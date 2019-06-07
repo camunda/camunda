@@ -28,7 +28,6 @@ import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.BpmnElementType;
@@ -40,7 +39,6 @@ import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.io.File;
 import java.net.URISyntaxException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -56,13 +54,10 @@ public class WorkflowInstanceFunctionalTest {
   public void shouldCreateWorkflowInstance() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
-    final long workflowKey =
-        ENGINE
-            .deploy(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
-            .getValue()
-            .getDeployedWorkflows()
-            .get(0)
-            .getWorkflowKey();
+    ENGINE
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .deploy();
 
     // when
     final long workflowInstanceKey =
@@ -115,7 +110,11 @@ public class WorkflowInstanceFunctionalTest {
     // given
     final String processId = Strings.newRandomValidBpmnId();
     final String startId = Strings.newRandomValidBpmnId();
-    ENGINE.deploy(Bpmn.createExecutableProcess(processId).startEvent(startId).endEvent().done());
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId).startEvent(startId).endEvent().done())
+        .deploy();
 
     // when
     final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
@@ -148,12 +147,15 @@ public class WorkflowInstanceFunctionalTest {
     // given
     final String processId = Strings.newRandomValidBpmnId();
     final String sequenceId = Strings.newRandomValidBpmnId();
-    ENGINE.deploy(
-        Bpmn.createExecutableProcess(processId)
-            .startEvent()
-            .sequenceFlowId(sequenceId)
-            .endEvent()
-            .done());
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .sequenceFlowId(sequenceId)
+                .endEvent()
+                .done())
+        .deploy();
 
     // when
     final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
@@ -180,7 +182,11 @@ public class WorkflowInstanceFunctionalTest {
     // given
     final String processId = Strings.newRandomValidBpmnId();
     final String endId = Strings.newRandomValidBpmnId();
-    ENGINE.deploy(Bpmn.createExecutableProcess(processId).startEvent().endEvent(endId).done());
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId).startEvent().endEvent(endId).done())
+        .deploy();
 
     // when
     final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
@@ -214,7 +220,7 @@ public class WorkflowInstanceFunctionalTest {
             .endEvent()
             .done();
 
-    ENGINE.deploy(model);
+    ENGINE.deployment().withXmlResource(model).deploy();
 
     // when
     final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
@@ -251,12 +257,15 @@ public class WorkflowInstanceFunctionalTest {
     final String processId = Strings.newRandomValidBpmnId();
     final String taskId = Strings.newRandomValidBpmnId();
     final String taskType = Strings.newRandomValidBpmnId();
-    ENGINE.deploy(
-        Bpmn.createExecutableProcess(processId)
-            .startEvent()
-            .serviceTask(taskId, t -> t.zeebeTaskType(taskType).zeebeTaskRetries(5))
-            .endEvent()
-            .done());
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(taskId, t -> t.zeebeTaskType(taskType).zeebeTaskRetries(5))
+                .endEvent()
+                .done())
+        .deploy();
 
     // when
     final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
@@ -291,14 +300,20 @@ public class WorkflowInstanceFunctionalTest {
     final String processId = Strings.newRandomValidBpmnId();
     final String taskId = Strings.newRandomValidBpmnId();
     final String taskType = Strings.newRandomValidBpmnId();
-    ENGINE.deploy(
-        Bpmn.createExecutableProcess(processId)
-            .startEvent()
-            .serviceTask(
-                taskId,
-                t -> t.zeebeTaskType(taskType).zeebeTaskHeader("a", "b").zeebeTaskHeader("c", "d"))
-            .endEvent()
-            .done());
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    taskId,
+                    t ->
+                        t.zeebeTaskType(taskType)
+                            .zeebeTaskHeader("a", "b")
+                            .zeebeTaskHeader("c", "d"))
+                .endEvent()
+                .done())
+        .deploy();
 
     // when
     final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
@@ -333,7 +348,7 @@ public class WorkflowInstanceFunctionalTest {
             .endEvent()
             .done();
 
-    ENGINE.deploy(definition);
+    ENGINE.deployment().withXmlResource(definition).deploy();
 
     final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
 
@@ -391,7 +406,7 @@ public class WorkflowInstanceFunctionalTest {
             .endEvent(endId)
             .done();
 
-    ENGINE.deploy(definition);
+    ENGINE.deployment().withXmlResource(definition).deploy();
     final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(processId).create();
 
     // when
@@ -435,11 +450,6 @@ public class WorkflowInstanceFunctionalTest {
     final File yamlFile =
         new File(getClass().getResource("/workflows/simple-workflow.yaml").toURI());
     final String yamlWorkflow = Files.contentOf(yamlFile, UTF_8);
-
-    final Map<String, Object> deploymentResource = new HashMap<>();
-    deploymentResource.put("resource", yamlWorkflow.getBytes(UTF_8));
-    deploymentResource.put("resourceType", ResourceType.YAML_WORKFLOW);
-    deploymentResource.put("resourceName", "simple-workflow.yaml");
 
     ENGINE.deployment().withYamlResource(yamlWorkflow.getBytes(UTF_8)).deploy();
 

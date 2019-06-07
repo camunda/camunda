@@ -156,7 +156,8 @@ public class JobOutputMappingTest {
   public void shouldApplyOutputMappings() {
     // given
     ENGINE_RULE
-        .deploy(
+        .deployment()
+        .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
                 .serviceTask(
@@ -167,6 +168,7 @@ public class JobOutputMappingTest {
                     })
                 .endEvent()
                 .done())
+        .deploy()
         .getValue()
         .getDeployedWorkflows()
         .get(0)

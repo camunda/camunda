@@ -84,10 +84,10 @@ public class TimerCatchEventTest {
 
   @BeforeClass
   public static void init() {
-    ENGINE.deploy(SINGLE_TIMER_WORKFLOW);
-    ENGINE.deploy(BOUNDARY_EVENT_WORKFLOW);
-    ENGINE.deploy(TWO_REPS_CYCLE_WORKFLOW);
-    ENGINE.deploy(INFINITE_CYCLE_WORKFLOW);
+    ENGINE.deployment().withXmlResource(SINGLE_TIMER_WORKFLOW).deploy();
+    ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_WORKFLOW).deploy();
+    ENGINE.deployment().withXmlResource(TWO_REPS_CYCLE_WORKFLOW).deploy();
+    ENGINE.deployment().withXmlResource(INFINITE_CYCLE_WORKFLOW).deploy();
   }
 
   @Test
@@ -100,7 +100,7 @@ public class TimerCatchEventTest {
             .endEvent()
             .done();
 
-    ENGINE.deploy(workflow);
+    ENGINE.deployment().withXmlResource(workflow).deploy();
     final long workflowInstanceKey =
         ENGINE.workflowInstance().ofBpmnProcessId("testLifeCycle").create();
 
@@ -135,7 +135,7 @@ public class TimerCatchEventTest {
             .endEvent()
             .done();
 
-    ENGINE.deploy(workflow);
+    ENGINE.deployment().withXmlResource(workflow).deploy();
     final long workflowInstanceKey =
         ENGINE.workflowInstance().ofBpmnProcessId("shouldCreateTimer").create();
 
@@ -229,7 +229,7 @@ public class TimerCatchEventTest {
             .endEvent()
             .done();
 
-    ENGINE.deploy(workflow);
+    ENGINE.deployment().withXmlResource(workflow).deploy();
     final long workflowInstanceKey =
         ENGINE.workflowInstance().ofBpmnProcessId("shouldTriggerTimerWithZeroDuration").create();
 
@@ -251,7 +251,7 @@ public class TimerCatchEventTest {
             .endEvent()
             .done();
 
-    ENGINE.deploy(workflow);
+    ENGINE.deployment().withXmlResource(workflow).deploy();
     final long workflowInstanceKey =
         ENGINE
             .workflowInstance()
@@ -280,7 +280,7 @@ public class TimerCatchEventTest {
             .endEvent()
             .done();
 
-    ENGINE.deploy(workflow);
+    ENGINE.deployment().withXmlResource(workflow).deploy();
     final long workflowInstanceKey =
         ENGINE.workflowInstance().ofBpmnProcessId("shouldTriggerMultipleTimers").create();
 
@@ -332,7 +332,7 @@ public class TimerCatchEventTest {
             .endEvent()
             .done();
 
-    ENGINE.deploy(workflow);
+    ENGINE.deployment().withXmlResource(workflow).deploy();
     final long workflowInstanceKey =
         ENGINE.workflowInstance().ofBpmnProcessId("shouldCancelTimer").create();
 
@@ -464,7 +464,7 @@ public class TimerCatchEventTest {
             .endEvent()
             .done();
 
-    ENGINE.deploy(workflow);
+    ENGINE.deployment().withXmlResource(workflow).deploy();
     final long workflowInstanceKey =
         ENGINE
             .workflowInstance()

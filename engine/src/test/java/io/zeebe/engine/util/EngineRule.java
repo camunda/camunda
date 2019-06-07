@@ -30,13 +30,10 @@ import io.zeebe.engine.processor.workflow.message.command.PartitionCommandSender
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandMessageHandler;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -130,12 +127,14 @@ public class EngineRule extends ExternalResource {
     environmentRule.getClock().addTime(duration);
   }
 
-  public DeploymentClient deployment() {
-    return new DeploymentClient(environmentRule, this::forEachPartition);
+  public List<Integer> getPartitionIds() {
+    return IntStream.range(PARTITION_ID, PARTITION_ID + partitionCount)
+        .boxed()
+        .collect(Collectors.toList());
   }
 
-  public Record<DeploymentRecordValue> deploy(final BpmnModelInstance modelInstance) {
-    return deployment().withXmlResource(modelInstance).deploy();
+  public DeploymentClient deployment() {
+    return new DeploymentClient(environmentRule, this::forEachPartition);
   }
 
   public WorkflowInstanceClient workflowInstance() {
@@ -144,12 +143,6 @@ public class EngineRule extends ExternalResource {
 
   public PublishMessageClient message() {
     return new PublishMessageClient(environmentRule, partitionCount);
-  }
-
-  public List<Integer> getPartitionIds() {
-    return IntStream.range(PARTITION_ID, PARTITION_ID + partitionCount)
-        .boxed()
-        .collect(Collectors.toList());
   }
 
   public VariableClient variables() {

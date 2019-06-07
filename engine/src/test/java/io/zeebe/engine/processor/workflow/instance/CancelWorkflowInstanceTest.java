@@ -83,9 +83,9 @@ public class CancelWorkflowInstanceTest {
 
   @BeforeClass
   public static void init() {
-    ENGINE.deploy(WORKFLOW);
-    ENGINE.deploy(SUB_PROCESS_WORKFLOW);
-    ENGINE.deploy(FORK_PROCESS);
+    ENGINE.deployment().withXmlResource(WORKFLOW).deploy();
+    ENGINE.deployment().withXmlResource(SUB_PROCESS_WORKFLOW).deploy();
+    ENGINE.deployment().withXmlResource(FORK_PROCESS).deploy();
   }
 
   @Test
@@ -268,12 +268,15 @@ public class CancelWorkflowInstanceTest {
   @Test
   public void shouldCancelIntermediateCatchEvent() {
     // given
-    ENGINE.deploy(
-        Bpmn.createExecutableProcess("shouldCancelIntermediateCatchEvent")
-            .startEvent()
-            .intermediateCatchEvent("catch-event")
-            .message(b -> b.name("msg").zeebeCorrelationKey("id"))
-            .done());
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("shouldCancelIntermediateCatchEvent")
+                .startEvent()
+                .intermediateCatchEvent("catch-event")
+                .message(b -> b.name("msg").zeebeCorrelationKey("id"))
+                .done())
+        .deploy();
 
     final long workflowInstanceKey =
         ENGINE
@@ -376,11 +379,14 @@ public class CancelWorkflowInstanceTest {
   @Test
   public void shouldRejectCancelCompletedWorkflowInstance() {
     // given
-    ENGINE.deploy(
-        Bpmn.createExecutableProcess("shouldRejectCancelCompletedWorkflowInstance")
-            .startEvent()
-            .endEvent()
-            .done());
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("shouldRejectCancelCompletedWorkflowInstance")
+                .startEvent()
+                .endEvent()
+                .done())
+        .deploy();
 
     final long workflowInstanceKey =
         ENGINE
@@ -452,14 +458,5 @@ public class CancelWorkflowInstanceTest {
 
     // then
     assertThat(canceledRecord.getValue()).isEqualTo(activatedEvent.getValue());
-    //    MsgPackUtil.assertEqualityExcluding(
-    //        response.getRawValue(), activatedEvent.getValue().toJson(), "variables");
-    //
-    //    final Record<WorkflowInstanceRecordValue> cancelingEvent =
-    //        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_TERMINATING)
-    //            .withElementId(JobAssert.PROCESS_ID)
-    //            .getFirst();
-
-    //    assertThat(cancelingEvent.getValue()).isEqualTo(activatedEvent.getValue());
   }
 }

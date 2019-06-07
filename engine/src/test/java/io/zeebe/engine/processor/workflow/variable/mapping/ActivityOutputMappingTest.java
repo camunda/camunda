@@ -86,7 +86,8 @@ public class ActivityOutputMappingTest {
     final String jobType = UUID.randomUUID().toString();
 
     ENGINE_RULE
-        .deploy(
+        .deployment()
+        .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
                 .subProcess(
@@ -101,6 +102,7 @@ public class ActivityOutputMappingTest {
                     })
                 .endEvent()
                 .done())
+        .deploy()
         .getValue()
         .getDeployedWorkflows()
         .get(0)

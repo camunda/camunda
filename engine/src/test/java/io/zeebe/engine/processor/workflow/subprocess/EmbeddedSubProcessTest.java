@@ -64,7 +64,7 @@ public class EmbeddedSubProcessTest {
 
   @BeforeClass
   public static void init() {
-    ENGINE.deploy(ONE_TASK_SUBPROCESS);
+    ENGINE.deployment().withXmlResource(ONE_TASK_SUBPROCESS).deploy();
   }
 
   @Test
@@ -220,7 +220,7 @@ public class EmbeddedSubProcessTest {
             .endEvent()
             .done();
 
-    ENGINE.deploy(model);
+    ENGINE.deployment().withXmlResource(model).deploy();
 
     // when
     final long workflowInstanceKey =
@@ -259,7 +259,7 @@ public class EmbeddedSubProcessTest {
             .subProcessDone()
             .endEvent()
             .done();
-    ENGINE.deploy(model);
+    ENGINE.deployment().withXmlResource(model).deploy();
     final long workflowInstanceKey =
         ENGINE.workflowInstance().ofBpmnProcessId("shouldCompleteNestedSubProcess").create();
 
@@ -317,7 +317,7 @@ public class EmbeddedSubProcessTest {
             .moveToActivity("outerSubProcess")
             .endEvent()
             .done();
-    ENGINE.deploy(model);
+    ENGINE.deployment().withXmlResource(model).deploy();
     final long workflowInstanceKey =
         ENGINE
             .workflowInstance()

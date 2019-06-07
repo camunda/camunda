@@ -162,7 +162,7 @@ public class MessageCatchElementTest {
   }
 
   private static void deploy(BpmnModelInstance modelInstance) {
-    ENGINE_RULE.deploy(modelInstance);
+    ENGINE_RULE.deployment().withXmlResource(modelInstance).deploy();
   }
 
   @Before

@@ -71,7 +71,7 @@ public class ActivityTest {
   @Test
   public void shouldApplyInputMappingOnReady() {
     // given
-    ENGINE.deploy(WITHOUT_BOUNDARY_EVENTS);
+    ENGINE.deployment().withXmlResource(WITHOUT_BOUNDARY_EVENTS).deploy();
     final long workflowInstanceKey =
         ENGINE
             .workflowInstance()
@@ -96,7 +96,7 @@ public class ActivityTest {
   @Test
   public void shouldApplyOutputMappingOnCompleting() {
     // given
-    ENGINE.deploy(WITHOUT_BOUNDARY_EVENTS);
+    ENGINE.deployment().withXmlResource(WITHOUT_BOUNDARY_EVENTS).deploy();
     final long workflowInstanceKey =
         ENGINE
             .workflowInstance()
@@ -122,7 +122,7 @@ public class ActivityTest {
   @Test
   public void shouldSubscribeToBoundaryEventTriggersOnReady() {
     // given
-    ENGINE.deploy(WITH_BOUNDARY_EVENTS);
+    ENGINE.deployment().withXmlResource(WITH_BOUNDARY_EVENTS).deploy();
 
     // when
     ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -151,7 +151,7 @@ public class ActivityTest {
   @Test
   public void shouldUnsubscribeFromBoundaryEventTriggersOnCompleting() {
     // given
-    ENGINE.deploy(WITH_BOUNDARY_EVENTS);
+    ENGINE.deployment().withXmlResource(WITH_BOUNDARY_EVENTS).deploy();
     final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
@@ -167,7 +167,7 @@ public class ActivityTest {
   @Test
   public void shouldUnsubscribeFromBoundaryEventTriggersOnTerminating() {
     // given
-    ENGINE.deploy(WITH_BOUNDARY_EVENTS);
+    ENGINE.deployment().withXmlResource(WITH_BOUNDARY_EVENTS).deploy();
     final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
@@ -212,7 +212,7 @@ public class ActivityTest {
             .done();
 
     // when
-    ENGINE.deploy(model);
+    ENGINE.deployment().withXmlResource(model).deploy();
     final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then

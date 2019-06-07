@@ -80,7 +80,7 @@ public class BoundaryEventTest {
   @Test
   public void shouldTakeAllOutgoingSequenceFlowsIfTriggered() {
     // given
-    ENGINE.deploy(MULTIPLE_SEQUENCE_FLOWS);
+    ENGINE.deployment().withXmlResource(MULTIPLE_SEQUENCE_FLOWS).deploy();
     final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
@@ -105,7 +105,7 @@ public class BoundaryEventTest {
   @Test
   public void shouldActivateBoundaryEventWhenEventTriggered() {
     // given
-    ENGINE.deploy(MULTIPLE_SEQUENCE_FLOWS);
+    ENGINE.deployment().withXmlResource(MULTIPLE_SEQUENCE_FLOWS).deploy();
     final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
@@ -154,7 +154,7 @@ public class BoundaryEventTest {
             .moveToActivity("task")
             .endEvent()
             .done();
-    ENGINE.deploy(workflow);
+    ENGINE.deployment().withXmlResource(workflow).deploy();
     final long workflowInstanceKey =
         ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
@@ -189,7 +189,7 @@ public class BoundaryEventTest {
             .moveToActivity("task")
             .endEvent()
             .done();
-    ENGINE.deploy(workflow);
+    ENGINE.deployment().withXmlResource(workflow).deploy();
     final long workflowInstanceKey =
         ENGINE
             .workflowInstance()
@@ -236,7 +236,7 @@ public class BoundaryEventTest {
             .moveToActivity("sub")
             .endEvent()
             .done();
-    ENGINE.deploy(workflow);
+    ENGINE.deployment().withXmlResource(workflow).deploy();
     ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
@@ -273,7 +273,7 @@ public class BoundaryEventTest {
   @Test
   public void shouldNotTerminateActivityForNonInterruptingBoundaryEvents() {
     // given
-    ENGINE.deploy(NON_INTERRUPTING_WORKFLOW);
+    ENGINE.deployment().withXmlResource(NON_INTERRUPTING_WORKFLOW).deploy();
     final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
@@ -327,7 +327,7 @@ public class BoundaryEventTest {
             .moveToActivity("task")
             .endEvent()
             .done();
-    ENGINE.deploy(workflow);
+    ENGINE.deployment().withXmlResource(workflow).deploy();
 
     // when
     final long workflowInstanceKey =
@@ -364,7 +364,7 @@ public class BoundaryEventTest {
             .moveToActivity("task")
             .endEvent()
             .done();
-    ENGINE.deploy(workflow);
+    ENGINE.deployment().withXmlResource(workflow).deploy();
 
     // when
     final long workflowInstanceKey =

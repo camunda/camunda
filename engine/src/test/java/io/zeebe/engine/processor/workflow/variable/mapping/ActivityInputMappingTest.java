@@ -79,7 +79,8 @@ public class ActivityInputMappingTest {
   public void shouldApplyInputMappings() {
     // given
     ENGINE_RULE
-        .deploy(
+        .deployment()
+        .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
                 .subProcess(
@@ -91,6 +92,7 @@ public class ActivityInputMappingTest {
                     })
                 .endEvent()
                 .done())
+        .deploy()
         .getValue()
         .getDeployedWorkflows()
         .get(0)

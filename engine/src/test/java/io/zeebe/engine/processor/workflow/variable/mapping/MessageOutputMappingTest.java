@@ -135,7 +135,8 @@ public class MessageOutputMappingTest {
   public void shouldApplyOutputMappings() {
     // given
     ENGINE_RULE
-        .deploy(
+        .deployment()
+        .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
                 .intermediateCatchEvent(
@@ -148,6 +149,7 @@ public class MessageOutputMappingTest {
                     })
                 .endEvent()
                 .done())
+        .deploy()
         .getValue()
         .getDeployedWorkflows()
         .get(0)

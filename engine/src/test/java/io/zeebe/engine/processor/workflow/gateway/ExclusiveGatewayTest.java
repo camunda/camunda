@@ -60,7 +60,7 @@ public class ExclusiveGatewayTest {
             .sequenceFlowId("s3")
             .endEvent("c")
             .done();
-    ENGINE.deploy(workflowDefinition);
+    ENGINE.deployment().withXmlResource(workflowDefinition).deploy();
 
     // when
     final long workflowInstance1 =
@@ -105,7 +105,7 @@ public class ExclusiveGatewayTest {
             .endEvent("end")
             .done();
 
-    ENGINE.deploy(workflowDefinition);
+    ENGINE.deployment().withXmlResource(workflowDefinition).deploy();
 
     // when
     final long workflowInstance1 =
@@ -152,7 +152,7 @@ public class ExclusiveGatewayTest {
             .endEvent("end")
             .done();
 
-    ENGINE.deploy(workflowDefinition);
+    ENGINE.deployment().withXmlResource(workflowDefinition).deploy();
 
     // when
     final long workflowInstance1 =
@@ -222,7 +222,7 @@ public class ExclusiveGatewayTest {
             .endEvent("b")
             .done();
 
-    ENGINE.deploy(workflowDefinition);
+    ENGINE.deployment().withXmlResource(workflowDefinition).deploy();
 
     // when
     final long workflowInstanceKey =
@@ -268,7 +268,7 @@ public class ExclusiveGatewayTest {
             .endEvent("b")
             .done();
 
-    ENGINE.deploy(workflowDefinition);
+    ENGINE.deployment().withXmlResource(workflowDefinition).deploy();
 
     // when
     final long workflowInstanceKey =
@@ -293,7 +293,7 @@ public class ExclusiveGatewayTest {
     final BpmnModelInstance workflowDefinition =
         Bpmn.createExecutableProcess(processId).startEvent().exclusiveGateway("xor").done();
 
-    ENGINE.deploy(workflowDefinition);
+    ENGINE.deployment().withXmlResource(workflowDefinition).deploy();
 
     // when
     final long workflowInstanceKey =

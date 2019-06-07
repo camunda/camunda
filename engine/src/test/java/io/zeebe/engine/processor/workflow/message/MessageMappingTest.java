@@ -233,7 +233,9 @@ public class MessageMappingTest {
       c.accept(((ReceiveTask) element).builder());
     }
     return ENGINE_RULE
-        .deploy(modifiedWorkflow)
+        .deployment()
+        .withXmlResource(modifiedWorkflow)
+        .deploy()
         .getValue()
         .getDeployedWorkflows()
         .get(0)

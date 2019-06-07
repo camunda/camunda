@@ -65,7 +65,7 @@ public class WorkflowInstanceVariableTypeTest {
 
   @BeforeClass
   public static void deployWorkflow() {
-    ENGINE_RULE.deploy(WORKFLOW);
+    ENGINE_RULE.deployment().withXmlResource(WORKFLOW).deploy();
   }
 
   @Test

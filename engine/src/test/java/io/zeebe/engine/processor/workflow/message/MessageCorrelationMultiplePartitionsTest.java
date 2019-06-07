@@ -70,7 +70,7 @@ public class MessageCorrelationMultiplePartitionsTest {
     assertThat(getPartitionId(CORRELATION_KEYS.get(START_PARTITION_ID + 2)))
         .isEqualTo(START_PARTITION_ID + 2);
 
-    engine.deploy(WORKFLOW);
+    engine.deployment().withXmlResource(WORKFLOW).deploy();
   }
 
   @Test

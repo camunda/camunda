@@ -66,7 +66,7 @@ public class ParallelGatewayTest {
   @Test
   public void shouldActivateTasksOnParallelBranches() {
     // given
-    engine.deploy(FORK_PROCESS);
+    engine.deployment().withXmlResource(FORK_PROCESS).deploy();
 
     // when
     engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -89,7 +89,7 @@ public class ParallelGatewayTest {
   @Test
   public void shouldCompleteScopeWhenAllPathsCompleted() {
     // given
-    engine.deploy(FORK_PROCESS);
+    engine.deployment().withXmlResource(FORK_PROCESS).deploy();
     final long workflowInstanceKey = engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
     engine.job().ofInstance(workflowInstanceKey).withType("type1").complete();
 
@@ -127,7 +127,7 @@ public class ParallelGatewayTest {
             .connectTo("join")
             .done();
 
-    engine.deploy(process);
+    engine.deployment().withXmlResource(process).deploy();
 
     // when
     engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -158,7 +158,7 @@ public class ParallelGatewayTest {
             .endEvent("end")
             .done();
 
-    engine.deploy(process);
+    engine.deployment().withXmlResource(process).deploy();
 
     // when
     engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -195,7 +195,7 @@ public class ParallelGatewayTest {
             .parallelGateway("fork")
             .done();
 
-    engine.deploy(process);
+    engine.deployment().withXmlResource(process).deploy();
 
     // when
     engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -216,7 +216,7 @@ public class ParallelGatewayTest {
   @Test
   public void shouldMergeParallelBranches() {
     // given
-    engine.deploy(FORK_JOIN_PROCESS);
+    engine.deployment().withXmlResource(FORK_JOIN_PROCESS).deploy();
 
     // when
     engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -257,7 +257,7 @@ public class ParallelGatewayTest {
             .endEvent()
             .done();
 
-    engine.deploy(process);
+    engine.deployment().withXmlResource(process).deploy();
 
     final long workflowInstanceKey = engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
@@ -306,7 +306,7 @@ public class ParallelGatewayTest {
             .serviceTask("task2", b -> b.zeebeTaskType("type2"))
             .done();
 
-    engine.deploy(process);
+    engine.deployment().withXmlResource(process).deploy();
 
     // when
     engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -337,7 +337,7 @@ public class ParallelGatewayTest {
             .serviceTask("task2", b -> b.zeebeTaskType("type2"))
             .done();
 
-    engine.deploy(process);
+    engine.deployment().withXmlResource(process).deploy();
 
     // when
     engine.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();

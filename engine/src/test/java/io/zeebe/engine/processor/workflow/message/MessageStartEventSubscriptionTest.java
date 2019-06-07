@@ -47,7 +47,7 @@ public class MessageStartEventSubscriptionTest {
   public void shouldOpenMessageSubscriptionOnDeployment() {
 
     // when
-    engine.deploy(createWorkflowWithOneMessageStartEvent());
+    engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
 
     final Record<MessageStartEventSubscriptionRecordValue> subscription =
         RecordingExporter.messageStartEventSubscriptionRecords(
@@ -63,7 +63,7 @@ public class MessageStartEventSubscriptionTest {
   public void shouldOpenSubscriptionsForAllMessageStartEvents() {
 
     // when
-    engine.deploy(createWorkflowWithTwoMessageStartEvent());
+    engine.deployment().withXmlResource(createWorkflowWithTwoMessageStartEvent()).deploy();
 
     final List<Record<MessageStartEventSubscriptionRecordValue>> subscriptions =
         RecordingExporter.messageStartEventSubscriptionRecords(
@@ -85,10 +85,10 @@ public class MessageStartEventSubscriptionTest {
   @Test
   public void shouldCloseSubscriptionForOldVersions() {
     // given
-    engine.deploy(createWorkflowWithOneMessageStartEvent());
+    engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
 
     // when
-    engine.deploy(createWorkflowWithOneMessageStartEvent());
+    engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
     // then
 
     final List<Record<MessageStartEventSubscriptionRecordValue>> subscriptions =
@@ -111,14 +111,11 @@ public class MessageStartEventSubscriptionTest {
   }
 
   private static BpmnModelInstance createWorkflowWithOneMessageStartEvent() {
-    final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess("processId")
-            .startEvent(EVENT_ID1)
-            .message(m -> m.name(MESSAGE_NAME1).id("startmsgId"))
-            .endEvent()
-            .done();
-
-    return modelInstance;
+    return Bpmn.createExecutableProcess("processId")
+        .startEvent(EVENT_ID1)
+        .message(m -> m.name(MESSAGE_NAME1).id("startmsgId"))
+        .endEvent()
+        .done();
   }
 
   private static BpmnModelInstance createWorkflowWithTwoMessageStartEvent() {
@@ -126,7 +123,6 @@ public class MessageStartEventSubscriptionTest {
     process.startEvent(EVENT_ID1).message(m -> m.name(MESSAGE_NAME1).id("startmsgId1")).endEvent();
     process.startEvent(EVENT_ID2).message(m -> m.name(MESSAGE_NAME2).id("startmsgId2")).endEvent();
 
-    final BpmnModelInstance modelInstance = process.done();
-    return modelInstance;
+    return process.done();
   }
 }

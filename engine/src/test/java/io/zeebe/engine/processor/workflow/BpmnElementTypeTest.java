@@ -308,7 +308,7 @@ public class BpmnElementTypeTest {
   @Test
   public void test() {
     // given
-    ENGINE.deploy(scenario.modelInstance());
+    ENGINE.deployment().withXmlResource(scenario.modelInstance()).deploy();
 
     // when
     scenario.test();

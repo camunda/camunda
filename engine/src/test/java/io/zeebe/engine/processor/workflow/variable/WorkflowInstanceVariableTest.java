@@ -51,7 +51,14 @@ public class WorkflowInstanceVariableTest {
   @BeforeClass
   public static void init() {
     workflowKey =
-        ENGINE_RULE.deploy(WORKFLOW).getValue().getDeployedWorkflows().get(0).getWorkflowKey();
+        ENGINE_RULE
+            .deployment()
+            .withXmlResource(WORKFLOW)
+            .deploy()
+            .getValue()
+            .getDeployedWorkflows()
+            .get(0)
+            .getWorkflowKey();
   }
 
   @Test
@@ -109,12 +116,14 @@ public class WorkflowInstanceVariableTest {
     // given
     final long workflowKey =
         ENGINE_RULE
-            .deploy(
+            .deployment()
+            .withXmlResource(
                 Bpmn.createExecutableProcess("shouldCreateVariableByOutputMapping")
                     .startEvent()
                     .serviceTask("task", t -> t.zeebeTaskType("test").zeebeOutput("x", "y"))
                     .endEvent()
                     .done())
+            .deploy()
             .getValue()
             .getDeployedWorkflows()
             .get(0)
@@ -230,12 +239,14 @@ public class WorkflowInstanceVariableTest {
     // given
     final long workflowKey =
         ENGINE_RULE
-            .deploy(
+            .deployment()
+            .withXmlResource(
                 Bpmn.createExecutableProcess("shouldUpdateVariableByOutputMapping")
                     .startEvent()
                     .serviceTask("task", t -> t.zeebeTaskType("test").zeebeOutput("x", "y"))
                     .endEvent()
                     .done())
+            .deploy()
             .getValue()
             .getDeployedWorkflows()
             .get(0)

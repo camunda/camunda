@@ -54,7 +54,7 @@ public class UpdateVariableDocumentTest {
     final Map<String, Object> document = Maps.of(entry("x", 2), entry("foo", "bar"));
 
     // when
-    ENGINE_RULE.deploy(process);
+    ENGINE_RULE.deployment().withXmlResource(process).deploy();
     final long workflowInstanceKey =
         ENGINE_RULE
             .workflowInstance()

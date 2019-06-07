@@ -52,7 +52,7 @@ public class MessageStartEventTest {
   public void shouldCorrelateMessageToStartEvent() {
     // given
     final Record<DeploymentRecordValue> deploymentRecord =
-        engine.deploy(createWorkflowWithOneMessageStartEvent());
+        engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
     final long workflowKey = getFirstDeployedWorkflowKey(deploymentRecord);
 
     // wait until subscription is opened
@@ -80,7 +80,7 @@ public class MessageStartEventTest {
   public void shouldCreateInstanceOnMessage() {
     // given
     final Record<DeploymentRecordValue> deploymentRecord =
-        engine.deploy(createWorkflowWithOneMessageStartEvent());
+        engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
     final long workflowKey = getFirstDeployedWorkflowKey(deploymentRecord);
 
     // wait until subscription is opened
@@ -118,7 +118,7 @@ public class MessageStartEventTest {
   @Test
   public void shouldMergeMessageVariables() {
     // given
-    engine.deploy(createWorkflowWithOneMessageStartEvent());
+    engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
 
     // wait until subscription is opened
     assertThat(
@@ -142,7 +142,10 @@ public class MessageStartEventTest {
   @Test
   public void shouldApplyOutputMappingsOfMessageStartEvent() {
     // given
-    engine.deploy(createWorkflowWithMessageStartEventOutputMapping());
+    engine
+        .deployment()
+        .withXmlResource(createWorkflowWithMessageStartEventOutputMapping())
+        .deploy();
 
     // wait until subscription is opened
     assertThat(
@@ -168,7 +171,7 @@ public class MessageStartEventTest {
   public void shouldCreateInstancesForMultipleMessagesOfSameName() {
     // given
     final Record<DeploymentRecordValue> record =
-        engine.deploy(createWorkflowWithOneMessageStartEvent());
+        engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
 
     final long workflowKey = getFirstDeployedWorkflowKey(record);
 
@@ -207,7 +210,7 @@ public class MessageStartEventTest {
   public void shouldCreateInstancesForDifferentMessages() {
     // given
     final Record<DeploymentRecordValue> record =
-        engine.deploy(createWorkflowWithTwoMessageStartEvent());
+        engine.deployment().withXmlResource(createWorkflowWithTwoMessageStartEvent()).deploy();
 
     final long workflowKey = getFirstDeployedWorkflowKey(record);
 
@@ -246,11 +249,11 @@ public class MessageStartEventTest {
   @Test
   public void shouldNotCreateInstanceOfOldVersion() {
     // given
-    engine.deploy(createWorkflowWithOneMessageStartEvent());
+    engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
 
     // new version
     final Record<DeploymentRecordValue> record =
-        engine.deploy(createWorkflowWithOneMessageStartEvent());
+        engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
     final long workflowKey2 = getFirstDeployedWorkflowKey(record);
 
     // wait until second subscription is opened
@@ -308,7 +311,6 @@ public class MessageStartEventTest {
         .done();
   }
 
-  @SuppressWarnings("unchecked")
   private long getFirstDeployedWorkflowKey(final Record<DeploymentRecordValue> deploymentRecord) {
     return deploymentRecord.getValue().getDeployedWorkflows().get(0).getWorkflowKey();
   }

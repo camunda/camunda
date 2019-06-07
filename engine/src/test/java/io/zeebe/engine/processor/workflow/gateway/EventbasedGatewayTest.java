@@ -107,10 +107,10 @@ public class EventbasedGatewayTest {
 
   @BeforeClass
   public static void init() {
-    ENGINE.deploy(WORKFLOW_WITH_TIMERS);
-    ENGINE.deploy(WORKFLOW_WITH_EQUAL_TIMERS);
-    ENGINE.deploy(WORKFLOW_WITH_MESSAGES);
-    ENGINE.deploy(WORKFLOW_WITH_TIMER_AND_MESSAGE);
+    ENGINE.deployment().withXmlResource(WORKFLOW_WITH_TIMERS).deploy();
+    ENGINE.deployment().withXmlResource(WORKFLOW_WITH_EQUAL_TIMERS).deploy();
+    ENGINE.deployment().withXmlResource(WORKFLOW_WITH_MESSAGES).deploy();
+    ENGINE.deployment().withXmlResource(WORKFLOW_WITH_TIMER_AND_MESSAGE).deploy();
   }
 
   @Test

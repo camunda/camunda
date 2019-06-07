@@ -69,7 +69,8 @@ public class JobInputMappingTest {
   public void shouldApplyInputMappings() {
     // given
     ENGINE_RULE
-        .deploy(
+        .deployment()
+        .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
                 .serviceTask(
@@ -80,6 +81,7 @@ public class JobInputMappingTest {
                     })
                 .endEvent()
                 .done())
+        .deploy()
         .getValue()
         .getDeployedWorkflows()
         .get(0)
