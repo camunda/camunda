@@ -2698,7 +2698,7 @@ cosmiconfig@^4.0.0:
     parse-json "^4.0.0"
     require-from-string "^2.0.1"
 
-cosmiconfig@^5.0.0, cosmiconfig@^5.0.2, cosmiconfig@^5.0.5, cosmiconfig@^5.0.6, cosmiconfig@^5.2.0:
+cosmiconfig@^5.0.0, cosmiconfig@^5.0.5, cosmiconfig@^5.0.6, cosmiconfig@^5.2.0:
   version "5.2.1"
   resolved "https://registry.yarnpkg.com/cosmiconfig/-/cosmiconfig-5.2.1.tgz#040f726809c591e77a17c0a3626ca45b4f168b1a"
   dependencies:
@@ -4264,10 +4264,6 @@ find-cache-dir@^2.0.0:
     commondir "^1.0.1"
     make-dir "^1.0.0"
     pkg-dir "^3.0.0"
-
-find-parent-dir@^0.3.0:
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/find-parent-dir/-/find-parent-dir-0.3.0.tgz#33c44b429ab2b2f0646299c5f9f718f376ff8d54"
 
 find-up@3.0.0, find-up@^3.0.0:
   version "3.0.0"
@@ -6437,18 +6433,17 @@ levn@^0.3.0, levn@~0.3.0:
     prelude-ls "~1.1.2"
     type-check "~0.3.2"
 
-lint-staged@^8.1.6:
-  version "8.1.6"
-  resolved "https://registry.yarnpkg.com/lint-staged/-/lint-staged-8.1.6.tgz#128a9bc5effbf69a359fb8f7eeb2da71a998daf6"
+lint-staged@^8.2.0:
+  version "8.2.0"
+  resolved "https://registry.yarnpkg.com/lint-staged/-/lint-staged-8.2.0.tgz#3d4149a229580815c955047a7acd8f09054be5a9"
   dependencies:
     chalk "^2.3.1"
     commander "^2.14.1"
-    cosmiconfig "^5.0.2"
+    cosmiconfig "^5.2.0"
     debug "^3.1.0"
     dedent "^0.7.0"
     del "^3.0.0"
     execa "^1.0.0"
-    find-parent-dir "^0.3.0"
     g-status "^2.0.2"
     is-glob "^4.0.0"
     is-windows "^1.0.2"
