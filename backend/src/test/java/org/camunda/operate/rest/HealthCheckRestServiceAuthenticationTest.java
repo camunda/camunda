@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.rest;
 
+import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.security.WebSecurityConfig;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.junit.Test;
@@ -23,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-  classes = {TestApplicationWithNoBeans.class, HealthCheckRestService.class, WebSecurityConfig.class},
+  classes = {OperateProperties.class,TestApplicationWithNoBeans.class, HealthCheckRestService.class, WebSecurityConfig.class},
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ActiveProfiles("auth")
