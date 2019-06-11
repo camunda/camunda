@@ -75,14 +75,14 @@ public class BatchOperationPerformanceTest {
   }
 
   private void createResolveIncidentOperations() {
-    BatchOperationRequestDto cancelRequest = new BatchOperationRequestDto();
-    cancelRequest.setOperationType(OperationType.RESOLVE_INCIDENT);
-    ListViewQueryDto queryForCancel = new ListViewQueryDto();
-    queryForCancel.setRunning(true);
-    queryForCancel.setIncidents(true);
-    queryForCancel.setWorkflowIds(ElasticsearchUtil.getWorkflowIds(esClient, getOperateAlias(WorkflowIndex.INDEX_NAME), 5));
-    cancelRequest.getQueries().add(queryForCancel);
-    final OperationResponseDto operationResponseDto = batchOperationWriter.scheduleBatchOperation(cancelRequest);
+    BatchOperationRequestDto resolveIncidentRequest = new BatchOperationRequestDto();
+    resolveIncidentRequest.setOperationType(OperationType.RESOLVE_INCIDENT);
+    ListViewQueryDto queryForResolveIncident = new ListViewQueryDto();
+    queryForResolveIncident.setRunning(true);
+    queryForResolveIncident.setIncidents(true);
+    queryForResolveIncident.setWorkflowIds(ElasticsearchUtil.getWorkflowIds(esClient, getOperateAlias(WorkflowIndex.INDEX_NAME), 5));
+    resolveIncidentRequest.getQueries().add(queryForResolveIncident);
+    final OperationResponseDto operationResponseDto = batchOperationWriter.scheduleBatchOperation(resolveIncidentRequest);
     logger.info("RESOLVE_INCIDENT operations scheduled: {}", operationResponseDto.getCount());
   }
 

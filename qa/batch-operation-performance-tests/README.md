@@ -1,6 +1,6 @@
 # Batch operation performance test
 
-Prerequisites: Elasticserch with dataset under test is running (both Zeebe + Operate data)
+Prerequisites: Elasticsearch with dataset under test is running (both Zeebe + Operate data)
 
 This test:
 1. Mocks Zeebe answers
