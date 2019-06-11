@@ -23,7 +23,6 @@ import Dashboard from './Dashboard';
 import Header from '../Header';
 import MetricPanel from './MetricPanel';
 import InstancesByWorkflow from './InstancesByWorkflow';
-import EmptyPanel from 'modules/components/EmptyPanel';
 import IncidentsByError from './IncidentsByError';
 import * as Styled from './styled';
 
