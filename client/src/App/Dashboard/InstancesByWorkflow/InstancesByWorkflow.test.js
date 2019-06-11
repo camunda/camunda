@@ -21,7 +21,10 @@ const instancesByWorkflow = [
     activeInstancesCount: 136,
     workflowName: 'Order process',
     bpmnProcessId: 'orderProcess',
-    workflows: [createWorkflow(), createWorkflow()]
+    workflows: [
+      createWorkflow({name: 'First Version', version: 1}),
+      createWorkflow({name: 'Second Version', version: 2})
+    ]
   }),
   createInstanceByWorkflow({
     bpmnProcessId: 'noIncidentsProcess',
@@ -151,6 +154,9 @@ describe('InstancesByWorkflow', () => {
 
     expect(versionStatisticNode.props().label).toContain(
       `Version ${instancesByWorkflow[1].workflows[0].version}`
+    );
+    expect(versionStatisticNode.props().label).toContain(
+      `${instancesByWorkflow[1].workflows[0].name}`
     );
     expect(versionStatisticNode.props().size).toBe('small');
     expect(versionStatisticNode.props().incidentsCount).toBe(

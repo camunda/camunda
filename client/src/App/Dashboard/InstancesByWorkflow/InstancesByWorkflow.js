@@ -58,7 +58,7 @@ export default class InstancesByWorkflow extends React.Component {
                   hasFinishedInstances: totalInstancesCount === 0
                 })}
                 title={concatTitle(
-                  workflowName,
+                  item.name || workflowName,
                   totalInstancesCount,
                   item.version
                 )}
@@ -66,7 +66,7 @@ export default class InstancesByWorkflow extends React.Component {
               >
                 <InstancesBar
                   label={concatLabel(
-                    workflowName,
+                    item.name || workflowName,
                     totalInstancesCount,
                     item.version
                   )}
