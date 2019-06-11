@@ -19,10 +19,9 @@ import {
 } from 'modules/api/incidents/incidents';
 import {PAGE_TITLE} from 'modules/constants';
 import EmptyPanel from 'modules/components/EmptyPanel';
-
 import Copyright from 'modules/components/Copyright';
-
 import * as Styled from './styled.js';
+import {MESSAGES, INCIDENTS_BY_ERROR, INSTANCES_BY_WORKFLOW} from './service';
 
 class Dashboard extends Component {
   state = {
@@ -56,37 +55,21 @@ class Dashboard extends Component {
     };
   };
 
-  renderEmptyList = (incidentsState, type) => {
-    const errorMessage =
-      type === 'workflow'
-        ? 'Instances by Workflow could not be fetched.'
-        : 'Incidents by Error Message could not be fetched.';
-
-    const emptyMessage =
-      type === 'workflow'
-        ? 'There are no Workflows.'
-        : 'There are no Instances with Incident.';
-
-    if (incidentsState.error) {
-      return <EmptyPanel type="warning" label={errorMessage} />;
+  renderPanel = (type, state) => {
+    if (state.error) {
+      return <EmptyPanel type="warning" label={MESSAGES[type].error} />;
+    } else if (state.data.length === 0) {
+      return <EmptyPanel type="info" label={MESSAGES[type].noData} />;
+    } else if (state.data.length > 0 && type === INSTANCES_BY_WORKFLOW) {
+      return <InstancesByWorkflow incidents={state.data} />;
+    } else if (state.data.length > 0 && type === INCIDENTS_BY_ERROR) {
+      return <IncidentsByError incidents={state.data} />;
     }
-
-    if (incidentsState.data && incidentsState.data.length === 0) {
-      return <EmptyPanel type="info" label={emptyMessage} />;
-    }
-  };
-
-  renderIncidentsList = (incidentsData, type) => {
-    return type === 'workflow' ? (
-      <InstancesByWorkflow incidents={incidentsData.data} />
-    ) : (
-      <IncidentsByError incidents={incidentsData.data} />
-    );
   };
 
   render() {
     const {
-      incidents: {byWorkflow, byError},
+      incidents: {byError, byWorkflow},
       counts: {
         data: {active, running, withIncidents},
         error: countsError
@@ -124,20 +107,14 @@ class Dashboard extends Component {
               <Styled.TileTitle>Instances by Workflow</Styled.TileTitle>
               <Styled.TileContent>
                 {this.state.isDataLoaded &&
-                  this.renderEmptyList(byWorkflow, 'workflow')}
-                {this.state.isDataLoaded &&
-                  Boolean(byWorkflow.data.length) &&
-                  this.renderIncidentsList(byWorkflow, 'workflow')}
+                  this.renderPanel(INSTANCES_BY_WORKFLOW, byWorkflow)}
               </Styled.TileContent>
             </Styled.Tile>
             <Styled.Tile data-test="incidents-byError">
               <Styled.TileTitle>Incidents by Error Message</Styled.TileTitle>
               <Styled.TileContent>
                 {this.state.isDataLoaded &&
-                  this.renderEmptyList(byError, 'error')}
-                {this.state.isDataLoaded &&
-                  Boolean(byError.data.length) &&
-                  this.renderIncidentsList(byError, 'error')}
+                  this.renderPanel(INCIDENTS_BY_ERROR, byError)}
               </Styled.TileContent>
             </Styled.Tile>
           </Styled.TitleWrapper>
