@@ -1,10 +1,10 @@
 #!/usr/bin/env groovy
 
 // general properties for CI execution
-def static NODE_POOL() { return "slaves" }
+def static NODE_POOL() { return "slaves-ssd-small" }
 def static GCLOUD_DOCKER_IMAGE() { return "google/cloud-sdk:alpine" }
-
-static String kubectlAgent(env) {
+def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { "postgres:${postgresVersion}" }
+static String kubectlAgent(env, postgresVersion='9.6-alpine') {
   return """
 apiVersion: v1
 kind: Pod
@@ -19,6 +19,11 @@ spec:
       operator: "Exists"
       effect: "NoSchedule"
   serviceAccountName: ci-optimize-camunda-cloud
+  volumes:
+  - name: import
+    hostPath:
+      path: /mnt/disks/ssd0
+      type: Directory
   containers:
   - name: gcloud
     image: ${GCLOUD_DOCKER_IMAGE()}
@@ -32,6 +37,32 @@ spec:
       requests:
         cpu: 500m
         memory: 500Mi
+    volumeMounts:
+    - name: import 
+      mountPath: /import
+  - name: postgres
+    image: ${POSTGRES_DOCKER_IMAGE(postgresVersion)}
+    command: ["cat"]
+    tty: true
+    resources:
+      limits:
+        cpu: 500m
+        memory: 500Mi
+      requests:
+        cpu: 500m
+        memory: 500Mi
+    env:
+      - name: PGUSER
+        value: camunda
+      - name: PGPASSWORD 
+        value: camunda123
+      - name: PGHOST
+        value: opt-ci-perf.db
+      - name: PGDATABASE
+        value: optimize-ci-performance
+    volumeMounts:
+    - name: import 
+      mountPath: /import
 """
 }
 
@@ -63,9 +94,9 @@ pipeline {
   }
 
   options {
+    disableConcurrentBuilds()
     buildDiscarder(logRotator(numToKeepStr: '10'))
     timestamps()
-    timeout(time: 15, unit: 'MINUTES')
   }
 
   stages {
@@ -87,6 +118,32 @@ pipeline {
         container('gcloud') {
           sh("""
             gcloud components install kubectl --quiet
+            apk add --no-cache jq py-pip && pip install yq
+            gsutil stat gs://optimize-data/optimize_large_data-stage.sqlc  | yq ".[].ETag" >> /import/optimize_large_data-stage.etag || true
+            gsutil cp   gs://optimize-data/optimize_large_data-stage.etag /import/optimize_large_data-stage.etag.old || true
+            diff -Ns /import/optimize_large_data-stage.etag /import/optimize_large_data-stage.etag.new && touch /import/skip || true
+          """)
+        }
+      }
+    }
+    stage('Import stage dataset') {
+      steps {
+        container('gcloud') {
+          sh("""
+            test -f /import/skip && echo "skipped" && exit 0
+            gsutil cp gs://optimize-data/optimize_large_data-stage.sqlc /import/
+          """)
+        }
+        container('postgres') {
+          sh("""
+            test -f /import/skip && echo "skipped" && exit 0
+            pg_restore --if-exists --clean --jobs=24 --no-owner -d \$PGDATABASE /import/*.sqlc || echo pg_restore=\$?
+          """)
+        }
+        container('gcloud') {
+          sh("""
+            test -f /import/skip && echo "skipped" && exit 0
+            gsutil cp /import/*.etag gs://optimize-data/
           """)
         }
       }

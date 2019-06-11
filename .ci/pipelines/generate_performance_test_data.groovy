@@ -178,7 +178,7 @@ pipeline {
             steps {
                 container('postgres') {
                     // Export dump
-                    sh ("pg_dump -h localhost -U camunda --format=c --file=\"/export/${SQL_DUMP}\" engine")
+                    sh ("pg_dump -h localhost -U camunda -n public --format=c --file=\"/export/${SQL_DUMP}\" engine")
                 }
             }
         }
