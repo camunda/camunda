@@ -5,14 +5,18 @@
  */
 package org.camunda.operate.data.generation;
 
+import javax.annotation.PreDestroy;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -73,39 +77,65 @@ public class DataGenerator {
   }
 
   private void startWorkflowInstances() {
-    int numberOfThreads = dataGeneratorProperties.getNumberOfThreads();
 
-    ExecutorService executorService = new ThreadPoolExecutor(
-        numberOfThreads, numberOfThreads,
-        0L, TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<>(dataGeneratorProperties.getQueueSize()),
-        new BlockCallerUntilExecutorHasCapacity());
+    ExecutorService executorService = createExecutorService();
 
-    AtomicInteger workflowInstancesCount = new AtomicInteger(0);
+    final BlockingQueue<Future> requestFutures = sendStartWorkflowInstanceCommands(executorService);
 
-    int count;
-    while ((count = workflowInstancesCount.getAndIncrement()) < dataGeneratorProperties.getWorkflowInstanceCount()) {
-      int finalCount = count;
-      executorService.submit(() -> {
-        ZeebeTestUtil.startWorkflowInstance(zeebeClient, getRandomBpmnProcessId(), "{\"var1\": \"value1\"}");
-        if ((finalCount - 1) % 1000 == 0) {
-          logger.info("{} workflow instances started", finalCount);
-        }
-      });
+    waitForResponses(requestFutures);
+
+    shutdownExecutorService(executorService);
+
+  }
+
+  private void shutdownExecutorService(ExecutorService executorService) {
+    executorService.shutdown();
+    try {
+      executorService.awaitTermination(60, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
     }
-    logger.info("{} workflow instances started", count-1);
+  }
 
-    //wait till all instances are started
-    while (workflowInstancesCount.get()<dataGeneratorProperties.getWorkflowInstanceCount()) {
+  private void waitForResponses(BlockingQueue<Future> requestFutures) {
+    final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
+    responseChecker.start();
+    //wait till all instances started
+    while (responseChecker.getResponseCount() < dataGeneratorProperties.getWorkflowInstanceCount()) {
       try {
-        Thread.sleep(5000L);
+        Thread.sleep(2000);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
     }
-    //terminate threads
-    executorService.shutdown();
-    logger.info("{} workflow instances started", workflowInstancesCount.get());
+    responseChecker.close();
+    logger.info("{} workflow instances started", responseChecker.getResponseCount());
+  }
+
+  private BlockingQueue<Future> sendStartWorkflowInstanceCommands(ExecutorService executorService) {
+    final BlockingQueue<Future> requestFutures = new ArrayBlockingQueue<>(dataGeneratorProperties.getQueueSize());
+    AtomicInteger count = new AtomicInteger(0);
+    while (count.incrementAndGet() <= dataGeneratorProperties.getWorkflowInstanceCount()) {
+      executorService.submit(() -> {
+        try {
+          requestFutures.put(ZeebeTestUtil.startWorkflowInstanceAsync(zeebeClient, getRandomBpmnProcessId(), "{\"var1\": \"value1\"}"));
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      });
+    }
+    return requestFutures;
+  }
+
+  private ExecutorService createExecutorService() {
+    int numberOfThreads = dataGeneratorProperties.getNumberOfThreads();
+    return new ThreadPoolExecutor(numberOfThreads, numberOfThreads, 0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<>(Integer.MAX_VALUE));
+  }
+
+  @PreDestroy
+  public void shutdown(){
+    zeebeClient.close();
   }
 
   private String getRandomBpmnProcessId() {
@@ -139,17 +169,45 @@ public class DataGenerator {
     .done();
   }
 
-  private class BlockCallerUntilExecutorHasCapacity implements RejectedExecutionHandler {
-    public void rejectedExecution(Runnable runnable, ThreadPoolExecutor executor) {
-      // this will block if the queue is full
-      if (!executor.isShutdown()) {
+  class ResponseChecker extends Thread {
+
+    private final BlockingQueue<Future> futures;
+    private volatile boolean shuttingDown = false;
+
+    private int responseCount = 0;
+
+    public ResponseChecker(BlockingQueue<Future> futures) {
+      this.futures = futures;
+    }
+
+    @Override
+    public void run() {
+      while (!shuttingDown) {
         try {
-          executor.getQueue().put(runnable);
+          futures.take().get();
+          responseCount++;
+          if (responseCount % 100 == 0) {
+            logger.info("{} workflow instances started", responseCount);
+          }
         } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+          // ignore and retry
+        } catch (ExecutionException e) {
+          logger.warn("Request failed", e);
         }
       }
     }
-  }
 
+    public int getResponseCount() {
+      return responseCount;
+    }
+
+    public void setResponseCount(int responseCount) {
+      this.responseCount = responseCount;
+    }
+
+    public void close() {
+      shuttingDown = true;
+      interrupt();
+    }
+  }
 }

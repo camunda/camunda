@@ -10,6 +10,7 @@ import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.DeployWorkflowCommandStep1;
 import io.zeebe.client.api.events.DeploymentEvent;
@@ -34,6 +35,14 @@ public abstract class ZeebeTestUtil {
     return String.valueOf(deploymentEvent.getWorkflows().get(0).getWorkflowKey());
   }
 
+  public static ZeebeFuture<WorkflowInstanceEvent> startWorkflowInstanceAsync(ZeebeClient client, String bpmnProcessId, String payload) {
+    final CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceCommandStep3 createWorkflowInstanceCommandStep3 = client
+      .newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
+    if (payload != null) {
+      createWorkflowInstanceCommandStep3.variables(payload);
+    }
+    return createWorkflowInstanceCommandStep3.send();
+  }
   public static long startWorkflowInstance(ZeebeClient client, String bpmnProcessId, String payload) {
     final CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceCommandStep3 createWorkflowInstanceCommandStep3 = client
       .newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
