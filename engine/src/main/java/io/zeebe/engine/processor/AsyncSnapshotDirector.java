@@ -204,30 +204,39 @@ public class AsyncSnapshotDirector extends Actor {
         () ->
             actor.runOnCompletion(
                 streamProcessor.getLastWrittenPositionAsync(),
-                (writtenPosition, ex1) -> {
-                  if (ex1 == null) {
-                    actor.runOnCompletion(
-                        streamProcessor.getLastProcessedPositionAsync(),
-                        (processedPosition, ex2) -> {
-                          if (ex2 == null) {
-                            enforceSnapshotCreation(writtenPosition, processedPosition);
-                            close();
-                            future.complete(null);
-                          } else {
-                            LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, ex2);
-                            close();
-                            future.completeExceptionally(ex2);
-                          }
-                        });
-
-                  } else {
-                    LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, ex1);
-                    close();
-                    future.completeExceptionally(ex1);
-                  }
-                }));
+                (writtenPosition, ex1) -> handleLastWrittenPosition(future, writtenPosition, ex1)));
 
     return future;
+  }
+
+  private void handleLastWrittenPosition(
+      final CompletableActorFuture<Void> future, final Long writtenPosition, final Throwable ex1) {
+    if (ex1 == null) {
+      actor.runOnCompletion(
+          streamProcessor.getLastProcessedPositionAsync(),
+          (processedPosition, ex2) ->
+              handleLastProcessedPosition(future, writtenPosition, processedPosition, ex2));
+    } else {
+      LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, ex1);
+      close();
+      future.completeExceptionally(ex1);
+    }
+  }
+
+  private void handleLastProcessedPosition(
+      final CompletableActorFuture<Void> future,
+      final Long writtenPosition,
+      final Long processedPosition,
+      final Throwable ex2) {
+    if (ex2 == null) {
+      enforceSnapshotCreation(writtenPosition, processedPosition);
+      close();
+      future.complete(null);
+    } else {
+      LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, ex2);
+      close();
+      future.completeExceptionally(ex2);
+    }
   }
 
   private void close() {

@@ -272,11 +272,25 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
   }
 
   public ActorFuture<Long> getLastProcessedPositionAsync() {
-    return actor.call(processingStateMachine::getLastSuccessfulProcessedEventPosition);
+    return actor.call(
+        () -> {
+          if (processingStateMachine != null) {
+            return processingStateMachine.getLastSuccessfulProcessedEventPosition();
+          }
+
+          throw new IllegalStateException("Stream processor actor hasn't started.");
+        });
   }
 
   public ActorFuture<Long> getLastWrittenPositionAsync() {
-    return actor.call(processingStateMachine::getLastWrittenEventPosition);
+    return actor.call(
+        () -> {
+          if (processingStateMachine != null) {
+            return processingStateMachine.getLastWrittenEventPosition();
+          }
+
+          throw new IllegalStateException("Stream processor actor hasn't started.");
+        });
   }
 
   public StreamProcessorMetrics getMetrics() {
