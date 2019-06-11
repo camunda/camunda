@@ -7,7 +7,7 @@ ENV ZB_HOME=/usr/local/zeebe \
     ZEEBE_GATEWAY_HOST=0.0.0.0 \
     ZEEBE_STANDALONE_GATEWAY=false
 ENV PATH "${ZB_HOME}/bin:${PATH}"
-ENV JAVA_OPTS -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap
+ENV JAVA_OPTS -XX:MaxRAMPercentage=80.0
 
 ADD https://github.com/krallin/tini/releases/download/v0.18.0/tini /bin/tini
 RUN chmod +x /bin/tini
