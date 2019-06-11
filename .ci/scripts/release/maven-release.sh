@@ -1,6 +1,6 @@
 #!/bin/bash
 
-mvn -s settings.xml release:prepare release:perform -B \
+mvn -s .ci/settings.xml release:prepare release:perform -B \
     -Dgpg.passphrase="${GPG_PASS}" \
     -Dresume=false \
     -Dtag=${RELEASE_VERSION} \
