@@ -80,9 +80,12 @@ public class DataGenerator {
 
     ExecutorService executorService = createExecutorService();
 
-    final BlockingQueue<Future> requestFutures = sendStartWorkflowInstanceCommands(executorService);
+    final BlockingQueue<Future> requestFutures = new ArrayBlockingQueue<>(dataGeneratorProperties.getQueueSize());
+    ResponseChecker responseChecker = startWaitingForResponses(requestFutures);
 
-    waitForResponses(requestFutures);
+    sendStartWorkflowInstanceCommands(executorService, requestFutures);
+
+    stopWaitingForResponses(responseChecker);
 
     shutdownExecutorService(executorService);
 
@@ -97,9 +100,13 @@ public class DataGenerator {
     }
   }
 
-  private void waitForResponses(BlockingQueue<Future> requestFutures) {
+  private ResponseChecker startWaitingForResponses(BlockingQueue<Future> requestFutures) {
     final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
     responseChecker.start();
+    return responseChecker;
+  }
+
+  private void stopWaitingForResponses(ResponseChecker responseChecker) {
     //wait till all instances started
     while (responseChecker.getResponseCount() < dataGeneratorProperties.getWorkflowInstanceCount()) {
       try {
@@ -112,11 +119,18 @@ public class DataGenerator {
     logger.info("{} workflow instances started", responseChecker.getResponseCount());
   }
 
-  private BlockingQueue<Future> sendStartWorkflowInstanceCommands(ExecutorService executorService) {
-    final BlockingQueue<Future> requestFutures = new ArrayBlockingQueue<>(dataGeneratorProperties.getQueueSize());
+  private void sendStartWorkflowInstanceCommands(ExecutorService executorService, BlockingQueue<Future> requestFutures) {
     AtomicInteger count = new AtomicInteger(0);
     while (count.incrementAndGet() <= dataGeneratorProperties.getWorkflowInstanceCount()) {
       executorService.submit(() -> {
+        //magic to avoid timeout
+//        if (count.get() % 10000 == 0) {
+//          try {
+//            Thread.sleep(2000);
+//          } catch (InterruptedException e) {
+//            Thread.currentThread().interrupt();
+//          }
+//        }
         try {
           requestFutures.put(ZeebeTestUtil.startWorkflowInstanceAsync(zeebeClient, getRandomBpmnProcessId(), "{\"var1\": \"value1\"}"));
         } catch (InterruptedException e) {
@@ -124,7 +138,6 @@ public class DataGenerator {
         }
       });
     }
-    return requestFutures;
   }
 
   private ExecutorService createExecutorService() {
@@ -186,7 +199,7 @@ public class DataGenerator {
         try {
           futures.take().get();
           responseCount++;
-          if (responseCount % 100 == 0) {
+          if (responseCount % 1000 == 0) {
             logger.info("{} workflow instances started", responseCount);
           }
         } catch (InterruptedException e) {
