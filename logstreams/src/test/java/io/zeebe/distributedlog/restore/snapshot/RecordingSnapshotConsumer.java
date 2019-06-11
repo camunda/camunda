@@ -16,6 +16,7 @@
 package io.zeebe.distributedlog.restore.snapshot;
 
 import io.zeebe.logstreams.state.SnapshotChunk;
+import io.zeebe.logstreams.state.SnapshotConsumer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,13 +35,13 @@ public class RecordingSnapshotConsumer implements SnapshotConsumer {
   }
 
   @Override
-  public boolean moveValidSnapshot(long snapshotPosition) {
+  public boolean completeSnapshot(long snapshotPosition) {
     snapshots.put(snapshotPosition, true);
     return true;
   }
 
   @Override
-  public void clearTmpSnapshot(long snapshotPosition) {
+  public void invalidateSnapshot(long snapshotPosition) {
     consumedChunks.clear();
   }
 

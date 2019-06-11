@@ -16,19 +16,17 @@
 package io.zeebe.distributedlog.restore.snapshot;
 
 import io.zeebe.logstreams.state.StateStorage;
+import io.zeebe.util.collection.Tuple;
 import java.util.function.Supplier;
 
 public interface SnapshotRestoreContext {
 
   /** @return state storage of processor */
-  StateStorage getStateStorage(int partitionId);
-
-  /** @return a supplier that supplies the latest exported position by reading exporterStorage */
-  Supplier<Long> getExporterPositionSupplier(int partitionId);
+  StateStorage getStateStorage();
 
   /**
-   * @return a supplier that supplies the latest processed position by reading snapshots in the
-   *     processorStorage
+   * @return a supplier that supplies the minimum exported and latest processed position in the
+   *     latest snapshot
    */
-  Supplier<Long> getProcessorPositionSupplier(int partitionId);
+  Supplier<Tuple<Long, Long>> getSnapshotPositionSupplier();
 }

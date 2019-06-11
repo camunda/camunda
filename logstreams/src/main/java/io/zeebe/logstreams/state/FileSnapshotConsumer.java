@@ -13,13 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.distributedlog.restore.snapshot.impl;
+package io.zeebe.logstreams.state;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
-import io.zeebe.distributedlog.restore.snapshot.SnapshotConsumer;
-import io.zeebe.logstreams.state.SnapshotChunk;
-import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
@@ -28,12 +25,12 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import org.slf4j.Logger;
 
-public class SnapshotConsumerImpl implements SnapshotConsumer {
+public class FileSnapshotConsumer implements SnapshotConsumer {
 
   private final StateStorage stateStorage;
   private final Logger logger;
 
-  public SnapshotConsumerImpl(StateStorage stateStorage, Logger logger) {
+  public FileSnapshotConsumer(StateStorage stateStorage, Logger logger) {
     this.stateStorage = stateStorage;
     this.logger = logger;
   }
@@ -44,12 +41,12 @@ public class SnapshotConsumerImpl implements SnapshotConsumer {
   }
 
   @Override
-  public boolean moveValidSnapshot(long snapshotId) {
+  public boolean completeSnapshot(long snapshotId) {
     return moveValidSnapshot(stateStorage, snapshotId);
   }
 
   @Override
-  public void clearTmpSnapshot(long snapshotId) {
+  public void invalidateSnapshot(long snapshotId) {
     final File tmpSnapshotDirectory =
         stateStorage.getTmpSnapshotDirectoryFor(Long.toString(snapshotId));
     try {
@@ -93,7 +90,7 @@ public class SnapshotConsumerImpl implements SnapshotConsumer {
 
     final File snapshotFile = new File(tmpSnapshotDirectory, chunkName);
     if (snapshotFile.exists()) {
-      logger.debug("Received a snapshot file which already exist '{}'.", snapshotFile);
+      logger.debug("Received a snapshot chunk which already exist '{}'.", snapshotFile);
       return false;
     }
 
@@ -109,7 +106,7 @@ public class SnapshotConsumerImpl implements SnapshotConsumer {
       return true;
     } catch (IOException ioe) {
       logger.error(
-          "Unexpected error occurred on writing an snapshot chunk to '{}'.", snapshotFile, ioe);
+          "Unexpected error occurred on writing snapshot chunk to '{}'.", snapshotFile, ioe);
       return false;
     }
   }
@@ -126,7 +123,10 @@ public class SnapshotConsumerImpl implements SnapshotConsumer {
       return true;
     } catch (IOException ioe) {
       logger.error(
-          "Could not move snapshot {} to {}", snapshotId, validSnapshotDirectory.toPath(), ioe);
+          "Unexpected error occurred when moving snapshot {} to {}",
+          snapshotId,
+          validSnapshotDirectory.toPath(),
+          ioe);
       return false;
     }
   }

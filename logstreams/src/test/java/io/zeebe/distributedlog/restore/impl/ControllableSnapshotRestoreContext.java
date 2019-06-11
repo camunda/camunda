@@ -17,44 +17,34 @@ package io.zeebe.distributedlog.restore.impl;
 
 import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreContext;
 import io.zeebe.logstreams.state.StateStorage;
+import io.zeebe.util.collection.Tuple;
 import java.util.function.Supplier;
 
 public class ControllableSnapshotRestoreContext implements SnapshotRestoreContext {
 
   private StateStorage processorStateStorage;
-  private Supplier<Long> exporterPositionSupplier;
-  private Supplier<Long> processorPositionSupplier;
+  private Supplier<Tuple<Long, Long>> positionSupplier;
 
   public void setProcessorStateStorage(StateStorage processorStateStorage) {
     this.processorStateStorage = processorStateStorage;
   }
 
-  public void setExporterPositionSupplier(Supplier<Long> exporterPositionSupplier) {
-    this.exporterPositionSupplier = exporterPositionSupplier;
-  }
-
-  public void setProcessorPositionSupplier(Supplier<Long> processorPositionSupplier) {
-    this.processorPositionSupplier = processorPositionSupplier;
+  public void setPositionSupplier(Supplier<Tuple<Long, Long>> exporterPositionSupplier) {
+    this.positionSupplier = exporterPositionSupplier;
   }
 
   @Override
-  public StateStorage getStateStorage(int partitionId) {
+  public StateStorage getStateStorage() {
     return processorStateStorage;
   }
 
   @Override
-  public Supplier<Long> getExporterPositionSupplier(int partitionId) {
-    return exporterPositionSupplier;
-  }
-
-  @Override
-  public Supplier<Long> getProcessorPositionSupplier(int partitionId) {
-    return processorPositionSupplier;
+  public Supplier<Tuple<Long, Long>> getSnapshotPositionSupplier() {
+    return positionSupplier;
   }
 
   public void reset() {
     processorStateStorage = null;
-    exporterPositionSupplier = null;
-    processorPositionSupplier = null;
+    positionSupplier = null;
   }
 }

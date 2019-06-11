@@ -35,7 +35,7 @@ public class RestoreSnapshotReplicatorTest {
       new ControllableSnapshotRestoreContext();
   private RecordingSnapshotConsumer snapshotConsumer = new RecordingSnapshotConsumer();
   private RestoreSnapshotReplicator snapshotReplicator =
-      new RestoreSnapshotReplicator(client, restoreContext, snapshotConsumer, 1, Runnable::run);
+      new RestoreSnapshotReplicator(client, restoreContext, snapshotConsumer, Runnable::run);
   private MemberId server = MemberId.anonymous();
   private final ControllableSnapshotChunk responseChunk = new ControllableSnapshotChunk();
 
@@ -53,8 +53,7 @@ public class RestoreSnapshotReplicatorTest {
     final long snapshotId = 10;
     final int numChunks = 5;
 
-    restoreContext.setExporterPositionSupplier(() -> 5L);
-    restoreContext.setProcessorPositionSupplier(() -> 10L);
+    restoreContext.setPositionSupplier(() -> new Tuple(5L, 10L));
 
     for (int i = 0; i < numChunks; i++) {
       client.completeRequestSnapshotChunk(
@@ -80,8 +79,7 @@ public class RestoreSnapshotReplicatorTest {
     final long snapshotId = 10;
     final int numChunks = 5;
 
-    restoreContext.setExporterPositionSupplier(() -> 5L);
-    restoreContext.setProcessorPositionSupplier(() -> 10L);
+    restoreContext.setPositionSupplier(() -> new Tuple(5L, 10L));
 
     client.completeRequestSnapshotChunk(0, new InvalidSnapshotRestoreResponse());
 
@@ -99,8 +97,7 @@ public class RestoreSnapshotReplicatorTest {
     final long snapshotId = 10;
     final int numChunks = 5;
 
-    restoreContext.setExporterPositionSupplier(() -> 5L);
-    restoreContext.setProcessorPositionSupplier(() -> 10L);
+    restoreContext.setPositionSupplier(() -> new Tuple(5L, 10L));
 
     final CompletableFuture<Tuple<Long, Long>> replicate =
         snapshotReplicator.restore(server, snapshotId, numChunks);

@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.distributedlog.restore.snapshot;
-
-import io.zeebe.logstreams.state.SnapshotChunk;
+package io.zeebe.logstreams.state;
 
 public interface SnapshotConsumer {
   boolean consumeSnapshotChunk(SnapshotChunk chunk);
 
-  boolean moveValidSnapshot(long snapshotPosition);
+  boolean completeSnapshot(long snapshotPosition);
 
-  void clearTmpSnapshot(long snapshotPosition);
+  void invalidateSnapshot(long snapshotPosition);
 }

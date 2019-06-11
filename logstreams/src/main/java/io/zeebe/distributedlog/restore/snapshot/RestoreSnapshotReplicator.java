@@ -18,6 +18,7 @@ package io.zeebe.distributedlog.restore.snapshot;
 import io.atomix.cluster.MemberId;
 import io.zeebe.distributedlog.restore.RestoreClient;
 import io.zeebe.distributedlog.restore.snapshot.impl.DefaultSnapshotRestoreRequest;
+import io.zeebe.logstreams.state.SnapshotConsumer;
 import io.zeebe.util.ZbLogger;
 import io.zeebe.util.collection.Tuple;
 import java.util.concurrent.CompletableFuture;
@@ -29,7 +30,6 @@ public class RestoreSnapshotReplicator {
   private final RestoreClient client;
   private final SnapshotRestoreContext restoreContext;
   private SnapshotConsumer snapshotConsumer;
-  private int partitionId;
   private final Executor executor;
   private final Logger logger;
   private int numChunks;
@@ -38,13 +38,11 @@ public class RestoreSnapshotReplicator {
       RestoreClient client,
       SnapshotRestoreContext restoreContext,
       SnapshotConsumer snapshotConsumer,
-      int partitionId,
       Executor executor,
       Logger logger) {
     this.client = client;
     this.restoreContext = restoreContext;
     this.snapshotConsumer = snapshotConsumer;
-    this.partitionId = partitionId;
     this.executor = executor;
     this.logger = logger;
   }
@@ -53,13 +51,11 @@ public class RestoreSnapshotReplicator {
       RestoreClient client,
       SnapshotRestoreContext restoreContext,
       SnapshotConsumer snapshotConsumer,
-      int partitionId,
       Executor executor) {
     this(
         client,
         restoreContext,
         snapshotConsumer,
-        partitionId,
         executor,
         new ZbLogger(RestoreSnapshotReplicator.class));
   }
@@ -108,12 +104,9 @@ public class RestoreSnapshotReplicator {
                 return;
               }
 
-              if (snapshotConsumer.moveValidSnapshot(snapshotId)) {
-                final Long exportedPosition =
-                    restoreContext.getExporterPositionSupplier(partitionId).get();
-                final Long processedPosition =
-                    restoreContext.getProcessorPositionSupplier(partitionId).get();
-                future.complete(new Tuple(exportedPosition, processedPosition));
+              if (snapshotConsumer.completeSnapshot(snapshotId)) {
+                final Tuple positions = restoreContext.getSnapshotPositionSupplier().get();
+                future.complete(positions);
               } else {
                 failReplication(
                     snapshotId,
@@ -130,6 +123,6 @@ public class RestoreSnapshotReplicator {
   private void failReplication(long snapshotId, CompletableFuture future, Throwable error) {
     future.completeExceptionally(error);
     logger.debug("Snapshot restore failed {}", snapshotId, error);
-    snapshotConsumer.clearTmpSnapshot(snapshotId);
+    snapshotConsumer.invalidateSnapshot(snapshotId);
   }
 }
