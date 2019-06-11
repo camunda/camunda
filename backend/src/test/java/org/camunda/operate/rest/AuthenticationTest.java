@@ -7,6 +7,8 @@ package org.camunda.operate.rest;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.UserDto;
 import org.camunda.operate.security.WebSecurityConfig;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -35,7 +37,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-  classes = {TestApplicationWithNoBeans.class, WebSecurityConfig.class, AuthenticationRestService.class},
+  classes = {OperateProperties.class,TestApplicationWithNoBeans.class, WebSecurityConfig.class, AuthenticationRestService.class},
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ActiveProfiles("auth")
@@ -47,7 +49,7 @@ public class AuthenticationTest {
   public static final String PASSWORD = "demo";
 
   @Autowired
-  WebSecurityConfig webSecurityConfig;
+  OperateProperties operateProperties;
   
   @Autowired
   private TestRestTemplate testRestTemplate;
@@ -64,7 +66,7 @@ public class AuthenticationTest {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     assertThat(response.getHeaders()).containsKey("Set-Cookie");
     assertThat(response.getHeaders().get("Set-Cookie").get(0)).contains(COOKIE_JSESSIONID);
-    if(webSecurityConfig.isCRSFPreventionEnabled()) {
+    if(operateProperties.isCsrfPreventionEnabled()) {
       assertThat(response.getHeaders()).containsKey("X-CSRF-TOKEN");
       assertThat(response.getHeaders().get("X-CSRF-TOKEN").get(0)).isNotBlank();
     }

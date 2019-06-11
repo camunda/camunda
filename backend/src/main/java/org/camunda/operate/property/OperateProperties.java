@@ -23,6 +23,11 @@ public class OperateProperties {
    * Indicates, whether loading of Zeebe data should start on startup.
    */
   private boolean startLoadingDataOnStartup = true;
+  
+  /**
+   * Indicates, whether CSRF prevention is enabled.
+   */
+  private boolean csrfPreventionEnabled = false;
 
   /**
    * Maximum size of batch operation.
@@ -58,6 +63,14 @@ public class OperateProperties {
 
   public void setBatchOperationMaxSize(Long batchOperationMaxSize) {
     this.batchOperationMaxSize = batchOperationMaxSize;
+  }
+  
+  public boolean isCsrfPreventionEnabled() {
+    return csrfPreventionEnabled;
+  }
+  
+  public void setCsrfPreventionEnabled(boolean csrfPreventionEnabled) {
+    this.csrfPreventionEnabled = csrfPreventionEnabled;
   }
 
   public OperateElasticsearchProperties getElasticsearch() {
@@ -99,4 +112,5 @@ public class OperateProperties {
   public void setImportProperties(ImportProperties importProperties) {
     this.importProperties = importProperties;
   }
+  
 }

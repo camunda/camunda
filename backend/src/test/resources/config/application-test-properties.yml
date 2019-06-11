@@ -1,4 +1,5 @@
 camunda.operate:
+  csrfPreventionEnabled: false
   startLoadingDataOnStartup: false
   batchOperationMaxSize: 500
   elasticsearch:

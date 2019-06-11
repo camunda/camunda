@@ -16,7 +16,10 @@ import javax.json.Json;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.camunda.operate.property.OperateProperties;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -33,6 +36,7 @@ import org.springframework.security.web.csrf.CsrfToken;
 
 @Profile("auth")
 @EnableWebSecurity
+@Configuration
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
   public static final String COOKIE_JSESSIONID = "JSESSIONID";
@@ -40,7 +44,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   public static final String LOGOUT_RESOURCE = "/api/logout";
   public static final String ACTUATOR_ENDPOINTS = "/actuator/**";
   
-  private boolean isCRSFPreventionEnabled = false;
+  @Autowired
+  private OperateProperties operateProperties;
   
   private static final String[] AUTH_WHITELIST = {
     // -- swagger ui
@@ -80,6 +85,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
   @Override
   public void configure(HttpSecurity http) throws Exception {
+    if(operateProperties.isCsrfPreventionEnabled()){
+      http.csrf().ignoringAntMatchers(LOGIN_RESOURCE);
+    }else {
+      http.csrf().disable();
+    }
     http
       .authorizeRequests()
         .antMatchers(AUTH_WHITELIST).permitAll()
@@ -100,19 +110,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         .deleteCookies(COOKIE_JSESSIONID)
       .and()
       .exceptionHandling().authenticationEntryPoint(this::failureHandler);
-    if(isCRSFPreventionEnabled){
-      http.csrf().ignoringAntMatchers(LOGIN_RESOURCE);
-    }else {
-      http.csrf().disable();
-    }
-  }
-  
-  public boolean isCRSFPreventionEnabled() {
-    return isCRSFPreventionEnabled;
-  }
-
-  public void setCRSFPreventionEnabled(boolean isCRSFPreventionEnabled) {
-    this.isCRSFPreventionEnabled = isCRSFPreventionEnabled;
   }
 
   private void logoutSuccessHandler(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
