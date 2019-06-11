@@ -12,12 +12,12 @@ import InstancesBar from 'modules/components/InstancesBar';
 
 import * as Styled from './styled';
 import {
-  getUrl,
-  getTitle,
-  getGroupTitle,
-  getLabel,
-  getGroupLabel,
-  getButtonTitle
+  concatUrl,
+  concatTitle,
+  concatGroupTitle,
+  concatLabel,
+  concatGroupLabel,
+  concatButtonTitle
 } from './service';
 
 export default class InstancesByWorkflow extends React.Component {
@@ -52,12 +52,12 @@ export default class InstancesByWorkflow extends React.Component {
           return (
             <Styled.VersionLi key={item.workflowId}>
               <Styled.IncidentLink
-                to={getUrl({
+                to={concatUrl({
                   bpmnProcessId: item.bpmnProcessId,
                   versions: [item],
                   hasFinishedInstances: totalInstancesCount === 0
                 })}
-                title={getTitle(
+                title={concatTitle(
                   workflowName,
                   totalInstancesCount,
                   item.version
@@ -65,7 +65,7 @@ export default class InstancesByWorkflow extends React.Component {
                 boxSize="small"
               >
                 <InstancesBar
-                  label={getLabel(
+                  label={concatLabel(
                     workflowName,
                     totalInstancesCount,
                     item.version
@@ -89,15 +89,19 @@ export default class InstancesByWorkflow extends React.Component {
 
     return (
       <Styled.IncidentLink
-        to={getUrl({
+        to={concatUrl({
           bpmnProcessId: item.bpmnProcessId,
           versions: item.workflows,
           hasFinishedInstances: totalInstancesCount === 0
         })}
-        title={getGroupTitle(name, totalInstancesCount, item.workflows.length)}
+        title={concatGroupTitle(
+          name,
+          totalInstancesCount,
+          item.workflows.length
+        )}
       >
         <InstancesBar
-          label={getGroupLabel(
+          label={concatGroupLabel(
             name,
             totalInstancesCount,
             item.workflows.length
@@ -133,7 +137,7 @@ export default class InstancesByWorkflow extends React.Component {
                 <Collapse
                   content={this.renderIncidentsPerVersion(name, item.workflows)}
                   header={IncidentByWorkflowComponent}
-                  buttonTitle={getButtonTitle(name, totalInstancesCount)}
+                  buttonTitle={concatButtonTitle(name, totalInstancesCount)}
                 />
               )}
             </Styled.Li>

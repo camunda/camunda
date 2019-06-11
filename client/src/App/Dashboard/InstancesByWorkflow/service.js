@@ -6,7 +6,7 @@
 
 import pluralSuffix from 'modules/utils/pluralSuffix';
 
-export function getUrl({bpmnProcessId, versions, hasFinishedInstances}) {
+export function concatUrl({bpmnProcessId, versions, hasFinishedInstances}) {
   const versionId = versions.length === 1 ? versions[0].version : 'all';
 
   const filter = {
@@ -26,35 +26,35 @@ export function getUrl({bpmnProcessId, versions, hasFinishedInstances}) {
   return `/instances?filter=${JSON.stringify(filter)}`;
 }
 
-export function getGroupTitle(workflowName, instancesCount, versionsCount) {
+export function concatGroupTitle(workflowName, instancesCount, versionsCount) {
   return `View ${pluralSuffix(instancesCount, 'Instance')} in ${pluralSuffix(
     versionsCount,
     'Version'
   )} of Workflow ${workflowName}`;
 }
 
-export function getTitle(workflowName, instancesCount, versionName) {
+export function concatTitle(workflowName, instancesCount, versionName) {
   return `View ${pluralSuffix(
     instancesCount,
     'Instance'
   )} in Version ${versionName} of Workflow ${workflowName}`;
 }
 
-export function getGroupLabel(name, instancesCount, versionsCount) {
+export function concatGroupLabel(name, instancesCount, versionsCount) {
   return `${name} – ${pluralSuffix(
     instancesCount,
     'Instance'
   )} in ${pluralSuffix(versionsCount, 'Version')}`;
 }
 
-export function getLabel(name, instancesCount, version) {
+export function concatLabel(name, instancesCount, version) {
   return `${name} – ${pluralSuffix(
     instancesCount,
     'Instance'
   )} in Version ${version}`;
 }
 
-export function getButtonTitle(name, instancesCount) {
+export function concatButtonTitle(name, instancesCount) {
   return `Expand ${pluralSuffix(
     instancesCount,
     'Instance'

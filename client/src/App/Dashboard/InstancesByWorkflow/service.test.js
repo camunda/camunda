@@ -5,118 +5,118 @@
  */
 
 import {
-  getTitle,
-  getGroupTitle,
-  getLabel,
-  getGroupLabel,
-  getButtonTitle,
-  getUrl
+  concatTitle,
+  concatGroupTitle,
+  concatLabel,
+  concatGroupLabel,
+  concatButtonTitle,
+  concatUrl
 } from './service';
 
 describe('service', () => {
-  describe('getTitle', () => {
+  describe('concatTitle', () => {
     it('should get title for multiple instances', () => {
-      const title = getTitle('myProcessName', 100, 3);
+      const title = concatTitle('myProcessName', 100, 3);
 
       expect(title).toMatchSnapshot();
     });
 
     it('should get title for single instance', () => {
-      const title = getTitle('myProcessName', 1, 2);
+      const title = concatTitle('myProcessName', 1, 2);
 
       expect(title).toMatchSnapshot();
     });
 
     it('should get title for no instances', () => {
-      const title = getTitle('myProcessName', 0, 6);
+      const title = concatTitle('myProcessName', 0, 6);
 
       expect(title).toMatchSnapshot();
     });
   });
 
-  describe('getLabel', () => {
+  describe('concatLabel', () => {
     it('should get label for multiple instances', () => {
-      const title = getLabel('myProcessName', 77, 3);
+      const title = concatLabel('myProcessName', 77, 3);
 
       expect(title).toMatchSnapshot();
     });
 
     it('should get label for single instance', () => {
-      const title = getLabel('myProcessName', 1, 'five');
+      const title = concatLabel('myProcessName', 1, 'five');
 
       expect(title).toMatchSnapshot();
     });
 
     it('should get label for no instances', () => {
-      const title = getLabel('myProcessName', 0, 'x');
+      const title = concatLabel('myProcessName', 0, 'x');
 
       expect(title).toMatchSnapshot();
     });
   });
 
-  describe('getGroupTitle', () => {
+  describe('concatGroupTitle', () => {
     it('should get title for muliple instances/versions', () => {
-      const title = getGroupTitle('myProcessName', 100, 3);
+      const title = concatGroupTitle('myProcessName', 100, 3);
 
       expect(title).toMatchSnapshot();
     });
 
     it('should get group title for single instance/version', () => {
-      const title = getGroupTitle('myProcessName', 1, 1);
+      const title = concatGroupTitle('myProcessName', 1, 1);
 
       expect(title).toMatchSnapshot();
     });
 
     it('should get group title for no instances/versions', () => {
-      const title = getGroupTitle('myProcessName', 0, 0);
+      const title = concatGroupTitle('myProcessName', 0, 0);
 
       expect(title).toMatchSnapshot();
     });
   });
 
-  describe('getGroupLabel', () => {
+  describe('concatGroupLabel', () => {
     it('should get group label for multiple instances/versions', () => {
-      const title = getGroupLabel('myProcessName', 123, 5);
+      const title = concatGroupLabel('myProcessName', 123, 5);
 
       expect(title).toMatchSnapshot();
     });
 
     it('should get group label for single instance/version', () => {
-      const title = getGroupLabel('myProcessName', 1, 1);
+      const title = concatGroupLabel('myProcessName', 1, 1);
 
       expect(title).toMatchSnapshot();
     });
 
     it('should get group label for no instances/versions', () => {
-      const title = getGroupLabel('myProcessName', 0, 0);
+      const title = concatGroupLabel('myProcessName', 0, 0);
 
       expect(title).toMatchSnapshot();
     });
   });
 
-  describe('getButtonTitle', () => {
+  describe('concatButtonTitle', () => {
     it('should get title for multiple instances', () => {
-      const title = getButtonTitle('myProcessName', 432);
+      const title = concatButtonTitle('myProcessName', 432);
 
       expect(title).toMatchSnapshot();
     });
 
     it('should get title for single instance', () => {
-      const title = getButtonTitle('myProcessName', 1);
+      const title = concatButtonTitle('myProcessName', 1);
 
       expect(title).toMatchSnapshot();
     });
 
     it('should get title for no instances', () => {
-      const title = getButtonTitle('myProcessName', 0);
+      const title = concatButtonTitle('myProcessName', 0);
 
       expect(title).toMatchSnapshot();
     });
   });
 
-  describe('getUrl', () => {
+  describe('concatUrl', () => {
     it('should get url - single version, finished instances', () => {
-      const url = getUrl({
+      const url = concatUrl({
         bpmnProcessId: 'Process_1',
         versions: [{version: 1}],
         hasFinishedInstances: true
@@ -126,7 +126,7 @@ describe('service', () => {
     });
 
     it('should get url - all versions, no finished instances', () => {
-      const url = getUrl({
+      const url = concatUrl({
         bpmnProcessId: 'Process_2',
         versions: [{version: 1}, {version: 2}]
       });
