@@ -7,42 +7,20 @@ There are different ways to install Zeebe:
 * [Download a distribution](#download-a-distribution)
 * [Using Docker](#using-docker) (Recommended)
 
-## Prerequisites
-
-* Operating System:
-  * Linux
-  * Windows/MacOS (development only, not supported for production)
-* Java Virtual Machine:
-  * Oracle Hotspot v1.8
-  * Open JDK v1.8
-
-## Download a distribution
-
-You can always download the latest Zeebe release from the [Github release page](https://github.com/zeebe-io/zeebe/releases).
-
-Once you have downloaded a distribution, extract it into a folder of your choice. To extract the Zeebe distribution and start the broker, **Linux users** can type:
-
-```bash
-tar -xzf zeebe-distribution-X.Y.Z.tar.gz -C zeebe/
-./bin/broker
-```
-
-**Windows users** can download the `.zip`package and extract it using their favorite unzip tool. They can then open the extracted folder, navigate to the `bin` folder and start the broker by double-clicking on the `broker.bat` file.
-
-Once the Zeebe broker has started, it should produce the following output:
-
-```bash
-23:39:13.167 [] [main] INFO  io.zeebe.util.config - Reading configuration for class class io.zeebe.broker.system.configuration.BrokerCfg from file conf/zeebe.cfg.toml
-23:39:13.246 [] [main] INFO  io.zeebe.broker.system - Scheduler configuration: Threads{cpu-bound: 2, io-bound: 2}.
-23:39:13.270 [] [main] INFO  io.zeebe.broker.system - Version: X.Y.Z
-23:39:13.273 [] [main] INFO  io.zeebe.broker.system - Starting broker with configuration {
-```
-
 ## Using Docker
 
 The easiest way to try Zeebe is using Docker. Using Docker provides you with a consistent environment, and we recommend it for development.
 
+### Prerequisites
+
+* Operating System:
+  * Linux
+  * Windows/MacOS (development only, not supported for production)
+* Docker
+
 ### Docker configurations for docker-compose
+
+The absolutely easiest way to try Zeebe is using the official docker-compose repository. This allows you to start complex configurations with a single command, and understand the details of how they are configured when you are ready to delve to that level.
 
 Docker configurations for starting a single Zeebe broker using `docker-compose`, optionally with Operate and Simple Monitor, are available in the [zeebe-docker-compose](https://github.com/zeebe-io/zeebe-docker-compose/blob/master/README.md) repository. Further instructions for using these configurations are in [the README.md in that repository](https://github.com/zeebe-io/zeebe-docker-compose/blob/master/README.md).
 
@@ -108,6 +86,8 @@ Exception in thread "actor-runner-service-container" java.lang.OutOfMemoryError:
         at java.lang.Thread.run(Thread.java:748)
 ```
 
+If you are using Docker with the default Moby VM, you can adjust the amount of memory available to the VM through the Docker preferences. Right-click on the Docker icon in the System Tray to access preferences.
+ 
 If you use a Docker setup with `docker-machine` and your `default` VM does
 not have 4GB of memory, you can create a new one with the following command:
 
@@ -149,3 +129,35 @@ Verify that you can connect to Zeebe:
 ```
 telnet 192.168.99.100 26500
 ```
+
+## Download a distribution
+
+You can always download the latest Zeebe release from the [Github release page](https://github.com/zeebe-io/zeebe/releases).
+
+### Prerequisites
+
+* Operating System:
+  * Linux
+  * Windows/MacOS (development only, not supported for production)
+* Java Virtual Machine:
+  * Oracle Hotspot v1.8
+  * Open JDK v1.8
+  
+Once you have downloaded a distribution, extract it into a folder of your choice. To extract the Zeebe distribution and start the broker, **Linux users** can type:
+
+```bash
+tar -xzf zeebe-distribution-X.Y.Z.tar.gz -C zeebe/
+./bin/broker
+```
+
+**Windows users** can download the `.zip`package and extract it using their favorite unzip tool. They can then open the extracted folder, navigate to the `bin` folder and start the broker by double-clicking on the `broker.bat` file.
+
+Once the Zeebe broker has started, it should produce the following output:
+
+```bash
+23:39:13.167 [] [main] INFO  io.zeebe.util.config - Reading configuration for class class io.zeebe.broker.system.configuration.BrokerCfg from file conf/zeebe.cfg.toml
+23:39:13.246 [] [main] INFO  io.zeebe.broker.system - Scheduler configuration: Threads{cpu-bound: 2, io-bound: 2}.
+23:39:13.270 [] [main] INFO  io.zeebe.broker.system - Version: X.Y.Z
+23:39:13.273 [] [main] INFO  io.zeebe.broker.system - Starting broker with configuration {
+```
+
