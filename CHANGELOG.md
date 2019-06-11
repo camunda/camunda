@@ -4,27 +4,27 @@
 #### Breaking Changes
 
 * **broker:**
-  *  rename port configuration ([02e3c472](https://github.com/zeebe-io/zeebe/commit/02e3c4720800c8067055efdd4b76d06786dcb007)
-  *  rename defaultLogSegmentSize to logSegmentSize in configuration ([915fd5e5](https://github.com/zeebe-io/zeebe/commit/915fd5e571b41bcf76dad801c448acf5d24ce544)
-* **exporter-api:**  move Exporter interface to upper api package ([faac031f](https://github.com/zeebe-io/zeebe/commit/faac031f3b84557793778b504dd02699477bdf0a)
-* **protocol:**  move protocol class to upper level package ([8f580c51](https://github.com/zeebe-io/zeebe/commit/8f580c51c3f70efb16f39c08fdff6ee8792e3bbf)
-* **gateway-protocol:**  remove control messages (list and get workflows) ([8a6035676](https://github.com/zeebe-io/zeebe/commit/8a6035676fb0eaf2bc79d1e3eacad8e683f787bb)
+  *  rename port configuration ([02e3c472](https://github.com/zeebe-io/zeebe/commit/02e3c4720800c8067055efdd4b76d06786dcb007))
+  *  rename defaultLogSegmentSize to logSegmentSize in configuration ([915fd5e5](https://github.com/zeebe-io/zeebe/commit/915fd5e571b41bcf76dad801c448acf5d24ce544))
+* **exporter-api:**  move Exporter interface to upper api package ([faac031f](https://github.com/zeebe-io/zeebe/commit/faac031f3b84557793778b504dd02699477bdf0a))
+* **protocol:**  move protocol class to upper level package ([8f580c51](https://github.com/zeebe-io/zeebe/commit/8f580c51c3f70efb16f39c08fdff6ee8792e3bbf))
+* **gateway-protocol:**  remove control messages (list and get workflows) ([8a6035676](https://github.com/zeebe-io/zeebe/commit/8a6035676fb0eaf2bc79d1e3eacad8e683f787bb))
 
 
 #### Bug Fixes
 
 * **broker:**
-  *  rename port configuration ([02e3c472](https://github.com/zeebe-io/zeebe/commit/02e3c4720800c8067055efdd4b76d06786dcb007), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  rename defaultLogSegmentSize to logSegmentSize in configuration ([915fd5e5](https://github.com/zeebe-io/zeebe/commit/915fd5e571b41bcf76dad801c448acf5d24ce544), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+  *  rename port configuration ([02e3c472](https://github.com/zeebe-io/zeebe/commit/02e3c4720800c8067055efdd4b76d06786dcb007))
+  *  rename defaultLogSegmentSize to logSegmentSize in configuration ([915fd5e5](https://github.com/zeebe-io/zeebe/commit/915fd5e571b41bcf76dad801c448acf5d24ce544))
   *  fix lost messages on rejected correlation ([cdcddd86](https://github.com/zeebe-io/zeebe/commit/cdcddd863b1d3f591839319840f9f5ca8c3bc076))
   *  fix intermediate catch event XML order dependency ([5c25ecd1](https://github.com/zeebe-io/zeebe/commit/5c25ecd17aa55f8cc223868df59530b412f9cfca))
   *  fix XOR gateway being dependent on element position in XML ([bdd88dc1](https://github.com/zeebe-io/zeebe/commit/bdd88dc1465d522eebb3032976eb10a85cfa9c24))
   *  do not skip partition on job activation ([80307830](https://github.com/zeebe-io/zeebe/commit/80307830bd9e750e5a7ec82829032a9f1cbafa05))
   *  fix invalid state when cancelling with job ([f990274a](https://github.com/zeebe-io/zeebe/commit/f990274af2647a6b51f52d448a3b5829824bb898))
   *  fix reading empty string token ([638e0631](https://github.com/zeebe-io/zeebe/commit/638e0631514160bdc74b280f61ac3c2cf44aca75))
-* **exporter-api:**  move Exporter interface to upper api package ([faac031f](https://github.com/zeebe-io/zeebe/commit/faac031f3b84557793778b504dd02699477bdf0a), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **exporter-api:**  move Exporter interface to upper api package ([faac031f](https://github.com/zeebe-io/zeebe/commit/faac031f3b84557793778b504dd02699477bdf0a))
 * **gateway:**  fix topology response ([ea92e981](https://github.com/zeebe-io/zeebe/commit/ea92e98102e1acb1bbefce822aaa796918504e54))
-* **protocol:**  move protocol class to upper level package ([8f580c51](https://github.com/zeebe-io/zeebe/commit/8f580c51c3f70efb16f39c08fdff6ee8792e3bbf), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **protocol:**  move protocol class to upper level package ([8f580c51](https://github.com/zeebe-io/zeebe/commit/8f580c51c3f70efb16f39c08fdff6ee8792e3bbf))
 
 #### Features
 
