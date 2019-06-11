@@ -56,52 +56,6 @@
             <artifactId>maven-dependency-plugin</artifactId>
             <executions>
               <execution>
-                <id>copy-generator-2-2</id>
-                <phase>pre-integration-test</phase>
-                <goals>
-                  <goal>copy</goal>
-                </goals>
-                <configuration>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>org.camunda.optimize</groupId>
-                      <artifactId>generator-2-2</artifactId>
-                      <version>${project.version}</version>
-                      <type>jar</type>
-                      <classifier>jar-with-dependencies</classifier>
-                      <overWrite>true</overWrite>
-                      <outputDirectory>${project.build.directory}/generators</outputDirectory>
-                      <destFileName>generator2.2.0.jar</destFileName>
-                    </artifactItem>
-                  </artifactItems>
-                  <overWriteReleases>false</overWriteReleases>
-                  <overWriteSnapshots>true</overWriteSnapshots>
-                </configuration>
-              </execution>
-              <execution>
-                <id>copy-generator-2-4</id>
-                <phase>pre-integration-test</phase>
-                <goals>
-                  <goal>copy</goal>
-                </goals>
-                <configuration>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>org.camunda.optimize</groupId>
-                      <artifactId>generator-2-4</artifactId>
-                      <version>${project.version}</version>
-                      <type>jar</type>
-                      <classifier>jar-with-dependencies</classifier>
-                      <overWrite>true</overWrite>
-                      <outputDirectory>${project.build.directory}/generators</outputDirectory>
-                      <destFileName>generator2.4.0.jar</destFileName>
-                    </artifactItem>
-                  </artifactItems>
-                  <overWriteReleases>false</overWriteReleases>
-                  <overWriteSnapshots>true</overWriteSnapshots>
-                </configuration>
-              </execution>
-              <execution>
                 <id>copy-generator-2-1</id>
                 <phase>pre-integration-test</phase>
                 <goals>
@@ -112,12 +66,35 @@
                     <artifactItem>
                       <groupId>org.camunda.optimize</groupId>
                       <artifactId>generator-2-1</artifactId>
-                      <version>${project.version}</version>
+                      <version>2.5.0-alpha2</version>
                       <type>jar</type>
                       <classifier>jar-with-dependencies</classifier>
                       <overWrite>true</overWrite>
                       <outputDirectory>${project.build.directory}/generators</outputDirectory>
                       <destFileName>generator2.1.0.jar</destFileName>
+                    </artifactItem>
+                  </artifactItems>
+                  <overWriteReleases>false</overWriteReleases>
+                  <overWriteSnapshots>true</overWriteSnapshots>
+                </configuration>
+              </execution>
+              <execution>
+                <id>copy-generator-2-2</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.camunda.optimize</groupId>
+                      <artifactId>generator-2-2</artifactId>
+                      <version>2.5.0-alpha2</version>
+                      <type>jar</type>
+                      <classifier>jar-with-dependencies</classifier>
+                      <overWrite>true</overWrite>
+                      <outputDirectory>${project.build.directory}/generators</outputDirectory>
+                      <destFileName>generator2.2.0.jar</destFileName>
                     </artifactItem>
                   </artifactItems>
                   <overWriteReleases>false</overWriteReleases>
@@ -135,12 +112,35 @@
                     <artifactItem>
                       <groupId>org.camunda.optimize</groupId>
                       <artifactId>generator-2-3</artifactId>
-                      <version>${project.version}</version>
+                      <version>2.5.0-alpha2</version>
                       <type>jar</type>
                       <classifier>jar-with-dependencies</classifier>
                       <overWrite>true</overWrite>
                       <outputDirectory>${project.build.directory}/generators</outputDirectory>
                       <destFileName>generator2.3.0.jar</destFileName>
+                    </artifactItem>
+                  </artifactItems>
+                  <overWriteReleases>false</overWriteReleases>
+                  <overWriteSnapshots>true</overWriteSnapshots>
+                </configuration>
+              </execution>
+              <execution>
+                <id>copy-generator-2-4</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.camunda.optimize</groupId>
+                      <artifactId>generator-2-4</artifactId>
+                      <version>2.5.0-alpha2</version>
+                      <type>jar</type>
+                      <classifier>jar-with-dependencies</classifier>
+                      <overWrite>true</overWrite>
+                      <outputDirectory>${project.build.directory}/generators</outputDirectory>
+                      <destFileName>generator2.4.0.jar</destFileName>
                     </artifactItem>
                   </artifactItems>
                   <overWriteReleases>false</overWriteReleases>

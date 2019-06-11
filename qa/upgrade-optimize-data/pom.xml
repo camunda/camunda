@@ -16,10 +16,6 @@
   <packaging>pom</packaging>
 
   <modules>
-    <module>generator-2-4</module>
-    <module>generator-2-3</module>
-    <module>generator-2-2</module>
-    <module>generator-2-1</module>
     <module>generator</module>
     <module>post-migration-test</module>
   </modules>
