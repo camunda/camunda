@@ -68,6 +68,7 @@ public class LogStreamRule extends ExternalResource {
 
   private LogStreamBuilder builder;
   private StateStorage stateStorage;
+  private ActorSchedulerRule actorSchedulerRule;
 
   public LogStreamRule(final TemporaryFolder temporaryFolder) {
     this(DEFAULT_NAME, temporaryFolder);
@@ -93,12 +94,13 @@ public class LogStreamRule extends ExternalResource {
 
   @Override
   protected void before() {
+    actorSchedulerRule = new ActorSchedulerRule(clock);
+    actorSchedulerRule.before();
     startLogStream();
   }
 
   public void startLogStream() {
-    actorScheduler = new ActorSchedulerRule(clock).get();
-    actorScheduler.start();
+    actorScheduler = actorSchedulerRule.get();
 
     serviceContainer = new ServiceContainerImpl(actorScheduler);
     serviceContainer.start();
@@ -126,6 +128,8 @@ public class LogStreamRule extends ExternalResource {
   @Override
   protected void after() {
     stopLogStream();
+
+    actorSchedulerRule.after();
   }
 
   public void stopLogStream() {
@@ -138,8 +142,6 @@ public class LogStreamRule extends ExternalResource {
     } catch (final TimeoutException | ExecutionException | InterruptedException e) {
       e.printStackTrace();
     }
-
-    actorScheduler.stop();
   }
 
   private void openDistributedLog() {

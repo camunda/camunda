@@ -111,7 +111,7 @@ public class ActivityTest {
             .create();
 
     // when
-    ENGINE.job().ofInstance(workflowInstanceKey).complete();
+    ENGINE.job().withType("type").ofInstance(workflowInstanceKey).complete();
 
     // then
     final Record<WorkflowInstanceRecordValue> record =
@@ -161,7 +161,7 @@ public class ActivityTest {
     final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    ENGINE.job().ofInstance(workflowInstanceKey).complete();
+    ENGINE.job().withType("type").ofInstance(workflowInstanceKey).complete();
 
     // then
     shouldUnsubscribeFromBoundaryEventTrigger(
