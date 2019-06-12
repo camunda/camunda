@@ -332,9 +332,9 @@ public class ExporterRecordMapper {
 
     return new JobBatchRecordValueImpl(
         objectMapper,
-        asString(record.getType()),
-        asString(record.getWorker()),
-        Duration.ofMillis(record.getTimeout()),
+        asString(record.getTypeBuffer()),
+        asString(record.getWorkerBuffer()),
+        Duration.ofMillis(record.getTimeoutLong()),
         record.getMaxJobsToActivate(),
         jobKeys,
         jobs,

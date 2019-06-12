@@ -17,27 +17,35 @@
  */
 package io.zeebe.engine.util;
 
-import static io.zeebe.protocol.intent.JobIntent.COMPLETED;
-import static io.zeebe.protocol.intent.JobIntent.FAILED;
-
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.util.record.RecordingExporter;
+import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class JobClient {
+  private static final Function<Long, Record<JobRecordValue>> SUCCESS_SUPPLIER =
+      (position) -> RecordingExporter.jobRecords().withSourceRecordPosition(position).getFirst();
+
+  private static final Function<Long, Record<JobRecordValue>> REJECTION_SUPPLIER =
+      (position) ->
+          RecordingExporter.jobRecords()
+              .onlyCommandRejections()
+              .withSourceRecordPosition(position)
+              .getFirst();
 
   private final JobRecord jobRecord;
   private final StreamProcessorRule environmentRule;
   private long workflowInstanceKey;
 
+  private Function<Long, Record<JobRecordValue>> expectation = SUCCESS_SUPPLIER;
+
   public JobClient(StreamProcessorRule environmentRule) {
     this.environmentRule = environmentRule;
-
     this.jobRecord = new JobRecord();
   }
 
@@ -61,6 +69,21 @@ public class JobClient {
     return this;
   }
 
+  public JobClient withRetries(int retries) {
+    jobRecord.setRetries(retries);
+    return this;
+  }
+
+  public JobClient withErrorMessage(String message) {
+    jobRecord.setErrorMessage(message);
+    return this;
+  }
+
+  public JobClient expectRejection() {
+    expectation = REJECTION_SUPPLIER;
+    return this;
+  }
+
   public Record<JobRecordValue> complete() {
     final boolean hasSpecificType = !jobRecord.getType().isEmpty();
 
@@ -71,31 +94,21 @@ public class JobClient {
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
 
-    final long jobKey = createdJob.getKey();
-    final long position = environmentRule.writeCommand(jobKey, JobIntent.COMPLETE, jobRecord);
-
-    return RecordingExporter.jobRecords()
-        .withIntent(COMPLETED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
-        .withSourceRecordPosition(position)
-        .getFirst();
+    return complete(createdJob.getKey());
   }
 
-  public Record<JobRecordValue> fail() {
-    final Record<JobRecordValue> createdJob =
-        RecordingExporter.jobRecords()
-            .withType(jobRecord.getType())
-            .withIntent(JobIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .getFirst();
+  public Record<JobRecordValue> complete(long jobKey) {
+    final long position = environmentRule.writeCommand(jobKey, JobIntent.COMPLETE, jobRecord);
+    return expectation.apply(position);
+  }
 
-    final long jobKey = createdJob.getKey();
+  public Record<JobRecordValue> fail(long jobKey) {
     final long position = environmentRule.writeCommand(jobKey, JobIntent.FAIL, jobRecord);
+    return expectation.apply(position);
+  }
 
-    return RecordingExporter.jobRecords()
-        .withIntent(FAILED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
-        .withSourceRecordPosition(position)
-        .getFirst();
+  public Record<JobRecordValue> updateRetries(long jobKey) {
+    final long position = environmentRule.writeCommand(jobKey, JobIntent.UPDATE_RETRIES, jobRecord);
+    return expectation.apply(position);
   }
 }

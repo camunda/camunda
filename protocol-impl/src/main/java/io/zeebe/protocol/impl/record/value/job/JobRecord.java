@@ -49,7 +49,7 @@ public class JobRecord extends UnifiedRecordValue
   private final StringProperty workerProp = new StringProperty("worker", "");
   private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
   private final StringProperty typeProp = new StringProperty(TYPE, "");
-  private final ObjectProperty<JobHeaders> headersProp =
+  private ObjectProperty<JobHeaders> headersProp =
       new ObjectProperty<>("headers", new JobHeaders());
   private final PackedProperty customHeadersProp = new PackedProperty(CUSTOM_HEADERS, NO_HEADERS);
   private final DocumentProperty variableProp = new DocumentProperty(VARIABLES);
@@ -126,12 +126,16 @@ public class JobRecord extends UnifiedRecordValue
 
   public JobRecord setVariables(DirectBuffer variables) {
     variableProp.setValue(variables);
-
     return this;
   }
 
   public JobRecord resetVariables() {
     variableProp.reset();
+    return this;
+  }
+
+  public JobRecord setJobHeaders(JobHeaders jobHeaders) {
+    headersProp = new ObjectProperty<>("headers", jobHeaders);
     return this;
   }
 

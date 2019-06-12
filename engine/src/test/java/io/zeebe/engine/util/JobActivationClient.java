@@ -22,6 +22,7 @@ import io.zeebe.exporter.api.record.value.JobBatchRecordValue;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.test.util.record.RecordingExporter;
+import java.util.function.BiFunction;
 
 public class JobActivationClient {
   private static final int DEFAULT_PARTITION = 1;
@@ -29,10 +30,29 @@ public class JobActivationClient {
   private static final String DEFAULT_WORKER = "defaultWorker";
   private static final int DEFAULT_MAX_ACTIVATE = 10;
 
+  private static final BiFunction<Integer, Long, Record<JobBatchRecordValue>>
+      SUCCESS_EXPECTATION_SUPPLIER =
+          (partitionId, position) ->
+              RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED)
+                  .withPartitionId(partitionId)
+                  .withSourceRecordPosition(position)
+                  .getFirst();
+
+  private static final BiFunction<Integer, Long, Record<JobBatchRecordValue>>
+      REJECTION_EXPECTATION_SUPPLIER =
+          (partitionId, position) ->
+              RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATE)
+                  .onlyCommandRejections()
+                  .withPartitionId(partitionId)
+                  .withSourceRecordPosition(position)
+                  .getFirst();
+
   private final StreamProcessorRule environmentRule;
   private final JobBatchRecord jobBatchRecord;
 
   private int partitionId;
+  private BiFunction<Integer, Long, Record<JobBatchRecordValue>> expectation =
+      SUCCESS_EXPECTATION_SUPPLIER;
 
   public JobActivationClient(StreamProcessorRule environmentRule) {
     this.environmentRule = environmentRule;
@@ -71,14 +91,16 @@ public class JobActivationClient {
     return this;
   }
 
+  public JobActivationClient expectRejection() {
+    expectation = REJECTION_EXPECTATION_SUPPLIER;
+    return this;
+  }
+
   public Record<JobBatchRecordValue> activate() {
     final long position =
         environmentRule.writeCommandOnPartition(
             partitionId, JobBatchIntent.ACTIVATE, jobBatchRecord);
 
-    return RecordingExporter.jobBatchRecords()
-        .withIntent(JobBatchIntent.ACTIVATED)
-        .withSourceRecordPosition(position)
-        .getFirst();
+    return expectation.apply(partitionId, position);
   }
 }
