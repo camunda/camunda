@@ -18,17 +18,12 @@ package io.zeebe.distributedlog.restore;
 import io.zeebe.distributedlog.restore.RestoreInfoResponse.ReplicationTarget;
 import io.zeebe.distributedlog.restore.log.LogReplicationRequest;
 import io.zeebe.distributedlog.restore.log.LogReplicationResponse;
+import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreInfo;
+import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreRequest;
+import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreResponse;
 import java.util.concurrent.CompletableFuture;
 
 public interface RestoreServer extends AutoCloseable {
-
-  /**
-   * Start serving snapshotInfo requests to the given handler.
-   *
-   * @param handler to handle incoming requests
-   * @return a future which will complete once the server is ready to accept requests
-   */
-  CompletableFuture<Void> serve(SnapshotInfoRequestHandler handler);
 
   /**
    * Start serving snapshot requests to the given handler.
@@ -58,27 +53,14 @@ public interface RestoreServer extends AutoCloseable {
   CompletableFuture<Void> serve(LogReplicationRequestHandler server);
 
   @FunctionalInterface
-  interface SnapshotInfoRequestHandler {
-
-    /**
-     * Handles a single snapshotInfo request. Return 1 if only processor snapshot exists, return 2
-     * if both processor and exporter snapshot exists.
-     *
-     * @param request null
-     */
-    Integer onSnapshotInfoRequest(Void request);
-  }
-
-  @FunctionalInterface
   interface SnapshotRequestHandler {
 
     /**
-     * Handles a single snapshot request. No response is expected from the server, as this is a
-     * control message to trigger the server to push the latest snapshot to the requester.
+     * Handles a single {@link SnapshotRestoreRequest} request.
      *
-     * @param request null
+     * @param request for a snapshot chunk
      */
-    void onSnapshotRequest(Void request);
+    SnapshotRestoreResponse onSnapshotRequest(SnapshotRestoreRequest request);
   }
 
   @FunctionalInterface
@@ -91,7 +73,8 @@ public interface RestoreServer extends AutoCloseable {
      * must exist an event locally at {@link RestoreInfoRequest#getLatestLocalPosition()}. If the
      * returned {@link ReplicationTarget} is {@link ReplicationTarget#SNAPSHOT}, then there must
      * exists a snapshot with a position greater than {@link
-     * RestoreInfoRequest#getLatestLocalPosition()}.
+     * RestoreInfoRequest#getLatestLocalPosition()}. If {@link ReplicationTarget#SNAPSHOT}, response
+     * must also include a non null {@link SnapshotRestoreInfo}
      *
      * @param request request to handle
      * @return response to return to sender

@@ -31,9 +31,8 @@ import io.zeebe.distributedlog.restore.impl.ReplicatingRestoreClient;
 import io.zeebe.distributedlog.restore.impl.ReplicatingRestoreClientProvider;
 import io.zeebe.distributedlog.restore.impl.RestoreController;
 import io.zeebe.distributedlog.restore.log.LogReplicator;
-import io.zeebe.logstreams.state.SnapshotChunk;
-import io.zeebe.logstreams.state.SnapshotReplication;
-import io.zeebe.logstreams.state.SnapshotRequester;
+import io.zeebe.distributedlog.restore.snapshot.RestoreSnapshotReplicator;
+import io.zeebe.distributedlog.restore.snapshot.impl.SnapshotConsumerImpl;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.logstreams.util.LogStreamReaderRule;
@@ -43,10 +42,7 @@ import io.zeebe.logstreams.util.RocksDBWrapper;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -90,21 +86,15 @@ public class RestoreControllerTest {
   private ReplicatingRestoreClient restoreClient;
   private String clientNodeId = "0";
   private RestoreController restoreController;
-  private Replicator processorReplicator;
 
   @Before
   public void setUp() throws IOException {
-    processorReplicator = new Replicator();
-
     final File runtimeDirectory = temporaryFolderServer.newFolder("runtime");
     final File snapshotsDirectory = temporaryFolderServer.newFolder("snapshots");
     final StateStorage storage = new StateStorage(runtimeDirectory, snapshotsDirectory);
     replicatorSnapshotController =
         new StateSnapshotController(
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class),
-            storage,
-            processorReplicator,
-            1);
+            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), storage, null, 1);
     final RocksDBWrapper wrapper = new RocksDBWrapper();
     wrapper.wrap(replicatorSnapshotController.openDb());
     wrapper.putInt(KEY, VALUE);
@@ -113,7 +103,6 @@ public class RestoreControllerTest {
     final File receiverSnapshotsDirectory = temporaryFolderClient.newFolder("snapshots-receiver");
     receiverStorage = new StateStorage(receiverRuntimeDirectory, receiverSnapshotsDirectory);
     snapshotRestoreContext = new ControllableSnapshotRestoreContext();
-    snapshotRestoreContext.setProcessorSnapshotReplicationConsumer(processorReplicator);
     snapshotRestoreContext.setProcessorStateStorage(receiverStorage);
 
     restoreClient =
@@ -144,8 +133,14 @@ public class RestoreControllerTest {
             restoreThreadContext,
             log);
 
-    final SnapshotRequester snapshotReplicator =
-        new SnapshotRequester(restoreClient, provider.createSnapshotRestoreContext(), 1);
+    final RestoreSnapshotReplicator snapshotReplicator =
+        new RestoreSnapshotReplicator(
+            restoreClient,
+            snapshotRestoreContext,
+            new SnapshotConsumerImpl(receiverStorage, log),
+            1,
+            restoreThreadContext,
+            log);
     return new RestoreController(
         restoreClient, nodeProvider, logReplicator, snapshotReplicator, restoreThreadContext, log);
   }
@@ -158,10 +153,6 @@ public class RestoreControllerTest {
 
     final long backupPosition = writerServer.writeEvents(numEventsInBackup, EVENT);
     writerServer.writeEvents(numExtraEvents, EVENT);
-
-    final DefaultRestoreInfoResponse defaultRestoreInfoResponse = new DefaultRestoreInfoResponse();
-    defaultRestoreInfoResponse.setReplicationTarget(ReplicationTarget.EVENTS);
-    restoreClient.completeRestoreInfoResponse(defaultRestoreInfoResponse);
 
     // when
     final long restoredPosition = restoreController.restore(-1, backupPosition);
@@ -177,10 +168,6 @@ public class RestoreControllerTest {
 
     final long snapshotPosition = writerServer.writeEvents(numEventsInSnapshot, EVENT);
     replicatorSnapshotController.takeSnapshot(snapshotPosition);
-
-    final DefaultRestoreInfoResponse defaultRestoreInfoResponse = new DefaultRestoreInfoResponse();
-    defaultRestoreInfoResponse.setReplicationTarget(ReplicationTarget.SNAPSHOT);
-    restoreClient.completeRestoreInfoResponse(defaultRestoreInfoResponse);
 
     snapshotRestoreContext.setProcessorPositionSupplier(() -> snapshotPosition);
     snapshotRestoreContext.setExporterPositionSupplier(() -> snapshotPosition);
@@ -205,11 +192,6 @@ public class RestoreControllerTest {
     final long snapshotPosition = writerServer.writeEvents(numEventsInSnapshot, EVENT);
     replicatorSnapshotController.takeSnapshot(snapshotPosition);
     final long backupPosition = writerServer.writeEvents(numEventsAfterSnapshotInBackup, EVENT);
-
-    final DefaultRestoreInfoResponse defaultRestoreInfoResponse = new DefaultRestoreInfoResponse();
-    defaultRestoreInfoResponse.setReplicationTarget(ReplicationTarget.SNAPSHOT);
-    restoreClient.completeRestoreInfoResponse(defaultRestoreInfoResponse);
-
     snapshotRestoreContext.setProcessorPositionSupplier(() -> snapshotPosition);
     snapshotRestoreContext.setExporterPositionSupplier(() -> snapshotPosition);
 
@@ -234,11 +216,6 @@ public class RestoreControllerTest {
     final long backupPosition = writerServer.writeEvents(numEventsBeforeBackUp, EVENT);
     final long snapshotPosition = writerServer.writeEvents(numEventsInSnapshotAfterBackup, EVENT);
     replicatorSnapshotController.takeSnapshot(snapshotPosition);
-
-    final DefaultRestoreInfoResponse defaultRestoreInfoResponse = new DefaultRestoreInfoResponse();
-    defaultRestoreInfoResponse.setReplicationTarget(ReplicationTarget.SNAPSHOT);
-    restoreClient.completeRestoreInfoResponse(defaultRestoreInfoResponse);
-
     snapshotRestoreContext.setProcessorPositionSupplier(() -> snapshotPosition);
     snapshotRestoreContext.setExporterPositionSupplier(() -> snapshotPosition);
 
@@ -263,11 +240,6 @@ public class RestoreControllerTest {
     final long exporterPosition = writerServer.writeEvents(numEventsExported, EVENT);
     final long backupPosition = writerServer.writeEvents(numEventsNotExported, EVENT);
     replicatorSnapshotController.takeSnapshot(backupPosition);
-
-    final DefaultRestoreInfoResponse defaultRestoreInfoResponse = new DefaultRestoreInfoResponse();
-    defaultRestoreInfoResponse.setReplicationTarget(ReplicationTarget.SNAPSHOT);
-    restoreClient.completeRestoreInfoResponse(defaultRestoreInfoResponse);
-
     snapshotRestoreContext.setProcessorPositionSupplier(() -> backupPosition);
     snapshotRestoreContext.setExporterPositionSupplier(() -> exporterPosition);
 
@@ -289,11 +261,6 @@ public class RestoreControllerTest {
     final long backupPosition = writerServer.writeEvents(numEventsNotExportedInBackup, EVENT);
     final long snapshotPosition = writerServer.writeEvents(numEventsNotExportedAfterBackup, EVENT);
     replicatorSnapshotController.takeSnapshot(snapshotPosition);
-
-    final DefaultRestoreInfoResponse defaultRestoreInfoResponse = new DefaultRestoreInfoResponse();
-    defaultRestoreInfoResponse.setReplicationTarget(ReplicationTarget.SNAPSHOT);
-    restoreClient.completeRestoreInfoResponse(defaultRestoreInfoResponse);
-
     snapshotRestoreContext.setProcessorPositionSupplier(() -> snapshotPosition);
     snapshotRestoreContext.setExporterPositionSupplier(() -> exporterPosition);
 
@@ -308,13 +275,10 @@ public class RestoreControllerTest {
 
   @Test
   public void shouldThrowExceptionIfSnapshotReplicationFailed() {
-    processorReplicator.setInvalidate(true);
+    restoreClient.setFailSnapshotChunk(true);
 
     final long backupPosition = writerServer.writeEvents(10, EVENT);
     replicatorSnapshotController.takeSnapshot(backupPosition);
-    final DefaultRestoreInfoResponse defaultRestoreInfoResponse = new DefaultRestoreInfoResponse();
-    defaultRestoreInfoResponse.setReplicationTarget(ReplicationTarget.SNAPSHOT);
-    restoreClient.completeRestoreInfoResponse(defaultRestoreInfoResponse);
 
     assertThatThrownBy(() -> restoreController.restore(-1, 10)).isNotNull();
   }
@@ -330,72 +294,7 @@ public class RestoreControllerTest {
 
   @Test
   public void shouldThrowExceptionIfRequestInfoFailed() {
-    restoreClient.completeExceptionallyRestoreInfoResponse(new RuntimeException());
+    restoreClient.completeRestoreInfoResponse(new RuntimeException());
     assertThatThrownBy(() -> restoreController.restore(-1, 10)).isNotNull();
-  }
-
-  protected static final class Replicator implements SnapshotReplication {
-
-    final List<SnapshotChunk> replicatedChunks = new ArrayList<>();
-    private Consumer<SnapshotChunk> chunkConsumer;
-
-    private boolean invalidate;
-
-    @Override
-    public void replicate(SnapshotChunk snapshot) {
-      if (invalidate) {
-        snapshot = new InvalidSnapshotChunk(snapshot);
-      }
-      replicatedChunks.add(snapshot);
-      if (chunkConsumer != null) {
-        chunkConsumer.accept(snapshot);
-      }
-    }
-
-    @Override
-    public void consume(Consumer<SnapshotChunk> consumer) {
-      chunkConsumer = consumer;
-    }
-
-    @Override
-    public void close() {}
-
-    public void setInvalidate(boolean invalidate) {
-      this.invalidate = invalidate;
-    }
-  }
-
-  protected static final class InvalidSnapshotChunk implements SnapshotChunk {
-
-    private final SnapshotChunk validSnapshot;
-
-    public InvalidSnapshotChunk(SnapshotChunk validSnapshot) {
-      this.validSnapshot = validSnapshot;
-    }
-
-    @Override
-    public long getSnapshotPosition() {
-      return validSnapshot.getSnapshotPosition();
-    }
-
-    @Override
-    public int getTotalCount() {
-      return validSnapshot.getTotalCount();
-    }
-
-    @Override
-    public String getChunkName() {
-      return validSnapshot.getChunkName();
-    }
-
-    @Override
-    public long getChecksum() {
-      return validSnapshot.getChecksum() + 1;
-    }
-
-    @Override
-    public byte[] getContent() {
-      return validSnapshot.getContent();
-    }
   }
 }

@@ -19,13 +19,10 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.spi.ValidSnapshotListener;
-import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.zip.CRC32;
 import org.agrona.collections.Long2LongHashMap;
 import org.slf4j.Logger;
@@ -43,8 +40,6 @@ public final class ReplicationController {
   private final Long2LongHashMap receivedSnapshots = new Long2LongHashMap(MISSING_SNAPSHOT);
   private final StateStorage storage;
 
-  private final List<SnapshotReplicationListener> replicationListeners =
-      new CopyOnWriteArrayList<>();
   private final ValidSnapshotListener validSnapshotListener;
 
   public ReplicationController(SnapshotReplication replication, StateStorage storage) {
@@ -83,14 +78,6 @@ public final class ReplicationController {
   /** Registering for consuming snapshot chunks. */
   public void consumeReplicatedSnapshots() {
     replication.consume(this::consumeSnapshotChunk);
-  }
-
-  public void addListener(SnapshotReplicationListener listener) {
-    replicationListeners.add(listener);
-  }
-
-  public void removeListener(SnapshotReplicationListener listener) {
-    replicationListeners.remove(listener);
   }
 
   /**
@@ -162,25 +149,9 @@ public final class ReplicationController {
     }
   }
 
-  private void deleteTmpSnapshotDirectoryIfExists(long snapshotPosition) {
-    final File tmpSnapshotDirectory =
-        storage.getTmpSnapshotDirectoryFor(Long.toString(snapshotPosition));
-    if (tmpSnapshotDirectory.exists()) {
-      try {
-        FileUtil.deleteFolder(tmpSnapshotDirectory.toPath());
-      } catch (IOException e) {
-        LOG.error(
-            "Unexpected error occurred when deleting invalid snapshot from {}",
-            tmpSnapshotDirectory.toPath(),
-            e);
-      }
-    }
-  }
-
   private void markSnapshotAsInvalid(SnapshotChunk chunk) {
     final long snapshotPosition = chunk.getSnapshotPosition();
     receivedSnapshots.put(snapshotPosition, INVALID_SNAPSHOT);
-    replicationListeners.forEach(listener -> listener.onFailure(snapshotPosition));
   }
 
   private void validateWhenReceivedAllChunks(
@@ -201,8 +172,6 @@ public final class ReplicationController {
           tryToMarkSnapshotAsValid(snapshotChunk, tmpSnapshotDirectory, validSnapshotDirectory);
 
       if (valid) {
-        replicationListeners.forEach(
-            listener -> listener.onReplicated(snapshotChunk.getSnapshotPosition()));
         validSnapshotListener.onNewValidSnapshot();
       }
     } else {
@@ -235,13 +204,6 @@ public final class ReplicationController {
           tmpSnapshotDirectory.toPath(),
           e);
       return false;
-    }
-  }
-
-  public void clearInvalidatedSnapshot(long snapshotPosition) {
-    if (receivedSnapshots.get(snapshotPosition) == INVALID_SNAPSHOT) {
-      receivedSnapshots.remove(snapshotPosition);
-      deleteTmpSnapshotDirectoryIfExists(snapshotPosition);
     }
   }
 
