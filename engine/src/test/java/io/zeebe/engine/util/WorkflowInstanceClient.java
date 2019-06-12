@@ -25,6 +25,7 @@ import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
+import java.util.Map;
 import java.util.function.Function;
 
 public class WorkflowInstanceClient {
@@ -49,6 +50,11 @@ public class WorkflowInstanceClient {
       this.environmentRule = environmentRule;
       this.workflowInstanceCreationRecord = new WorkflowInstanceCreationRecord();
       workflowInstanceCreationRecord.setBpmnProcessId(bpmnProcessId);
+    }
+
+    public WorkflowInstanceCreationClient withVariables(Map<String, Object> variables) {
+      workflowInstanceCreationRecord.setVariables(MsgPackUtil.asMsgPack(variables));
+      return this;
     }
 
     public WorkflowInstanceCreationClient withVariables(String variables) {

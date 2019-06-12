@@ -1,5 +1,5 @@
 /*
- * Zeebe Broker Core
+ * Zeebe Workflow Engine
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,11 +15,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.engine.incident;
+package io.zeebe.engine.processor.workflow.incident;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.engine.util.EngineRule;
 import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.IncidentRecordValue;
@@ -31,8 +31,6 @@ import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
-import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
@@ -44,7 +42,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -166,9 +163,7 @@ public class EventSubscriptionIncidentTest {
           .endEvent()
           .done();
 
-  public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public static CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
-  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @ClassRule public static final EngineRule ENGINE = new EngineRule();
 
   @Rule
   public RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -247,7 +242,7 @@ public class EventSubscriptionIncidentTest {
             WF_BOUNDARY_EVENT_2,
             WF_EVENT_BASED_GATEWAY,
             WF_EVENT_BASED_GATEWAY_2)) {
-      apiRule.deployWorkflow(modelInstance);
+      ENGINE.deployment().withXmlResource(modelInstance).deploy();
     }
   }
 
@@ -264,14 +259,11 @@ public class EventSubscriptionIncidentTest {
   public void shouldCreateIncidentIfMessageCorrelationKeyNotFound() {
     // when
     final long workflowInstanceKey =
-        apiRule
-            .partitionClient()
-            .createWorkflowInstance(
-                r ->
-                    r.setBpmnProcessId(processId)
-                        .setVariables(
-                            MsgPackUtil.asMsgPack(CORRELATION_VARIABLE_1, correlationKey1)))
-            .getInstanceKey();
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(processId)
+            .withVariable(CORRELATION_VARIABLE_1, correlationKey1)
+            .create();
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
         RecordingExporter.workflowInstanceRecords(failureEventIntent)
@@ -306,11 +298,7 @@ public class EventSubscriptionIncidentTest {
     variables.put(CORRELATION_VARIABLE_2, Arrays.asList(1, 2, 3));
 
     final long workflowInstanceKey =
-        apiRule
-            .partitionClient()
-            .createWorkflowInstance(
-                r -> r.setBpmnProcessId(processId).setVariables(MsgPackUtil.asMsgPack(variables)))
-            .getInstanceKey();
+        ENGINE.workflowInstance().ofBpmnProcessId(processId).withVariables(variables).create();
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
         RecordingExporter.workflowInstanceRecords(failureEventIntent)
@@ -342,15 +330,13 @@ public class EventSubscriptionIncidentTest {
     // given
     final String correlationKey1 = UUID.randomUUID().toString();
     final String correlationKey2 = UUID.randomUUID().toString();
+
     final long workflowInstanceKey =
-        apiRule
-            .partitionClient()
-            .createWorkflowInstance(
-                r ->
-                    r.setBpmnProcessId(processId)
-                        .setVariables(
-                            MsgPackUtil.asMsgPack(CORRELATION_VARIABLE_1, correlationKey1)))
-            .getInstanceKey();
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(processId)
+            .withVariable(CORRELATION_VARIABLE_1, correlationKey1)
+            .create();
 
     final Record<IncidentRecordValue> incidentCreatedRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
@@ -361,11 +347,17 @@ public class EventSubscriptionIncidentTest {
     final Map<String, Object> document = new HashMap<>();
     document.put(CORRELATION_VARIABLE_1, correlationKey1);
     document.put(CORRELATION_VARIABLE_2, correlationKey2);
-    apiRule
-        .partitionClient()
-        .updateVariables(incidentCreatedRecord.getValue().getElementInstanceKey(), document);
+    ENGINE
+        .variables()
+        .ofScope(incidentCreatedRecord.getValue().getElementInstanceKey())
+        .withDocument(document)
+        .update();
 
-    apiRule.resolveIncident(incidentCreatedRecord.getKey());
+    ENGINE
+        .incident()
+        .ofInstance(workflowInstanceKey)
+        .withKey(incidentCreatedRecord.getKey())
+        .resolve();
 
     // then
     assertThat(
@@ -378,7 +370,7 @@ public class EventSubscriptionIncidentTest {
         .containsExactlyInAnyOrder(MESSAGE_NAME_1, MESSAGE_NAME_2);
 
     // and
-    apiRule.publishMessage(MESSAGE_NAME_2, correlationKey2);
+    ENGINE.message().withName(MESSAGE_NAME_2).withCorrelationKey(correlationKey2).publish();
 
     assertThat(
             RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
@@ -392,14 +384,11 @@ public class EventSubscriptionIncidentTest {
   public void shouldNotOpenSubscriptionsWhenIncidentIsCreated() {
     // given
     final long workflowInstanceKey =
-        apiRule
-            .partitionClient()
-            .createWorkflowInstance(
-                r ->
-                    r.setBpmnProcessId(processId)
-                        .setVariables(
-                            MsgPackUtil.asMsgPack(CORRELATION_VARIABLE_1, correlationKey1)))
-            .getInstanceKey();
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(processId)
+            .withVariable(CORRELATION_VARIABLE_1, correlationKey1)
+            .create();
 
     final Record<IncidentRecordValue> incidentCreatedRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
@@ -410,12 +399,17 @@ public class EventSubscriptionIncidentTest {
     final Map<String, Object> document = new HashMap<>();
     document.put(CORRELATION_VARIABLE_1, correlationKey1);
     document.put(CORRELATION_VARIABLE_2, correlationKey2);
+    ENGINE
+        .variables()
+        .ofScope(incidentCreatedRecord.getValue().getElementInstanceKey())
+        .withDocument(document)
+        .update();
 
-    apiRule
-        .partitionClient()
-        .updateVariables(incidentCreatedRecord.getValue().getElementInstanceKey(), document);
-
-    apiRule.resolveIncident(incidentCreatedRecord.getKey());
+    ENGINE
+        .incident()
+        .ofInstance(workflowInstanceKey)
+        .withKey(incidentCreatedRecord.getKey())
+        .resolve();
 
     // then
     final Record<IncidentRecordValue> incidentResolvedRecord =
