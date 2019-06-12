@@ -77,14 +77,10 @@ export default function Variables({
     [editMode]
   );
 
-  function strictJSONValidation(value) {
-    return isValidJSON(value) && typeof JSON.parse(value) === 'object';
-  }
-
-  function renderEditButtons({showModalBtn, isDisabled}) {
+  function renderEditButtons({modalType, isDisabled}) {
     return (
       <>
-        {showModalBtn && (
+        {modalType === 'edit' && (
           <Styled.EditButton
             title="Open Modal"
             data-test="open-modal-btn"
@@ -128,8 +124,8 @@ export default function Variables({
         </Styled.EditInputTD>
         <Styled.EditButtonsTD>
           {renderEditButtons({
-            showModalBtn: strictJSONValidation(propValue),
-            isDisabled: valueHasntChanged
+            isDisabled: valueHasntChanged,
+            modalType: 'edit'
           })}
         </Styled.EditButtonsTD>
       </>
@@ -162,7 +158,7 @@ export default function Variables({
         </Styled.EditInputTD>
         <Styled.AddButtonsTD>
           {renderEditButtons({
-            showModalButton: true,
+            modalType: 'add',
             isDisabled: variableAlreadyExists
           })}
         </Styled.AddButtonsTD>
