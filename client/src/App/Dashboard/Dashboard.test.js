@@ -24,7 +24,6 @@ import Header from '../Header';
 import MetricPanel from './MetricPanel';
 import InstancesByWorkflow from './InstancesByWorkflow';
 import IncidentsByError from './IncidentsByError';
-import * as Styled from './styled';
 import EmptyPanel from 'modules/components/EmptyPanel';
 
 const mockInstancesByWorkflow = {
