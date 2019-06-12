@@ -18,6 +18,7 @@ import {
   fetchIncidentsByError
 } from 'modules/api/incidents/incidents';
 import {PAGE_TITLE} from 'modules/constants';
+import EmptyPanel from 'modules/components/EmptyPanel';
 
 import Copyright from 'modules/components/Copyright';
 
@@ -67,11 +68,11 @@ class Dashboard extends Component {
         : 'There are no Instances with Incident.';
 
     if (incidentsState.error) {
-      return <Styled.EmptyIncidentsPanel type="warning" label={errorMessage} />;
+      return <EmptyPanel type="warning" label={errorMessage} />;
     }
 
     if (incidentsState.data && incidentsState.data.length === 0) {
-      return <Styled.EmptyIncidentsPanel type="info" label={emptyMessage} />;
+      return <EmptyPanel type="info" label={emptyMessage} />;
     }
   };
 

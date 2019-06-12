@@ -2,21 +2,25 @@
 
 exports[`EmptyPanel should display a success message 1`] = `
 <Themed(styled.div)>
-  <Themed(styled.span)
-    type="info"
-  >
-    someLabel
-  </Themed(styled.span)>
+  <styled.div>
+    <Themed(styled.span)
+      type="info"
+    >
+      someLabel
+    </Themed(styled.span)>
+  </styled.div>
 </Themed(styled.div)>
 `;
 
 exports[`EmptyPanel should display a warning message 1`] = `
 <Themed(styled.div)>
-  <Styled(ReactComponent) />
-  <Themed(styled.span)
-    type="warning"
-  >
-    someLabel
-  </Themed(styled.span)>
+  <styled.div>
+    <Styled(ReactComponent) />
+    <Themed(styled.span)
+      type="warning"
+    >
+      someLabel
+    </Themed(styled.span)>
+  </styled.div>
 </Themed(styled.div)>
 `;

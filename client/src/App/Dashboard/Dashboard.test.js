@@ -25,6 +25,7 @@ import MetricPanel from './MetricPanel';
 import InstancesByWorkflow from './InstancesByWorkflow';
 import IncidentsByError from './IncidentsByError';
 import * as Styled from './styled';
+import EmptyPanel from 'modules/components/EmptyPanel';
 
 const mockInstancesByWorkflow = {
   data: createInstancesByWorkflow()
@@ -112,7 +113,7 @@ describe('Dashboard', () => {
 
       const EmptyPanelNode = node
         .find('[data-test="instances-byWorkflow"]')
-        .find(Styled.EmptyIncidentsPanel);
+        .find(EmptyPanel);
 
       expect(EmptyPanelNode).toExist();
       expect(EmptyPanelNode.props().label).toBe(
@@ -126,7 +127,7 @@ describe('Dashboard', () => {
 
       const EmptyPanelNode = node
         .find('[data-test="instances-byWorkflow"]')
-        .find(Styled.EmptyIncidentsPanel);
+        .find(EmptyPanel);
 
       expect(EmptyPanelNode).toExist();
       expect(EmptyPanelNode.props().label).toBe('There are no Workflows.');
@@ -148,10 +149,10 @@ describe('Dashboard', () => {
 
       const EmptyPanelNode = node
         .find('[data-test="incidents-byError"]')
-        .find(Styled.EmptyIncidentsPanel);
+        .find(EmptyPanel);
 
       expect(EmptyPanelNode).toExist();
-      expect(EmptyPanelNode.dive().props().label).toBe(
+      expect(EmptyPanelNode.dive().text()).toBe(
         'Incidents by Error Message could not be fetched.'
       );
     });
@@ -162,10 +163,10 @@ describe('Dashboard', () => {
 
       const EmptyPanelNode = node
         .find('[data-test="incidents-byError"]')
-        .find(Styled.EmptyIncidentsPanel);
+        .find(EmptyPanel);
 
       expect(EmptyPanelNode).toExist();
-      expect(EmptyPanelNode.dive().props().label).toBe(
+      expect(EmptyPanelNode.dive().text()).toBe(
         'There are no Instances with Incident.'
       );
     });

@@ -96,15 +96,8 @@ export const TileContent = styled.div`
   margin-top: -4px;
 `;
 
-export const EmptyIncidentsPanel = styled(EmptyPanel)`
-  margin-left: -4px;
-  margin-top: -4px;
-  position: absolute;
-  padding-top 210px;
-`;
-
 export const EmptyMetricPanel = styled(EmptyPanel)`
-  padding-top: 51px;
+  padding-top: 26px;
 `;
 
 export const EmptyMetricPanelWrapper = styled.div`

@@ -11,8 +11,10 @@ import * as Styled from './styled';
 function EmptyPanel({type, label, ...props}) {
   return (
     <Styled.EmptyPanel {...props}>
-      {type === 'warning' && <Styled.WarningIcon />}
-      <Styled.Label type={type}>{label}</Styled.Label>
+      <Styled.LabelContainer>
+        {type === 'warning' && <Styled.WarningIcon />}
+        <Styled.Label type={type}>{label}</Styled.Label>
+      </Styled.LabelContainer>
     </Styled.EmptyPanel>
   );
 }
