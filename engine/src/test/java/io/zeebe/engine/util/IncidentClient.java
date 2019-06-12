@@ -59,7 +59,7 @@ public class IncidentClient {
     public Record<IncidentRecordValue> resolve() {
       if (incidentKey == DEFAULT_KEY) {
         incidentKey =
-            RecordingExporter.incidentRecords()
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
                 .withWorkflowInstanceKey(workflowInstanceKey)
                 .getFirst()
                 .getKey();

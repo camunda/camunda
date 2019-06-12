@@ -71,8 +71,9 @@ public class EngineRule extends ExternalResource {
   private static final int PARTITION_ID = Protocol.DEPLOYMENT_PARTITION;
   private static final RecordingExporter RECORDING_EXPORTER = new RecordingExporter();
 
-  protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
+  private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
   private final StreamProcessorRule environmentRule;
 
   private final int partitionCount;
