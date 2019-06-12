@@ -47,7 +47,7 @@ export default function Variables({
 
   function handleModalClose() {
     setIsModalVisible(false);
-    setEditMode('');
+    closeEdit();
   }
 
   function handleModalSave(modifiedValue) {
@@ -80,7 +80,7 @@ export default function Variables({
   function renderEditButtons({modalType, isDisabled}) {
     return (
       <>
-        {modalType === 'edit' && (
+        {modalType === MODE.EDIT && (
           <Styled.EditButton
             title="Open Modal"
             data-test="open-modal-btn"
@@ -125,7 +125,7 @@ export default function Variables({
         <Styled.EditButtonsTD>
           {renderEditButtons({
             isDisabled: valueHasntChanged,
-            modalType: 'edit'
+            modalType: MODE.EDIT
           })}
         </Styled.EditButtonsTD>
       </>
@@ -158,7 +158,7 @@ export default function Variables({
         </Styled.EditInputTD>
         <Styled.AddButtonsTD>
           {renderEditButtons({
-            modalType: 'add',
+            modalType: MODE.ADD,
             isDisabled: variableAlreadyExists
           })}
         </Styled.AddButtonsTD>
