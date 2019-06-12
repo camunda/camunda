@@ -45,8 +45,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 public class FailJobTest {
-  private static final String JSON_VARIABLES = "{\"foo\":\"bar\"}";
-  private static final byte[] VARIABLES_MSG_PACK = MsgPackUtil.asMsgPackReturnArray(JSON_VARIABLES);
   private static final String PROCESS_ID = "process";
   private static String jobType;
 
@@ -70,9 +68,10 @@ public class FailJobTest {
     final Record<JobRecordValue> failRecord =
         engineRule
             .job()
+            .withKey(jobKey)
             .ofInstance(job.getHeaders().getWorkflowInstanceKey())
             .withRetries(retries)
-            .fail(jobKey);
+            .fail();
 
     // then
     Assertions.assertThat(failRecord.getMetadata())
@@ -99,10 +98,11 @@ public class FailJobTest {
     final Record<JobRecordValue> failedRecord =
         engineRule
             .job()
+            .withKey(jobKey)
             .ofInstance(job.getHeaders().getWorkflowInstanceKey())
             .withRetries(retries)
             .withErrorMessage("failed job")
-            .fail(jobKey);
+            .fail();
 
     // then
     Assertions.assertThat(failedRecord.getMetadata())
@@ -130,9 +130,10 @@ public class FailJobTest {
     final Record<JobRecordValue> failRecord =
         engineRule
             .job()
+            .withKey(jobKey)
             .ofInstance(job.getValue().getHeaders().getWorkflowInstanceKey())
             .withRetries(3)
-            .fail(jobKey);
+            .fail();
     engineRule.jobs().withType(jobType).activate();
 
     // then
@@ -186,7 +187,7 @@ public class FailJobTest {
 
     // when
     final Record<JobRecordValue> jobRecord =
-        engineRule.job().withRetries(3).expectRejection().fail(key);
+        engineRule.job().withKey(key).withRetries(3).expectRejection().fail();
 
     // then
     Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.NOT_FOUND);
@@ -198,11 +199,11 @@ public class FailJobTest {
     engineRule.createJob(jobType, PROCESS_ID);
     final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    engineRule.job().withRetries(0).fail(jobKey);
+    engineRule.job().withKey(jobKey).withRetries(0).fail();
 
     // when
     final Record<JobRecordValue> jobRecord =
-        engineRule.job().withRetries(3).expectRejection().fail(jobKey);
+        engineRule.job().withKey(jobKey).withRetries(3).expectRejection().fail();
 
     // then
     Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.INVALID_STATE);
@@ -216,7 +217,7 @@ public class FailJobTest {
 
     // when
     final Record<JobRecordValue> jobRecord =
-        engineRule.job().withRetries(3).expectRejection().fail(job.getKey());
+        engineRule.job().withKey(job.getKey()).withRetries(3).expectRejection().fail();
 
     // then
     Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.INVALID_STATE);
@@ -231,11 +232,15 @@ public class FailJobTest {
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
-    engineRule.job().withVariables(MsgPackUtil.asMsgPack(job.getVariables())).complete(jobKey);
+    engineRule
+        .job()
+        .withKey(jobKey)
+        .withVariables(MsgPackUtil.asMsgPack(job.getVariables()))
+        .complete();
 
     // when
     final Record<JobRecordValue> jobRecord =
-        engineRule.job().withRetries(3).expectRejection().fail(jobKey);
+        engineRule.job().withKey(jobKey).withRetries(3).expectRejection().fail();
 
     // then
     Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.NOT_FOUND);

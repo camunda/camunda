@@ -158,12 +158,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.msgpack</groupId>
-      <artifactId>msgpack-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
     </dependency>

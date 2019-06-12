@@ -43,7 +43,6 @@ import org.junit.Test;
 
 public class CompleteJobTest {
   private static final String JSON_VARIABLES = "{\"foo\":\"bar\"}";
-  private static final byte[] VARIABLES_MSG_PACK = MsgPackUtil.asMsgPackReturnArray(JSON_VARIABLES);
   private static final String PROCESS_ID = "process";
   private static String jobType;
 
@@ -65,8 +64,9 @@ public class CompleteJobTest {
     final Record<JobRecordValue> jobCompletedRecord =
         engineRule
             .job()
+            .withKey(batchRecord.getValue().getJobKeys().get(0))
             .withVariables(MsgPackConstants.MSGPACK_VARIABLES)
-            .complete(batchRecord.getValue().getJobKeys().get(0));
+            .complete();
 
     // then
     final RecordMetadata metadata = jobCompletedRecord.getMetadata();
@@ -91,9 +91,10 @@ public class CompleteJobTest {
     final Record<JobRecordValue> jobRecord =
         engineRule
             .job()
+            .withKey(key)
             .withVariables(MsgPackConstants.MSGPACK_VARIABLES)
             .expectRejection()
-            .complete(key);
+            .complete();
 
     // then
     Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.NOT_FOUND);
@@ -109,8 +110,9 @@ public class CompleteJobTest {
     final Record<JobRecordValue> completedRecord =
         engineRule
             .job()
+            .withKey(batchRecord.getValue().getJobKeys().get(0))
             .withVariables(MsgPackConstants.MSGPACK_VARIABLES)
-            .complete(batchRecord.getValue().getJobKeys().get(0));
+            .complete();
 
     // then
     Assertions.assertThat(completedRecord.getMetadata())
@@ -130,8 +132,9 @@ public class CompleteJobTest {
     final Record<JobRecordValue> completedRecord =
         engineRule
             .job()
+            .withKey(batchRecord.getValue().getJobKeys().get(0))
             .withVariables(new UnsafeBuffer(MsgPackHelper.NIL))
-            .complete(batchRecord.getValue().getJobKeys().get(0));
+            .complete();
 
     // then
     Assertions.assertThat(completedRecord.getMetadata())
@@ -151,8 +154,9 @@ public class CompleteJobTest {
     final Record<JobRecordValue> completedRecord =
         engineRule
             .job()
+            .withKey(batchRecord.getValue().getJobKeys().get(0))
             .withVariables(new UnsafeBuffer(new byte[0]))
-            .complete(batchRecord.getValue().getJobKeys().get(0));
+            .complete();
 
     // then
     Assertions.assertThat(completedRecord.getMetadata())
@@ -173,7 +177,11 @@ public class CompleteJobTest {
     // when
     final DirectBuffer variables = MsgPackUtil.asMsgPack(activated.getValue().getVariables());
     final Record<JobRecordValue> completedRecord =
-        engineRule.job().withVariables(variables).complete(activated.getKey());
+        engineRule
+            .job()
+            .withKey(batchRecord.getValue().getJobKeys().get(0))
+            .withVariables(variables)
+            .complete();
 
     // then
     Assertions.assertThat(completedRecord.getMetadata())
@@ -197,9 +205,10 @@ public class CompleteJobTest {
             () ->
                 engineRule
                     .job()
+                    .withKey(batchRecord.getValue().getJobKeys().get(0))
                     .withVariables(new UnsafeBuffer(invalidVariables))
                     .expectRejection()
-                    .complete(batchRecord.getValue().getJobKeys().get(0)));
+                    .complete());
 
     // then
     assertThat(throwable).isInstanceOf(RuntimeException.class);
@@ -217,11 +226,11 @@ public class CompleteJobTest {
     final DirectBuffer variables =
         MsgPackUtil.asMsgPack(batchRecord.getValue().getJobs().get(0).getVariables());
     final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    engineRule.job().withVariables(variables).complete(jobKey);
+    engineRule.job().withKey(jobKey).withVariables(variables).complete();
 
     // when
     final Record<JobRecordValue> jobRecord =
-        engineRule.job().withVariables(variables).expectRejection().complete(jobKey);
+        engineRule.job().withKey(jobKey).withVariables(variables).expectRejection().complete();
 
     // then
     Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.NOT_FOUND);
@@ -235,15 +244,16 @@ public class CompleteJobTest {
     // when
     final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
     final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    engineRule.job().fail(jobKey);
+    engineRule.job().withKey(jobKey).fail();
 
     final Record<JobRecordValue> jobRecord =
         engineRule
             .job()
+            .withKey(jobKey)
             .withVariables(
                 MsgPackUtil.asMsgPack(batchRecord.getValue().getJobs().get(0).getVariables()))
             .expectRejection()
-            .complete(jobKey);
+            .complete();
 
     // then
     Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.INVALID_STATE);

@@ -407,7 +407,11 @@ public class ActivateJobsTest {
   }
 
   private Record<JobRecordValue> completeJob(long jobKey) {
-    return engineRule.job().withVariables(new UnsafeBuffer(VARIABLES_MSG_PACK)).complete(jobKey);
+    return engineRule
+        .job()
+        .withKey(jobKey)
+        .withVariables(new UnsafeBuffer(VARIABLES_MSG_PACK))
+        .complete();
   }
 
   private Long activateJob(String type) {
