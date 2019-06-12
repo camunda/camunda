@@ -38,17 +38,23 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class FailJobTest {
   private static final String PROCESS_ID = "process";
   private static String jobType;
 
-  @ClassRule public static EngineRule engineRule = new EngineRule();
+  @ClassRule public static final EngineRule ENGINE = new EngineRule();
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Before
   public void setup() {
@@ -58,15 +64,15 @@ public class FailJobTest {
   @Test
   public void shouldFail() {
     // given
-    engineRule.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
     final int retries = 23;
 
     // when
     final Record<JobRecordValue> failRecord =
-        engineRule
+        ENGINE
             .job()
             .withKey(jobKey)
             .ofInstance(job.getHeaders().getWorkflowInstanceKey())
@@ -87,8 +93,8 @@ public class FailJobTest {
   @Test
   public void shouldFailWithMessage() {
     // given
-    engineRule.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
 
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
@@ -96,7 +102,7 @@ public class FailJobTest {
 
     // when
     final Record<JobRecordValue> failedRecord =
-        engineRule
+        ENGINE
             .job()
             .withKey(jobKey)
             .ofInstance(job.getHeaders().getWorkflowInstanceKey())
@@ -119,22 +125,22 @@ public class FailJobTest {
   @Test
   public void shouldFailJobAndRetry() {
     // given
-    final Record<JobRecordValue> job = engineRule.createJob(jobType, PROCESS_ID);
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
 
-    final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
     final Record<JobRecordValue> activatedRecord =
         jobRecords(ACTIVATED).withRecordKey(jobKey).getFirst();
 
     // when
     final Record<JobRecordValue> failRecord =
-        engineRule
+        ENGINE
             .job()
             .withKey(jobKey)
             .ofInstance(job.getValue().getHeaders().getWorkflowInstanceKey())
             .withRetries(3)
             .fail();
-    engineRule.jobs().withType(jobType).activate();
+    ENGINE.jobs().withType(jobType).activate();
 
     // then
     Assertions.assertThat(failRecord.getMetadata())
@@ -187,7 +193,7 @@ public class FailJobTest {
 
     // when
     final Record<JobRecordValue> jobRecord =
-        engineRule.job().withKey(key).withRetries(3).expectRejection().fail();
+        ENGINE.job().withKey(key).withRetries(3).expectRejection().fail();
 
     // then
     Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.NOT_FOUND);
@@ -196,14 +202,14 @@ public class FailJobTest {
   @Test
   public void shouldRejectFailIfJobAlreadyFailed() {
     // given
-    engineRule.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    engineRule.job().withKey(jobKey).withRetries(0).fail();
+    ENGINE.job().withKey(jobKey).withRetries(0).fail();
 
     // when
     final Record<JobRecordValue> jobRecord =
-        engineRule.job().withKey(jobKey).withRetries(3).expectRejection().fail();
+        ENGINE.job().withKey(jobKey).withRetries(3).expectRejection().fail();
 
     // then
     Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.INVALID_STATE);
@@ -213,11 +219,11 @@ public class FailJobTest {
   @Test
   public void shouldRejectFailIfJobCreated() {
     // given
-    final Record<JobRecordValue> job = engineRule.createJob(jobType, PROCESS_ID);
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
 
     // when
     final Record<JobRecordValue> jobRecord =
-        engineRule.job().withKey(job.getKey()).withRetries(3).expectRejection().fail();
+        ENGINE.job().withKey(job.getKey()).withRetries(3).expectRejection().fail();
 
     // then
     Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.INVALID_STATE);
@@ -227,12 +233,12 @@ public class FailJobTest {
   @Test
   public void shouldRejectFailIfJobCompleted() {
     // given
-    engineRule.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
-    engineRule
+    ENGINE
         .job()
         .withKey(jobKey)
         .withVariables(MsgPackUtil.asMsgPack(job.getVariables()))
@@ -240,7 +246,7 @@ public class FailJobTest {
 
     // when
     final Record<JobRecordValue> jobRecord =
-        engineRule.job().withKey(jobKey).withRetries(3).expectRejection().fail();
+        ENGINE.job().withKey(jobKey).withRetries(3).expectRejection().fail();
 
     // then
     Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.NOT_FOUND);

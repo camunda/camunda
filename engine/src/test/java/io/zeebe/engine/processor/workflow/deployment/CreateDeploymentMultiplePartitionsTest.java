@@ -33,6 +33,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,6 +41,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class CreateDeploymentMultiplePartitionsTest {
@@ -54,6 +56,10 @@ public class CreateDeploymentMultiplePartitionsTest {
   public static final int PARTITION_COUNT = 3;
 
   @ClassRule public static final EngineRule ENGINE = new EngineRule(PARTITION_COUNT);
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Test
   public void shouldCreateDeploymentOnAllPartitions() {

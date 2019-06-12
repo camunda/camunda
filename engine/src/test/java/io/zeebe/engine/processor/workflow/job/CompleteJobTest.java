@@ -35,10 +35,12 @@ import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.Strings;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class CompleteJobTest {
@@ -46,7 +48,11 @@ public class CompleteJobTest {
   private static final String PROCESS_ID = "process";
   private static String jobType;
 
-  @ClassRule public static EngineRule engineRule = new EngineRule();
+  @ClassRule public static final EngineRule ENGINE = new EngineRule();
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Before
   public void setup() {
@@ -56,13 +62,13 @@ public class CompleteJobTest {
   @Test
   public void shouldCompleteJob() {
     // given
-    engineRule.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
 
     // when
     final Record<JobRecordValue> jobCompletedRecord =
-        engineRule
+        ENGINE
             .job()
             .withKey(batchRecord.getValue().getJobKeys().get(0))
             .withVariables(MsgPackConstants.MSGPACK_VARIABLES)
@@ -89,7 +95,7 @@ public class CompleteJobTest {
 
     // when
     final Record<JobRecordValue> jobRecord =
-        engineRule
+        ENGINE
             .job()
             .withKey(key)
             .withVariables(MsgPackConstants.MSGPACK_VARIABLES)
@@ -103,12 +109,12 @@ public class CompleteJobTest {
   @Test
   public void shouldCompleteJobWithVariables() {
     // given
-    engineRule.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
 
     // when
     final Record<JobRecordValue> completedRecord =
-        engineRule
+        ENGINE
             .job()
             .withKey(batchRecord.getValue().getJobKeys().get(0))
             .withVariables(MsgPackConstants.MSGPACK_VARIABLES)
@@ -125,12 +131,12 @@ public class CompleteJobTest {
   @Test
   public void shouldCompleteJobWithNilVariables() {
     // given
-    engineRule.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
 
     // when
     final Record<JobRecordValue> completedRecord =
-        engineRule
+        ENGINE
             .job()
             .withKey(batchRecord.getValue().getJobKeys().get(0))
             .withVariables(new UnsafeBuffer(MsgPackHelper.NIL))
@@ -147,12 +153,12 @@ public class CompleteJobTest {
   @Test
   public void shouldCompleteJobWithZeroLengthVariables() {
     // given
-    engineRule.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
 
     // when
     final Record<JobRecordValue> completedRecord =
-        engineRule
+        ENGINE
             .job()
             .withKey(batchRecord.getValue().getJobKeys().get(0))
             .withVariables(new UnsafeBuffer(new byte[0]))
@@ -169,15 +175,15 @@ public class CompleteJobTest {
   @Test
   public void shouldCompleteJobWithNoVariables() {
     // given
-    final Record<JobRecordValue> job = engineRule.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
     final Record<JobRecordValue> activated =
         jobRecords(JobIntent.ACTIVATED).withRecordKey(job.getKey()).getFirst();
 
     // when
     final DirectBuffer variables = MsgPackUtil.asMsgPack(activated.getValue().getVariables());
     final Record<JobRecordValue> completedRecord =
-        engineRule
+        ENGINE
             .job()
             .withKey(batchRecord.getValue().getJobKeys().get(0))
             .withVariables(variables)
@@ -194,8 +200,8 @@ public class CompleteJobTest {
   @Test
   public void shouldThrowExceptionOnCompletionIfVariablesAreInvalid() {
     // given
-    engineRule.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
 
     final byte[] invalidVariables = new byte[] {1}; // positive fixnum, i.e. no object
 
@@ -203,7 +209,7 @@ public class CompleteJobTest {
     final Throwable throwable =
         catchThrowable(
             () ->
-                engineRule
+                ENGINE
                     .job()
                     .withKey(batchRecord.getValue().getJobKeys().get(0))
                     .withVariables(new UnsafeBuffer(invalidVariables))
@@ -220,17 +226,17 @@ public class CompleteJobTest {
   @Test
   public void shouldRejectCompletionIfJobIsCompleted() {
     // given
-    engineRule.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
 
     final DirectBuffer variables =
         MsgPackUtil.asMsgPack(batchRecord.getValue().getJobs().get(0).getVariables());
     final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    engineRule.job().withKey(jobKey).withVariables(variables).complete();
+    ENGINE.job().withKey(jobKey).withVariables(variables).complete();
 
     // when
     final Record<JobRecordValue> jobRecord =
-        engineRule.job().withKey(jobKey).withVariables(variables).expectRejection().complete();
+        ENGINE.job().withKey(jobKey).withVariables(variables).expectRejection().complete();
 
     // then
     Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.NOT_FOUND);
@@ -239,15 +245,15 @@ public class CompleteJobTest {
   @Test
   public void shouldRejectCompletionIfJobIsFailed() {
     // given
-    engineRule.createJob(jobType, PROCESS_ID);
+    ENGINE.createJob(jobType, PROCESS_ID);
 
     // when
-    final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
     final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    engineRule.job().withKey(jobKey).fail();
+    ENGINE.job().withKey(jobKey).fail();
 
     final Record<JobRecordValue> jobRecord =
-        engineRule
+        ENGINE
             .job()
             .withKey(jobKey)
             .withVariables(

@@ -31,20 +31,25 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class WorkflowInstanceTokenTest {
 
   @ClassRule public static final EngineRule ENGINE = new EngineRule();
 
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
+
   private String processId;
 
   @Before
   public void setUp() {
-    //    BROKER_RULE.getClock().reset();
     processId = Strings.newRandomValidBpmnId();
   }
 

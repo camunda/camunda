@@ -37,6 +37,7 @@ import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -44,11 +45,16 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.assertj.core.util.Files;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class WorkflowInstanceFunctionalTest {
 
   @ClassRule public static final EngineRule ENGINE = new EngineRule();
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Test
   public void shouldCreateWorkflowInstance() {

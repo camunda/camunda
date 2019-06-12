@@ -28,8 +28,10 @@ import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.util.Strings;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class JobUpdateRetriesTest {
@@ -38,7 +40,11 @@ public class JobUpdateRetriesTest {
 
   private static String jobType;
 
-  @ClassRule public static EngineRule engineRule = new EngineRule();
+  @ClassRule public static final EngineRule ENGINE = new EngineRule();
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Before
   public void setup() {
@@ -48,14 +54,14 @@ public class JobUpdateRetriesTest {
   @Test
   public void shouldUpdateRetries() {
     // given
-    engineRule.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     // when
     final Record<JobRecordValue> updatedRecord =
-        engineRule.job().withKey(jobKey).withRetries(NEW_RETRIES).updateRetries();
+        ENGINE.job().withKey(jobKey).withRetries(NEW_RETRIES).updateRetries();
 
     // then
     Assertions.assertThat(updatedRecord.getMetadata())
@@ -74,7 +80,7 @@ public class JobUpdateRetriesTest {
   public void shouldRejectUpdateRetriesIfJobNotFound() {
     // when
     final Record<JobRecordValue> jobRecord =
-        engineRule.job().withKey(123).withRetries(NEW_RETRIES).expectRejection().updateRetries();
+        ENGINE.job().withKey(123).withRetries(NEW_RETRIES).expectRejection().updateRetries();
 
     // then
     Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.NOT_FOUND);
@@ -83,15 +89,15 @@ public class JobUpdateRetriesTest {
   @Test
   public void shouldRejectUpdateRetriesIfJobCompleted() {
     // given
-    engineRule.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
 
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    engineRule.job().withKey(jobKey).withVariables("{}").complete();
+    ENGINE.job().withKey(jobKey).withVariables("{}").complete();
 
     // when
     final Record<JobRecordValue> jobRecord =
-        engineRule.job().withKey(jobKey).withRetries(NEW_RETRIES).expectRejection().updateRetries();
+        ENGINE.job().withKey(jobKey).withRetries(NEW_RETRIES).expectRejection().updateRetries();
 
     // then
     Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.NOT_FOUND);
@@ -100,13 +106,13 @@ public class JobUpdateRetriesTest {
   @Test
   public void shouldUpdateRetriesIfJobActivated() {
     // given
-    engineRule.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     // when
     final Record<JobRecordValue> response =
-        engineRule.job().withKey(jobKey).withRetries(NEW_RETRIES).updateRetries();
+        ENGINE.job().withKey(jobKey).withRetries(NEW_RETRIES).updateRetries();
 
     // then
     assertThat(response.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
@@ -118,11 +124,11 @@ public class JobUpdateRetriesTest {
   @Test
   public void shouldUpdateRetriesIfJobCreated() {
     // given
-    final long jobKey = engineRule.createJob(jobType, PROCESS_ID).getKey();
+    final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
 
     // when
     final Record<JobRecordValue> response =
-        engineRule.job().withKey(jobKey).withRetries(NEW_RETRIES).updateRetries();
+        ENGINE.job().withKey(jobKey).withRetries(NEW_RETRIES).updateRetries();
 
     // then
     assertThat(response.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
@@ -134,15 +140,15 @@ public class JobUpdateRetriesTest {
   @Test
   public void shouldRejectUpdateRetriesIfRetriesZero() {
     // given
-    engineRule.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
-    engineRule.job().withKey(jobKey).withRetries(0).fail();
+    ENGINE.job().withKey(jobKey).withRetries(0).fail();
 
     // when
     final Record<JobRecordValue> jobRecord =
-        engineRule.job().withKey(jobKey).withRetries(0).expectRejection().updateRetries();
+        ENGINE.job().withKey(jobKey).withRetries(0).expectRejection().updateRetries();
 
     // then
     Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.INVALID_ARGUMENT);
@@ -151,15 +157,15 @@ public class JobUpdateRetriesTest {
   @Test
   public void shouldRejectUpdateRetriesIfRetriesLessThanZero() {
     // given
-    engineRule.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = engineRule.jobs().withType(jobType).activate();
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
-    engineRule.job().withKey(jobKey).withRetries(0).fail();
+    ENGINE.job().withKey(jobKey).withRetries(0).fail();
 
     // when
     final Record<JobRecordValue> jobRecord =
-        engineRule.job().withKey(jobKey).withRetries(-1).expectRejection().updateRetries();
+        ENGINE.job().withKey(jobKey).withRetries(-1).expectRejection().updateRetries();
 
     // then
     Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.INVALID_ARGUMENT);
