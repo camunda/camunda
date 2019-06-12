@@ -1,4 +1,5 @@
 camunda.operate:
+  csrfPreventionEnabled: false
   startLoadingDataOnStartup: false
   elasticsearch:
     clusterName: docker-cluster
