@@ -14,12 +14,7 @@ import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.camunda.operate.qa.util.ZeebeTestUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,26 +73,15 @@ public class DataGenerator {
 
   private void startWorkflowInstances() {
 
-    ExecutorService executorService = createExecutorService();
-
     final BlockingQueue<Future> requestFutures = new ArrayBlockingQueue<>(dataGeneratorProperties.getQueueSize());
     ResponseChecker responseChecker = startWaitingForResponses(requestFutures);
 
-    sendStartWorkflowInstanceCommands(executorService, requestFutures);
+    InstancesStarter instancesStarter = sendStartWorkflowInstanceCommands(requestFutures);
 
     stopWaitingForResponses(responseChecker);
 
-    shutdownExecutorService(executorService);
+    instancesStarter.close();
 
-  }
-
-  private void shutdownExecutorService(ExecutorService executorService) {
-    executorService.shutdown();
-    try {
-      executorService.awaitTermination(60, TimeUnit.SECONDS);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
   }
 
   private ResponseChecker startWaitingForResponses(BlockingQueue<Future> requestFutures) {
@@ -119,31 +103,10 @@ public class DataGenerator {
     logger.info("{} workflow instances started", responseChecker.getResponseCount());
   }
 
-  private void sendStartWorkflowInstanceCommands(ExecutorService executorService, BlockingQueue<Future> requestFutures) {
-    AtomicInteger count = new AtomicInteger(0);
-    while (count.incrementAndGet() <= dataGeneratorProperties.getWorkflowInstanceCount()) {
-      executorService.submit(() -> {
-        //magic to avoid timeout
-//        if (count.get() % 10000 == 0) {
-//          try {
-//            Thread.sleep(2000);
-//          } catch (InterruptedException e) {
-//            Thread.currentThread().interrupt();
-//          }
-//        }
-        try {
-          requestFutures.put(ZeebeTestUtil.startWorkflowInstanceAsync(zeebeClient, getRandomBpmnProcessId(), "{\"var1\": \"value1\"}"));
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
-      });
-    }
-  }
-
-  private ExecutorService createExecutorService() {
-    int numberOfThreads = dataGeneratorProperties.getNumberOfThreads();
-    return new ThreadPoolExecutor(numberOfThreads, numberOfThreads, 0L, TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<>(Integer.MAX_VALUE));
+  private InstancesStarter sendStartWorkflowInstanceCommands(BlockingQueue<Future> requestFutures) {
+    InstancesStarter instancesStarter = new InstancesStarter(requestFutures);
+    instancesStarter.start();
+    return instancesStarter;
   }
 
   @PreDestroy
@@ -214,13 +177,38 @@ public class DataGenerator {
       return responseCount;
     }
 
-    public void setResponseCount(int responseCount) {
-      this.responseCount = responseCount;
+    public void close() {
+      shuttingDown = true;
+      interrupt();
+    }
+  }
+
+  class InstancesStarter extends Thread {
+
+    private final BlockingQueue<Future> futures;
+
+    private boolean shuttingDown = false;
+
+    public InstancesStarter(BlockingQueue<Future> futures) {
+      this.futures = futures;
+    }
+
+    @Override
+    public void run() {
+      int count = 0;
+      while (count++ <= dataGeneratorProperties.getWorkflowInstanceCount() && ! shuttingDown) {
+        try {
+          futures.put(ZeebeTestUtil.startWorkflowInstanceAsync(zeebeClient, getRandomBpmnProcessId(), "{\"var1\": \"value1\"}"));
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      }
     }
 
     public void close() {
       shuttingDown = true;
       interrupt();
     }
+
   }
 }

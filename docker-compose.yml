@@ -25,6 +25,7 @@ services:
       - cluster.name=docker-cluster
       - bootstrap.memory_lock=true
       - processors=1
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ulimits:
       memlock:
         soft: -1
@@ -45,6 +46,7 @@ services:
     container_name: zeebe
     image: camunda/zeebe:0.18.0
     environment:
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
       - ZEEBE_PARTITIONS_COUNT=2
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
