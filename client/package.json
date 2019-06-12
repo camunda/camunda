@@ -8,6 +8,7 @@
     "lodash": "^4.17.11",
     "prop-types": "^15.6.2",
     "react": "^16.8.6",
+    "react-contenteditable": "^3.2.6",
     "react-dom": "^16.8.6",
     "react-router-dom": "^4.3.1",
     "react-transition-group": "^2.5.3",
@@ -46,17 +47,8 @@
     "react-styleguidist": "^9.1.4"
   },
   "lint-staged": {
-    "src/**/*.js": [
-      "eslint --fix",
-      "prettier --write",
-      "git add"
-    ]
+    "src/**/*.js": ["eslint --fix", "prettier --write", "git add"]
   },
   "proxy": "http://localhost:8080",
-  "browserslist": [
-    ">0.2%",
-    "not dead",
-    "not ie <= 11",
-    "not op_mini all"
-  ]
+  "browserslist": [">0.2%", "not dead", "not ie <= 11", "not op_mini all"]
 }

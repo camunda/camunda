@@ -6,6 +6,7 @@
 
 import React from 'react';
 import {shallow, mount} from 'enzyme';
+import {act} from 'react-dom/test-utils';
 
 import {createActivity, createMetadata} from 'modules/testUtils';
 import {Colors, ThemeProvider} from 'modules/theme';
@@ -394,50 +395,22 @@ describe('Diagram', () => {
       });
     });
 
-    it('should render a modal with the detailed metadata', () => {
-      // given
-      const node = mountNode({
-        selectedFlowNodeId: activityId,
-        selectedFlowNodeName: activityId,
-        metadata: mockMetadata
-      });
-      const overlayNode = node.find('Overlay');
-      const moreButton = overlayNode.find('button[data-test="more-metadata"]');
-
-      // when
-      moreButton.simulate('click');
-      node.update();
-
-      // then
-      const modalNode = node.find('Modal');
-      expect(modalNode).toHaveLength(1);
-      const modalNodeText = modalNode.text();
-      Object.entries(mockMetadata.data).forEach(([key, value]) => {
-        expect(modalNodeText.includes(key)).toBe(true);
-        expect(modalNodeText.includes(value)).toBe(true);
-      });
-    });
-
     it('should render a modal with the detailed metadata and a button to select the flownode', () => {
       // given
-      const node = mountNode({
+      let node;
+
+      node = mountNode({
         selectedFlowNodeId: activityId,
         selectedFlowNodeName: activityId,
         metadata: {...mockMetadata, isSingleRowPeterCase: true}
       });
+
       const overlayNode = node.find('Overlay');
       const moreButton = overlayNode.find('button[data-test="more-metadata"]');
 
       // when
       moreButton.simulate('click');
       node.update();
-
-      // then
-      const modalNodeText = node.find('Modal').text();
-      Object.entries(mockMetadata.data).forEach(([key, value]) => {
-        expect(modalNodeText.includes(key)).toBe(true);
-        expect(modalNodeText.includes(value)).toBe(true);
-      });
 
       // when
       node.find('button[data-test="select-flownode"]').simulate('click');
