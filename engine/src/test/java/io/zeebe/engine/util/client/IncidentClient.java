@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.engine.util;
+package io.zeebe.engine.util.client;
 
+import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.IncidentRecordValue;
 import io.zeebe.protocol.Protocol;

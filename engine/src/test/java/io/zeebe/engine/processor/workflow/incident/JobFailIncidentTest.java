@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.engine.util.JobClient;
+import io.zeebe.engine.util.client.JobClient;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.RecordMetadata;
 import io.zeebe.exporter.api.record.value.IncidentRecordValue;

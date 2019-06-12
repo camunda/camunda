@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.data.MapEntry.entry;
 
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.engine.util.WorkflowInstanceClient.WorkflowInstanceCreationClient;
+import io.zeebe.engine.util.client.WorkflowInstanceClient.WorkflowInstanceCreationClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.SubscriptionUtil;

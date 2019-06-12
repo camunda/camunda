@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.engine.processor.workflow.MsgPackConstants;
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.engine.util.PublishMessageClient;
+import io.zeebe.engine.util.client.PublishMessageClient;
 import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.MessageRecordValue;

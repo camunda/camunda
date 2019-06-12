@@ -23,7 +23,7 @@ import static io.zeebe.test.util.record.RecordingExporter.messageStartEventSubsc
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.engine.util.PublishMessageClient;
+import io.zeebe.engine.util.client.PublishMessageClient;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
