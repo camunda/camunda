@@ -59,7 +59,7 @@ public class BootstrapPartitions implements Service<Void> {
     atomix = atomixInjector.getValue();
 
     final RaftPartitionGroup partitionGroup =
-        (RaftPartitionGroup) atomix.getPartitionService().getPartitionGroup("raft-atomix");
+        (RaftPartitionGroup) atomix.getPartitionService().getPartitionGroup(Partition.GROUP_NAME);
 
     final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
     final List<RaftPartition> owningPartitions =

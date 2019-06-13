@@ -33,4 +33,7 @@ public class SystemServiceNames {
       LEADER_MANAGEMENT_REQUEST_HANDLER =
           ServiceName.newServiceName(
               "broker.system.management.requestHandler", LeaderManagementRequestHandler.class);
+
+  public static final ServiceName<Void> BROKER_HEALTH_CHECK_SERVICE =
+      ServiceName.newServiceName("broker.system.monitoring.healthcheck", Void.class);
 }
