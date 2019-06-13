@@ -15,6 +15,7 @@
  */
 package io.zeebe.protocol.impl.record.value.message;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.DocumentProperty;
@@ -51,6 +52,7 @@ public class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(closeOnCorrelateProp);
   }
 
+  @JsonIgnore
   public int getSubscriptionPartitionId() {
     return subscriptionPartitionIdProp.getValue();
   }
@@ -78,6 +80,7 @@ public class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
+  @JsonIgnore
   public long getMessageKey() {
     return messageKeyProp.getValue();
   }
@@ -126,6 +129,11 @@ public class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
 
   @Override
   public Map<String, Object> getVariablesAsMap() {
-    throw new UnsupportedOperationException("not yet implemented");
+    return MsgPackConverter.convertToMap(variablesProp.getValue());
+  }
+
+  @Override
+  public String toJson() {
+    return MsgPackConverter.convertRecordToJson(this);
   }
 }

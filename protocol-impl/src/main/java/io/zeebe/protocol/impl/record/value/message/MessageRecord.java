@@ -128,6 +128,11 @@ public class MessageRecord extends UnifiedRecordValue implements MessageRecordVa
 
   @Override
   public Map<String, Object> getVariablesAsMap() {
-    throw new UnsupportedOperationException("not yet implemented");
+    return MsgPackConverter.convertToMap(variablesProp.getValue());
+  }
+
+  @Override
+  public String toJson() {
+    return MsgPackConverter.convertRecordToJson(this);
   }
 }

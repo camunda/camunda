@@ -15,12 +15,14 @@
  */
 package io.zeebe.protocol.impl.record.value.workflowinstance;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.WorkflowInstanceRelated;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
@@ -94,6 +96,7 @@ public class WorkflowInstanceCreationRecord extends UnifiedRecordValue
   }
 
   @Override
+  @JsonIgnore
   public long getWorkflowInstanceKey() {
     return getInstanceKey();
   }
@@ -105,11 +108,11 @@ public class WorkflowInstanceCreationRecord extends UnifiedRecordValue
 
   @Override
   public Map<String, Object> getVariables() {
-    throw new UnsupportedOperationException("not yet implemented");
+    return MsgPackConverter.convertToMap(variablesProperty.getValue());
   }
 
   @Override
   public String toJson() {
-    throw new UnsupportedOperationException("not yet implemented");
+    return MsgPackConverter.convertRecordToJson(this);
   }
 }

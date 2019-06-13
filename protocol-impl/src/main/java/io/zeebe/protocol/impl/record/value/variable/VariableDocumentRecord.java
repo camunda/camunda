@@ -115,4 +115,9 @@ public class VariableDocumentRecord extends UnifiedRecordValue
         + "} "
         + super.toString();
   }
+
+  @Override
+  public String toJson() {
+    return MsgPackConverter.convertRecordToJson(this);
+  }
 }
