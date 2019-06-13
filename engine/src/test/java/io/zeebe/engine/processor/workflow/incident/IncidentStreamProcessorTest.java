@@ -20,10 +20,10 @@ package io.zeebe.engine.processor.workflow.incident;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.state.instance.IncidentState;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import java.util.List;
@@ -52,7 +52,7 @@ public class IncidentStreamProcessorTest {
     // then
     streamProcessorRule.awaitIncidentRejection(IncidentIntent.CREATE);
 
-    final List<TypedRecord<IncidentRecord>> incidentEvents =
+    final List<Record<IncidentRecord>> incidentEvents =
         envRule.events().onlyIncidentRecords().collect(Collectors.toList());
     Assertions.assertThat(incidentEvents)
         .extracting(r -> r.getMetadata())
@@ -74,7 +74,7 @@ public class IncidentStreamProcessorTest {
     // then
     streamProcessorRule.awaitIncidentRejection(IncidentIntent.CREATE);
 
-    final List<TypedRecord<IncidentRecord>> incidentEvents =
+    final List<Record<IncidentRecord>> incidentEvents =
         envRule.events().onlyIncidentRecords().collect(Collectors.toList());
     Assertions.assertThat(incidentEvents)
         .extracting(r -> r.getMetadata())
@@ -96,7 +96,7 @@ public class IncidentStreamProcessorTest {
     // then
     streamProcessorRule.awaitIncidentRejection(IncidentIntent.RESOLVE);
 
-    final List<TypedRecord<IncidentRecord>> incidentEvents =
+    final List<Record<IncidentRecord>> incidentEvents =
         envRule.events().onlyIncidentRecords().collect(Collectors.toList());
     Assertions.assertThat(incidentEvents)
         .extracting(r -> r.getMetadata())

@@ -17,6 +17,7 @@
  */
 package io.zeebe.engine.util;
 
+import io.zeebe.engine.processor.CopiedRecords;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -59,69 +60,61 @@ public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
 
   public TypedRecordStream<JobRecord> onlyJobRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isJobRecord).map(e -> CopiedTypedEvent.toTypedEvent(e, JobRecord.class)));
+        filter(Records::isJobRecord).map(CopiedRecords::createCopiedRecord));
   }
 
   public TypedRecordStream<IncidentRecord> onlyIncidentRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isIncidentRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, IncidentRecord.class)));
+        filter(Records::isIncidentRecord).map(CopiedRecords::createCopiedRecord));
   }
 
   public TypedRecordStream<DeploymentRecord> onlyDeploymentRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isDeploymentRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, DeploymentRecord.class)));
+        filter(Records::isDeploymentRecord).map(CopiedRecords::createCopiedRecord));
   }
 
   public TypedRecordStream<WorkflowInstanceRecord> onlyWorkflowInstanceRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isWorkflowInstanceRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceRecord.class)));
+        filter(Records::isWorkflowInstanceRecord).map(CopiedRecords::createCopiedRecord));
   }
 
   public TypedRecordStream<MessageRecord> onlyMessageRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isMessageRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, MessageRecord.class)));
+        filter(Records::isMessageRecord).map(CopiedRecords::createCopiedRecord));
   }
 
   public TypedRecordStream<MessageSubscriptionRecord> onlyMessageSubscriptionRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isMessageSubscriptionRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, MessageSubscriptionRecord.class)));
+        filter(Records::isMessageSubscriptionRecord).map(CopiedRecords::createCopiedRecord));
   }
 
   public TypedRecordStream<MessageStartEventSubscriptionRecord>
       onlyMessageStartEventSubscriptionRecords() {
     return new TypedRecordStream<>(
         filter(Records::isMessageStartEventSubscriptionRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, MessageStartEventSubscriptionRecord.class)));
+            .map(CopiedRecords::createCopiedRecord));
   }
 
   public TypedRecordStream<WorkflowInstanceSubscriptionRecord>
       onlyWorkflowInstanceSubscriptionRecords() {
     return new TypedRecordStream<>(
         filter(Records::isWorkflowInstanceSubscriptionRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceSubscriptionRecord.class)));
+            .map(CopiedRecords::createCopiedRecord));
   }
 
   public TypedRecordStream<TimerRecord> onlyTimerRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isTimerRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, TimerRecord.class)));
+        filter(Records::isTimerRecord).map(CopiedRecords::createCopiedRecord));
   }
 
   public TypedRecordStream<WorkflowInstanceCreationRecord> onlyWorkflowInstanceCreationRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isWorkflowInstanceCreationRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceCreationRecord.class)));
+        filter(Records::isWorkflowInstanceCreationRecord).map(CopiedRecords::createCopiedRecord));
   }
 
   public TypedRecordStream<ErrorRecord> onlyErrorRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isErrorRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, ErrorRecord.class)));
+        filter(Records::isErrorRecord).map(CopiedRecords::createCopiedRecord));
   }
 
   /**

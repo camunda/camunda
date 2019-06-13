@@ -15,6 +15,7 @@
  */
 package io.zeebe.protocol.impl.record.value.message;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
@@ -44,40 +45,17 @@ public class MessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(closeOnCorrelateProp);
   }
 
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProp.getValue();
+  public boolean shouldCloseOnCorrelate() {
+    return closeOnCorrelateProp.getValue();
   }
 
-  public MessageSubscriptionRecord setWorkflowInstanceKey(long key) {
-    workflowInstanceKeyProp.setValue(key);
-    return this;
-  }
-
-  public long getElementInstanceKey() {
-    return elementInstanceKeyProp.getValue();
-  }
-
-  public MessageSubscriptionRecord setElementInstanceKey(long key) {
-    elementInstanceKeyProp.setValue(key);
-    return this;
-  }
-
-  public DirectBuffer getMessageNameBuffer() {
-    return messageNameProp.getValue();
-  }
-
-  public MessageSubscriptionRecord setMessageName(DirectBuffer messageName) {
-    messageNameProp.setValue(messageName);
-    return this;
-  }
-
+  @JsonIgnore
   public DirectBuffer getCorrelationKeyBuffer() {
     return correlationKeyProp.getValue();
   }
 
-  public MessageSubscriptionRecord setCorrelationKey(DirectBuffer correlationKey) {
-    correlationKeyProp.setValue(correlationKey);
-    return this;
+  public long getElementInstanceKey() {
+    return elementInstanceKeyProp.getValue();
   }
 
   @Override
@@ -90,8 +68,18 @@ public class MessageSubscriptionRecord extends UnifiedRecordValue
     return BufferUtil.bufferAsString(correlationKeyProp.getValue());
   }
 
-  public boolean shouldCloseOnCorrelate() {
-    return closeOnCorrelateProp.getValue();
+  @JsonIgnore
+  public long getMessageKey() {
+    return messageKeyProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getMessageNameBuffer() {
+    return messageNameProp.getValue();
+  }
+
+  public long getWorkflowInstanceKey() {
+    return workflowInstanceKeyProp.getValue();
   }
 
   public MessageSubscriptionRecord setCloseOnCorrelate(boolean closeOnCorrelate) {
@@ -99,12 +87,28 @@ public class MessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  public long getMessageKey() {
-    return messageKeyProp.getValue();
+  public MessageSubscriptionRecord setCorrelationKey(DirectBuffer correlationKey) {
+    correlationKeyProp.setValue(correlationKey);
+    return this;
+  }
+
+  public MessageSubscriptionRecord setElementInstanceKey(long key) {
+    elementInstanceKeyProp.setValue(key);
+    return this;
   }
 
   public MessageSubscriptionRecord setMessageKey(long messageKey) {
     this.messageKeyProp.setValue(messageKey);
+    return this;
+  }
+
+  public MessageSubscriptionRecord setMessageName(DirectBuffer messageName) {
+    messageNameProp.setValue(messageName);
+    return this;
+  }
+
+  public MessageSubscriptionRecord setWorkflowInstanceKey(long key) {
+    workflowInstanceKeyProp.setValue(key);
     return this;
   }
 }

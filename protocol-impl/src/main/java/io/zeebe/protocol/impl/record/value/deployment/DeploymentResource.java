@@ -17,6 +17,7 @@ package io.zeebe.protocol.impl.record.value.deployment;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapArray;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.BinaryProperty;
 import io.zeebe.msgpack.property.EnumProperty;
@@ -43,8 +44,55 @@ public class DeploymentResource extends UnpackedObject
         .declareProperty(resourceProp);
   }
 
+  public static ResourceType getResourceType(String resourceName) {
+    resourceName = resourceName.toLowerCase();
+
+    if (resourceName.endsWith(".yaml")) {
+      return ResourceType.YAML_WORKFLOW;
+    } else if (resourceName.endsWith(".bpmn") || resourceName.endsWith(".bpmn20.xml")) {
+      return ResourceType.BPMN_XML;
+    } else {
+      throw new RuntimeException(
+          String.format(
+              "Expected to resolve type of resource '%s', but could not; should be a .bpmn or .yaml file",
+              resourceName));
+    }
+  }
+
+  @Override
+  public byte[] getResource() {
+    return BufferUtil.bufferAsArray(resourceProp.getValue());
+  }
+
+  public ResourceType getResourceType() {
+    return resourceTypeProp.getValue();
+  }
+
+  @Override
+  public String getResourceName() {
+    return BufferUtil.bufferAsString(resourceNameProp.getValue());
+  }
+
+  @JsonIgnore
   public DirectBuffer getResourceBuffer() {
     return resourceProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getResourceNameBuffer() {
+    return resourceNameProp.getValue();
+  }
+
+  @Override
+  @JsonIgnore
+  public int getLength() {
+    return super.getLength();
+  }
+
+  @Override
+  @JsonIgnore
+  public int getEncodedLength() {
+    return super.getEncodedLength();
   }
 
   public DeploymentResource setResource(byte[] resource) {
@@ -60,19 +108,6 @@ public class DeploymentResource extends UnpackedObject
     return this;
   }
 
-  public ResourceType getResourceType() {
-    return resourceTypeProp.getValue();
-  }
-
-  public DeploymentResource setResourceType(ResourceType resourceType) {
-    this.resourceTypeProp.setValue(resourceType);
-    return this;
-  }
-
-  public DirectBuffer getResourceNameBuffer() {
-    return resourceNameProp.getValue();
-  }
-
   public DeploymentResource setResourceName(String resourceName) {
     this.resourceNameProp.setValue(resourceName);
     return this;
@@ -83,28 +118,8 @@ public class DeploymentResource extends UnpackedObject
     return this;
   }
 
-  @Override
-  public byte[] getResource() {
-    return BufferUtil.bufferAsArray(resourceProp.getValue());
-  }
-
-  @Override
-  public String getResourceName() {
-    return BufferUtil.bufferAsString(resourceNameProp.getValue());
-  }
-
-  public static ResourceType getResourceType(String resourceName) {
-    resourceName = resourceName.toLowerCase();
-
-    if (resourceName.endsWith(".yaml")) {
-      return ResourceType.YAML_WORKFLOW;
-    } else if (resourceName.endsWith(".bpmn") || resourceName.endsWith(".bpmn20.xml")) {
-      return ResourceType.BPMN_XML;
-    } else {
-      throw new RuntimeException(
-          String.format(
-              "Expected to resolve type of resource '%s', but could not; should be a .bpmn or .yaml file",
-              resourceName));
-    }
+  public DeploymentResource setResourceType(ResourceType resourceType) {
+    this.resourceTypeProp.setValue(resourceType);
+    return this;
   }
 }

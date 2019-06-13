@@ -15,7 +15,9 @@
  */
 package io.zeebe.protocol.impl.record;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.record.MessageHeaderDecoder;
 import io.zeebe.protocol.record.MessageHeaderEncoder;
 import io.zeebe.protocol.record.RecordMetadataDecoder;
@@ -47,10 +49,9 @@ public class RecordMetadata
   private short intentValue = Intent.NULL_VAL;
   private Intent intent = null;
   private int partitionId;
-  protected int requestStreamId;
+  private int requestStreamId;
   protected long requestId;
-  protected int protocolVersion =
-      Protocol.PROTOCOL_VERSION; // always the current version by default
+  private int protocolVersion = Protocol.PROTOCOL_VERSION; // always the current version by default
   protected ValueType valueType = ValueType.NULL_VAL;
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
@@ -89,6 +90,7 @@ public class RecordMetadata
   }
 
   @Override
+  @JsonIgnore
   public int getLength() {
     return BLOCK_LENGTH
         + RecordMetadataEncoder.rejectionReasonHeaderLength()
@@ -128,6 +130,7 @@ public class RecordMetadata
     }
   }
 
+  @JsonIgnore
   public long getRequestId() {
     return requestId;
   }
@@ -137,6 +140,7 @@ public class RecordMetadata
     return this;
   }
 
+  @JsonIgnore
   public int getRequestStreamId() {
     return requestStreamId;
   }
@@ -151,6 +155,7 @@ public class RecordMetadata
     return this;
   }
 
+  @JsonIgnore
   public int getProtocolVersion() {
     return protocolVersion;
   }
@@ -203,6 +208,7 @@ public class RecordMetadata
     return this;
   }
 
+  @JsonIgnore
   public DirectBuffer getRejectionReasonBuffer() {
     return rejectionReason;
   }
@@ -224,7 +230,7 @@ public class RecordMetadata
 
   @Override
   public String toJson() {
-    throw new UnsupportedOperationException("not yet implemented");
+    return MsgPackConverter.convertJsonSerializableObjectToJson(this);
   }
 
   public RecordMetadata reset() {

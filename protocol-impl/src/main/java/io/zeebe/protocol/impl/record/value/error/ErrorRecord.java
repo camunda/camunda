@@ -15,15 +15,18 @@
  */
 package io.zeebe.protocol.impl.record.value.error;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.value.ErrorRecordValue;
+import io.zeebe.util.buffer.BufferUtil;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
 
-public class ErrorRecord extends UnifiedRecordValue {
+public class ErrorRecord extends UnifiedRecordValue implements ErrorRecordValue {
 
   private static final String NULL_MESSAGE = "Without exception message.";
 
@@ -54,11 +57,13 @@ public class ErrorRecord extends UnifiedRecordValue {
     errorEventPositionProp.setValue(position);
   }
 
-  public DirectBuffer getExceptionMessage() {
+  @JsonIgnore
+  public DirectBuffer getExceptionMessageBuffer() {
     return exceptionMessageProp.getValue();
   }
 
-  public DirectBuffer getStacktrace() {
+  @JsonIgnore
+  public DirectBuffer getStacktraceBuffer() {
     return stacktraceProp.getValue();
   }
 
@@ -73,5 +78,15 @@ public class ErrorRecord extends UnifiedRecordValue {
   public ErrorRecord setWorkflowInstanceKey(long workflowInstanceKey) {
     this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
     return this;
+  }
+
+  @Override
+  public String getExceptionMessage() {
+    return BufferUtil.bufferAsString(exceptionMessageProp.getValue());
+  }
+
+  @Override
+  public String getStacktrace() {
+    return BufferUtil.bufferAsString(stacktraceProp.getValue());
   }
 }

@@ -19,6 +19,7 @@ import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInsta
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_KEY;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
@@ -41,8 +42,55 @@ public class Workflow extends UnpackedObject implements DeployedWorkflow {
         .declareProperty(resourceNameProp);
   }
 
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  public int getVersion() {
+    return versionProp.getValue();
+  }
+
+  @Override
+  public long getWorkflowKey() {
+    return getKey();
+  }
+
+  @JsonIgnore
+  public long getKey() {
+    return keyProp.getValue();
+  }
+
+  @Override
+  public String getResourceName() {
+    return BufferUtil.bufferAsString(resourceNameProp.getValue());
+  }
+
+  @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
     return bpmnProcessIdProp.getValue();
+  }
+
+  @Override
+  @JsonIgnore
+  public int getEncodedLength() {
+    return super.getEncodedLength();
+  }
+
+  @Override
+  @JsonIgnore
+  public int getLength() {
+    return super.getLength();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getResourceNameBuffer() {
+    return resourceNameProp.getValue();
+  }
+
+  public Workflow setBpmnProcessId(DirectBuffer bpmnProcessId, int offset, int length) {
+    this.bpmnProcessIdProp.setValue(bpmnProcessId, offset, length);
+    return this;
   }
 
   public Workflow setBpmnProcessId(String bpmnProcessId) {
@@ -55,31 +103,9 @@ public class Workflow extends UnpackedObject implements DeployedWorkflow {
     return this;
   }
 
-  public Workflow setBpmnProcessId(DirectBuffer bpmnProcessId, int offset, int length) {
-    this.bpmnProcessIdProp.setValue(bpmnProcessId, offset, length);
-    return this;
-  }
-
-  public int getVersion() {
-    return versionProp.getValue();
-  }
-
-  public Workflow setVersion(int version) {
-    this.versionProp.setValue(version);
-    return this;
-  }
-
-  public long getKey() {
-    return keyProp.getValue();
-  }
-
   public Workflow setKey(long key) {
     this.keyProp.setValue(key);
     return this;
-  }
-
-  public DirectBuffer getResourceNameBuffer() {
-    return resourceNameProp.getValue();
   }
 
   public Workflow setResourceName(String resourceName) {
@@ -92,18 +118,8 @@ public class Workflow extends UnpackedObject implements DeployedWorkflow {
     return this;
   }
 
-  @Override
-  public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
-  }
-
-  @Override
-  public long getWorkflowKey() {
-    return getKey();
-  }
-
-  @Override
-  public String getResourceName() {
-    return BufferUtil.bufferAsString(resourceNameProp.getValue());
+  public Workflow setVersion(int version) {
+    this.versionProp.setValue(version);
+    return this;
   }
 }

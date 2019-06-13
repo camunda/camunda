@@ -32,12 +32,12 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.util.CopiedTypedEvent;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
@@ -58,7 +58,6 @@ import org.mockito.verification.VerificationWithTimeout;
 
 public class StreamProcessorTest {
 
-  private static final int MAX_SNAPSHOTS = 1;
   private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(1);
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
@@ -251,7 +250,7 @@ public class StreamProcessorTest {
         streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     // then
-    final TypedRecord<WorkflowInstanceRecord> activatedEvent =
+    final Record<WorkflowInstanceRecord> activatedEvent =
         doRepeatedly(
                 () ->
                     streamProcessorRule
@@ -766,9 +765,9 @@ public class StreamProcessorTest {
     // then
     processLatch.await();
 
-    final TypedRecord<ErrorRecord> errorRecord =
+    final Record<ErrorRecord> errorRecord =
         streamProcessorRule.events().onlyErrorRecords().getFirst();
 
-    assertThat(lastCommitPosition.get()).isEqualTo(((CopiedTypedEvent) errorRecord).getPosition());
+    assertThat(lastCommitPosition.get()).isEqualTo(errorRecord.getPosition());
   }
 }

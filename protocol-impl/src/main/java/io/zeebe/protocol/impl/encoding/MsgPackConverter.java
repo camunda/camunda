@@ -22,10 +22,12 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonParser.Feature;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.protocol.record.JsonSerializable;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -56,7 +58,11 @@ public class MsgPackConverter {
       new MessagePackFactory().setReuseResourceInGenerator(false).setReuseResourceInParser(false);
   private static final JsonFactory JSON_FACTORY =
       new MappingJsonFactory().configure(Feature.ALLOW_SINGLE_QUOTES, true);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(JSON_FACTORY);
+
+  private static final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper(JSON_FACTORY);
+
+  private static final ObjectMapper MESSSAGE_PACK_OBJECT_MAPPER =
+      new ObjectMapper(MESSAGE_PACK_FACTORY);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////// JSON to MSGPACK //////////////////////////////////////////
@@ -146,8 +152,26 @@ public class MsgPackConverter {
     final TypeReference<HashMap<String, Object>> typeRef =
         new TypeReference<HashMap<String, Object>>() {};
     try {
-      return OBJECT_MAPPER.readValue(jsonBytes, typeRef);
+      return JSON_OBJECT_MAPPER.readValue(jsonBytes, typeRef);
     } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static byte[] convertToMsgPack(Object value) {
+    try {
+      return MESSSAGE_PACK_OBJECT_MAPPER.writeValueAsBytes(value);
+    } catch (IOException e) {
+      throw new RuntimeException(
+          String.format("Failed to serialize object '%s' to Msgpack", value), e);
+    }
+  }
+
+  public static String convertJsonSerializableObjectToJson(JsonSerializable recordValue) {
+    try {
+
+      return JSON_OBJECT_MAPPER.writeValueAsString(recordValue);
+    } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
   }

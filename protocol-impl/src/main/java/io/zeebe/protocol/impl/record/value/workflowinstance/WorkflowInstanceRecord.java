@@ -15,6 +15,7 @@
  */
 package io.zeebe.protocol.impl.record.value.workflowinstance;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
@@ -62,8 +63,66 @@ public class WorkflowInstanceRecord extends UnifiedRecordValue
         .declareProperty(bpmnElementTypeProp);
   }
 
+  public void wrap(WorkflowInstanceRecord record) {
+    elementIdProp.setValue(record.getElementIdBuffer());
+    bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
+    flowScopeKeyProp.setValue(record.getFlowScopeKey());
+    versionProp.setValue(record.getVersion());
+    workflowKeyProp.setValue(record.getWorkflowKey());
+    workflowInstanceKeyProp.setValue(record.getWorkflowInstanceKey());
+    bpmnElementTypeProp.setValue(record.getBpmnElementType());
+  }
+
+  @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
     return bpmnProcessIdProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getElementIdBuffer() {
+    return elementIdProp.getValue();
+  }
+
+  @Override
+  public long getWorkflowInstanceKey() {
+    return workflowInstanceKeyProp.getValue();
+  }
+
+  public WorkflowInstanceRecord setBpmnProcessId(
+      DirectBuffer directBuffer, int offset, int length) {
+    bpmnProcessIdProp.setValue(directBuffer, offset, length);
+    return this;
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  public int getVersion() {
+    return versionProp.getValue();
+  }
+
+  public long getWorkflowKey() {
+    return workflowKeyProp.getValue();
+  }
+
+  @Override
+  public String getElementId() {
+    return BufferUtil.bufferAsString(elementIdProp.getValue());
+  }
+
+  public long getFlowScopeKey() {
+    return flowScopeKeyProp.getValue();
+  }
+
+  public BpmnElementType getBpmnElementType() {
+    return bpmnElementTypeProp.getValue();
+  }
+
+  public WorkflowInstanceRecord setBpmnElementType(BpmnElementType bpmnType) {
+    bpmnElementTypeProp.setValue(bpmnType);
+    return this;
   }
 
   public WorkflowInstanceRecord setBpmnProcessId(String bpmnProcessId) {
@@ -74,16 +133,6 @@ public class WorkflowInstanceRecord extends UnifiedRecordValue
   public WorkflowInstanceRecord setBpmnProcessId(DirectBuffer directBuffer) {
     bpmnProcessIdProp.setValue(directBuffer);
     return this;
-  }
-
-  public WorkflowInstanceRecord setBpmnProcessId(
-      DirectBuffer directBuffer, int offset, int length) {
-    bpmnProcessIdProp.setValue(directBuffer, offset, length);
-    return this;
-  }
-
-  public DirectBuffer getElementIdBuffer() {
-    return elementIdProp.getValue();
   }
 
   public WorkflowInstanceRecord setElementId(String elementId) {
@@ -100,27 +149,9 @@ public class WorkflowInstanceRecord extends UnifiedRecordValue
     return this;
   }
 
-  @Override
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProp.getValue();
-  }
-
-  public WorkflowInstanceRecord setWorkflowInstanceKey(long workflowInstanceKey) {
-    this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
-    return this;
-  }
-
-  public long getFlowScopeKey() {
-    return flowScopeKeyProp.getValue();
-  }
-
   public WorkflowInstanceRecord setFlowScopeKey(long flowScopeKey) {
     this.flowScopeKeyProp.setValue(flowScopeKey);
     return this;
-  }
-
-  public int getVersion() {
-    return versionProp.getValue();
   }
 
   public WorkflowInstanceRecord setVersion(int version) {
@@ -128,41 +159,13 @@ public class WorkflowInstanceRecord extends UnifiedRecordValue
     return this;
   }
 
-  public long getWorkflowKey() {
-    return workflowKeyProp.getValue();
+  public WorkflowInstanceRecord setWorkflowInstanceKey(long workflowInstanceKey) {
+    this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
+    return this;
   }
 
   public WorkflowInstanceRecord setWorkflowKey(long workflowKey) {
     this.workflowKeyProp.setValue(workflowKey);
     return this;
-  }
-
-  public BpmnElementType getBpmnElementType() {
-    return bpmnElementTypeProp.getValue();
-  }
-
-  public WorkflowInstanceRecord setBpmnElementType(BpmnElementType bpmnType) {
-    bpmnElementTypeProp.setValue(bpmnType);
-    return this;
-  }
-
-  public void wrap(WorkflowInstanceRecord record) {
-    elementIdProp.setValue(record.getElementIdBuffer());
-    bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
-    flowScopeKeyProp.setValue(record.getFlowScopeKey());
-    versionProp.setValue(record.getVersion());
-    workflowKeyProp.setValue(record.getWorkflowKey());
-    workflowInstanceKeyProp.setValue(record.getWorkflowInstanceKey());
-    bpmnElementTypeProp.setValue(record.getBpmnElementType());
-  }
-
-  @Override
-  public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
-  }
-
-  @Override
-  public String getElementId() {
-    return BufferUtil.bufferAsString(elementIdProp.getValue());
   }
 }

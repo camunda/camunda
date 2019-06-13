@@ -15,6 +15,8 @@
  */
 package io.zeebe.protocol.impl.record.value.job;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
@@ -59,55 +61,13 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
         .declareProperty(truncatedProp);
   }
 
-  public DirectBuffer getTypeBuffer() {
-    return typeProp.getValue();
-  }
-
-  public JobBatchRecord setType(String type) {
-    this.typeProp.setValue(type);
-    return this;
-  }
-
-  public JobBatchRecord setType(DirectBuffer buf) {
-    this.typeProp.setValue(buf);
-    return this;
-  }
-
   public JobBatchRecord setType(DirectBuffer buf, int offset, int length) {
     typeProp.setValue(buf, offset, length);
     return this;
   }
 
-  public DirectBuffer getWorkerBuffer() {
-    return workerProp.getValue();
-  }
-
-  public JobBatchRecord setWorker(String worker) {
-    this.workerProp.setValue(worker);
-    return this;
-  }
-
-  public JobBatchRecord setWorker(DirectBuffer worker) {
-    this.workerProp.setValue(worker);
-    return this;
-  }
-
   public JobBatchRecord setWorker(DirectBuffer worker, int offset, int length) {
     workerProp.setValue(worker, offset, length);
-    return this;
-  }
-
-  public long getTimeoutLong() {
-    return timeoutProp.getValue();
-  }
-
-  public JobBatchRecord setTimeout(long val) {
-    timeoutProp.setValue(val);
-    return this;
-  }
-
-  public JobBatchRecord setMaxJobsToActivate(int maxJobsToActivate) {
-    maxJobsToActivateProp.setValue(maxJobsToActivate);
     return this;
   }
 
@@ -123,9 +83,9 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
     return variablesProp;
   }
 
-  public JobBatchRecord setTruncated(boolean truncated) {
-    truncatedProp.setValue(truncated);
-    return this;
+  @JsonProperty("timeout")
+  public long getTimeoutLong() {
+    return timeoutProp.getValue();
   }
 
   public boolean getTruncated() {
@@ -143,6 +103,7 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
   }
 
   @Override
+  @JsonIgnore
   public Duration getTimeout() {
     return Duration.ofMillis(timeoutProp.getValue());
   }
@@ -178,5 +139,50 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
   @Override
   public boolean isTruncated() {
     return truncatedProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getTypeBuffer() {
+    return typeProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getWorkerBuffer() {
+    return workerProp.getValue();
+  }
+
+  public JobBatchRecord setMaxJobsToActivate(int maxJobsToActivate) {
+    maxJobsToActivateProp.setValue(maxJobsToActivate);
+    return this;
+  }
+
+  public JobBatchRecord setTimeout(long val) {
+    timeoutProp.setValue(val);
+    return this;
+  }
+
+  public JobBatchRecord setTruncated(boolean truncated) {
+    truncatedProp.setValue(truncated);
+    return this;
+  }
+
+  public JobBatchRecord setType(DirectBuffer buf) {
+    this.typeProp.setValue(buf);
+    return this;
+  }
+
+  public JobBatchRecord setType(String type) {
+    this.typeProp.setValue(type);
+    return this;
+  }
+
+  public JobBatchRecord setWorker(DirectBuffer worker) {
+    this.workerProp.setValue(worker);
+    return this;
+  }
+
+  public JobBatchRecord setWorker(String worker) {
+    this.workerProp.setValue(worker);
+    return this;
   }
 }

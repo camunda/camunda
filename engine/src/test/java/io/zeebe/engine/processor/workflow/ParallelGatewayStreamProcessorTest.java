@@ -17,7 +17,6 @@
  */
 package io.zeebe.engine.processor.workflow;
 
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -26,6 +25,7 @@ import io.zeebe.model.bpmn.instance.ParallelGateway;
 import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
@@ -87,7 +87,7 @@ public class ParallelGatewayStreamProcessorTest {
 
     // then
     // there should be no scope completing event
-    final Optional<TypedRecord<WorkflowInstanceRecord>> processCompleting =
+    final Optional<Record<WorkflowInstanceRecord>> processCompleting =
         envRule
             .events()
             .onlyWorkflowInstanceRecords()

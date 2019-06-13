@@ -29,11 +29,11 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -88,8 +88,7 @@ public class MessageStreamProcessorTest {
     rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
 
     // then
-    final TypedRecord<MessageSubscriptionRecord> rejection =
-        awaitAndGetFirstSubscriptionRejection();
+    final Record<MessageSubscriptionRecord> rejection = awaitAndGetFirstSubscriptionRejection();
 
     Assertions.assertThat(rejection.getMetadata().getIntent())
         .isEqualTo(MessageSubscriptionIntent.OPEN);
@@ -186,8 +185,7 @@ public class MessageStreamProcessorTest {
     rule.writeCommand(MessageSubscriptionIntent.CORRELATE, subscription);
 
     // then
-    final TypedRecord<MessageSubscriptionRecord> rejection =
-        awaitAndGetFirstSubscriptionRejection();
+    final Record<MessageSubscriptionRecord> rejection = awaitAndGetFirstSubscriptionRejection();
 
     Assertions.assertThat(rejection.getMetadata().getIntent())
         .isEqualTo(MessageSubscriptionIntent.CORRELATE);
@@ -213,8 +211,7 @@ public class MessageStreamProcessorTest {
     rule.writeCommand(MessageSubscriptionIntent.CLOSE, subscription);
 
     // then
-    final TypedRecord<MessageSubscriptionRecord> rejection =
-        awaitAndGetFirstSubscriptionRejection();
+    final Record<MessageSubscriptionRecord> rejection = awaitAndGetFirstSubscriptionRejection();
 
     Assertions.assertThat(rejection.getMetadata().getIntent())
         .isEqualTo(MessageSubscriptionIntent.CLOSE);
@@ -466,7 +463,7 @@ public class MessageStreamProcessorTest {
     return message;
   }
 
-  private TypedRecord<MessageSubscriptionRecord> awaitAndGetFirstSubscriptionRejection() {
+  private Record<MessageSubscriptionRecord> awaitAndGetFirstSubscriptionRejection() {
     waitUntil(
         () ->
             rule.events()

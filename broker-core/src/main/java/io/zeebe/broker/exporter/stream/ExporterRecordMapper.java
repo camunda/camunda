@@ -399,8 +399,8 @@ public class ExporterRecordMapper {
 
     return new ErrorRecordValueImpl(
         objectMapper,
-        asString(record.getExceptionMessage()),
-        asString(record.getStacktrace()),
+        asString(record.getExceptionMessageBuffer()),
+        asString(record.getStacktraceBuffer()),
         record.getErrorEventPosition(),
         record.getWorkflowInstanceKey());
   }
