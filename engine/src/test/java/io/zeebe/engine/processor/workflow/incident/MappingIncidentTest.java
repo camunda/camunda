@@ -24,7 +24,6 @@ import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.UnstableTest;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.exporter.api.record.Record;
@@ -44,7 +43,6 @@ import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
 public class MappingIncidentTest {
 
@@ -536,7 +534,6 @@ public class MappingIncidentTest {
   }
 
   @Test
-  @Category(UnstableTest.class)
   public void shouldProcessIncidentsAfterMultipleTerminations() {
     // given
     ENGINE.deployment().withXmlResource(WORKFLOW_INPUT_MAPPING).deploy();
