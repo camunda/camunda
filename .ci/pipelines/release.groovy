@@ -44,6 +44,25 @@ void runRelease(params) {
   """)
 }
 
+def githubRelease = '''\
+#!/bin/bash
+
+ARTIFACT="camunda-operate"
+ZEEBE_VERSION=$(mvn help:evaluate -Dexpression=version.zeebe -q -DforceStdout)
+
+cd target/checkout/distro/target
+
+# create checksums
+sha1sum ${ARTIFACT}-${RELEASE_VERSION}.tar.gz > ${ARTIFACT}-${RELEASE_VERSION}.tar.gz.sha1sum
+sha1sum ${ARTIFACT}-${RELEASE_VERSION}.zip > ${ARTIFACT}-${RELEASE_VERSION}.zip.sha1sum
+
+# upload to github release
+curl -sL https://github.com/aktau/github-release/releases/download/v0.7.2/linux-amd64-github-release.tar.bz2 | tar xjvf - --strip 3
+for f in ${ARTIFACT}-${RELEASE_VERSION}.{tar.gz,zip}{,.sha1sum}; do
+	./github-release upload --user zeebe-io --repo zeebe --tag ${ZEEBE_VERSION} --name "${f}" --file "${f}"
+done
+'''
+
 static String mavenAgent(env) {
   return """
 apiVersion: v1
@@ -98,7 +117,8 @@ pipeline {
   parameters {
     string(name: 'RELEASE_VERSION', defaultValue: '1.0.0', description: 'Version to release. Applied to pom.xml and Git tag.')
     string(name: 'DEVELOPMENT_VERSION', defaultValue: '1.1.0-SNAPSHOT', description: 'Next development version.')
-    booleanParam(name: 'PUSH_CHANGES', defaultValue: false, description: 'Should the changes be pushed to remote locations.')
+    booleanParam('PUSH_CHANGES', defaultValue: false, 'Should the changes be pushed to remote locations (Nexus).')
+    booleanParam('GITHUB_UPLOAD_RELEASE', defaultValue: false, 'Should upload the release to github.')
   }
 
   environment {
@@ -144,6 +164,14 @@ pipeline {
           sshagent(['camunda-jenkins-github-ssh']) {
             runRelease(params)
           }
+        }
+      }
+    }
+    stage('Upload to GitHub Release') {
+      when { expression { return params.GITHUB_UPLOAD_RELEASE } }
+      steps {
+        container('maven') {
+          sh githubRelease
         }
       }
     }
