@@ -96,4 +96,9 @@ public class VariableRecord extends UnifiedRecordValue
   public String getValue() {
     return MsgPackConverter.convertToJson(valueProp.getValue());
   }
+
+  @Override
+  public String toJson() {
+    return MsgPackConverter.convertRecordToJson(this);
+  }
 }

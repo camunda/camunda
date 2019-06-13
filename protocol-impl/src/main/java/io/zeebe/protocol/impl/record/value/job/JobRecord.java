@@ -15,6 +15,8 @@
  */
 package io.zeebe.protocol.impl.record.value.job;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
@@ -38,18 +40,18 @@ public class JobRecord extends UnifiedRecordValue
     implements WorkflowInstanceRelated, JobRecordValue {
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
-  public static final String RETRIES = "retries";
-  public static final String TYPE = "type";
-  public static final String CUSTOM_HEADERS = "customHeaders";
-  public static final String VARIABLES = "variables";
-  public static final String ERROR_MESSAGE = "errorMessage";
+  private static final String RETRIES = "retries";
+  private static final String TYPE = "type";
+  private static final String CUSTOM_HEADERS = "customHeaders";
+  private static final String VARIABLES = "variables";
+  private static final String ERROR_MESSAGE = "errorMessage";
 
   private final LongProperty deadlineProp =
       new LongProperty("deadline", Protocol.INSTANT_NULL_VALUE);
   private final StringProperty workerProp = new StringProperty("worker", "");
   private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
   private final StringProperty typeProp = new StringProperty(TYPE, "");
-  private ObjectProperty<JobHeaders> headersProp =
+  private final ObjectProperty<JobHeaders> headersProp =
       new ObjectProperty<>("headers", new JobHeaders());
   private final PackedProperty customHeadersProp = new PackedProperty(CUSTOM_HEADERS, NO_HEADERS);
   private final DocumentProperty variableProp = new DocumentProperty(VARIABLES);
@@ -66,6 +68,7 @@ public class JobRecord extends UnifiedRecordValue
         .declareProperty(errorMessageProp);
   }
 
+  @JsonProperty("deadline")
   public long getDeadlineLong() {
     return deadlineProp.getValue();
   }
@@ -93,6 +96,7 @@ public class JobRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
   public int getRetries() {
     return retriesProp.getValue();
   }
@@ -134,17 +138,9 @@ public class JobRecord extends UnifiedRecordValue
     return this;
   }
 
-  public JobRecord setJobHeaders(JobHeaders jobHeaders) {
-    headersProp = new ObjectProperty<>("headers", jobHeaders);
-    return this;
-  }
-
+  @JsonIgnore
   public JobHeaders getJobHeaders() {
     return headersProp.getValue();
-  }
-
-  public void setCustomHeaders(DirectBuffer buffer, int offset, int length) {
-    customHeadersProp.setValue(buffer, offset, length);
   }
 
   public JobRecord setCustomHeaders(DirectBuffer buffer) {
@@ -175,6 +171,7 @@ public class JobRecord extends UnifiedRecordValue
   }
 
   @Override
+  @JsonIgnore
   public long getWorkflowInstanceKey() {
     return headersProp.getValue().getWorkflowInstanceKey();
   }
@@ -205,13 +202,14 @@ public class JobRecord extends UnifiedRecordValue
   }
 
   @Override
+  @JsonIgnore
   public Instant getDeadline() {
     return Instant.ofEpochMilli(deadlineProp.getValue());
   }
 
   @Override
   public Map<String, Object> getVariablesAsMap() {
-    throw new UnsupportedOperationException("not yet implemented");
+    return MsgPackConverter.convertToMap(variableProp.getValue());
   }
 
   @Override
@@ -221,6 +219,6 @@ public class JobRecord extends UnifiedRecordValue
 
   @Override
   public String toJson() {
-    throw new UnsupportedOperationException("not yet implemented");
+    return MsgPackConverter.convertRecordToJson(this);
   }
 }

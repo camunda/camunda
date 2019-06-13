@@ -15,13 +15,23 @@
  */
 package io.zeebe.protocol.impl.record;
 
+import com.fasterxml.jackson.annotation.JsonFilter;
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.record.RecordValue;
+import org.agrona.concurrent.UnsafeBuffer;
 
+@JsonFilter("internalPropertiesFilter")
 public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
 
   @Override
   public String toJson() {
-    throw new UnsupportedOperationException("not yet implemented");
+    // converts simple records directly from msg pack to json
+    // for more complex records we need to overwrite this method (see for example JobRecord)
+    final byte[] bytes = new byte[getLength()];
+    final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
+    write(buffer, 0);
+
+    return MsgPackConverter.convertToJson(buffer);
   }
 }

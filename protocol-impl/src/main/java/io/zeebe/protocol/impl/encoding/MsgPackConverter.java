@@ -22,10 +22,17 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonParser.Feature;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
+import com.fasterxml.jackson.databind.ser.FilterProvider;
+import com.fasterxml.jackson.databind.ser.PropertyWriter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -34,8 +41,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
@@ -56,7 +66,13 @@ public class MsgPackConverter {
       new MessagePackFactory().setReuseResourceInGenerator(false).setReuseResourceInParser(false);
   private static final JsonFactory JSON_FACTORY =
       new MappingJsonFactory().configure(Feature.ALLOW_SINGLE_QUOTES, true);
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(JSON_FACTORY);
+
+  private static final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper(JSON_FACTORY);
+
+  private static final ObjectMapper MESSSAGE_PACK_OBJECT_MAPPER =
+      new ObjectMapper(MESSAGE_PACK_FACTORY);
+
+  private static final ObjectMapper RECORD_OBJECT_MAPPER = new ObjectMapper();
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////// JSON to MSGPACK //////////////////////////////////////////
@@ -146,9 +162,69 @@ public class MsgPackConverter {
     final TypeReference<HashMap<String, Object>> typeRef =
         new TypeReference<HashMap<String, Object>>() {};
     try {
-      return OBJECT_MAPPER.readValue(jsonBytes, typeRef);
+      return JSON_OBJECT_MAPPER.readValue(jsonBytes, typeRef);
     } catch (IOException e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  public static byte[] convertToMsgPack(Object value) {
+    try {
+      return MESSSAGE_PACK_OBJECT_MAPPER.writeValueAsBytes(value);
+    } catch (IOException e) {
+      throw new RuntimeException(
+          String.format("Failed to serialize object '%s' to Msgpack", value), e);
+    }
+  }
+
+  public static String convertRecordToJson(UnifiedRecordValue recordValue) {
+    try {
+      // used to filter getLength(), getEncodedLength() and internal properties
+      // like `getTypeBuffer`, which is the counterpart of `getType`
+      final FilterProvider filters =
+          new SimpleFilterProvider()
+              .addFilter(
+                  "internalPropertiesFilter",
+                  new InternalPropertiesFilter("length", "encodedLength"));
+
+      return RECORD_OBJECT_MAPPER.writer(filters).writeValueAsString(recordValue);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static final class InternalPropertiesFilter extends SimpleBeanPropertyFilter {
+
+    final Set<String> propertyNames;
+
+    InternalPropertiesFilter(String... propertyNames) {
+      final HashSet<String> properties = new HashSet<>(propertyNames.length);
+      Collections.addAll(properties, propertyNames);
+      this.propertyNames = properties;
+    }
+
+    private static boolean exclude(boolean filterResult) {
+      return !filterResult;
+    }
+
+    private boolean checkPropertyName(String propertyName) {
+      return exclude(
+          propertyName.endsWith("Buffer")
+              || propertyName.endsWith("AsMap")
+              || propertyName.endsWith("Long")
+              || propertyNames.contains(propertyName));
+    }
+
+    @Override
+    protected boolean include(BeanPropertyWriter writer) {
+      final String propertyName = writer.getName();
+      return checkPropertyName(propertyName);
+    }
+
+    @Override
+    protected boolean include(PropertyWriter writer) {
+      final String propertyName = writer.getName();
+      return checkPropertyName(propertyName);
     }
   }
 }

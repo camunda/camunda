@@ -15,6 +15,8 @@
  */
 package io.zeebe.protocol.impl.record.value.job;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
@@ -24,6 +26,7 @@ import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.msgpack.value.StringValue;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.protocol.record.value.JobRecordValue;
@@ -97,6 +100,7 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
     return this;
   }
 
+  @JsonProperty("timeout")
   public long getTimeoutLong() {
     return timeoutProp.getValue();
   }
@@ -143,6 +147,7 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
   }
 
   @Override
+  @JsonIgnore
   public Duration getTimeout() {
     return Duration.ofMillis(timeoutProp.getValue());
   }
@@ -178,5 +183,10 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
   @Override
   public boolean isTruncated() {
     return truncatedProp.getValue();
+  }
+
+  @Override
+  public String toJson() {
+    return MsgPackConverter.convertRecordToJson(this);
   }
 }

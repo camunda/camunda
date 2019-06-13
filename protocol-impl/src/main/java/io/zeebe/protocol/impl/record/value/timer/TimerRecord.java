@@ -30,7 +30,7 @@ public class TimerRecord extends UnifiedRecordValue
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
   private final LongProperty dueDateProp = new LongProperty("dueDate");
-  private final StringProperty handlerNodeId = new StringProperty("handlerNodeId");
+  private final StringProperty handlerNodeId = new StringProperty("handlerFlowNodeId");
   private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions");
   private final LongProperty workflowKeyProp = new LongProperty("workflowKey");
 

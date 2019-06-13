@@ -15,9 +15,11 @@
  */
 package io.zeebe.protocol.impl.record.value.message;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.intent.WorkflowInstanceRelated;
 import io.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
@@ -99,6 +101,7 @@ public class MessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
+  @JsonIgnore
   public long getMessageKey() {
     return messageKeyProp.getValue();
   }
@@ -106,5 +109,10 @@ public class MessageSubscriptionRecord extends UnifiedRecordValue
   public MessageSubscriptionRecord setMessageKey(long messageKey) {
     this.messageKeyProp.setValue(messageKey);
     return this;
+  }
+
+  @Override
+  public String toJson() {
+    return MsgPackConverter.convertRecordToJson(this);
   }
 }

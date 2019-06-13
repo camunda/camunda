@@ -26,13 +26,18 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
+import com.fasterxml.jackson.core.JsonParser.Feature;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.value.DeploymentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.IncidentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobBatchRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.MessageStartEventSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.TimerRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.VariableDocumentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.VariableRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceCreationRecordValueImpl;
@@ -44,15 +49,17 @@ import io.zeebe.broker.exporter.record.value.job.HeadersImpl;
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.broker.exporter.util.ControlledTestExporter;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
@@ -88,6 +95,7 @@ import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.util.buffer.BufferUtil;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -95,6 +103,7 @@ import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.assertj.core.api.Assertions;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -343,6 +352,39 @@ public class ExporterRecordTest {
   }
 
   @Test
+  public void shouldExportTimerRecord() {
+    // given
+    final int workflowKey = 13;
+    final int workflowInstanceKey = 1234;
+    final int dueDate = 1234;
+    final int elementInstanceKey = 567;
+    final String handlerNodeId = "node1";
+    final int repetitions = 3;
+
+    final TimerRecord record =
+        new TimerRecord()
+            .setDueDate(dueDate)
+            .setElementInstanceKey(elementInstanceKey)
+            .setHandlerNodeId(wrapString(handlerNodeId))
+            .setRepetitions(repetitions)
+            .setWorkflowInstanceKey(workflowInstanceKey)
+            .setWorkflowKey(workflowKey);
+
+    final TimerRecordValueImpl recordValue =
+        new TimerRecordValueImpl(
+            OBJECT_MAPPER,
+            elementInstanceKey,
+            workflowInstanceKey,
+            dueDate,
+            handlerNodeId,
+            repetitions,
+            workflowKey);
+
+    // then
+    assertRecordExported(WorkflowInstanceIntent.ELEMENT_ACTIVATING, record, recordValue);
+  }
+
+  @Test
   public void shouldExportWorkflowInstanceSubscriptionRecord() {
     // given
     final long activityInstanceKey = 123;
@@ -368,6 +410,27 @@ public class ExporterRecordTest {
             messageName,
             workflowInstanceKey,
             activityInstanceKey);
+
+    // then
+    assertRecordExported(WorkflowInstanceSubscriptionIntent.OPENED, record, recordValue);
+  }
+
+  @Test
+  public void shouldExportMessageStartEventSubscriptionRecord() {
+    // given
+    final String messageName = "name";
+    final String startEventId = "startEvent";
+    final int workflowKey = 22334;
+
+    final MessageStartEventSubscriptionRecord record =
+        new MessageStartEventSubscriptionRecord()
+            .setMessageName(wrapString(messageName))
+            .setStartEventId(wrapString(startEventId))
+            .setWorkflowKey(workflowKey);
+
+    final MessageStartEventSubscriptionRecordValueImpl recordValue =
+        new MessageStartEventSubscriptionRecordValueImpl(
+            OBJECT_MAPPER, workflowKey, startEventId, messageName);
 
     // then
     assertRecordExported(WorkflowInstanceSubscriptionIntent.OPENED, record, recordValue);
@@ -522,7 +585,7 @@ public class ExporterRecordTest {
   }
 
   private void assertRecordExported(
-      final Intent intent, final UnpackedObject record, final RecordValue expectedRecordValue) {
+      final Intent intent, final UnifiedRecordValue record, final RecordValue expectedRecordValue) {
     // setup stream processor
     final List<ExporterDescriptor> exporterDescriptors =
         Collections.singletonList(createMockedExporter());
@@ -558,6 +621,22 @@ public class ExporterRecordTest {
         .hasValueType(metadata.getValueType());
 
     assertThat(actualRecord).hasValue(expectedRecordValue);
+
+    final String json = record.toJson();
+
+    // then
+    Assertions.assertThat(json(json)).isEqualTo(json(expectedRecordValue.toJson()));
+  }
+
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().configure(Feature.ALLOW_SINGLE_QUOTES, true);
+
+  private static JsonNode json(String jsonString) {
+    try {
+      return MAPPER.readTree(jsonString);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private ExporterDescriptor createMockedExporter() {

@@ -18,6 +18,7 @@ package io.zeebe.protocol.impl.record.value.job;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
 
+import com.fasterxml.jackson.annotation.JsonFilter;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
@@ -26,6 +27,7 @@ import io.zeebe.protocol.record.value.job.Headers;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
+@JsonFilter("internalPropertiesFilter")
 public class JobHeaders extends UnpackedObject implements Headers {
   private static final String EMPTY_STRING = "";
 
@@ -48,6 +50,7 @@ public class JobHeaders extends UnpackedObject implements Headers {
         .declareProperty(elementInstanceKeyProp);
   }
 
+  @Override
   public long getWorkflowInstanceKey() {
     return workflowInstanceKeyProp.getValue();
   }
@@ -89,6 +92,7 @@ public class JobHeaders extends UnpackedObject implements Headers {
     return bpmnProcessIdProp.getValue();
   }
 
+  @Override
   public int getWorkflowDefinitionVersion() {
     return workflowDefinitionVersionProp.getValue();
   }
@@ -98,6 +102,7 @@ public class JobHeaders extends UnpackedObject implements Headers {
     return this;
   }
 
+  @Override
   public long getElementInstanceKey() {
     return elementInstanceKeyProp.getValue();
   }
@@ -107,6 +112,7 @@ public class JobHeaders extends UnpackedObject implements Headers {
     return this;
   }
 
+  @Override
   public long getWorkflowKey() {
     return workflowKeyProp.getValue();
   }
