@@ -31,17 +31,23 @@ import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class JobTimeOutTest {
   private static final String PROCESS_ID = "process";
   private static String jobType;
 
-  @ClassRule public static EngineRule engineRule = new EngineRule();
+  @ClassRule public static final EngineRule ENGINE = new EngineRule();
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Before
   public void setup() {
@@ -51,15 +57,15 @@ public class JobTimeOutTest {
   @Test
   public void shouldTimeOutJob() {
     // given
-    final long jobKey = engineRule.createJob(jobType, PROCESS_ID).getKey();
+    final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
     final long timeout = 10L;
 
-    engineRule.jobs().withType(jobType).withTimeout(timeout).activate();
-    engineRule.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.jobs().withType(jobType).withTimeout(timeout).activate();
+    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
 
     // when expired
     RecordingExporter.jobRecords(TIME_OUT).getFirst();
-    engineRule.jobs().withType(jobType).activate();
+    ENGINE.jobs().withType(jobType).activate();
 
     // then activated again
     final List<Record<JobRecordValue>> jobEvents =
@@ -81,14 +87,14 @@ public class JobTimeOutTest {
   @Test
   public void shouldSetCorrectSourcePositionAfterJobTimeOut() {
     // given
-    engineRule.createJob(jobType, PROCESS_ID);
+    ENGINE.createJob(jobType, PROCESS_ID);
     final long timeout = 10L;
-    engineRule.jobs().withType(jobType).withTimeout(timeout).activate();
-    engineRule.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.jobs().withType(jobType).withTimeout(timeout).activate();
+    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
 
     // when expired
     RecordingExporter.jobRecords(TIME_OUT).getFirst();
-    engineRule.jobs().withType(jobType).activate();
+    ENGINE.jobs().withType(jobType).activate();
 
     // then activated again
     final Record jobActivated =
@@ -132,7 +138,7 @@ public class JobTimeOutTest {
             .getKey();
     final long timeout = 10L;
 
-    engineRule.jobs().withType(jobType).withTimeout(timeout).activate();
+    ENGINE.jobs().withType(jobType).withTimeout(timeout).activate();
 
     // when
     RecordingExporter.jobRecords(ACTIVATED)
@@ -140,11 +146,11 @@ public class JobTimeOutTest {
         .limit(2)
         .getFirst();
 
-    engineRule.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
     RecordingExporter.jobRecords(JobIntent.TIMED_OUT)
         .withWorkflowInstanceKey(instanceKey1)
         .getFirst();
-    engineRule.jobs().withType(jobType).activate();
+    ENGINE.jobs().withType(jobType).activate();
 
     // then
     final List<Record<JobRecordValue>> activatedEvents =
@@ -178,7 +184,7 @@ public class JobTimeOutTest {
   }
 
   private long createInstance() {
-    engineRule
+    ENGINE
         .deployment()
         .withXmlResource(
             Bpmn.createExecutableProcess(PROCESS_ID)
@@ -187,6 +193,6 @@ public class JobTimeOutTest {
                 .endEvent("end")
                 .done())
         .deploy();
-    return engineRule.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+    return ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
   }
 }

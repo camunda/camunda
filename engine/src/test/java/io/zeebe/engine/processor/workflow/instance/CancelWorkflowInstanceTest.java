@@ -38,9 +38,11 @@ import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class CancelWorkflowInstanceTest {
@@ -80,6 +82,10 @@ public class CancelWorkflowInstanceTest {
   }
 
   @ClassRule public static final EngineRule ENGINE = new EngineRule();
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @BeforeClass
   public static void init() {

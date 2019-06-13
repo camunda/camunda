@@ -31,6 +31,13 @@ import io.zeebe.engine.processor.workflow.message.command.PartitionCommandSender
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandMessageHandler;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.zeebe.engine.util.client.DeploymentClient;
+import io.zeebe.engine.util.client.IncidentClient;
+import io.zeebe.engine.util.client.JobActivationClient;
+import io.zeebe.engine.util.client.JobClient;
+import io.zeebe.engine.util.client.PublishMessageClient;
+import io.zeebe.engine.util.client.VariableClient;
+import io.zeebe.engine.util.client.WorkflowInstanceClient;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.logstreams.impl.Loggers;
@@ -71,8 +78,9 @@ public class EngineRule extends ExternalResource {
   private static final int PARTITION_ID = Protocol.DEPLOYMENT_PARTITION;
   private static final RecordingExporter RECORDING_EXPORTER = new RecordingExporter();
 
-  protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
+  private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
   private final StreamProcessorRule environmentRule;
 
   private final int partitionCount;

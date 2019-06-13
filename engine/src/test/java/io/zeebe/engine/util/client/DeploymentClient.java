@@ -15,11 +15,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.engine.util;
+package io.zeebe.engine.util.client;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapArray;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
 import io.zeebe.exporter.api.record.value.deployment.ResourceType;

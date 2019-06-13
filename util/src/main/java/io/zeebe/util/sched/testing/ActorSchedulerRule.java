@@ -24,21 +24,23 @@ import io.zeebe.util.sched.future.ActorFuture;
 import org.junit.rules.ExternalResource;
 
 public class ActorSchedulerRule extends ExternalResource {
-  private final ActorScheduler actorScheduler;
+
+  private final int numOfIoThreads;
+  private final int numOfThreads;
+  private final ActorClock clock;
+
   private ActorSchedulerBuilder builder;
+  private ActorScheduler actorScheduler;
 
   public ActorSchedulerRule(int numOfThreads, ActorClock clock) {
     this(numOfThreads, 2, clock);
   }
 
   public ActorSchedulerRule(int numOfThreads, int numOfIoThreads, ActorClock clock) {
-    builder =
-        ActorScheduler.newActorScheduler()
-            .setCpuBoundActorThreadCount(numOfThreads)
-            .setIoBoundActorThreadCount(numOfIoThreads)
-            .setActorClock(clock);
 
-    actorScheduler = builder.build();
+    this.numOfIoThreads = numOfIoThreads;
+    this.numOfThreads = numOfThreads;
+    this.clock = clock;
   }
 
   public ActorSchedulerRule(int numOfThreads) {
@@ -54,13 +56,22 @@ public class ActorSchedulerRule extends ExternalResource {
   }
 
   @Override
-  protected void before() {
+  public void before() {
+    builder =
+        ActorScheduler.newActorScheduler()
+            .setCpuBoundActorThreadCount(numOfThreads)
+            .setIoBoundActorThreadCount(numOfIoThreads)
+            .setActorClock(clock);
+
+    actorScheduler = builder.build();
     actorScheduler.start();
   }
 
   @Override
-  protected void after() {
+  public void after() {
     FutureUtil.join(actorScheduler.stop());
+    actorScheduler = null;
+    builder = null;
   }
 
   public ActorFuture<Void> submitActor(Actor actor) {

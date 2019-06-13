@@ -42,6 +42,7 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
 import java.time.Instant;
@@ -54,6 +55,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.internal.bytebuddy.utility.RandomString;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class ActivateJobsTest {
@@ -72,7 +74,11 @@ public class ActivateJobsTest {
 
   private String taskType;
 
-  @ClassRule public static EngineRule engineRule = new EngineRule();
+  @ClassRule public static final EngineRule ENGINE = new EngineRule();
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Before
   public void setup() {
@@ -83,7 +89,7 @@ public class ActivateJobsTest {
   public void shouldRejectInvalidAmount() {
     // when
     final Record<JobBatchRecordValue> batchRecord =
-        engineRule.jobs().withType(taskType).withMaxJobsToActivate(0).expectRejection().activate();
+        ENGINE.jobs().withType(taskType).withMaxJobsToActivate(0).expectRejection().activate();
 
     // then
     Assertions.assertThat(batchRecord.getMetadata())
@@ -96,7 +102,7 @@ public class ActivateJobsTest {
   public void shouldRejectInvalidTimeout() {
     // when
     final Record<JobBatchRecordValue> batchRecord =
-        engineRule
+        ENGINE
             .jobs()
             .withType(taskType)
             .withTimeout(Duration.ofSeconds(0).toMillis())
@@ -114,7 +120,7 @@ public class ActivateJobsTest {
   public void shouldRejectInvalidType() {
     // when
     final Record<JobBatchRecordValue> batchRecord =
-        engineRule.jobs().withType("").expectRejection().activate();
+        ENGINE.jobs().withType("").expectRejection().activate();
 
     // then
     Assertions.assertThat(batchRecord.getMetadata())
@@ -127,7 +133,7 @@ public class ActivateJobsTest {
   public void shouldRejectInvalidWorker() {
     // when
     final Record<JobBatchRecordValue> batchRecord =
-        engineRule.jobs().withType(taskType).byWorker("").expectRejection().activate();
+        ENGINE.jobs().withType(taskType).byWorker("").expectRejection().activate();
 
     // then
     Assertions.assertThat(batchRecord.getMetadata())
@@ -139,7 +145,7 @@ public class ActivateJobsTest {
   @Test
   public void shouldActivateSingleJob() {
     // given
-    engineRule.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
     final long firstInstanceKey = createWorkflowInstances(3, VARIABLES_MSG_PACK).get(0);
 
     final long expectedJobKey =
@@ -154,7 +160,7 @@ public class ActivateJobsTest {
 
     // when
     final Record<JobBatchRecordValue> batchRecord =
-        engineRule
+        ENGINE
             .jobs()
             .withType(taskType)
             .byWorker(worker)
@@ -278,7 +284,7 @@ public class ActivateJobsTest {
     for (final String type : Arrays.asList(jobType, jobType2, jobType3)) {
       builder = builder.serviceTask(type, b -> b.zeebeTaskType(type));
     }
-    engineRule.deployment().withXmlResource(PROCESS_ID, builder.done()).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_ID, builder.done()).deploy();
 
     final List<Long> workflowInstanceKeys = createWorkflowInstances(jobAmount, VARIABLES_MSG_PACK);
 
@@ -314,7 +320,7 @@ public class ActivateJobsTest {
             .endEvent()
             .done();
 
-    engineRule.deployment().withXmlResource(PROCESS_ID, modelInstance).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_ID, modelInstance).deploy();
     final long workflowInstanceKey = createWorkflowInstances(1, VARIABLES_MSG_PACK).get(0);
     RecordingExporter.jobRecords(JobIntent.CREATED)
         .withWorkflowInstanceKey(workflowInstanceKey)
@@ -322,7 +328,7 @@ public class ActivateJobsTest {
 
     // when
     activateJob(taskType);
-    engineRule.job().ofInstance(workflowInstanceKey).withType(taskType).complete();
+    ENGINE.job().ofInstance(workflowInstanceKey).withType(taskType).complete();
 
     // then
     final JobRecordValue jobRecord =
@@ -337,21 +343,21 @@ public class ActivateJobsTest {
   @Test
   public void shouldFetchFullJobRecordFromWorkflow() {
     // given
-    final ControlledActorClock clock = engineRule.getClock();
+    final ControlledActorClock clock = ENGINE.getClock();
     clock.pinCurrentTime();
 
     final String worker = "testWorker";
     final Duration timeout = Duration.ofMinutes(4);
     final Instant deadline = clock.getCurrentTime().plus(timeout);
 
-    engineRule.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
     createWorkflowInstances(1, VARIABLES_MSG_PACK);
     final Record<JobRecordValue> jobRecord =
         jobRecords(JobIntent.CREATED).withType(taskType).getFirst();
 
     // when
     final long jobKey =
-        engineRule
+        ENGINE
             .jobs()
             .withType(taskType)
             .byWorker(worker)
@@ -407,7 +413,11 @@ public class ActivateJobsTest {
   }
 
   private Record<JobRecordValue> completeJob(long jobKey) {
-    return engineRule.job().withVariables(new UnsafeBuffer(VARIABLES_MSG_PACK)).complete(jobKey);
+    return ENGINE
+        .job()
+        .withKey(jobKey)
+        .withVariables(new UnsafeBuffer(VARIABLES_MSG_PACK))
+        .complete();
   }
 
   private Long activateJob(String type) {
@@ -415,7 +425,7 @@ public class ActivateJobsTest {
   }
 
   private List<Long> activateJobs(String type, int amount) {
-    return engineRule
+    return ENGINE
         .jobs()
         .withType(type)
         .withMaxJobsToActivate(amount)
@@ -433,7 +443,7 @@ public class ActivateJobsTest {
         .boxed()
         .map(
             i ->
-                engineRule
+                ENGINE
                     .workflowInstance()
                     .ofBpmnProcessId(PROCESS_ID)
                     .withVariables(MsgPackConverter.convertToJson(variables))
@@ -443,7 +453,7 @@ public class ActivateJobsTest {
 
   private List<Long> deployAndCreateJobs(
       final String type, final int amount, final byte[] variables) {
-    engineRule.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(type)).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(type)).deploy();
     final List<Long> instanceKeys = createWorkflowInstances(amount, variables);
 
     return jobRecords(JobIntent.CREATED)

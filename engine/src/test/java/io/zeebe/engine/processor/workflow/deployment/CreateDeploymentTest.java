@@ -34,6 +34,7 @@ import io.zeebe.protocol.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,6 +42,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class CreateDeploymentTest {
@@ -52,6 +54,10 @@ public class CreateDeploymentTest {
       Bpmn.createExecutableProcess("process2").startEvent().endEvent().done();
 
   @ClassRule public static final EngineRule ENGINE = new EngineRule();
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Test
   public void shouldCreateDeploymentWithBpmnXml() {

@@ -34,8 +34,8 @@ import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -53,11 +53,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DistributedLogRule extends ExternalResource {
-  private final ActorScheduler actorScheduler;
-  private final ServiceContainer serviceContainer;
+  private ServiceContainer serviceContainer;
   private final int nodeId;
   private final SocketAddress socketAddress;
   private final List<Node> otherNodes;
+  private final ActorSchedulerRule actorSchedulerRule;
+  private final ServiceContainerRule serviceContainerRule;
   private Atomix atomix;
   private final int numPartitions;
   private final int replicationFactor;
@@ -72,7 +73,8 @@ public class DistributedLogRule extends ExternalResource {
 
   public static final ServiceName<Atomix> ATOMIX_SERVICE_NAME =
       ServiceName.newServiceName("cluster.base.atomix", Atomix.class);
-  private final ActorFuture<Void> configFuture;
+  private ActorFuture<Void> configFuture;
+  private final StorageConfigurationManager config;
 
   public DistributedLogRule(
       ServiceContainerRule serviceContainerRule,
@@ -81,8 +83,8 @@ public class DistributedLogRule extends ExternalResource {
       int replicationFactor,
       List<String> members,
       List<Node> otherNodes) {
-    this.actorScheduler = serviceContainerRule.getActorScheduler();
-    this.serviceContainer = serviceContainerRule.get();
+    this.actorSchedulerRule = serviceContainerRule.getActorSchedulerRule();
+    this.serviceContainerRule = serviceContainerRule;
     this.nodeId = nodeId;
     this.numPartitions = numPartitions;
     this.replicationFactor = replicationFactor;
@@ -95,14 +97,9 @@ public class DistributedLogRule extends ExternalResource {
     }
     final String memberId = String.valueOf(nodeId);
 
-    final StorageConfigurationManager config =
+    config =
         new StorageConfigurationManager(
             Collections.singletonList(rootDirectory.toAbsolutePath().toString()), "512M", "4M");
-
-    LogstreamConfig.putConfig(memberId, config);
-    LogstreamConfig.putServiceContainer(memberId, serviceContainer);
-
-    configFuture = actorScheduler.submitActor(config);
   }
 
   public Node getNode() {
@@ -113,6 +110,12 @@ public class DistributedLogRule extends ExternalResource {
 
   @Override
   protected void before() throws IOException {
+    configFuture = actorSchedulerRule.get().submitActor(config);
+    serviceContainer = serviceContainerRule.get();
+
+    final String memberId = String.valueOf(nodeId);
+    LogstreamConfig.putConfig(memberId, config);
+    LogstreamConfig.putServiceContainer(memberId, serviceContainer);
     startNode();
   }
 

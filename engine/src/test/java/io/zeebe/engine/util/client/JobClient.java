@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.engine.util;
+package io.zeebe.engine.util.client;
 
+import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -28,6 +29,8 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class JobClient {
+  private static final long DEFAULT_KEY = -1L;
+
   private static final Function<Long, Record<JobRecordValue>> SUCCESS_SUPPLIER =
       (position) -> RecordingExporter.jobRecords().withSourceRecordPosition(position).getFirst();
 
@@ -41,6 +44,7 @@ public class JobClient {
   private final JobRecord jobRecord;
   private final StreamProcessorRule environmentRule;
   private long workflowInstanceKey;
+  private long jobKey = DEFAULT_KEY;
 
   private Function<Long, Record<JobRecordValue>> expectation = SUCCESS_SUPPLIER;
 
@@ -54,6 +58,16 @@ public class JobClient {
     return this;
   }
 
+  public JobClient withType(String jobType) {
+    jobRecord.setType(jobType);
+    return this;
+  }
+
+  public JobClient withKey(long jobKey) {
+    this.jobKey = jobKey;
+    return this;
+  }
+
   public JobClient withVariables(String variables) {
     jobRecord.setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
     return this;
@@ -64,18 +78,13 @@ public class JobClient {
     return this;
   }
 
-  public JobClient withType(String jobType) {
-    jobRecord.setType(jobType);
-    return this;
-  }
-
   public JobClient withRetries(int retries) {
     jobRecord.setRetries(retries);
     return this;
   }
 
-  public JobClient withErrorMessage(String message) {
-    jobRecord.setErrorMessage(message);
+  public JobClient withErrorMessage(String errorMessage) {
+    jobRecord.setErrorMessage(errorMessage);
     return this;
   }
 
@@ -84,30 +93,36 @@ public class JobClient {
     return this;
   }
 
-  public Record<JobRecordValue> complete() {
-    final boolean hasSpecificType = !jobRecord.getType().isEmpty();
+  private long findJobKey() {
+    if (jobKey == DEFAULT_KEY) {
+      final Record<JobRecordValue> createdJob =
+          RecordingExporter.jobRecords()
+              .withType(jobRecord.getType())
+              .withIntent(JobIntent.CREATED)
+              .withWorkflowInstanceKey(workflowInstanceKey)
+              .getFirst();
 
-    final Record<JobRecordValue> createdJob =
-        RecordingExporter.jobRecords()
-            .valueFilter(v -> hasSpecificType ? v.getType().equals(jobRecord.getType()) : true)
-            .withIntent(JobIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .getFirst();
+      return createdJob.getKey();
+    }
 
-    return complete(createdJob.getKey());
+    return jobKey;
   }
 
-  public Record<JobRecordValue> complete(long jobKey) {
+  public Record<JobRecordValue> complete() {
+    final long jobKey = findJobKey();
     final long position = environmentRule.writeCommand(jobKey, JobIntent.COMPLETE, jobRecord);
     return expectation.apply(position);
   }
 
-  public Record<JobRecordValue> fail(long jobKey) {
+  public Record<JobRecordValue> fail() {
+    final long jobKey = findJobKey();
     final long position = environmentRule.writeCommand(jobKey, JobIntent.FAIL, jobRecord);
+
     return expectation.apply(position);
   }
 
-  public Record<JobRecordValue> updateRetries(long jobKey) {
+  public Record<JobRecordValue> updateRetries() {
+    final long jobKey = findJobKey();
     final long position = environmentRule.writeCommand(jobKey, JobIntent.UPDATE_RETRIES, jobRecord);
     return expectation.apply(position);
   }

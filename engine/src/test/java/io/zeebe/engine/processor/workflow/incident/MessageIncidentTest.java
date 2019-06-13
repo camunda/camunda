@@ -1,5 +1,5 @@
 /*
- * Zeebe Broker Core
+ * Zeebe Workflow Engine
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,13 +15,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.engine.incident;
+package io.zeebe.engine.processor.workflow.incident;
 
-import static io.zeebe.protocol.intent.IncidentIntent.RESOLVED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.engine.util.EngineRule;
 import io.zeebe.exporter.api.record.Assertions;
 import io.zeebe.exporter.api.record.Record;
 import io.zeebe.exporter.api.record.value.IncidentRecordValue;
@@ -32,15 +31,13 @@ import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
-import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
-import io.zeebe.test.broker.protocol.commandapi.PartitionTestClient;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordingExporter;
-import org.junit.Before;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 public class MessageIncidentTest {
 
@@ -53,36 +50,33 @@ public class MessageIncidentTest {
               "catch", e -> e.message(m -> m.name("cancel").zeebeCorrelationKey("orderId")))
           .done();
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomix);
+  @ClassRule public static final EngineRule ENGINE = new EngineRule();
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
-  private PartitionTestClient testClient;
-
-  @Before
-  public void init() {
-    testClient = apiRule.partitionClient();
-    apiRule.waitForPartition(1);
-
-    // given
-    testClient.deploy(WORKFLOW);
+  @BeforeClass
+  public static void init() {
+    ENGINE.deployment().withXmlResource(WORKFLOW).deploy();
   }
 
   @Test
   public void shouldCreateIncidentIfCorrelationKeyNotFound() {
     // when
-    final long workflowInstanceKey =
-        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId("catch")
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
 
     // then
     final Record<IncidentRecordValue> incidentRecord =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR.name())
@@ -99,21 +93,23 @@ public class MessageIncidentTest {
   public void shouldCreateIncidentIfCorrelationKeyOfInvalidType() {
     // when
     final long workflowInstanceKey =
-        testClient
-            .createWorkflowInstance(
-                r ->
-                    r.setBpmnProcessId(PROCESS_ID)
-                        .setVariables(MsgPackUtil.asMsgPack("orderId", true)))
-            .getInstanceKey();
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("orderId", true)
+            .create();
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .withElementId("catch")
             .getFirst();
 
     // then
     final Record<IncidentRecordValue> incidentRecord =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR.name())
@@ -130,28 +126,35 @@ public class MessageIncidentTest {
   @Test
   public void shouldResolveIncidentIfCorrelationKeyNotFound() {
     // given
-    final long workflowInstance =
-        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
+    final long workflowInstance = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     final Record<IncidentRecordValue> incidentCreatedRecord =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstance)
+            .getFirst();
 
-    testClient.updateVariables(
-        incidentCreatedRecord.getValue().getElementInstanceKey(),
-        Maps.of(entry("orderId", "order123")));
+    ENGINE
+        .variables()
+        .ofScope(incidentCreatedRecord.getValue().getElementInstanceKey())
+        .withDocument(Maps.of(entry("orderId", "order123")))
+        .update();
 
     // when
-    testClient.resolveIncident(incidentCreatedRecord.getKey());
+    final Record<IncidentRecordValue> incidentResolvedEvent =
+        ENGINE
+            .incident()
+            .ofInstance(workflowInstance)
+            .withKey(incidentCreatedRecord.getKey())
+            .resolve();
 
     // then
     assertThat(
             RecordingExporter.workflowInstanceSubscriptionRecords(
                     WorkflowInstanceSubscriptionIntent.OPENED)
+                .withWorkflowInstanceKey(workflowInstance)
                 .exists())
         .isTrue();
 
-    final Record<IncidentRecordValue> incidentResolvedEvent =
-        testClient.receiveFirstIncidentEvent(workflowInstance, RESOLVED);
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentCreatedRecord.getKey());
   }
 }

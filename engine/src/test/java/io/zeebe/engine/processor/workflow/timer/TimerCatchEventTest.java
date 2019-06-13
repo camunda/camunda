@@ -30,14 +30,20 @@ import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.stream.IntStream;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class TimerCatchEventTest {
   @ClassRule public static final EngineRule ENGINE = new EngineRule();
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   private static final BpmnModelInstance SINGLE_TIMER_WORKFLOW =
       Bpmn.createExecutableProcess("SINGLE_TIMER_WORKFLOW")

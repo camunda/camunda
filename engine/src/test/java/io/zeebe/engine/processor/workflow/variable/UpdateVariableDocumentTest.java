@@ -34,15 +34,21 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordStream;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class UpdateVariableDocumentTest {
 
   @ClassRule public static final EngineRule ENGINE_RULE = new EngineRule();
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Test
   public void shouldProduceCorrectSequenceOfEvents() {

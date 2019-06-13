@@ -26,30 +26,36 @@ import java.util.concurrent.TimeoutException;
 import org.junit.rules.ExternalResource;
 
 public class ServiceContainerRule extends ExternalResource {
-  private final ServiceContainerImpl serviceContainer;
-  private ActorScheduler actorScheduler;
-  private boolean shouldStop;
+  private ServiceContainerImpl serviceContainer;
+  private final boolean shouldStop;
 
-  public ServiceContainerRule(ActorScheduler actorScheduler, boolean shouldStop) {
-    this.actorScheduler = actorScheduler;
+  private ActorSchedulerRule actorSchedulerRule;
+  private ControlledActorSchedulerRule controlledActorSchedulerRule;
+
+  public ServiceContainerRule(ActorSchedulerRule actorSchedulerRule, boolean shouldStop) {
+    this.actorSchedulerRule = actorSchedulerRule;
     this.shouldStop = shouldStop;
-    this.serviceContainer = new ServiceContainerImpl(actorScheduler);
   }
 
-  public ServiceContainerRule(ActorScheduler actorScheduler) {
-    this(actorScheduler, true);
+  public ServiceContainerRule(
+      ControlledActorSchedulerRule controlledActorSchedulerRule, boolean shouldStop) {
+    this.controlledActorSchedulerRule = controlledActorSchedulerRule;
+    this.shouldStop = shouldStop;
   }
 
   public ServiceContainerRule(ActorSchedulerRule actorSchedulerRule) {
-    this(actorSchedulerRule.get(), true);
+    this(actorSchedulerRule, true);
   }
 
   public ServiceContainerRule(ControlledActorSchedulerRule actorSchedulerRule) {
-    this(actorSchedulerRule.get(), false);
+    this(actorSchedulerRule, false);
   }
 
   @Override
   protected void before() throws Throwable {
+    final ActorScheduler actorScheduler =
+        actorSchedulerRule == null ? controlledActorSchedulerRule.get() : actorSchedulerRule.get();
+    serviceContainer = new ServiceContainerImpl(actorScheduler);
     serviceContainer.start();
   }
 
@@ -68,7 +74,7 @@ public class ServiceContainerRule extends ExternalResource {
     return serviceContainer;
   }
 
-  public ActorScheduler getActorScheduler() {
-    return actorScheduler;
+  public ActorSchedulerRule getActorSchedulerRule() {
+    return actorSchedulerRule;
   }
 }

@@ -267,23 +267,6 @@ public class TestStreams {
         SNAPSHOT_INTERVAL);
   }
 
-  public StreamProcessor startStreamProcessor(
-      final String log,
-      final int streamProcessorId,
-      final ZeebeDbFactory zeebeDbFactory,
-      final TypedRecordProcessorFactory typedRecordProcessorFactory,
-      final int maxSnapshot,
-      final Duration snapshotInterval) {
-    final LogStream stream = getLogStream(log);
-    return buildStreamProcessor(
-        streamProcessorId,
-        stream,
-        zeebeDbFactory,
-        typedRecordProcessorFactory,
-        maxSnapshot,
-        snapshotInterval);
-  }
-
   private StreamProcessor buildStreamProcessor(
       int streamProcessorId,
       LogStream stream,
