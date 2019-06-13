@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import javax.json.Json;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -32,7 +34,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 @Profile("auth")
 @EnableWebSecurity
@@ -86,7 +90,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   @Override
   public void configure(HttpSecurity http) throws Exception {
     if(operateProperties.isCsrfPreventionEnabled()){
-      http.csrf().ignoringAntMatchers(LOGIN_RESOURCE);
+      http.csrf()
+      .ignoringAntMatchers(LOGIN_RESOURCE)
+      .and()
+      .addFilterAfter(getCSRFFilter(),CsrfFilter.class);
     }else {
       http.csrf().disable();
     }
@@ -141,7 +148,17 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   }
 
   private void successHandler(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-    addCSRFTokenWhenAvailable(request,response).setStatus(NO_CONTENT.value());
+    addCSRFTokenWhenAvailable(request, response).setStatus(NO_CONTENT.value());
+  }
+  
+  protected OncePerRequestFilter getCSRFFilter() {
+    return new OncePerRequestFilter() {
+      
+      @Override
+      protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+          filterChain.doFilter(request, addCSRFTokenWhenAvailable(request, response));
+      }
+    };
   }
 
 }
