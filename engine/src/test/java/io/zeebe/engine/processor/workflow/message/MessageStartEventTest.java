@@ -17,7 +17,7 @@
  */
 package io.zeebe.engine.processor.workflow.message;
 
-import static io.zeebe.exporter.api.record.Assertions.assertThat;
+import static io.zeebe.protocol.record.Assertions.assertThat;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.test.util.record.RecordingExporter.messageStartEventSubscriptionRecords;
 import static org.assertj.core.api.Assertions.assertThat;

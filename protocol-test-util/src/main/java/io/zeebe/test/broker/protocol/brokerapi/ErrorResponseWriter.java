@@ -15,9 +15,9 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
-import io.zeebe.protocol.ErrorCode;
-import io.zeebe.protocol.ErrorResponseEncoder;
-import io.zeebe.protocol.MessageHeaderEncoder;
+import io.zeebe.protocol.record.ErrorCode;
+import io.zeebe.protocol.record.ErrorResponseEncoder;
+import io.zeebe.protocol.record.MessageHeaderEncoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import java.nio.charset.StandardCharsets;
 import org.agrona.MutableDirectBuffer;

@@ -25,7 +25,7 @@ import io.zeebe.engine.state.instance.EventScopeInstanceState;
 import io.zeebe.engine.state.message.MessageStartEventSubscriptionState;
 import io.zeebe.engine.state.message.MessageState;
 import io.zeebe.engine.state.message.MessageSubscriptionState;
-import io.zeebe.protocol.ValueType;
+import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;

@@ -17,11 +17,11 @@ package io.zeebe.protocol.impl.record.value.deployment;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapArray;
 
-import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.BinaryProperty;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 

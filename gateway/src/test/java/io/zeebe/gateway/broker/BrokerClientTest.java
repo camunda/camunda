@@ -37,12 +37,12 @@ import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.msgpack.value.DocumentValue;
-import io.zeebe.protocol.ErrorCode;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.RejectionType;
-import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
+import io.zeebe.protocol.record.ErrorCode;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
@@ -77,7 +77,7 @@ public class BrokerClientTest {
   @Rule public TestName testContext = new TestName();
   private BrokerClient client;
   private ControlledActorClock clock;
-  private static int clientMaxRequests = 128;
+  private static final int CLIENT_MAX_REQUESTS = 128;
 
   @Before
   public void setUp() {
@@ -249,7 +249,7 @@ public class BrokerClientTest {
     stubJobResponse();
 
     // when then
-    for (int i = 0; i < clientMaxRequests; i++) {
+    for (int i = 0; i < CLIENT_MAX_REQUESTS; i++) {
       client.sendRequest(new BrokerCreateWorkflowInstanceRequest()).join();
     }
   }
@@ -266,7 +266,7 @@ public class BrokerClientTest {
 
     final List<ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>>> futures =
         new ArrayList<>();
-    for (int i = 0; i < clientMaxRequests; i++) {
+    for (int i = 0; i < CLIENT_MAX_REQUESTS; i++) {
       final ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>> future =
           client.sendRequest(new BrokerCreateWorkflowInstanceRequest());
 
@@ -279,7 +279,7 @@ public class BrokerClientTest {
     }
 
     // then
-    for (int i = 0; i < clientMaxRequests; i++) {
+    for (int i = 0; i < CLIENT_MAX_REQUESTS; i++) {
       final ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>> future =
           client.sendRequest(new BrokerCreateWorkflowInstanceRequest());
 
@@ -295,7 +295,7 @@ public class BrokerClientTest {
     // given
     final List<ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>>> futures =
         new ArrayList<>();
-    for (int i = 0; i < clientMaxRequests; i++) {
+    for (int i = 0; i < CLIENT_MAX_REQUESTS; i++) {
       final ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>> future =
           client.sendRequest(new BrokerCreateWorkflowInstanceRequest());
       futures.add(future);
@@ -312,7 +312,7 @@ public class BrokerClientTest {
     }
 
     // then
-    for (int i = 0; i < clientMaxRequests; i++) {
+    for (int i = 0; i < CLIENT_MAX_REQUESTS; i++) {
       final ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>> future =
           client.sendRequest(new BrokerCreateWorkflowInstanceRequest());
 

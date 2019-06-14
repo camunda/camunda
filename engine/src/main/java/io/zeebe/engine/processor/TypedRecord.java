@@ -17,9 +17,9 @@
  */
 package io.zeebe.engine.processor;
 
-import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.Record;
 
 public interface TypedRecord<T extends UnifiedRecordValue> extends Record<T> {
 

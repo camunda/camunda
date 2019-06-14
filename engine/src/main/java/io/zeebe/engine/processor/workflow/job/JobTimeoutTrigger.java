@@ -23,7 +23,7 @@ import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.TypedCommandWriter;
 import io.zeebe.engine.state.instance.JobState;
-import io.zeebe.protocol.ValueType;
+import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.util.sched.ScheduledTimer;
 import java.time.Duration;

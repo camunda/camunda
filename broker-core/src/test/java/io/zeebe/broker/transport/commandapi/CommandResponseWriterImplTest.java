@@ -21,10 +21,10 @@ import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.VarDataUtil.readBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.protocol.ExecuteCommandResponseDecoder;
-import io.zeebe.protocol.MessageHeaderDecoder;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.ValueType;
+import io.zeebe.protocol.record.ExecuteCommandResponseDecoder;
+import io.zeebe.protocol.record.MessageHeaderDecoder;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import org.agrona.concurrent.UnsafeBuffer;

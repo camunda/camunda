@@ -18,12 +18,12 @@
 package io.zeebe.engine.util.client;
 
 import io.zeebe.engine.util.StreamProcessorRule;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;

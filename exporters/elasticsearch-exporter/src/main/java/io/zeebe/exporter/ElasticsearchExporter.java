@@ -20,8 +20,8 @@ import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.ValueType;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.ValueType;
 import java.time.Duration;
 import org.slf4j.Logger;
 

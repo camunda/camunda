@@ -22,8 +22,8 @@ import io.zeebe.engine.processor.workflow.EventOutput;
 import io.zeebe.engine.processor.workflow.WorkflowInstanceCommandContext;
 import io.zeebe.engine.processor.workflow.WorkflowInstanceCommandHandler;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public class CancelWorkflowInstanceHandler implements WorkflowInstanceCommandHandler {

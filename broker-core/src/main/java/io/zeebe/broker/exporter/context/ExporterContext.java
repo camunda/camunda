@@ -19,8 +19,8 @@ package io.zeebe.broker.exporter.context;
 
 import io.zeebe.exporter.api.context.Configuration;
 import io.zeebe.exporter.api.context.Context;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.ValueType;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.ValueType;
 import io.zeebe.util.EnsureUtil;
 import org.slf4j.Logger;
 

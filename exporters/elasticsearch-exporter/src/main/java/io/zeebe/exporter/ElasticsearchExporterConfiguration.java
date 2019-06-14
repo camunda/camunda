@@ -17,8 +17,8 @@ package io.zeebe.exporter;
 
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordMetadata;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.ValueType;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.ValueType;
 
 public class ElasticsearchExporterConfiguration {
 

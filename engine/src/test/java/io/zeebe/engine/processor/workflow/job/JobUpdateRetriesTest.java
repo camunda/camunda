@@ -20,13 +20,13 @@ package io.zeebe.engine.processor.workflow.job;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.exporter.api.record.Assertions;
+import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.protocol.record.value.JobRecordValue;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.RejectionType;
-import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.Before;

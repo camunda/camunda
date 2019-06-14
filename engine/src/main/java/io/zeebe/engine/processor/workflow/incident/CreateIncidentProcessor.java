@@ -25,8 +25,8 @@ import io.zeebe.engine.state.instance.IncidentState;
 import io.zeebe.engine.state.instance.IndexedRecord;
 import io.zeebe.engine.state.instance.JobState;
 import io.zeebe.engine.state.instance.JobState.State;
-import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 
 public final class CreateIncidentProcessor implements CommandProcessor<IncidentRecord> {

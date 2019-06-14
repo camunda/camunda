@@ -15,7 +15,7 @@
  */
 package io.zeebe.gateway.impl.broker.response;
 
-import io.zeebe.protocol.RejectionType;
+import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;

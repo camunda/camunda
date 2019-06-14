@@ -20,8 +20,8 @@ package io.zeebe.engine.processor.workflow.job;
 import io.zeebe.engine.processor.CommandProcessor;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.state.instance.JobState;
-import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.JobIntent;
 
 public class UpdateRetriesProcessor implements CommandProcessor<JobRecord> {

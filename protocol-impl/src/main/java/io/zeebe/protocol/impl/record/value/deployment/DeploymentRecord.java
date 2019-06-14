@@ -15,11 +15,11 @@
  */
 package io.zeebe.protocol.impl.record.value.deployment;
 
-import io.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

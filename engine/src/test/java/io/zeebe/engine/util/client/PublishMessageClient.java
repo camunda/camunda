@@ -18,11 +18,11 @@
 package io.zeebe.engine.util.client;
 
 import io.zeebe.engine.util.StreamProcessorRule;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.value.MessageRecordValue;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.MessageIntent;
+import io.zeebe.protocol.record.value.MessageRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.function.Function;

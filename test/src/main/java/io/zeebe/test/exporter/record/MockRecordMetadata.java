@@ -16,9 +16,9 @@
 package io.zeebe.test.exporter.record;
 
 import io.zeebe.protocol.record.RecordMetadata;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.RejectionType;
-import io.zeebe.protocol.ValueType;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
 import java.util.Objects;
