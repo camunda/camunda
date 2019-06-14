@@ -54,7 +54,7 @@ import io.zeebe.engine.processor.workflow.handlers.seqflow.SequenceFlowTakenHand
 import io.zeebe.engine.processor.workflow.handlers.servicetask.ServiceTaskElementActivatedHandler;
 import io.zeebe.engine.processor.workflow.handlers.servicetask.ServiceTaskElementTerminatingHandler;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.EnumMap;
 import java.util.Map;
 

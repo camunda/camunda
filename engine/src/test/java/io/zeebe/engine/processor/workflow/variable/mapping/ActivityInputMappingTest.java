@@ -21,11 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.exporter.api.record.Record;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;

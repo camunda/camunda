@@ -15,7 +15,7 @@
  */
 package io.zeebe.protocol.impl.record;
 
-import io.zeebe.exporter.api.record.RecordValue;
+import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.msgpack.UnpackedObject;
 
 public class UnifiedRecordValue extends UnpackedObject implements RecordValue {

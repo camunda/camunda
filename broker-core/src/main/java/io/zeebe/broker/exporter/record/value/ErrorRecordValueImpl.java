@@ -19,7 +19,7 @@ package io.zeebe.broker.exporter.record.value;
 
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueImpl;
-import io.zeebe.exporter.api.record.value.ErrorRecordValue;
+import io.zeebe.protocol.record.value.ErrorRecordValue;
 import java.util.Objects;
 
 public class ErrorRecordValueImpl extends RecordValueImpl implements ErrorRecordValue {

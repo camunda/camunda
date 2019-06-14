@@ -24,7 +24,7 @@ import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
 
 public class DeploymentCreateProcessor implements TypedRecordProcessor<DeploymentRecord> {
   public static final String DEPLOYMENT_ALREADY_EXISTS_MESSAGE =

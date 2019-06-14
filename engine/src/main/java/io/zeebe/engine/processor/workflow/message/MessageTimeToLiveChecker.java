@@ -21,7 +21,7 @@ import io.zeebe.engine.processor.TypedCommandWriter;
 import io.zeebe.engine.state.message.Message;
 import io.zeebe.engine.state.message.MessageState;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.util.sched.clock.ActorClock;
 
 public class MessageTimeToLiveChecker implements Runnable {

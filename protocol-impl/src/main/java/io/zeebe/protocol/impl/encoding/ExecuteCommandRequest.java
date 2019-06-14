@@ -24,7 +24,7 @@ import io.zeebe.protocol.MessageHeaderDecoder;
 import io.zeebe.protocol.MessageHeaderEncoder;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;

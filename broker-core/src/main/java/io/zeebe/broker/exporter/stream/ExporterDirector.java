@@ -28,7 +28,7 @@ import io.zeebe.engine.processor.EventFilter;
 import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
-import io.zeebe.exporter.api.record.Record;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;

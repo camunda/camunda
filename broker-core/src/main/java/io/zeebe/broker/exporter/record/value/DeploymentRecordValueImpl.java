@@ -19,9 +19,9 @@ package io.zeebe.broker.exporter.record.value;
 
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueImpl;
-import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.api.record.value.deployment.DeployedWorkflow;
-import io.zeebe.exporter.api.record.value.deployment.DeploymentResource;
+import io.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
+import io.zeebe.protocol.record.value.deployment.DeploymentResource;
 import java.util.List;
 import java.util.Objects;
 

@@ -36,7 +36,7 @@ import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerMessageHandler;
 import io.zeebe.transport.ServerOutput;

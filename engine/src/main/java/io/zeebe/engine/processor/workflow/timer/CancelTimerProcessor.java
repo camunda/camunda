@@ -25,7 +25,7 @@ import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
 
 public class CancelTimerProcessor implements TypedRecordProcessor<TimerRecord> {
   public static final String NO_TIMER_FOUND_MESSAGE =

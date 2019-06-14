@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueImpl;
-import io.zeebe.exporter.api.record.value.VariableRecordValue;
+import io.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.Objects;
 import java.util.function.Supplier;
 

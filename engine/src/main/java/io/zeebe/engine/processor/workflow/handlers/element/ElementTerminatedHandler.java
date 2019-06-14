@@ -23,7 +23,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlo
 import io.zeebe.engine.processor.workflow.handlers.AbstractTerminalStateHandler;
 import io.zeebe.engine.processor.workflow.handlers.IncidentResolver;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 /**
  * Once terminated, consumes its token, and if it is the last active element in its flow scope, will

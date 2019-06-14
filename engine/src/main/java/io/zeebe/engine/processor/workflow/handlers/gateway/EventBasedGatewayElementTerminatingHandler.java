@@ -21,7 +21,7 @@ import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableEventBasedGateway;
 import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementTerminatingHandler;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public class EventBasedGatewayElementTerminatingHandler<T extends ExecutableEventBasedGateway>
     extends ElementTerminatingHandler<T> {

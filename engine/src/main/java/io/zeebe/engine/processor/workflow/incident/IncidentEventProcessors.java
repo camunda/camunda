@@ -21,7 +21,7 @@ import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.processor.workflow.BpmnStepProcessor;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.record.intent.IncidentIntent;
 
 public class IncidentEventProcessors {
 

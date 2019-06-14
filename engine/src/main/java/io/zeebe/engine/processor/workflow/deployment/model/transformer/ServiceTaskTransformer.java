@@ -30,7 +30,7 @@ import io.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.zeebe.msgpack.spec.MsgPackWriter;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;

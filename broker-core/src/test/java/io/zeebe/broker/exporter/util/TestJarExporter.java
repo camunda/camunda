@@ -18,7 +18,7 @@
 package io.zeebe.broker.exporter.util;
 
 import io.zeebe.exporter.api.Exporter;
-import io.zeebe.exporter.api.record.Record;
+import io.zeebe.protocol.record.Record;
 
 /** Simple exported meant to be embedded into a JAR for testing */
 public class TestJarExporter implements Exporter {

@@ -16,7 +16,7 @@
 package io.zeebe.test.broker.protocol.brokerapi;
 
 import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
 import java.util.function.Consumer;
 
 public class JobStubs {

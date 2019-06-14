@@ -22,7 +22,7 @@ import io.zeebe.protocol.ErrorCode;
 import io.zeebe.protocol.ExecuteCommandRequestEncoder;
 import io.zeebe.protocol.MessageHeaderEncoder;
 import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientResponse;

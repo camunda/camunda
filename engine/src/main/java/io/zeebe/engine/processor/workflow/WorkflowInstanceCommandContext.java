@@ -23,7 +23,7 @@ import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public class WorkflowInstanceCommandContext {
 

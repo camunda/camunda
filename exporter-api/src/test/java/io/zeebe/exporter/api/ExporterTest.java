@@ -18,7 +18,7 @@ package io.zeebe.exporter.api;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.exporter.api.context.Context;
-import io.zeebe.exporter.api.record.Record;
+import io.zeebe.protocol.record.Record;
 import java.io.IOException;
 import org.junit.Test;
 

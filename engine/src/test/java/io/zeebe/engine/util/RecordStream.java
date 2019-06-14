@@ -29,8 +29,8 @@ import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionR
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.stream.StreamWrapper;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.stream.Stream;

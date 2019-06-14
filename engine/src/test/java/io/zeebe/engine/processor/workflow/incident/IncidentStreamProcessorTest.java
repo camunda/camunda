@@ -25,7 +25,7 @@ import io.zeebe.engine.state.instance.IncidentState;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.record.intent.IncidentIntent;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;

@@ -17,14 +17,14 @@
  */
 package io.zeebe.engine.processor.workflow;
 
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETING;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATING;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETING;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATING;
 
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;

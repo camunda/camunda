@@ -27,7 +27,7 @@ import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.instance.JobState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.util.sched.ActorControl;
 import org.junit.Before;
 import org.junit.Rule;

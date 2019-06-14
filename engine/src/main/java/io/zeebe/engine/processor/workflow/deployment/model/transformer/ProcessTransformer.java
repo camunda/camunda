@@ -22,8 +22,8 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWor
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Process;
-import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 
 public class ProcessTransformer implements ModelElementTransformer<Process> {
 

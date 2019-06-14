@@ -19,7 +19,7 @@ package io.zeebe.engine.processor;
 
 import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.intent.Intent;
 
 /**
  * High-level record processor abstraction that implements the common behavior of most

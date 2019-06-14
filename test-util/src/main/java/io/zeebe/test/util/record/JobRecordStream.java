@@ -15,9 +15,9 @@
  */
 package io.zeebe.test.util.record;
 
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.JobRecordValue;
-import io.zeebe.exporter.api.record.value.job.Headers;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.value.JobRecordValue;
+import io.zeebe.protocol.record.value.job.Headers;
 import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Stream;

@@ -18,8 +18,8 @@
 package io.zeebe.engine.processor.workflow.deployment.model.element;
 
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
-import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 import org.agrona.DirectBuffer;
 
 public interface ExecutableFlowElement {

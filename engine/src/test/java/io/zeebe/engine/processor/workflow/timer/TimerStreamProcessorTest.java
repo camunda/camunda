@@ -25,7 +25,7 @@ import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;

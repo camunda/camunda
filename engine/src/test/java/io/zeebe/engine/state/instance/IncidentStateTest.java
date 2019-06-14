@@ -22,8 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.ZeebeStateRule;
-import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.zeebe.protocol.record.value.ErrorType;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

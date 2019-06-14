@@ -27,7 +27,7 @@ import io.zeebe.broker.exporter.util.TestJarExporter;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Context;
-import io.zeebe.exporter.api.record.Record;
+import io.zeebe.protocol.record.Record;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;

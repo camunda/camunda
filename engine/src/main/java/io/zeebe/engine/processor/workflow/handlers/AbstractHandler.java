@@ -23,7 +23,7 @@ import io.zeebe.engine.processor.workflow.BpmnStepHandler;
 import io.zeebe.engine.processor.workflow.WorkflowInstanceLifecycle;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public abstract class AbstractHandler<T extends ExecutableFlowElement>
     implements BpmnStepHandler<T> {

@@ -15,8 +15,8 @@
  */
 package io.zeebe.protocol.impl.record.value.deployment;
 
-import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.api.record.value.deployment.DeployedWorkflow;
+import io.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -49,9 +49,9 @@ public class DeploymentRecord extends UnifiedRecordValue implements DeploymentRe
   }
 
   @Override
-  public List<io.zeebe.exporter.api.record.value.deployment.DeploymentResource> getResources() {
+  public List<io.zeebe.protocol.record.value.deployment.DeploymentResource> getResources() {
 
-    final List<io.zeebe.exporter.api.record.value.deployment.DeploymentResource> resources =
+    final List<io.zeebe.protocol.record.value.deployment.DeploymentResource> resources =
         new ArrayList<>();
 
     final Iterator<DeploymentResource> iterator = resourcesProp.iterator();

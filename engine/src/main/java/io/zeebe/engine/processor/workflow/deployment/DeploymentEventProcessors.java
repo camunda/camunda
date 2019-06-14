@@ -17,7 +17,7 @@
  */
 package io.zeebe.engine.processor.workflow.deployment;
 
-import static io.zeebe.protocol.intent.DeploymentIntent.CREATE;
+import static io.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.processor.workflow.CatchEventBehavior;

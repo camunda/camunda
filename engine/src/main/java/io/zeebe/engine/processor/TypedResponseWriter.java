@@ -19,7 +19,7 @@ package io.zeebe.engine.processor;
 
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.RejectionType;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.intent.Intent;
 
 public interface TypedResponseWriter {
 

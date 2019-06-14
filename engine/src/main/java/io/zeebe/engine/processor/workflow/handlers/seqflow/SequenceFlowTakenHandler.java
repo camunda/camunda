@@ -22,7 +22,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlo
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableSequenceFlow;
 import io.zeebe.engine.processor.workflow.handlers.AbstractHandler;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public class SequenceFlowTakenHandler<T extends ExecutableSequenceFlow> extends AbstractHandler<T> {
   public SequenceFlowTakenHandler() {
