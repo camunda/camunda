@@ -15,6 +15,7 @@ import org.camunda.operate.exceptions.OperateRuntimeException;
 
 public abstract class CollectionUtil {
 
+  @SafeVarargs
   public static <T> List<T> throwAwayNullElements(T... array) {
     List<T> listOfNotNulls = new ArrayList<>();
     for (T o: array) {
@@ -45,5 +46,13 @@ public abstract class CollectionUtil {
     if (collection!= null && object != null) {
       collection.add(object);
     }
+  }
+  
+  public static Collection<Integer> fromTo(int from,int to){
+    Collection<Integer> result = new ArrayList<>();
+    for(int i=from;i<=to;i++) {
+      result.add(i);
+    }
+    return result;
   }
 }

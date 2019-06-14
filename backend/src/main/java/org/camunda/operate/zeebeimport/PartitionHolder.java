@@ -5,10 +5,15 @@
  */
 package org.camunda.operate.zeebeimport;
 
+import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
+
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
+
 import org.camunda.operate.es.schema.indices.ImportPositionIndex;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -23,10 +28,13 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.Topology;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 @Component
 public class PartitionHolder {
+
+  public static final long WAIT_TIME_IN_MS = 500L;
+
+  public static final int MAX_RETRY = 2 * 10; 
 
   private static final Logger logger = LoggerFactory.getLogger(PartitionHolder.class);
 
@@ -44,37 +52,66 @@ public class PartitionHolder {
   @Qualifier("zeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
+  /**
+   * Retrieves PartitionIds with waiting time of {@value #WAIT_TIME_IN_MS} milliseconds and retries for {@value #MAX_RETRY} times.
+   */
   public Set<Integer> getPartitionIds() {
-    if (partitionIds.size() == 0) {
-      initPartitionListFromZeebe();
-    }
-    //if still not initialized, try to read from Elasticsearch, but not cache, as it can change with the time
-    if (partitionIds.size() == 0) {
-      return getPartitionsFromElasticsearch();
+    return getPartitionIdsWithWaitingTimeAndRetries(WAIT_TIME_IN_MS, MAX_RETRY);
+  }
+  
+  public Set<Integer> getPartitionIdsWithWaitingTimeAndRetries(long waitingTimeInMilliseconds, int maxRetries) {
+    int retries = 0;
+    while (partitionIds.isEmpty() && retries <= maxRetries) {
+      if (retries > 0) {
+        sleepFor(waitingTimeInMilliseconds);
+      }
+      retries++;
+
+      // partitionIds are only "present" when the sets are not empty.
+      Optional<Set<Integer>> zeebePartitionIds = getPartitionIdsFromZeebe();
+      Optional<Set<Integer>> zeebeElasticSearchPartitionIds = getPartitionsFromElasticsearch();
+
+      if (zeebePartitionIds.isPresent() && zeebeElasticSearchPartitionIds.isPresent() && 
+          zeebePartitionIds.get().equals(zeebeElasticSearchPartitionIds.get())) {
+        logger.debug("PartitionIds from both sources are present and equal");
+        partitionIds = zeebePartitionIds.get();
+      } else if (zeebePartitionIds.isPresent()) {
+        logger.debug("PartitionIds from zeebe client are present");
+        partitionIds = zeebePartitionIds.get();
+      } else if (zeebeElasticSearchPartitionIds.isPresent() && !zeebePartitionIds.isPresent()) {
+        logger.debug("PartitionIds from elasticsearch are present");
+        partitionIds.clear();
+        return zeebeElasticSearchPartitionIds.get();
+      }else {
+        logger.debug("PartitionIds are not present or not equal. Try ({}) next round.");
+      }
     }
     return partitionIds;
   }
 
-  private void initPartitionListFromZeebe() {
+  protected void sleepFor(long milliseconds) {
     try {
-      final Topology topology = zeebeClient.newTopologyRequest().send().join();
-      final int partitionsCount = topology.getPartitionsCount();
-      //generate list of partition ids
-      for (int i = 1; i<= partitionsCount; i++) {
-        partitionIds.add(i);
-      }
-      if (partitionIds.size() == 0) {
-        logger.warn("Partitions are not found. Import from Zeebe won't load any data.");
-      } else {
-        logger.debug("Following partition ids were found: {}", partitionIds);
-      }
-    } catch (Exception ex) { //TODO check exception class
-      logger.warn("Error occurred when requesting partition ids from Zeebe: " + ex.getMessage(), ex);
-      //ignore, if Zeebe is not available
+      Thread.sleep(milliseconds);
+    } catch (InterruptedException e) {
+      // Ignore interruption
     }
   }
+  
+  protected Optional<Set<Integer>> getPartitionIdsFromZeebe(){
+    logger.debug("Requesting partition ids from Zeebe client");
+    try {
+      final Topology topology = zeebeClient.newTopologyRequest().send().join();
+      int partitionCount = topology.getPartitionsCount();
+      if(partitionCount>0) {
+        return Optional.of(new HashSet<Integer>(CollectionUtil.fromTo(1,partitionCount)));
+      }
+    } catch (Throwable t) { 
+      logger.warn("Error occurred when requesting partition ids from Zeebe client: " + t.getMessage(), t);
+    }
+    return Optional.empty();
+  }
 
-  private Set<Integer> getPartitionsFromElasticsearch() {
+  protected Optional<Set<Integer>> getPartitionsFromElasticsearch() {
     logger.debug("Requesting partition ids from elasticsearch");
     final String aggName = "partitions";
     SearchRequest searchRequest = new SearchRequest(ImportValueType.DEPLOYMENT.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix()))
@@ -87,12 +124,13 @@ public class PartitionHolder {
       final HashSet<Integer> partitionIds = ((Terms) searchResponse.getAggregations().get(aggName)).getBuckets().stream()
           .collect(HashSet::new, (set, bucket) -> set.add(Integer.valueOf(bucket.getKeyAsString())), (set1, set2) -> set1.addAll(set2));
       logger.debug("Following partition ids were found: {}", partitionIds);
-      return partitionIds;
+      if(!partitionIds.isEmpty()) {
+        return Optional.of(partitionIds);
+      }
     } catch (Exception ex) {
       logger.warn("Error occurred when requesting partition ids from Elasticsearch: " + ex.getMessage(), ex);
-      return new HashSet<>();
     }
+    return Optional.empty();
   }
-
 
 }

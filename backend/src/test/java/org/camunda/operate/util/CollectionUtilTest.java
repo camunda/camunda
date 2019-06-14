@@ -35,5 +35,13 @@ public class CollectionUtilTest {
     assertThatExceptionOfType(OperateRuntimeException.class).isThrownBy(() -> CollectionUtil.asMap("key1"));
     assertThatExceptionOfType(OperateRuntimeException.class).isThrownBy(() -> CollectionUtil.asMap("key1","value1","key2")); 
   }
+  
+  @Test
+  public void testFromTo() {
+    assertThat(CollectionUtil.fromTo(0,0)).contains(0);
+    assertThat(CollectionUtil.fromTo(0,-1)).isEmpty();
+    assertThat(CollectionUtil.fromTo(-1,0)).contains(-1,0);
+    assertThat(CollectionUtil.fromTo(1,5)).contains(1,2,3,4,5);
+  }
 
 }
