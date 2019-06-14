@@ -26,6 +26,7 @@ import io.zeebe.broker.exporter.ExporterServiceNames;
 import io.zeebe.broker.logstreams.delete.FollowerLogStreamDeletionService;
 import io.zeebe.broker.logstreams.delete.LeaderLogStreamDeletionService;
 import io.zeebe.broker.logstreams.restore.BrokerRestoreServer;
+import io.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.distributedlog.StorageConfiguration;
@@ -90,9 +91,13 @@ public class Partition implements Service<Partition> {
 
     final DeletionService deletionService;
     if (state == RaftState.FOLLOWER) {
-      deletionService =
-          new FollowerLogStreamDeletionService(
-              logStream, snapshotController, brokerCfg.getCluster().getNodeId());
+      final StatePositionSupplier positionSupplier =
+          new StatePositionSupplier(
+              snapshotController,
+              partitionId,
+              String.valueOf(brokerCfg.getCluster().getNodeId()),
+              LOG);
+      deletionService = new FollowerLogStreamDeletionService(logStream, positionSupplier);
 
       snapshotController.setDeletionService(deletionService);
       snapshotController.consumeReplicatedSnapshots();

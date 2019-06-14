@@ -20,6 +20,7 @@ import io.zeebe.distributedlog.restore.RestoreClient;
 import io.zeebe.distributedlog.restore.RestoreFactory;
 import io.zeebe.distributedlog.restore.RestoreNodeProvider;
 import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreContext;
+import org.slf4j.Logger;
 
 public class ReplicatingRestoreClientProvider implements RestoreFactory {
 
@@ -43,7 +44,7 @@ public class ReplicatingRestoreClientProvider implements RestoreFactory {
   }
 
   @Override
-  public SnapshotRestoreContext createSnapshotRestoreContext() {
+  public SnapshotRestoreContext createSnapshotRestoreContext(int partitionId, Logger logger) {
     return this.snapshotRestoreContext;
   }
 }

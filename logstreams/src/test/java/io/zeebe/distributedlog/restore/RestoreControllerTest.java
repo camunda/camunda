@@ -32,13 +32,14 @@ import io.zeebe.distributedlog.restore.impl.ReplicatingRestoreClientProvider;
 import io.zeebe.distributedlog.restore.impl.RestoreController;
 import io.zeebe.distributedlog.restore.log.LogReplicator;
 import io.zeebe.distributedlog.restore.snapshot.RestoreSnapshotReplicator;
-import io.zeebe.distributedlog.restore.snapshot.impl.SnapshotConsumerImpl;
+import io.zeebe.logstreams.state.FileSnapshotConsumer;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.logstreams.util.LogStreamReaderRule;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
 import io.zeebe.logstreams.util.RocksDBWrapper;
+import io.zeebe.util.collection.Tuple;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -137,8 +138,7 @@ public class RestoreControllerTest {
         new RestoreSnapshotReplicator(
             restoreClient,
             snapshotRestoreContext,
-            new SnapshotConsumerImpl(receiverStorage, log),
-            1,
+            new FileSnapshotConsumer(receiverStorage, log),
             restoreThreadContext,
             log);
     return new RestoreController(
@@ -169,8 +169,7 @@ public class RestoreControllerTest {
     final long snapshotPosition = writerServer.writeEvents(numEventsInSnapshot, EVENT);
     replicatorSnapshotController.takeSnapshot(snapshotPosition);
 
-    snapshotRestoreContext.setProcessorPositionSupplier(() -> snapshotPosition);
-    snapshotRestoreContext.setExporterPositionSupplier(() -> snapshotPosition);
+    snapshotRestoreContext.setPositionSupplier(() -> new Tuple(snapshotPosition, snapshotPosition));
 
     final long restoredPosition = restoreController.restore(-1, snapshotPosition);
 
@@ -192,9 +191,7 @@ public class RestoreControllerTest {
     final long snapshotPosition = writerServer.writeEvents(numEventsInSnapshot, EVENT);
     replicatorSnapshotController.takeSnapshot(snapshotPosition);
     final long backupPosition = writerServer.writeEvents(numEventsAfterSnapshotInBackup, EVENT);
-    snapshotRestoreContext.setProcessorPositionSupplier(() -> snapshotPosition);
-    snapshotRestoreContext.setExporterPositionSupplier(() -> snapshotPosition);
-
+    snapshotRestoreContext.setPositionSupplier(() -> new Tuple(snapshotPosition, snapshotPosition));
     // when
     final long restoredPosition = restoreController.restore(-1, backupPosition);
 
@@ -216,8 +213,7 @@ public class RestoreControllerTest {
     final long backupPosition = writerServer.writeEvents(numEventsBeforeBackUp, EVENT);
     final long snapshotPosition = writerServer.writeEvents(numEventsInSnapshotAfterBackup, EVENT);
     replicatorSnapshotController.takeSnapshot(snapshotPosition);
-    snapshotRestoreContext.setProcessorPositionSupplier(() -> snapshotPosition);
-    snapshotRestoreContext.setExporterPositionSupplier(() -> snapshotPosition);
+    snapshotRestoreContext.setPositionSupplier(() -> new Tuple(snapshotPosition, snapshotPosition));
 
     // when
     final long restoredPosition = restoreController.restore(-1, backupPosition);
@@ -240,14 +236,44 @@ public class RestoreControllerTest {
     final long exporterPosition = writerServer.writeEvents(numEventsExported, EVENT);
     final long backupPosition = writerServer.writeEvents(numEventsNotExported, EVENT);
     replicatorSnapshotController.takeSnapshot(backupPosition);
-    snapshotRestoreContext.setProcessorPositionSupplier(() -> backupPosition);
-    snapshotRestoreContext.setExporterPositionSupplier(() -> exporterPosition);
+
+    snapshotRestoreContext.setPositionSupplier(() -> new Tuple(exporterPosition, backupPosition));
 
     // when
     restoreController.restore(-1, backupPosition);
 
     // then
     assertThat(readerClient.readEvents().size()).isEqualTo(1 + numEventsNotExported);
+  }
+
+  @Test
+  public void shouldRestoreFromLatestProcessedPositionIfNoExporters() {
+    // given
+    final int numEventsNotExported = 10;
+    final long backupPosition = writerServer.writeEvents(numEventsNotExported, EVENT);
+    replicatorSnapshotController.takeSnapshot(backupPosition);
+    snapshotRestoreContext.setPositionSupplier(() -> new Tuple(Long.MAX_VALUE, backupPosition));
+
+    // when
+    restoreController.restore(-1, backupPosition);
+
+    // then
+    assertThat(readerClient.readEvents().size()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldRestoreFromStartIfNoEventExported() {
+    // given
+    final int numEvents = 10;
+    final long backupPosition = writerServer.writeEvents(numEvents, EVENT);
+    replicatorSnapshotController.takeSnapshot(backupPosition);
+    snapshotRestoreContext.setPositionSupplier(() -> new Tuple(-1L, backupPosition));
+
+    // when
+    restoreController.restore(-1, backupPosition);
+
+    // then
+    assertThat(readerClient.readEvents().size()).isEqualTo(numEvents);
   }
 
   @Test
@@ -261,8 +287,7 @@ public class RestoreControllerTest {
     final long backupPosition = writerServer.writeEvents(numEventsNotExportedInBackup, EVENT);
     final long snapshotPosition = writerServer.writeEvents(numEventsNotExportedAfterBackup, EVENT);
     replicatorSnapshotController.takeSnapshot(snapshotPosition);
-    snapshotRestoreContext.setProcessorPositionSupplier(() -> snapshotPosition);
-    snapshotRestoreContext.setExporterPositionSupplier(() -> exporterPosition);
+    snapshotRestoreContext.setPositionSupplier(() -> new Tuple(exporterPosition, snapshotPosition));
 
     // when
     restoreController.restore(-1, backupPosition);

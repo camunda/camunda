@@ -136,7 +136,6 @@ public class AtomixService implements Service<Atomix> {
     final BrokerRestoreFactory restoreFactory =
         new BrokerRestoreFactory(
             atomix.getCommunicationService(),
-            atomix.getEventService(),
             atomix.getPartitionService(),
             raftPartitionGroupName,
             localMemberId);

@@ -21,6 +21,7 @@ import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreResponse;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.logstreams.state.SnapshotChunk;
+import io.zeebe.logstreams.state.SnapshotChunkUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;

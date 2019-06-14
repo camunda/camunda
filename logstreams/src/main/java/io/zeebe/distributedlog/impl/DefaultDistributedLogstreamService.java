@@ -35,14 +35,14 @@ import io.zeebe.distributedlog.restore.impl.RestoreController;
 import io.zeebe.distributedlog.restore.log.LogReplicationAppender;
 import io.zeebe.distributedlog.restore.log.LogReplicator;
 import io.zeebe.distributedlog.restore.snapshot.RestoreSnapshotReplicator;
-import io.zeebe.distributedlog.restore.snapshot.SnapshotConsumer;
 import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreContext;
-import io.zeebe.distributedlog.restore.snapshot.impl.SnapshotConsumerImpl;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.state.FileSnapshotConsumer;
+import io.zeebe.logstreams.state.SnapshotConsumer;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.util.ZbLogger;
@@ -291,18 +291,13 @@ public class DefaultDistributedLogstreamService
         new LogReplicator(this, restoreClient, restoreThreadContext);
 
     final SnapshotRestoreContext snapshotRestoreContext =
-        restoreFactory.createSnapshotRestoreContext();
-    final StateStorage storage = snapshotRestoreContext.getStateStorage(partitionId);
-    final SnapshotConsumer snapshotConsumer = new SnapshotConsumerImpl(storage, LOG);
+        restoreFactory.createSnapshotRestoreContext(partitionId, logger);
+    final StateStorage storage = snapshotRestoreContext.getStateStorage();
+    final SnapshotConsumer snapshotConsumer = new FileSnapshotConsumer(storage, LOG);
 
     final RestoreSnapshotReplicator snapshotReplicator =
         new RestoreSnapshotReplicator(
-            restoreClient,
-            snapshotRestoreContext,
-            snapshotConsumer,
-            partitionId,
-            restoreThreadContext,
-            logger);
+            restoreClient, snapshotRestoreContext, snapshotConsumer, restoreThreadContext, logger);
     return new RestoreController(
         restoreClient,
         nodeProvider,

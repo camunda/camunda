@@ -18,31 +18,37 @@
 package io.zeebe.broker.logstreams.restore;
 
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionGroup;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionService;
+import io.zeebe.broker.engine.EngineService;
+import io.zeebe.broker.logstreams.state.StatePositionSupplier;
+import io.zeebe.distributedlog.StorageConfiguration;
+import io.zeebe.distributedlog.impl.LogstreamConfig;
 import io.zeebe.distributedlog.restore.RestoreClient;
 import io.zeebe.distributedlog.restore.RestoreFactory;
 import io.zeebe.distributedlog.restore.RestoreNodeProvider;
 import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreContext;
+import io.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.zeebe.engine.state.StateStorageFactory;
+import io.zeebe.logstreams.spi.SnapshotController;
+import io.zeebe.logstreams.state.StateSnapshotController;
+import io.zeebe.logstreams.state.StateStorage;
+import org.slf4j.Logger;
 
 public class BrokerRestoreFactory implements RestoreFactory {
   private final ClusterCommunicationService communicationService;
-  private final ClusterEventService eventService;
   private final PartitionService partitionService;
   private final String partitionGroupName;
   private final String localMemberId;
 
   public BrokerRestoreFactory(
       ClusterCommunicationService communicationService,
-      ClusterEventService eventService,
       PartitionService partitionService,
       String partitionGroupName,
       String localMemberId) {
     this.communicationService = communicationService;
-    this.eventService = eventService;
     this.partitionService = partitionService;
     this.partitionGroupName = partitionGroupName;
     this.localMemberId = localMemberId;
@@ -59,8 +65,20 @@ public class BrokerRestoreFactory implements RestoreFactory {
   }
 
   @Override
-  public SnapshotRestoreContext createSnapshotRestoreContext() {
-    return new BrokerSnapshotRestoreContext(localMemberId);
+  public SnapshotRestoreContext createSnapshotRestoreContext(int partitionId, Logger logger) {
+    final StorageConfiguration configuration =
+        LogstreamConfig.getConfig(localMemberId, partitionId).join();
+    final StateStorage restoreStateStorage =
+        new StateStorageFactory(configuration.getStatesDirectory())
+            .create(partitionId, EngineService.PROCESSOR_NAME, "-restore-log");
+
+    final SnapshotController stateSnapshotController =
+        new StateSnapshotController(DefaultZeebeDbFactory.DEFAULT_DB_FACTORY, restoreStateStorage);
+
+    final StatePositionSupplier positionSupplier =
+        new StatePositionSupplier(stateSnapshotController, partitionId, localMemberId, logger);
+
+    return new BrokerSnapshotRestoreContext(positionSupplier, restoreStateStorage);
   }
 
   private Partition getPartition(int partitionId) {

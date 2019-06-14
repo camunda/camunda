@@ -15,15 +15,10 @@
  */
 package io.zeebe.logstreams.state;
 
-import static java.nio.file.StandardOpenOption.CREATE_NEW;
-
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.spi.ValidSnapshotListener;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardOpenOption;
-import java.util.zip.CRC32;
 import org.agrona.collections.Long2LongHashMap;
 import org.slf4j.Logger;
 
@@ -40,6 +35,8 @@ public final class ReplicationController {
   private final Long2LongHashMap receivedSnapshots = new Long2LongHashMap(MISSING_SNAPSHOT);
   private final StateStorage storage;
 
+  private final SnapshotConsumer snapshotConsumer;
+
   private final ValidSnapshotListener validSnapshotListener;
 
   public ReplicationController(SnapshotReplication replication, StateStorage storage) {
@@ -53,22 +50,15 @@ public final class ReplicationController {
     this.replication = replication;
     this.storage = storage;
     this.validSnapshotListener = validSnapshotListener;
-  }
-
-  private static long createChecksum(byte[] content) {
-    final CRC32 crc32 = new CRC32();
-    crc32.update(content);
-    return crc32.getValue();
+    this.snapshotConsumer = new FileSnapshotConsumer(storage, LOG);
   }
 
   public void replicate(long snapshotPosition, int totalCount, File snapshotChunkFile) {
     try {
-      final byte[] content = Files.readAllBytes(snapshotChunkFile.toPath());
-      final long checksum = createChecksum(content);
-
-      replication.replicate(
-          new SnapshotChunkImpl(
-              snapshotPosition, totalCount, snapshotChunkFile.getName(), checksum, content));
+      final SnapshotChunk chunkToReplicate =
+          SnapshotChunkUtil.createSnapshotChunkFromFile(
+              snapshotChunkFile, snapshotPosition, totalCount);
+      replication.replicate(chunkToReplicate);
     } catch (IOException ioe) {
       LOG.error(
           "Unexpected error on reading snapshot chunk from file '{}'.", snapshotChunkFile, ioe);
@@ -90,11 +80,6 @@ public final class ReplicationController {
     final String snapshotName = Long.toString(snapshotPosition);
     final String chunkName = snapshotChunk.getChunkName();
 
-    if (storage.existSnapshot(snapshotPosition)) {
-      LOG.debug("Ignore snapshot chunk {}, snapshot {} already exist.", chunkName, snapshotName);
-      return;
-    }
-
     final long snapshotCounter =
         receivedSnapshots.computeIfAbsent(snapshotPosition, k -> START_VALUE);
     if (snapshotCounter == INVALID_SNAPSHOT) {
@@ -105,47 +90,10 @@ public final class ReplicationController {
       return;
     }
 
-    final long expectedChecksum = snapshotChunk.getChecksum();
-    final long actualChecksum = createChecksum(snapshotChunk.getContent());
-
-    if (expectedChecksum != actualChecksum) {
+    if (snapshotConsumer.consumeSnapshotChunk(snapshotChunk)) {
+      validateWhenReceivedAllChunks(snapshotChunk);
+    } else {
       markSnapshotAsInvalid(snapshotChunk);
-      LOG.warn(
-          "Expected to have checksum {} for snapshot chunk file {} ({}), but calculated {}",
-          expectedChecksum,
-          chunkName,
-          snapshotName,
-          actualChecksum);
-      return;
-    }
-
-    final File tmpSnapshotDirectory = storage.getTmpSnapshotDirectoryFor(snapshotName);
-    if (!tmpSnapshotDirectory.exists()) {
-      tmpSnapshotDirectory.mkdirs();
-    }
-
-    final File snapshotFile = new File(tmpSnapshotDirectory, chunkName);
-    if (snapshotFile.exists()) {
-      LOG.debug("Received a snapshot file which already exist '{}'.", snapshotFile);
-      return;
-    }
-
-    LOG.debug("Consume snapshot chunk {}", chunkName);
-    writeReceivedSnapshotChunk(snapshotChunk, tmpSnapshotDirectory, snapshotFile);
-  }
-
-  private void writeReceivedSnapshotChunk(
-      SnapshotChunk snapshotChunk, File tmpSnapshotDirectory, File snapshotFile) {
-    try {
-      Files.write(
-          snapshotFile.toPath(), snapshotChunk.getContent(), CREATE_NEW, StandardOpenOption.WRITE);
-      LOG.debug("Wrote replicated snapshot chunk to file {}", snapshotFile.toPath());
-
-      validateWhenReceivedAllChunks(snapshotChunk, tmpSnapshotDirectory);
-    } catch (IOException ioe) {
-      markSnapshotAsInvalid(snapshotChunk);
-      LOG.error(
-          "Unexpected error occurred on writing an snapshot chunk to '{}'.", snapshotFile, ioe);
     }
   }
 
@@ -154,8 +102,7 @@ public final class ReplicationController {
     receivedSnapshots.put(snapshotPosition, INVALID_SNAPSHOT);
   }
 
-  private void validateWhenReceivedAllChunks(
-      SnapshotChunk snapshotChunk, File tmpSnapshotDirectory) {
+  private void validateWhenReceivedAllChunks(SnapshotChunk snapshotChunk) {
     final int totalChunkCount = snapshotChunk.getTotalCount();
     final long currentChunks = incrementAndGetChunkCount(snapshotChunk);
 
@@ -168,8 +115,7 @@ public final class ReplicationController {
           totalChunkCount,
           validSnapshotDirectory.toPath());
 
-      final boolean valid =
-          tryToMarkSnapshotAsValid(snapshotChunk, tmpSnapshotDirectory, validSnapshotDirectory);
+      final boolean valid = tryToMarkSnapshotAsValid(snapshotChunk);
 
       if (valid) {
         validSnapshotListener.onNewValidSnapshot();
@@ -190,59 +136,14 @@ public final class ReplicationController {
     return newCount;
   }
 
-  private boolean tryToMarkSnapshotAsValid(
-      SnapshotChunk snapshotChunk, File tmpSnapshotDirectory, File validSnapshotDirectory) {
-    try {
-      Files.move(tmpSnapshotDirectory.toPath(), validSnapshotDirectory.toPath());
+  private boolean tryToMarkSnapshotAsValid(SnapshotChunk snapshotChunk) {
+    if (snapshotConsumer.completeSnapshot(snapshotChunk.getSnapshotPosition())) {
       receivedSnapshots.remove(snapshotChunk.getSnapshotPosition());
-
       return true;
-    } catch (Exception e) {
+
+    } else {
       markSnapshotAsInvalid(snapshotChunk);
-      LOG.error(
-          "Unexpected error occurred on moving replicated snapshot from '{}'.",
-          tmpSnapshotDirectory.toPath(),
-          e);
       return false;
-    }
-  }
-
-  private final class SnapshotChunkImpl implements SnapshotChunk {
-    private final long snapshotPosition;
-    private final int totalCount;
-    private final String chunkName;
-    private final byte[] content;
-    private final long checksum;
-
-    SnapshotChunkImpl(
-        long snapshotPosition, int totalCount, String chunkName, long checksum, byte[] content) {
-      this.snapshotPosition = snapshotPosition;
-      this.totalCount = totalCount;
-      this.chunkName = chunkName;
-      this.checksum = checksum;
-      this.content = content;
-    }
-
-    public long getSnapshotPosition() {
-      return snapshotPosition;
-    }
-
-    @Override
-    public String getChunkName() {
-      return chunkName;
-    }
-
-    @Override
-    public int getTotalCount() {
-      return totalCount;
-    }
-
-    public long getChecksum() {
-      return checksum;
-    }
-
-    public byte[] getContent() {
-      return content;
     }
   }
 }

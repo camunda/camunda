@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.distributedlog.restore.snapshot.impl;
+package io.zeebe.logstreams.state;
 
-import io.zeebe.logstreams.state.SnapshotChunk;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;

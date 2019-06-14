@@ -69,9 +69,6 @@ public class SnapshotRestoreStrategy implements RestoreStrategy {
   }
 
   private long getFirstEventToBeReplicated(long exporterPosition, long processedPosition) {
-    if (exporterPosition > 0) {
-      return Math.min(processedPosition, exporterPosition);
-    }
-    return processedPosition;
+    return Math.min(processedPosition, exporterPosition);
   }
 }
