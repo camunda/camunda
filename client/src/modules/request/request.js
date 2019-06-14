@@ -4,10 +4,17 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import Csrf from 'modules/Csrf';
+
 let responseInterceptor = null;
 
 export async function request({url, method, body, query, headers}) {
   const resourceUrl = query ? `${url}?${stringifyQuery(query)}` : `${url}`;
+  const csrfToken = Csrf.getInstance().getToken();
+
+  if (csrfToken) {
+    headers = {'X-CSRF-TOKEN': csrfToken, ...headers};
+  }
 
   let response = await fetch(resourceUrl, {
     method,
@@ -25,6 +32,12 @@ export async function request({url, method, body, query, headers}) {
   }
 
   if (response.status >= 200 && response.status < 300) {
+    const token = response.headers && response.headers.get('X-CSRF-TOKEN');
+
+    if (token) {
+      Csrf.getInstance().setToken(token);
+    }
+
     return response;
   } else {
     throw response;

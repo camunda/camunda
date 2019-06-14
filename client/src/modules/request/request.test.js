@@ -8,6 +8,8 @@ import {mockResolvedAsyncFn, mockRejectedAsyncFn} from 'modules/testUtils';
 
 import {request, setResponseInterceptor} from './request';
 
+import Csrf from 'modules/Csrf';
+
 const successResponse = {
   status: 200,
   content: 'I have some content'
@@ -18,13 +20,22 @@ const failedResponse = {
   content: 'FAILED'
 };
 
-global.fetch = mockResolvedAsyncFn(successResponse);
+const csrfResponse = {
+  status: 200,
+  headers: new Map([['X-CSRF-TOKEN', 'awesome-token']])
+};
 
 describe('request', () => {
   const url = '/some/url';
 
   beforeEach(() => {
-    fetch.mockClear();
+    jest
+      .spyOn(global, 'fetch')
+      .mockImplementation(mockResolvedAsyncFn(successResponse));
+  });
+
+  afterEach(() => {
+    global.fetch.mockClear();
   });
 
   describe('url', () => {
@@ -96,6 +107,72 @@ describe('request', () => {
     });
   });
 
+  describe('CSRF', () => {
+    afterEach(() => {
+      Csrf.getInstance().setToken(null);
+    });
+
+    it('should not include CSRF token in request header when no token is present', () => {
+      // when
+      request({url});
+
+      // then
+      const headers = fetch.mock.calls[0][1].headers;
+      expect(headers).not.toContain('X-CSRF-TOKEN');
+    });
+
+    it('should include CSRF token in request header when token is present', () => {
+      // given
+      const token = 'my-csrf-token';
+      Csrf.getInstance().setToken(token);
+
+      // when
+      request({url});
+
+      // then
+      const headers = fetch.mock.calls[0][1].headers;
+      expect(headers['X-CSRF-TOKEN']).toBe(token);
+    });
+
+    it('should not store CSRF token in app when response does not contain token', async () => {
+      // when
+      await request({url});
+
+      // then
+      expect(Csrf.getInstance().getToken()).toBeNull();
+    });
+
+    it('should store CSRF token in app when response contains token', async () => {
+      // given
+      jest
+        .spyOn(global, 'fetch')
+        .mockImplementation(mockResolvedAsyncFn(csrfResponse));
+
+      // when
+      await request({url});
+
+      // then
+      expect(Csrf.getInstance().getToken()).toBe('awesome-token');
+    });
+
+    it('should contain retreived CSRF token in next request', async () => {
+      // given
+      jest
+        .spyOn(global, 'fetch')
+        .mockImplementation(mockResolvedAsyncFn(csrfResponse));
+
+      // when
+      // first request gets response containing token
+      await request({url});
+
+      // then
+      // second request should contain token in header
+      await request({url});
+      const headers = fetch.mock.calls[1][1].headers;
+      expect(headers['X-CSRF-TOKEN']).toBe('awesome-token');
+    });
+  });
+
   describe('response', () => {
     it("should call responseInterceptor when it's provided", async () => {
       // given
@@ -111,8 +188,9 @@ describe('request', () => {
 
     it("should throw response if it's unsuccessful", async () => {
       // mock global.fetch
-      const originalFetch = global.fetch;
-      global.fetch = mockRejectedAsyncFn(failedResponse);
+      jest
+        .spyOn(global, 'fetch')
+        .mockImplementation(mockRejectedAsyncFn(failedResponse));
 
       // then
       let error = null;
@@ -122,9 +200,6 @@ describe('request', () => {
         error = e;
       }
       expect(error).toEqual(failedResponse);
-
-      // reset global.fetch
-      global.fetch = originalFetch.bind(global);
     });
   });
 });
