@@ -9,10 +9,8 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ExecutorService;
 import org.camunda.operate.es.schema.indices.ImportPositionIndex;
 import org.camunda.operate.exceptions.NoSuchIndexException;
 import org.camunda.operate.exceptions.OperateRuntimeException;
@@ -33,7 +31,6 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -67,11 +64,6 @@ public class RecordsReader {
   private ImportValueType importValueType;
 
   /**
-   * The queue of executed tasks for execution.
-   */
-  private final BlockingQueue<Callable<Boolean>> importJobs;
-
-  /**
    * The job that we are currently busy with.
    */
   private Callable<Boolean> active;
@@ -82,8 +74,8 @@ public class RecordsReader {
   private OffsetDateTime activateDateTime = OffsetDateTime.now().minusMinutes(1L);
 
   @Autowired
-  @Qualifier("importThreadPoolExecutor")
-  private ThreadPoolTaskExecutor importExecutor;
+  @Qualifier("importExecutorService")
+  private ExecutorService importExecutorService;
 
   @Autowired
   private ImportPositionHolder importPositionHolder;
@@ -106,7 +98,6 @@ public class RecordsReader {
   public RecordsReader(int partitionId, ImportValueType importValueType, int queueSize) {
     this.partitionId = partitionId;
     this.importValueType = importValueType;
-    this.importJobs = new LinkedBlockingQueue<>(queueSize);
   }
 
   public int readAndScheduleNextBatch() {
@@ -126,10 +117,16 @@ public class RecordsReader {
   }
 
   private void scheduleImport(ImportBatch importBatch) {
-    //create new instance of import job
-    ImportJob importJob = beanFactory.getBean(ImportJob.class, importBatch);
-    scheduleImport(importJob);
-    recordLatestScheduledPosition(importBatch);
+    try {
+      importExecutorService.submit(importBatch);
+      recordLatestScheduledPosition(importBatch);
+    } catch (IllegalStateException ex) {
+      //this can happen when the queue for this reader is full
+      //log and ignore, will be retried next time
+      logger.debug(String.format("Queue is full for import batch [%s, %s]. Will be retried with the next run.", importBatch.getPartitionId(),
+          importBatch.getImportValueType()));
+    }
+
   }
 
   private void recordLatestScheduledPosition(ImportBatch importBatch) {
@@ -160,7 +157,7 @@ public class RecordsReader {
       JavaType valueType = objectMapper.getTypeFactory().constructParametricType(RecordImpl.class, importValueType.getRecordValueClass());
       final List<Record> result = ElasticsearchUtil.mapSearchHits(searchResponse.getHits().getHits(), objectMapper, valueType);
 
-      return new ImportBatch(partitionId, importValueType, result, importListener);
+      return beanFactory.getBean(ImportBatch.class, partitionId, importValueType, result, importListener);
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
       logger.error(message, e);
@@ -191,70 +188,12 @@ public class RecordsReader {
     }
   }
 
-  public void scheduleImport(ImportJob importJob) {
-    boolean scheduled = false;
-    while (!scheduled) {
-      scheduled = importJobs.offer(() -> {
-        try {
-          Boolean imported = importJob.call();
-          if (imported) {
-            executeNext();
-          } else {
-            //retry the same job
-            execute(active);
-          }
-          return imported;
-        } catch (Exception ex) {
-          //retry the same job
-          execute(active);
-          return false;
-        }
-      });
-      if (!scheduled) {
-        doBackoffForScheduler();
-      }
-    }
-    if (active == null) {
-      executeNext();
-    }
-  }
-
-  /**
-   * Freeze the scheduler (usually when queue is full).
-   */
-  private void doBackoffForScheduler() {
-    int schedulerBackoff = operateProperties.getImportProperties().getSchedulerBackoff();
-    if (schedulerBackoff > 0) {
-      try {
-        Thread.sleep(schedulerBackoff);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupted();
-      }
-    }
-  }
-
-  private void executeNext() {
-    if ((active = importJobs.poll()) != null) {
-      Future<Boolean> result = importExecutor.submit(active);
-      //TODO what to do with failing jobs
-    }
-  }
-
-  private void execute(Callable<Boolean> job) {
-    Future<Boolean> result = importExecutor.submit(job);
-    //TODO what to do with failing jobs
-  }
-
   public int getPartitionId() {
     return partitionId;
   }
 
   public ImportValueType getImportValueType() {
     return importValueType;
-  }
-
-  public BlockingQueue<Callable<Boolean>> getImportJobs() {
-    return importJobs;
   }
 
   public void setImportListener(ImportListener importListener) {

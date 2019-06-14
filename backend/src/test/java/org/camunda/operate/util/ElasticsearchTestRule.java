@@ -186,27 +186,10 @@ public class ElasticsearchTestRule extends TestWatcher {
         logTimeout();
       } else {
         //wait till queues are empty
-        waitForQueuesEmptiness(getRecordsReaders(importValueType));
+        Thread.sleep(2000L);
       }
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
-    }
-  }
-
-  private void waitForQueuesEmptiness(Collection<RecordsReader> recordsReaders) throws InterruptedException {
-    int queueCheckAttempts = 0;
-    boolean queuesAreEmpty = true;
-    do {
-      Thread.sleep(300L);
-      for (RecordsReader reader : recordsReaders) {
-        queuesAreEmpty = queuesAreEmpty && reader.getImportJobs().size() == 0;
-      }
-      queueCheckAttempts ++;
-    } while (!queuesAreEmpty && queueCheckAttempts < 5);
-    if (!queuesAreEmpty && queueCheckAttempts == 5) {
-      logTimeout();
-    } else {
-      Thread.sleep(300L);
     }
   }
 
