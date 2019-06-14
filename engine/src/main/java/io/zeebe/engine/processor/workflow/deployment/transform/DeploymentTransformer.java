@@ -24,7 +24,7 @@ import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.engine.processor.workflow.deployment.model.yaml.BpmnYamlParser;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
-import io.zeebe.exporter.api.record.value.deployment.ResourceType;
+import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Process;

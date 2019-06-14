@@ -21,14 +21,14 @@ import static io.zeebe.util.buffer.BufferUtil.wrapArray;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.engine.util.StreamProcessorRule;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.api.record.value.deployment.ResourceType;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;

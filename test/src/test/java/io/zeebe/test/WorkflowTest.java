@@ -17,7 +17,7 @@ package io.zeebe.test;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Collections;
 import org.junit.Before;

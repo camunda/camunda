@@ -15,9 +15,9 @@
  */
 package io.zeebe.test.util.record;
 
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.VariableDocumentRecordValue;
-import io.zeebe.protocol.VariableDocumentUpdateSemantic;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
+import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.zeebe.test.util.collection.Maps;
 import java.util.Map;
 import java.util.function.Predicate;

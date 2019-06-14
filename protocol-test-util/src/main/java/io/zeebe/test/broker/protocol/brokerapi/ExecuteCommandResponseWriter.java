@@ -20,7 +20,7 @@ import io.zeebe.protocol.MessageHeaderEncoder;
 import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.util.EnsureUtil;
 import java.nio.charset.StandardCharsets;

@@ -15,14 +15,14 @@
  */
 package io.zeebe.protocol.impl.record.value.incident;
 
-import io.zeebe.exporter.api.record.value.IncidentRecordValue;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
-import io.zeebe.protocol.ErrorType;
-import io.zeebe.protocol.WorkflowInstanceRelated;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.record.intent.WorkflowInstanceRelated;
+import io.zeebe.protocol.record.value.ErrorType;
+import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 

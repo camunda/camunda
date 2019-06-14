@@ -30,7 +30,7 @@ import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
-import io.zeebe.protocol.intent.ErrorIntent;
+import io.zeebe.protocol.record.intent.ErrorIntent;
 import io.zeebe.util.exception.RecoverableException;
 import io.zeebe.util.retry.AbortableRetryStrategy;
 import io.zeebe.util.retry.RecoverableRetryStrategy;

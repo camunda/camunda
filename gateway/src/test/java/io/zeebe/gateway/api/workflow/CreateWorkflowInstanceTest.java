@@ -23,7 +23,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
 import org.junit.Test;
 
 public class CreateWorkflowInstanceTest extends GatewayTest {

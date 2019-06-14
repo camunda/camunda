@@ -24,7 +24,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableSeq
 import io.zeebe.engine.processor.workflow.handlers.element.EventOccurredHandler;
 import io.zeebe.engine.state.instance.EventTrigger;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 

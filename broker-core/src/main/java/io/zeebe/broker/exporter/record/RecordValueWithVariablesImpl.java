@@ -20,7 +20,7 @@ package io.zeebe.broker.exporter.record;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.broker.exporter.ExporterObjectMapper;
-import io.zeebe.exporter.api.record.RecordValueWithVariables;
+import io.zeebe.protocol.record.RecordValueWithVariables;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;

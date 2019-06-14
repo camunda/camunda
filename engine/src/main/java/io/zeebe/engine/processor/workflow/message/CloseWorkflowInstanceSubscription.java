@@ -24,7 +24,7 @@ import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscriptionState;
 import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
 
 public final class CloseWorkflowInstanceSubscription

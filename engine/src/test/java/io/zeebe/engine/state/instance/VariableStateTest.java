@@ -29,7 +29,7 @@ import io.zeebe.engine.state.instance.VariablesState.VariableListener;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;

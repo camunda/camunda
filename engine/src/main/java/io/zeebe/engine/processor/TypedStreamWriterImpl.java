@@ -22,7 +22,7 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.intent.Intent;
 import java.util.function.Consumer;
 
 public class TypedStreamWriterImpl extends TypedCommandWriterImpl implements TypedStreamWriter {

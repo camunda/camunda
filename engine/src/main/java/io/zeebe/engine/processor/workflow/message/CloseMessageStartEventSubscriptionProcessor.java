@@ -23,7 +23,7 @@ import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.message.MessageStartEventSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
-import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
+import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 
 public class CloseMessageStartEventSubscriptionProcessor
     implements TypedRecordProcessor<MessageStartEventSubscriptionRecord> {

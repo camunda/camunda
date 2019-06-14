@@ -21,7 +21,7 @@ import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Configuration;
 import io.zeebe.exporter.api.context.Controller;
-import io.zeebe.exporter.api.record.Record;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.test.exporter.record.MockRecord;
 import io.zeebe.test.exporter.record.MockRecordMetadata;
 import io.zeebe.test.exporter.record.MockRecordStream;

@@ -34,7 +34,7 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
 
 public class EngineProcessors {
 

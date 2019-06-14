@@ -17,24 +17,24 @@
  */
 package io.zeebe.engine.processor.workflow.job;
 
-import static io.zeebe.protocol.intent.JobIntent.ACTIVATED;
-import static io.zeebe.protocol.intent.JobIntent.FAIL;
-import static io.zeebe.protocol.intent.JobIntent.FAILED;
+import static io.zeebe.protocol.record.intent.JobIntent.ACTIVATED;
+import static io.zeebe.protocol.record.intent.JobIntent.FAIL;
+import static io.zeebe.protocol.record.intent.JobIntent.FAILED;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.exporter.api.record.Assertions;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.RecordMetadata;
-import io.zeebe.exporter.api.record.value.JobBatchRecordValue;
-import io.zeebe.exporter.api.record.value.JobRecordValue;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordMetadata;
+import io.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.JobBatchIntent;
-import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.record.intent.JobBatchIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;

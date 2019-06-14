@@ -27,8 +27,8 @@ import io.zeebe.model.bpmn.instance.ConditionExpression;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionFactory;
-import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 
 public class SequenceFlowTransformer implements ModelElementTransformer<SequenceFlow> {
   @Override

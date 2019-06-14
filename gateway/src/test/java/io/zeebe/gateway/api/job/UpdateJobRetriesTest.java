@@ -23,7 +23,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
 import org.junit.Test;
 
 public class UpdateJobRetriesTest extends GatewayTest {

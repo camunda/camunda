@@ -35,7 +35,7 @@ import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;

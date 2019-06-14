@@ -22,7 +22,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableAct
 import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
 import io.zeebe.engine.processor.workflow.handlers.IOMappingHelper;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementCompletingHandler;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public class ActivityElementCompletingHandler<T extends ExecutableActivity>
     extends ElementCompletingHandler<T> {

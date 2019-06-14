@@ -18,7 +18,7 @@ package io.zeebe.protocol.impl.record.value.job;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
 
-import io.zeebe.exporter.api.record.value.job.Headers;
+import io.zeebe.protocol.record.value.job.Headers;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;

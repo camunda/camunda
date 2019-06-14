@@ -22,8 +22,8 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.JobState;
 import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.JobBatchIntent;
-import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.record.intent.JobBatchIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
 
 public class JobEventProcessors {
   public static void addJobProcessors(

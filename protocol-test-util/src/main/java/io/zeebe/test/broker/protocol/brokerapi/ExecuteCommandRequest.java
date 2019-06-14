@@ -18,7 +18,7 @@ package io.zeebe.test.broker.protocol.brokerapi;
 import io.zeebe.protocol.ExecuteCommandRequestDecoder;
 import io.zeebe.protocol.MessageHeaderDecoder;
 import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.buffer.BufferReader;

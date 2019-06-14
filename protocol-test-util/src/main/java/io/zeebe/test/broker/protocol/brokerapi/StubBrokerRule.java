@@ -19,7 +19,7 @@ import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
 import io.zeebe.transport.ServerTransport;

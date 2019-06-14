@@ -26,7 +26,7 @@ import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.IndexedRecord;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
 
 public class ContainerElementActivatedHandler<T extends ExecutableFlowElementContainer>

@@ -35,9 +35,9 @@ import io.zeebe.engine.state.message.MessageSubscriptionState;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscriptionState;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.WorkflowInstanceRelated;
-import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.WorkflowInstanceRelatedIntent;
+import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceRelated;
+import io.zeebe.protocol.record.intent.WorkflowInstanceRelatedIntent;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 

@@ -17,8 +17,8 @@ package io.zeebe.test.util.record;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.TimerRecordValue;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.value.TimerRecordValue;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 

@@ -22,7 +22,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlo
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableSequenceFlow;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementCompletedHandler;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
 
 /**

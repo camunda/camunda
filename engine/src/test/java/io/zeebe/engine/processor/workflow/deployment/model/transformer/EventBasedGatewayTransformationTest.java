@@ -26,7 +26,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWor
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.BpmnTransformer;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
 import org.junit.Test;
 

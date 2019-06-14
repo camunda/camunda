@@ -23,7 +23,7 @@ import io.zeebe.engine.state.instance.JobState;
 import io.zeebe.engine.state.instance.JobState.State;
 import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
 
 public class CompleteProcessor implements CommandProcessor<JobRecord> {
   public static final String NO_JOB_FOUND_MESSAGE =

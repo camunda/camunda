@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.exporter.record.value.deployment;
 
-import io.zeebe.exporter.api.record.value.deployment.DeploymentResource;
-import io.zeebe.exporter.api.record.value.deployment.ResourceType;
+import io.zeebe.protocol.record.value.deployment.DeploymentResource;
+import io.zeebe.protocol.record.value.deployment.ResourceType;
 import java.util.Arrays;
 import java.util.Objects;
 

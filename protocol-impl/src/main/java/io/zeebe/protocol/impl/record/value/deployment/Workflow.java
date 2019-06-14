@@ -19,7 +19,7 @@ import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInsta
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_KEY;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
 
-import io.zeebe.exporter.api.record.value.deployment.DeployedWorkflow;
+import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;

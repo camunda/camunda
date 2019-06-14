@@ -15,8 +15,8 @@
  */
 package io.zeebe.protocol.impl.record.value.job;
 
-import io.zeebe.exporter.api.record.value.JobBatchRecordValue;
-import io.zeebe.exporter.api.record.value.JobRecordValue;
+import io.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.IntegerProperty;

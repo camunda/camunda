@@ -17,23 +17,23 @@
  */
 package io.zeebe.engine.processor.workflow.incident;
 
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.exporter.api.record.Assertions;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.RecordMetadata;
-import io.zeebe.exporter.api.record.value.IncidentRecordValue;
-import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.intent.IncidentIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordMetadata;
+import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.protocol.record.value.ErrorType;
+import io.zeebe.protocol.record.value.IncidentRecordValue;
+import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordingExporter;

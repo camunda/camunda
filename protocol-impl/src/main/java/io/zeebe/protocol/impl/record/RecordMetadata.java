@@ -23,7 +23,7 @@ import io.zeebe.protocol.RecordMetadataEncoder;
 import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
@@ -33,7 +33,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class RecordMetadata
-    implements BufferWriter, BufferReader, io.zeebe.exporter.api.record.RecordMetadata {
+    implements BufferWriter, BufferReader, io.zeebe.protocol.record.RecordMetadata {
   public static final int BLOCK_LENGTH =
       MessageHeaderEncoder.ENCODED_LENGTH + RecordMetadataEncoder.BLOCK_LENGTH;
 

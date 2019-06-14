@@ -25,7 +25,7 @@ import io.zeebe.protocol.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.MessageHeaderDecoder;
 import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;

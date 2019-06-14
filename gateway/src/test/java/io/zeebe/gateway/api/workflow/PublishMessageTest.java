@@ -24,7 +24,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.test.util.JsonUtil;
 import io.zeebe.test.util.MsgPackUtil;
 import java.util.Collections;

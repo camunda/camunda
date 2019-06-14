@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.carrotsearch.hppc.cursors.ObjectCursor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.exporter.api.record.Record;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.exporter.util.ElasticsearchForkedJvm;
 import io.zeebe.exporter.util.ElasticsearchNode;
 import io.zeebe.test.exporter.ExporterIntegrationRule;

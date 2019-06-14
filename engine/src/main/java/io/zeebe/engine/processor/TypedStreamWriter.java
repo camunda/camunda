@@ -20,7 +20,7 @@ package io.zeebe.engine.processor;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.intent.Intent;
 import java.util.function.Consumer;
 
 /** Things that only a stream processor should write to the log stream (+ commands) */

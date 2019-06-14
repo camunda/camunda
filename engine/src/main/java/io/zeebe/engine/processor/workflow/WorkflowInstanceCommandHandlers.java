@@ -18,7 +18,7 @@
 package io.zeebe.engine.processor.workflow;
 
 import io.zeebe.engine.processor.workflow.instance.CancelWorkflowInstanceHandler;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.HashMap;
 import java.util.Map;
 

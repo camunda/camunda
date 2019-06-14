@@ -29,7 +29,7 @@ import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.function.Consumer;

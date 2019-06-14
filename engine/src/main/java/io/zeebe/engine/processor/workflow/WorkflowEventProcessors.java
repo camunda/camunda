@@ -36,11 +36,11 @@ import io.zeebe.engine.state.instance.VariablesState;
 import io.zeebe.engine.state.instance.WorkflowEngineState;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscriptionState;
 import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.TimerIntent;
-import io.zeebe.protocol.intent.VariableDocumentIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
+import io.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
 import java.util.Arrays;
 import java.util.List;
 

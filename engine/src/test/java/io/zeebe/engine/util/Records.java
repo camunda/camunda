@@ -27,7 +27,7 @@ import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.util.ReflectUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;

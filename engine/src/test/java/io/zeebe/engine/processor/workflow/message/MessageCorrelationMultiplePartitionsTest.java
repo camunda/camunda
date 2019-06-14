@@ -28,7 +28,7 @@ import io.zeebe.engine.util.client.WorkflowInstanceClient.WorkflowInstanceCreati
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.SubscriptionUtil;
-import io.zeebe.protocol.intent.MessageSubscriptionIntent;
+import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.WorkflowInstances;

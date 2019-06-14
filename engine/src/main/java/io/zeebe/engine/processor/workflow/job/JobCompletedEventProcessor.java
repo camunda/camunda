@@ -26,7 +26,7 @@ import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.protocol.impl.record.value.job.JobHeaders;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public final class JobCompletedEventProcessor implements TypedRecordProcessor<JobRecord> {
 

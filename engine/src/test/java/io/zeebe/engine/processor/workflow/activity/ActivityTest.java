@@ -17,21 +17,21 @@
  */
 package io.zeebe.engine.processor.workflow.activity;
 
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.RecordValue;
-import io.zeebe.exporter.api.record.value.JobRecordValue;
-import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordValue;
+import io.zeebe.protocol.record.value.JobRecordValue;
+import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.TimerIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.record.WorkflowInstances;

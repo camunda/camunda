@@ -32,7 +32,7 @@ import io.zeebe.model.bpmn.util.time.Interval;
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.model.bpmn.util.time.TimeDateTimer;
 import io.zeebe.model.bpmn.util.time.Timer;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public class CatchEventTransformer implements ModelElementTransformer<CatchEvent> {
   @Override

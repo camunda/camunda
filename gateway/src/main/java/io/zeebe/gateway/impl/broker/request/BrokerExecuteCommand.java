@@ -25,7 +25,7 @@ import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.encoding.ExecuteCommandRequest;
 import io.zeebe.protocol.impl.encoding.ExecuteCommandResponse;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.intent.Intent;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 

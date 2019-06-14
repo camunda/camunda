@@ -21,7 +21,7 @@ import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.CatchEventBehavior;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
-import io.zeebe.protocol.ErrorType;
+import io.zeebe.protocol.record.value.ErrorType;
 
 public class CatchEventSubscriber {
   private final CatchEventBehavior catchEventBehavior;

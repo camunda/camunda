@@ -22,9 +22,9 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlo
 import io.zeebe.engine.processor.workflow.handlers.AbstractHandler;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.EventTrigger;
-import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 
 /**
  * Checks the event trigger, and if it is related to the element itself, will transition to

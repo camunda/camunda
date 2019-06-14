@@ -19,7 +19,7 @@ package io.zeebe.broker.exporter.record.value;
 
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueWithVariablesImpl;
-import io.zeebe.exporter.api.record.value.MessageRecordValue;
+import io.zeebe.protocol.record.value.MessageRecordValue;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;

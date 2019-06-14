@@ -27,7 +27,7 @@ import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.model.bpmn.util.time.TimeDateTimer;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
 import java.util.Random;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;

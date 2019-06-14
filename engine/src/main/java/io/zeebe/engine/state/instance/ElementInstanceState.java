@@ -28,7 +28,7 @@ import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.ExpandableArrayBuffer;

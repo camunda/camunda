@@ -22,11 +22,11 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.zeebe.broker.exporter.ExporterObjectMapper;
-import io.zeebe.exporter.api.record.RecordMetadata;
+import io.zeebe.protocol.record.RecordMetadata;
 import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.intent.Intent;
 
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.PUBLIC_ONLY)
 @JsonInclude(Include.NON_NULL)

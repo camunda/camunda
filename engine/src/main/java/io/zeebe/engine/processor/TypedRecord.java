@@ -17,7 +17,7 @@
  */
 package io.zeebe.engine.processor;
 
-import io.zeebe.exporter.api.record.Record;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 

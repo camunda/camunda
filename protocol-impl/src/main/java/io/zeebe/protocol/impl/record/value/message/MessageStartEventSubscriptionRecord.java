@@ -15,7 +15,7 @@
  */
 package io.zeebe.protocol.impl.record.value.message;
 
-import io.zeebe.exporter.api.record.value.MessageStartEventSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;

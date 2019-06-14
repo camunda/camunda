@@ -23,11 +23,11 @@ import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessor;
 import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
-import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobHeaders;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.zeebe.protocol.record.value.ErrorType;
 import org.agrona.DirectBuffer;
 
 public final class JobFailedProcessor implements TypedRecordProcessor<JobRecord> {

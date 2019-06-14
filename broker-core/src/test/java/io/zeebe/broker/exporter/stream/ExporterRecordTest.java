@@ -43,24 +43,8 @@ import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
 import io.zeebe.broker.exporter.record.value.job.HeadersImpl;
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.broker.exporter.util.ControlledTestExporter;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.RecordValue;
-import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.api.record.value.IncidentRecordValue;
-import io.zeebe.exporter.api.record.value.JobRecordValue;
-import io.zeebe.exporter.api.record.value.MessageRecordValue;
-import io.zeebe.exporter.api.record.value.MessageSubscriptionRecordValue;
-import io.zeebe.exporter.api.record.value.VariableDocumentRecordValue;
-import io.zeebe.exporter.api.record.value.VariableRecordValue;
-import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
-import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValue;
-import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.ErrorType;
-import io.zeebe.protocol.VariableDocumentUpdateSemantic;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -73,18 +57,34 @@ import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.IncidentIntent;
-import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.JobBatchIntent;
-import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.protocol.intent.MessageIntent;
-import io.zeebe.protocol.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.intent.VariableDocumentIntent;
-import io.zeebe.protocol.intent.VariableIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordValue;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
+import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.intent.JobBatchIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.intent.MessageIntent;
+import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.zeebe.protocol.record.intent.VariableIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.zeebe.protocol.record.value.ErrorType;
+import io.zeebe.protocol.record.value.IncidentRecordValue;
+import io.zeebe.protocol.record.value.JobRecordValue;
+import io.zeebe.protocol.record.value.MessageRecordValue;
+import io.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
+import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import io.zeebe.protocol.record.value.VariableRecordValue;
+import io.zeebe.protocol.record.value.WorkflowInstanceCreationRecordValue;
+import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.WorkflowInstanceSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.util.buffer.BufferUtil;
@@ -145,9 +145,7 @@ public class ExporterRecordTest {
                     bpmnProcessId, resourceName, workflowKey, workflowVersion)),
             Collections.singletonList(
                 new DeploymentResourceImpl(
-                    BufferUtil.bufferAsArray(resource),
-                    io.zeebe.exporter.api.record.value.deployment.ResourceType.BPMN_XML,
-                    resourceName)));
+                    BufferUtil.bufferAsArray(resource), ResourceType.BPMN_XML, resourceName)));
 
     // then
     assertRecordExported(DeploymentIntent.CREATE, record, expectedRecordValue);

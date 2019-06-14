@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.engine;
 
-import static io.zeebe.protocol.intent.MessageIntent.PUBLISH;
+import static io.zeebe.protocol.record.intent.MessageIntent.PUBLISH;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;

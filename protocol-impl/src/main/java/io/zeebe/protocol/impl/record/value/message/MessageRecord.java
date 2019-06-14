@@ -15,7 +15,7 @@
  */
 package io.zeebe.protocol.impl.record.value.message;
 
-import io.zeebe.exporter.api.record.value.MessageRecordValue;
+import io.zeebe.protocol.record.value.MessageRecordValue;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
