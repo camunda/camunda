@@ -15,6 +15,7 @@
  */
 package io.zeebe.protocol;
 
+import io.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import java.nio.ByteOrder;
 
 public class Protocol {

@@ -130,7 +130,7 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-exporter-asserts</artifactId>
+      <artifactId>zeebe-protocol-asserts</artifactId>
       <scope>test</scope>
     </dependency>
 

@@ -18,11 +18,11 @@
 package io.zeebe.engine.util.client;
 
 import io.zeebe.engine.util.StreamProcessorRule;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 
 public class IncidentClient {

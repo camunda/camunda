@@ -16,7 +16,7 @@
 package io.zeebe.exporter;
 
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.ValueType;
+import io.zeebe.protocol.record.ValueType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;

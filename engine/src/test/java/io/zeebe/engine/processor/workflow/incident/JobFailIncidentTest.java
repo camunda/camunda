@@ -17,7 +17,7 @@
  */
 package io.zeebe.engine.processor.workflow.incident;
 
-import static io.zeebe.exporter.api.record.Assertions.assertThat;
+import static io.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
@@ -26,10 +26,10 @@ import io.zeebe.engine.util.EngineRule;
 import io.zeebe.engine.util.client.JobClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordMetadata;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;

@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.exporter.stream;
 
-import static io.zeebe.exporter.api.record.Assertions.assertThat;
+import static io.zeebe.protocol.record.Assertions.assertThat;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapArray;

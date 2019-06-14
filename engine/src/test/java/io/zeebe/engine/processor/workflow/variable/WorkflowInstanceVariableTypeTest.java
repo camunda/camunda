@@ -20,11 +20,11 @@ package io.zeebe.engine.processor.workflow.variable;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.VariableIntent;
+import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.BeforeClass;

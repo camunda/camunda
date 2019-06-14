@@ -25,9 +25,9 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest.Builder
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowMetadata;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject.ResourceType;
-import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
+import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import org.junit.Test;
 

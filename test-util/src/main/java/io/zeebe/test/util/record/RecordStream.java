@@ -17,7 +17,7 @@ package io.zeebe.test.util.record;
 
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordValue;
-import io.zeebe.protocol.ValueType;
+import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.function.Predicate;
 import java.util.stream.Stream;

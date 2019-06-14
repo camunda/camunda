@@ -15,8 +15,8 @@
  */
 package io.zeebe.gateway.impl.broker.request;
 
-import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import org.agrona.DirectBuffer;
 

@@ -17,8 +17,8 @@ package io.zeebe.gateway.impl.broker.request;
 
 import io.zeebe.msgpack.value.StringValue;
 import io.zeebe.msgpack.value.ValueArray;
-import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;

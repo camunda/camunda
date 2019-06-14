@@ -18,9 +18,9 @@
 package io.zeebe.engine.processor;
 
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
 import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;

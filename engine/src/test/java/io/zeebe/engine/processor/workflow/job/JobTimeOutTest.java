@@ -23,12 +23,12 @@ import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.util.EngineRule;
+import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordMetadata;
-import io.zeebe.protocol.record.value.JobRecordValue;
-import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;

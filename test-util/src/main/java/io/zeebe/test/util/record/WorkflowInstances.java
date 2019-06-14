@@ -15,10 +15,10 @@
  */
 package io.zeebe.test.util.record;
 
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import java.util.HashMap;
 import java.util.Map;
 

@@ -15,9 +15,9 @@
  */
 package io.zeebe.gateway.impl;
 
-import io.zeebe.protocol.ErrorCode;
-import io.zeebe.protocol.ErrorResponseDecoder;
-import io.zeebe.protocol.MessageHeaderDecoder;
+import io.zeebe.protocol.record.ErrorCode;
+import io.zeebe.protocol.record.ErrorResponseDecoder;
+import io.zeebe.protocol.record.MessageHeaderDecoder;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 

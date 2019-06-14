@@ -15,7 +15,7 @@
  */
 package io.zeebe.test.broker.protocol.commandapi;
 
-import io.zeebe.protocol.ErrorCode;
+import io.zeebe.protocol.record.ErrorCode;
 
 public class ErrorResponseException extends RuntimeException {
 

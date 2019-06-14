@@ -18,8 +18,8 @@
 package io.zeebe.engine.util;
 
 import io.zeebe.engine.processor.TypedRecord;
-import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.util.stream.StreamWrapper;
 import java.util.stream.Stream;

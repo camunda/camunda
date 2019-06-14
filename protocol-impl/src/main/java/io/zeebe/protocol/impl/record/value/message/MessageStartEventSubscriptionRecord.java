@@ -15,10 +15,10 @@
  */
 package io.zeebe.protocol.impl.record.value.message;
 
-import io.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
