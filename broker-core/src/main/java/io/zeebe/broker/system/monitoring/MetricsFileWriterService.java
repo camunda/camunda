@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.system.metrics;
+package io.zeebe.broker.system.monitoring;
 
 import io.zeebe.broker.system.configuration.MetricsCfg;
 import io.zeebe.servicecontainer.Service;

@@ -18,16 +18,16 @@
 package io.zeebe.broker.system;
 
 import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
-import io.zeebe.broker.system.metrics.MetricsFileWriter;
-import io.zeebe.broker.system.metrics.MetricsHttpServer;
+import io.zeebe.broker.system.monitoring.BrokerHttpServer;
+import io.zeebe.broker.system.monitoring.MetricsFileWriter;
 import io.zeebe.servicecontainer.ServiceName;
 
 public class SystemServiceNames {
   public static final ServiceName<MetricsFileWriter> METRICS_FILE_WRITER =
       ServiceName.newServiceName("broker.metricsFileWriter", MetricsFileWriter.class);
 
-  public static final ServiceName<MetricsHttpServer> METRICS_HTTP_SERVER =
-      ServiceName.newServiceName("broker.metricsHttpServer", MetricsHttpServer.class);
+  public static final ServiceName<BrokerHttpServer> BROKER_HTTP_SERVER =
+      ServiceName.newServiceName("broker.httpServer", BrokerHttpServer.class);
 
   public static final ServiceName<LeaderManagementRequestHandler>
       LEADER_MANAGEMENT_REQUEST_HANDLER =

@@ -22,15 +22,15 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMI
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.FOLLOWER_PARTITION_GROUP_NAME;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
 import static io.zeebe.broker.system.SystemServiceNames.BROKER_HEALTH_CHECK_SERVICE;
+import static io.zeebe.broker.system.SystemServiceNames.BROKER_HTTP_SERVER;
 import static io.zeebe.broker.system.SystemServiceNames.LEADER_MANAGEMENT_REQUEST_HANDLER;
 import static io.zeebe.broker.system.SystemServiceNames.METRICS_FILE_WRITER;
-import static io.zeebe.broker.system.SystemServiceNames.METRICS_HTTP_SERVER;
 
 import io.zeebe.broker.system.configuration.MetricsCfg;
 import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
-import io.zeebe.broker.system.metrics.MetricsFileWriterService;
-import io.zeebe.broker.system.metrics.MetricsHttpServerService;
 import io.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.zeebe.broker.system.monitoring.BrokerHttpServerService;
+import io.zeebe.broker.system.monitoring.MetricsFileWriterService;
 import io.zeebe.servicecontainer.ServiceContainer;
 
 public class SystemComponent implements Component {
@@ -56,7 +56,8 @@ public class SystemComponent implements Component {
 
     if (metricsCfg.isEnableHttpServer()) {
       serviceContainer
-          .createService(METRICS_HTTP_SERVER, new MetricsHttpServerService(metricsCfg))
+          .createService(
+              BROKER_HTTP_SERVER, new BrokerHttpServerService(metricsCfg, healthCheckService))
           .install();
     }
 

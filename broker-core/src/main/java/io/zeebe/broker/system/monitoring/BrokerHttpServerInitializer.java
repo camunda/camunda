@@ -15,25 +15,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.system.metrics;
+package io.zeebe.broker.system.monitoring;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.zeebe.util.metrics.MetricsManager;
 
-public class MetricsHttpServerInitializer extends ChannelInitializer<SocketChannel> {
+public class BrokerHttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
   private final MetricsManager metricsManager;
+  private BrokerHealthCheckService brokerHealthCheckService;
 
-  public MetricsHttpServerInitializer(MetricsManager metricsManager) {
+  public BrokerHttpServerInitializer(
+      MetricsManager metricsManager, BrokerHealthCheckService brokerHealthCheckService) {
     this.metricsManager = metricsManager;
+    this.brokerHealthCheckService = brokerHealthCheckService;
   }
 
   @Override
   protected void initChannel(SocketChannel ch) throws Exception {
     ch.pipeline()
         .addLast("codec", new HttpServerCodec())
-        .addLast("request", new MetricsHttpServerHandler(metricsManager));
+        .addLast("request", new BrokerHttpServerHandler(metricsManager, brokerHealthCheckService));
   }
 }
