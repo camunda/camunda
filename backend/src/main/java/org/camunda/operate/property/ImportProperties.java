@@ -13,11 +13,15 @@ public class ImportProperties {
 
   private static final int DEFAULT_READER_BACKOFF = 5000;
 
+  private static final int DEFAULT_SCHEDULER_BACKOFF = 5000;
+
   private int threadsCount = DEFAULT_IMPORT_THREADS_COUNT;
 
   private int queueSize = DEFAULT_IMPORT_QUEUE_SIZE;
 
   private int readerBackoff = DEFAULT_READER_BACKOFF;
+
+  private int schedulerBackoff = DEFAULT_SCHEDULER_BACKOFF;
 
   public int getThreadsCount() {
     return threadsCount;
@@ -43,4 +47,11 @@ public class ImportProperties {
     this.readerBackoff = readerBackoff;
   }
 
+  public int getSchedulerBackoff() {
+    return schedulerBackoff;
+  }
+
+  public void setSchedulerBackoff(int schedulerBackoff) {
+    this.schedulerBackoff = schedulerBackoff;
+  }
 }

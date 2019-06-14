@@ -8,7 +8,6 @@ package org.camunda.operate.zeebeimport;
 import java.io.IOException;
 import javax.annotation.PreDestroy;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.zeebeimport.stripedexecutor.StripedExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,9 +79,14 @@ public class ZeebeImporter extends Thread implements ImportListener  {
     return recordsReader.readAndScheduleNextBatch();
   }
 
-  @Bean("importExecutorService")
-  public StripedExecutorService getExecutorService() {
-    return new StripedExecutorService(operateProperties.getImportProperties().getThreadsCount());
+  @Bean("importThreadPoolExecutor")
+  public ThreadPoolTaskExecutor getTaskExecutor() {
+    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    executor.setCorePoolSize(operateProperties.getImportProperties().getThreadsCount());
+    executor.setMaxPoolSize(operateProperties.getImportProperties().getThreadsCount());
+    executor.setThreadNamePrefix("import_thread_");
+    executor.initialize();
+    return executor;
   }
 
   public Object getImportFinished() {
