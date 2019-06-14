@@ -33,29 +33,34 @@ import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.ValueType;
+import java.util.Collections;
 import java.util.EnumMap;
+import java.util.Map;
 
 public class TypedEventRegistry {
 
-  public static final EnumMap<ValueType, Class<? extends UnifiedRecordValue>> EVENT_REGISTRY =
-      new EnumMap<>(ValueType.class);
+  public static final Map<ValueType, Class<? extends UnifiedRecordValue>> EVENT_REGISTRY;
 
   static {
-    EVENT_REGISTRY.put(ValueType.DEPLOYMENT, DeploymentRecord.class);
-    EVENT_REGISTRY.put(ValueType.JOB, JobRecord.class);
-    EVENT_REGISTRY.put(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceRecord.class);
-    EVENT_REGISTRY.put(ValueType.INCIDENT, IncidentRecord.class);
-    EVENT_REGISTRY.put(ValueType.MESSAGE, MessageRecord.class);
-    EVENT_REGISTRY.put(ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionRecord.class);
-    EVENT_REGISTRY.put(
+    final EnumMap<ValueType, Class<? extends UnifiedRecordValue>> registry =
+        new EnumMap<>(ValueType.class);
+    registry.put(ValueType.DEPLOYMENT, DeploymentRecord.class);
+    registry.put(ValueType.JOB, JobRecord.class);
+    registry.put(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceRecord.class);
+    registry.put(ValueType.INCIDENT, IncidentRecord.class);
+    registry.put(ValueType.MESSAGE, MessageRecord.class);
+    registry.put(ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionRecord.class);
+    registry.put(
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, MessageStartEventSubscriptionRecord.class);
-    EVENT_REGISTRY.put(
+    registry.put(
         ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION, WorkflowInstanceSubscriptionRecord.class);
-    EVENT_REGISTRY.put(ValueType.JOB_BATCH, JobBatchRecord.class);
-    EVENT_REGISTRY.put(ValueType.TIMER, TimerRecord.class);
-    EVENT_REGISTRY.put(ValueType.VARIABLE, VariableRecord.class);
-    EVENT_REGISTRY.put(ValueType.VARIABLE_DOCUMENT, VariableDocumentRecord.class);
-    EVENT_REGISTRY.put(ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationRecord.class);
-    EVENT_REGISTRY.put(ValueType.ERROR, ErrorRecord.class);
+    registry.put(ValueType.JOB_BATCH, JobBatchRecord.class);
+    registry.put(ValueType.TIMER, TimerRecord.class);
+    registry.put(ValueType.VARIABLE, VariableRecord.class);
+    registry.put(ValueType.VARIABLE_DOCUMENT, VariableDocumentRecord.class);
+    registry.put(ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationRecord.class);
+    registry.put(ValueType.ERROR, ErrorRecord.class);
+
+    EVENT_REGISTRY = Collections.unmodifiableMap(registry);
   }
 }

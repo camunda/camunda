@@ -15,17 +15,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.engine.util;
+package io.zeebe.engine.processor;
 
-import io.zeebe.engine.processor.TypedEventImpl;
-import io.zeebe.engine.processor.TypedRecord;
+import static io.zeebe.engine.processor.TypedEventRegistry.EVENT_REGISTRY;
+
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.util.ReflectUtil;
 import java.time.Instant;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
-public class CopiedTypedEvent extends TypedEventImpl {
+public final class CopiedTypedEvent extends TypedEventImpl {
   private final long key;
   private final long position;
   private final long sourcePosition;
@@ -42,7 +44,7 @@ public class CopiedTypedEvent extends TypedEventImpl {
     event.readValue(object);
   }
 
-  public CopiedTypedEvent(
+  private CopiedTypedEvent(
       UnifiedRecordValue object,
       RecordMetadata recordMetadata,
       long key,
@@ -86,5 +88,37 @@ public class CopiedTypedEvent extends TypedEventImpl {
       LoggedEvent event, Class<T> valueClass) {
     final T value = ReflectUtil.newInstance(valueClass);
     return new CopiedTypedEvent(event, value);
+  }
+
+  public static CopiedTypedEvent createCopiedEvent(LoggedEvent rawEvent) {
+    // we have to access the underlying buffer and copy the metadata and value bytes
+    // otherwise next event will overwrite the event before, since UnpackedObject
+    // and RecordMetadata has properties (buffers, StringProperty etc.) which only wraps the given
+    // buffer instead of copying it
+
+    final DirectBuffer contentBuffer = rawEvent.getValueBuffer();
+
+    final byte[] metadataBytes = new byte[rawEvent.getMetadataLength()];
+    contentBuffer.getBytes(rawEvent.getMetadataOffset(), metadataBytes);
+    final DirectBuffer metadataBuffer = new UnsafeBuffer(metadataBytes);
+
+    final RecordMetadata metadata = new RecordMetadata();
+    metadata.wrap(metadataBuffer, 0, metadataBuffer.capacity());
+
+    final byte[] valueBytes = new byte[rawEvent.getValueLength()];
+    contentBuffer.getBytes(rawEvent.getValueOffset(), valueBytes);
+    final DirectBuffer valueBuffer = new UnsafeBuffer(valueBytes);
+
+    final UnifiedRecordValue recordValue =
+        ReflectUtil.newInstance(EVENT_REGISTRY.get(metadata.getValueType()));
+    recordValue.wrap(valueBuffer);
+
+    return new CopiedTypedEvent(
+        recordValue,
+        metadata,
+        rawEvent.getKey(),
+        rawEvent.getPosition(),
+        rawEvent.getSourceEventPosition(),
+        rawEvent.getTimestamp());
   }
 }

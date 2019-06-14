@@ -17,14 +17,15 @@
  */
 package io.zeebe.broker.exporter.stream;
 
+import static io.zeebe.engine.processor.TypedEventRegistry.EVENT_REGISTRY;
+
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.context.ExporterContext;
-import io.zeebe.broker.exporter.record.RecordMetadataImpl;
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.engine.processor.AsyncSnapshotDirector;
+import io.zeebe.engine.processor.CopiedTypedEvent;
 import io.zeebe.engine.processor.EventFilter;
+import io.zeebe.engine.processor.TypedEventImpl;
 import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
@@ -32,14 +33,14 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.LangUtil;
-import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.ReflectUtil;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.retry.AbortableRetryStrategy;
 import io.zeebe.util.retry.EndlessRetryStrategy;
@@ -51,10 +52,11 @@ import io.zeebe.util.sched.SchedulingHints;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -67,44 +69,39 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
       "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
-  private static final long NO_LAST_WRITTEN_EVENT_POSITION = -1L;
-  private static final Consumer<Long> NO_DATA_REMOVER = pos -> {};
 
   private ActorScheduler actorScheduler;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
 
   private final List<ExporterContainer> containers;
   private final int partitionId;
-  private final RecordMetadata rawMetadata;
 
   private final LogStream logStream;
   private final LogStreamReader logStreamReader;
-  private final RecordExporter recordExporter = new RecordExporter();
+  private final RecordExporter recordExporter;
 
   private final ZeebeDb zeebeDb;
   private final String name;
-  private final ExporterDirectorContext context;
   private final RetryStrategy exportingRetryStrategy;
   private final RetryStrategy recordWrapStrategy;
   private EventFilter eventFilter;
   private ExportersState state;
 
   private ExporterMetrics metrics;
-  private AsyncSnapshotDirector asyncSnapshotDirector;
   private ActorCondition onCommitPositionUpdatedCondition;
-  private long lastExportedPosition;
   private boolean inExportingPhase;
 
   public ExporterDirector(ExporterDirectorContext context) {
     this.name = context.getName();
-    this.context = context;
-
     this.containers =
         context.getDescriptors().stream().map(ExporterContainer::new).collect(Collectors.toList());
 
+    final Map<ValueType, UnifiedRecordValue> eventCache = new EnumMap<>(ValueType.class);
+    EVENT_REGISTRY.forEach((t, c) -> eventCache.put(t, ReflectUtil.newInstance(c)));
+    this.recordExporter = new RecordExporter(Collections.unmodifiableMap(eventCache), containers);
+
     this.logStream = context.getLogStream();
     this.partitionId = logStream.getPartitionId();
-    this.rawMetadata = new RecordMetadata();
 
     this.logStreamReader = context.getLogStreamReader();
     this.exportingRetryStrategy = new AbortableRetryStrategy(actor);
@@ -252,7 +249,6 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     final ActorFuture<Boolean> wrapRetryFuture =
         recordWrapStrategy.runWithRetry(
             () -> {
-              event.readMetadata(rawMetadata);
               recordExporter.wrap(event);
               return true;
             },
@@ -273,7 +269,6 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
                   LOG.error(ERROR_MESSAGE_EXPORTING_ABORTED, event, throwable);
                   onFailure();
                 } else {
-                  lastExportedPosition = event.getPosition();
                   metrics.incrementEventsExportedCount();
                   inExportingPhase = false;
                   actor.submit(this::readNextEvent);
@@ -369,27 +364,33 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     }
   }
 
-  private class RecordExporter {
-    private final ExporterObjectMapper objectMapper = new ExporterObjectMapper();
-    private final ExporterRecordMapper recordMapper = new ExporterRecordMapper(objectMapper);
-    private Record record;
+  private static class RecordExporter {
+
+    private final RecordMetadata rawMetadata = new RecordMetadata();
+    private final Map<ValueType, UnifiedRecordValue> recordValueMap;
+    private final List<ExporterContainer> containers;
+
+    private TypedEventImpl record;
     private boolean shouldExecuteSideEffects;
     private int exporterIndex;
 
-    void wrap(LoggedEvent rawEvent) {
-      final RecordMetadataImpl metadata =
-          new RecordMetadataImpl(
-              objectMapper,
-              partitionId,
-              rawMetadata.getIntent(),
-              rawMetadata.getRecordType(),
-              rawMetadata.getRejectionType(),
-              BufferUtil.bufferAsString(rawMetadata.getRejectionReasonBuffer()),
-              rawMetadata.getValueType());
+    RecordExporter(
+        Map<ValueType, UnifiedRecordValue> recordValueMap, List<ExporterContainer> containers) {
+      this.recordValueMap = recordValueMap;
+      this.containers = containers;
+    }
 
-      record = recordMapper.map(rawEvent, metadata);
+    void wrap(LoggedEvent rawEvent) {
+      rawEvent.readMetadata(rawMetadata);
+
+      final UnifiedRecordValue value = recordValueMap.get(rawMetadata.getValueType());
+      value.reset();
+      rawEvent.readValue(value);
+
+      record = CopiedTypedEvent.createCopiedEvent(rawEvent);
+
       exporterIndex = 0;
-      shouldExecuteSideEffects = record != null;
+      shouldExecuteSideEffects = value != null;
     }
 
     public boolean export() {
@@ -420,7 +421,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     }
   }
 
-  private class ExporterEventFilter implements EventFilter {
+  private static class ExporterEventFilter implements EventFilter {
 
     private final RecordMetadata metadata = new RecordMetadata();
     private final Map<RecordType, Boolean> acceptRecordTypes;

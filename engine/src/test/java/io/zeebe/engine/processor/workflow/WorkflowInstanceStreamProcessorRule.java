@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.engine.processor.CopiedTypedEvent;
 import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.TypedRecord;
@@ -33,7 +34,6 @@ import io.zeebe.engine.processor.workflow.job.JobEventProcessors;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processor.workflow.timer.DueDateTimerChecker;
 import io.zeebe.engine.state.deployment.WorkflowState;
-import io.zeebe.engine.util.CopiedTypedEvent;
 import io.zeebe.engine.util.Records;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.engine.util.TypedRecordStream;

@@ -17,6 +17,7 @@
  */
 package io.zeebe.engine.util;
 
+import io.zeebe.engine.processor.CopiedTypedEvent;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
