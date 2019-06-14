@@ -18,11 +18,13 @@
 package io.zeebe.engine.processor.workflow.deployment.transform;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.engine.processor.workflow.deployment.model.yaml.BpmnYamlParser;
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.deployment.DeployedWorkflow;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -33,9 +35,12 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayOutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.Iterator;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 import org.slf4j.Logger;
 
@@ -46,6 +51,7 @@ public class DeploymentTransformer {
   private final BpmnYamlParser yamlParser = new BpmnYamlParser();
   private final WorkflowState workflowState;
   private final KeyGenerator keyGenerator;
+  private final MessageDigest digestGenerator;
 
   // internal changes during processing
   private RejectionType rejectionType;
@@ -54,6 +60,12 @@ public class DeploymentTransformer {
   public DeploymentTransformer(final ZeebeState zeebeState) {
     this.workflowState = zeebeState.getWorkflowState();
     this.keyGenerator = zeebeState.getKeyGenerator();
+
+    try {
+      this.digestGenerator = MessageDigest.getInstance("MD5");
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   public boolean transform(final DeploymentRecord deploymentEvent) {
@@ -121,9 +133,24 @@ public class DeploymentTransformer {
     for (final Process workflow : processes) {
       if (workflow.isExecutable()) {
         final String bpmnProcessId = workflow.getId();
+        final DeployedWorkflow lastWorkflow =
+            workflowState.getLatestWorkflowVersionByProcessId(BufferUtil.wrapString(bpmnProcessId));
+        final long key;
+        final int version;
 
-        final long key = keyGenerator.nextKey();
-        final int version = workflowState.getNextWorkflowVersion(bpmnProcessId);
+        final DirectBuffer lastDigest =
+            workflowState.getLatestVersionDigest(wrapString(bpmnProcessId));
+        final DirectBuffer resourceDigest =
+            new UnsafeBuffer(digestGenerator.digest(deploymentResource.getResource()));
+
+        if (isDuplicateOfLatest(deploymentResource, resourceDigest, lastWorkflow, lastDigest)) {
+          key = lastWorkflow.getKey();
+          version = lastWorkflow.getVersion();
+        } else {
+          key = keyGenerator.nextKey();
+          version = workflowState.getNextWorkflowVersion(bpmnProcessId);
+          workflowState.putLatestVersionDigest(wrapString(bpmnProcessId), resourceDigest);
+        }
 
         deploymentEvent
             .workflows()
@@ -136,6 +163,16 @@ public class DeploymentTransformer {
     }
 
     transformYamlWorkflowResource(deploymentResource, definition);
+  }
+
+  private boolean isDuplicateOfLatest(
+      final DeploymentResource deploymentResource,
+      final DirectBuffer resourceDigest,
+      final DeployedWorkflow lastWorkflow,
+      final DirectBuffer lastVersionDigest) {
+    return lastVersionDigest != null
+        && lastVersionDigest.equals(resourceDigest)
+        && lastWorkflow.getResourceName().equals(deploymentResource.getResourceNameBuffer());
   }
 
   private BpmnModelInstance readWorkflowDefinition(final DeploymentResource deploymentResource) {

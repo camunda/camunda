@@ -297,7 +297,7 @@ public class BrokerReprocessingTest {
         clientRule
             .getClient()
             .newDeployCommand()
-            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+            .addWorkflowModel(WORKFLOW, "workflow-2.bpmn")
             .send()
             .join();
 

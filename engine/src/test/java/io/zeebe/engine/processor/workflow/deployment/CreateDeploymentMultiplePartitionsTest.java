@@ -40,14 +40,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class CreateDeploymentMultiplePartitionsTest {
+  public static final String PROCESS_ID = "process";
 
   private static final BpmnModelInstance WORKFLOW =
-      Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
+      Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
 
   private static final BpmnModelInstance WORKFLOW_2 =
       Bpmn.createExecutableProcess("process2").startEvent().endEvent().done();
@@ -211,11 +213,11 @@ public class CreateDeploymentMultiplePartitionsTest {
             .endEvent()
             .done();
     final Record<DeploymentRecordValue> firstDeployment =
-        ENGINE.deployment().withXmlResource(modelInstance).deploy();
+        ENGINE.deployment().withXmlResource("process1.bpmn", modelInstance).deploy();
 
     // when
     final Record<DeploymentRecordValue> secondDeployment =
-        ENGINE.deployment().withXmlResource(modelInstance).deploy();
+        ENGINE.deployment().withXmlResource("process2.bpmn", modelInstance).deploy();
 
     // then
     final List<Record<DeploymentRecordValue>> firstCreatedDeployments =
@@ -245,6 +247,94 @@ public class CreateDeploymentMultiplePartitionsTest {
         .flatExtracting(DeploymentRecordValue::getDeployedWorkflows)
         .extracting(DeployedWorkflow::getVersion)
         .containsOnly(2);
+  }
+
+  @Test
+  public void shouldFilterDuplicateWorkflow() {
+    // given
+    final Record<DeploymentRecordValue> original =
+        ENGINE.deployment().withXmlResource("process.bpmn", WORKFLOW).deploy();
+
+    // when
+    final Record<DeploymentRecordValue> repeated =
+        ENGINE.deployment().withXmlResource("process.bpmn", WORKFLOW).deploy();
+
+    // then
+    assertThat(repeated.getKey()).isGreaterThan(original.getKey());
+
+    final List<DeployedWorkflow> originalWorkflows = original.getValue().getDeployedWorkflows();
+    final List<DeployedWorkflow> repeatedWorkflows = repeated.getValue().getDeployedWorkflows();
+    assertThat(repeatedWorkflows.size()).isEqualTo(originalWorkflows.size()).isOne();
+
+    assertThat(
+            RecordingExporter.deploymentRecords(DeploymentIntent.CREATE)
+                .withRecordKey(repeated.getKey())
+                .limit(PARTITION_COUNT - 1)
+                .count())
+        .isEqualTo(PARTITION_COUNT - 1);
+
+    final List<DeployedWorkflow> repeatedWfs =
+        RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
+            .withRecordKey(repeated.getKey())
+            .limit(PARTITION_COUNT)
+            .map(r -> r.getValue().getDeployedWorkflows().get(0))
+            .collect(Collectors.toList());
+
+    assertThat(repeatedWfs.size()).isEqualTo(PARTITION_COUNT);
+    repeatedWfs.forEach(repeatedWf -> assertSameResource(originalWorkflows.get(0), repeatedWf));
+  }
+
+  @Test
+  public void shouldNotFilterDifferentWorkflows() {
+    // given
+    final Record<DeploymentRecordValue> original =
+        ENGINE.deployment().withXmlResource("process.bpmn", WORKFLOW).deploy();
+
+    // when
+    final BpmnModelInstance sameBpmnIdModel =
+        Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
+    final Record<DeploymentRecordValue> repeated =
+        ENGINE.deployment().withXmlResource("process.bpmn", sameBpmnIdModel).deploy();
+
+    // then
+    final List<DeployedWorkflow> originalWorkflows = original.getValue().getDeployedWorkflows();
+    final List<DeployedWorkflow> repeatedWorkflows = repeated.getValue().getDeployedWorkflows();
+    assertThat(repeatedWorkflows.size()).isEqualTo(originalWorkflows.size()).isOne();
+
+    assertDifferentResources(originalWorkflows.get(0), repeatedWorkflows.get(0));
+
+    assertThat(
+            RecordingExporter.deploymentRecords(DeploymentIntent.CREATE)
+                .withRecordKey(repeated.getKey())
+                .limit(PARTITION_COUNT - 1)
+                .count())
+        .isEqualTo(PARTITION_COUNT - 1);
+
+    final List<DeployedWorkflow> repeatedWfs =
+        RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
+            .withRecordKey(repeated.getKey())
+            .limit(PARTITION_COUNT)
+            .map(r -> r.getValue().getDeployedWorkflows().get(0))
+            .collect(Collectors.toList());
+
+    assertThat(repeatedWfs.size()).isEqualTo(PARTITION_COUNT);
+    repeatedWfs.forEach(
+        repeatedWf -> assertDifferentResources(originalWorkflows.get(0), repeatedWf));
+  }
+
+  private void assertSameResource(
+      final DeployedWorkflow original, final DeployedWorkflow repeated) {
+    Assertions.assertThat(repeated)
+        .hasVersion(original.getVersion())
+        .hasWorkflowKey(original.getWorkflowKey())
+        .hasResourceName(original.getResourceName())
+        .hasBpmnProcessId(original.getBpmnProcessId());
+  }
+
+  private void assertDifferentResources(
+      final DeployedWorkflow original, final DeployedWorkflow repeated) {
+    assertThat(original.getWorkflowKey()).isLessThan(repeated.getWorkflowKey());
+    assertThat(original.getVersion()).isLessThan(repeated.getVersion());
   }
 
   private byte[] bpmnXml(final BpmnModelInstance definition) {
