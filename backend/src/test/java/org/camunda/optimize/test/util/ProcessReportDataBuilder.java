@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
@@ -203,12 +204,12 @@ public class ProcessReportDataBuilder {
   }
 
   public ProcessReportDataBuilder setFilter(ProcessFilterDto newFilter) {
-    this.filter.add(newFilter);
+    this.filter = Collections.singletonList(newFilter);
     return this;
   }
 
   public ProcessReportDataBuilder setFilter(List<ProcessFilterDto> newFilter) {
-    this.filter.addAll(newFilter);
+    this.filter = newFilter;
     return this;
   }
 }

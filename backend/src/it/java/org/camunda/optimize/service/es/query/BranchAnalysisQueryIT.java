@@ -772,7 +772,7 @@ public class BranchAnalysisQueryIT {
 
   private BranchAnalysisDto performBranchAnalysis(final String processDefinitionKey,
                                                   final Integer processDefinitionVersion) {
-    return performBranchAnalysis(processDefinitionKey, processDefinitionVersion, Collections.emptyList());
+    return performBranchAnalysis(processDefinitionKey, processDefinitionVersion, Collections.singletonList(null));
   }
 
   private BranchAnalysisDto performBranchAnalysis(final String processDefinitionKey,

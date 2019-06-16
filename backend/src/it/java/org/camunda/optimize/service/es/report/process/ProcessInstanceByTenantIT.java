@@ -53,14 +53,13 @@ public class ProcessInstanceByTenantIT extends AbstractProcessDefinitionIT {
   }
 
   @Test
-  public void reportAcrossTenants_tenantDefinition_emptyTenantListDefaultsToNoneTenant() {
+  public void reportAcrossTenants_tenantDefinition_emptyTenantListDefaultsToEmptyTenantList() {
     // given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
     testTenantFiltering(
       Lists.newArrayList(null, tenantId1, tenantId2),
-      Lists.newArrayList(),
-      Lists.newArrayList((String) null)
+      Lists.newArrayList()
     );
   }
 

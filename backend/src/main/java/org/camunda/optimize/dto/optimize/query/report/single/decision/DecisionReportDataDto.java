@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.view.Decis
 import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -23,7 +24,7 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
 
   protected String decisionDefinitionKey;
   protected String decisionDefinitionVersion;
-  protected List<String> tenantIds = new ArrayList<>();
+  protected List<String> tenantIds = new ArrayList<>(Collections.singletonList(null));
   protected List<DecisionFilterDto> filter = new ArrayList<>();
   protected DecisionViewDto view;
   protected DecisionGroupByDto groupBy;

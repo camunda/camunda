@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableList;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
@@ -17,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -26,7 +28,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
 
   protected String processDefinitionKey;
   protected String processDefinitionVersion;
-  protected List<String> tenantIds = new ArrayList<>();
+  protected List<String> tenantIds = Collections.singletonList(null);
   protected List<ProcessFilterDto> filter = new ArrayList<>();
   protected ProcessViewDto view;
   protected ProcessGroupByDto groupBy;

@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
@@ -100,11 +101,11 @@ public abstract class ReportCommand<R extends ReportEvaluationResult, RD extends
   }
 
   public static QueryBuilder createTenantIdQuery(final String tenantField, final List<String> tenantIds) {
-    final AtomicBoolean includeNoneTenant = new AtomicBoolean(false);
+    final AtomicBoolean includeNotDefinedTenant = new AtomicBoolean(false);
     final List<String> tenantIdTerms = tenantIds.stream()
       .peek(id -> {
         if (id == null) {
-          includeNoneTenant.set(true);
+          includeNotDefinedTenant.set(true);
         }
       })
       .filter(Objects::nonNull)
@@ -114,9 +115,15 @@ public abstract class ReportCommand<R extends ReportEvaluationResult, RD extends
     if (!tenantIdTerms.isEmpty()) {
       tenantQueryBuilder.should(termsQuery(tenantField, tenantIdTerms));
     }
-    if (includeNoneTenant.get() || tenantIdTerms.isEmpty()) {
+    if (includeNotDefinedTenant.get()) {
       tenantQueryBuilder.should(boolQuery().mustNot(existsQuery(tenantField)));
     }
+    if (tenantIdTerms.isEmpty() && !includeNotDefinedTenant.get()){
+      // All tenants have been deselected and therefore we should not return any data.
+      // This query ensures that the condition never holds for any data.
+      tenantQueryBuilder.mustNot(matchAllQuery());
+    }
+
     return tenantQueryBuilder;
   }
 }

@@ -9,6 +9,7 @@ import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Data
@@ -17,7 +18,7 @@ public class BranchAnalysisQueryDto {
   private String gateway;
   private String processDefinitionKey;
   private String processDefinitionVersion;
-  private List<String> tenantIds = new ArrayList<>();
+  private List<String> tenantIds = Collections.singletonList(null);
 
   private List<ProcessFilterDto> filter = new ArrayList<>();
 }

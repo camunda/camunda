@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.Deci
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByEvaluationDateTime;
@@ -27,7 +28,7 @@ public class DecisionReportDataBuilder {
 
   private String decisionDefinitionKey;
   private String decisionDefinitionVersion;
-  private List<String> tenantIds = new ArrayList<>();
+  private List<String> tenantIds = new ArrayList<>(Collections.singleton(null));
   private String variableId;
   private String variableName;
   private GroupByDateUnit dateInterval;
@@ -104,22 +105,22 @@ public class DecisionReportDataBuilder {
   }
 
   public DecisionReportDataBuilder setFilter(DecisionFilterDto newFilter) {
-    this.filter.add(newFilter);
+    this.filter = Collections.singletonList(newFilter);
     return this;
   }
 
   public DecisionReportDataBuilder setFilter(List<DecisionFilterDto> newFilter) {
-    this.filter.addAll(newFilter);
+    this.filter = newFilter;
     return this;
   }
 
   public DecisionReportDataBuilder setTenantId(String tenantId) {
-    this.tenantIds.add(tenantId);
+    this.tenantIds = Collections.singletonList(tenantId);
     return this;
   }
 
   public DecisionReportDataBuilder setTenantIds(List<String> tenantIds) {
-    this.tenantIds.addAll(tenantIds);
+    this.tenantIds = tenantIds;
     return this;
   }
 
