@@ -40,7 +40,7 @@ docker run --name zeebe -p 26500:26500 camunda/zeebe:latest
 
 ### Volumes
 
-The default data volume is under `/usr/local/zeebe/bin/data`. It contains
+The default data volume is under `/usr/local/zeebe/data`. It contains
 all data which should be persisted.
 
 ### Configuration
@@ -87,7 +87,7 @@ Exception in thread "actor-runner-service-container" java.lang.OutOfMemoryError:
 ```
 
 If you are using Docker with the default Moby VM, you can adjust the amount of memory available to the VM through the Docker preferences. Right-click on the Docker icon in the System Tray to access preferences.
- 
+
 If you use a Docker setup with `docker-machine` and your `default` VM does
 not have 4GB of memory, you can create a new one with the following command:
 
@@ -142,7 +142,7 @@ You can always download the latest Zeebe release from the [Github release page](
 * Java Virtual Machine:
   * Oracle Hotspot v1.8
   * Open JDK v1.8
-  
+
 Once you have downloaded a distribution, extract it into a folder of your choice. To extract the Zeebe distribution and start the broker, **Linux users** can type:
 
 ```bash
