@@ -56,7 +56,10 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
       .flatMap(parameters -> Optional.ofNullable(parameters.getProcessPart()))
       .map(ProcessPartDto::createCommandKey)
       .orElse("null");
-    return viewCommandKey + "_" + groupByCommandKey + "_" + processPartCommandKey + "_" + configuration.getAggregationType();
+    String configurationCommandKey = Optional.ofNullable(getConfiguration())
+      .map(c -> c.createCommandKey(getView()))
+      .orElse("null");
+    return viewCommandKey + "_" + groupByCommandKey + "_" + processPartCommandKey + "_" + configurationCommandKey;
   }
 
   @Override

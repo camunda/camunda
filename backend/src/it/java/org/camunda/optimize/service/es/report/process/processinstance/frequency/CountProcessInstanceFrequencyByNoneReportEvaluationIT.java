@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.process.processinstance.frequency
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -237,6 +238,30 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
 
     // then
     assertThat(response.getStatus(), is(400));
+  }
+
+  @Test
+  public void frequencyReportCanAlsoBeEvaluatedIfAggregationTypeIsDifferentFromDefault() {
+
+    // given
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
+      processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
+    );
+    reportData.getConfiguration().setAggregationType(AggregationType.MAX);
+    ProcessReportEvaluationResultDto<ProcessReportNumberResultDto> evaluationResponse =
+      evaluateNumberReport(reportData);
+
+    // then
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+    final ProcessReportNumberResultDto resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getProcessInstanceCount(), is(1L));
+    assertThat(resultDto.getData(), is(notNullValue()));
+    assertThat(resultDto.getData(), is(1L));
   }
 
 }

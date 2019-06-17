@@ -5,10 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.configuration;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +23,7 @@ public class SingleReportConfigurationDto {
   private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
   private AggregationType aggregationType = AggregationType.AVERAGE;
   private FlowNodeExecutionState flowNodeExecutionState = FlowNodeExecutionState.ALL;
+  private UserTaskDurationTime userTaskDurationTime = UserTaskDurationTime.TOTAL;
   private List<String> hiddenNodes = new ArrayList<>();
   private Boolean showInstanceCount = false;
   private Boolean pointMarkers = true;
@@ -35,4 +40,19 @@ public class SingleReportConfigurationDto {
   private ColumnOrderDto columnOrder = new ColumnOrderDto();
   private SingleReportTargetValueDto targetValue = new SingleReportTargetValueDto();
   private HeatmapTargetValueDto heatmapTargetValue = new HeatmapTargetValueDto();
+
+  @JsonIgnore
+  public String createCommandKey(ProcessViewDto viewDto) {
+    String configurationCommandKey = "";
+    List<String> configsToConsiderForCommand = new ArrayList<>();
+    if (viewDto != null && viewDto.getProperty() != null &&
+        viewDto.getProperty().equals(ProcessViewProperty.DURATION)) {
+      configsToConsiderForCommand.add(this.aggregationType.getId());
+    }
+    if (viewDto != null && viewDto.getEntity() != null &&
+        viewDto.getEntity().equals(ProcessViewEntity.USER_TASK)) {
+      configsToConsiderForCommand.add(this.userTaskDurationTime.getId());
+    }
+    return String.join("-", configsToConsiderForCommand);
+  }
 }

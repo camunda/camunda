@@ -44,22 +44,10 @@ public class ProcessViewDtoCreator {
     return view;
   }
 
-  public static ProcessViewDto createUserTaskTotalDurationView() {
-    return createUserTaskView(ProcessViewProperty.DURATION);
-  }
-
-  public static ProcessViewDto createUserTaskIdleDurationView() {
-    return createUserTaskView(ProcessViewProperty.IDLE_DURATION);
-  }
-
-  public static ProcessViewDto createUserTaskWorkDurationView() {
-    return createUserTaskView(ProcessViewProperty.WORK_DURATION);
-  }
-
-  private static ProcessViewDto createUserTaskView(final ProcessViewProperty durationProperty) {
+  public static ProcessViewDto createUserTaskDurationView() {
     final ProcessViewDto view = new ProcessViewDto();
     view.setEntity(ProcessViewEntity.USER_TASK);
-    view.setProperty(durationProperty);
+    view.setProperty(ProcessViewProperty.DURATION);
     return view;
   }
 

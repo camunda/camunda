@@ -36,6 +36,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.IDLE_USER_TASK_DURATION_TIME;
+import static org.camunda.optimize.dto.optimize.ReportConstants.TOTAL_USER_TASK_DURATION_TIME;
+import static org.camunda.optimize.dto.optimize.ReportConstants.VIEW_DURATION_PROPERTY;
+import static org.camunda.optimize.dto.optimize.ReportConstants.VIEW_USER_TASK_ENTITY;
+import static org.camunda.optimize.dto.optimize.ReportConstants.WORK_USER_TASK_DURATION_TIME;
 import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.extractUserTaskNames;
 import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.parseBpmnModel;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
@@ -92,6 +97,8 @@ public class UpgradeFrom24To25 implements Upgrade {
       .addUpgradeStep(createChangeSingleDecisionReportViewStructureStep())
       .addUpgradeStep(createNewConfigFieldsToReportConfigStep(SINGLE_DECISION_REPORT_TYPE))
       .addUpgradeStep(createNewConfigFieldsToReportConfigStep(SINGLE_PROCESS_REPORT_TYPE))
+      .addUpgradeStep(createMoveUserTaskDurationTimeFromReportViewToConfigurationStep())
+      .addUpgradeStep(createAddUserTaskDurationToDecisionConfigurationStep())
       .addUpgradeStep(createNewClaimDateFieldForUserTasksSetup())
       .addUpgradeStep(createUserTaskNamesForProcessDefinitions())
       .build();
@@ -190,6 +197,65 @@ public class UpgradeFrom24To25 implements Upgrade {
       type,
       QueryBuilders.matchAllQuery(),
       script
+    );
+  }
+
+  private static UpdateDataStep createMoveUserTaskDurationTimeFromReportViewToConfigurationStep() {
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("userTaskEntity", VIEW_USER_TASK_ENTITY)
+        .put("durationProperty", VIEW_DURATION_PROPERTY)
+        .put("idleUserTaskTimeConfig", IDLE_USER_TASK_DURATION_TIME)
+        .put("workUserTaskTimeConfig", WORK_USER_TASK_DURATION_TIME)
+        .put("totalUserTaskTimeConfig", TOTAL_USER_TASK_DURATION_TIME)
+        .build()
+    );
+
+    String script =
+      // @formatter:off
+      "def reportData = ctx._source.data;\n" +
+      "if (reportData.view != null && reportData.view.entity != null && " +
+      "    reportData.view.property != null && reportData.configuration != null) {\n" +
+      "  if(reportData.view.entity.equals(\"${userTaskEntity}\")) {\n" +
+      "    if(reportData.view.property.equals(\"${durationProperty}\")) {\n" +
+      "      reportData.configuration.userTaskDurationTime = \"${totalUserTaskTimeConfig}\";\n" +
+      "    } else if (reportData.view.property.equals(\"idleDuration\")) {\n" +
+      "      reportData.view.property = \"${durationProperty}\";\n" +
+      "      reportData.configuration.userTaskDurationTime = \"${idleUserTaskTimeConfig}\";\n" +
+      "    } else if (reportData.view.property.equals(\"workDuration\")) {\n" +
+      "      reportData.view.property = \"${durationProperty}\";\n" +
+      "      reportData.configuration.userTaskDurationTime = \"${workUserTaskTimeConfig}\";\n" +
+      "    }\n" +
+        "}\n" +
+      "}\n";
+      // @formatter:on
+    return new UpdateDataStep(
+      SINGLE_PROCESS_REPORT_TYPE,
+      QueryBuilders.matchAllQuery(),
+      substitutor.replace(script)
+    );
+  }
+
+  private static UpdateDataStep createAddUserTaskDurationToDecisionConfigurationStep() {
+    // since we have the same configuration for decision and process report,
+    // we need to add the userTaskDurationTime to the decision reports as well.
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("totalUserTaskTimeConfig", TOTAL_USER_TASK_DURATION_TIME)
+        .build()
+    );
+
+    String script =
+      // @formatter:off
+      "def reportData = ctx._source.data;\n" +
+      "if (reportData.configuration != null) {\n" +
+      "  reportData.configuration.userTaskDurationTime = \"${totalUserTaskTimeConfig}\";\n" +
+      "}\n";
+      // @formatter:on
+    return new UpdateDataStep(
+      SINGLE_DECISION_REPORT_TYPE,
+      QueryBuilders.matchAllQuery(),
+      substitutor.replace(script)
     );
   }
 

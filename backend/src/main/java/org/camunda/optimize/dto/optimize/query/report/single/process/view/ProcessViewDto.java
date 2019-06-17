@@ -17,9 +17,6 @@ import java.util.Set;
 @Getter
 @Setter
 public class ProcessViewDto implements Combinable {
-  private static final Set<ProcessViewProperty> DURATION_PROPERTIES = ImmutableSet.of(
-    ProcessViewProperty.DURATION, ProcessViewProperty.IDLE_DURATION, ProcessViewProperty.WORK_DURATION
-  );
   private static final Set<ProcessViewEntity> FLOW_NODE_ENTITIES = ImmutableSet.of(
     ProcessViewEntity.FLOW_NODE, ProcessViewEntity.USER_TASK
   );
@@ -61,8 +58,7 @@ public class ProcessViewDto implements Combinable {
 
   private boolean isPropertyCombinable(final ProcessViewDto viewDto) {
     // note: different duration properties are combinable
-    return Objects.equals(property, viewDto.property)
-      || (DURATION_PROPERTIES.contains(property) && DURATION_PROPERTIES.contains(viewDto.property));
+    return Objects.equals(property, viewDto.property);
   }
 
   @JsonIgnore

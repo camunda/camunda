@@ -6,6 +6,7 @@
 package org.camunda.optimize.upgrade;
 
 import com.google.common.collect.Lists;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty;
 import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
@@ -55,7 +56,7 @@ public class UpgradeSingleDecisionReportDataIT extends AbstractUpgradeIT {
 
     setMetadataIndexVersion(FROM_VERSION);
 
-    executeBulk("steps/configuration_upgrade/24-single-decision-report-bulk");
+    executeBulk("steps/report_data/24-single-decision-report-bulk");
   }
 
 
@@ -99,6 +100,20 @@ public class UpgradeSingleDecisionReportDataIT extends AbstractUpgradeIT {
     final SingleDecisionReportDefinitionDto report = getSingleDecisionReportDefinitionDataById();
 
     assertThat(report.getData().getConfiguration().getFlowNodeExecutionState(), notNullValue());
+  }
+
+  @Test
+  public void userTaskDurationTimeFieldWasAddedToReportConfiguration() throws Exception {
+    //given
+    UpgradePlan upgradePlan = new UpgradeFrom24To25().buildUpgradePlan();
+
+    // when
+    upgradePlan.execute();
+
+    // then
+    final SingleDecisionReportDefinitionDto report = getSingleDecisionReportDefinitionDataById();
+
+    assertThat(report.getData().getConfiguration().getUserTaskDurationTime(), is(UserTaskDurationTime.TOTAL));
   }
 
 

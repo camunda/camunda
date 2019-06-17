@@ -20,8 +20,6 @@ public class ReportConstants {
 
   public static final String VIEW_FREQUENCY_PROPERTY = "frequency";
   public static final String VIEW_DURATION_PROPERTY = "duration";
-  public static final String VIEW_IDLE_DURATION_PROPERTY = "idleDuration";
-  public static final String VIEW_WORK_DURATION_PROPERTY = "workDuration";
   public static final String VIEW_RAW_DATA_PROPERTY = "rawData";
 
   public static final String GROUP_BY_FLOW_NODES_TYPE = "flowNodes";
@@ -63,6 +61,10 @@ public class ReportConstants {
   public static final String RUNNING_FLOWNODE_EXECUTION_STATE = "running";
   public static final String COMPLETED_FLOWNODE_EXECUTION_STATE = "completed";
   public static final String ALL_FLOWNODE_EXECUTION_STATE = "all";
+
+  public static final String IDLE_USER_TASK_DURATION_TIME = "idle";
+  public static final String WORK_USER_TASK_DURATION_TIME = "work";
+  public static final String TOTAL_USER_TASK_DURATION_TIME = "total";
 
   // miscellaneous report constants
   public static final String ALL_VERSIONS = "ALL";

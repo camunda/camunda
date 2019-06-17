@@ -6,16 +6,15 @@
 package org.camunda.optimize.service.es.report.process.user_task;
 
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
-import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskIdleDurationMapGroupByUserTaskReport;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -25,8 +24,8 @@ public class UserTaskIdleDurationByUserTaskReportEvaluationIT
 
 
   @Override
-  protected ProcessViewProperty getViewProperty() {
-    return ProcessViewProperty.IDLE_DURATION;
+  protected UserTaskDurationTime getUserTaskDurationTime() {
+    return UserTaskDurationTime.IDLE;
   }
 
   @Override

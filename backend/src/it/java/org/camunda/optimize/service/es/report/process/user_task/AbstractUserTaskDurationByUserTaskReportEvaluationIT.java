@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -92,7 +93,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
-    assertThat(resultReportDataDto.getView().getProperty(), is(getViewProperty()));
+    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
+    assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTime(), is(getUserTaskDurationTime()));
 
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData(), is(notNullValue()));
@@ -854,7 +856,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
       );
   }
 
-  protected abstract ProcessViewProperty getViewProperty();
+  protected abstract UserTaskDurationTime getUserTaskDurationTime();
 
   protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                          final String userTaskKey,
