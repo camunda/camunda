@@ -41,6 +41,6 @@ In addition, Zeebe works well with other systems. For example, Zeebe provides a 
 
 ## Deciding if Zeebe is right for you
 
-Note that Zeebe is currently in "developer preview", meaning that it's not yet ready for production and is under heavy development. See the [roadmap](https://github.com/zeebe-io/zeebe/blob/master/ROADMAP.md) for more details.
+Note that Zeebe is currently in "developer preview", meaning that it's not yet ready for production and is under heavy development. See the [roadmap](https://zeebe.io/roadmap/) for more details.
 
 Your applications might not need the scalability and performance features provided by Zeebe. Or, you might a mature set of features around BPM (Business Process Management), which Zeebe does not yet offer. In such scenarios, a workflow automation platform such as [Camunda BPM](https://camunda.org) could be a better fit.
