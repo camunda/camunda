@@ -56,8 +56,8 @@
     <version.protobuf>3.8.0</version.protobuf>
     <version.rocksdbjni>6.0.1</version.rocksdbjni>
     <version.sbe>1.12.7</version.sbe>
-    <version.scala-parser>1.0.6</version.scala-parser>
-    <version.scala>2.12.8</version.scala>
+    <version.scala-parser>1.1.2</version.scala-parser>
+    <version.scala>2.13.0</version.scala>
     <version.slf4j>1.7.26</version.slf4j>
     <version.snakeyaml>1.24</version.snakeyaml>
     <version.streamex>0.6.8</version.streamex>
@@ -76,7 +76,7 @@
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.1.0</plugin.version.resources>
-    <plugin.version.scala>3.2.1</plugin.version.scala>
+    <plugin.version.scala>3.4.6</plugin.version.scala>
     <plugin.version.shade>3.2.1</plugin.version.shade>
     <plugin.version.surefire>3.0.0-M3</plugin.version.surefire>
     <plugin.version.versions>2.7</plugin.version.versions>
@@ -210,7 +210,7 @@
 
       <dependency>
         <groupId>org.scala-lang.modules</groupId>
-        <artifactId>scala-parser-combinators_2.12</artifactId>
+        <artifactId>scala-parser-combinators_2.13</artifactId>
         <version>${version.scala-parser}</version>
       </dependency>
 
