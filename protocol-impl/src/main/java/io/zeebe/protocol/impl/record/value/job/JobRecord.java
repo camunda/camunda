@@ -204,7 +204,13 @@ public class JobRecord extends UnifiedRecordValue
   @Override
   @JsonIgnore
   public Instant getDeadline() {
-    return Instant.ofEpochMilli(deadlineProp.getValue());
+
+    final long deadline = deadlineProp.getValue();
+    if (Protocol.INSTANT_NULL_VALUE != deadline) {
+      return Instant.ofEpochMilli(deadline);
+    }
+
+    return null;
   }
 
   @Override
