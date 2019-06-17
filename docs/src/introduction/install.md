@@ -38,7 +38,7 @@ docker run --name zeebe -p 26500:26500 camunda/zeebe:latest
 
 ### Volumes
 
-The default data volume is under `/usr/local/zeebe/bin/data`. It contains
+The default data volume is under `/usr/local/zeebe/data`. It contains
 all data which should be persisted.
 
 ### Configuration
