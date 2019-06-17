@@ -35,6 +35,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
+import org.slf4j.helpers.NOPLogger;
 
 public class DefaultLogReplicationRequestHandlerTest {
   private static final TemporaryFolder LOG_FOLDER = new TemporaryFolder();
@@ -69,7 +70,8 @@ public class DefaultLogReplicationRequestHandlerTest {
         new DefaultLogReplicationRequestHandler(LOG_STREAM_RULE.getLogStream());
 
     // when
-    final LogReplicationResponse response = handler.onReplicationRequest(request);
+    final LogReplicationResponse response =
+        handler.onReplicationRequest(request, NOPLogger.NOP_LOGGER);
 
     // then
     assertThat(response.getToPosition()).isEqualTo(events.lastPosition);
@@ -89,7 +91,8 @@ public class DefaultLogReplicationRequestHandlerTest {
             LOG_STREAM_RULE.getLogStream(), events.serialized.length + 1);
 
     // when
-    final LogReplicationResponse response = handler.onReplicationRequest(request);
+    final LogReplicationResponse response =
+        handler.onReplicationRequest(request, NOPLogger.NOP_LOGGER);
 
     // then
     assertThat(response.getToPosition()).isEqualTo(events.lastPosition);
@@ -108,7 +111,8 @@ public class DefaultLogReplicationRequestHandlerTest {
         new DefaultLogReplicationRequestHandler(LOG_STREAM_RULE.getLogStream());
 
     // when
-    final LogReplicationResponse response = handler.onReplicationRequest(request);
+    final LogReplicationResponse response =
+        handler.onReplicationRequest(request, NOPLogger.NOP_LOGGER);
 
     // then
     assertThat(response.getToPosition()).isEqualTo(events.lastPosition);
@@ -129,7 +133,8 @@ public class DefaultLogReplicationRequestHandlerTest {
         new DefaultLogReplicationRequestHandler(LOG_STREAM_RULE.getLogStream());
 
     // when
-    final LogReplicationResponse response = handler.onReplicationRequest(request);
+    final LogReplicationResponse response =
+        handler.onReplicationRequest(request, NOPLogger.NOP_LOGGER);
 
     // then
     assertThat(deserialize(response.getSerializedEvents()).get(0).getPosition())
@@ -152,7 +157,8 @@ public class DefaultLogReplicationRequestHandlerTest {
         new DefaultLogReplicationRequestHandler(LOG_STREAM_RULE.getLogStream());
 
     // when
-    final LogReplicationResponse response = handler.onReplicationRequest(request);
+    final LogReplicationResponse response =
+        handler.onReplicationRequest(request, NOPLogger.NOP_LOGGER);
 
     // then
     assertThat(deserialize(response.getSerializedEvents()).get(0).getPosition())
@@ -173,7 +179,8 @@ public class DefaultLogReplicationRequestHandlerTest {
         new DefaultLogReplicationRequestHandler(LOG_STREAM_RULE.getLogStream());
 
     // when
-    final LogReplicationResponse response = handler.onReplicationRequest(request);
+    final LogReplicationResponse response =
+        handler.onReplicationRequest(request, NOPLogger.NOP_LOGGER);
 
     // then
     assertThat(response.hasMoreAvailable()).isFalse();
@@ -190,7 +197,8 @@ public class DefaultLogReplicationRequestHandlerTest {
         new DefaultLogReplicationRequestHandler(LOG_STREAM_RULE.getLogStream());
 
     // when
-    final LogReplicationResponse response = handler.onReplicationRequest(request);
+    final LogReplicationResponse response =
+        handler.onReplicationRequest(request, NOPLogger.NOP_LOGGER);
 
     // then
     assertThat(response.getToPosition()).isEqualTo(events.lastPosition);

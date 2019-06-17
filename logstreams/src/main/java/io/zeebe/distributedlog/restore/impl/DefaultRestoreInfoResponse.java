@@ -23,6 +23,8 @@ public class DefaultRestoreInfoResponse implements RestoreInfoResponse {
   private ReplicationTarget replicationTarget;
   private SnapshotRestoreInfo snapshotRestoreInfo;
 
+  static final DefaultRestoreInfoResponse NONE =
+      new DefaultRestoreInfoResponse(ReplicationTarget.NONE);
   private static final NullSnapshotRestoreInfo NULL_SNAPSHOT_RESTORE_INFO =
       new NullSnapshotRestoreInfo();
 
@@ -65,6 +67,16 @@ public class DefaultRestoreInfoResponse implements RestoreInfoResponse {
     } else {
       setSnapshotRestoreInfo(NULL_SNAPSHOT_RESTORE_INFO);
     }
+  }
+
+  @Override
+  public String toString() {
+    return "DefaultRestoreInfoResponse{"
+        + "replicationTarget="
+        + replicationTarget
+        + ", snapshotRestoreInfo="
+        + snapshotRestoreInfo
+        + '}';
   }
 
   private static class NullSnapshotRestoreInfo implements SnapshotRestoreInfo {

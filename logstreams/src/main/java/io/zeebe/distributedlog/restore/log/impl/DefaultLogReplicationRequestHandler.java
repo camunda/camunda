@@ -22,7 +22,6 @@ import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.util.ZbLogger;
 import java.nio.ByteBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -33,7 +32,6 @@ public class DefaultLogReplicationRequestHandler implements LogReplicationReques
 
   private final LogStreamReader reader;
   private final MutableDirectBuffer readerBuffer;
-  private final Logger logger;
 
   public DefaultLogReplicationRequestHandler(LogStream logStream) {
     this(logStream, DEFAULT_READ_BUFFER_SIZE);
@@ -42,13 +40,14 @@ public class DefaultLogReplicationRequestHandler implements LogReplicationReques
   public DefaultLogReplicationRequestHandler(LogStream logStream, int bufferSize) {
     this.reader = new BufferedLogStreamReader(logStream);
     this.readerBuffer = new UnsafeBuffer(ByteBuffer.allocate(bufferSize));
-    this.logger = new ZbLogger(String.format("log.replication.server.%s", logStream.getLogName()));
   }
 
   @Override
-  public final LogReplicationResponse onReplicationRequest(LogReplicationRequest request) {
+  public final LogReplicationResponse onReplicationRequest(
+      LogReplicationRequest request, Logger logger) {
     final DefaultLogReplicationResponse response = new DefaultLogReplicationResponse();
 
+    logger.debug("Received log replication request {}", request);
     if (seekToRequestedPosition(request.getFromPosition(), !request.includeFromPosition())) {
       long lastReadPosition = reader.getPosition();
       int offset = 0;
@@ -78,6 +77,7 @@ public class DefaultLogReplicationRequestHandler implements LogReplicationReques
           request.getFromPosition());
     }
 
+    logger.debug("Responding log replication request with {}", response);
     return response;
   }
 

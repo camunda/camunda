@@ -36,7 +36,6 @@ public class SbeSnapshotRestoreResponse
 
   private final SnapshotRestoreResponseEncoder encoder;
   private final SnapshotRestoreResponseDecoder decoder;
-
   private SnapshotRestoreResponse delegate;
   private DirectBuffer snapshotChunkBuffer;
 
@@ -93,6 +92,11 @@ public class SbeSnapshotRestoreResponse
 
   public static byte[] serialize(SnapshotRestoreResponse response) {
     return new SbeSnapshotRestoreResponse(response).toBytes();
+  }
+
+  @Override
+  public String toString() {
+    return "SbeSnapshotRestoreResponse{" + "delegate=" + delegate + "} " + super.toString();
   }
 
   @Override

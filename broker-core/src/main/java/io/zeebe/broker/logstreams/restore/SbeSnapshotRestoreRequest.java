@@ -35,7 +35,6 @@ public class SbeSnapshotRestoreRequest
 
   private final SnapshotRestoreRequestEncoder encoder;
   private final SnapshotRestoreRequestDecoder decoder;
-
   private final DefaultSnapshotRestoreRequest delegate;
 
   public SbeSnapshotRestoreRequest() {
@@ -93,6 +92,11 @@ public class SbeSnapshotRestoreRequest
   @Override
   public int getChunkIdx() {
     return delegate.getChunkIdx();
+  }
+
+  @Override
+  public String toString() {
+    return "SbeSnapshotRestoreRequest{" + "delegate=" + delegate + "} " + super.toString();
   }
 
   @Override

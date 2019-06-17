@@ -46,8 +46,8 @@ public class SbeRestoreInfoResponse
 
   public SbeRestoreInfoResponse(RestoreInfoResponse other) {
     this();
-    setReplicationTarget(other.getReplicationTarget());
-    setSnapshotRestoreInfo(other.getSnapshotRestoreInfo());
+    delegate.setReplicationTarget(other.getReplicationTarget());
+    delegate.setSnapshotRestoreInfo(other.getSnapshotRestoreInfo());
   }
 
   public SbeRestoreInfoResponse(byte[] serialized) {
@@ -58,8 +58,8 @@ public class SbeRestoreInfoResponse
   @Override
   public void wrap(DirectBuffer buffer, int offset, int length) {
     super.wrap(buffer, offset, length);
-    setReplicationTarget(ENUM_CONSTANTS[decoder.replicationTarget()]);
-    setSnapshotRestoreInfo(decoder.snapshotId(), decoder.numChunks());
+    delegate.setReplicationTarget(ENUM_CONSTANTS[decoder.replicationTarget()]);
+    delegate.setSnapshotRestoreInfo(decoder.snapshotId(), decoder.numChunks());
   }
 
   @Override
@@ -81,16 +81,9 @@ public class SbeRestoreInfoResponse
     return delegate.getSnapshotRestoreInfo();
   }
 
-  public void setReplicationTarget(ReplicationTarget replicationTarget) {
-    delegate.setReplicationTarget(replicationTarget);
-  }
-
-  private void setSnapshotRestoreInfo(long snapshotId, int numChunks) {
-    delegate.setSnapshotRestoreInfo(snapshotId, numChunks);
-  }
-
-  private void setSnapshotRestoreInfo(SnapshotRestoreInfo snapshotRestoreInfo) {
-    delegate.setSnapshotRestoreInfo(snapshotRestoreInfo);
+  @Override
+  public String toString() {
+    return "SbeRestoreInfoResponse{" + "delegate=" + delegate + "} " + super.toString();
   }
 
   @Override

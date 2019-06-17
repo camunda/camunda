@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 public class ReplicatingRestoreClientProvider implements RestoreFactory {
 
   private final RestoreClient restoreClient;
-  private SnapshotRestoreContext snapshotRestoreContext;
+  private final SnapshotRestoreContext snapshotRestoreContext;
 
   public ReplicatingRestoreClientProvider(
       RestoreClient restoreClient, SnapshotRestoreContext restoreContext) {

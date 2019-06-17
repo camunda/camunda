@@ -24,8 +24,8 @@ import io.zeebe.clustering.management.BooleanType;
 import io.zeebe.clustering.management.LogReplicationResponseDecoder;
 import io.zeebe.clustering.management.LogReplicationResponseEncoder;
 import io.zeebe.distributedlog.restore.log.LogReplicationResponse;
+import io.zeebe.distributedlog.restore.log.impl.DefaultLogReplicationResponse;
 import io.zeebe.engine.util.SbeBufferWriterReader;
-import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -33,106 +33,102 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class SbeLogReplicationResponse
     extends SbeBufferWriterReader<LogReplicationResponseEncoder, LogReplicationResponseDecoder>
     implements LogReplicationResponse {
-  private final LogReplicationResponseEncoder encoder = new LogReplicationResponseEncoder();
-  private final LogReplicationResponseDecoder decoder = new LogReplicationResponseDecoder();
-  private final DirectBuffer serializedEvents = new UnsafeBuffer();
+  private final LogReplicationResponseEncoder encoder;
+  private final LogReplicationResponseDecoder decoder;
+  private final DefaultLogReplicationResponse delegate;
 
-  private long toPosition;
-  private boolean moreAvailable;
-
-  public SbeLogReplicationResponse() {}
-
-  public SbeLogReplicationResponse(LogReplicationResponse other) {
+  public SbeLogReplicationResponse() {
+    this.delegate = new DefaultLogReplicationResponse();
+    this.encoder = new LogReplicationResponseEncoder();
+    this.decoder = new LogReplicationResponseDecoder();
     reset();
-    wrap(other);
   }
 
-  public SbeLogReplicationResponse(
-      long toPosition, boolean moreAvailable, byte[] serializedEvents) {
-    this.toPosition = toPosition;
-    this.moreAvailable = moreAvailable;
-    this.serializedEvents.wrap(serializedEvents);
+  public SbeLogReplicationResponse(LogReplicationResponse other) {
+    this();
+    delegate.setToPosition(other.getToPosition());
+    delegate.setSerializedEvents(other.getSerializedEvents());
+    delegate.setMoreAvailable(other.hasMoreAvailable());
   }
 
   public SbeLogReplicationResponse(byte[] serialized) {
-    reset();
+    this();
     wrap(new UnsafeBuffer(serialized));
   }
 
   @Override
   public void reset() {
     super.reset();
-    toPosition = toPositionNullValue();
-    moreAvailable = false;
-    serializedEvents.wrap(0, 0);
+    delegate.setToPosition(toPositionNullValue());
+    delegate.setMoreAvailable(false);
+    delegate.setSerializedEvents(new UnsafeBuffer(), 0, 0);
   }
 
   @Override
   public void wrap(DirectBuffer buffer, int offset, int length) {
     super.wrap(buffer, offset, length);
+    final DirectBuffer wrapBuffer = new UnsafeBuffer();
+    decoder.wrapSerializedEvents(wrapBuffer);
 
-    toPosition = decoder.toPosition();
-    moreAvailable = decoder.moreAvailable() == BooleanType.TRUE;
-    decoder.wrapSerializedEvents(serializedEvents);
-  }
-
-  public void wrap(LogReplicationResponse other) {
-    this.setToPosition(other.getToPosition());
-    this.setSerializedEvents(other.getSerializedEvents());
-    this.setMoreAvailable(other.hasMoreAvailable());
+    delegate.setToPosition(decoder.toPosition());
+    delegate.setMoreAvailable(decoder.moreAvailable() == BooleanType.TRUE);
+    delegate.setSerializedEvents(wrapBuffer, 0, wrapBuffer.capacity());
   }
 
   @Override
   public void write(MutableDirectBuffer buffer, int offset) {
     super.write(buffer, offset);
-    encoder.toPosition(toPosition);
-    encoder.putSerializedEvents(serializedEvents, 0, serializedEvents.capacity());
-    encoder.moreAvailable(moreAvailable ? BooleanType.TRUE : BooleanType.FALSE);
+    final byte[] serializedEvents = delegate.getSerializedEvents();
+
+    encoder.toPosition(delegate.getToPosition());
+    encoder.moreAvailable(delegate.hasMoreAvailable() ? BooleanType.TRUE : BooleanType.FALSE);
+
+    if (getSerializedEventsLength() > 0) {
+      encoder.putSerializedEvents(serializedEvents, 0, serializedEvents.length);
+    } else {
+      encoder.putSerializedEvents(new UnsafeBuffer(), 0, 0);
+    }
   }
 
   @Override
   public int getLength() {
-    return super.getLength() + serializedEventsHeaderLength() + serializedEvents.capacity();
+    return super.getLength() + serializedEventsHeaderLength() + getSerializedEventsLength();
   }
 
   @Override
-  public boolean hasMoreAvailable() {
-    return moreAvailable;
-  }
-
-  @Override
-  public byte[] getSerializedEvents() {
-    return BufferUtil.bufferAsArray(serializedEvents);
+  public boolean isValid() {
+    return delegate.isValid()
+        && getSerializedEventsLength() > 0
+        && delegate.getToPosition() != toPositionNullValue();
   }
 
   @Override
   public long getToPosition() {
-    return toPosition;
+    return delegate.getToPosition();
   }
 
-  public void setToPosition(long toPosition) {
-    this.toPosition = toPosition;
+  @Override
+  public boolean hasMoreAvailable() {
+    return delegate.hasMoreAvailable();
   }
 
-  public void setMoreAvailable(boolean moreAvailable) {
-    this.moreAvailable = moreAvailable;
+  @Override
+  public byte[] getSerializedEvents() {
+    return delegate.getSerializedEvents();
   }
 
-  public void setSerializedEvents(byte[] serializedEvents) {
-    this.serializedEvents.wrap(serializedEvents);
-  }
-
-  public void setSerializedEvents(DirectBuffer serializedEvents, int offset, int length) {
-    this.serializedEvents.wrap(serializedEvents, offset, length);
+  @Override
+  public String toString() {
+    return "SbeLogReplicationResponse{" + "delegate=" + delegate + "} " + super.toString();
   }
 
   public static byte[] serialize(LogReplicationResponse response) {
     return new SbeLogReplicationResponse(response).toBytes();
   }
 
-  @Override
-  public boolean isValid() {
-    return toPosition != toPositionNullValue() && serializedEvents.capacity() > 0;
+  private int getSerializedEventsLength() {
+    final byte[] serializedEvents = delegate.getSerializedEvents();
+    return serializedEvents != null ? serializedEvents.length : 0;
   }
 
   @Override

@@ -35,4 +35,14 @@ public class DefaultSnapshotRestoreInfo implements SnapshotRestoreInfo {
   public int getNumChunks() {
     return numChunks;
   }
+
+  @Override
+  public String toString() {
+    return "DefaultSnapshotRestoreInfo{"
+        + "snapshotId="
+        + snapshotId
+        + ", numChunks="
+        + numChunks
+        + '}';
+  }
 }
