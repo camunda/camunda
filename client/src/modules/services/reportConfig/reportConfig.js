@@ -11,23 +11,23 @@ export default function reportConfig({view, groupBy, visualization, combinations
   /**
    * Construct a String representing the entry. Suitable for displaying to the user
    *
-   * @param config One of the configuration objects of the reportConfig service (view, groupBy, visualization)
-   * @param data One data entry of the configuration object. This corresponds to the payload sent to the backend
+   * @param type One of the type arrays of the reportConfig service (view, groupBy, visualization)
+   * @param data One data entry of the type array. This corresponds to the payload sent to the backend
    */
-  const getLabelFor = (config, data) => {
+  const getLabelFor = (type, data) => {
     // special case: variables
     if (data && data.type && data.type.toLowerCase().includes('variable')) {
       return convertCamelToSpaces(data.type) + ': ' + data.value.name;
     }
 
-    for (let i = 0; i < config.length; i++) {
-      const entry = config[i];
+    for (let i = 0; i < type.length; i++) {
+      const entry = type[i];
 
       if (equal(entry.data, data, {strict: true})) {
         return entry.label;
       }
 
-      if (typeof entry.options === 'object') {
+      if (Array.isArray(entry.options)) {
         const sublabel = getLabelFor(entry.options, data);
         if (sublabel) {
           return `${entry.label}: ${sublabel}`;
@@ -68,7 +68,7 @@ export default function reportConfig({view, groupBy, visualization, combinations
     const entry = type.find(entry => {
       if (entry.data) {
         return equal(entry.data, data, {strict: true});
-      } else if (typeof entry.options === 'object') {
+      } else if (Array.isArray(entry.options)) {
         return entry.options.find(entry => equal(entry.data, data, {strict: true}));
       }
       return false;

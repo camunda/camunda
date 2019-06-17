@@ -45,8 +45,5 @@ export const combinations = {
     rule: ['table'],
     date: ['table', 'chart'],
     variable: ['table', 'chart']
-  },
-  fn: {
-    fn: ['table', 'chart', 'heat']
   }
 };
