@@ -371,7 +371,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     private final List<ExporterContainer> containers;
 
     private TypedEventImpl record;
-    private boolean shouldExecuteSideEffects;
+    private boolean shouldExport;
     private int exporterIndex;
 
     RecordExporter(
@@ -384,17 +384,19 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
       rawEvent.readMetadata(rawMetadata);
 
       final UnifiedRecordValue value = recordValueMap.get(rawMetadata.getValueType());
-      value.reset();
-      rawEvent.readValue(value);
+      shouldExport = value != null;
+      if (shouldExport) {
+        value.reset();
+        rawEvent.readValue(value);
 
-      record = CopiedTypedEvent.createCopiedEvent(rawEvent);
+        record = CopiedTypedEvent.createCopiedEvent(rawEvent);
 
-      exporterIndex = 0;
-      shouldExecuteSideEffects = value != null;
+        exporterIndex = 0;
+      }
     }
 
     public boolean export() {
-      if (!shouldExecuteSideEffects) {
+      if (!shouldExport) {
         return true;
       }
 
