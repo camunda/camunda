@@ -22,7 +22,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCat
 import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
 import io.zeebe.engine.processor.workflow.handlers.IOMappingHelper;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementActivatingHandler;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public class IntermediateCatchEventElementActivatingHandler<T extends ExecutableCatchEventElement>
     extends ElementActivatingHandler<T> {

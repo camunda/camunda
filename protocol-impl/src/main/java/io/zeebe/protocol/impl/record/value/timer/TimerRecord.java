@@ -15,12 +15,12 @@
  */
 package io.zeebe.protocol.impl.record.value.timer;
 
-import io.zeebe.exporter.api.record.value.TimerRecordValue;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
-import io.zeebe.protocol.WorkflowInstanceRelated;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.intent.WorkflowInstanceRelated;
+import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 

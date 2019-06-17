@@ -24,7 +24,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableSeq
 import io.zeebe.engine.processor.workflow.handlers.AbstractHandler;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.IndexedRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.ArrayList;
 import java.util.List;
 

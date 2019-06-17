@@ -19,7 +19,7 @@ package io.zeebe.engine.processor.workflow.handlers.element;
 
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.EnumSet;
 import java.util.Set;
 import org.assertj.core.api.Assertions;

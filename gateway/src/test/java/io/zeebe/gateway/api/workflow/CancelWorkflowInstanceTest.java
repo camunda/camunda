@@ -21,8 +21,8 @@ import io.zeebe.gateway.api.util.GatewayTest;
 import io.zeebe.gateway.impl.broker.request.BrokerCancelWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
-import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import org.junit.Test;
 
 public class CancelWorkflowInstanceTest extends GatewayTest {

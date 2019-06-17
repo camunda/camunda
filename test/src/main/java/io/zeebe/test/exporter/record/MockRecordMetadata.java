@@ -15,12 +15,12 @@
  */
 package io.zeebe.test.exporter.record;
 
-import io.zeebe.exporter.api.record.RecordMetadata;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.RejectionType;
-import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.RecordMetadata;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
 import java.util.Objects;
 
 public class MockRecordMetadata extends ExporterMappedObject implements RecordMetadata, Cloneable {

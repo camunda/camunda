@@ -18,11 +18,11 @@
 package io.zeebe.engine.util.client;
 
 import io.zeebe.engine.util.StreamProcessorRule;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.VariableDocumentRecordValue;
-import io.zeebe.protocol.VariableDocumentUpdateSemantic;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
-import io.zeebe.protocol.intent.VariableDocumentIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
+import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;

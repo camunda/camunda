@@ -21,7 +21,7 @@ import static io.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
 
 import io.zeebe.db.DbValue;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;

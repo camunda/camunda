@@ -17,16 +17,16 @@ package io.zeebe.protocol.impl.record.value.deployment;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapArray;
 
-import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.BinaryProperty;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public class DeploymentResource extends UnpackedObject
-    implements io.zeebe.exporter.api.record.value.deployment.DeploymentResource {
+    implements io.zeebe.protocol.record.value.deployment.DeploymentResource {
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
   private final EnumProperty<ResourceType> resourceTypeProp =
       new EnumProperty<>("resourceType", ResourceType.class, ResourceType.BPMN_XML);

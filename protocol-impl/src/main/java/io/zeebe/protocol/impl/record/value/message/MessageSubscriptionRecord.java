@@ -15,12 +15,12 @@
  */
 package io.zeebe.protocol.impl.record.value.message;
 
-import io.zeebe.exporter.api.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
-import io.zeebe.protocol.WorkflowInstanceRelated;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.intent.WorkflowInstanceRelated;
+import io.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 

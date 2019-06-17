@@ -20,7 +20,7 @@ package io.zeebe.engine.processor.workflow.handlers.element;
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processor.workflow.handlers.AbstractHandler;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 /**
  * Represents the "business logic" phase the element, so the base handler does nothing.

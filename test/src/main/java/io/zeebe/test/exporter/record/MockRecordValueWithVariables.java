@@ -15,7 +15,7 @@
  */
 package io.zeebe.test.exporter.record;
 
-import io.zeebe.exporter.api.record.RecordValueWithVariables;
+import io.zeebe.protocol.record.RecordValueWithVariables;
 import java.util.Map;
 
 public class MockRecordValueWithVariables extends MockRecordValue

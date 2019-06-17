@@ -21,7 +21,7 @@ import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableReceiveTask;
 import io.zeebe.engine.processor.workflow.handlers.activity.ActivityEventOccurredHandler;
 import io.zeebe.engine.state.instance.EventTrigger;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public class ReceiveTaskEventOccurredHandler<T extends ExecutableReceiveTask>
     extends ActivityEventOccurredHandler<T> {

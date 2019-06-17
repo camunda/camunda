@@ -15,8 +15,8 @@
  */
 package io.zeebe.test.util.record;
 
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.RecordValueWithVariables;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordValueWithVariables;
 import java.util.Map;
 import java.util.stream.Stream;
 

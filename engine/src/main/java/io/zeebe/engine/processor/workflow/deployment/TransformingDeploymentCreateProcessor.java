@@ -31,10 +31,10 @@ import io.zeebe.engine.processor.workflow.deployment.transform.DeploymentTransfo
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.TimerInstance;
-import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.Workflow;
-import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;

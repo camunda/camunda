@@ -15,13 +15,13 @@
  */
 package io.zeebe.test.util.record;
 
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.RecordMetadata;
-import io.zeebe.exporter.api.record.RecordValue;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.RejectionType;
-import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordMetadata;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RecordValue;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.util.stream.StreamWrapper;
 import java.time.Instant;
 import java.util.function.Predicate;

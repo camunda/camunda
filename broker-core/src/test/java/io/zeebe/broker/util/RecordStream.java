@@ -18,7 +18,7 @@
 package io.zeebe.broker.util;
 
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.util.stream.StreamWrapper;
 import java.util.stream.Stream;
 

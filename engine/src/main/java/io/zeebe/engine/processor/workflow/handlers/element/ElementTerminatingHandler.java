@@ -20,7 +20,7 @@ package io.zeebe.engine.processor.workflow.handlers.element;
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processor.workflow.handlers.AbstractHandler;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 /**
  * Resolves any incident that were associated with this element.

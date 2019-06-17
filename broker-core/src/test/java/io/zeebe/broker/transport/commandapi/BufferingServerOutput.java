@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.transport.commandapi;
 
-import io.zeebe.protocol.ErrorResponseDecoder;
-import io.zeebe.protocol.MessageHeaderDecoder;
+import io.zeebe.protocol.record.ErrorResponseDecoder;
+import io.zeebe.protocol.record.MessageHeaderDecoder;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;

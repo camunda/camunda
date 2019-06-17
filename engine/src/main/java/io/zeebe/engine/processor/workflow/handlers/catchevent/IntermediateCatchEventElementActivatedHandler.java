@@ -20,7 +20,7 @@ package io.zeebe.engine.processor.workflow.handlers.catchevent;
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventElement;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementActivatedHandler;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public class IntermediateCatchEventElementActivatedHandler<T extends ExecutableCatchEventElement>
     extends ElementActivatedHandler<T> {

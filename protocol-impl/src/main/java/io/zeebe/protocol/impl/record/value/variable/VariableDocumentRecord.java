@@ -15,13 +15,13 @@
  */
 package io.zeebe.protocol.impl.record.value.variable;
 
-import io.zeebe.exporter.api.record.value.VariableDocumentRecordValue;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.LongProperty;
-import io.zeebe.protocol.VariableDocumentUpdateSemantic;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
+import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import java.util.Map;
 import java.util.Objects;
 import org.agrona.DirectBuffer;

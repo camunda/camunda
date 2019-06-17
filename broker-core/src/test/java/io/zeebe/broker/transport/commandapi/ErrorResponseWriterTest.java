@@ -19,9 +19,9 @@ package io.zeebe.broker.transport.commandapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.protocol.ErrorCode;
-import io.zeebe.protocol.ErrorResponseDecoder;
-import io.zeebe.protocol.MessageHeaderDecoder;
+import io.zeebe.protocol.record.ErrorCode;
+import io.zeebe.protocol.record.ErrorResponseDecoder;
+import io.zeebe.protocol.record.MessageHeaderDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Test;

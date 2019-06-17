@@ -15,9 +15,9 @@
  */
 package io.zeebe.test.broker.protocol.commandapi;
 
-import io.zeebe.protocol.ErrorCode;
-import io.zeebe.protocol.ErrorResponseDecoder;
-import io.zeebe.protocol.MessageHeaderDecoder;
+import io.zeebe.protocol.record.ErrorCode;
+import io.zeebe.protocol.record.ErrorResponseDecoder;
+import io.zeebe.protocol.record.MessageHeaderDecoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;

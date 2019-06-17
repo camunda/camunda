@@ -22,8 +22,8 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlo
 import io.zeebe.engine.processor.workflow.handlers.AbstractHandler;
 import io.zeebe.engine.processor.workflow.handlers.IOMappingHelper;
 import io.zeebe.msgpack.mapping.MappingException;
-import io.zeebe.protocol.ErrorType;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.ErrorType;
 
 /**
  * Applies input mappings in the scope.
