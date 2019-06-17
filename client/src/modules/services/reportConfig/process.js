@@ -48,6 +48,18 @@ export const groupBy = [
       {label: 'Hour', data: {type: 'startDate', value: {unit: 'hour'}}}
     ]
   },
+  {
+    label: 'End Date of Process Instance',
+    group: 'date',
+    options: [
+      {label: 'Automatic', data: {type: 'endDate', value: {unit: 'automatic'}}},
+      {label: 'Year', data: {type: 'endDate', value: {unit: 'year'}}},
+      {label: 'Month', data: {type: 'endDate', value: {unit: 'month'}}},
+      {label: 'Week', data: {type: 'endDate', value: {unit: 'week'}}},
+      {label: 'Day', data: {type: 'endDate', value: {unit: 'day'}}},
+      {label: 'Hour', data: {type: 'endDate', value: {unit: 'hour'}}}
+    ]
+  },
   {label: 'Variable', group: 'variable', options: 'variable'}
 ];
 
