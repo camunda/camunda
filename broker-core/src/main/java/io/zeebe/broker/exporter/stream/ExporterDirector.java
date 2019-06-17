@@ -33,14 +33,12 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.LangUtil;
-import io.zeebe.util.ReflectUtil;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.retry.AbortableRetryStrategy;
 import io.zeebe.util.retry.EndlessRetryStrategy;
@@ -52,8 +50,6 @@ import io.zeebe.util.sched.SchedulingHints;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -96,9 +92,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     this.containers =
         context.getDescriptors().stream().map(ExporterContainer::new).collect(Collectors.toList());
 
-    final Map<ValueType, UnifiedRecordValue> eventCache = new EnumMap<>(ValueType.class);
-    EVENT_REGISTRY.forEach((t, c) -> eventCache.put(t, ReflectUtil.newInstance(c)));
-    this.recordExporter = new RecordExporter(Collections.unmodifiableMap(eventCache), containers);
+    this.recordExporter = new RecordExporter(containers);
 
     this.logStream = context.getLogStream();
     this.partitionId = logStream.getPartitionId();
@@ -367,30 +361,22 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   private static class RecordExporter {
 
     private final RecordMetadata rawMetadata = new RecordMetadata();
-    private final Map<ValueType, UnifiedRecordValue> recordValueMap;
     private final List<ExporterContainer> containers;
 
     private TypedEventImpl record;
     private boolean shouldExport;
     private int exporterIndex;
 
-    RecordExporter(
-        Map<ValueType, UnifiedRecordValue> recordValueMap, List<ExporterContainer> containers) {
-      this.recordValueMap = recordValueMap;
+    RecordExporter(List<ExporterContainer> containers) {
       this.containers = containers;
     }
 
     void wrap(LoggedEvent rawEvent) {
       rawEvent.readMetadata(rawMetadata);
 
-      final UnifiedRecordValue value = recordValueMap.get(rawMetadata.getValueType());
-      shouldExport = value != null;
+      shouldExport = EVENT_REGISTRY.containsKey(rawMetadata.getValueType());
       if (shouldExport) {
-        value.reset();
-        rawEvent.readValue(value);
-
         record = CopiedTypedEvent.createCopiedEvent(rawEvent);
-
         exporterIndex = 0;
       }
     }
