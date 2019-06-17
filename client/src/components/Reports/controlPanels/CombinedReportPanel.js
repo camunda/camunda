@@ -65,7 +65,13 @@ export default class CombinedReportPanel extends React.Component {
       return [];
     }
 
-    return this.props.report.data.reports.map(({id}) => this.props.report.result.data[id]);
+    // the new report might be in the reports array,
+    // but the report has not been evaluated yet,
+    // so that the report is not in the results structure yet.
+    // we filter all entries which are not truthy to get rid of them
+    return this.props.report.data.reports
+      .map(({id}) => this.props.report.result.data[id])
+      .filter(v => v);
   };
 
   getUpdatedColors = newSelected => {
@@ -135,7 +141,10 @@ export default class CombinedReportPanel extends React.Component {
         referenceReport.groupBy.value.unit === data.groupBy.value.unit &&
         referenceReport.groupBy.value.name === data.groupBy.value.name;
     }
-    return data.groupBy.type === referenceReport.groupBy.type && isSameValue;
+    return (
+      convertGroupByType(data.groupBy.type) === convertGroupByType(referenceReport.groupBy.type) &&
+      isSameValue
+    );
   };
 
   updateColor = idx => color => {
@@ -218,4 +227,11 @@ export default class CombinedReportPanel extends React.Component {
       </div>
     );
   }
+}
+
+function convertGroupByType(type) {
+  if (type === 'startDate' || type === 'endDate') {
+    return 'date';
+  }
+  return type;
 }

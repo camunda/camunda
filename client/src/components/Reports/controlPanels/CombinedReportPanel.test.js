@@ -191,6 +191,61 @@ describe('isCompatible', () => {
 
     expect(node.instance().isCompatible(report)).toBeTruthy();
   });
+
+  it('should allow to combine a start date with an end date report', () => {
+    const report1 = {
+      id: '1',
+      data: {
+        processDefinitionKey: 'leadQualification',
+        processDefinitionVersion: '1',
+        view: {
+          entity: 'flowNode',
+          property: 'duration'
+        },
+        groupBy: {
+          type: 'startDate',
+          value: {unit: 'month'}
+        },
+        visualization: 'bar'
+      }
+    };
+    const report2 = {
+      id: '2',
+      data: {
+        processDefinitionKey: 'leadQualification',
+        processDefinitionVersion: '2',
+        view: {
+          entity: 'flowNode',
+          property: 'duration'
+        },
+        groupBy: {
+          type: 'endDate',
+          value: {unit: 'month'}
+        },
+        visualization: 'bar'
+      }
+    };
+    const node = shallow(
+      <CombinedReportPanel
+        report={{
+          id: 'combinedReport',
+          name: 'Combined Report',
+          combined: true,
+          data: {
+            configuration: {},
+            reports: [{id: '1'}],
+            visualization: 'bar'
+          },
+          result: {
+            data: {
+              '1': report1
+            }
+          }
+        }}
+      />
+    );
+    expect(node.instance().isCompatible(report2)).toBeTruthy();
+  });
 });
 
 it('should update the color of a single report inside a combined report', async () => {
