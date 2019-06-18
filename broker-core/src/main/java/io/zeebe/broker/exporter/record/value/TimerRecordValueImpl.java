@@ -27,7 +27,7 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
   private final long elementInstanceKey;
   private final long workflowInstanceKey;
   private final long dueDate;
-  private final String handlerFlowNodeId;
+  private final String targetElementId;
   private final int repetitions;
   private final long workflowKey;
 
@@ -36,13 +36,13 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
       long elementInstanceKey,
       long workflowInstanceKey,
       long dueDate,
-      String handlerFlowNodeId,
+      String targetElementId,
       int repetitions,
       long workflowKey) {
     super(objectMapper);
     this.elementInstanceKey = elementInstanceKey;
     this.dueDate = dueDate;
-    this.handlerFlowNodeId = handlerFlowNodeId;
+    this.targetElementId = targetElementId;
     this.workflowInstanceKey = workflowInstanceKey;
 
     this.repetitions = repetitions;
@@ -65,8 +65,8 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
   }
 
   @Override
-  public String getHandlerFlowNodeId() {
-    return handlerFlowNodeId;
+  public String getTargetElementId() {
+    return targetElementId;
   }
 
   @Override
@@ -86,7 +86,7 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
         elementInstanceKey,
         workflowInstanceKey,
         dueDate,
-        handlerFlowNodeId,
+        targetElementId,
         workflowKey,
         repetitions);
   }
@@ -107,7 +107,7 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
         && dueDate == other.dueDate
         && repetitions == other.repetitions
         && workflowKey == other.workflowKey
-        && Objects.equals(handlerFlowNodeId, other.handlerFlowNodeId);
+        && Objects.equals(targetElementId, other.targetElementId);
   }
 
   @Override
@@ -123,8 +123,8 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
         + dueDate
         + ", repetitions="
         + repetitions
-        + ", handlerFlowNodeId='"
-        + handlerFlowNodeId
+        + ", targetElementId='"
+        + targetElementId
         + '\''
         + '}';
   }

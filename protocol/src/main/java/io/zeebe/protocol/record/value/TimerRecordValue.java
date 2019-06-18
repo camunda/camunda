@@ -45,7 +45,7 @@ public interface TimerRecordValue extends RecordValue {
    *
    * @return the ID of the flow node which will handle the trigger element
    */
-  String getHandlerFlowNodeId();
+  String getTargetElementId();
 
   /** @return the number of times this timer should trigger */
   int getRepetitions();

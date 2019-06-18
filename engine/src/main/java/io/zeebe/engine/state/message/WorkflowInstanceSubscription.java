@@ -35,7 +35,7 @@ public class WorkflowInstanceSubscription implements DbValue {
 
   private final DirectBuffer messageName = new UnsafeBuffer();
   private final DirectBuffer correlationKey = new UnsafeBuffer();
-  private final DirectBuffer handlerNodeId = new UnsafeBuffer();
+  private final DirectBuffer targetElementId = new UnsafeBuffer();
 
   private long workflowInstanceKey;
   private long elementInstanceKey;
@@ -55,14 +55,14 @@ public class WorkflowInstanceSubscription implements DbValue {
   public WorkflowInstanceSubscription(
       long workflowInstanceKey,
       long elementInstanceKey,
-      DirectBuffer handlerNodeId,
+      DirectBuffer targetElementId,
       DirectBuffer messageName,
       DirectBuffer correlationKey,
       long commandSentTime,
       boolean closeOnCorrelate) {
     this(workflowInstanceKey, elementInstanceKey);
 
-    this.handlerNodeId.wrap(handlerNodeId);
+    this.targetElementId.wrap(targetElementId);
     this.commandSentTime = commandSentTime;
     this.messageName.wrap(messageName);
     this.correlationKey.wrap(correlationKey);
@@ -85,12 +85,12 @@ public class WorkflowInstanceSubscription implements DbValue {
     this.correlationKey.wrap(correlationKey);
   }
 
-  public DirectBuffer getHandlerNodeId() {
-    return handlerNodeId;
+  public DirectBuffer getTargetElementId() {
+    return targetElementId;
   }
 
-  public void setHandlerNodeId(DirectBuffer handlerNodeId) {
-    this.handlerNodeId.wrap(handlerNodeId);
+  public void setTargetElementId(DirectBuffer targetElementId) {
+    this.targetElementId.wrap(targetElementId);
   }
 
   public long getWorkflowInstanceKey() {
@@ -172,7 +172,7 @@ public class WorkflowInstanceSubscription implements DbValue {
 
     offset = readIntoBuffer(buffer, offset, messageName);
     offset = readIntoBuffer(buffer, offset, correlationKey);
-    offset = readIntoBuffer(buffer, offset, handlerNodeId);
+    offset = readIntoBuffer(buffer, offset, targetElementId);
 
     assert (offset - startOffset) == length : "End offset differs from length";
   }
@@ -184,7 +184,7 @@ public class WorkflowInstanceSubscription implements DbValue {
         + Integer.BYTES * 5
         + messageName.capacity()
         + correlationKey.capacity()
-        + handlerNodeId.capacity();
+        + targetElementId.capacity();
   }
 
   @Override
@@ -209,7 +209,7 @@ public class WorkflowInstanceSubscription implements DbValue {
 
     offset = writeIntoBuffer(buffer, offset, messageName);
     offset = writeIntoBuffer(buffer, offset, correlationKey);
-    offset = writeIntoBuffer(buffer, offset, handlerNodeId);
+    offset = writeIntoBuffer(buffer, offset, targetElementId);
     assert offset == getLength() : "End offset differs with getLength()";
   }
 

@@ -103,7 +103,7 @@ public class TimerStartEventTest {
 
     Assertions.assertThat(timerRecord)
         .hasWorkflowInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE)
-        .hasHandlerFlowNodeId("start_1")
+        .hasTargetElementId("start_1")
         .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
 
     final long now = System.currentTimeMillis();
@@ -600,7 +600,7 @@ public class TimerStartEventTest {
 
     Assertions.assertThat(timerRecord)
         .hasDueDate(triggerTime.toEpochMilli())
-        .hasHandlerFlowNodeId("start_2")
+        .hasTargetElementId("start_2")
         .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
 
     assertThat(
@@ -643,7 +643,7 @@ public class TimerStartEventTest {
 
     Assertions.assertThat(timerRecord)
         .hasDueDate(triggerTime.toEpochMilli())
-        .hasHandlerFlowNodeId("start_2")
+        .hasTargetElementId("start_2")
         .hasElementInstanceKey(TimerInstance.NO_ELEMENT_INSTANCE);
   }
 

@@ -58,7 +58,7 @@ public class CreateTimerProcessor implements TypedRecordProcessor<TimerRecord> {
     timerInstance.setElementInstanceKey(timer.getElementInstanceKey());
     timerInstance.setDueDate(timer.getDueDate());
     timerInstance.setKey(timerKey);
-    timerInstance.setHandlerNodeId(timer.getHandlerNodeId());
+    timerInstance.setHandlerNodeId(timer.getTargetElementIdBuffer());
     timerInstance.setRepetitions(timer.getRepetitions());
     timerInstance.setWorkflowKey(timer.getWorkflowKey());
     timerInstance.setWorkflowInstanceKey(timer.getWorkflowInstanceKey());

@@ -521,7 +521,7 @@ public class ExporterRecordTest {
         new TimerRecord()
             .setDueDate(dueDate)
             .setElementInstanceKey(elementInstanceKey)
-            .setHandlerNodeId(wrapString(handlerNodeId))
+            .setTargetElementId(wrapString(handlerNodeId))
             .setRepetitions(repetitions)
             .setWorkflowInstanceKey(workflowInstanceKey)
             .setWorkflowKey(workflowKey);

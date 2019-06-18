@@ -472,14 +472,14 @@ public class JsonSerializableToJsonTest {
                   new TimerRecord()
                       .setDueDate(dueDate)
                       .setElementInstanceKey(elementInstanceKey)
-                      .setHandlerNodeId(wrapString(handlerNodeId))
+                      .setTargetElementId(wrapString(handlerNodeId))
                       .setRepetitions(repetitions)
                       .setWorkflowInstanceKey(workflowInstanceKey)
                       .setWorkflowKey(workflowKey);
 
               return record;
             },
-        "{'elementInstanceKey':567,'workflowInstanceKey':1234,'dueDate':1234,'handlerFlowNodeId':'node1','repetitions':3,'workflowKey':13}"
+        "{'elementInstanceKey':567,'workflowInstanceKey':1234,'dueDate':1234,'targetElementId':'node1','repetitions':3,'workflowKey':13}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////

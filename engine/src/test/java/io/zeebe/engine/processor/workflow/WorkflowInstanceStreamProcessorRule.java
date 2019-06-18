@@ -268,13 +268,12 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
   }
 
   public Record<TimerRecord> awaitTimerInState(final String timerId, final TimerIntent state) {
-    final DirectBuffer handlerNodeId = wrapString(timerId);
     final Supplier<TypedRecordStream<TimerRecord>> lookupStream =
         () ->
             environmentRule
                 .events()
                 .onlyTimerRecords()
-                .filter(r -> r.getValue().getHandlerNodeId().equals(handlerNodeId))
+                .filter(r -> r.getValue().getTargetElementId().equals(timerId))
                 .withIntent(state);
 
     waitUntil(() -> lookupStream.get().findFirst().isPresent());

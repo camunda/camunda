@@ -119,7 +119,7 @@ public class CatchEventBehavior {
         .setDueDate(timer.getDueDate(ActorClock.currentTimeMillis()))
         .setElementInstanceKey(elementInstanceKey)
         .setWorkflowInstanceKey(workflowInstanceKey)
-        .setHandlerNodeId(handlerNodeId)
+        .setTargetElementId(handlerNodeId)
         .setWorkflowKey(workflowKey);
     writer.appendNewCommand(TimerIntent.CREATE, timerRecord);
   }
@@ -139,7 +139,7 @@ public class CatchEventBehavior {
         .setWorkflowInstanceKey(timer.getWorkflowInstanceKey())
         .setDueDate(timer.getDueDate())
         .setRepetitions(timer.getRepetitions())
-        .setHandlerNodeId(timer.getHandlerNodeId())
+        .setTargetElementId(timer.getHandlerNodeId())
         .setWorkflowKey(timer.getWorkflowKey());
 
     writer.appendFollowUpCommand(timer.getKey(), TimerIntent.CANCEL, timerRecord);
@@ -163,7 +163,7 @@ public class CatchEventBehavior {
     subscription.setCommandSentTime(ActorClock.currentTimeMillis());
     subscription.setWorkflowInstanceKey(workflowInstanceKey);
     subscription.setCorrelationKey(correlationKey);
-    subscription.setHandlerNodeId(handler.getId());
+    subscription.setTargetElementId(handler.getId());
     subscription.setCloseOnCorrelate(closeOnCorrelate);
     state.getWorkflowInstanceSubscriptionState().put(subscription);
 

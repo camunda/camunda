@@ -191,7 +191,7 @@ public class EventbasedGatewayTest {
     assertThat(timerEvents)
         .hasSize(2)
         .extracting(
-            r -> tuple(r.getValue().getHandlerFlowNodeId(), r.getValue().getElementInstanceKey()))
+            r -> tuple(r.getValue().getTargetElementId(), r.getValue().getElementInstanceKey()))
         .contains(tuple("timer-1", gatewayEvent.getKey()), tuple("timer-2", gatewayEvent.getKey()));
   }
 
@@ -277,7 +277,7 @@ public class EventbasedGatewayTest {
         RecordingExporter.timerRecords(TimerIntent.CREATE)
             .withWorkflowInstanceKey(workflowInstanceKey)
             .limit(2)
-            .map(r -> r.getValue().getHandlerFlowNodeId())
+            .map(r -> r.getValue().getTargetElementId())
             .collect(Collectors.toList());
 
     assertThat(

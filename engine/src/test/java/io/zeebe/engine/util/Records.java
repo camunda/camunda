@@ -178,7 +178,7 @@ public class Records {
         .setWorkflowInstanceKey(instanceKey)
         .setElementInstanceKey(instanceKey)
         .setDueDate(1245)
-        .setHandlerNodeId(BufferUtil.wrapString("foo"))
+        .setTargetElementId(BufferUtil.wrapString("foo"))
         .setRepetitions(0)
         .setWorkflowKey(1);
     return event;
