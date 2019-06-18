@@ -9,6 +9,10 @@ import React from 'react';
 import './ClickBehavior.scss';
 
 export default class ClickBehavior extends React.Component {
+  static defaultProps = {
+    nodeType: 'FlowNode'
+  };
+
   render() {
     return null;
   }
@@ -19,6 +23,7 @@ export default class ClickBehavior extends React.Component {
     }
     this.setupEventListeners();
     this.update();
+    this.roundEdges();
   }
 
   componentWillUnmount() {
@@ -37,7 +42,7 @@ export default class ClickBehavior extends React.Component {
 
     // remove existing selection markers
     elementRegistry.forEach(element => {
-      if (element.businessObject.$instanceOf('bpmn:FlowNode')) {
+      if (element.businessObject.$instanceOf('bpmn:' + this.props.nodeType)) {
         canvas.removeMarker(element.businessObject.id, 'ClickBehavior__node--selected');
         canvas.removeMarker(element.businessObject.id, 'ClickBehavior__node');
       }
@@ -45,7 +50,7 @@ export default class ClickBehavior extends React.Component {
   };
 
   onClick = ({element}) => {
-    if (element.businessObject.$instanceOf('bpmn:FlowNode')) {
+    if (element.businessObject.$instanceOf('bpmn:' + this.props.nodeType)) {
       this.props.onClick(element.businessObject);
     }
   };
@@ -61,7 +66,7 @@ export default class ClickBehavior extends React.Component {
 
     // remove existing selection markers and indicate selectable status for all flownodes
     elementRegistry.forEach(element => {
-      if (element.businessObject.$instanceOf('bpmn:FlowNode')) {
+      if (element.businessObject.$instanceOf('bpmn:' + this.props.nodeType)) {
         canvas.removeMarker(element.businessObject.id, 'ClickBehavior__node--selected');
         canvas.addMarker(element.businessObject.id, 'ClickBehavior__node');
       }
@@ -70,11 +75,6 @@ export default class ClickBehavior extends React.Component {
     // add selection marker for all selected nodes
     selectedNodes.forEach(elementId => {
       canvas.addMarker(elementId, 'ClickBehavior__node--selected');
-
-      const gfx = elementRegistry.getGraphics(elementId).querySelector('.djs-outline');
-
-      gfx.setAttribute('rx', '14px');
-      gfx.setAttribute('ry', '14px');
     });
   }
 
@@ -83,6 +83,16 @@ export default class ClickBehavior extends React.Component {
     const elementRegistry = viewer.get('elementRegistry');
     const nodes = selectedNodes.map(v => elementRegistry.get(v).businessObject);
     this.props.setSelectedNodes(nodes);
+  };
+
+  roundEdges = () => {
+    this.props.viewer.get('elementRegistry').forEach((element, gfx) => {
+      const outline = gfx.querySelector('.djs-outline');
+      if (outline) {
+        outline.setAttribute('rx', '14px');
+        outline.setAttribute('ry', '14px');
+      }
+    });
   };
 
   setupEventListeners() {

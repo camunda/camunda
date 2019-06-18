@@ -62,6 +62,8 @@ export default class NodeSelectionModal extends Component {
   };
 
   render() {
+    const nodeType = this.props.report.data.view.entity === 'userTask' ? 'UserTask' : 'FlowNode';
+
     return (
       <Modal
         open
@@ -83,7 +85,11 @@ export default class NodeSelectionModal extends Component {
           </div>
           <div className="diagramContainer">
             <BPMNDiagram xml={this.props.report.data.configuration.xml}>
-              <ClickBehavior onClick={this.toggleNode} selectedNodes={this.state.selectedNodes} />
+              <ClickBehavior
+                onClick={this.toggleNode}
+                selectedNodes={this.state.selectedNodes}
+                nodeType={nodeType}
+              />
             </BPMNDiagram>
           </div>
         </Modal.Content>

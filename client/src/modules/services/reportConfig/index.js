@@ -25,6 +25,14 @@ config.process.update = (type, data, props) => {
     if (data.property !== 'duration' || data.entity !== 'processInstance') {
       changes.parameters.processPart = {$set: null};
     }
+
+    if (
+      data.entity === 'userTask' &&
+      props.report.data.view &&
+      props.report.data.view.entity !== 'userTask'
+    ) {
+      changes.configuration.hiddenNodes = {$set: []};
+    }
   }
 
   return changes;
