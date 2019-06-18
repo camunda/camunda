@@ -163,7 +163,7 @@ export default class DefinitionSelection extends React.Component {
                   placeholder="Select..."
                   values={availableDefinitions}
                   onSelect={this.changeKey}
-                  formatter={({name}) => name}
+                  formatter={({name, key}) => name || key}
                 />
               </div>
               <div className="entry">
