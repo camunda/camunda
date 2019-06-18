@@ -21,7 +21,7 @@ it('should return relative if only alwaysShowRelative is enabled', () => {
   expect(result).toBe('100%');
 });
 
-it('should return an empty string if the value if falsy but not 0', () => {
+it('should return an empty string if the value is falsy but not 0', () => {
   const formatter = a => '' + a;
   expect(getTooltipText(0, formatter, 5, false, false, true)).toBe('0');
   expect(getTooltipText(null, formatter, 5, false, false, true)).toBe('');

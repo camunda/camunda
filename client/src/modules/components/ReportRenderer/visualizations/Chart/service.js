@@ -74,12 +74,6 @@ export function calculateLinePosition(chart) {
   return (1 - chart.options.lineAt / yAxis.max) * yAxis.height + yAxis.top;
 }
 
-export function isDate(groupBy) {
-  return (
-    groupBy.type === 'startDate' || (groupBy.type === 'variable' && groupBy.value.type === 'Date')
-  );
-}
-
 export function canBeInterpolated({type, value}, xml, decisionDefinitionKey) {
   if (type === 'flowNodes') {
     return false;
