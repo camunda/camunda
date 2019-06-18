@@ -18,7 +18,7 @@ package io.zeebe.protocol.record;
 import java.time.Instant;
 
 /** Represents a record published to the log stream. */
-public interface Record<T extends RecordValue> {
+public interface Record<T extends RecordValue> extends JsonSerializable {
   /**
    * Retrieves the position of the record. Positions are locally unique to the partition, and
    * monotonically increasing. Records are then ordered on the partition by their positions, i.e.
@@ -75,7 +75,4 @@ public interface Record<T extends RecordValue> {
    * @return record value
    */
   T getValue();
-
-  /** @return a JSON marshaled representation of this record */
-  String toJson();
 }

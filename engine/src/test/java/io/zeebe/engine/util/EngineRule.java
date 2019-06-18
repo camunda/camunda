@@ -17,11 +17,11 @@
  */
 package io.zeebe.engine.util;
 
-import static io.zeebe.engine.processor.TypedEventRegistry.EVENT_REGISTRY;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.engine.processor.CopiedRecords;
 import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.workflow.EngineProcessors;
@@ -43,8 +43,7 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.impl.record.CopiedRecord;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
@@ -52,7 +51,6 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
-import io.zeebe.util.ReflectUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
@@ -270,42 +268,10 @@ public class EngineRule extends ExternalResource {
       while (logStreamReader.hasNext()) {
         final LoggedEvent rawEvent = logStreamReader.next();
 
-        final CopiedTypedEvent typedRecord = createCopiedEvent(rawEvent);
+        final CopiedRecord typedRecord = CopiedRecords.createCopiedRecord(rawEvent);
 
         RECORDING_EXPORTER.export(typedRecord);
       }
-    }
-
-    private CopiedTypedEvent createCopiedEvent(LoggedEvent rawEvent) {
-      // we have to access the underlying buffer and copy the metadata and value bytes
-      // otherwise next event will overwrite the event before, since UnpackedObject
-      // and RecordMetadata has properties (buffers, StringProperty etc.) which only wraps the given
-      // buffer instead of copying it
-
-      final DirectBuffer contentBuffer = rawEvent.getValueBuffer();
-
-      final byte[] metadataBytes = new byte[rawEvent.getMetadataLength()];
-      contentBuffer.getBytes(rawEvent.getMetadataOffset(), metadataBytes);
-      final DirectBuffer metadataBuffer = new UnsafeBuffer(metadataBytes);
-
-      final RecordMetadata metadata = new RecordMetadata();
-      metadata.wrap(metadataBuffer, 0, metadataBuffer.capacity());
-
-      final byte[] valueBytes = new byte[rawEvent.getValueLength()];
-      contentBuffer.getBytes(rawEvent.getValueOffset(), valueBytes);
-      final DirectBuffer valueBuffer = new UnsafeBuffer(valueBytes);
-
-      final UnifiedRecordValue recordValue =
-          ReflectUtil.newInstance(EVENT_REGISTRY.get(metadata.getValueType()));
-      recordValue.wrap(valueBuffer);
-
-      return new CopiedTypedEvent(
-          recordValue,
-          metadata,
-          rawEvent.getKey(),
-          rawEvent.getPosition(),
-          rawEvent.getSourceEventPosition(),
-          rawEvent.getTimestamp());
     }
   }
 }

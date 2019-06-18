@@ -26,7 +26,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.workflow.CatchEventBehavior;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.deployment.WorkflowState;
@@ -35,6 +34,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.value.deployment.ResourceType;
@@ -90,9 +90,9 @@ public class TransformingDeploymentCreateProcessorTest {
     // then
     waitUntil(() -> rule.events().onlyDeploymentRecords().count() >= 2);
 
-    final List<TypedRecord<DeploymentRecord>> collect =
+    final List<Record<DeploymentRecord>> collect =
         rule.events().onlyDeploymentRecords().collect(Collectors.toList());
-    //
+
     Assertions.assertThat(collect)
         .extracting(r -> r.getMetadata().getIntent())
         .containsExactly(DeploymentIntent.CREATE, DeploymentIntent.CREATED);

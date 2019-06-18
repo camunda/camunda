@@ -18,6 +18,7 @@ package io.zeebe.protocol.impl.record.value.job;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
@@ -48,17 +49,66 @@ public class JobHeaders extends UnpackedObject implements Headers {
         .declareProperty(elementInstanceKeyProp);
   }
 
+  @JsonIgnore
+  public DirectBuffer getBpmnProcessIdBuffer() {
+    return bpmnProcessIdProp.getValue();
+  }
+
+  @Override
+  public String getElementId() {
+    return BufferUtil.bufferAsString(elementIdProp.getValue());
+  }
+
+  @Override
+  public long getElementInstanceKey() {
+    return elementInstanceKeyProp.getValue();
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  @Override
+  public int getWorkflowDefinitionVersion() {
+    return workflowDefinitionVersionProp.getValue();
+  }
+
+  @Override
   public long getWorkflowInstanceKey() {
     return workflowInstanceKeyProp.getValue();
   }
 
-  public JobHeaders setWorkflowInstanceKey(long key) {
-    this.workflowInstanceKeyProp.setValue(key);
+  @Override
+  public long getWorkflowKey() {
+    return workflowKeyProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getElementIdBuffer() {
+    return elementIdProp.getValue();
+  }
+
+  @Override
+  @JsonIgnore
+  public int getLength() {
+    return super.getLength();
+  }
+
+  @Override
+  @JsonIgnore
+  public int getEncodedLength() {
+    return super.getEncodedLength();
+  }
+
+  public JobHeaders setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
-  public DirectBuffer getElementIdBuffer() {
-    return elementIdProp.getValue();
+  public JobHeaders setBpmnProcessId(DirectBuffer bpmnProcessId) {
+    this.bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
   }
 
   public JobHeaders setElementId(String elementId) {
@@ -75,22 +125,9 @@ public class JobHeaders extends UnpackedObject implements Headers {
     return this;
   }
 
-  public JobHeaders setBpmnProcessId(String bpmnProcessId) {
-    this.bpmnProcessIdProp.setValue(bpmnProcessId);
+  public JobHeaders setElementInstanceKey(long elementInstanceKey) {
+    this.elementInstanceKeyProp.setValue(elementInstanceKey);
     return this;
-  }
-
-  public JobHeaders setBpmnProcessId(DirectBuffer bpmnProcessId) {
-    this.bpmnProcessIdProp.setValue(bpmnProcessId);
-    return this;
-  }
-
-  public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProp.getValue();
-  }
-
-  public int getWorkflowDefinitionVersion() {
-    return workflowDefinitionVersionProp.getValue();
   }
 
   public JobHeaders setWorkflowDefinitionVersion(int version) {
@@ -98,31 +135,13 @@ public class JobHeaders extends UnpackedObject implements Headers {
     return this;
   }
 
-  public long getElementInstanceKey() {
-    return elementInstanceKeyProp.getValue();
-  }
-
-  public JobHeaders setElementInstanceKey(long elementInstanceKey) {
-    this.elementInstanceKeyProp.setValue(elementInstanceKey);
+  public JobHeaders setWorkflowInstanceKey(long key) {
+    this.workflowInstanceKeyProp.setValue(key);
     return this;
-  }
-
-  public long getWorkflowKey() {
-    return workflowKeyProp.getValue();
   }
 
   public JobHeaders setWorkflowKey(long workflowKey) {
     this.workflowKeyProp.setValue(workflowKey);
     return this;
-  }
-
-  @Override
-  public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
-  }
-
-  @Override
-  public String getElementId() {
-    return BufferUtil.bufferAsString(elementIdProp.getValue());
   }
 }

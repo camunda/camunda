@@ -31,6 +31,7 @@ import io.zeebe.engine.util.TestStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
@@ -191,7 +192,7 @@ public class TypedStreamProcessorTest {
     assertThat(requestId.get()).isEqualTo(255L);
     assertThat(requestStreamId.get()).isEqualTo(99);
 
-    final TypedRecord<DeploymentRecord> deploymentRejection =
+    final Record<DeploymentRecord> deploymentRejection =
         new RecordStream(streams.events(STREAM_NAME))
             .onlyDeploymentRecords()
             .onlyRejections()

@@ -15,4 +15,8 @@
  */
 package io.zeebe.protocol.record;
 
-public interface RecordValue extends JsonSerializable {}
+public interface JsonSerializable {
+
+  /** @return a JSON marshaled representation */
+  String toJson();
+}

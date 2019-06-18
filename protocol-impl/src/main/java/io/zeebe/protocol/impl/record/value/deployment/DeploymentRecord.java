@@ -28,7 +28,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class DeploymentRecord extends UnifiedRecordValue implements DeploymentRecordValue {
 
   public static final String RESOURCES = "resources";
-  public static final String WORKFLOWS = "workflows";
+  public static final String WORKFLOWS = "deployedWorkflows";
 
   private final ArrayProperty<DeploymentResource> resourcesProp =
       new ArrayProperty<>(RESOURCES, new DeploymentResource());
@@ -78,10 +78,5 @@ public class DeploymentRecord extends UnifiedRecordValue implements DeploymentRe
     }
 
     return workflows;
-  }
-
-  @Override
-  public String toJson() {
-    throw new UnsupportedOperationException("not yet implemented");
   }
 }

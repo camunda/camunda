@@ -20,7 +20,6 @@ package io.zeebe.engine.processor.workflow.deployment;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
@@ -28,6 +27,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
@@ -116,7 +116,7 @@ public class DeploymentCreatedProcessorTest {
     // then
     waitUntil(() -> rule.events().onlyMessageStartEventSubscriptionRecords().count() == 2);
 
-    final TypedRecord<MessageStartEventSubscriptionRecord> closeRecord =
+    final Record<MessageStartEventSubscriptionRecord> closeRecord =
         rule.events()
             .onlyMessageStartEventSubscriptionRecords()
             .withIntent(MessageStartEventSubscriptionIntent.CLOSE)

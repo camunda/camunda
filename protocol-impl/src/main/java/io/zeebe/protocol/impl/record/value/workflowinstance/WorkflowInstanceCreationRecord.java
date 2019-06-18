@@ -15,10 +15,12 @@
  */
 package io.zeebe.protocol.impl.record.value.workflowinstance;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.intent.WorkflowInstanceRelated;
 import io.zeebe.protocol.record.value.WorkflowInstanceCreationRecordValue;
@@ -43,6 +45,44 @@ public class WorkflowInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(variablesProperty);
   }
 
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProperty.getValue());
+  }
+
+  public int getVersion() {
+    return versionProperty.getValue();
+  }
+
+  public long getKey() {
+    return keyProperty.getValue();
+  }
+
+  public long getInstanceKey() {
+    return instanceKeyProperty.getValue();
+  }
+
+  @Override
+  public Map<String, Object> getVariables() {
+    return MsgPackConverter.convertToMap(variablesProperty.getValue());
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBpmnProcessIdBuffer() {
+    return bpmnProcessIdProperty.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getVariablesBuffer() {
+    return variablesProperty.getValue();
+  }
+
+  @Override
+  @JsonIgnore
+  public long getWorkflowInstanceKey() {
+    return getInstanceKey();
+  }
+
   public WorkflowInstanceCreationRecord setBpmnProcessId(String bpmnProcessId) {
     this.bpmnProcessIdProperty.setValue(bpmnProcessId);
     return this;
@@ -53,8 +93,9 @@ public class WorkflowInstanceCreationRecord extends UnifiedRecordValue
     return this;
   }
 
-  public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProperty.getValue();
+  public WorkflowInstanceCreationRecord setInstanceKey(long instanceKey) {
+    this.instanceKeyProperty.setValue(instanceKey);
+    return this;
   }
 
   public WorkflowInstanceCreationRecord setKey(long key) {
@@ -62,54 +103,13 @@ public class WorkflowInstanceCreationRecord extends UnifiedRecordValue
     return this;
   }
 
-  public long getKey() {
-    return keyProperty.getValue();
-  }
-
-  public WorkflowInstanceCreationRecord setVersion(int version) {
-    this.versionProperty.setValue(version);
-    return this;
-  }
-
-  public WorkflowInstanceCreationRecord setInstanceKey(long instanceKey) {
-    this.instanceKeyProperty.setValue(instanceKey);
-    return this;
-  }
-
-  public long getInstanceKey() {
-    return instanceKeyProperty.getValue();
-  }
-
-  public int getVersion() {
-    return versionProperty.getValue();
-  }
-
-  public DirectBuffer getVariablesBuffer() {
-    return variablesProperty.getValue();
-  }
-
   public WorkflowInstanceCreationRecord setVariables(DirectBuffer variables) {
     variablesProperty.setValue(variables);
     return this;
   }
 
-  @Override
-  public long getWorkflowInstanceKey() {
-    return getInstanceKey();
-  }
-
-  @Override
-  public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProperty.getValue());
-  }
-
-  @Override
-  public Map<String, Object> getVariables() {
-    throw new UnsupportedOperationException("not yet implemented");
-  }
-
-  @Override
-  public String toJson() {
-    throw new UnsupportedOperationException("not yet implemented");
+  public WorkflowInstanceCreationRecord setVersion(int version) {
+    this.versionProperty.setValue(version);
+    return this;
   }
 }

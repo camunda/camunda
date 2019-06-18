@@ -17,22 +17,22 @@
  */
 package io.zeebe.engine.util;
 
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.util.stream.StreamWrapper;
 import java.util.stream.Stream;
 
 public class TypedRecordStream<T extends UnifiedRecordValue>
-    extends StreamWrapper<TypedRecord<T>, TypedRecordStream<T>> {
+    extends StreamWrapper<Record<T>, TypedRecordStream<T>> {
 
-  public TypedRecordStream(Stream<TypedRecord<T>> wrappedStream) {
+  public TypedRecordStream(Stream<Record<T>> wrappedStream) {
     super(wrappedStream);
   }
 
   @Override
-  protected TypedRecordStream<T> supply(Stream<TypedRecord<T>> wrappedStream) {
+  protected TypedRecordStream<T> supply(Stream<Record<T>> wrappedStream) {
     return new TypedRecordStream<>(wrappedStream);
   }
 

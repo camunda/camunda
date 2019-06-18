@@ -18,7 +18,7 @@ package io.zeebe.protocol.record;
 import io.zeebe.protocol.record.intent.Intent;
 
 /** Encapsulates metadata information shared by all records. */
-public interface RecordMetadata {
+public interface RecordMetadata extends JsonSerializable {
   /** @return the intent of the record */
   Intent getIntent();
 
@@ -42,7 +42,4 @@ public interface RecordMetadata {
 
   /** @return the type of the record (e.g. job, workflow, workflow instance, etc.) */
   ValueType getValueType();
-
-  /** @return a JSON marshaled representation of the record metadata */
-  String toJson();
 }

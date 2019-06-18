@@ -27,12 +27,16 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
 import io.zeebe.broker.exporter.ExporterObjectMapper;
+import io.zeebe.broker.exporter.record.RecordImpl;
+import io.zeebe.broker.exporter.record.RecordMetadataImpl;
 import io.zeebe.broker.exporter.record.value.DeploymentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.IncidentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobBatchRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.MessageStartEventSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.TimerRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.VariableDocumentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.VariableRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceCreationRecordValueImpl;
@@ -44,21 +48,27 @@ import io.zeebe.broker.exporter.record.value.job.HeadersImpl;
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.broker.exporter.util.ControlledTestExporter;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.impl.record.CopiedRecord;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
+import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RecordValue;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.Intent;
@@ -85,6 +95,7 @@ import io.zeebe.protocol.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.deployment.ResourceType;
+import io.zeebe.test.util.JsonUtil;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.util.buffer.BufferUtil;
@@ -111,6 +122,160 @@ public class ExporterRecordTest {
   @Rule public ExporterRule rule = new ExporterRule(PARTITION_ID);
 
   private ControlledTestExporter exporter;
+
+  @Test
+  public void shouldExportRecord() {
+    // given
+    final RecordMetadata recordMetadata = new RecordMetadata();
+
+    final DeploymentIntent intent = DeploymentIntent.CREATE;
+    final int partitionId = 2;
+    final int protocolVersion = 1;
+    final ValueType valueType = ValueType.DEPLOYMENT;
+
+    final RecordType recordType = RecordType.COMMAND;
+    final String rejectionReason = "fails";
+    final RejectionType rejectionType = RejectionType.INVALID_ARGUMENT;
+    final int requestId = 23;
+    final int requestStreamId = 1;
+
+    recordMetadata
+        .intent(intent)
+        .partitionId(partitionId)
+        .protocolVersion(protocolVersion)
+        .valueType(valueType)
+        .recordType(recordType)
+        .rejectionReason(rejectionReason)
+        .rejectionType(rejectionType)
+        .requestId(requestId)
+        .requestStreamId(requestStreamId);
+
+    final String resourceName = "resource";
+    final ResourceType resourceType = ResourceType.BPMN_XML;
+    final DirectBuffer resource = wrapString("contents");
+    final String bpmnProcessId = "testProcess";
+    final long workflowKey = 123;
+    final int workflowVersion = 12;
+
+    final DeploymentRecord recordValue = new DeploymentRecord();
+    recordValue
+        .resources()
+        .add()
+        .setResourceName(wrapString(resourceName))
+        .setResourceType(resourceType)
+        .setResource(resource);
+    recordValue
+        .workflows()
+        .add()
+        .setBpmnProcessId(wrapString(bpmnProcessId))
+        .setKey(workflowKey)
+        .setResourceName(wrapString(resourceName))
+        .setVersion(workflowVersion);
+
+    final int key = 1234;
+    final int position = 4321;
+    final int sourcePosition = 231;
+    final long timestamp = 2191L;
+    final int producerId = 23;
+
+    final CopiedRecord<UnifiedRecordValue> copiedRecord =
+        new CopiedRecord<>(
+            recordValue, recordMetadata, key, position, sourcePosition, timestamp, producerId);
+
+    final RecordMetadataImpl expectedMetadata =
+        new RecordMetadataImpl(
+            OBJECT_MAPPER,
+            partitionId,
+            intent,
+            recordType,
+            rejectionType,
+            rejectionReason,
+            valueType);
+
+    final DeploymentRecordValue expectedRecordValue =
+        new DeploymentRecordValueImpl(
+            OBJECT_MAPPER,
+            Collections.singletonList(
+                new DeployedWorkflowImpl(
+                    bpmnProcessId, resourceName, workflowKey, workflowVersion)),
+            Collections.singletonList(
+                new DeploymentResourceImpl(
+                    BufferUtil.bufferAsArray(resource), ResourceType.BPMN_XML, resourceName)));
+
+    final RecordImpl expectedRecord =
+        new RecordImpl<>(
+            OBJECT_MAPPER,
+            key,
+            position,
+            Instant.ofEpochMilli(timestamp),
+            producerId,
+            sourcePosition,
+            expectedMetadata,
+            () -> expectedRecordValue);
+
+    // then
+    assertThat(copiedRecord)
+        .hasPosition(expectedRecord.getPosition())
+        .hasSourceRecordPosition(expectedRecord.getSourceRecordPosition())
+        .hasProducerId(expectedRecord.getProducerId())
+        .hasKey(expectedRecord.getKey())
+        .hasTimestamp(expectedRecord.getTimestamp());
+
+    assertThat(copiedRecord.getMetadata())
+        .hasIntent(expectedMetadata.getIntent())
+        .hasPartitionId(expectedMetadata.getPartitionId())
+        .hasRecordType(expectedMetadata.getRecordType())
+        .hasRejectionType(expectedMetadata.getRejectionType())
+        .hasRejectionReason(expectedMetadata.getRejectionReason())
+        .hasValueType(expectedMetadata.getValueType());
+
+    final String json = copiedRecord.toJson();
+    JsonUtil.assertEquality(json, expectedRecord.toJson());
+  }
+
+  @Test
+  public void shouldExportRecordMetadata() {
+    // given
+    final RecordMetadata recordMetadata = new RecordMetadata();
+
+    final DeploymentIntent intent = DeploymentIntent.CREATE;
+    final int partitionId = 2;
+    final int protocolVersion = 1;
+    final ValueType valueType = ValueType.DEPLOYMENT;
+
+    final RecordType recordType = RecordType.COMMAND;
+    final String rejectionReason = "fails";
+    final RejectionType rejectionType = RejectionType.INVALID_ARGUMENT;
+    final int requestId = 23;
+    final int requestStreamId = 1;
+
+    recordMetadata
+        .intent(intent)
+        .partitionId(partitionId)
+        .protocolVersion(protocolVersion)
+        .valueType(valueType)
+        .recordType(recordType)
+        .rejectionReason(rejectionReason)
+        .rejectionType(rejectionType)
+        .requestId(requestId)
+        .requestStreamId(requestStreamId);
+
+    final RecordMetadataImpl expectedMetadata =
+        new RecordMetadataImpl(
+            OBJECT_MAPPER,
+            partitionId,
+            intent,
+            recordType,
+            rejectionType,
+            rejectionReason,
+            valueType);
+
+    // when
+    final String json = recordMetadata.toJson();
+
+    // then
+    JsonUtil.assertEquality(json, expectedMetadata.toJson());
+  }
 
   @Test
   public void shouldExportDeploymentEvent() {
@@ -343,6 +508,39 @@ public class ExporterRecordTest {
   }
 
   @Test
+  public void shouldExportTimerRecord() {
+    // given
+    final int workflowKey = 13;
+    final int workflowInstanceKey = 1234;
+    final int dueDate = 1234;
+    final int elementInstanceKey = 567;
+    final String handlerNodeId = "node1";
+    final int repetitions = 3;
+
+    final TimerRecord record =
+        new TimerRecord()
+            .setDueDate(dueDate)
+            .setElementInstanceKey(elementInstanceKey)
+            .setHandlerNodeId(wrapString(handlerNodeId))
+            .setRepetitions(repetitions)
+            .setWorkflowInstanceKey(workflowInstanceKey)
+            .setWorkflowKey(workflowKey);
+
+    final TimerRecordValueImpl recordValue =
+        new TimerRecordValueImpl(
+            OBJECT_MAPPER,
+            elementInstanceKey,
+            workflowInstanceKey,
+            dueDate,
+            handlerNodeId,
+            repetitions,
+            workflowKey);
+
+    // then
+    assertRecordExported(WorkflowInstanceIntent.ELEMENT_ACTIVATING, record, recordValue);
+  }
+
+  @Test
   public void shouldExportWorkflowInstanceSubscriptionRecord() {
     // given
     final long activityInstanceKey = 123;
@@ -368,6 +566,27 @@ public class ExporterRecordTest {
             messageName,
             workflowInstanceKey,
             activityInstanceKey);
+
+    // then
+    assertRecordExported(WorkflowInstanceSubscriptionIntent.OPENED, record, recordValue);
+  }
+
+  @Test
+  public void shouldExportMessageStartEventSubscriptionRecord() {
+    // given
+    final String messageName = "name";
+    final String startEventId = "startEvent";
+    final int workflowKey = 22334;
+
+    final MessageStartEventSubscriptionRecord record =
+        new MessageStartEventSubscriptionRecord()
+            .setMessageName(wrapString(messageName))
+            .setStartEventId(wrapString(startEventId))
+            .setWorkflowKey(workflowKey);
+
+    final MessageStartEventSubscriptionRecordValueImpl recordValue =
+        new MessageStartEventSubscriptionRecordValueImpl(
+            OBJECT_MAPPER, workflowKey, startEventId, messageName);
 
     // then
     assertRecordExported(WorkflowInstanceSubscriptionIntent.OPENED, record, recordValue);
@@ -522,7 +741,7 @@ public class ExporterRecordTest {
   }
 
   private void assertRecordExported(
-      final Intent intent, final UnpackedObject record, final RecordValue expectedRecordValue) {
+      final Intent intent, final UnifiedRecordValue record, final RecordValue expectedRecordValue) {
     // setup stream processor
     final List<ExporterDescriptor> exporterDescriptors =
         Collections.singletonList(createMockedExporter());
@@ -558,6 +777,11 @@ public class ExporterRecordTest {
         .hasValueType(metadata.getValueType());
 
     assertThat(actualRecord).hasValue(expectedRecordValue);
+
+    final String json = record.toJson();
+
+    // then
+    JsonUtil.assertEquality(json, expectedRecordValue.toJson());
   }
 
   private ExporterDescriptor createMockedExporter() {

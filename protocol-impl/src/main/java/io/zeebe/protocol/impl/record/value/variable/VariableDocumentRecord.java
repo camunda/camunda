@@ -15,6 +15,7 @@
  */
 package io.zeebe.protocol.impl.record.value.variable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.LongProperty;
@@ -42,31 +43,20 @@ public class VariableDocumentRecord extends UnifiedRecordValue
         .declareProperty(documentProperty);
   }
 
+  public VariableDocumentRecord wrap(VariableDocumentRecord other) {
+    this.setScopeKey(other.getScopeKey())
+        .setDocument(other.getDocumentBuffer())
+        .setUpdateSemantics(other.getUpdateSemantics());
+
+    return this;
+  }
+
   public long getScopeKey() {
     return scopeKeyProperty.getValue();
   }
 
-  public VariableDocumentRecord setScopeKey(long scopeKey) {
-    scopeKeyProperty.setValue(scopeKey);
-    return this;
-  }
-
   public VariableDocumentUpdateSemantic getUpdateSemantics() {
     return updateSemanticsProperty.getValue();
-  }
-
-  public VariableDocumentRecord setUpdateSemantics(VariableDocumentUpdateSemantic updateSemantics) {
-    updateSemanticsProperty.setValue(updateSemantics);
-    return this;
-  }
-
-  public DirectBuffer getDocumentBuffer() {
-    return documentProperty.getValue();
-  }
-
-  public VariableDocumentRecord setDocument(DirectBuffer document) {
-    documentProperty.setValue(document);
-    return this;
   }
 
   @Override
@@ -74,11 +64,23 @@ public class VariableDocumentRecord extends UnifiedRecordValue
     return MsgPackConverter.convertToMap(documentProperty.getValue());
   }
 
-  public VariableDocumentRecord wrap(VariableDocumentRecord other) {
-    this.setScopeKey(other.getScopeKey())
-        .setDocument(other.getDocumentBuffer())
-        .setUpdateSemantics(other.getUpdateSemantics());
+  public VariableDocumentRecord setScopeKey(long scopeKey) {
+    scopeKeyProperty.setValue(scopeKey);
+    return this;
+  }
 
+  public VariableDocumentRecord setUpdateSemantics(VariableDocumentUpdateSemantic updateSemantics) {
+    updateSemanticsProperty.setValue(updateSemantics);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getDocumentBuffer() {
+    return documentProperty.getValue();
+  }
+
+  public VariableDocumentRecord setDocument(DirectBuffer document) {
+    documentProperty.setValue(document);
     return this;
   }
 

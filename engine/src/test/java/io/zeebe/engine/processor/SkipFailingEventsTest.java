@@ -143,7 +143,8 @@ public class SkipFailingEventsTest {
         new RecordStream(streams.events(STREAM_NAME)).onlyErrorRecords().getFirst().getValue();
 
     assertThat(errorRecord.getErrorEventPosition()).isEqualTo(failingEventPosition);
-    assertThat(BufferUtil.bufferAsString(errorRecord.getExceptionMessage())).isEqualTo("expected");
+    assertThat(BufferUtil.bufferAsString(errorRecord.getExceptionMessageBuffer()))
+        .isEqualTo("expected");
     assertThat(errorRecord.getWorkflowInstanceKey()).isEqualTo(1);
   }
 
@@ -188,7 +189,7 @@ public class SkipFailingEventsTest {
         new RecordStream(streams.events(STREAM_NAME)).onlyErrorRecords().getFirst().getValue();
 
     assertThat(errorRecord.getErrorEventPosition()).isEqualTo(failingEventPosition);
-    assertThat(BufferUtil.bufferAsString(errorRecord.getExceptionMessage()))
+    assertThat(BufferUtil.bufferAsString(errorRecord.getExceptionMessageBuffer()))
         .isEqualTo("Without exception message.");
     assertThat(errorRecord.getWorkflowInstanceKey()).isEqualTo(1);
   }
