@@ -1,11 +1,16 @@
 <a name="0.19.0-alpha1"></a>
 ## 0.19.0-alpha1 (2019-06-18)
 
+#### Breaking Changes
+
+* **broker:**
+  *  migrate RecordValue interfaces to protocol ([e19529f1](https://github.com/zeebe-io/zeebe/commit/e19529f1efba8b7206502bf8e3e55d372e6f62ee))
+  *  change package of asserts and generated types ([9abc82236](https://github.com/zeebe-io/zeebe/commit/9abc82236bc0cd9b2d406ada2e2a59b6e2d63485))
 
 #### Bug Fixes
 
 * **docker:**  remove deprecated JVM option ([950795f8](https://github.com/zeebe-io/zeebe/commit/950795f869367d1eb13036b1492a84486284d233))
-* **protocol-impl:**  fix transformation to get deployed workflows ([743fe20a](https://github.com/zeebe-io/zeebe/commit/743fe20a492e5cf3e682b2d93b978bb69de1eed6))
+* **broker:**  fix transformation to get deployed workflows ([743fe20a](https://github.com/zeebe-io/zeebe/commit/743fe20a492e5cf3e682b2d93b978bb69de1eed6))
 
 #### Features
 
