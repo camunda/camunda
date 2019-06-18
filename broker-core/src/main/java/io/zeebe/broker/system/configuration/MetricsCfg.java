@@ -19,24 +19,18 @@ package io.zeebe.broker.system.configuration;
 
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_METRICS_HTTP_SERVER;
 
-import io.zeebe.util.DurationUtil;
 import io.zeebe.util.Environment;
-import java.time.Duration;
 
 public class MetricsCfg implements ConfigurationEntry {
 
   public static final int DEFAULT_PORT = 9600;
 
-  private String reportingInterval = "5s";
-  private String file = "metrics/zeebe.prom";
-  private boolean enableHttpServer = false;
+  private boolean enableHttpServer = true;
   private String host;
   private int port = DEFAULT_PORT;
 
   @Override
   public void init(BrokerCfg brokerCfg, String brokerBase, Environment environment) {
-    file = ConfigurationUtil.toAbsolutePath(file, brokerBase);
-
     environment.getBool(ENV_METRICS_HTTP_SERVER).ifPresent(this::setEnableHttpServer);
 
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
@@ -44,26 +38,6 @@ public class MetricsCfg implements ConfigurationEntry {
       host = networkCfg.getHost();
     }
     port += networkCfg.getPortOffset() * 10;
-  }
-
-  public Duration getReportingIntervalDuration() {
-    return DurationUtil.parse(reportingInterval);
-  }
-
-  public String getReportingInterval() {
-    return reportingInterval;
-  }
-
-  public void setReportingInterval(String reportingInterval) {
-    this.reportingInterval = reportingInterval;
-  }
-
-  public String getFile() {
-    return file;
-  }
-
-  public void setFile(String metricsFile) {
-    this.file = metricsFile;
   }
 
   public boolean isEnableHttpServer() {
@@ -96,13 +70,7 @@ public class MetricsCfg implements ConfigurationEntry {
   @Override
   public String toString() {
     return "MetricsCfg{"
-        + "reportingInterval='"
-        + reportingInterval
-        + '\''
-        + ", file='"
-        + file
-        + '\''
-        + ", enableHttpServer="
+        + "enableHttpServer="
         + enableHttpServer
         + ", host='"
         + host
