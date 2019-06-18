@@ -16,6 +16,7 @@
 package io.zeebe.test.util.record;
 
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
 import java.util.stream.Stream;
 
@@ -31,7 +32,7 @@ public class IncidentRecordStream
     return new IncidentRecordStream(wrappedStream);
   }
 
-  public IncidentRecordStream withErrorType(final String errorType) {
+  public IncidentRecordStream withErrorType(final ErrorType errorType) {
     return valueFilter(v -> errorType.equals(v.getErrorType()));
   }
 

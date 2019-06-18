@@ -118,7 +118,7 @@ public class ExpressionIncidentTest {
     assertThat(incidentCommand.getSourceRecordPosition()).isEqualTo(failingEvent.getPosition());
 
     Assertions.assertThat(incidentEvent.getValue())
-        .hasErrorType(ErrorType.CONDITION_ERROR.name())
+        .hasErrorType(ErrorType.CONDITION_ERROR)
         .hasErrorMessage(
             "Expected at least one condition to evaluate to true, or to have a default flow")
         .hasBpmnProcessId("workflow")
@@ -144,7 +144,7 @@ public class ExpressionIncidentTest {
             .getFirst();
 
     Assertions.assertThat(incidentEvent.getValue())
-        .hasErrorType(ErrorType.CONDITION_ERROR.name())
+        .hasErrorType(ErrorType.CONDITION_ERROR)
         .hasErrorMessage(
             "Expected to evaluate condition 'foo >= 5 && foo < 10' successfully, but failed because: Cannot compare values of different types: STRING and INTEGER")
         .hasBpmnProcessId("workflow")
@@ -351,7 +351,7 @@ public class ExpressionIncidentTest {
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     Assertions.assertThat(incidentEvent.getValue())
-        .hasErrorType(ErrorType.CONDITION_ERROR.name())
+        .hasErrorType(ErrorType.CONDITION_ERROR)
         .hasErrorMessage(
             "Expected to evaluate condition 'foo >= 5 && foo < 10' successfully, but failed because: Cannot compare values of different types: STRING and INTEGER")
         .hasBpmnProcessId("workflow")

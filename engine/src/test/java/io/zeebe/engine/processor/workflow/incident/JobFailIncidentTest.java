@@ -125,7 +125,7 @@ public class JobFailIncidentTest {
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
 
     assertThat(incidentEvent.getValue())
-        .hasErrorType(ErrorType.JOB_NO_RETRIES.name())
+        .hasErrorType(ErrorType.JOB_NO_RETRIES)
         .hasErrorMessage("No more retries left.")
         .hasBpmnProcessId("process")
         .hasWorkflowKey(workflowKey)
@@ -174,7 +174,7 @@ public class JobFailIncidentTest {
     assertThat(incidentCommand.getSourceRecordPosition()).isEqualTo(failedEvent.getPosition());
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     assertThat(incidentEvent.getValue())
-        .hasErrorType(ErrorType.JOB_NO_RETRIES.name())
+        .hasErrorType(ErrorType.JOB_NO_RETRIES)
         .hasErrorMessage("failed job")
         .hasBpmnProcessId("process")
         .hasWorkflowKey(workflowKey)
@@ -211,7 +211,7 @@ public class JobFailIncidentTest {
             .getFirst();
 
     assertThat(incidentEvent.getValue())
-        .hasErrorType(ErrorType.JOB_NO_RETRIES.name())
+        .hasErrorType(ErrorType.JOB_NO_RETRIES)
         .hasErrorMessage("second message")
         .hasBpmnProcessId("process")
         .hasWorkflowKey(workflowKey)
@@ -267,7 +267,7 @@ public class JobFailIncidentTest {
     assertThat(resolvedIncident.getSourceRecordPosition()).isEqualTo(lastPos);
 
     assertThat(resolvedIncident.getValue())
-        .hasErrorType(ErrorType.JOB_NO_RETRIES.name())
+        .hasErrorType(ErrorType.JOB_NO_RETRIES)
         .hasErrorMessage("No more retries left.")
         .hasBpmnProcessId("process")
         .hasWorkflowKey(workflowKey)
@@ -355,7 +355,7 @@ public class JobFailIncidentTest {
     assertThat(jobCancelCommand.getSourceRecordPosition()).isEqualTo(terminatingTask.getPosition());
 
     assertThat(resolvedIncidentEvent.getValue())
-        .hasErrorType(ErrorType.JOB_NO_RETRIES.name())
+        .hasErrorType(ErrorType.JOB_NO_RETRIES)
         .hasErrorMessage("No more retries left.")
         .hasBpmnProcessId("process")
         .hasWorkflowKey(workflowKey)

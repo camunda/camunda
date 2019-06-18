@@ -28,7 +28,7 @@ public interface IncidentRecordValue extends RecordValue {
    * @return the type of error this incident is caused by. Can be <code>UNKNOWN</code> if the
    *     incident record is part of a {@link IncidentIntent#RESOLVE} command.
    */
-  String getErrorType();
+  ErrorType getErrorType();
 
   /**
    * @return the description of the error this incident is caused by. Can be empty if the incident

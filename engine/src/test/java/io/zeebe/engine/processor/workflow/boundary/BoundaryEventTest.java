@@ -394,7 +394,7 @@ public class BoundaryEventTest {
             .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
-        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR.name())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId("task")
         .hasElementInstanceKey(failureEvent.getKey())

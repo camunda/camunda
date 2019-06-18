@@ -113,7 +113,7 @@ public class MappingIncidentTest {
 
     final IncidentRecordValue incidentEventValue = incidentEvent.getValue();
     Assertions.assertThat(incidentEventValue)
-        .hasErrorType(ErrorType.IO_MAPPING_ERROR.name())
+        .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasErrorMessage("No data found for query foo.")
         .hasBpmnProcessId("process")
         .hasWorkflowKey(workflowKey)
@@ -163,7 +163,7 @@ public class MappingIncidentTest {
     assertThat(incidentEvent.getValue().getVariableScopeKey()).isEqualTo(failureEvent.getKey());
 
     Assertions.assertThat(incidentEvent.getValue())
-        .hasErrorType(ErrorType.IO_MAPPING_ERROR.name())
+        .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasErrorMessage("No data found for query notExisting.")
         .hasBpmnProcessId("process")
         .hasWorkflowInstanceKey(workflowInstanceKey)
@@ -212,7 +212,7 @@ public class MappingIncidentTest {
         .isEqualTo(createIncidentEvent.getPosition());
 
     Assertions.assertThat(incidentEvent.getValue())
-        .hasErrorType(ErrorType.IO_MAPPING_ERROR.name())
+        .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasErrorMessage("No data found for query foo.")
         .hasBpmnProcessId("process")
         .hasWorkflowInstanceKey(workflowInstanceKey)
@@ -271,7 +271,7 @@ public class MappingIncidentTest {
         .isEqualTo(incidentResolvedEvent.getSourceRecordPosition());
 
     Assertions.assertThat(incidentResolvedEvent.getValue())
-        .hasErrorType(ErrorType.IO_MAPPING_ERROR.name())
+        .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasErrorMessage("No data found for query foo.")
         .hasBpmnProcessId("process")
         .hasWorkflowInstanceKey(workflowInstanceKey)
@@ -332,7 +332,7 @@ public class MappingIncidentTest {
         .isEqualTo(incidentResolvedEvent.getSourceRecordPosition());
 
     Assertions.assertThat(incidentResolvedEvent.getValue())
-        .hasErrorType(ErrorType.IO_MAPPING_ERROR.name())
+        .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasErrorMessage("No data found for query foo.")
         .hasBpmnProcessId("process")
         .hasWorkflowInstanceKey(workflowInstanceKey)
@@ -387,7 +387,7 @@ public class MappingIncidentTest {
             .getFirst();
 
     Assertions.assertThat(secondIncidentEvent.getValue())
-        .hasErrorType(ErrorType.IO_MAPPING_ERROR.name())
+        .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasErrorMessage("No data found for query bar.")
         .hasBpmnProcessId("process")
         .hasWorkflowInstanceKey(workflowInstanceKey)
@@ -439,7 +439,7 @@ public class MappingIncidentTest {
     // then
     assertThat(secondResolvedIncident.getKey()).isGreaterThan(firstIncident.getKey());
     Assertions.assertThat(secondResolvedIncident.getValue())
-        .hasErrorType(ErrorType.IO_MAPPING_ERROR.name())
+        .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasErrorMessage("No data found for query foo.")
         .hasBpmnProcessId("process")
         .hasWorkflowInstanceKey(workflowInstanceKey)
@@ -524,7 +524,7 @@ public class MappingIncidentTest {
         .isEqualTo(incidentResolvedEvent.getSourceRecordPosition());
 
     Assertions.assertThat(incidentResolvedEvent.getValue())
-        .hasErrorType(ErrorType.IO_MAPPING_ERROR.name())
+        .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasErrorMessage("No data found for query foo.")
         .hasBpmnProcessId("process")
         .hasWorkflowInstanceKey(workflowInstanceKey)
@@ -568,7 +568,7 @@ public class MappingIncidentTest {
     assertThat(incidentEvent.getKey()).isEqualTo(incidentCreatedEvent.getKey());
 
     Assertions.assertThat(incidentEvent.getValue())
-        .hasErrorType(ErrorType.IO_MAPPING_ERROR.name())
+        .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasErrorMessage("No data found for query foo.")
         .hasBpmnProcessId("process")
         .hasWorkflowInstanceKey(workflowInstanceKey)
