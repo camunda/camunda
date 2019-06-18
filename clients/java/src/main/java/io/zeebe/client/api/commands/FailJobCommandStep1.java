@@ -32,6 +32,14 @@ public interface FailJobCommandStep1 {
   interface FailJobCommandStep2 extends FinalCommandStep<Void> {
     // the place for new optional parameters
 
-    FinalCommandStep errorMessage(String errorMsg);
+    /**
+     * Provide an error message describing the reason for the job failure. If failing the job
+     * creates an incident, this error message will be used as incident message.
+     *
+     * @param errorMsg error message to be attached to the failed job
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    FailJobCommandStep2 errorMessage(String errorMsg);
   }
 }

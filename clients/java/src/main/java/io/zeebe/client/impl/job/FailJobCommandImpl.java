@@ -47,7 +47,7 @@ public class FailJobCommandImpl implements FailJobCommandStep1, FailJobCommandSt
   }
 
   @Override
-  public FinalCommandStep errorMessage(String errorMsg) {
+  public FailJobCommandStep2 errorMessage(String errorMsg) {
     builder.setErrorMessage(errorMsg);
     return this;
   }
