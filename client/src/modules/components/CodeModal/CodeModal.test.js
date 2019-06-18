@@ -51,20 +51,6 @@ describe('CodeModal', () => {
     expect(node.find(Modal.Footer)).toExist();
   });
 
-  // it('should render multiple lines for a valid JSON value', () => {
-  //   const node = mountNode(testData.userOpensEditModal);
-
-  //   expect(node.find('code').children().length).toBe(5);
-  // });
-
-  // it('should render a single line for a broken JSON object', () => {
-  //   const node = mountNode({
-  //     ...testData.userOpensEditModalWithBrokenJSON
-  //   });
-
-  //   expect(node.find('code').children().length).toBe(1);
-  // });
-
   describe('edit', () => {
     let node;
 
@@ -72,64 +58,57 @@ describe('CodeModal', () => {
       node = mountNode(testData.userOpensEditModal);
     });
 
-    //   it('should add an input event listener ', () => {
-    //     expect(elementMock.addEventListener).toBeCalledWith(
-    //       'input',
-    //       expect.any(Function)
-    //     );
-    //   });
+    it('should render editable code editor', () => {
+      expect(node.find('code').props().contentEditable).toBe(true);
+    });
 
-    //   it('should render editable code editor', () => {
-    //     expect(node.find('code').props().contentEditable).toBe(true);
-    //   });
+    describe.skip('save button', () => {
+      //check if tests can be written with TextContent
+      // get access to the whole code editor text
+      // change the code editor text
+      // check if the button state changed accordingly
+      it('should allow to save value, when valid & modfied', () => {
+        // node.find('code').simulate('input', {
+        //   target: {
+        //     textContent: '{"firstname":"asdasdMax"}'
+        //   }
+        // });
 
-    //   describe.skip('save button', () => {
-    //     //check if tests can be written with TextContent
-    //     // get access to the whole code editor text
-    //     // change the code editor text
-    //     // check if the button state changed accordingly
-    //     it('should allow to save value, when valid & modfied', () => {
-    //       // node.find('code').simulate('input', {
-    //       //   target: {
-    //       //     textContent: '{"firstname":"asdasdMax"}'
-    //       //   }
-    //       // });
+        // const domNode = node.find('code').getDOMNode();
+        // domNode.textContent =
+        //   '{"firstname":"asdasdMax","lastname":"Muster","age":31}';
 
-    //       // const domNode = node.find('code').getDOMNode();
-    //       // domNode.textContent =
-    //       //   '{"firstname":"asdasdMax","lastname":"Muster","age":31}';
+        node.update();
 
-    //       node.update();
+        // expect(elementMock.addEventListener).toBeCalledWith(
+        //   'input',
+        //   expect.any(Function).toBeCalledWith(
+        //     expect.objectContaining({
+        //       target: {
+        //         textContent: '{"firstname":"asdasdMax"}'
+        //       }
+        //     })
+        //   )
+        // );
 
-    //       // expect(elementMock.addEventListener).toBeCalledWith(
-    //       //   'input',
-    //       //   expect.any(Function).toBeCalledWith(
-    //       //     expect.objectContaining({
-    //       //       target: {
-    //       //         textContent: '{"firstname":"asdasdMax"}'
-    //       //       }
-    //       //     })
-    //       //   )
-    //       // );
+        // expect(node.find('code').text()).toEqual('{"firstname":"asdasdMax"}');
 
-    //       // expect(node.find('code').text()).toEqual('{"firstname":"asdasdMax"}');
+        // expect(node.find("button[data-test='save-btn']").prop('disabled')).toBe(
+        //   false
+        // );
+      });
+      it('should not allow to save "empty" values', () => {
+        //
+      });
 
-    //       // expect(node.find("button[data-test='save-btn']").prop('disabled')).toBe(
-    //       //   false
-    //       // );
-    //     });
-    //     it('should not allow to save "empty" values', () => {
-    //       //
-    //     });
+      it('should not allow to save invalid JSON values', () => {});
 
-    //     it('should not allow to save invalid JSON values', () => {});
-
-    //     it('should not allow to save an unmodified value', () => {
-    //       expect(node.find("button[data-test='save-btn']").prop('disabled')).toBe(
-    //         true
-    //       );
-    //     });
-    //   });
+      it('should not allow to save an unmodified value', () => {
+        expect(node.find("button[data-test='save-btn']").prop('disabled')).toBe(
+          true
+        );
+      });
+    });
   });
 
   describe('view', () => {
