@@ -28,6 +28,7 @@ public class ReportConstants {
   public static final String GROUP_BY_START_DATE_TYPE = "startDate";
   public static final String GROUP_BY_END_DATE_TYPE = "endDate";
   public static final String GROUP_BY_VARIABLE_TYPE = "variable";
+  public static final String GROUP_BY_ASSIGNEE = "assignee";
 
   public static final String GROUP_BY_EVALUATION_DATE_TYPE = "evaluationDateTime";
   public static final String GROUP_BY_INPUT_VARIABLE_TYPE = "inputVariable";

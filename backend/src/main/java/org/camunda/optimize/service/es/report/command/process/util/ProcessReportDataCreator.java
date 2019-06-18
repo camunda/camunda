@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByAssignee;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByEndDateDto;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByFlowNode;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByNone;
@@ -36,21 +37,46 @@ public class ProcessReportDataCreator {
   }
 
   public static ProcessReportDataDto createUserTaskIdleDurationGroupByUserTaskReport(AggregationType aggroType) {
-    return createUserTaskReportWithViewAndConfiguration(aggroType, UserTaskDurationTime.IDLE);
+    return createUserTaskGroupedByUserTaskReport(aggroType, UserTaskDurationTime.IDLE);
   }
 
   public static ProcessReportDataDto createUserTaskTotalDurationGroupByUserTaskReport(AggregationType aggroType) {
-    return createUserTaskReportWithViewAndConfiguration(aggroType, UserTaskDurationTime.TOTAL);
+    return createUserTaskGroupedByUserTaskReport(aggroType, UserTaskDurationTime.TOTAL);
   }
 
   public static ProcessReportDataDto createUserTaskWorkDurationGroupByUserTaskReport(AggregationType aggroType) {
-    return createUserTaskReportWithViewAndConfiguration(aggroType, UserTaskDurationTime.WORK);
+    return createUserTaskGroupedByUserTaskReport(aggroType, UserTaskDurationTime.WORK);
   }
 
-  private static ProcessReportDataDto createUserTaskReportWithViewAndConfiguration(final AggregationType aggroType,
-                                                                                   final UserTaskDurationTime userTaskDurationTime) {
+  private static ProcessReportDataDto createUserTaskGroupedByUserTaskReport(final AggregationType aggroType,
+                                                                            final UserTaskDurationTime userTaskDurationTime) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByFlowNode();
+
+    final ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    reportData.getConfiguration().setAggregationType(aggroType);
+    reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
+    return reportData;
+  }
+
+  public static ProcessReportDataDto createUserTaskIdleDurationGroupByAssigneeReport(AggregationType aggroType) {
+    return createUserTaskGroupByAssigneeReport(aggroType, UserTaskDurationTime.IDLE);
+  }
+
+  public static ProcessReportDataDto createUserTaskTotalDurationGroupByAssigneeReport(AggregationType aggroType) {
+    return createUserTaskGroupByAssigneeReport(aggroType, UserTaskDurationTime.TOTAL);
+  }
+
+  public static ProcessReportDataDto createUserTaskWorkDurationGroupByAssigneeReport(AggregationType aggroType) {
+    return createUserTaskGroupByAssigneeReport(aggroType, UserTaskDurationTime.WORK);
+  }
+
+  private static ProcessReportDataDto createUserTaskGroupByAssigneeReport(final AggregationType aggroType,
+                                                                          final UserTaskDurationTime userTaskDurationTime) {
+    final ProcessViewDto view = createUserTaskDurationView();
+    final ProcessGroupByDto groupByDto = createGroupByAssignee();
 
     final ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);

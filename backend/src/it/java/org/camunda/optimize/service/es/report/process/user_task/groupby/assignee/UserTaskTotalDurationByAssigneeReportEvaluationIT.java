@@ -3,22 +3,24 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.user_task;
+package org.camunda.optimize.service.es.report.process.user_task.groupby.assignee;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 
 import java.sql.SQLException;
 
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskTotalDurationMapGroupByUserTaskReport;
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskTotalDurationMapGroupByAssigneeReport;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
-public class UserTaskTotalDurationByUserTaskReportEvaluationIT
-  extends AbstractUserTaskDurationByUserTaskReportEvaluationIT {
+public class UserTaskTotalDurationByAssigneeReportEvaluationIT
+  extends AbstractUserTaskDurationByAssigneeReportEvaluationIT {
 
   @Override
   protected UserTaskDurationTime getUserTaskDurationTime() {
@@ -47,19 +49,19 @@ public class UserTaskTotalDurationByUserTaskReportEvaluationIT
 
   @Override
   protected ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
-    return createUserTaskTotalDurationMapGroupByUserTaskReport(processDefinitionKey, version);
+    return createUserTaskTotalDurationMapGroupByAssigneeReport(processDefinitionKey, version);
   }
 
   @Override
   protected void assertEvaluateReportWithExecutionState(final ProcessDurationReportMapResultDto result,
                                                         final ExecutionStateTestValues expectedValues) {
     assertThat(
-      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(expectedValues.getExpectedTotalDurationValues().get(USER_TASK_1))
+      result.getDataEntryForKey(DEFAULT_USERNAME).orElse(new MapResultEntryDto<>("foo", null)).getValue(),
+      is(expectedValues.getExpectedTotalDurationValues().get(DEFAULT_USERNAME))
     );
     assertThat(
-      result.getDataEntryForKey(USER_TASK_2).get().getValue(),
-      is(expectedValues.getExpectedTotalDurationValues().get(USER_TASK_2))
+      result.getDataEntryForKey(SECOND_USER).orElse(new MapResultEntryDto<>("foo", null)).getValue(),
+      is(expectedValues.getExpectedTotalDurationValues().get(SECOND_USER))
     );
   }
 

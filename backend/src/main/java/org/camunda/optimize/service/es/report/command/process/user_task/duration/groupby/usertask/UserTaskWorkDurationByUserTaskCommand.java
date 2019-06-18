@@ -3,25 +3,26 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.process.user_task.duration;
+package org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.usertask;
 
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 
-public class UserTaskTotalDurationByUserTaskCommand extends AbstractUserTaskDurationByUserTaskCommand {
+public class UserTaskWorkDurationByUserTaskCommand extends AbstractUserTaskDurationByUserTaskCommand {
 
 
-  public UserTaskTotalDurationByUserTaskCommand(final AggregationStrategy strategy) {
+  public UserTaskWorkDurationByUserTaskCommand(final AggregationStrategy strategy) {
     super(strategy);
   }
 
   @Override
   protected String getDurationFieldName() {
-    return ProcessInstanceType.USER_TASK_TOTAL_DURATION;
+    return ProcessInstanceType.USER_TASK_WORK_DURATION;
   }
+
 
   @Override
   protected String getReferenceDateFieldName() {
-    return ProcessInstanceType.USER_TASK_START_DATE;
+    return ProcessInstanceType.USER_TASK_CLAIM_DATE;
   }
 }

@@ -3,15 +3,15 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.process.user_task.duration;
+package org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.assignee;
 
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 
-public class UserTaskIdleDurationByUserTaskCommand extends AbstractUserTaskDurationByUserTaskCommand {
+public class UserTaskIdleDurationByAssigneeCommand extends AbstractUserTaskDurationByAssigneeCommand {
 
 
-  public UserTaskIdleDurationByUserTaskCommand(final AggregationStrategy strategy) {
+  public UserTaskIdleDurationByAssigneeCommand(final AggregationStrategy strategy) {
     super(strategy);
   }
 

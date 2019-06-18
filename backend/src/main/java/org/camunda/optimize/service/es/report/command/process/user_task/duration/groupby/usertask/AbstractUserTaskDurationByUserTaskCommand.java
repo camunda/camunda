@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.process.user_task.duration;
+package org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.usertask;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -125,7 +125,7 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
   }
 
 
-  protected Script getScriptedAggregationField() {
+  private Script getScriptedAggregationField() {
     return FlowNodeExecutionStateAggregationUtil.getAggregationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
       USER_TASKS + "." + getDurationFieldName(),
