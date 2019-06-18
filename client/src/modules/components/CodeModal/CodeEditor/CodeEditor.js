@@ -6,6 +6,7 @@
 
 import React, {useEffect, useState, useRef} from 'react';
 import ContentEditable from 'react-contenteditable';
+import sanitizeHtml from 'sanitize-html';
 
 import PropTypes from 'prop-types';
 
@@ -24,34 +25,41 @@ const defaultContent =
 
 function CodeEditor({contentEditable, initialValue, handleChange}) {
   const [codeHTML, setCodeHTML] = useState(defaultContent);
-
-  const prevContent = usePrevious(ref);
+  const {prevContent, prevHTML} = usePrevious(ref);
 
   function usePrevious(codeRef) {
     if (!codeRef) {
       return '';
     }
-
     const ref = useRef();
     useEffect(() => {
-      ref.current = codeRef.current.textContent;
+      ref.current = codeRef.current;
     });
-    return ref.current;
+
+    if (ref.current) {
+      return {
+        prevContent: ref.current.textContent,
+        prevHTML: ref.current.innerHTML
+      };
+    } else {
+      return {
+        prevContent: '',
+        prevHTML: ''
+      };
+    }
   }
 
   // Set initial Code modal content
-  useEffect(
-    () => {
-      setCodeHTML(
-        renderCodeLines(
-          isValidJSON(initialValue)
-            ? createBeautyfiedJSON(initialValue, 2)
-            : initialValue
-        )
-      );
-    },
-    [initialValue]
-  );
+  useEffect(() => {
+    console.log('set init value');
+    setCodeHTML(
+      renderCodeLines(
+        isValidJSON(initialValue)
+          ? createBeautyfiedJSON(initialValue, 2)
+          : initialValue
+      )
+    );
+  }, []);
 
   // update parent with sanitized content when content changed,
   // layout changes are ignored.
@@ -79,8 +87,26 @@ function CodeEditor({contentEditable, initialValue, handleChange}) {
     return htmlString;
   }
 
-  function handleOnChange(newValue) {
-    setCodeHTML(!newValue ? defaultContent : newValue);
+  function handleOnChange(newHTML) {
+    setCodeHTML(!newHTML ? defaultContent : newHTML);
+  }
+
+  function handleOnPaste(event) {
+    // Stop data actually being pasted into div
+    event.stopPropagation();
+    event.preventDefault();
+
+    const content = event.clipboardData.getData('Text');
+    console.log('pasted:', content);
+    const sanitizeConf = {
+      allowedTags: []
+    };
+
+    setCodeHTML(
+      !event
+        ? defaultContent
+        : renderCodeLines(sanitizeHtml(content, sanitizeConf))
+    );
   }
 
   return (
@@ -92,6 +118,7 @@ function CodeEditor({contentEditable, initialValue, handleChange}) {
           disabled={!contentEditable}
           onChange={e => handleOnChange(e.target.value)}
           tagName="code"
+          onPaste={e => handleOnPaste(e)}
         />
       </Styled.Pre>
     </Styled.CodeEditor>
