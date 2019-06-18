@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.user_task;
 
+import com.google.common.collect.ImmutableSet;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
@@ -15,6 +16,8 @@ import org.elasticsearch.search.SearchHit;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.IDENTITY_LINK_OPERATION_ADD;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.IDENTITY_LINK_OPERATION_DELETE;
@@ -94,8 +97,11 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
       );
       List<UserTaskInstanceDto> userTasks = processInstanceDto.getUserTasks();
       assertThat(userTasks.size(), is(2));
-      assertThat(userTasks.get(0).getAssignee(), is(DEFAULT_USERNAME));
-      assertThat(userTasks.get(1).getAssignee(), is("secondUser"));
+      Set<String> expectedAssignees = ImmutableSet.of(DEFAULT_USERNAME, "secondUser");
+      Set<String> actualAssignees = userTasks.stream()
+        .map(UserTaskInstanceDto::getAssignee)
+        .collect(Collectors.toSet());
+      assertThat(actualAssignees, is(expectedAssignees));
     }
   }
 
@@ -123,8 +129,14 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
       );
       List<UserTaskInstanceDto> userTasks = processInstanceDto.getUserTasks();
       assertThat(userTasks.size(), is(2));
-      assertThat(userTasks.get(0).getCandidateGroups(), contains("firstGroup"));
-      assertThat(userTasks.get(1).getCandidateGroups(), contains("secondGroup"));
+      Set<String> expectedCandidateGroups = ImmutableSet.of("firstGroup", "secondGroup");
+      Set<String> actualCandidateGroups = userTasks.stream()
+        .map(userTask -> {
+          assertThat(userTask.getCandidateGroups().size(), is(1));
+          return userTask.getCandidateGroups().get(0);
+        })
+        .collect(Collectors.toSet());
+      assertThat(actualCandidateGroups, is(expectedCandidateGroups));
     }
   }
 
