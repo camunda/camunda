@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.system.metrics;
+package io.zeebe.broker.system.monitoring;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -33,13 +33,17 @@ import java.time.Instant;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class MetricsHttpServerHandler extends ChannelInboundHandlerAdapter {
+public class BrokerHttpServerHandler extends ChannelInboundHandlerAdapter {
 
+  private static final String BROKER_READY_STATUS_URI = "/ready";
   private final MutableDirectBuffer metricsBuffer = new ExpandableDirectByteBuffer();
   private final MetricsManager metricsManager;
+  private BrokerHealthCheckService brokerHealthCheckService;
 
-  public MetricsHttpServerHandler(MetricsManager metricsManager) {
+  public BrokerHttpServerHandler(
+      MetricsManager metricsManager, BrokerHealthCheckService brokerHealthCheckService) {
     this.metricsManager = metricsManager;
+    this.brokerHealthCheckService = brokerHealthCheckService;
   }
 
   @Override
@@ -63,6 +67,30 @@ public class MetricsHttpServerHandler extends ChannelInboundHandlerAdapter {
       return;
     }
 
+    final DefaultFullHttpResponse response;
+    if (request.uri().equals(BROKER_READY_STATUS_URI)) {
+      response = getReadyStatus();
+    } else {
+      response = getMetrics();
+    }
+
+    HttpUtil.setKeepAlive(response, HttpUtil.isKeepAlive(request));
+    ctx.writeAndFlush(response);
+  }
+
+  private DefaultFullHttpResponse getReadyStatus() {
+    final boolean brokerReady = brokerHealthCheckService.isBrokerReady();
+    final DefaultFullHttpResponse response;
+    if (brokerReady) {
+      response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
+    } else {
+      response =
+          new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.SERVICE_UNAVAILABLE);
+    }
+    return response;
+  }
+
+  private DefaultFullHttpResponse getMetrics() {
     final int length = metricsManager.dump(metricsBuffer, 0, Instant.now().toEpochMilli());
 
     final DefaultFullHttpResponse response =
@@ -73,8 +101,7 @@ public class MetricsHttpServerHandler extends ChannelInboundHandlerAdapter {
 
     response.headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.TEXT_PLAIN);
     response.headers().set(HttpHeaderNames.CONTENT_LENGTH, length);
-    HttpUtil.setKeepAlive(response, HttpUtil.isKeepAlive(request));
 
-    ctx.writeAndFlush(response);
+    return response;
   }
 }

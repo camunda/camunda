@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.system.metrics;
+package io.zeebe.broker.system.monitoring;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -23,13 +23,17 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.zeebe.util.metrics.MetricsManager;
 
-public class MetricsHttpServer implements AutoCloseable {
+public class BrokerHttpServer implements AutoCloseable {
 
   private final NioEventLoopGroup bossGroup;
   private final NioEventLoopGroup workerGroup;
   private final Channel channel;
 
-  public MetricsHttpServer(MetricsManager metricsManager, String host, int port) {
+  public BrokerHttpServer(
+      MetricsManager metricsManager,
+      BrokerHealthCheckService brokerHealthCheckService,
+      String host,
+      int port) {
     bossGroup = new NioEventLoopGroup(1);
     workerGroup = new NioEventLoopGroup();
 
@@ -37,7 +41,7 @@ public class MetricsHttpServer implements AutoCloseable {
         new ServerBootstrap()
             .group(bossGroup, workerGroup)
             .channel(NioServerSocketChannel.class)
-            .childHandler(new MetricsHttpServerInitializer(metricsManager))
+            .childHandler(new BrokerHttpServerInitializer(metricsManager, brokerHealthCheckService))
             .bind(host, port)
             .syncUninterruptibly()
             .channel();

@@ -31,7 +31,7 @@ import org.apache.http.util.EntityUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class MetricsHttpServerTest {
+public class BrokerHttpServerTest {
 
   @Rule
   public final EmbeddedBrokerRule brokerWithEnabledMetricsHttpServer =
@@ -60,6 +60,20 @@ public class MetricsHttpServerTest {
       fail("Unexpected to be able to connect to metrics http server with config: " + metricsCfg);
     } catch (Exception e) {
       // expect error
+    }
+  }
+
+  @Test
+  public void shouldGetReadyStatus() {
+    final MetricsCfg metricsCfg = brokerWithEnabledMetricsHttpServer.getBrokerCfg().getMetrics();
+    try (CloseableHttpClient client = HttpClients.createDefault()) {
+      final HttpGet request =
+          new HttpGet("http://" + metricsCfg.getHost() + ":" + metricsCfg.getPort() + "/ready");
+      try (CloseableHttpResponse response = client.execute(request)) {
+        assertThat(response.getStatusLine().getStatusCode()).isEqualTo(204);
+      }
+    } catch (Exception e) {
+      fail("Failed to connect to metrics http server with config: " + metricsCfg, e);
     }
   }
 }

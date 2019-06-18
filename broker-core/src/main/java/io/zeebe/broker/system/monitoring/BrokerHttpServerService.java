@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.system.metrics;
+package io.zeebe.broker.system.monitoring;
 
 import io.zeebe.broker.system.configuration.MetricsCfg;
 import io.zeebe.servicecontainer.Service;
@@ -23,13 +23,16 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.metrics.MetricsManager;
 
-public class MetricsHttpServerService implements Service<MetricsHttpServer> {
+public class BrokerHttpServerService implements Service<BrokerHttpServer> {
 
-  private MetricsHttpServer metricsHttpServer;
+  private BrokerHttpServer brokerHttpServer;
   private MetricsCfg configuration;
+  private BrokerHealthCheckService brokerHealthCheckService;
 
-  public MetricsHttpServerService(MetricsCfg cfg) {
+  public BrokerHttpServerService(
+      MetricsCfg cfg, BrokerHealthCheckService brokerHealthCheckService) {
     this.configuration = cfg;
+    this.brokerHealthCheckService = brokerHealthCheckService;
   }
 
   @Override
@@ -38,19 +41,22 @@ public class MetricsHttpServerService implements Service<MetricsHttpServer> {
 
     startContext.run(
         () -> {
-          metricsHttpServer =
-              new MetricsHttpServer(
-                  metricsManager, configuration.getHost(), configuration.getPort());
+          brokerHttpServer =
+              new BrokerHttpServer(
+                  metricsManager,
+                  brokerHealthCheckService,
+                  configuration.getHost(),
+                  configuration.getPort());
         });
   }
 
   @Override
   public void stop(ServiceStopContext stopContext) {
-    stopContext.run(metricsHttpServer::close);
+    stopContext.run(brokerHttpServer::close);
   }
 
   @Override
-  public MetricsHttpServer get() {
-    return metricsHttpServer;
+  public BrokerHttpServer get() {
+    return brokerHttpServer;
   }
 }

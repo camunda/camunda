@@ -48,6 +48,8 @@ import org.slf4j.Logger;
 /** Service representing a partition. */
 public class Partition implements Service<Partition> {
   private static final String PARTITION_NAME_FORMAT = "raft-atomix-partition-%d";
+  public static final String GROUP_NAME = "raft-atomix";
+
   public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   public static String getPartitionName(final int partitionId) {
