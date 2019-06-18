@@ -34,6 +34,7 @@ import io.zeebe.util.StreamUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.List;
 import org.junit.Test;
 
@@ -71,6 +72,8 @@ public class DeployWorkflowTest extends ClientTest {
     assertThat(workflow.getType()).isEqualTo(ResourceType.FILE);
     assertThat(workflow.getName()).isEqualTo(filename);
     assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
+
+    rule.verifyDefaultRequestTimeout();
   }
 
   @Test
@@ -244,6 +247,23 @@ public class DeployWorkflowTest extends ClientTest {
             () -> client.newDeployCommand().addResourceStringUtf8("", "test.bpmn").send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
+  }
+
+  @Test
+  public void shouldSetRequestTimeout() {
+    // given
+    final Duration requestTimeout = Duration.ofHours(124);
+
+    // when
+    client
+        .newDeployCommand()
+        .addResourceStringUtf8("", "test.bpmn")
+        .requestTimeout(requestTimeout)
+        .send()
+        .join();
+
+    // then
+    rule.verifyRequestTimeout(requestTimeout);
   }
 
   private byte[] getBytes(String filename) {

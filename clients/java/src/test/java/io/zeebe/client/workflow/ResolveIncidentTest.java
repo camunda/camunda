@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
+import java.time.Duration;
 import org.junit.Test;
 
 public class ResolveIncidentTest extends ClientTest {
@@ -31,5 +32,19 @@ public class ResolveIncidentTest extends ClientTest {
     // then
     final ResolveIncidentRequest request = gatewayService.getLastRequest();
     assertThat(request.getIncidentKey()).isEqualTo(123);
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldSetRequestTimeout() {
+    // given
+    final Duration requestTimeout = Duration.ofHours(124);
+
+    // when
+    client.newResolveIncidentCommand(123).requestTimeout(requestTimeout).send().join();
+
+    // then
+    rule.verifyRequestTimeout(requestTimeout);
   }
 }

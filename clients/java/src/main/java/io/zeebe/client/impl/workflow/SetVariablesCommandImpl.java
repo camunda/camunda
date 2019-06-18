@@ -16,6 +16,7 @@
 package io.zeebe.client.impl.workflow;
 
 import io.zeebe.client.api.ZeebeFuture;
+import io.zeebe.client.api.commands.FinalCommandStep;
 import io.zeebe.client.api.commands.SetVariablesCommandStep1;
 import io.zeebe.client.api.commands.SetVariablesCommandStep1.SetVariablesCommandStep2;
 import io.zeebe.client.impl.ArgumentUtil;
@@ -26,20 +27,35 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest.Builder;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class SetVariablesCommandImpl implements SetVariablesCommandStep1, SetVariablesCommandStep2 {
 
   private final GatewayStub asyncStub;
   private final Builder builder;
   private final ZeebeObjectMapper objectMapper;
+  private final long elementInstanceKey;
+  private Duration requestTimeout;
 
   public SetVariablesCommandImpl(
-      GatewayStub asyncStub, ZeebeObjectMapper objectMapper, long elementInstanceKey) {
+      GatewayStub asyncStub,
+      ZeebeObjectMapper objectMapper,
+      long elementInstanceKey,
+      Duration requestTimeout) {
     this.asyncStub = asyncStub;
     this.objectMapper = objectMapper;
+    this.elementInstanceKey = elementInstanceKey;
+    this.requestTimeout = requestTimeout;
     this.builder = SetVariablesRequest.newBuilder();
     builder.setElementInstanceKey(elementInstanceKey);
+  }
+
+  @Override
+  public FinalCommandStep<Void> requestTimeout(Duration requestTimeout) {
+    this.requestTimeout = requestTimeout;
+    return this;
   }
 
   @Override
@@ -48,7 +64,9 @@ public class SetVariablesCommandImpl implements SetVariablesCommandStep1, SetVar
 
     final ZeebeClientFutureImpl<Void, SetVariablesResponse> future = new ZeebeClientFutureImpl<>();
 
-    asyncStub.setVariables(request, future);
+    asyncStub
+        .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
+        .setVariables(request, future);
     return future;
   }
 

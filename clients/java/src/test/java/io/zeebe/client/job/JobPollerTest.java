@@ -15,39 +15,28 @@
  */
 package io.zeebe.client.job;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import io.zeebe.client.impl.ZeebeObjectMapper;
+import io.zeebe.client.impl.subscription.JobPoller;
 import io.zeebe.client.util.ClientTest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import java.time.Duration;
 import org.junit.Test;
 
-public class JobUpdateRetriesTest extends ClientTest {
-
-  @Test
-  public void shouldUpdateRetries() {
-    // given
-    final long jobKey = 12;
-    final int newRetries = 23;
-
-    // when
-    client.newUpdateRetriesCommand(jobKey).retries(newRetries).send().join();
-
-    // then
-    final UpdateJobRetriesRequest request = gatewayService.getLastRequest();
-    assertThat(request.getJobKey()).isEqualTo(jobKey);
-    assertThat(request.getRetries()).isEqualTo(newRetries);
-
-    rule.verifyDefaultRequestTimeout();
-  }
+public class JobPollerTest extends ClientTest {
 
   @Test
   public void shouldSetRequestTimeout() {
     // given
-    final Duration requestTimeout = Duration.ofHours(124);
+    final Duration requestTimeout = Duration.ofHours(123);
+    final JobPoller jobPoller =
+        new JobPoller(
+            rule.getGatewayStub(),
+            ActivateJobsRequest.newBuilder(),
+            new ZeebeObjectMapper(),
+            requestTimeout);
 
     // when
-    client.newUpdateRetriesCommand(123).retries(3).requestTimeout(requestTimeout).send().join();
+    jobPoller.poll(123, job -> {}, integer -> {});
 
     // then
     rule.verifyRequestTimeout(requestTimeout);

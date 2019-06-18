@@ -17,6 +17,7 @@ package io.zeebe.client.impl.workflow;
 
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.ZeebeFuture;
+import io.zeebe.client.api.commands.FinalCommandStep;
 import io.zeebe.client.api.commands.PublishMessageCommandStep1;
 import io.zeebe.client.api.commands.PublishMessageCommandStep1.PublishMessageCommandStep2;
 import io.zeebe.client.api.commands.PublishMessageCommandStep1.PublishMessageCommandStep3;
@@ -27,12 +28,14 @@ import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 public class PublishMessageCommandImpl extends CommandWithVariables<PublishMessageCommandImpl>
     implements PublishMessageCommandStep1, PublishMessageCommandStep2, PublishMessageCommandStep3 {
 
   private final GatewayStub asyncStub;
   private final PublishMessageRequest.Builder builder;
+  private Duration requestTimeout;
 
   public PublishMessageCommandImpl(
       final GatewayStub asyncStub,
@@ -41,6 +44,7 @@ public class PublishMessageCommandImpl extends CommandWithVariables<PublishMessa
     super(objectMapper);
     this.asyncStub = asyncStub;
     this.builder = PublishMessageRequest.newBuilder();
+    this.requestTimeout = configuration.getDefaultRequestTimeout();
     builder.setTimeToLive(configuration.getDefaultMessageTimeToLive().toMillis());
   }
 
@@ -75,11 +79,19 @@ public class PublishMessageCommandImpl extends CommandWithVariables<PublishMessa
   }
 
   @Override
+  public FinalCommandStep<Void> requestTimeout(Duration requestTimeout) {
+    this.requestTimeout = requestTimeout;
+    return this;
+  }
+
+  @Override
   public ZeebeFuture<Void> send() {
     final ZeebeClientFutureImpl<Void, PublishMessageResponse> future =
         new ZeebeClientFutureImpl<>();
 
-    asyncStub.publishMessage(builder.build(), future);
+    asyncStub
+        .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
+        .publishMessage(builder.build(), future);
     return future;
   }
 }

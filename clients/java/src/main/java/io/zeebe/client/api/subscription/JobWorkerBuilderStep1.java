@@ -142,6 +142,17 @@ public interface JobWorkerBuilderStep1 {
     JobWorkerBuilderStep3 pollInterval(Duration pollInterval);
 
     /**
+     * Set the request timeout for activate job request used to poll for new job.
+     *
+     * <p>If no request timeout is set then the default is used from the {@link
+     * ZeebeClientConfiguration}
+     *
+     * @param requestTimeout the request timeout for activate jobs request
+     * @return the builder for this worker
+     */
+    JobWorkerBuilderStep3 requestTimeout(Duration requestTimeout);
+
+    /**
      * Set a list of variable names which should be fetch on job activation.
      *
      * <p>The jobs which are activated by this worker will only contain variables from this list.

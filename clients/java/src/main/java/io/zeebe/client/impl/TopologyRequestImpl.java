@@ -17,18 +17,29 @@
 package io.zeebe.client.impl;
 
 import io.zeebe.client.api.ZeebeFuture;
+import io.zeebe.client.api.commands.FinalCommandStep;
 import io.zeebe.client.api.commands.Topology;
 import io.zeebe.client.api.commands.TopologyRequestStep1;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 public class TopologyRequestImpl implements TopologyRequestStep1 {
 
   private final GatewayStub asyncStub;
+  private Duration requestTimeout;
 
-  TopologyRequestImpl(final GatewayStub asyncStub) {
+  TopologyRequestImpl(final GatewayStub asyncStub, Duration requestTimeout) {
     this.asyncStub = asyncStub;
+    this.requestTimeout = requestTimeout;
+  }
+
+  @Override
+  public FinalCommandStep<Topology> requestTimeout(Duration requestTimeout) {
+    this.requestTimeout = requestTimeout;
+    return this;
   }
 
   @Override
@@ -38,7 +49,9 @@ public class TopologyRequestImpl implements TopologyRequestStep1 {
     final ZeebeClientFutureImpl<Topology, TopologyResponse> future =
         new ZeebeClientFutureImpl<>(TopologyImpl::new);
 
-    asyncStub.topology(request, future);
+    asyncStub
+        .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
+        .topology(request, future);
 
     return future;
   }

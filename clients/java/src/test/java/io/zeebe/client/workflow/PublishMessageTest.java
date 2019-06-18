@@ -49,6 +49,8 @@ public class PublishMessageTest extends ClientTest {
     assertThat(request.getCorrelationKey()).isEqualTo("key");
     assertThat(request.getMessageId()).isEqualTo("theId");
     assertThat(request.getTimeToLive()).isEqualTo(Duration.ofDays(1).toMillis());
+
+    rule.verifyDefaultRequestTimeout();
   }
 
   @Test
@@ -142,6 +144,24 @@ public class PublishMessageTest extends ClientTest {
                     .join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
+  }
+
+  @Test
+  public void shouldSetRequestTimeout() {
+    // given
+    final Duration requestTimeout = Duration.ofHours(124);
+
+    // when
+    client
+        .newPublishMessageCommand()
+        .messageName("test")
+        .correlationKey("test")
+        .requestTimeout(requestTimeout)
+        .send()
+        .join();
+
+    // then
+    rule.verifyRequestTimeout(requestTimeout);
   }
 
   public static class Variables {

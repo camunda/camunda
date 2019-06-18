@@ -16,6 +16,7 @@
 package io.zeebe.client.impl.job;
 
 import io.zeebe.client.api.ZeebeFuture;
+import io.zeebe.client.api.commands.FinalCommandStep;
 import io.zeebe.client.api.commands.UpdateRetriesJobCommandStep1;
 import io.zeebe.client.api.commands.UpdateRetriesJobCommandStep1.UpdateRetriesJobCommandStep2;
 import io.zeebe.client.impl.ZeebeClientFutureImpl;
@@ -23,15 +24,19 @@ import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest.Builder;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 public class JobUpdateRetriesCommandImpl
     implements UpdateRetriesJobCommandStep1, UpdateRetriesJobCommandStep2 {
 
   private final GatewayStub asyncStub;
   private final Builder builder;
+  private Duration requestTimeout;
 
-  public JobUpdateRetriesCommandImpl(GatewayStub asyncStub, long jobKey) {
+  public JobUpdateRetriesCommandImpl(GatewayStub asyncStub, long jobKey, Duration requestTimeout) {
     this.asyncStub = asyncStub;
+    this.requestTimeout = requestTimeout;
     builder = UpdateJobRetriesRequest.newBuilder();
     builder.setJobKey(jobKey);
   }
@@ -43,13 +48,21 @@ public class JobUpdateRetriesCommandImpl
   }
 
   @Override
+  public FinalCommandStep<Void> requestTimeout(Duration requestTimeout) {
+    this.requestTimeout = requestTimeout;
+    return this;
+  }
+
+  @Override
   public ZeebeFuture<Void> send() {
     final UpdateJobRetriesRequest request = builder.build();
 
     final ZeebeClientFutureImpl<Void, UpdateJobRetriesResponse> future =
         new ZeebeClientFutureImpl<>();
 
-    asyncStub.updateJobRetries(request, future);
+    asyncStub
+        .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
+        .updateJobRetries(request, future);
     return future;
   }
 }

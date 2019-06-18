@@ -22,6 +22,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.zeebe.test.util.JsonUtil;
 import io.zeebe.util.StringUtil;
 import java.io.ByteArrayInputStream;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.Test;
@@ -40,6 +41,8 @@ public class CompleteJobTest extends ClientTest {
     final CompleteJobRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(jobKey);
     assertThat(request.getVariables()).isEmpty();
+
+    rule.verifyDefaultRequestTimeout();
   }
 
   @Test
@@ -110,6 +113,18 @@ public class CompleteJobTest extends ClientTest {
     final CompleteJobRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(jobKey);
     JsonUtil.assertEquality(request.getVariables(), expectedJson);
+  }
+
+  @Test
+  public void shouldSetRequestTimeout() {
+    // given
+    final Duration requestTimeout = Duration.ofHours(124);
+
+    // when
+    client.newCompleteCommand(123).requestTimeout(requestTimeout).send().join();
+
+    // then
+    rule.verifyRequestTimeout(requestTimeout);
   }
 
   public static class POJO {

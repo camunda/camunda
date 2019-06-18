@@ -20,6 +20,7 @@ import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.ActivateJobsCommandStep1;
 import io.zeebe.client.api.commands.ActivateJobsCommandStep1.ActivateJobsCommandStep2;
 import io.zeebe.client.api.commands.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
+import io.zeebe.client.api.commands.FinalCommandStep;
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.client.impl.ZeebeStreamingClientFutureImpl;
@@ -30,6 +31,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest.Builder;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class ActivateJobsCommandImpl
     implements ActivateJobsCommandStep1, ActivateJobsCommandStep2, ActivateJobsCommandStep3 {
@@ -37,12 +39,14 @@ public class ActivateJobsCommandImpl
   private final GatewayStub asyncStub;
   private final ZeebeObjectMapper objectMapper;
   private final Builder builder;
+  private Duration requestTimeout;
 
   public ActivateJobsCommandImpl(
       GatewayStub asyncStub, ZeebeClientConfiguration config, ZeebeObjectMapper objectMapper) {
     this.asyncStub = asyncStub;
     this.objectMapper = objectMapper;
     builder = ActivateJobsRequest.newBuilder();
+    requestTimeout = config.getDefaultRequestTimeout();
 
     timeout(config.getDefaultJobTimeout());
     workerName(config.getDefaultJobWorkerName());
@@ -89,6 +93,12 @@ public class ActivateJobsCommandImpl
   }
 
   @Override
+  public FinalCommandStep<ActivateJobsResponse> requestTimeout(Duration requestTimeout) {
+    this.requestTimeout = requestTimeout;
+    return this;
+  }
+
+  @Override
   public ZeebeFuture<ActivateJobsResponse> send() {
     final ActivateJobsRequest request = builder.build();
 
@@ -97,7 +107,9 @@ public class ActivateJobsCommandImpl
             ActivateJobsResponse, io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse>
         future = new ZeebeStreamingClientFutureImpl<>(response, response::addResponse);
 
-    asyncStub.activateJobs(request, future);
+    asyncStub
+        .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
+        .activateJobs(request, future);
     return future;
   }
 }

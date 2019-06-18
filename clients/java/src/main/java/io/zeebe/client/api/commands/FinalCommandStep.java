@@ -16,8 +16,18 @@
 package io.zeebe.client.api.commands;
 
 import io.zeebe.client.api.ZeebeFuture;
+import java.time.Duration;
 
 public interface FinalCommandStep<T> {
+
+  /**
+   * Sets the request timeout for the command. The default request timeout can be configured using
+   * {@link io.zeebe.client.ZeebeClientBuilder#defaultRequestTimeout(Duration)}.
+   *
+   * @param requestTimeout the request timeout
+   * @return the configured command
+   */
+  FinalCommandStep<T> requestTimeout(Duration requestTimeout);
 
   /**
    * Sends the command to the Zeebe broker. This operation is asynchronous. In case of success, the
