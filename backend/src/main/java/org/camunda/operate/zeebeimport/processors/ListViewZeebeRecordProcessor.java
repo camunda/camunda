@@ -5,9 +5,9 @@
  */
 package org.camunda.operate.zeebeimport.processors;
 
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -46,9 +46,9 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 
 @Component
 public class ListViewZeebeRecordProcessor {

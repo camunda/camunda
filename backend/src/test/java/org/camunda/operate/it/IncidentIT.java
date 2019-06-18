@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.it;
 
+import io.zeebe.protocol.record.value.ErrorType;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -20,7 +21,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.web.servlet.MvcResult;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.protocol.ErrorType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;

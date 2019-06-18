@@ -10,7 +10,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.zeebe.exporter.api.record.Record;
+import io.zeebe.protocol.record.Record;
 
 /**
  * One batch for importing Zeebe data. Contains list of records as well as partition id and value type of the records.

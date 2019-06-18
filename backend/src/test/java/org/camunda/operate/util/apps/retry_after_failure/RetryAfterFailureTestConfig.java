@@ -14,7 +14,7 @@ import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import io.zeebe.exporter.api.record.Record;
+import io.zeebe.protocol.record.Record;
 
 /**
  * Let's mock ElasticsearchBulkProcessor, so that it throw an exception with the 2st run and persist the data only with the second run.

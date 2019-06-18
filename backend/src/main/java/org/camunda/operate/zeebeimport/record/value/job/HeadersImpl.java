@@ -6,7 +6,7 @@
 package org.camunda.operate.zeebeimport.record.value.job;
 
 import java.util.Objects;
-import io.zeebe.exporter.api.record.value.job.Headers;
+import io.zeebe.protocol.record.value.job.Headers;
 
 public class HeadersImpl implements Headers {
   private String bpmnProcessId;

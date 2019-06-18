@@ -7,8 +7,8 @@ package org.camunda.operate.zeebeimport.record;
 
 import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.zeebe.exporter.api.record.RecordValue;
-import io.zeebe.exporter.api.record.RecordValueWithVariables;
+import io.zeebe.protocol.record.RecordValue;
+import io.zeebe.protocol.record.RecordValueWithVariables;
 
 public abstract class RecordValueWithPayloadImpl implements RecordValue, RecordValueWithVariables {
   private String variables;

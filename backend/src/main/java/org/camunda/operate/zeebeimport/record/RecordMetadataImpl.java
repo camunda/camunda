@@ -6,10 +6,10 @@
 package org.camunda.operate.zeebeimport.record;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.zeebe.exporter.api.record.RecordMetadata;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.RejectionType;
-import io.zeebe.protocol.ValueType;
+import io.zeebe.protocol.record.RecordMetadata;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
 
 public class RecordMetadataImpl implements RecordMetadata {
   private int partitionId;

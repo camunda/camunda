@@ -5,7 +5,7 @@
  */
 package org.camunda.operate.zeebeimport.record;
 
-public enum Intent implements io.zeebe.protocol.intent.Intent {
+public enum Intent implements io.zeebe.protocol.record.intent.Intent {
 
   CREATED,
 

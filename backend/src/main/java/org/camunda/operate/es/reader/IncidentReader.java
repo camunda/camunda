@@ -5,6 +5,13 @@
  */
 package org.camunda.operate.es.reader;
 
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
+
+import io.zeebe.protocol.record.value.ErrorType;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -28,7 +35,6 @@ import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -39,14 +45,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import io.zeebe.protocol.ErrorType;
-
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 @Component
 public class IncidentReader extends AbstractReader {
@@ -138,7 +136,8 @@ public class IncidentReader extends AbstractReader {
     final String errorTypesAggName = "errorTypesAgg";
     final String flowNodesAggName = "flowNodesAgg";
 
-    final TermsAggregationBuilder errorTypesAgg = terms(errorTypesAggName).field(IncidentTemplate.ERROR_TYPE).size(ErrorType.values().length)
+    final TermsAggregationBuilder errorTypesAgg = terms(errorTypesAggName).field(IncidentTemplate.ERROR_TYPE).size(
+        ErrorType.values().length)
         .order(BucketOrder.key(true));
     final TermsAggregationBuilder flowNodesAgg = terms(flowNodesAggName).field(IncidentTemplate.FLOW_NODE_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
         .order(BucketOrder.key(true));

@@ -10,8 +10,8 @@ import java.util.Map;
 import java.util.Objects;
 import org.camunda.operate.zeebeimport.record.RecordValueWithPayloadImpl;
 import org.camunda.operate.zeebeimport.record.value.job.HeadersImpl;
-import io.zeebe.exporter.api.record.value.JobRecordValue;
-import io.zeebe.exporter.api.record.value.job.Headers;
+import io.zeebe.protocol.record.value.JobRecordValue;
+import io.zeebe.protocol.record.value.job.Headers;
 
 public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements JobRecordValue {
   private String type;

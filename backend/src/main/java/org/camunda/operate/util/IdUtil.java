@@ -5,7 +5,7 @@
  */
 package org.camunda.operate.util;
 
-import io.zeebe.exporter.api.record.Record;
+import io.zeebe.protocol.record.Record;
 
 public abstract class IdUtil {
 

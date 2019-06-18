@@ -5,11 +5,10 @@
  */
 package org.camunda.operate.entities;
 
+import io.zeebe.protocol.record.value.ErrorType;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
-
-import io.zeebe.protocol.ErrorType;
 
 public class IncidentEntity extends OperateZeebeEntity {
 

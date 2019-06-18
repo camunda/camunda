@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.zeebeimport.processors;
 
+import io.zeebe.protocol.record.value.BpmnElementType;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,12 +32,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.intent.IncidentIntent;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.IncidentIntent;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
 
 @Component
 public class ActivityInstanceZeebeRecordProcessor {

@@ -18,7 +18,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <version.zeebe>0.18.0</version.zeebe>
+    <version.zeebe>0.19.0-alpha1</version.zeebe>
     <version.elasticsearch>6.8.0</version.elasticsearch>
     <version.spring.boot>2.1.5.RELEASE</version.spring.boot>
 

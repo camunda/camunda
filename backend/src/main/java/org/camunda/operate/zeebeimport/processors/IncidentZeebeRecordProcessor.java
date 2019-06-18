@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.zeebeimport.processors;
 
+import io.zeebe.protocol.record.value.ErrorType;
 import java.io.IOException;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
@@ -26,8 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.protocol.ErrorType;
+import io.zeebe.protocol.record.Record;
 
 import static org.camunda.operate.zeebeimport.record.Intent.CREATED;
 import static org.camunda.operate.zeebeimport.record.Intent.RESOLVED;

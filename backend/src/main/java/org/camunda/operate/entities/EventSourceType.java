@@ -5,7 +5,7 @@
  */
 package org.camunda.operate.entities;
 
-import io.zeebe.protocol.ValueType;
+import io.zeebe.protocol.record.ValueType;
 
 public enum EventSourceType {
 

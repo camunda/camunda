@@ -5,7 +5,7 @@
  */
 package org.camunda.operate.zeebeimport.record;
 
-import io.zeebe.exporter.api.record.RecordValue;
+import io.zeebe.protocol.record.RecordValue;
 
 public abstract class RecordValueImpl implements RecordValue {
 

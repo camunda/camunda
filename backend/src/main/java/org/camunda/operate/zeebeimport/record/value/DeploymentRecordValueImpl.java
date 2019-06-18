@@ -10,10 +10,10 @@ import java.util.List;
 import java.util.Objects;
 import org.camunda.operate.zeebeimport.record.value.deployment.DeployedWorkflowImpl;
 import org.camunda.operate.zeebeimport.record.value.deployment.DeploymentResourceImpl;
-import io.zeebe.exporter.api.record.RecordValue;
-import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.api.record.value.deployment.DeployedWorkflow;
-import io.zeebe.exporter.api.record.value.deployment.DeploymentResource;
+import io.zeebe.protocol.record.RecordValue;
+import io.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
+import io.zeebe.protocol.record.value.deployment.DeploymentResource;
 
 public class DeploymentRecordValueImpl implements DeploymentRecordValue, RecordValue {
   private List<DeployedWorkflowImpl> deployedWorkflows;

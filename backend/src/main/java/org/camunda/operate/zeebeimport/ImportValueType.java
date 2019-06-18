@@ -10,8 +10,8 @@ import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.JobRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.VariableRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
-import io.zeebe.exporter.api.record.RecordValue;
-import io.zeebe.protocol.ValueType;
+import io.zeebe.protocol.record.RecordValue;
+import io.zeebe.protocol.record.ValueType;
 
 public class ImportValueType {
 

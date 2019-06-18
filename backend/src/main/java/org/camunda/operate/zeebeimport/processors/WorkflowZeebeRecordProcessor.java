@@ -44,11 +44,11 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.deployment.DeployedWorkflow;
-import io.zeebe.exporter.api.record.value.deployment.DeploymentResource;
-import io.zeebe.exporter.api.record.value.deployment.ResourceType;
-import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
+import io.zeebe.protocol.record.value.deployment.DeploymentResource;
+import io.zeebe.protocol.record.value.deployment.ResourceType;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
 
 @Component
 public class WorkflowZeebeRecordProcessor {

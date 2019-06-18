@@ -14,7 +14,7 @@ import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import io.zeebe.exporter.api.record.Record;
+import io.zeebe.protocol.record.Record;
 
 /**
  * Let's mock ElasticsearchBulkProcessor, so that it persists the data sucesfully, but throw an exception aftre that. This will cause the data to be imported twice.

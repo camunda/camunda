@@ -5,6 +5,8 @@
  */
 package org.camunda.operate.util;
 
+import static io.zeebe.protocol.record.value.ErrorType.JOB_NO_RETRIES;
+
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -31,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
-import static io.zeebe.protocol.ErrorType.*;
 
 public abstract class TestUtil {
 
