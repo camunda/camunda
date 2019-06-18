@@ -17,38 +17,33 @@
  */
 package io.zeebe.broker.exporter.record.value;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.broker.exporter.ExporterObjectMapper;
-import io.zeebe.broker.exporter.record.RecordValueImpl;
+import io.zeebe.broker.exporter.record.RecordValueWithVariablesImpl;
 import io.zeebe.protocol.record.value.WorkflowInstanceCreationRecordValue;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-public class WorkflowInstanceCreationRecordValueImpl extends RecordValueImpl
+public class WorkflowInstanceCreationRecordValueImpl extends RecordValueWithVariablesImpl
     implements WorkflowInstanceCreationRecordValue {
   private final String bpmnProcessId;
   private final int version;
-  private final long key;
-  private final long instanceKey;
-
-  @JsonIgnore private final Supplier<Map<String, Object>> variablesSupplier;
-  @JsonIgnore private Map<String, Object> variables;
+  private final long workflowKey;
+  private final long workflowInstanceKey;
 
   public WorkflowInstanceCreationRecordValueImpl(
       ExporterObjectMapper objectMapper,
       String bpmnProcessId,
       int version,
-      long key,
-      long instanceKey,
-      Supplier<Map<String, Object>> variablesSupplier) {
-    super(objectMapper);
+      long workflowKey,
+      long workflowInstanceKey,
+      Supplier<String> variablesSupplier,
+      Supplier<Map<String, Object>> variableMapSupplier) {
+    super(objectMapper, variablesSupplier, variableMapSupplier);
     this.bpmnProcessId = bpmnProcessId;
     this.version = version;
-    this.key = key;
-    this.instanceKey = instanceKey;
-    this.variablesSupplier = variablesSupplier;
+    this.workflowKey = workflowKey;
+    this.workflowInstanceKey = workflowInstanceKey;
   }
 
   @Override
@@ -62,22 +57,13 @@ public class WorkflowInstanceCreationRecordValueImpl extends RecordValueImpl
   }
 
   @Override
-  public long getKey() {
-    return key;
+  public long getWorkflowKey() {
+    return workflowKey;
   }
 
   @Override
-  public long getInstanceKey() {
-    return instanceKey;
-  }
-
-  @Override
-  @JsonProperty
-  public Map<String, Object> getVariables() {
-    if (variables == null) {
-      variables = variablesSupplier.get();
-    }
-    return variables;
+  public long getWorkflowInstanceKey() {
+    return workflowInstanceKey;
   }
 
   @Override
@@ -93,16 +79,20 @@ public class WorkflowInstanceCreationRecordValueImpl extends RecordValueImpl
     final WorkflowInstanceCreationRecordValueImpl that =
         (WorkflowInstanceCreationRecordValueImpl) o;
     return getVersion() == that.getVersion()
-        && getKey() == that.getKey()
-        && getInstanceKey() == that.getInstanceKey()
+        && getWorkflowKey() == that.getWorkflowKey()
+        && getWorkflowInstanceKey() == that.getWorkflowInstanceKey()
         && Objects.equals(getBpmnProcessId(), that.getBpmnProcessId())
-        && Objects.equals(getVariables(), that.getVariables());
+        && Objects.equals(getVariablesAsMap(), that.getVariablesAsMap());
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        getBpmnProcessId(), getVersion(), getKey(), getInstanceKey(), getVariables());
+        getBpmnProcessId(),
+        getVersion(),
+        getWorkflowKey(),
+        getWorkflowInstanceKey(),
+        getVariablesAsMap());
   }
 
   @Override
@@ -113,12 +103,12 @@ public class WorkflowInstanceCreationRecordValueImpl extends RecordValueImpl
         + '\''
         + ", version="
         + version
-        + ", key="
-        + key
+        + ", workflowKey="
+        + workflowKey
         + ", workflowInstanceKey="
-        + instanceKey
+        + workflowInstanceKey
         + ", variables="
-        + getVariables()
+        + getVariablesAsMap()
         + "}";
   }
 }

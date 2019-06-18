@@ -272,7 +272,7 @@ public class PartitionTestClient {
     final long workflowInstance =
         createWorkflowInstance(
                 r -> r.setBpmnProcessId("process").setVariables(MsgPackUtil.asMsgPack(variables)))
-            .getInstanceKey();
+            .getWorkflowInstanceKey();
 
     return RecordingExporter.jobRecords(JobIntent.CREATED)
         .withType(type)

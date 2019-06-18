@@ -35,7 +35,7 @@ public class BrokerCreateWorkflowInstanceRequest
   }
 
   public BrokerCreateWorkflowInstanceRequest setKey(long key) {
-    requestDto.setKey(key);
+    requestDto.setWorkflowKey(key);
     return this;
   }
 

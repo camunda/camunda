@@ -97,10 +97,10 @@ public class CreateWorkflowInstanceProcessor
         workflowInstance.getValue());
 
     record
-        .setInstanceKey(workflowInstanceKey)
+        .setWorkflowInstanceKey(workflowInstanceKey)
         .setBpmnProcessId(workflow.getBpmnProcessId())
         .setVersion(workflow.getVersion())
-        .setKey(workflow.getKey());
+        .setWorkflowKey(workflow.getKey());
     controller.accept(WorkflowInstanceCreationIntent.CREATED, record);
   }
 
@@ -164,8 +164,8 @@ public class CreateWorkflowInstanceProcessor
       } else {
         workflow = getWorkflow(bpmnProcessId, controller);
       }
-    } else if (record.getKey() >= 0) {
-      workflow = getWorkflow(record.getKey(), controller);
+    } else if (record.getWorkflowKey() >= 0) {
+      workflow = getWorkflow(record.getWorkflowKey(), controller);
     } else {
       controller.reject(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED);
       workflow = null;

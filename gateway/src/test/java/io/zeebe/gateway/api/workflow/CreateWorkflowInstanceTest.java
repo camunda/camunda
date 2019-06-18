@@ -51,6 +51,6 @@ public class CreateWorkflowInstanceTest extends GatewayTest {
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE_CREATION);
 
     final WorkflowInstanceCreationRecord brokerRequestValue = brokerRequest.getRequestWriter();
-    assertThat(brokerRequestValue.getKey()).isEqualTo(stub.getWorkflowKey());
+    assertThat(brokerRequestValue.getWorkflowKey()).isEqualTo(stub.getWorkflowKey());
   }
 }

@@ -83,10 +83,10 @@ public class ResponseMapper {
   public static CreateWorkflowInstanceResponse toCreateWorkflowInstanceResponse(
       long key, WorkflowInstanceCreationRecord brokerResponse) {
     return CreateWorkflowInstanceResponse.newBuilder()
-        .setWorkflowKey(brokerResponse.getKey())
+        .setWorkflowKey(brokerResponse.getWorkflowKey())
         .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessIdBuffer()))
         .setVersion(brokerResponse.getVersion())
-        .setWorkflowInstanceKey(brokerResponse.getInstanceKey())
+        .setWorkflowInstanceKey(brokerResponse.getWorkflowInstanceKey())
         .build();
   }
 

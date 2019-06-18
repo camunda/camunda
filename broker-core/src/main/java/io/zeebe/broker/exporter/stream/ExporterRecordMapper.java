@@ -388,8 +388,9 @@ public class ExporterRecordMapper {
         objectMapper,
         asString(record.getBpmnProcessIdBuffer()),
         record.getVersion(),
-        record.getKey(),
-        record.getInstanceKey(),
+        record.getWorkflowKey(),
+        record.getWorkflowInstanceKey(),
+        asJson(record.getVariablesBuffer()),
         asMsgPackMap(record.getVariablesBuffer()));
   }
 
