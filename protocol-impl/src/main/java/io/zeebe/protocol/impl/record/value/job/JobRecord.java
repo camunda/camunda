@@ -24,7 +24,6 @@ import io.zeebe.msgpack.property.ObjectProperty;
 import io.zeebe.msgpack.property.PackedProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.spec.MsgPackHelper;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.intent.WorkflowInstanceRelated;
@@ -46,8 +45,7 @@ public class JobRecord extends UnifiedRecordValue
   private static final String VARIABLES = "variables";
   private static final String ERROR_MESSAGE = "errorMessage";
 
-  private final LongProperty deadlineProp =
-      new LongProperty("deadline", Protocol.INSTANT_NULL_VALUE);
+  private final LongProperty deadlineProp = new LongProperty("deadline", -1);
   private final StringProperty workerProp = new StringProperty("worker", "");
   private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
   private final StringProperty typeProp = new StringProperty(TYPE, "");
@@ -121,7 +119,8 @@ public class JobRecord extends UnifiedRecordValue
   @Override
   @JsonIgnore
   public Instant getDeadline() {
-    return Instant.ofEpochMilli(deadlineProp.getValue());
+    final long deadline = deadlineProp.getValue();
+    return deadline > 0 ? Instant.ofEpochMilli(deadline) : null;
   }
 
   @Override
