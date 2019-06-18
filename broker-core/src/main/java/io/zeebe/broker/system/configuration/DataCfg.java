@@ -37,7 +37,7 @@ public class DataCfg implements ConfigurationEntry {
 
   private String raftSegmentSize;
 
-  private int maxSnapshots = 1;
+  private int maxSnapshots = 3;
 
   @Override
   public void init(BrokerCfg globalConfig, String brokerBase, Environment environment) {
