@@ -1,3 +1,18 @@
+<a name="0.19.0-alpha1"></a>
+## 0.19.0-alpha1 (2019-06-18)
+
+
+#### Bug Fixes
+
+* **docker:**  remove deprecated JVM option ([950795f8](https://github.com/zeebe-io/zeebe/commit/950795f869367d1eb13036b1492a84486284d233))
+* **protocol-impl:**  fix transformation to get deployed workflows ([743fe20a](https://github.com/zeebe-io/zeebe/commit/743fe20a492e5cf3e682b2d93b978bb69de1eed6))
+
+#### Features
+
+* **clients/java:**  allow to set request timeout ([2d7ac6b9](https://github.com/zeebe-io/zeebe/commit/2d7ac6b9476e2731fb012b37f8ac61f2134bb073))
+
+
+
 <a name="0.18.0"></a>
 ## 0.18.0 (2019-06-06)
 
