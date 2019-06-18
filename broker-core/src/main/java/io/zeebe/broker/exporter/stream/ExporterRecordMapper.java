@@ -37,6 +37,7 @@ import io.zeebe.broker.exporter.record.value.job.HeadersImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.Workflow;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -423,7 +424,7 @@ public class ExporterRecordMapper {
   private Supplier<String> asJson(final DirectBuffer msgPackEncoded) {
     return () -> {
       serderInputStream.wrap(msgPackEncoded);
-      return objectMapper.getMsgPackConverter().convertToJson(serderInputStream);
+      return MsgPackConverter.convertToJson(serderInputStream);
     };
   }
 }

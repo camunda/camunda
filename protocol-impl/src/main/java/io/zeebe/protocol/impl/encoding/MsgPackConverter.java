@@ -39,7 +39,7 @@ import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
-public class MsgPackConverter {
+public final class MsgPackConverter {
   private static final JsonEncoding JSON_ENCODING = JsonEncoding.UTF8;
   private static final Charset JSON_CHARSET = StandardCharsets.UTF_8;
 
@@ -51,6 +51,9 @@ public class MsgPackConverter {
    * need differently * configured factories. Factory reuse is important if efficiency matters; *
    * most recycling of expensive construct is done on per-factory basis.
    */
+
+  // prevent instantiation
+  private MsgPackConverter() {}
 
   private static final JsonFactory MESSAGE_PACK_FACTORY =
       new MessagePackFactory().setReuseResourceInGenerator(false).setReuseResourceInParser(false);

@@ -29,8 +29,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class ActivateJobsStub
     implements RequestStub<BrokerActivateJobsRequest, BrokerResponse<JobBatchRecord>> {
 
-  private static final MsgPackConverter MSG_PACK_CONVERTER = new MsgPackConverter();
-
   public static final long JOB_BATCH_KEY = 123;
   public static final int RETRIES = 12;
   public static final long DEADLINE = 123123123L;
@@ -46,9 +44,9 @@ public class ActivateJobsStub
   public static final String VARIABLES = "{\"foo\": 13, \"bar\": \"world\"}";
 
   public static final DirectBuffer CUSTOM_HEADERS_MSGPACK =
-      new UnsafeBuffer(MSG_PACK_CONVERTER.convertToMsgPack(CUSTOM_HEADERS));
+      new UnsafeBuffer(MsgPackConverter.convertToMsgPack(CUSTOM_HEADERS));
   public static final DirectBuffer VARIABLES_MSGPACK =
-      new UnsafeBuffer(MSG_PACK_CONVERTER.convertToMsgPack(VARIABLES));
+      new UnsafeBuffer(MsgPackConverter.convertToMsgPack(VARIABLES));
 
   public long getJobBatchKey() {
     return JOB_BATCH_KEY;

@@ -25,7 +25,6 @@ import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
@@ -39,11 +38,7 @@ public class ExporterObjectMapper {
   private final ObjectMapper msgpackObjectMapper;
   private final ObjectMapper jsonObjectMapper;
 
-  private final MsgPackConverter msgPackConverter;
-
   public ExporterObjectMapper() {
-    this.msgPackConverter = new MsgPackConverter();
-
     final InjectableValues.Std injectableValues = new InjectableValues.Std();
     injectableValues.addValue(ExporterObjectMapper.class, this);
 
@@ -75,10 +70,6 @@ public class ExporterObjectMapper {
     objectMapper.setInjectableValues(injectableValues);
 
     return objectMapper;
-  }
-
-  public MsgPackConverter getMsgPackConverter() {
-    return msgPackConverter;
   }
 
   public String toJson(Object value) {

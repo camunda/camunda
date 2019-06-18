@@ -44,8 +44,6 @@ import org.agrona.DirectBuffer;
 
 public class ResponseMapper {
 
-  private static final MsgPackConverter MSG_PACK_CONVERTER = new MsgPackConverter();
-
   public static DeployWorkflowResponse toDeployWorkflowResponse(
       long key, DeploymentRecord brokerResponse) {
     final DeployWorkflowResponse.Builder responseBuilder =
@@ -148,7 +146,7 @@ public class ResponseMapper {
   }
 
   private static String bufferAsJson(DirectBuffer customHeaders) {
-    return MSG_PACK_CONVERTER.convertToJson(bufferAsArray(customHeaders));
+    return MsgPackConverter.convertToJson(bufferAsArray(customHeaders));
   }
 
   @FunctionalInterface
