@@ -20,7 +20,7 @@ exports[`InstancesBar should display the right data 1`] = `
     </Themed(styled.div)>
   </Themed(styled.div)>
   <styled.div
-    size="small"
+    height={5}
   >
     <Themed(styled.div)
       hasActive={true}

@@ -3,6 +3,7 @@
 exports[`InstancesByWorkflow should pass the right data to InstancesBar 1`] = `
 <InstancesBar
   activeCount={122}
+  barHeight={5}
   incidentsCount={16}
   label="loanProcess – 138 Instances in 1 Version"
   size="medium"

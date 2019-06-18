@@ -9,7 +9,7 @@ import PropTypes from 'prop-types';
 import * as Styled from './styled.js';
 
 function InstancesBar(props) {
-  const {label, activeCount, incidentsCount, size} = props;
+  const {label, activeCount, incidentsCount, size, barHeight} = props;
   const incidentsBarRatio =
     (100 * incidentsCount) / (activeCount + incidentsCount);
 
@@ -23,11 +23,13 @@ function InstancesBar(props) {
           {incidentsCount}
         </Styled.IncidentsCount>
         <Styled.Label>{label}</Styled.Label>
-        <Styled.ActiveCount hasActive={hasActive}>
-          {activeCount}
-        </Styled.ActiveCount>
+        {activeCount && (
+          <Styled.ActiveCount hasActive={hasActive}>
+            {activeCount}
+          </Styled.ActiveCount>
+        )}
       </Styled.Wrapper>
-      <Styled.BarContainer size={size}>
+      <Styled.BarContainer height={barHeight}>
         <Styled.Bar hasActive={hasActive} />
         <Styled.IncidentsBar
           style={{
@@ -41,10 +43,11 @@ function InstancesBar(props) {
 
 InstancesBar.propTypes = {
   label: PropTypes.string,
-  activeCount: PropTypes.number.isRequired,
+  activeCount: PropTypes.number,
   incidentsCount: PropTypes.number.isRequired,
   className: PropTypes.string,
-  size: PropTypes.oneOf(['small', 'medium', 'large']).isRequired
+  size: PropTypes.oneOf(['small', 'medium', 'large']).isRequired,
+  barHeight: PropTypes.number.isRequired
 };
 
 export default InstancesBar;

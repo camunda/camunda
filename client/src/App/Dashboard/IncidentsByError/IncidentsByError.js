@@ -8,8 +8,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import Collapse from '../Collapse';
-import IncidentByError from './IncidentByError';
 import {getFilterQueryString} from 'modules/utils/filter';
+import InstancesBar from 'modules/components/InstancesBar';
+import PanelListItem from '../PanelListItem';
 
 import * as Styled from './styled';
 
@@ -35,7 +36,7 @@ export default class IncidentsByError extends React.Component {
 
   renderIncidentsPerWorkflow = (errorMessage, items) => {
     return (
-      <ul>
+      <Styled.VersionList>
         {items.map(item => {
           const name = item.name || item.bpmnProcessId;
           const query = getFilterQueryString({
@@ -52,17 +53,22 @@ export default class IncidentsByError extends React.Component {
 
           return (
             <Styled.VersionLi key={item.workflowId}>
-              <Styled.IncidentLink to={`/instances${query}`} title={title}>
-                <IncidentByError
+              <PanelListItem
+                to={`/instances${query}`}
+                title={title}
+                boxSize="small"
+              >
+                <Styled.VersionLiInstancesBar
                   label={`${name} – Version ${item.version}`}
                   incidentsCount={item.instancesWithActiveIncidentsCount}
-                  perUnit
+                  barHeight={2}
+                  size="small"
                 />
-              </Styled.IncidentLink>
+              </PanelListItem>
             </Styled.VersionLi>
           );
         })}
-      </ul>
+      </Styled.VersionList>
     );
   };
 
@@ -75,12 +81,14 @@ export default class IncidentsByError extends React.Component {
     const title = `View ${instancesWithErrorCount} Instances with error ${errorMessage}`;
 
     return (
-      <Styled.IncidentLink to={`/instances${query}`} title={title}>
-        <IncidentByError
+      <PanelListItem to={`/instances${query}`} title={title}>
+        <Styled.LiInstancesBar
           label={`${errorMessage}`}
           incidentsCount={instancesWithErrorCount}
+          size="medium"
+          barHeight={2}
         />
-      </Styled.IncidentLink>
+      </PanelListItem>
     );
   };
 

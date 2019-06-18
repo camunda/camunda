@@ -39,6 +39,7 @@ export default function MetricPanel({
         incidentsCount={incidentsCount}
         activeCount={activeInstancesCount}
         size="large"
+        barHeight={15}
       />
       <Styled.LabelContainer>
         <Styled.Label

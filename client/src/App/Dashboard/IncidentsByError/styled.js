@@ -4,43 +4,43 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
+import BaseInstancesBar, {Wrapper, Bar} from 'modules/components/InstancesBar';
 import {Colors, themed, themeStyle} from 'modules/theme';
-import {Link} from 'react-router-dom';
 
 export const Li = styled.li`
-  margin: 0 10px 6px 0;
+  margin: 0 10px 10px 0;
 `;
+
+export const VersionList = styled.ul`
+  margin-top: 8px;
+  margin-bottom: 16px;
+`;
+
 export const VersionLi = styled.li`
-  margin: 2px 0 0;
+  margin: 6px 0 0;
   padding: 0;
 `;
 
-export const IncidentLink = themed(styled(Link)`
-  display: block;
-  padding: 10px 8px;
-  margin-left: 24px;
-  border: 1px solid transparent;
-
-  &:hover {
-    box-shadow: ${themeStyle({
-      dark: '0 0 4px 0 #000000',
-      light: '0 0 5px 0 rgba(0, 0, 0, 0.1)'
-    })};
-    border-color: ${themeStyle({
+const InstancesBarStyles = css`
+  ${Bar.WrappedComponent} {
+    border-radius: 2px;
+    opacity: 1;
+    background: ${themeStyle({
       dark: Colors.uiDark05,
-      light: 'rgba(216, 220, 227, 0.5)'
+      light: Colors.uiLight05
     })};
   }
+`;
 
-  &:active {
-    box-shadow: ${themeStyle({
-      dark: 'inset 0 0 6px 0 rgba(0, 0, 0, 0.4)',
-      light: 'inset 0 0 6px 0 rgba(0, 0, 0, 0.1)'
-    })};
-    border-color: ${themeStyle({
-      dark: 'rgba(91, 94, 99, 0.7)',
-      light: 'rgba(216, 220, 227, 0.4)'
-    })};
+export const LiInstancesBar = themed(styled(BaseInstancesBar)`
+  ${InstancesBarStyles};
+
+  ${Wrapper.WrappedComponent} {
+    color: ${Colors.incidentsAndErrors};
   }
+`);
+
+export const VersionLiInstancesBar = themed(styled(BaseInstancesBar)`
+  ${InstancesBarStyles}
 `);

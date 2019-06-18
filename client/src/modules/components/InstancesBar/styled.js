@@ -22,12 +22,6 @@ const FONT_STYLES = {
   `
 };
 
-const BAR_HEIGHTS = {
-  small: '3px',
-  medium: '5px',
-  large: '15px'
-};
-
 export const Wrapper = themed(styled('div')`
   display: flex;
   padding: 0;
@@ -76,6 +70,10 @@ export const ActiveCount = themed(styled.div`
 `);
 
 export const Label = themed(styled.div`
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
   opacity: ${themeStyle({
     dark: 0.9,
     light: 1
@@ -99,7 +97,7 @@ const greyBarStyle = css`
 export const BarContainer = styled.div`
   position: relative;
   > div {
-    height: ${({size}) => BAR_HEIGHTS[size]};
+    height: ${({height}) => `${height}px`};
   }
 `;
 

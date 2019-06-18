@@ -16,6 +16,7 @@ describe('InstancesBar', () => {
         incidentsCount={10}
         label="someLabel"
         activeCount={8}
+        barHeight={5}
         size="small"
       />
     );

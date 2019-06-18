@@ -9,6 +9,7 @@ import PropTypes from 'prop-types';
 
 import Collapse from '../Collapse';
 import InstancesBar from 'modules/components/InstancesBar';
+import PanelListItem from '../PanelListItem';
 
 import * as Styled from './styled';
 import {
@@ -51,7 +52,7 @@ export default class InstancesByWorkflow extends React.Component {
 
           return (
             <Styled.VersionLi key={item.workflowId}>
-              <Styled.IncidentLink
+              <PanelListItem
                 to={concatUrl({
                   bpmnProcessId: item.bpmnProcessId,
                   versions: [item],
@@ -73,8 +74,9 @@ export default class InstancesByWorkflow extends React.Component {
                   incidentsCount={item.instancesWithActiveIncidentsCount}
                   activeCount={item.activeInstancesCount}
                   size="small"
+                  barHeight={3}
                 />
-              </Styled.IncidentLink>
+              </PanelListItem>
             </Styled.VersionLi>
           );
         })}
@@ -88,7 +90,7 @@ export default class InstancesByWorkflow extends React.Component {
       item.instancesWithActiveIncidentsCount + item.activeInstancesCount;
 
     return (
-      <Styled.IncidentLink
+      <PanelListItem
         to={concatUrl({
           bpmnProcessId: item.bpmnProcessId,
           versions: item.workflows,
@@ -109,8 +111,9 @@ export default class InstancesByWorkflow extends React.Component {
           incidentsCount={item.instancesWithActiveIncidentsCount}
           activeCount={item.activeInstancesCount}
           size="medium"
+          barHeight={5}
         />
-      </Styled.IncidentLink>
+      </PanelListItem>
     );
   };
 

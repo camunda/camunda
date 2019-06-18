@@ -5,3 +5,4 @@
  */
 
 export {default} from './InstancesBar';
+export {Wrapper, Bar} from './styled';
