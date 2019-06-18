@@ -1,6 +1,6 @@
 springfox.documentation.swagger.v2.path: /documentation
 camunda.operate:
-  csrfPreventionEnabled: false
+  csrfPreventionEnabled: true
   elasticsearch:
     clusterName: docker-cluster
     host: localhost
