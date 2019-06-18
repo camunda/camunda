@@ -51,6 +51,7 @@ public class JobWorkerBuilderImpl
   private String workerName;
   private int maxJobsActive;
   private Duration pollInterval;
+  private Duration requestTimeout;
   private List<String> fetchVariables;
 
   public JobWorkerBuilderImpl(
@@ -70,6 +71,7 @@ public class JobWorkerBuilderImpl
     this.workerName = configuration.getDefaultJobWorkerName();
     this.maxJobsActive = configuration.getDefaultJobWorkerMaxJobsActive();
     this.pollInterval = configuration.getDefaultJobPollInterval();
+    this.requestTimeout = configuration.getDefaultRequestTimeout();
   }
 
   @Override
@@ -113,6 +115,11 @@ public class JobWorkerBuilderImpl
     return this;
   }
 
+  public JobWorkerBuilderStep3 requestTimeout(Duration requestTimeout) {
+    this.requestTimeout = requestTimeout;
+    return this;
+  }
+
   @Override
   public JobWorkerBuilderStep3 fetchVariables(List<String> fetchVariables) {
     this.fetchVariables = fetchVariables;
@@ -144,7 +151,8 @@ public class JobWorkerBuilderImpl
     }
 
     final JobRunnableFactory jobRunnableFactory = new JobRunnableFactory(jobClient, handler);
-    final JobPoller jobPoller = new JobPoller(gatewayStub, requestBuilder, objectMapper);
+    final JobPoller jobPoller =
+        new JobPoller(gatewayStub, requestBuilder, objectMapper, requestTimeout);
 
     final JobWorkerImpl jobWorker =
         new JobWorkerImpl(

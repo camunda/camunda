@@ -19,6 +19,7 @@ import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceCommandStep2;
 import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceCommandStep3;
+import io.zeebe.client.api.commands.FinalCommandStep;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.impl.ArgumentUtil;
 import io.zeebe.client.impl.ZeebeClientFutureImpl;
@@ -28,7 +29,9 @@ import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest.Builder;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class CreateWorkflowInstanceCommandImpl
     implements CreateWorkflowInstanceCommandStep1,
@@ -38,10 +41,13 @@ public class CreateWorkflowInstanceCommandImpl
   private final ZeebeObjectMapper objectMapper;
   private final GatewayStub asyncStub;
   private final Builder builder;
+  private Duration requestTimeout;
 
-  public CreateWorkflowInstanceCommandImpl(GatewayStub asyncStub, ZeebeObjectMapper objectMapper) {
+  public CreateWorkflowInstanceCommandImpl(
+      GatewayStub asyncStub, ZeebeObjectMapper objectMapper, Duration requestTimeout) {
     this.asyncStub = asyncStub;
     this.objectMapper = objectMapper;
+    this.requestTimeout = requestTimeout;
 
     this.builder = CreateWorkflowInstanceRequest.newBuilder();
   }
@@ -93,6 +99,12 @@ public class CreateWorkflowInstanceCommandImpl
   }
 
   @Override
+  public FinalCommandStep<WorkflowInstanceEvent> requestTimeout(Duration requestTimeout) {
+    this.requestTimeout = requestTimeout;
+    return this;
+  }
+
+  @Override
   public ZeebeFuture<WorkflowInstanceEvent> send() {
     final CreateWorkflowInstanceRequest request = builder.build();
 
@@ -100,7 +112,9 @@ public class CreateWorkflowInstanceCommandImpl
             WorkflowInstanceEvent, GatewayOuterClass.CreateWorkflowInstanceResponse>
         future = new ZeebeClientFutureImpl<>(CreateWorkflowInstanceResponseImpl::new);
 
-    asyncStub.createWorkflowInstance(request, future);
+    asyncStub
+        .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
+        .createWorkflowInstance(request, future);
     return future;
   }
 

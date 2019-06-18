@@ -17,6 +17,7 @@ package io.zeebe.client.impl.job;
 
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.CompleteJobCommandStep1;
+import io.zeebe.client.api.commands.FinalCommandStep;
 import io.zeebe.client.impl.CommandWithVariables;
 import io.zeebe.client.impl.ZeebeClientFutureImpl;
 import io.zeebe.client.impl.ZeebeObjectMapper;
@@ -24,18 +25,29 @@ import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest.Builder;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 public class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobCommandStep1>
     implements CompleteJobCommandStep1 {
 
   private final GatewayStub asyncStub;
   private final Builder builder;
+  private Duration requestTimeout;
 
-  public CompleteJobCommandImpl(GatewayStub asyncStub, ZeebeObjectMapper objectMapper, long key) {
+  public CompleteJobCommandImpl(
+      GatewayStub asyncStub, ZeebeObjectMapper objectMapper, long key, Duration requestTimeout) {
     super(objectMapper);
     this.asyncStub = asyncStub;
+    this.requestTimeout = requestTimeout;
     builder = CompleteJobRequest.newBuilder();
     builder.setJobKey(key);
+  }
+
+  @Override
+  public FinalCommandStep<Void> requestTimeout(Duration requestTimeout) {
+    this.requestTimeout = requestTimeout;
+    return this;
   }
 
   @Override
@@ -45,7 +57,9 @@ public class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobComm
     final ZeebeClientFutureImpl<Void, GatewayOuterClass.CompleteJobResponse> future =
         new ZeebeClientFutureImpl<>();
 
-    asyncStub.completeJob(request, future);
+    asyncStub
+        .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
+        .completeJob(request, future);
     return future;
   }
 

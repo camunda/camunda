@@ -65,6 +65,9 @@ public interface ZeebeClientBuilder {
   /** The time-to-live which is used when none is provided for a message. Default is 1 hour. */
   ZeebeClientBuilder defaultMessageTimeToLive(Duration timeToLive);
 
+  /** The request timeout used if not overridden by the command. Default is 20 seconds. */
+  ZeebeClientBuilder defaultRequestTimeout(Duration requestTimeout);
+
   /** @return a new {@link ZeebeClient} with the provided configuration options. */
   ZeebeClient build();
 }

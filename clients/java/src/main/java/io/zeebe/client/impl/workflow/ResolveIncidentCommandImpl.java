@@ -16,21 +16,33 @@
 package io.zeebe.client.impl.workflow;
 
 import io.zeebe.client.api.ZeebeFuture;
+import io.zeebe.client.api.commands.FinalCommandStep;
 import io.zeebe.client.api.commands.ResolveIncidentCommandStep1;
 import io.zeebe.client.impl.ZeebeClientFutureImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest.Builder;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 public class ResolveIncidentCommandImpl implements ResolveIncidentCommandStep1 {
 
   private final GatewayStub asyncStub;
   private final Builder builder;
+  private Duration requestTimeout;
 
-  public ResolveIncidentCommandImpl(GatewayStub asyncStub, long incidentKey) {
+  public ResolveIncidentCommandImpl(
+      GatewayStub asyncStub, long incidentKey, Duration requestTimeout) {
     this.asyncStub = asyncStub;
     this.builder = ResolveIncidentRequest.newBuilder().setIncidentKey(incidentKey);
+    this.requestTimeout = requestTimeout;
+  }
+
+  @Override
+  public FinalCommandStep<Void> requestTimeout(Duration requestTimeout) {
+    this.requestTimeout = requestTimeout;
+    return this;
   }
 
   @Override
@@ -40,7 +52,9 @@ public class ResolveIncidentCommandImpl implements ResolveIncidentCommandStep1 {
     final ZeebeClientFutureImpl<Void, ResolveIncidentResponse> future =
         new ZeebeClientFutureImpl<>();
 
-    asyncStub.resolveIncident(request, future);
+    asyncStub
+        .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
+        .resolveIncident(request, future);
     return future;
   }
 }

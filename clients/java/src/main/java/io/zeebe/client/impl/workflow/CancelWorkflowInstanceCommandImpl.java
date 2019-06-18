@@ -17,21 +17,33 @@ package io.zeebe.client.impl.workflow;
 
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.CancelWorkflowInstanceCommandStep1;
+import io.zeebe.client.api.commands.FinalCommandStep;
 import io.zeebe.client.impl.ZeebeClientFutureImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest.Builder;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 public class CancelWorkflowInstanceCommandImpl implements CancelWorkflowInstanceCommandStep1 {
 
   private final GatewayStub asyncStub;
   private final Builder builder;
+  private Duration requestTimeout;
 
-  public CancelWorkflowInstanceCommandImpl(GatewayStub asyncStub, long workflowInstanceKey) {
+  public CancelWorkflowInstanceCommandImpl(
+      GatewayStub asyncStub, long workflowInstanceKey, Duration requestTimeout) {
     this.asyncStub = asyncStub;
+    this.requestTimeout = requestTimeout;
     this.builder = CancelWorkflowInstanceRequest.newBuilder();
     builder.setWorkflowInstanceKey(workflowInstanceKey);
+  }
+
+  @Override
+  public FinalCommandStep<Void> requestTimeout(Duration requestTimeout) {
+    this.requestTimeout = requestTimeout;
+    return this;
   }
 
   @Override
@@ -41,7 +53,9 @@ public class CancelWorkflowInstanceCommandImpl implements CancelWorkflowInstance
     final ZeebeClientFutureImpl<Void, CancelWorkflowInstanceResponse> future =
         new ZeebeClientFutureImpl<>();
 
-    asyncStub.cancelWorkflowInstance(request, future);
+    asyncStub
+        .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
+        .cancelWorkflowInstance(request, future);
     return future;
   }
 }

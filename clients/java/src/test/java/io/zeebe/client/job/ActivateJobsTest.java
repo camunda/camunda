@@ -188,6 +188,8 @@ public class ActivateJobsTest extends ClientTest {
     assertThat(request.getTimeout())
         .isEqualTo(client.getConfiguration().getDefaultJobTimeout().toMillis());
     assertThat(request.getWorker()).isEqualTo(client.getConfiguration().getDefaultJobWorkerName());
+
+    rule.verifyDefaultRequestTimeout();
   }
 
   @Test
@@ -201,5 +203,23 @@ public class ActivateJobsTest extends ClientTest {
             () -> client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3).send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
+  }
+
+  @Test
+  public void shouldSetRequestTimeout() {
+    // given
+    final Duration requestTimeout = Duration.ofHours(124);
+
+    // when
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(3)
+        .requestTimeout(requestTimeout)
+        .send()
+        .join();
+
+    // then
+    rule.verifyRequestTimeout(requestTimeout);
   }
 }

@@ -68,17 +68,25 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   public ZeebeClientImpl(final ZeebeClientConfiguration configuration, ManagedChannel channel) {
-    this(configuration, channel, buildExecutorService(configuration));
+    this(configuration, channel, buildGatewayStub(channel));
+  }
+
+  public ZeebeClientImpl(
+      final ZeebeClientConfiguration configuration,
+      ManagedChannel channel,
+      GatewayStub gatewayStub) {
+    this(configuration, channel, gatewayStub, buildExecutorService(configuration));
   }
 
   public ZeebeClientImpl(
       ZeebeClientConfiguration config,
       ManagedChannel channel,
+      GatewayStub gatewayStub,
       ScheduledExecutorService executorService) {
     this.config = config;
     this.objectMapper = new ZeebeObjectMapper();
     this.channel = channel;
-    this.asyncStub = GatewayGrpc.newStub(channel);
+    this.asyncStub = gatewayStub;
     this.executorService = executorService;
     this.jobClient = newJobClient();
   }
@@ -98,6 +106,10 @@ public class ZeebeClientImpl implements ZeebeClient {
         .build();
   }
 
+  public static GatewayStub buildGatewayStub(ManagedChannel channel) {
+    return GatewayGrpc.newStub(channel);
+  }
+
   private static ScheduledExecutorService buildExecutorService(
       ZeebeClientConfiguration configuration) {
     final int threadCount = configuration.getNumJobWorkerExecutionThreads();
@@ -106,7 +118,7 @@ public class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public TopologyRequestStep1 newTopologyRequest() {
-    return new TopologyRequestImpl(asyncStub);
+    return new TopologyRequestImpl(asyncStub, config.getDefaultRequestTimeout());
   }
 
   @Override
@@ -145,23 +157,26 @@ public class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public DeployWorkflowCommandStep1 newDeployCommand() {
-    return new DeployWorkflowCommandImpl(asyncStub);
+    return new DeployWorkflowCommandImpl(asyncStub, config.getDefaultRequestTimeout());
   }
 
   @Override
   public CreateWorkflowInstanceCommandStep1 newCreateInstanceCommand() {
-    return new CreateWorkflowInstanceCommandImpl(asyncStub, objectMapper);
+    return new CreateWorkflowInstanceCommandImpl(
+        asyncStub, objectMapper, config.getDefaultRequestTimeout());
   }
 
   @Override
   public CancelWorkflowInstanceCommandStep1 newCancelInstanceCommand(
       final long workflowInstanceKey) {
-    return new CancelWorkflowInstanceCommandImpl(asyncStub, workflowInstanceKey);
+    return new CancelWorkflowInstanceCommandImpl(
+        asyncStub, workflowInstanceKey, config.getDefaultRequestTimeout());
   }
 
   @Override
   public SetVariablesCommandStep1 newSetVariablesCommand(final long elementInstanceKey) {
-    return new SetVariablesCommandImpl(asyncStub, objectMapper, elementInstanceKey);
+    return new SetVariablesCommandImpl(
+        asyncStub, objectMapper, elementInstanceKey, config.getDefaultRequestTimeout());
   }
 
   @Override
@@ -171,12 +186,13 @@ public class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public ResolveIncidentCommandStep1 newResolveIncidentCommand(long incidentKey) {
-    return new ResolveIncidentCommandImpl(asyncStub, incidentKey);
+    return new ResolveIncidentCommandImpl(
+        asyncStub, incidentKey, config.getDefaultRequestTimeout());
   }
 
   @Override
   public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(long jobKey) {
-    return new JobUpdateRetriesCommandImpl(asyncStub, jobKey);
+    return new JobUpdateRetriesCommandImpl(asyncStub, jobKey, config.getDefaultRequestTimeout());
   }
 
   @Override

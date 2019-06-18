@@ -30,6 +30,7 @@ import io.zeebe.client.api.commands.Topology;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
+import java.time.Duration;
 import java.util.List;
 import org.junit.Test;
 
@@ -96,5 +97,19 @@ public class TopologyRequestTest extends ClientTest {
     assertThatThrownBy(() -> client.newTopologyRequest().send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldSetRequestTimeout() {
+    // given
+    final Duration requestTimeout = Duration.ofHours(124);
+
+    // when
+    client.newTopologyRequest().requestTimeout(requestTimeout).send().join();
+
+    // then
+    rule.verifyRequestTimeout(requestTimeout);
   }
 }

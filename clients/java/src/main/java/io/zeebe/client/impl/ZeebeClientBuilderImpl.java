@@ -16,6 +16,7 @@
 package io.zeebe.client.impl;
 
 import static io.zeebe.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE;
+import static io.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
 
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
@@ -33,6 +34,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   private Duration defaultJobTimeout = Duration.ofMinutes(5);
   private Duration defaultJobPollInterval = Duration.ofMillis(100);
   private Duration defaultMessageTimeToLive = Duration.ofHours(1);
+  private Duration defaultRequestTimeout = Duration.ofSeconds(20);
 
   @Override
   public String getBrokerContactPoint() {
@@ -112,6 +114,17 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
+  public ZeebeClientBuilder defaultRequestTimeout(Duration requestTimeout) {
+    this.defaultRequestTimeout = requestTimeout;
+    return this;
+  }
+
+  @Override
+  public Duration getDefaultRequestTimeout() {
+    return defaultRequestTimeout;
+  }
+
+  @Override
   public ZeebeClient build() {
     return new ZeebeClientImpl(this);
   }
@@ -147,6 +160,10 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
       defaultMessageTimeToLive(
           Duration.ofMillis(Long.parseLong(properties.getProperty(DEFAULT_MESSAGE_TIME_TO_LIVE))));
     }
+    if (properties.containsKey(DEFAULT_REQUEST_TIMEOUT)) {
+      defaultRequestTimeout(
+          Duration.ofMillis(Long.parseLong(properties.getProperty(DEFAULT_REQUEST_TIMEOUT))));
+    }
 
     return this;
   }
@@ -162,6 +179,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     appendProperty(sb, "defaultJobTimeout", defaultJobTimeout);
     appendProperty(sb, "defaultJobPollInterval", defaultJobPollInterval);
     appendProperty(sb, "defaultMessageTimeToLive", defaultMessageTimeToLive);
+    appendProperty(sb, "defaultRequestTimeout", defaultRequestTimeout);
 
     return sb.toString();
   }

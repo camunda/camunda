@@ -21,6 +21,7 @@ import com.google.protobuf.ByteString;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.DeployWorkflowCommandStep1;
 import io.zeebe.client.api.commands.DeployWorkflowCommandStep1.DeployWorkflowCommandBuilderStep2;
+import io.zeebe.client.api.commands.FinalCommandStep;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.ZeebeClientFutureImpl;
@@ -39,15 +40,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 public class DeployWorkflowCommandImpl
     implements DeployWorkflowCommandStep1, DeployWorkflowCommandBuilderStep2 {
 
   private final DeployWorkflowRequest.Builder request = DeployWorkflowRequest.newBuilder();
   private final GatewayStub asyncStub;
+  private Duration requestTimeout;
 
-  public DeployWorkflowCommandImpl(final GatewayStub asyncStub) {
+  public DeployWorkflowCommandImpl(GatewayStub asyncStub, Duration requestTimeout) {
     this.asyncStub = asyncStub;
+    this.requestTimeout = requestTimeout;
   }
 
   @Override
@@ -135,11 +140,19 @@ public class DeployWorkflowCommandImpl
   }
 
   @Override
+  public FinalCommandStep<DeploymentEvent> requestTimeout(Duration requestTimeout) {
+    this.requestTimeout = requestTimeout;
+    return this;
+  }
+
+  @Override
   public ZeebeFuture<DeploymentEvent> send() {
     final ZeebeClientFutureImpl<DeploymentEvent, DeployWorkflowResponse> future =
         new ZeebeClientFutureImpl<>(DeploymentEventImpl::new);
 
-    asyncStub.deployWorkflow(request.build(), future);
+    asyncStub
+        .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
+        .deployWorkflow(request.build(), future);
     return future;
   }
 }

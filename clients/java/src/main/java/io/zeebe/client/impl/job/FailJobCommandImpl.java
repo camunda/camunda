@@ -24,14 +24,18 @@ import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest.Builder;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 public class FailJobCommandImpl implements FailJobCommandStep1, FailJobCommandStep2 {
 
   private final GatewayStub asyncStub;
   private final Builder builder;
+  private Duration requestTimeout;
 
-  public FailJobCommandImpl(GatewayStub asyncStub, long key) {
+  public FailJobCommandImpl(GatewayStub asyncStub, long key, Duration requestTimeout) {
     this.asyncStub = asyncStub;
+    this.requestTimeout = requestTimeout;
     builder = FailJobRequest.newBuilder();
     builder.setJobKey(key);
   }
@@ -49,12 +53,20 @@ public class FailJobCommandImpl implements FailJobCommandStep1, FailJobCommandSt
   }
 
   @Override
+  public FinalCommandStep<Void> requestTimeout(Duration requestTimeout) {
+    this.requestTimeout = requestTimeout;
+    return this;
+  }
+
+  @Override
   public ZeebeFuture<Void> send() {
     final FailJobRequest request = builder.build();
 
     final ZeebeClientFutureImpl<Void, FailJobResponse> future = new ZeebeClientFutureImpl<>();
 
-    asyncStub.failJob(request, future);
+    asyncStub
+        .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
+        .failJob(request, future);
     return future;
   }
 }

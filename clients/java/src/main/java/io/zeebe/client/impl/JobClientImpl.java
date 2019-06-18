@@ -49,11 +49,12 @@ public class JobClientImpl implements JobClient {
 
   @Override
   public CompleteJobCommandStep1 newCompleteCommand(long jobKey) {
-    return new CompleteJobCommandImpl(asyncStub, objectMapper, jobKey);
+    return new CompleteJobCommandImpl(
+        asyncStub, objectMapper, jobKey, config.getDefaultRequestTimeout());
   }
 
   @Override
   public FailJobCommandStep1 newFailCommand(long jobKey) {
-    return new FailJobCommandImpl(asyncStub, jobKey);
+    return new FailJobCommandImpl(asyncStub, jobKey, config.getDefaultRequestTimeout());
   }
 }

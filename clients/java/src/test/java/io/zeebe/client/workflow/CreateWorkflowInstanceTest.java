@@ -28,6 +28,7 @@ import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Collections;
 import org.junit.Test;
 
@@ -50,6 +51,8 @@ public class CreateWorkflowInstanceTest extends ClientTest {
 
     final CreateWorkflowInstanceRequest request = gatewayService.getLastRequest();
     assertThat(request.getWorkflowKey()).isEqualTo(123);
+
+    rule.verifyDefaultRequestTimeout();
   }
 
   @Test
@@ -143,6 +146,18 @@ public class CreateWorkflowInstanceTest extends ClientTest {
     assertThatThrownBy(() -> client.newCreateInstanceCommand().workflowKey(123).send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
+  }
+
+  @Test
+  public void shouldSetRequestTimeout() {
+    // given
+    final Duration requestTimeout = Duration.ofHours(124);
+
+    // when
+    client.newCreateInstanceCommand().workflowKey(123).requestTimeout(requestTimeout).send().join();
+
+    // then
+    rule.verifyRequestTimeout(requestTimeout);
   }
 
   public static class VariableDocument {

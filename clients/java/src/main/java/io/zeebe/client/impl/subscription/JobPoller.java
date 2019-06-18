@@ -23,6 +23,8 @@ import io.zeebe.client.impl.response.ActivatedJobImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest.Builder;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
@@ -33,23 +35,28 @@ public class JobPoller implements StreamObserver<ActivateJobsResponse> {
   private final GatewayStub gatewayStub;
   private final Builder requestBuilder;
   private final ZeebeObjectMapper objectMapper;
+  private final long requestTimeout;
 
   private Consumer<ActivatedJob> jobConsumer;
   private Consumer<Integer> doneCallback;
   private int activatedJobs;
 
   public JobPoller(
-      GatewayStub gatewayStub, Builder requestBuilder, ZeebeObjectMapper objectMapper) {
+      GatewayStub gatewayStub,
+      Builder requestBuilder,
+      ZeebeObjectMapper objectMapper,
+      Duration requestTimeout) {
     this.gatewayStub = gatewayStub;
     this.requestBuilder = requestBuilder;
     this.objectMapper = objectMapper;
+    this.requestTimeout = requestTimeout.toMillis();
   }
 
   private void reset() {
     activatedJobs = 0;
   }
 
-  void poll(
+  public void poll(
       int maxJobsToActivate, Consumer<ActivatedJob> jobConsumer, Consumer<Integer> doneCallback) {
     reset();
 
@@ -66,7 +73,9 @@ public class JobPoller implements StreamObserver<ActivateJobsResponse> {
         requestBuilder.getMaxJobsToActivate(),
         requestBuilder.getWorker(),
         requestBuilder.getType());
-    gatewayStub.activateJobs(requestBuilder.build(), this);
+    gatewayStub
+        .withDeadlineAfter(requestTimeout, TimeUnit.MILLISECONDS)
+        .activateJobs(requestBuilder.build(), this);
   }
 
   @Override
