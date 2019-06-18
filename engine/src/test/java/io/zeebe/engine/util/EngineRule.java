@@ -38,7 +38,6 @@ import io.zeebe.engine.util.client.JobClient;
 import io.zeebe.engine.util.client.PublishMessageClient;
 import io.zeebe.engine.util.client.VariableClient;
 import io.zeebe.engine.util.client.WorkflowInstanceClient;
-import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -273,7 +272,6 @@ public class EngineRule extends ExternalResource {
 
         final CopiedTypedEvent typedRecord = createCopiedEvent(rawEvent);
 
-        Loggers.LOGSTREAMS_LOGGER.warn("Export: {}", typedRecord);
         RECORDING_EXPORTER.export(typedRecord);
       }
     }
