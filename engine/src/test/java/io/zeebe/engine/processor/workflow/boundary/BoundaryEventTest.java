@@ -114,12 +114,18 @@ public class BoundaryEventTest {
     ENGINE.deployment().withXmlResource(MULTIPLE_SEQUENCE_FLOWS).deploy();
     final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    // when
     RecordingExporter.timerRecords()
         .withHandlerNodeId("timer")
         .withIntent(TimerIntent.CREATED)
         .withWorkflowInstanceKey(workflowInstanceKey)
         .getFirst();
+
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withType("type")
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .getFirst();
+
+    // when
     ENGINE.increaseTime(Duration.ofMinutes(1));
 
     // then
