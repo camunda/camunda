@@ -21,7 +21,7 @@ pipeline {
         buildDiscarder(logRotator(daysToKeepStr: '-1', numToKeepStr: '10'))
         skipDefaultCheckout()
         timestamps()
-        timeout(time: 120, unit: 'MINUTES')
+        timeout(time: 45, unit: 'MINUTES')
     }
 
     stages {
@@ -120,6 +120,7 @@ pipeline {
                 }
             }
         }
+    }
 
     post {
         always {
