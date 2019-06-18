@@ -35,7 +35,7 @@ One of the following:
 
 Before you begin to setup your project, please start the broker.
 
-If you are using Docker with [zeebe-docker-compose], then cd into the `simple-monitor` subdirectory, and run `docker-compose up`.
+If you are using Docker with [zeebe-docker-compose], then change into the `simple-monitor` subdirectory, and run `docker-compose up`.
 
 If you are not using Docker, run the start up script `bin/broker` or `bin/broker.bat` in the distribution.
 
@@ -394,3 +394,4 @@ Next steps:
 * Take a deeper look into the [Java client](java-client/README.html)
 
 [job worker]: ../basics/job-workers.html
+[zeebe-docker-compose]: https://github.com/zeebe-io/zeebe-docker-compose
