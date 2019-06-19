@@ -28,7 +28,7 @@
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-dmn-model</artifactId>
-      <version>${camunda.engine.version}</version>
+      <version>${camunda.engine.version}-ee</version>
     </dependency>
 
     <dependency>
