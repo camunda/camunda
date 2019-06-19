@@ -73,7 +73,7 @@ public class ZeebeState {
     keyState = new KeyState(partitionId, zeebeDb, dbContext);
     workflowState = new WorkflowState(zeebeDb, dbContext, keyState);
     deploymentState = new DeploymentsState(zeebeDb, dbContext);
-    jobState = new JobState(zeebeDb, dbContext);
+    jobState = new JobState(zeebeDb, dbContext, partitionId);
     messageState = new MessageState(zeebeDb, dbContext);
     messageSubscriptionState = new MessageSubscriptionState(zeebeDb, dbContext);
     messageStartEventSubscriptionState = new MessageStartEventSubscriptionState(zeebeDb, dbContext);

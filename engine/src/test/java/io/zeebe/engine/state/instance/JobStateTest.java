@@ -131,14 +131,14 @@ public class JobStateTest {
   }
 
   @Test
-  public void shouldDeleteActivatableJob() {
+  public void shouldCompleteActivatableJob() {
     // given
     final long key = 1L;
     final JobRecord jobRecord = newJobRecord();
 
     // when
     jobState.create(key, jobRecord);
-    jobState.delete(key, jobRecord);
+    jobState.complete(key, jobRecord);
 
     // then
     Assertions.assertThat(jobState.exists(key)).isFalse();
@@ -149,7 +149,25 @@ public class JobStateTest {
   }
 
   @Test
-  public void shouldDeleteActivatedJob() {
+  public void shouldCancelActivatableJob() {
+    // given
+    final long key = 1L;
+    final JobRecord jobRecord = newJobRecord();
+
+    // when
+    jobState.create(key, jobRecord);
+    jobState.cancel(key, jobRecord);
+
+    // then
+    Assertions.assertThat(jobState.exists(key)).isFalse();
+    Assertions.assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
+    Assertions.assertThat(jobState.getJob(key)).isNull();
+    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
+    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+  }
+
+  @Test
+  public void shouldCompleteActivatedJob() {
     // given
     final long key = 1L;
     final JobRecord jobRecord = newJobRecord();
@@ -157,7 +175,7 @@ public class JobStateTest {
     // when
     jobState.create(key, jobRecord);
     jobState.activate(key, jobRecord);
-    jobState.delete(key, jobRecord);
+    jobState.complete(key, jobRecord);
 
     // then
     Assertions.assertThat(jobState.exists(key)).isFalse();
@@ -168,7 +186,26 @@ public class JobStateTest {
   }
 
   @Test
-  public void shouldDeleteFailedJob() {
+  public void shouldCancelActivatedJob() {
+    // given
+    final long key = 1L;
+    final JobRecord jobRecord = newJobRecord();
+
+    // when
+    jobState.create(key, jobRecord);
+    jobState.activate(key, jobRecord);
+    jobState.cancel(key, jobRecord);
+
+    // then
+    Assertions.assertThat(jobState.exists(key)).isFalse();
+    Assertions.assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
+    Assertions.assertThat(jobState.getJob(key)).isNull();
+    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
+    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+  }
+
+  @Test
+  public void shouldCompleteFailedJob() {
     // given
     final long key = 1L;
     final JobRecord jobRecord = newJobRecord();
@@ -177,7 +214,27 @@ public class JobStateTest {
     jobState.create(key, jobRecord);
     jobState.activate(key, jobRecord);
     jobState.fail(key, jobRecord.setRetries(0));
-    jobState.delete(key, jobRecord);
+    jobState.complete(key, jobRecord);
+
+    // then
+    Assertions.assertThat(jobState.exists(key)).isFalse();
+    Assertions.assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
+    Assertions.assertThat(jobState.getJob(key)).isNull();
+    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
+    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+  }
+
+  @Test
+  public void shouldCancelFailedJob() {
+    // given
+    final long key = 1L;
+    final JobRecord jobRecord = newJobRecord();
+
+    // when
+    jobState.create(key, jobRecord);
+    jobState.activate(key, jobRecord);
+    jobState.fail(key, jobRecord.setRetries(0));
+    jobState.cancel(key, jobRecord);
 
     // then
     Assertions.assertThat(jobState.exists(key)).isFalse();
@@ -401,13 +458,18 @@ public class JobStateTest {
     assertThatThrownBy(() -> jobState.timeout(1L, jobWithoutDeadline))
         .hasMessage("deadline must be greater than 0");
 
-    // delete
-    assertThatThrownBy(() -> jobState.delete(1L, jobWithoutType))
+    // complete
+    assertThatThrownBy(() -> jobState.complete(1L, jobWithoutType))
+        .hasStackTraceContaining("type must not be empty");
+
+    // cancel
+    assertThatThrownBy(() -> jobState.cancel(1L, jobWithoutType))
         .hasStackTraceContaining("type must not be empty");
 
     // should not throw any exception
     jobState.activate(1L, newJobRecord());
-    jobState.delete(1L, jobWithoutDeadline);
+    jobState.complete(1L, jobWithoutDeadline);
+    jobState.cancel(1L, jobWithoutDeadline);
   }
 
   @Test
