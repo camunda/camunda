@@ -17,6 +17,7 @@
  */
 package io.zeebe.engine.state.instance;
 
+import io.zeebe.engine.metrics.WorkflowEngineMetrics;
 import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.workflow.UpdateVariableStreamWriter;
@@ -30,6 +31,7 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
   private final WorkflowState workflowState;
   private ElementInstanceState elementInstanceState;
+  private WorkflowEngineMetrics metrics;
 
   public WorkflowEngineState(WorkflowState workflowState) {
     this.workflowState = workflowState;
@@ -38,6 +40,8 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
   @Override
   public void onOpen(ReadonlyProcessingContext processingContext) {
     this.elementInstanceState = workflowState.getElementInstanceState();
+
+    this.metrics = new WorkflowEngineMetrics(processingContext.getLogStream().getPartitionId());
 
     final UpdateVariableStreamWriter updateVariableStreamWriter =
         new UpdateVariableStreamWriter(processingContext.getLogStreamWriter());
@@ -71,6 +75,8 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
     } else {
       updateElementInstance(key, state, value);
     }
+
+    recordMetrics(state, value);
   }
 
   private void updateElementInstance(
@@ -91,6 +97,20 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
       elementInstanceState.newInstance(flowScopeInstance, key, value, state);
     } else {
       elementInstanceState.newInstance(key, value, state);
+    }
+  }
+
+  private void recordMetrics(WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
+    switch (state) {
+      case ELEMENT_ACTIVATED:
+        metrics.elementInstanceActivated(value.getBpmnElementType());
+        break;
+      case ELEMENT_COMPLETED:
+        metrics.elementInstanceCompleted(value.getBpmnElementType());
+        break;
+      case ELEMENT_TERMINATED:
+        metrics.elementInstanceTerminated(value.getBpmnElementType());
+        break;
     }
   }
 
