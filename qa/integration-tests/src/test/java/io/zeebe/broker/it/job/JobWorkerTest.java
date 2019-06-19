@@ -117,10 +117,10 @@ public class JobWorkerTest {
     waitUntil(() -> jobRecords(JobIntent.COMPLETED).exists());
 
     final Record<JobRecordValue> createRecord = jobRecords(JobIntent.CREATE).getFirst();
-    assertThat(createRecord.getValue()).hasDeadline(null).hasWorker("");
+    assertThat(createRecord.getValue()).hasDeadline(-1).hasWorker("");
 
     final Record<JobRecordValue> createdRecord = jobRecords(JobIntent.CREATED).getFirst();
-    assertThat(createdRecord.getValue()).hasDeadline(null);
+    assertThat(createdRecord.getValue()).hasDeadline(-1);
 
     final Record<JobRecordValue> activatedRecord = jobRecords(JobIntent.ACTIVATED).getFirst();
     assertThat(activatedRecord.getValue().getDeadline()).isNotNull();
@@ -154,7 +154,7 @@ public class JobWorkerTest {
     final ActivatedJob subscribedJob = jobHandler.getHandledJobs().get(0);
     assertThat(subscribedJob.getKey()).isEqualTo(jobKey);
     assertThat(subscribedJob.getType()).isEqualTo("foo");
-    assertThat(subscribedJob.getDeadline()).isAfter(Instant.now());
+    assertThat(subscribedJob.getDeadline()).isGreaterThan(Instant.now().toEpochMilli());
 
     waitUntil(() -> jobRecords(JobIntent.COMPLETED).exists());
 

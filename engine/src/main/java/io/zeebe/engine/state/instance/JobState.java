@@ -102,7 +102,7 @@ public class JobState {
    */
   public void activate(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
-    final long deadline = record.getDeadlineLong();
+    final long deadline = record.getDeadline();
 
     validateParameters(type, deadline);
 
@@ -118,7 +118,7 @@ public class JobState {
 
   public void timeout(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
-    final long deadline = record.getDeadlineLong();
+    final long deadline = record.getDeadline();
     validateParameters(type, deadline);
 
     createJob(key, record, type);
@@ -127,7 +127,7 @@ public class JobState {
 
   public void delete(long key, JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
-    final long deadline = record.getDeadlineLong();
+    final long deadline = record.getDeadline();
 
     jobKey.wrapLong(key);
     jobsColumnFamily.delete(jobKey);
@@ -141,7 +141,7 @@ public class JobState {
 
   public void fail(long key, JobRecord updatedValue) {
     final DirectBuffer type = updatedValue.getTypeBuffer();
-    final long deadline = updatedValue.getDeadlineLong();
+    final long deadline = updatedValue.getDeadline();
 
     validateParameters(type, deadline);
 

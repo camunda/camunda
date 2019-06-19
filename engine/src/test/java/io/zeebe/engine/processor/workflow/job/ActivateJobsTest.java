@@ -45,7 +45,6 @@ import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -348,7 +347,7 @@ public class ActivateJobsTest {
 
     final String worker = "testWorker";
     final Duration timeout = Duration.ofMinutes(4);
-    final Instant deadline = clock.getCurrentTime().plus(timeout);
+    final long deadline = clock.getCurrentTime().plus(timeout).toEpochMilli();
 
     ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
     createWorkflowInstances(1, VARIABLES_MSG_PACK);

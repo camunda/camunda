@@ -17,7 +17,6 @@ package io.zeebe.protocol.record.value;
 
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
-import java.time.Duration;
 import java.util.List;
 
 /**
@@ -33,11 +32,11 @@ public interface JobBatchRecordValue extends RecordValue {
   String getWorker();
 
   /**
-   * @return the timeout when the job is exclusively assigned to this worker. If the timeout is
-   *     exceeded, it can happen that the job is handed to another worker and the work is performed
-   *     twice.
+   * @return the timeout (time span in milliseconds) for which a job is exclusively assigned to this
+   *     worker. If the timeout is exceeded, it can happen that the job is handed to another worker
+   *     and the work is performed twice.
    */
-  Duration getTimeout();
+  long getTimeout();
 
   /** @return the number of jobs to handle */
   int getMaxJobsToActivate();

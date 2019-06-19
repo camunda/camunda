@@ -102,7 +102,7 @@ public class ActivateJobsStub
     response.setMaxJobsToActivate(requestDto.getMaxJobsToActivate());
     response.setWorker(requestDto.getWorkerBuffer());
     response.setType(requestDto.getTypeBuffer());
-    response.setTimeout(requestDto.getTimeoutLong());
+    response.setTimeout(requestDto.getTimeout());
     addJobs(
         response,
         partitionId,

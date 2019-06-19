@@ -73,7 +73,7 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
 
   private boolean isValid(final JobBatchRecord record) {
     return record.getMaxJobsToActivate() > 0
-        && record.getTimeoutLong() > 0
+        && record.getTimeout() > 0
         && record.getTypeBuffer().capacity() > 0
         && record.getWorkerBuffer().capacity() > 0;
   }
@@ -120,7 +120,7 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
         value.getTypeBuffer(),
         (key, jobRecord) -> {
           int remainingAmount = amount.get();
-          final long deadline = currentTimeMillis() + value.getTimeoutLong();
+          final long deadline = currentTimeMillis() + value.getTimeout();
           jobRecord.setDeadline(deadline).setWorker(value.getWorkerBuffer());
 
           // fetch and set variables, required here to already have the full size of the job record
@@ -203,14 +203,11 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
               "max jobs to activate",
               "greater than zero",
               String.format("'%d'", value.getMaxJobsToActivate()));
-    } else if (value.getTimeoutLong() < 1) {
+    } else if (value.getTimeout() < 1) {
       rejectionType = RejectionType.INVALID_ARGUMENT;
       rejectionReason =
           String.format(
-              format,
-              "timeout",
-              "greater than zero",
-              String.format("'%d'", value.getTimeoutLong()));
+              format, "timeout", "greater than zero", String.format("'%d'", value.getTimeout()));
     } else if (value.getTypeBuffer().capacity() < 1) {
       rejectionType = RejectionType.INVALID_ARGUMENT;
       rejectionReason = String.format(format, "type", "present", "blank");

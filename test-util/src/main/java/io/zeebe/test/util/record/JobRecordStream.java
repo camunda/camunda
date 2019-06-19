@@ -18,7 +18,6 @@ package io.zeebe.test.util.record;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.protocol.record.value.job.Headers;
-import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -56,14 +55,6 @@ public class JobRecordStream
 
   public JobRecordStream withRetries(final int retries) {
     return valueFilter(v -> v.getRetries() == retries);
-  }
-
-  public JobRecordStream withDeadline(final Instant deadline) {
-    return valueFilter(v -> deadline.equals(v.getDeadline()));
-  }
-
-  public JobRecordStream withDeadline(final long deadline) {
-    return valueFilter(v -> Instant.ofEpochMilli(deadline).equals(v.getDeadline()));
   }
 
   public JobRecordStream withWorkflowInstanceKey(long workflowInstanceKey) {
