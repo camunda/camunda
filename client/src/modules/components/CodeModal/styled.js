@@ -10,4 +10,5 @@ import Modal from 'modules/components/Modal';
 export const ModalBody = styled(Modal.Body)`
   padding: 0;
   height: 100%;
+  overflow: auto;
 `;

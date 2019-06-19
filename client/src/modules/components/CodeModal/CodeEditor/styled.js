@@ -32,7 +32,6 @@ export const CodeEditor = themed(styled.div`
   padding: 0;
   position: relative;
   counter-reset: line;
-  overflow: auto;
   max-height: calc(100% - 5px);
 
   ${LinesSeparator}

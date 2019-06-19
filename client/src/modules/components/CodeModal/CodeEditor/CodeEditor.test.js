@@ -52,7 +52,7 @@ describe('CodeModal', () => {
     });
   });
 
-  it('should render an empty line when no content is passed', () => {
+  it.skip('should render an empty line when no content is passed', () => {
     //given
     let node;
     act(() => {

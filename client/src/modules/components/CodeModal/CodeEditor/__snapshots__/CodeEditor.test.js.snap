@@ -1,13 +1,13 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`CodeModal should prettify content when initially rendered 1`] = `"<code contenteditable=\\"true\\"><p classname=\\"code-line\\" data-test=\\"codeline-0\\" key=\\"0\\">SomeString</p></code>"`;
+exports[`CodeModal should prettify content when initially rendered 1`] = `"<code contenteditable=\\"true\\"><p classname=\\"code-line\\">SomeString</p></code>"`;
 
-exports[`CodeModal should prettify content when initially rendered 2`] = `"<code contenteditable=\\"true\\"><p classname=\\"code-line\\" data-test=\\"codeline-0\\" key=\\"0\\">{</p><p classname=\\"code-line\\" data-test=\\"codeline-1\\" key=\\"1\\">  \\"firstname\\": \\"Max\\",</p><p classname=\\"code-line\\" data-test=\\"codeline-2\\" key=\\"2\\">  \\"lastname\\": \\"Muster\\",</p><p classname=\\"code-line\\" data-test=\\"codeline-3\\" key=\\"3\\">  \\"age\\": 31</p><p classname=\\"code-line\\" data-test=\\"codeline-4\\" key=\\"4\\">}</p></code>"`;
+exports[`CodeModal should prettify content when initially rendered 2`] = `"<code contenteditable=\\"true\\"><p classname=\\"code-line\\">{</p><p classname=\\"code-line\\">  \\"firstname\\": \\"Max\\",</p><p classname=\\"code-line\\">  \\"lastname\\": \\"Muster\\",</p><p classname=\\"code-line\\">  \\"age\\": 31</p><p classname=\\"code-line\\">}</p></code>"`;
 
-exports[`CodeModal should prettify content when initially rendered 3`] = `"<code contenteditable=\\"true\\"><p classname=\\"code-line\\" data-test=\\"codeline-0\\" key=\\"0\\">SomeString</p></code>"`;
+exports[`CodeModal should prettify content when initially rendered 3`] = `"<code contenteditable=\\"true\\"><p classname=\\"code-line\\">SomeString</p></code>"`;
 
-exports[`CodeModal should prettify content when initially rendered 4`] = `"<code contenteditable=\\"true\\"><p classname=\\"code-line\\" data-test=\\"codeline-0\\" key=\\"0\\">\\"firstname\\":\\"Bro\\",\\"lastname\\":\\"Ken\\",\\"age\\":31}</p></code>"`;
+exports[`CodeModal should prettify content when initially rendered 4`] = `"<code contenteditable=\\"true\\"><p classname=\\"code-line\\">\\"firstname\\":\\"Bro\\",\\"lastname\\":\\"Ken\\",\\"age\\":31}</p></code>"`;
 
-exports[`CodeModal should prettify content when initially rendered 5`] = `"<code contenteditable=\\"true\\"><p classname=\\"code-line\\" data-test=\\"codeline-0\\" key=\\"0\\"></p></code>"`;
+exports[`CodeModal should prettify content when initially rendered 5`] = `"<code contenteditable=\\"true\\"><p classname=\\"code-line\\"></p></code>"`;
 
 exports[`CodeModal should render an empty line when no content is passed 1`] = `"<code contenteditable=\\"true\\"><p classname=\\"code-line\\" data-test=\\"codeline-0\\" key=\\"0\\"></p></code>"`;
