@@ -22,7 +22,6 @@ import java.util.Objects;
 public class MockRecord extends ExporterMappedObject implements Record, Cloneable {
 
   private long position = 0;
-  private int raftTerm = 0;
   private long sourceRecordPosition = -1;
   private int producerId = 0;
   private long key = -1;
@@ -34,7 +33,6 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
 
   public MockRecord(
       long position,
-      int raftTerm,
       long sourceRecordPosition,
       int producerId,
       long key,
@@ -42,7 +40,6 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
       MockRecordMetadata metadata,
       MockRecordValueWithVariables value) {
     this.position = position;
-    this.raftTerm = raftTerm;
     this.sourceRecordPosition = sourceRecordPosition;
     this.producerId = producerId;
     this.key = key;
@@ -126,8 +123,6 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
     return "MockRecord{"
         + "position="
         + position
-        + ", raftTerm="
-        + raftTerm
         + ", sourceRecordPosition="
         + sourceRecordPosition
         + ", producerId="

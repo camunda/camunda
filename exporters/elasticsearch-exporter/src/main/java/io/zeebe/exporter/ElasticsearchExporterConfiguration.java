@@ -63,7 +63,6 @@ public class ElasticsearchExporterConfiguration {
     public boolean jobBatch = false;
     public boolean message = false;
     public boolean messageSubscription = false;
-    public boolean raft = false;
     public boolean variable = true;
     public boolean variableDocument = false;
     public boolean workflowInstance = true;
@@ -94,8 +93,6 @@ public class ElasticsearchExporterConfiguration {
           + message
           + ", messageSubscription="
           + messageSubscription
-          + ", raft="
-          + raft
           + ", variable="
           + variable
           + ", variableDocument="
