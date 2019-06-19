@@ -46,7 +46,7 @@ public abstract class ZeebeTestUtil {
       ((DeployWorkflowCommandStep1.DeployWorkflowCommandBuilderStep2)deployWorkflowCommandStep1)
         .send()
         .join();
-    logger.debug("Deployment of resource [{}] was performed", classpathResources);
+    logger.debug("Deployment of resource [{}] was performed", (Object[])classpathResources);
     return String.valueOf(deploymentEvent.getWorkflows().get(classpathResources.length - 1).getWorkflowKey());
   }
 
@@ -207,10 +207,6 @@ public abstract class ZeebeTestUtil {
 
     public Long getJobKey() {
       return jobKey;
-    }
-
-    public void setJobKey(Long jobKey) {
-      this.jobKey = jobKey;
     }
   }
 

@@ -8,7 +8,6 @@ package org.camunda.operate.zeebeimport.processors;
 import java.io.IOException;
 import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.es.schema.templates.SequenceFlowTemplate;
-import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdUtil;
@@ -34,9 +33,6 @@ public class SequenceFlowZeebeRecordProcessor {
 
   @Autowired
   private SequenceFlowTemplate sequenceFlowTemplate;
-
-  @Autowired
-  private BatchOperationWriter batchOperationWriter;
 
   public void processSequenceFlowRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     final String intentStr = record.getMetadata().getIntent().name();

@@ -58,12 +58,14 @@ public class OperationExecutor extends Thread implements Shutdownable{
     }
   }
 
-  //@PreDestroy
+  @PreDestroy
   @Override
   public void shutdown() {
     logger.info("Shutdown OperationExecutor");
     shutdown = true;
-    operationsTaskExecutor.shutdown();
+    if(operationsTaskExecutor!=null) {
+      operationsTaskExecutor.shutdown();
+    }
   }
 
   @Override

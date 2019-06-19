@@ -5,14 +5,15 @@
  */
 package org.camunda.operate.zeebeimport;
 
+import static org.springframework.beans.factory.config.ConfigurableBeanFactory.SCOPE_PROTOTYPE;
+
 import java.util.concurrent.Callable;
-import org.camunda.operate.exceptions.PersistenceException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-import static org.springframework.beans.factory.config.ConfigurableBeanFactory.SCOPE_PROTOTYPE;
 
 /**
  * Import job for one batch of Zeebe data.
@@ -46,11 +47,7 @@ public class ImportJob implements Callable<Boolean> {
           importBatch.getPartitionId(), lastProcessedPosition);
       importBatch.finished();
       return true;
-    } catch (PersistenceException e) {
-      logger.error(e.getMessage(), e);
-      importBatch.failed();
-      return false;
-    } catch (Exception ex) {
+    } catch (Throwable ex) {
       logger.error(ex.getMessage(), ex);
       importBatch.failed();
       return false;

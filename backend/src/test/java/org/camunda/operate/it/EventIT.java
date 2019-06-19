@@ -5,17 +5,18 @@
  */
 package org.camunda.operate.it;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Predicate;
+
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.EventSourceType;
 import org.camunda.operate.entities.EventType;
 import org.camunda.operate.entities.IncidentEntity;
-import org.camunda.operate.es.reader.ActivityInstanceReader;
 import org.camunda.operate.es.reader.EventReader;
 import org.camunda.operate.es.reader.IncidentReader;
-import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.rest.dto.EventQueryDto;
 import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.IdUtil;
@@ -25,18 +26,15 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class EventIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private EventReader eventReader;
-
-  @Autowired
-  private WorkflowInstanceReader workflowInstanceReader;
 
   @Autowired
   @Qualifier("workflowInstanceIsCompletedCheck")
@@ -61,9 +59,6 @@ public class EventIT extends OperateZeebeIntegrationTest {
   @Autowired
   @Qualifier("activityIsTerminatedCheck")
   private Predicate<Object[]> activityIsTerminatedCheck;
-
-  @Autowired
-  private ActivityInstanceReader activityInstanceReader;
 
   @Autowired
   private IncidentReader incidentReader;
@@ -91,7 +86,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, "{\"a\": \"b\"}");
 
     //create an incident
-    final Long jobKey = failTaskWithNoRetriesLeft(taskA, workflowInstanceKey, errorMessage);
+    /*final Long jobKey =*/ failTaskWithNoRetriesLeft(taskA, workflowInstanceKey, errorMessage);
 
     //update retries
     final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);

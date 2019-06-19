@@ -5,13 +5,13 @@
  */
 package org.camunda.operate;
 
-import java.io.IOException;
 import java.util.Arrays;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.camunda.operate.data.DataGenerator;
+import org.camunda.operate.es.ElasticsearchConnector;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.es.archiver.Archiver;
 import org.camunda.operate.zeebe.operation.OperationExecutor;
@@ -76,17 +76,8 @@ public class StartupBean {
         shutdownable.shutdown();
       }
     }
-    closeEsClient(esClient);
-    closeEsClient(zeebeEsClient);
+    ElasticsearchConnector.closeEsClient(esClient);
+    ElasticsearchConnector.closeEsClient(zeebeEsClient);
   }
   
-  public void closeEsClient(RestHighLevelClient esClient) {
-    if (esClient != null) {
-      try {
-        esClient.close();
-      } catch (IOException e) {
-        logger.error("Could not close esClient",e);
-      }
-    }
-  }
 }

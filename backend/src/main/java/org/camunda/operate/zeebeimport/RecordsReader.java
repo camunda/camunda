@@ -228,7 +228,7 @@ public class RecordsReader {
       try {
         Thread.sleep(schedulerBackoff);
       } catch (InterruptedException e) {
-        Thread.currentThread().interrupted();
+        Thread.interrupted();
       }
     }
   }
@@ -237,12 +237,14 @@ public class RecordsReader {
     if ((active = importJobs.poll()) != null) {
       Future<Boolean> result = importExecutor.submit(active);
       //TODO what to do with failing jobs
+      logger.debug("Submitted active Job as Future {}",result);
     }
   }
 
   private void execute(Callable<Boolean> job) {
     Future<Boolean> result = importExecutor.submit(job);
     //TODO what to do with failing jobs
+    logger.debug("Submitted Job as Future {}",result);
   }
 
   public int getPartitionId() {

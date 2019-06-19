@@ -93,7 +93,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
       http.csrf()
       .ignoringAntMatchers(LOGIN_RESOURCE)
       .and()
-      .addFilterAfter(getCSRFFilter(),CsrfFilter.class);
+      .addFilterAfter(getCSRFHeaderFilter(),CsrfFilter.class);
     }else {
       http.csrf().disable();
     }
@@ -151,7 +151,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     addCSRFTokenWhenAvailable(request, response).setStatus(NO_CONTENT.value());
   }
   
-  protected OncePerRequestFilter getCSRFFilter() {
+  protected OncePerRequestFilter getCSRFHeaderFilter() {
     return new OncePerRequestFilter() {
       
       @Override

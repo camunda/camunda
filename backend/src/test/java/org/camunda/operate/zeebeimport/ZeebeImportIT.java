@@ -233,8 +233,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     // having
     String activityId = "taskA";
     String processId = "demoProcess";
-    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    deployWorkflow("demoProcess_v_1.bpmn");
+    ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     //create an incident
     ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
     elasticsearchTestRule.refreshIndexesInElasticsearch();
@@ -280,7 +280,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
           .serviceTask(activityId).zeebeTaskType(activityId)
         .endEvent()
       .done();
-    final String workflowId = deployWorkflow(modelInstance, "demoProcess_v_1.bpmn");
+    deployWorkflow(modelInstance, "demoProcess_v_1.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
@@ -332,7 +332,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
         .serviceTask(activityId).zeebeTaskType(activityId)
         .endEvent()
         .done();
-    final String workflowId = deployWorkflow(modelInstance, "demoProcess_v_1.bpmn");
+    deployWorkflow(modelInstance, "demoProcess_v_1.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident

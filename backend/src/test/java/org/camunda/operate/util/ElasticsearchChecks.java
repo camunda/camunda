@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.IncidentEntity;
-import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
@@ -22,7 +21,6 @@ import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.VariableReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.reader.WorkflowReader;
-import org.camunda.operate.rest.dto.OperationDto;
 import org.camunda.operate.rest.dto.VariableDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
@@ -31,8 +29,6 @@ import org.camunda.operate.rest.exception.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import com.google.longrunning.Operation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -299,7 +295,7 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
       try {
-        final WorkflowInstanceForListViewEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+        workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
         return true;
       } catch (NotFoundException ex) {
         return false;
@@ -335,6 +331,7 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(List.class);
+      @SuppressWarnings("unchecked")
       List<String> ids = (List<String>)objects[0];
       final ListViewRequestDto getFinishedQuery =
         TestUtil.createGetAllFinishedQuery(q -> q.setIds(ids));
@@ -352,6 +349,7 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(List.class);
+      @SuppressWarnings("unchecked")
       List<String> ids = (List<String>)objects[0];
       final ListViewRequestDto getActiveQuery =
         TestUtil.createWorkflowInstanceQuery(q -> {

@@ -45,6 +45,7 @@ public class ZeebeImporter extends Thread implements ImportListener,Shutdownable
   private Long allRecordsCount = 0L;
 
   private Long imported = 0L;
+  private Long failed = 0L;
 
   public void startImportingData() {
     if (operateProperties.isStartLoadingDataOnStartup()) {
@@ -100,7 +101,7 @@ public class ZeebeImporter extends Thread implements ImportListener,Shutdownable
     return importFinished;
   }
 
-  //@PreDestroy
+  @PreDestroy
   @Override
   public void shutdown() {
     logger.info("Shutdown ZeebeImporter");
@@ -108,7 +109,9 @@ public class ZeebeImporter extends Thread implements ImportListener,Shutdownable
     synchronized (importFinished) {
       importFinished.notifyAll();
     }
-    importExecutor.shutdown();
+    if(importExecutor!=null) {
+      importExecutor.shutdown();
+    }
   }
 
   private void doBackoff() {
@@ -127,6 +130,10 @@ public class ZeebeImporter extends Thread implements ImportListener,Shutdownable
     return allRecordsCount.longValue();
   }
 
+  public long getFailedCount() {
+    return failed.longValue();
+  }
+  
   @Override
   public void finished(int count) {
       imported += count;
@@ -134,6 +141,7 @@ public class ZeebeImporter extends Thread implements ImportListener,Shutdownable
 
   @Override
   public void failed(int count) {
+    failed += count;
     logger.info("Failed to import {} records.",count); 
   }
 

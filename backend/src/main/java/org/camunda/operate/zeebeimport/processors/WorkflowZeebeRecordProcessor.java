@@ -31,14 +31,12 @@ import org.camunda.operate.zeebeimport.record.value.DeploymentRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -67,9 +65,6 @@ public class WorkflowZeebeRecordProcessor {
   
   @Autowired
   private WorkflowInstanceReader workflowInstanceReader;
-  
-  @Autowired
-  private RestHighLevelClient esClient;
 
   @Autowired
   private ObjectMapper objectMapper;

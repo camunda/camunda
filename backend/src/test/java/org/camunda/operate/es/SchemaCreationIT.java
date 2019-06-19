@@ -12,7 +12,6 @@ import org.camunda.operate.es.schema.indices.IndexCreator;
 import org.camunda.operate.es.schema.templates.EventTemplate;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.TemplateCreator;
-import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
@@ -30,9 +29,6 @@ public class SchemaCreationIT extends OperateIntegrationTest {
 
   @Autowired
   private RestHighLevelClient esClient;
-
-  @Autowired
-  private OperateProperties operateProperties;
 
   @Autowired
   private ElasticsearchSchemaManager elasticsearchSchemaManager;

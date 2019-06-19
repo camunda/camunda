@@ -50,9 +50,10 @@ public class OperateZeebeRule extends TestWatcher {
     this.prefix = TestUtil.createRandomString(10);
     operateProperties.getZeebeElasticsearch().setPrefix(prefix);
     brokerRule.getBrokerCfg().getExporters().stream().filter(ec -> ec.getId().equals("elasticsearch")).forEach(ec -> {
-      final Object indexArgs = ec.getArgs().get("index");
-      if (indexArgs != null && indexArgs instanceof Map) {
-        ((Map) indexArgs).put("prefix", prefix);
+      @SuppressWarnings("unchecked")
+      final Map<String,String> indexArgs = (Map<String,String>) ec.getArgs().get("index");
+      if (indexArgs != null) {
+        indexArgs.put("prefix", prefix);
       } else {
         Assertions.fail("Unable to configure Elasticsearch exporter");
       }

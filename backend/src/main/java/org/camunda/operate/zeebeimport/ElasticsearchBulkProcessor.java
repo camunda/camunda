@@ -110,6 +110,9 @@ public class ElasticsearchBulkProcessor {
                 .collect(Collectors.groupingBy(obj -> obj.getValue().getHeaders().getElementInstanceKey()));
         eventZeebeRecordProcessor.processJobRecord(groupedJobRecords, bulkRequest);
         break;
+      default:
+        logger.debug("Default case triggered for type {}",importValueType.getValueType());
+        break;
       }
 
     ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, true);

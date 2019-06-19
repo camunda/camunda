@@ -5,8 +5,6 @@
  */
 package org.camunda.operate.es;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -57,19 +55,13 @@ public class ElasticsearchConnector {
     System.setProperty("es.set.netty.runtime.available.processors", "false");
     return createEsClient(operateProperties.getZeebeElasticsearch().getHost(), operateProperties.getZeebeElasticsearch().getPort());
   }
-
-  //@PreDestroy
-  public void closeEsClients() {
-    closeEsClient(esClient());
-    closeEsClient(zeebeEsClient());
-  }
-
-  private void closeEsClient(RestHighLevelClient esClient) {
+  
+  public static void closeEsClient(RestHighLevelClient esClient) {
     if (esClient != null) {
       try {
         esClient.close();
       } catch (IOException e) {
-        //
+        logger.error("Could not close esClient",e);
       }
     }
   }

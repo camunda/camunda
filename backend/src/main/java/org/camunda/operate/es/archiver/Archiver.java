@@ -72,7 +72,7 @@ public class Archiver extends Thread implements Shutdownable{
     }
   }
 
-  //@PreDestroy
+  @PreDestroy
   @Override
   public void shutdown() {
     logger.info("Shutdown Archiver");

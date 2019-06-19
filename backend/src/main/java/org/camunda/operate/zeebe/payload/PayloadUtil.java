@@ -57,10 +57,11 @@ public class PayloadUtil {
         value = jsonNode.textValue();
         break;
       case NULL:
-        value = null;
         break;
       case BINARY:
         //TODO
+        break;
+      default:
         break;
       }
       map.put(path, value);
