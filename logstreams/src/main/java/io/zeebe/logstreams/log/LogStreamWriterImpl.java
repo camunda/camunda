@@ -21,7 +21,6 @@ import static io.zeebe.logstreams.impl.LogEntryDescriptor.metadataOffset;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setKey;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setMetadataLength;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setPosition;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setProducerId;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventPosition;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setTimestamp;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.valueOffset;
@@ -47,7 +46,6 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
   protected long key;
 
   protected long sourceRecordPosition = -1L;
-  protected int producerId = -1;
 
   protected BufferWriter metadataWriter;
 
@@ -78,12 +76,6 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
 
   public LogStreamRecordWriter sourceRecordPosition(final long position) {
     this.sourceRecordPosition = position;
-    return this;
-  }
-
-  @Override
-  public LogStreamRecordWriter producerId(final int producerId) {
-    this.producerId = producerId;
     return this;
   }
 
@@ -128,7 +120,6 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
     metadataWriter = metadataWriterInstance;
     valueWriter = null;
     sourceRecordPosition = -1L;
-    producerId = -1;
 
     bufferWriterInstance.reset();
     metadataWriterInstance.reset();
@@ -155,7 +146,6 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
 
         // write log entry header
         setPosition(writeBuffer, bufferOffset, claimedPosition);
-        setProducerId(writeBuffer, bufferOffset, producerId);
         setSourceEventPosition(writeBuffer, bufferOffset, sourceRecordPosition);
         setKey(writeBuffer, bufferOffset, key);
         setTimestamp(writeBuffer, bufferOffset, ActorClock.currentTimeMillis());

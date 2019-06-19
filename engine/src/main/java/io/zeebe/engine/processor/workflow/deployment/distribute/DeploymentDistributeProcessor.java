@@ -43,7 +43,6 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
 
   private ActorControl actor;
   private final DeploymentDistributor deploymentDistributor;
-  private int streamProcessorId;
   private int partitionId;
 
   public DeploymentDistributeProcessor(
@@ -58,7 +57,6 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
   @Override
   public void onOpen(final ReadonlyProcessingContext processingContext) {
     partitionId = processingContext.getLogStream().getPartitionId();
-    streamProcessorId = processingContext.getProducerId();
     actor = processingContext.getActor();
     actor.submit(this::reprocessPendingDeployments);
   }
@@ -119,7 +117,6 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
           final long position =
               logStreamWriter
                   .key(deploymentKey)
-                  .producerId(streamProcessorId)
                   .sourceRecordPosition(sourcePosition)
                   .valueWriter(deploymentRecord)
                   .metadataWriter(recordMetadata)

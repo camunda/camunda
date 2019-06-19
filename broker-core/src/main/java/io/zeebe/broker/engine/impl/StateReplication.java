@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 
 public class StateReplication implements SnapshotReplication {
 
-  public static final String REPLICATION_TOPIC_FORMAT = "replication-%d-%s";
+  public static final String REPLICATION_TOPIC_FORMAT = "replication-%d";
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   private final String replicationTopic;
@@ -42,9 +42,9 @@ public class StateReplication implements SnapshotReplication {
   private ExecutorService executorService;
   private Subscription subscription;
 
-  public StateReplication(ClusterEventService eventService, int partitionId, String name) {
+  public StateReplication(ClusterEventService eventService, int partitionId) {
     this.eventService = eventService;
-    this.replicationTopic = String.format(REPLICATION_TOPIC_FORMAT, partitionId, name);
+    this.replicationTopic = String.format(REPLICATION_TOPIC_FORMAT, partitionId);
   }
 
   @Override

@@ -23,7 +23,6 @@ import static io.zeebe.logstreams.impl.LogEntryDescriptor.metadataOffset;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setKey;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setMetadataLength;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setPosition;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setProducerId;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventPosition;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.setTimestamp;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.valueOffset;
@@ -64,8 +63,6 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
 
   private long key;
 
-  private int producerId;
-
   private long sourceEventPosition;
 
   private BufferWriter metadataWriter;
@@ -86,12 +83,6 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
   @Override
   public LogStreamBatchWriter sourceRecordPosition(final long position) {
     this.sourceEventPosition = position;
-    return this;
-  }
-
-  @Override
-  public LogStreamBatchWriter producerId(final int producerId) {
-    this.producerId = producerId;
     return this;
   }
 
@@ -248,7 +239,6 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
 
       // write log entry header
       setPosition(writeBuffer, bufferOffset, position);
-      setProducerId(writeBuffer, bufferOffset, producerId);
       setSourceEventPosition(writeBuffer, bufferOffset, sourceEventPosition);
       setKey(writeBuffer, bufferOffset, key);
       setTimestamp(writeBuffer, bufferOffset, ActorClock.currentTimeMillis());
@@ -276,7 +266,6 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
     eventLength = 0;
     eventCount = 0;
     sourceEventPosition = -1L;
-    producerId = -1;
     resetEvent();
   }
 

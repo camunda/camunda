@@ -21,16 +21,15 @@ import io.zeebe.servicecontainer.ServiceName;
 
 public class StreamProcessorServiceNames {
 
-  public static final ServiceName<StreamProcessor> streamProcessorService(
-      String logName, String processorName) {
+  public static final ServiceName<StreamProcessor> streamProcessorService(String logName) {
     return ServiceName.newServiceName(
-        String.format("logstream.%s.processor.%s", logName, processorName), StreamProcessor.class);
+        String.format("logstream.%s.stream-processor", logName), StreamProcessor.class);
   }
 
   public static final ServiceName<AsyncSnapshotingDirectorService> asyncSnapshotingDirectorService(
-      String logName, String processorName) {
+      String logName) {
     return ServiceName.newServiceName(
-        String.format("logstream.%s.processor.%s.snapshot-director", logName, processorName),
+        String.format("logstream.%s.snapshot-director", logName),
         AsyncSnapshotingDirectorService.class);
   }
 }

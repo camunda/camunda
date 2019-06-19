@@ -19,13 +19,7 @@ package io.zeebe.engine.processor;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
@@ -54,7 +48,6 @@ public class AsyncSnapshotingTest {
 
   private static final VerificationWithTimeout TIMEOUT = timeout(2000L);
   private static final int MAX_SNAPSHOTS = 2;
-  public static final String PROCESSOR_NAME = "processor-1";
 
   private final TemporaryFolder tempFolderRule = new TemporaryFolder();
   private final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
@@ -102,14 +95,13 @@ public class AsyncSnapshotingTest {
         .thenReturn(CompletableActorFuture.completed(99L), CompletableActorFuture.completed(100L));
 
     final StreamProcessorMetrics streamProcessorMetrics =
-        new StreamProcessorMetrics(new MetricsManager(), PROCESSOR_NAME, "1");
+        new StreamProcessorMetrics(new MetricsManager(), "1");
     when(mockStreamProcessor.getMetrics()).thenReturn(streamProcessorMetrics);
   }
 
   private void createAsyncSnapshotDirector(ActorScheduler actorScheduler) {
     final SnapshotMetrics metrics =
-        new SnapshotMetrics(
-            logStreamRule.getActorScheduler().getMetricsManager(), PROCESSOR_NAME, "1");
+        new SnapshotMetrics(logStreamRule.getActorScheduler().getMetricsManager(), "1");
 
     noopDeletionService = spy(new NoopDeletionService());
     snapshotController.setDeletionService(noopDeletionService);

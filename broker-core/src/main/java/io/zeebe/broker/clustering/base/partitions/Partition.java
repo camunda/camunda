@@ -19,7 +19,6 @@ package io.zeebe.broker.clustering.base.partitions;
 
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.engine.EngineService;
 import io.zeebe.broker.engine.EngineServiceNames;
 import io.zeebe.broker.engine.impl.StateReplication;
 import io.zeebe.broker.exporter.ExporterServiceNames;
@@ -150,15 +149,14 @@ public class Partition implements Service<Partition> {
   }
 
   private StateSnapshotController createSnapshotController() {
-    final String streamProcessorName = EngineService.PROCESSOR_NAME;
 
     final StateStorageFactory storageFactory =
         new StateStorageFactory(configuration.getStatesDirectory());
-    final StateStorage stateStorage = storageFactory.create(partitionId, streamProcessorName);
+    final StateStorage stateStorage = storageFactory.create();
 
     stateReplication =
         shouldReplicateSnapshots()
-            ? new StateReplication(clusterEventService, partitionId, streamProcessorName)
+            ? new StateReplication(clusterEventService, partitionId)
             : new NoneSnapshotReplication();
 
     return new StateSnapshotController(

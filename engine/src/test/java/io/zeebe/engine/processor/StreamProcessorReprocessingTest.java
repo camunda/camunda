@@ -195,53 +195,6 @@ public class StreamProcessorReprocessingTest {
   }
 
   @Test
-  public void shouldNotReprocessIfNotSameProducer() {
-    // given
-    final long position =
-        streamProcessorRule.writeWorkflowInstanceEventWithDifferentProducerId(
-            ELEMENT_ACTIVATING, 1, 255);
-    final long secondPosition =
-        streamProcessorRule.writeWorkflowInstanceEventWithDifferentProducerIdAndSource(
-            WorkflowInstanceIntent.ELEMENT_ACTIVATED, 1, 255, position);
-    waitUntil(
-        () ->
-            streamProcessorRule
-                .events()
-                .onlyWorkflowInstanceRecords()
-                .withIntent(ELEMENT_ACTIVATED)
-                .exists());
-
-    // when
-    final TypedRecordProcessor typedRecordProcessor = mock(TypedRecordProcessor.class);
-    final StreamProcessor streamProcessor =
-        streamProcessorRule.startTypedStreamProcessor(
-            (processors, state) ->
-                processors
-                    .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
-                    .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
-
-    verify(typedRecordProcessor, TIMEOUT.times(1))
-        .processRecord(eq(secondPosition), any(), any(), any(), any());
-    streamProcessor.closeAsync().join();
-
-    // then
-    final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(2)).onOpen(any());
-    // no reprocessing
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(2)).onRecovered(any());
-    // normal processing
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(1))
-        .processRecord(eq(position), any(), any(), any(), any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(1))
-        .processRecord(eq(secondPosition), any(), any(), any(), any());
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(2)).onClose();
-
-    inOrder.verifyNoMoreInteractions();
-  }
-
-  @Test
   public void shouldRetryProcessingRecordOnException() {
     // given
     final long firstPosition =

@@ -67,7 +67,7 @@ public class DataDeleteTest {
   public void shouldDeleteDataWithExporters() {
     // given
     final String rootPath = brokerRule.getBrokerCfg().getData().getDirectories().get(0);
-    final String snapshotDirPath = rootPath + "/partition-1/state/1_zb-stream-processor/snapshots";
+    final String snapshotDirPath = rootPath + "/partition-1/state/snapshots";
     final String segmentsDirPath = rootPath + "/partition-1/segments";
 
     final File segmentsDir = new File(segmentsDirPath);

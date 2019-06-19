@@ -32,8 +32,6 @@ public class ProcessingContext implements ReadonlyProcessingContext {
 
   private ActorControl actor;
   private MetricsManager metricsManager;
-  private int producerId;
-  private String streamProcessorName;
   private EventFilter eventFilter;
   private LogStream logStream;
   private LogStreamReader logStreamReader;
@@ -92,16 +90,6 @@ public class ProcessingContext implements ReadonlyProcessingContext {
     return this;
   }
 
-  public ProcessingContext producerId(int producerId) {
-    this.producerId = producerId;
-    return this;
-  }
-
-  public ProcessingContext streamProcessorName(String streamProcessorName) {
-    this.streamProcessorName = streamProcessorName;
-    return this;
-  }
-
   public ProcessingContext logStreamWriter(TypedStreamWriter logStreamWriter) {
     this.logStreamWriter = logStreamWriter;
     return this;
@@ -119,14 +107,6 @@ public class ProcessingContext implements ReadonlyProcessingContext {
 
   public ActorControl getActor() {
     return actor;
-  }
-
-  public int getProducerId() {
-    return producerId;
-  }
-
-  public String getStreamProcessorName() {
-    return streamProcessorName;
   }
 
   public EventFilter getEventFilter() {

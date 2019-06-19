@@ -24,13 +24,11 @@ public class SnapshotMetrics {
   private final Metric snapshotSizeMetric;
   private final Metric snapshotTimeMillisMetric;
 
-  public SnapshotMetrics(
-      final MetricsManager metricsManager, final String processorName, final String partitionId) {
+  public SnapshotMetrics(final MetricsManager metricsManager, final String partitionId) {
     snapshotSizeMetric =
         metricsManager
             .newMetric("streamprocessor_snapshot_last_size_bytes")
             .type("gauge")
-            .label("processor", processorName)
             .label("partition", partitionId)
             .create();
 
@@ -38,7 +36,6 @@ public class SnapshotMetrics {
         metricsManager
             .newMetric("streamprocessor_snapshot_last_duration_millis")
             .type("gauge")
-            .label("processor", processorName)
             .label("partition", partitionId)
             .create();
   }
@@ -46,10 +43,6 @@ public class SnapshotMetrics {
   public void close() {
     snapshotTimeMillisMetric.close();
     snapshotSizeMetric.close();
-  }
-
-  public void recordSnapshotSize(final long size) {
-    snapshotSizeMetric.setOrdered(size);
   }
 
   public void recordSnapshotCreationTime(final long creationTime) {

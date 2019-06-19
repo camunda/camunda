@@ -33,12 +33,6 @@ public interface ReadonlyProcessingContext {
   /** @return the actor on which the processing runs */
   ActorControl getActor();
 
-  /** @return the producer id of the processor (eq to processor id) */
-  int getProducerId();
-
-  /** @return the stream processor name */
-  String getStreamProcessorName();
-
   /** @return the filter, which is used to filter for events */
   EventFilter getEventFilter();
 

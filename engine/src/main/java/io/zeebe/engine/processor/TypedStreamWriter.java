@@ -41,5 +41,5 @@ public interface TypedStreamWriter extends TypedCommandWriter {
   void appendFollowUpEvent(
       long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
 
-  void configureSourceContext(int producerId, long sourceRecordPosition);
+  void configureSourceContext(long sourceRecordPosition);
 }

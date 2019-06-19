@@ -43,7 +43,6 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
 
   protected LogStreamBatchWriter batchWriter;
 
-  protected int producerId;
   protected long sourceRecordPosition = -1;
 
   public TypedCommandWriterImpl(final LogStream stream) {
@@ -54,8 +53,7 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
     EVENT_REGISTRY.forEach((e, c) -> typeRegistry.put(c, e));
   }
 
-  public void configureSourceContext(final int producerId, final long sourceRecordPosition) {
-    this.producerId = producerId;
+  public void configureSourceContext(final long sourceRecordPosition) {
     this.sourceRecordPosition = sourceRecordPosition;
   }
 
@@ -93,7 +91,6 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
       final UnpackedObject value,
       final Consumer<RecordMetadata> additionalMetadata) {
     final LogEntryBuilder event = batchWriter.event();
-    batchWriter.producerId(producerId);
 
     if (sourceRecordPosition >= 0) {
       batchWriter.sourceRecordPosition(sourceRecordPosition);

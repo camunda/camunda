@@ -93,7 +93,6 @@ public class TypedStreamProcessorTest {
     // given
     streams.startStreamProcessor(
         STREAM_NAME,
-        STREAM_PROCESSOR_ID,
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
         (processingContext) ->
             TypedRecordProcessors.processors()
@@ -119,8 +118,6 @@ public class TypedStreamProcessorTest {
             .get();
 
     // then
-    assertThat(writtenEvent.getProducerId()).isEqualTo(STREAM_PROCESSOR_ID);
-
     assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(firstEventPosition);
   }
 
@@ -129,7 +126,6 @@ public class TypedStreamProcessorTest {
     // given
     streams.startStreamProcessor(
         STREAM_NAME,
-        STREAM_PROCESSOR_ID,
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
         (processingContext) ->
             TypedRecordProcessors.processors()
@@ -183,7 +179,6 @@ public class TypedStreamProcessorTest {
 
     // then
     assertThat(writtenEvent.getKey()).isEqualTo(1);
-    assertThat(writtenEvent.getProducerId()).isEqualTo(STREAM_PROCESSOR_ID);
     assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(secondEventPosition);
 
     // error response
