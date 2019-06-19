@@ -58,8 +58,8 @@ public class CreateWorkflowInstanceStub
     response.setBpmnProcessId(PROCESS_ID);
     response.setVariables(request.getRequestWriter().getVariablesBuffer());
     response.setVersion(PROCESS_VERSION);
-    response.setKey(WORKFLOW_KEY);
-    response.setInstanceKey(WORKFLOW_INSTANCE_KEY);
+    response.setWorkflowKey(WORKFLOW_KEY);
+    response.setWorkflowInstanceKey(WORKFLOW_INSTANCE_KEY);
 
     return new BrokerResponse<>(response, 0, WORKFLOW_INSTANCE_KEY);
   }

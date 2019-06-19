@@ -78,7 +78,7 @@ public class WorkflowInstanceClient {
           .withSourceRecordPosition(position)
           .getFirst()
           .getValue()
-          .getInstanceKey();
+          .getWorkflowInstanceKey();
     }
   }
 

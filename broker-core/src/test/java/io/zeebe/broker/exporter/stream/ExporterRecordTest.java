@@ -723,18 +723,25 @@ public class ExporterRecordTest {
     final int version = 1;
     final long instanceKey = 2L;
     final Map<String, Object> variables = Maps.of(entry("foo", "bar"), entry("baz", "boz"));
+    final String variablesJson = OBJECT_MAPPER.toJson(variables);
 
     final WorkflowInstanceCreationRecord record =
         new WorkflowInstanceCreationRecord()
             .setBpmnProcessId(processId)
-            .setKey(key)
+            .setWorkflowKey(key)
             .setVersion(version)
             .setVariables(MsgPackUtil.asMsgPack(variables))
-            .setInstanceKey(instanceKey);
+            .setWorkflowInstanceKey(instanceKey);
 
     final WorkflowInstanceCreationRecordValue recordValue =
         new WorkflowInstanceCreationRecordValueImpl(
-            OBJECT_MAPPER, processId, version, key, instanceKey, () -> variables);
+            OBJECT_MAPPER,
+            processId,
+            version,
+            key,
+            instanceKey,
+            () -> variablesJson,
+            () -> variables);
 
     // then
     assertRecordExported(WorkflowInstanceCreationIntent.CREATED, record, recordValue);

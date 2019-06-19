@@ -20,6 +20,7 @@ package io.zeebe.engine.state.deployment;
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.DbBuffer;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
@@ -63,6 +64,9 @@ public class WorkflowPersistenceCache {
   private final DbString workflowId;
   private final DbLong workflowVersion;
 
+  private final ColumnFamily<DbString, DbBuffer> digestByIdColumnFamily;
+  private final DbBuffer digest;
+
   public WorkflowPersistenceCache(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
     workflowKey = new DbLong();
     persistedWorkflow = new PersistedWorkflow();
@@ -83,6 +87,11 @@ public class WorkflowPersistenceCache {
     latestWorkflowColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.WORKFLOW_CACHE_LATEST_KEY, dbContext, workflowId, workflowVersion);
+
+    digest = new DbBuffer();
+    digestByIdColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.WORKFLOW_CACHE_DIGEST_BY_ID, dbContext, workflowId, digest);
 
     deployments = new LongHashSet();
     workflowsByKey = new Long2ObjectHashMap<>();
@@ -292,5 +301,18 @@ public class WorkflowPersistenceCache {
 
   private void updateCompleteInMemoryState() {
     workflowColumnFamily.forEach((workflow) -> updateInMemoryState(persistedWorkflow));
+  }
+
+  public void putLatestVersionDigest(final DirectBuffer processId, final DirectBuffer digest) {
+    this.workflowId.wrapBuffer(processId);
+    this.digest.wrapBuffer(digest);
+
+    digestByIdColumnFamily.put(this.workflowId, this.digest);
+  }
+
+  public DirectBuffer getLatestVersionDigest(final DirectBuffer processId) {
+    this.workflowId.wrapBuffer(processId);
+    final DbBuffer dbBuffer = digestByIdColumnFamily.get(this.workflowId);
+    return dbBuffer == null ? null : dbBuffer.getValue();
   }
 }

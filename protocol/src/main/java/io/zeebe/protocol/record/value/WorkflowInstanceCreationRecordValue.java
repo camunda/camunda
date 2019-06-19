@@ -15,10 +15,11 @@
  */
 package io.zeebe.protocol.record.value;
 
-import io.zeebe.protocol.record.RecordValue;
-import java.util.Map;
+import io.zeebe.protocol.record.RecordValueWithVariables;
+import io.zeebe.protocol.record.intent.WorkflowInstanceRelated;
 
-public interface WorkflowInstanceCreationRecordValue extends RecordValue {
+public interface WorkflowInstanceCreationRecordValue
+    extends RecordValueWithVariables, WorkflowInstanceRelated {
   /** @return the BPMN process id to create a workflow from */
   String getBpmnProcessId();
 
@@ -26,11 +27,5 @@ public interface WorkflowInstanceCreationRecordValue extends RecordValue {
   int getVersion();
 
   /** @return the unique key of the BPMN process definition to create a workflow from */
-  long getKey();
-
-  /** @return the created workflow instance key */
-  long getInstanceKey();
-
-  /** @return the initial variables to use when starting the workflow instance */
-  Map<String, Object> getVariables();
+  long getWorkflowKey();
 }

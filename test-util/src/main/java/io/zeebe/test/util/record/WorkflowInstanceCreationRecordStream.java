@@ -47,15 +47,15 @@ public class WorkflowInstanceCreationRecordStream
   }
 
   public WorkflowInstanceCreationRecordStream withKey(long key) {
-    return valueFilter(v -> v.getKey() == key);
+    return valueFilter(v -> v.getWorkflowKey() == key);
   }
 
   public WorkflowInstanceCreationRecordStream withInstanceKey(long instanceKey) {
-    return valueFilter(v -> v.getInstanceKey() == instanceKey);
+    return valueFilter(v -> v.getWorkflowInstanceKey() == instanceKey);
   }
 
   public WorkflowInstanceCreationRecordStream withVariables(Map<String, Object> variables) {
-    return valueFilter(v -> v.getVariables().equals(variables));
+    return valueFilter(v -> v.getVariablesAsMap().equals(variables));
   }
 
   public WorkflowInstanceCreationRecordStream withVariables(Map.Entry<String, Object>... entries) {
@@ -64,7 +64,7 @@ public class WorkflowInstanceCreationRecordStream
 
   public WorkflowInstanceCreationRecordStream withVariables(
       Predicate<Map<String, Object>> matcher) {
-    return valueFilter(v -> matcher.test(v.getVariables()));
+    return valueFilter(v -> matcher.test(v.getVariablesAsMap()));
   }
 
   public WorkflowInstanceCreationRecordStream limitToWorkflowInstanceCreated(
@@ -72,6 +72,6 @@ public class WorkflowInstanceCreationRecordStream
     return limit(
         r ->
             r.getMetadata().getIntent() == WorkflowInstanceCreationIntent.CREATED
-                && r.getValue().getInstanceKey() == workflowInstanceKey);
+                && r.getValue().getWorkflowInstanceKey() == workflowInstanceKey);
   }
 }

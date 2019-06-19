@@ -152,7 +152,7 @@ public class IncidentStreamProcessorRule extends ExternalResource {
       final DirectBuffer processId, final DirectBuffer variables) {
     final WorkflowInstanceCreationRecord record = new WorkflowInstanceCreationRecord();
 
-    record.setKey(1);
+    record.setWorkflowKey(1);
     record.setBpmnProcessId(processId);
     record.setVariables(variables);
 

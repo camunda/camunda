@@ -165,7 +165,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
     return awaitAndGetFirstWorkflowInstanceRecord(
         r ->
             r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATING
-                && r.getKey() == createdRecord.getValue().getInstanceKey());
+                && r.getKey() == createdRecord.getValue().getWorkflowInstanceKey());
   }
 
   public Record<WorkflowInstanceCreationRecord> createWorkflowInstance(
