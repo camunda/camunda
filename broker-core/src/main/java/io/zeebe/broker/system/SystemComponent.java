@@ -24,13 +24,11 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADE
 import static io.zeebe.broker.system.SystemServiceNames.BROKER_HEALTH_CHECK_SERVICE;
 import static io.zeebe.broker.system.SystemServiceNames.BROKER_HTTP_SERVER;
 import static io.zeebe.broker.system.SystemServiceNames.LEADER_MANAGEMENT_REQUEST_HANDLER;
-import static io.zeebe.broker.system.SystemServiceNames.METRICS_FILE_WRITER;
 
 import io.zeebe.broker.system.configuration.MetricsCfg;
 import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.zeebe.broker.system.monitoring.BrokerHttpServerService;
-import io.zeebe.broker.system.monitoring.MetricsFileWriterService;
 import io.zeebe.servicecontainer.ServiceContainer;
 
 public class SystemComponent implements Component {
@@ -50,10 +48,6 @@ public class SystemComponent implements Component {
         .install();
 
     final MetricsCfg metricsCfg = context.getBrokerConfiguration().getMetrics();
-    serviceContainer
-        .createService(METRICS_FILE_WRITER, new MetricsFileWriterService(metricsCfg))
-        .install();
-
     if (metricsCfg.isEnableHttpServer()) {
       serviceContainer
           .createService(

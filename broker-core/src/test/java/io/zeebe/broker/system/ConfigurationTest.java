@@ -467,28 +467,28 @@ public class ConfigurationTest {
     final MetricsCfg metricsCfg = readConfig("default").getMetrics();
 
     // then
-    assertThat(metricsCfg.isEnableHttpServer()).isFalse();
-  }
-
-  @Test
-  public void shouldReadEnableMetricsHttpServer() {
-    // when
-    final MetricsCfg metricsCfg = readConfig("enabled-metrics-http-server").getMetrics();
-
-    // then
     assertThat(metricsCfg.isEnableHttpServer()).isTrue();
   }
 
   @Test
-  public void shouldEnableMetricsHttpServerViaEnvironment() {
+  public void shouldReadDisableMetricsHttpServer() {
+    // when
+    final MetricsCfg metricsCfg = readConfig("disabled-metrics-http-server").getMetrics();
+
+    // then
+    assertThat(metricsCfg.isEnableHttpServer()).isFalse();
+  }
+
+  @Test
+  public void shouldDisableMetricsHttpServerViaEnvironment() {
     // given
-    environment.put(ENV_METRICS_HTTP_SERVER, "true");
+    environment.put(ENV_METRICS_HTTP_SERVER, "false");
 
     // when
     final MetricsCfg metricsCfg = readConfig("default").getMetrics();
 
     // then
-    assertThat(metricsCfg.isEnableHttpServer()).isTrue();
+    assertThat(metricsCfg.isEnableHttpServer()).isFalse();
   }
 
   private BrokerCfg readConfig(final String name) {

@@ -218,16 +218,9 @@
 
 [metrics]
 
-# Path to the file to which metrics are written. Metrics are written in a
-# text-based format understood by prometheus.io
-# metricsFile = "metrics/zeebe.prom"
-
-# Controls the interval at which the metrics are written to the metrics file
-# reportingInterval = "5s"
-
 # Controls if the prometheus metrics should be exporter over HTTP
 # This setting can also be overridden using the environment variable ZEEBE_METRICS_HTTP_SERVER.
-# enableHttpServer = false
+# enableHttpServer = true
 
 # Host to export metrics on, defaults to network.host
 # host = "0.0.0.0"

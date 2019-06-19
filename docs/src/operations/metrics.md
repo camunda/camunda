@@ -3,7 +3,7 @@
 When operating a distributed system like Zeebe, it is important to put proper monitoring in place.
 To facilitate this, Zeebe exposes an extensive set of metrics.
 
-Zeebe writes metrics to a file. The reporting interval can be configured.
+Zeebe exposes metrics over an embedded HTTP server.
 
 ## Types of metrics
 
@@ -29,44 +29,23 @@ Metrics can be configured in the [configuration file](operations/the-zeebecfgtom
 
 ## Connecting Prometheus
 
-As explained, Zeebe writes metrics to a file. The default location of the file is `$ZB_HOME/metrics/zeebe.prom`. There are two ways to connect Zeebe to Prometheus:
+As explained, Zeebe exposes the metrics over a HTTP server. The default port is `9600`.
 
-### Node exporter
-
-In case you are already using the prometheus node exporter, you can relocate the metrics file to the scrape directory of the node exporter. The configuration would look as follows:
+Add the following entry to your `prometheus.yml`:
 
 ```
-[metrics]
-reportingInterval = 15
-metricsFile = "zeebe.prom"
-directory = "/var/lib/metrics"
-```
-
-### HTTP
-
-In case you want to scrape Zeebe nodes via HTTP, you can start a http server inside the metrics directory and expose
-the directory via HTTP. In case python is available, you can use
-
-```
-$cd $ZB_HOME/metrics
-$python -m SimpleHTTPServer 8000
-```
-
-Then, add the following entry to your `prometheus.yml`:
-
-```
-- job_name: zb
+- job_name: zeebe
   scrape_interval: 15s
-  metrics_path: /zeebe.prom
+  metrics_path: /metrics
   scheme: http
   static_configs:
   - targets:
-    - localhost:8000
+    - localhost: 9600
 ```
 
 ## Grafana Dashboards
 
-The Zeebe community has prepared two ready to use Grafana dashboars:
+The Zeebe community has prepared two ready to use Grafana dashboards:
 
 ### Overview Dashboard
 
