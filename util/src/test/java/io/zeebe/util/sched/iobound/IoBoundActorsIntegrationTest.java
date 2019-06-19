@@ -49,7 +49,7 @@ public class IoBoundActorsIntegrationTest {
         };
 
     // when
-    schedulerRule.get().submitActor(actor, false, ioBound()).join();
+    schedulerRule.get().submitActor(actor, ioBound()).join();
 
     // then
     assertThat(threadGroupRef.get()).isEqualTo(ioBoundActorThreads);
@@ -81,7 +81,7 @@ public class IoBoundActorsIntegrationTest {
 
     // when
     schedulerRule.submitActor(callableActor).join();
-    schedulerRule.get().submitActor(ioBoundActor, false, ioBound()).join();
+    schedulerRule.get().submitActor(ioBoundActor, ioBound()).join();
 
     // then
     assertThat(isOnWrongThreadGroup).isFalse();
@@ -113,7 +113,7 @@ public class IoBoundActorsIntegrationTest {
 
     // when
     schedulerRule.submitActor(callableActor).join();
-    schedulerRule.get().submitActor(ioBoundActor, false, ioBound()).join();
+    schedulerRule.get().submitActor(ioBoundActor, ioBound()).join();
 
     // then
     assertThat(isOnWrongThreadGroup).isFalse();

@@ -186,13 +186,12 @@ public class DispatcherBuilder {
             bufferWindowLength,
             subscriptionNames,
             mode,
-            dispatcherName,
-            actorScheduler.getMetricsManager());
+            dispatcherName);
 
     dispatcher.updatePublisherLimit(); // make subscription initially writable without waiting for
     // conductor to do this
 
-    actorScheduler.submitActor(dispatcher, true);
+    actorScheduler.submitActor(dispatcher);
 
     return dispatcher;
   }

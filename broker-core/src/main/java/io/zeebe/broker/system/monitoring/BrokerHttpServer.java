@@ -21,7 +21,6 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.zeebe.util.metrics.MetricsManager;
 
 public class BrokerHttpServer implements AutoCloseable {
 
@@ -30,10 +29,7 @@ public class BrokerHttpServer implements AutoCloseable {
   private final Channel channel;
 
   public BrokerHttpServer(
-      MetricsManager metricsManager,
-      BrokerHealthCheckService brokerHealthCheckService,
-      String host,
-      int port) {
+      BrokerHealthCheckService brokerHealthCheckService, String host, int port) {
     bossGroup = new NioEventLoopGroup(1);
     workerGroup = new NioEventLoopGroup();
 
@@ -41,7 +37,7 @@ public class BrokerHttpServer implements AutoCloseable {
         new ServerBootstrap()
             .group(bossGroup, workerGroup)
             .channel(NioServerSocketChannel.class)
-            .childHandler(new BrokerHttpServerInitializer(metricsManager, brokerHealthCheckService))
+            .childHandler(new BrokerHttpServerInitializer(brokerHealthCheckService))
             .bind(host, port)
             .syncUninterruptibly()
             .channel();

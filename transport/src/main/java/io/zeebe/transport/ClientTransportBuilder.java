@@ -164,16 +164,13 @@ public class ClientTransportBuilder {
     if (channelFactory != null) {
       context.setChannelFactory(channelFactory);
     } else {
-      context.setChannelFactory(
-          new DefaultChannelFactory(scheduler.getMetricsManager(), context.getName()));
+      context.setChannelFactory(new DefaultChannelFactory());
     }
 
     return context;
   }
 
   protected ClientTransport build(ClientActorContext actorContext, TransportContext context) {
-    actorContext.setMetricsManager(scheduler.getMetricsManager());
-
     final ClientConductor conductor = new ClientConductor(actorContext, context);
     final Receiver receiver = new Receiver(actorContext, context);
     final Sender sender = actorContext.getSender();
@@ -187,9 +184,9 @@ public class ClientTransportBuilder {
 
     context.setClientOutput(output);
 
-    scheduler.submitActor(conductor, true);
-    scheduler.submitActor(receiver, true);
-    scheduler.submitActor(sender, true);
+    scheduler.submitActor(conductor);
+    scheduler.submitActor(receiver);
+    scheduler.submitActor(sender);
 
     return new ClientTransport(actorContext, context);
   }

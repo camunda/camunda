@@ -21,7 +21,6 @@ import io.zeebe.util.sched.ActorThreadGroup;
 import io.zeebe.util.sched.ActorTimerQueue;
 import io.zeebe.util.sched.TaskScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
-import io.zeebe.util.sched.metrics.ActorThreadMetrics;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
@@ -34,9 +33,8 @@ public class ControlledActorThread extends ActorThread {
       ActorThreadGroup threadGroup,
       TaskScheduler taskScheduler,
       ActorClock clock,
-      ActorThreadMetrics metrics,
       ActorTimerQueue timerQueue) {
-    super(name, id, threadGroup, taskScheduler, clock, metrics, timerQueue);
+    super(name, id, threadGroup, taskScheduler, clock, timerQueue);
     idleStrategy = new ControlledIdleStartegy();
   }
 

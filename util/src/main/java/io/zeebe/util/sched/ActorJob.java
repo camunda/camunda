@@ -46,8 +46,6 @@ public class ActorJob {
   }
 
   void execute(ActorThread runner) {
-    runner.getMetrics().incrementJobCount();
-
     this.actorThread = runner;
     try {
       invoke();

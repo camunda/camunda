@@ -78,10 +78,6 @@ public class ActorSchedulerRule extends ExternalResource {
     return actorScheduler.submitActor(actor);
   }
 
-  public ActorFuture<Void> submitActor(Actor actor, boolean useCountersManager) {
-    return actorScheduler.submitActor(actor, useCountersManager);
-  }
-
   public ActorScheduler get() {
     return actorScheduler;
   }

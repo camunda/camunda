@@ -20,23 +20,19 @@ package io.zeebe.broker.system.monitoring;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpServerCodec;
-import io.zeebe.util.metrics.MetricsManager;
 
 public class BrokerHttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
-  private final MetricsManager metricsManager;
   private BrokerHealthCheckService brokerHealthCheckService;
 
-  public BrokerHttpServerInitializer(
-      MetricsManager metricsManager, BrokerHealthCheckService brokerHealthCheckService) {
-    this.metricsManager = metricsManager;
+  public BrokerHttpServerInitializer(BrokerHealthCheckService brokerHealthCheckService) {
     this.brokerHealthCheckService = brokerHealthCheckService;
   }
 
   @Override
-  protected void initChannel(SocketChannel ch) throws Exception {
+  protected void initChannel(SocketChannel ch) {
     ch.pipeline()
         .addLast("codec", new HttpServerCodec())
-        .addLast("request", new BrokerHttpServerHandler(metricsManager, brokerHealthCheckService));
+        .addLast("request", new BrokerHttpServerHandler(brokerHealthCheckService));
   }
 }

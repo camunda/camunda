@@ -43,9 +43,7 @@ public class FsLogStorageService implements Service<LogStorage> {
   @Override
   public void start(final ServiceStartContext startContext) {
     final ActorScheduler scheduler = startContext.getScheduler();
-    logStorage =
-        logStorageStubber.apply(
-            new FsLogStorage(config, scheduler.getMetricsManager(), partitionId));
+    logStorage = logStorageStubber.apply(new FsLogStorage(config, partitionId));
 
     startContext.run(logStorage::open);
   }

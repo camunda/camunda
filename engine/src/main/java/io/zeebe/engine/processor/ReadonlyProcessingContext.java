@@ -23,7 +23,6 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorControl;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
@@ -62,7 +61,4 @@ public interface ReadonlyProcessingContext {
 
   /** @return condition which indicates, whether the processing should stop or not */
   BooleanSupplier getAbortCondition();
-
-  /** @return the metrics manager to create new metrics */
-  MetricsManager getMetricsManager();
 }

@@ -20,8 +20,6 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.RemoteAddressImpl;
 import io.zeebe.transport.impl.RemoteAddressListImpl;
 import io.zeebe.transport.impl.TransportChannel;
-import io.zeebe.transport.impl.TransportChannel.TransportChannelMetrics;
-import io.zeebe.util.metrics.MetricsManager;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
@@ -90,8 +88,7 @@ public class ControllableServerTransport implements AutoCloseable {
                 messageCounter.incrementAndGet();
                 return FragmentHandler.CONSUME_FRAGMENT_RESULT;
               },
-              clientChannel,
-              new TransportChannelMetrics(new MetricsManager(), "test"));
+              clientChannel);
 
       clientChannels.computeIfAbsent(localAddress, a -> new ArrayList<>());
       clientChannels.get(localAddress).add(c);

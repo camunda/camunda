@@ -20,60 +20,55 @@ package io.zeebe.broker.system;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.fail;
 
-import io.zeebe.broker.system.configuration.MetricsCfg;
+import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import java.net.Socket;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import org.junit.Rule;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 public class BrokerHttpServerTest {
 
-  @Rule
-  public final EmbeddedBrokerRule brokerWithEnabledMetricsHttpServer =
-      new EmbeddedBrokerRule(cfg -> cfg.getMetrics().setEnableHttpServer(true));
+  @ClassRule public static final EmbeddedBrokerRule RULE = new EmbeddedBrokerRule();
 
-  @Rule
-  public final EmbeddedBrokerRule brokerWithDisabledMetricsHttpServer =
-      new EmbeddedBrokerRule(cfg -> cfg.getMetrics().setEnableHttpServer(false));
+  private static String baseUrl;
+
+  @BeforeClass
+  public static void setUp() {
+    final SocketBindingCfg monitoringApi = RULE.getBrokerCfg().getNetwork().getMonitoringApi();
+    baseUrl = String.format("http://%s:%d", monitoringApi.getHost(), monitoringApi.getPort());
+  }
 
   @Test
-  public void shouldConfigureMetricsHttpServer() {
-    MetricsCfg metricsCfg = brokerWithEnabledMetricsHttpServer.getBrokerCfg().getMetrics();
+  public void shouldGetMetrics() {
+    final String url = baseUrl + "/metrics";
+
     try (CloseableHttpClient client = HttpClients.createDefault()) {
-      final HttpGet request =
-          new HttpGet("http://" + metricsCfg.getHost() + ":" + metricsCfg.getPort());
+      final HttpGet request = new HttpGet(url);
       try (CloseableHttpResponse response = client.execute(request)) {
         assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
         assertThat(EntityUtils.toString(response.getEntity())).contains("zb_broker_info");
       }
     } catch (Exception e) {
-      fail("Failed to connect to metrics http server with config: " + metricsCfg, e);
-    }
-
-    metricsCfg = brokerWithDisabledMetricsHttpServer.getBrokerCfg().getMetrics();
-    try (Socket socket = new Socket(metricsCfg.getHost(), metricsCfg.getPort())) {
-      fail("Unexpected to be able to connect to metrics http server with config: " + metricsCfg);
-    } catch (Exception e) {
-      // expect error
+      fail("Failed to fetch metrics from: " + url, e);
     }
   }
 
   @Test
   public void shouldGetReadyStatus() {
-    final MetricsCfg metricsCfg = brokerWithEnabledMetricsHttpServer.getBrokerCfg().getMetrics();
+    final String url = baseUrl + "/ready";
+
     try (CloseableHttpClient client = HttpClients.createDefault()) {
-      final HttpGet request =
-          new HttpGet("http://" + metricsCfg.getHost() + ":" + metricsCfg.getPort() + "/ready");
+      final HttpGet request = new HttpGet(url);
       try (CloseableHttpResponse response = client.execute(request)) {
         assertThat(response.getStatusLine().getStatusCode()).isEqualTo(204);
       }
     } catch (Exception e) {
-      fail("Failed to connect to metrics http server with config: " + metricsCfg, e);
+      fail("Failed to fetch ready status from: " + url, e);
     }
   }
 }

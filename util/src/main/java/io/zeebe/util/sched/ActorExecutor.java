@@ -15,10 +15,8 @@
  */
 package io.zeebe.util.sched;
 
-import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.metrics.TaskMetrics;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -32,14 +30,12 @@ public class ActorExecutor {
   private final ActorThreadGroup cpuBoundThreads;
   private final ActorThreadGroup ioBoundThreads;
   private final ThreadPoolExecutor blockingTasksRunner;
-  private final MetricsManager metricsManager;
   private Duration blockingTasksShutdownTime;
 
   public ActorExecutor(ActorSchedulerBuilder builder) {
     this.ioBoundThreads = builder.getIoBoundActorThreads();
     this.cpuBoundThreads = builder.getCpuBoundActorThreads();
     this.blockingTasksRunner = builder.getBlockingTasksRunner();
-    this.metricsManager = builder.getMetricsManager();
     this.blockingTasksShutdownTime = builder.getBlockingTasksShutdownTime();
   }
 
@@ -47,26 +43,17 @@ public class ActorExecutor {
    * Initially submit a non-blocking actor to be managed by this scheduler.
    *
    * @param task the task to submit
-   * @param collectTaskMetrics Controls whether metrics should be collected. (See {@link
-   *     ActorScheduler#submitActor(Actor, boolean)})
    */
-  public ActorFuture<Void> submitCpuBound(ActorTask task, boolean collectTaskMetrics) {
-    return submitTask(task, collectTaskMetrics, cpuBoundThreads);
+  public ActorFuture<Void> submitCpuBound(ActorTask task) {
+    return submitTask(task, cpuBoundThreads);
   }
 
-  public ActorFuture<Void> submitIoBoundTask(ActorTask task, boolean collectTaskMetrics) {
-    return submitTask(task, collectTaskMetrics, ioBoundThreads);
+  public ActorFuture<Void> submitIoBoundTask(ActorTask task) {
+    return submitTask(task, ioBoundThreads);
   }
 
-  private ActorFuture<Void> submitTask(
-      ActorTask task, boolean collectMetrics, ActorThreadGroup threadGroup) {
-    TaskMetrics taskMetrics = null;
-
-    if (collectMetrics) {
-      taskMetrics = new TaskMetrics(task.getName(), metricsManager);
-    }
-
-    final ActorFuture<Void> startingFuture = task.onTaskScheduled(this, threadGroup, taskMetrics);
+  private ActorFuture<Void> submitTask(ActorTask task, ActorThreadGroup threadGroup) {
+    final ActorFuture<Void> startingFuture = task.onTaskScheduled(this, threadGroup);
 
     threadGroup.submit(task);
     return startingFuture;
@@ -100,10 +87,6 @@ public class ActorExecutor {
     }
 
     return resultFuture;
-  }
-
-  public MetricsManager getMetricsManager() {
-    return metricsManager;
   }
 
   public ActorThreadGroup getCpuBoundThreads() {

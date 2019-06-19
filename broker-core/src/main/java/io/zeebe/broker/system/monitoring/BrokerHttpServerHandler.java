@@ -17,32 +17,21 @@
  */
 package io.zeebe.broker.system.monitoring;
 
-import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
-import io.zeebe.util.metrics.MetricsManager;
-import java.time.Instant;
-import org.agrona.ExpandableDirectByteBuffer;
-import org.agrona.MutableDirectBuffer;
 
 public class BrokerHttpServerHandler extends ChannelInboundHandlerAdapter {
 
   private static final String BROKER_READY_STATUS_URI = "/ready";
-  private final MutableDirectBuffer metricsBuffer = new ExpandableDirectByteBuffer();
-  private final MetricsManager metricsManager;
   private BrokerHealthCheckService brokerHealthCheckService;
 
-  public BrokerHttpServerHandler(
-      MetricsManager metricsManager, BrokerHealthCheckService brokerHealthCheckService) {
-    this.metricsManager = metricsManager;
+  public BrokerHttpServerHandler(BrokerHealthCheckService brokerHealthCheckService) {
     this.brokerHealthCheckService = brokerHealthCheckService;
   }
 
@@ -71,11 +60,10 @@ public class BrokerHttpServerHandler extends ChannelInboundHandlerAdapter {
     if (request.uri().equals(BROKER_READY_STATUS_URI)) {
       response = getReadyStatus();
     } else {
-      response = getMetrics();
+      response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
     }
 
-    HttpUtil.setKeepAlive(response, HttpUtil.isKeepAlive(request));
-    ctx.writeAndFlush(response);
+    ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
   }
 
   private DefaultFullHttpResponse getReadyStatus() {
@@ -87,21 +75,6 @@ public class BrokerHttpServerHandler extends ChannelInboundHandlerAdapter {
       response =
           new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.SERVICE_UNAVAILABLE);
     }
-    return response;
-  }
-
-  private DefaultFullHttpResponse getMetrics() {
-    final int length = metricsManager.dump(metricsBuffer, 0, Instant.now().toEpochMilli());
-
-    final DefaultFullHttpResponse response =
-        new DefaultFullHttpResponse(
-            HttpVersion.HTTP_1_1,
-            HttpResponseStatus.OK,
-            Unpooled.copiedBuffer(metricsBuffer.byteBuffer()).slice(0, length));
-
-    response.headers().set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.TEXT_PLAIN);
-    response.headers().set(HttpHeaderNames.CONTENT_LENGTH, length);
-
     return response;
   }
 }

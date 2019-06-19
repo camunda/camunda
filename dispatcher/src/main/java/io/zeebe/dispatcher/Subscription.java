@@ -34,7 +34,6 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
-import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.channel.ConsumableChannel;
@@ -54,7 +53,6 @@ public class Subscription implements ConsumableChannel {
   protected final String name;
   protected final ActorCondition dataConsumed;
   protected final ByteBuffer rawDispatcherBufferView;
-  protected final Metric fragmentsConsumedMetric;
 
   protected volatile boolean isClosed = false;
 
@@ -64,15 +62,13 @@ public class Subscription implements ConsumableChannel {
       int id,
       String name,
       ActorCondition onConsumption,
-      LogBuffer logBuffer,
-      Metric fragmentsConsumedMetric) {
+      LogBuffer logBuffer) {
     this.position = position;
     this.id = id;
     this.name = name;
     this.limit = limit;
     this.logBuffer = logBuffer;
     this.dataConsumed = onConsumption;
-    this.fragmentsConsumedMetric = fragmentsConsumedMetric;
 
     // required so that a subscription can freely modify position and limit of the raw buffer
     this.rawDispatcherBufferView = logBuffer.createRawBufferView();
@@ -190,7 +186,6 @@ public class Subscription implements ConsumableChannel {
 
     position.set(position(partitionId, fragmentOffset));
     dataConsumed.signal();
-    this.fragmentsConsumedMetric.getAndAddOrdered(fragmentsConsumed);
 
     return fragmentsConsumed;
   }
@@ -365,8 +360,7 @@ public class Subscription implements ConsumableChannel {
           blockLength,
           partitionId,
           offset,
-          fragmentCount,
-          fragmentsConsumedMetric);
+          fragmentCount);
     }
     return blockLength;
   }

@@ -91,7 +91,6 @@ public class WorkStealingGroup {
         final ActorTask stolenActor = taskQueues[runnerId].trySteal();
 
         if (stolenActor != null) {
-          currentThread.getMetrics().incrementTaskStealCount();
           return stolenActor;
         }
       }

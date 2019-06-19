@@ -20,12 +20,10 @@ import static org.agrona.UnsafeAccess.UNSAFE;
 import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.metrics.TaskMetrics;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Queue;
-import java.util.concurrent.TimeUnit;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /**
@@ -108,12 +106,6 @@ public class ActorTask {
 
   boolean shouldYield;
 
-  private TaskMetrics taskMetrics;
-
-  private boolean isCollectTaskMetrics;
-
-  private boolean isJumbo = false;
-
   /**
    * the priority class of the task. Only set if the task is scheduled as non-blocking, CPU-bound
    */
@@ -125,7 +117,7 @@ public class ActorTask {
 
   /** called when the task is initially scheduled. */
   public ActorFuture<Void> onTaskScheduled(
-      ActorExecutor actorExecutor, ActorThreadGroup actorThreadGroup, TaskMetrics taskMetrics) {
+      ActorExecutor actorExecutor, ActorThreadGroup actorThreadGroup) {
     this.actorExecutor = actorExecutor;
     this.actorThreadGroup = actorThreadGroup;
     // reset previous state to allow re-scheduling
@@ -141,13 +133,9 @@ public class ActorTask {
     jobStartingTaskFuture.close();
     jobStartingTaskFuture.setAwaitingResult();
 
-    this.isJumbo = false;
     this.submittedJobs = new ManyToOneConcurrentLinkedQueue<>();
     this.fastLaneJobs = new ArrayDeque<>();
     this.lifecyclePhase = ActorLifecyclePhase.STARTING;
-
-    this.isCollectTaskMetrics = taskMetrics != null;
-    this.taskMetrics = taskMetrics;
 
     // create initial job to invoke on start callback
     final ActorJob j = new ActorJob();
@@ -322,10 +310,6 @@ public class ActorTask {
     while ((j = activeJobsQueue.poll()) != null) {
       // cancel and discard jobs
       failJob(j);
-    }
-
-    if (taskMetrics != null) {
-      taskMetrics.close();
     }
   }
 
@@ -526,34 +510,6 @@ public class ActorTask {
 
   public void yield() {
     shouldYield = true;
-  }
-
-  public TaskMetrics getMetrics() {
-    return taskMetrics;
-  }
-
-  public boolean isCollectTaskMetrics() {
-    return isCollectTaskMetrics;
-  }
-
-  public void reportExecutionTime(long t) {
-    taskMetrics.reportExecutionTime(t);
-  }
-
-  public void warnMaxTaskExecutionTimeExceeded(long taskExecutionTime) {
-    if (!isJumbo) {
-      isJumbo = true;
-
-      System.err.println(
-          String.format(
-              "%s reported running for %dµs. Jumbo task detected! "
-                  + "Will not print further warnings for this task.",
-              actor.getName(), TimeUnit.NANOSECONDS.toMicros(taskExecutionTime)));
-    }
-  }
-
-  public boolean isHasWarnedJumbo() {
-    return isJumbo;
   }
 
   public long getStateCount() {

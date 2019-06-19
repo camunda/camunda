@@ -39,7 +39,6 @@ import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.LangUtil;
-import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.retry.AbortableRetryStrategy;
 import io.zeebe.util.retry.EndlessRetryStrategy;
 import io.zeebe.util.retry.RetryStrategy;
@@ -83,7 +82,6 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   private EventFilter eventFilter;
   private ExportersState state;
 
-  private ExporterMetrics metrics;
   private ActorCondition onCommitPositionUpdatedCondition;
   private boolean inExportingPhase;
 
@@ -107,7 +105,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   @Override
   public void start(ServiceStartContext startContext) {
     actorScheduler = startContext.getScheduler();
-    startContext.async(actorScheduler.submitActor(this, false, SchedulingHints.ioBound()));
+    startContext.async(actorScheduler.submitActor(this, SchedulingHints.ioBound()));
   }
 
   @Override
@@ -127,9 +125,6 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
 
   @Override
   protected void onActorStarting() {
-    final MetricsManager metricsManager = actorScheduler.getMetricsManager();
-    metrics = new ExporterMetrics(metricsManager, Integer.toString(partitionId));
-
     this.logStreamReader.wrap(logStream);
   }
 
@@ -224,7 +219,6 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
 
   private void skipRecord() {
     actor.submit(this::readNextEvent);
-    metrics.incrementEventsSkippedCount();
   }
 
   private void readNextEvent() {
@@ -263,7 +257,6 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
                   LOG.error(ERROR_MESSAGE_EXPORTING_ABORTED, event, throwable);
                   onFailure();
                 } else {
-                  metrics.incrementEventsExportedCount();
                   inExportingPhase = false;
                   actor.submit(this::readNextEvent);
                 }
@@ -304,7 +297,6 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
 
   @Override
   protected void onActorClosing() {
-    metrics.close();
     logStreamReader.close();
     if (onCommitPositionUpdatedCondition != null) {
       logStream.removeOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);

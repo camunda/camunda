@@ -48,8 +48,7 @@ public class LogStorageAppenderService implements Service<LogStorageAppender> {
             subscription,
             maxAppendBlockSize);
 
-    startContext.async(
-        startContext.getScheduler().submitActor(service, true, SchedulingHints.ioBound()));
+    startContext.async(startContext.getScheduler().submitActor(service, SchedulingHints.ioBound()));
   }
 
   @Override

@@ -15,10 +15,8 @@
  */
 package io.zeebe.util.sched;
 
-import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.metrics.ActorThreadMetrics;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.Future;
@@ -32,12 +30,10 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ActorScheduler {
   private final AtomicReference<SchedulerState> state = new AtomicReference<>();
   private final ActorExecutor actorTaskExecutor;
-  private final MetricsManager metricsManager;
 
   public ActorScheduler(ActorSchedulerBuilder builder) {
     state.set(SchedulerState.NEW);
     actorTaskExecutor = builder.getActorExecutor();
-    metricsManager = builder.getMetricsManager();
   }
 
   /**
@@ -46,21 +42,7 @@ public class ActorScheduler {
    * @param actor the actor to submit
    */
   public ActorFuture<Void> submitActor(Actor actor) {
-    return submitActor(actor, false);
-  }
-
-  /**
-   * Submits an non-blocking, CPU-bound actor.
-   *
-   * @param actor the actor to submit
-   * @param collectTaskMetrics controls whether metrics should be written for this actor. This has
-   *     the overhead cost (time & memory) for allocating the counters which are used to record the
-   *     metrics. Generally, metrics should not be recorded for short-lived tasks but only make
-   *     sense for long-lived tasks where a small overhead when initially submitting the actor is
-   *     acceptable.
-   */
-  public ActorFuture<Void> submitActor(Actor actor, boolean collectTaskMetrics) {
-    return actorTaskExecutor.submitCpuBound(actor.actor.task, collectTaskMetrics);
+    return actorTaskExecutor.submitCpuBound(actor.actor.task);
   }
 
   /**
@@ -78,23 +60,17 @@ public class ActorScheduler {
    * Scheduling hints can be created using the {@link SchedulingHints} class.
    *
    * @param actor the actor to submit
-   * @param collectTaskMetrics controls whether metrics should be written for this actor. This has
-   *     the overhead cost (time & memory) for allocating the counters which are used to record the
-   *     metrics. Generally, metrics should not be recorded for short-lived tasks but only make
-   *     sense for long-lived tasks where a small overhead when initially submitting the actor is
-   *     acceptable.
    * @param schedulingHints additional scheduling hint
    */
-  public ActorFuture<Void> submitActor(
-      Actor actor, boolean collectTaskMetrics, int schedulingHints) {
+  public ActorFuture<Void> submitActor(Actor actor, int schedulingHints) {
     final ActorTask task = actor.actor.task;
 
     final ActorFuture<Void> startingFuture;
     if (SchedulingHints.isCpuBound(schedulingHints)) {
       task.setPriority(SchedulingHints.getPriority(schedulingHints));
-      startingFuture = actorTaskExecutor.submitCpuBound(task, collectTaskMetrics);
+      startingFuture = actorTaskExecutor.submitCpuBound(task);
     } else {
-      startingFuture = actorTaskExecutor.submitIoBoundTask(task, collectTaskMetrics);
+      startingFuture = actorTaskExecutor.submitIoBoundTask(task);
     }
     return startingFuture;
   }
@@ -136,7 +112,6 @@ public class ActorScheduler {
   public static class ActorSchedulerBuilder {
     private String schedulerName = "";
     private ActorClock actorClock;
-    private MetricsManager metricsManager;
 
     private int cpuBoundThreadsCount = Math.max(1, Runtime.getRuntime().availableProcessors() - 2);
     private ActorThreadGroup cpuBoundActorGroup;
@@ -159,11 +134,6 @@ public class ActorScheduler {
 
     public ActorSchedulerBuilder setActorClock(ActorClock actorClock) {
       this.actorClock = actorClock;
-      return this;
-    }
-
-    public ActorSchedulerBuilder setMetricsManager(MetricsManager metricsManager) {
-      this.metricsManager = metricsManager;
       return this;
     }
 
@@ -204,10 +174,6 @@ public class ActorScheduler {
       return actorTimerQueue;
     }
 
-    public MetricsManager getMetricsManager() {
-      return metricsManager;
-    }
-
     public int getCpuBoundActorThreadCount() {
       return cpuBoundThreadsCount;
     }
@@ -242,12 +208,6 @@ public class ActorScheduler {
 
     public ActorThreadGroup getIoBoundActorThreads() {
       return ioBoundActorGroup;
-    }
-
-    private void initMetricsManager() {
-      if (metricsManager == null) {
-        metricsManager = new MetricsManager();
-      }
     }
 
     private void initActorThreadFactory() {
@@ -288,7 +248,6 @@ public class ActorScheduler {
     }
 
     public ActorScheduler build() {
-      initMetricsManager();
       initActorThreadFactory();
       initBlockingTaskRunner();
       initCpuBoundActorThreadGroup();
@@ -305,7 +264,6 @@ public class ActorScheduler {
         ActorThreadGroup threadGroup,
         TaskScheduler taskScheduler,
         ActorClock clock,
-        ActorThreadMetrics metrics,
         ActorTimerQueue timerQueue);
   }
 
@@ -317,9 +275,8 @@ public class ActorScheduler {
         ActorThreadGroup threadGroup,
         TaskScheduler taskScheduler,
         ActorClock clock,
-        ActorThreadMetrics metrics,
         ActorTimerQueue timerQueue) {
-      return new ActorThread(name, id, threadGroup, taskScheduler, clock, metrics, timerQueue);
+      return new ActorThread(name, id, threadGroup, taskScheduler, clock, timerQueue);
     }
   }
 
@@ -345,9 +302,5 @@ public class ActorScheduler {
     RUNNING,
     TERMINATING,
     TERMINATED // scheduler is not reusable
-  }
-
-  public MetricsManager getMetricsManager() {
-    return metricsManager;
   }
 }
