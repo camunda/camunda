@@ -40,6 +40,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.sorting.Sort
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -241,7 +242,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
     // then
     assertThat(result.getProcessInstanceCount(), is(1L));
-    assertThat(result.getDataEntryForKey("startEvent").get().getValue(), is(0L));
+    assertThat(result.getDataEntryForKey("startEvent").get().getValue(), is(nullValue()));
     assertThat(result.getDataEntryForKey("userTask").get().getValue(), is(1L));
   }
 
@@ -262,7 +263,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     // then
     assertThat(result.getProcessInstanceCount(), is(1L));
     assertThat(result.getDataEntryForKey("startEvent").get().getValue(), is(1L));
-    assertThat(result.getDataEntryForKey("userTask").get().getValue(), is(0L));
+    assertThat(result.getDataEntryForKey("userTask").get().getValue(), is(nullValue()));
   }
 
   @Test
@@ -485,7 +486,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     assertThat(result.getData().size(), is(3));
     MapResultEntryDto<Long> notExecutedFlowNode =
       result.getDataEntryForKey("endEvent").get();
-    assertThat(notExecutedFlowNode.getValue(), is(0L));
+    assertThat(notExecutedFlowNode.getValue(), is(nullValue()));
   }
 
   @Test
@@ -632,6 +633,6 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
   }
 
   private long getExecutedFlowNodeCount(ProcessCountReportMapResultDto resultList) {
-    return resultList.getData().stream().filter(result -> result.getValue() > 0).count();
+    return resultList.getData().stream().filter(result -> result.getValue() != null).count();
   }
 }

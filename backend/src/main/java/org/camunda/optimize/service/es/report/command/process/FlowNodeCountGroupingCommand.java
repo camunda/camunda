@@ -23,8 +23,11 @@ public abstract class FlowNodeCountGroupingCommand extends ProcessReportCommand<
   @Override
   protected SingleProcessMapReportResult enrichResultData(final CommandContext<SingleProcessReportDefinitionDto> commandContext,
                                                           final SingleProcessMapReportResult evaluationResult) {
+    // We are enriching the Result Data with not executed flow nodes.
+    // For those flow nodes, count value is set to null.
+    // A value of 0 doesn't work, because the heatmap shows still a little heat for a 0 value.
     GroupByFlowNodeCommandUtil.enrichResultData(
-      commandContext, evaluationResult, () -> new Long(0), ProcessDefinitionOptimizeDto::getFlowNodeNames
+      commandContext, evaluationResult, () -> null, ProcessDefinitionOptimizeDto::getFlowNodeNames
     );
     return evaluationResult;
   }
