@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.assignee;
+package org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.candidate_group;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -36,22 +36,22 @@ import java.util.List;
 import static org.camunda.optimize.service.es.report.command.util.FlowNodeExecutionStateAggregationUtil.addExecutionStateFilter;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ASSIGNEE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_CANDIDATE_GROUPS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_END_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
-public abstract class AbstractUserTaskDurationByAssigneeCommand extends ProcessReportCommand<SingleProcessMapDurationReportResult> {
+public abstract class AbstractUserTaskDurationByCandidateGroupCommand extends ProcessReportCommand<SingleProcessMapDurationReportResult> {
 
-  private static final String USER_TASK_ASSIGNEE_TERMS_AGGREGATION = "assignees";
+  private static final String USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION = "candidateGroups";
   private static final String USER_TASKS_AGGREGATION = "userTasks";
   private static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
 
   protected AggregationStrategy aggregationStrategy;
 
-  AbstractUserTaskDurationByAssigneeCommand(AggregationStrategy strategy) {
+  AbstractUserTaskDurationByCandidateGroupCommand(AggregationStrategy strategy) {
     aggregationStrategy = strategy;
   }
 
@@ -60,7 +60,7 @@ public abstract class AbstractUserTaskDurationByAssigneeCommand extends ProcessR
   protected SingleProcessMapDurationReportResult evaluate() {
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
-      "Evaluating user task duration grouped by assignee report for process definition key [{}] and version [{}]",
+      "Evaluating user task duration grouped by candidate group report for process definition key [{}] and version [{}]",
       processReportData.getProcessDefinitionKey(),
       processReportData.getProcessDefinitionVersion()
     );
@@ -81,7 +81,7 @@ public abstract class AbstractUserTaskDurationByAssigneeCommand extends ProcessR
       return new SingleProcessMapDurationReportResult(resultDto, reportDefinition);
     } catch (IOException e) {
       final String reason = String.format(
-        "Could not evaluate user task duration grouped by assignee report " +
+        "Could not evaluate user task duration grouped by candidate group report " +
           "for process definition key [%s] and version [%s]",
         processReportData.getProcessDefinitionKey(),
         processReportData.getProcessDefinitionVersion()
@@ -114,9 +114,9 @@ public abstract class AbstractUserTaskDurationByAssigneeCommand extends ProcessR
         )
           .subAggregation(
             AggregationBuilders
-              .terms(USER_TASK_ASSIGNEE_TERMS_AGGREGATION)
+              .terms(USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION)
               .size(configurationService.getEsAggregationBucketLimit())
-              .field(USER_TASKS + "." + USER_TASK_ASSIGNEE)
+              .field(USER_TASKS + "." + USER_TASK_CANDIDATE_GROUPS)
               .subAggregation(
                 aggregationStrategy.getAggregationBuilder()
                   .script(getScriptedAggregationField())
@@ -142,7 +142,8 @@ public abstract class AbstractUserTaskDurationByAssigneeCommand extends ProcessR
     final Aggregations aggregations = response.getAggregations();
     final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
-    final Terms byTaskIdAggregation = filteredUserTasks.getAggregations().get(USER_TASK_ASSIGNEE_TERMS_AGGREGATION);
+    final Terms byTaskIdAggregation = filteredUserTasks.getAggregations().get(
+      USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION);
 
     final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
     for (Terms.Bucket b : byTaskIdAggregation.getBuckets()) {

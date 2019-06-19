@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.process.util;
 
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.AssigneeGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.CandidateGroupGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
@@ -52,6 +53,10 @@ public class ProcessGroupByDtoCreator {
 
   public static ProcessGroupByDto createGroupByAssignee() {
     return new AssigneeGroupByDto();
+  }
+
+  public static ProcessGroupByDto createGroupByCandidateGroup() {
+    return new CandidateGroupGroupByDto();
   }
 
   public static ProcessGroupByDto createGroupByNone() {

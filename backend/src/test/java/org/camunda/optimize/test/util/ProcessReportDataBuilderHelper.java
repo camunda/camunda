@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByAssignee;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByCandidateGroup;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByEndDateDto;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByFlowNode;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByNone;
@@ -451,6 +452,62 @@ public class ProcessReportDataBuilderHelper {
     final String processDefinitionVersion) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByAssignee();
+
+    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
+      view,
+      groupByDto
+    );
+    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.WORK);
+
+    return reportDataViewRaw;
+  }
+
+  public static ProcessReportDataDto createUserTaskTotalDurationMapGroupByCandidateGroupReport(
+    final String processDefinitionKey,
+    final String processDefinitionVersion
+  ) {
+    final ProcessViewDto view = createUserTaskDurationView();
+    final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
+
+    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
+      view,
+      groupByDto
+    );
+    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.TOTAL);
+
+    return reportDataViewRaw;
+  }
+
+  public static ProcessReportDataDto createUserTaskIdleDurationMapGroupByCandidateGroupReport(
+    final String processDefinitionKey,
+    final String processDefinitionVersion
+  ) {
+    final ProcessViewDto view = createUserTaskDurationView();
+    final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
+
+    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
+      view,
+      groupByDto
+    );
+    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
+
+    return reportDataViewRaw;
+  }
+
+  public static ProcessReportDataDto createUserTaskWorkDurationMapGroupByCandidateGroupReport(
+    final String processDefinitionKey,
+    final String processDefinitionVersion) {
+    final ProcessViewDto view = createUserTaskDurationView();
+    final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
 
     ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
       processDefinitionKey,

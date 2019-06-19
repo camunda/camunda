@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByAssignee;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByCandidateGroup;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByEndDateDto;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByFlowNode;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByNone;
@@ -77,6 +78,31 @@ public class ProcessReportDataCreator {
                                                                           final UserTaskDurationTime userTaskDurationTime) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByAssignee();
+
+    final ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    reportData.getConfiguration().setAggregationType(aggroType);
+    reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
+    return reportData;
+  }
+
+  public static ProcessReportDataDto createUserTaskIdleDurationGroupByCandidateGroupReport(AggregationType aggroType) {
+    return createUserTaskGroupByCandidateGroupReport(aggroType, UserTaskDurationTime.IDLE);
+  }
+
+  public static ProcessReportDataDto createUserTaskTotalDurationGroupByCandidateGroupReport(AggregationType aggroType) {
+    return createUserTaskGroupByCandidateGroupReport(aggroType, UserTaskDurationTime.TOTAL);
+  }
+
+  public static ProcessReportDataDto createUserTaskWorkDurationGroupByCandidateGroupReport(AggregationType aggroType) {
+    return createUserTaskGroupByCandidateGroupReport(aggroType, UserTaskDurationTime.WORK);
+  }
+
+  private static ProcessReportDataDto createUserTaskGroupByCandidateGroupReport(final AggregationType aggroType,
+                                                                                final UserTaskDurationTime userTaskDurationTime) {
+    final ProcessViewDto view = createUserTaskDurationView();
+    final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
 
     final ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);

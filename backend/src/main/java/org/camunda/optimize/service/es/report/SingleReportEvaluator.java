@@ -46,6 +46,9 @@ import org.camunda.optimize.service.es.report.command.process.processinstance.fr
 import org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.assignee.UserTaskIdleDurationByAssigneeCommand;
 import org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.assignee.UserTaskTotalDurationByAssigneeCommand;
 import org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.assignee.UserTaskWorkDurationByAssigneeCommand;
+import org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.candidate_group.UserTaskIdleDurationByCandidateGroupCommand;
+import org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.candidate_group.UserTaskTotalDurationByCandidateGroupCommand;
+import org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.candidate_group.UserTaskWorkDurationByCandidateGroupCommand;
 import org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.usertask.UserTaskIdleDurationByUserTaskCommand;
 import org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.usertask.UserTaskTotalDurationByUserTaskCommand;
 import org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.usertask.UserTaskWorkDurationByUserTaskCommand;
@@ -85,10 +88,13 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createProcessInstanceDurationGroupByVariableWithProcessPartReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createRawDataReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskIdleDurationGroupByAssigneeReport;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskIdleDurationGroupByCandidateGroupReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskIdleDurationGroupByUserTaskReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskTotalDurationGroupByAssigneeReport;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskTotalDurationGroupByCandidateGroupReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskTotalDurationGroupByUserTaskReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskWorkDurationGroupByAssigneeReport;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskWorkDurationGroupByCandidateGroupReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskWorkDurationGroupByUserTaskReport;
 
 @RequiredArgsConstructor
@@ -196,6 +202,7 @@ public class SingleReportEvaluator {
   private static void addUserTaskDurationReports() {
     createUserTaskDurationGroupedByAssigneeReports();
     createUserTaskDurationGroupedByUserTaskReports();
+    createUserTaskDurationGroupedByCandidateGroupReports();
   }
 
   private static void createUserTaskDurationGroupedByUserTaskReports() {
@@ -235,6 +242,26 @@ public class SingleReportEvaluator {
     createCommandsForAllAggregationTypes(
       (AggregationType aggro) -> createUserTaskWorkDurationGroupByAssigneeReport(aggro).createCommandKey(),
       UserTaskWorkDurationByAssigneeCommand::new
+    );
+  }
+
+  private static void createUserTaskDurationGroupedByCandidateGroupReports() {
+    // IDLE USER TASKS
+    createCommandsForAllAggregationTypes(
+      (AggregationType aggro) -> createUserTaskIdleDurationGroupByCandidateGroupReport(aggro).createCommandKey(),
+      UserTaskIdleDurationByCandidateGroupCommand::new
+    );
+
+    // TOTAL USER TASKS
+    createCommandsForAllAggregationTypes(
+      (AggregationType aggro) -> createUserTaskTotalDurationGroupByCandidateGroupReport(aggro).createCommandKey(),
+      UserTaskTotalDurationByCandidateGroupCommand::new
+    );
+
+    // WORK USER TASKS
+    createCommandsForAllAggregationTypes(
+      (AggregationType aggro) -> createUserTaskWorkDurationGroupByCandidateGroupReport(aggro).createCommandKey(),
+      UserTaskWorkDurationByCandidateGroupCommand::new
     );
   }
 
