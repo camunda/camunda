@@ -76,6 +76,9 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   private final RecordExporter recordExporter;
 
   private final ZeebeDb zeebeDb;
+
+  private final ExporterMetrics metrics;
+
   private final String name;
   private final RetryStrategy exportingRetryStrategy;
   private final RetryStrategy recordWrapStrategy;
@@ -100,6 +103,8 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     this.recordWrapStrategy = new EndlessRetryStrategy(actor);
 
     this.zeebeDb = context.getZeebeDb();
+
+    this.metrics = new ExporterMetrics(partitionId);
   }
 
   @Override
@@ -218,6 +223,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   }
 
   private void skipRecord() {
+    metrics.eventSkipped();
     actor.submit(this::readNextEvent);
   }
 
@@ -257,6 +263,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
                   LOG.error(ERROR_MESSAGE_EXPORTING_ABORTED, event, throwable);
                   onFailure();
                 } else {
+                  metrics.eventExported();
                   inExportingPhase = false;
                   actor.submit(this::readNextEvent);
                 }
