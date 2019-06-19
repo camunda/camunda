@@ -7,10 +7,13 @@ package org.camunda.operate.zeebeimport;
 
 import java.io.IOException;
 import javax.annotation.PreDestroy;
+
+import org.camunda.operate.Shutdownable;
 import org.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -18,7 +21,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
-public class ZeebeImporter extends Thread implements ImportListener  {
+public class ZeebeImporter extends Thread implements ImportListener,Shutdownable  {
 
   private static final Logger logger = LoggerFactory.getLogger(ZeebeImporter.class);
 
@@ -31,6 +34,10 @@ public class ZeebeImporter extends Thread implements ImportListener  {
 
   @Autowired
   private OperateProperties operateProperties;
+  
+  @Autowired
+  @Qualifier("importThreadPoolExecutor")
+  private ThreadPoolTaskExecutor importExecutor;
 
   @Autowired
   private RecordsReaderHolder recordsReaderHolder;
@@ -93,12 +100,15 @@ public class ZeebeImporter extends Thread implements ImportListener  {
     return importFinished;
   }
 
-  @PreDestroy
+  //@PreDestroy
+  @Override
   public void shutdown() {
+    logger.info("Shutdown ZeebeImporter");
     shutdown = true;
     synchronized (importFinished) {
       importFinished.notifyAll();
     }
+    importExecutor.shutdown();
   }
 
   private void doBackoff() {

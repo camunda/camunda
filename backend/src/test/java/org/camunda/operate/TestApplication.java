@@ -28,8 +28,7 @@ public class TestApplication {
   @Bean(name = "dataGenerator")
   @ConditionalOnMissingBean
   public DataGenerator stubDataGenerator() {
-    return manuallyCalled -> {
-    };
+    return DataGenerator.DO_NOTHING;
   }
 
 }

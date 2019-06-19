@@ -9,6 +9,7 @@ import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.camunda.operate.property.OperateProperties;
 import org.elasticsearch.client.RequestOptions;
@@ -41,9 +42,19 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
 
-  @PreDestroy
+  //@PreDestroy
+  @Override
   public void shutdown() {
+    logger.info("Shutdown DataGenerator");
     shutdown = true;
+    scheduler.shutdown();
+    try {
+      if (!scheduler.awaitTermination(2, TimeUnit.MINUTES)) {
+        scheduler.shutdownNow();
+      }
+    } catch (InterruptedException e) {
+      scheduler.shutdownNow();
+    }
   }
 
   @Override

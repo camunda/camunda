@@ -5,12 +5,18 @@
  */
 package org.camunda.operate;
 
+import java.io.IOException;
+import java.util.Arrays;
+
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import org.camunda.operate.data.DataGenerator;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.es.archiver.Archiver;
 import org.camunda.operate.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebeimport.ZeebeImporter;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +27,12 @@ public class StartupBean {
 
   private static final Logger logger = LoggerFactory.getLogger(StartupBean.class);
 
+  @Autowired
+  private RestHighLevelClient esClient;
+  
+  @Autowired
+  private RestHighLevelClient zeebeEsClient; 
+  
   @Autowired
   private ElasticsearchSchemaManager elasticsearchSchemaManager;
 
@@ -55,5 +67,26 @@ public class StartupBean {
     archiver.startArchiving();
     logger.info("INIT: DONE");
   }
-
+  
+  @PreDestroy
+  public void shutdown() {
+    logger.info("Shutdown Operate application");
+    for(Shutdownable shutdownable: Arrays.asList(archiver,operationExecutor,zeebeImporter,dataGenerator)) {
+      if(shutdownable!=null) {
+        shutdownable.shutdown();
+      }
+    }
+    closeEsClient(esClient);
+    closeEsClient(zeebeEsClient);
+  }
+  
+  public void closeEsClient(RestHighLevelClient esClient) {
+    if (esClient != null) {
+      try {
+        esClient.close();
+      } catch (IOException e) {
+        logger.error("Could not close esClient",e);
+      }
+    }
+  }
 }

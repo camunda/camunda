@@ -5,8 +5,20 @@
  */
 package org.camunda.operate.data;
 
-public interface DataGenerator {
+import org.camunda.operate.Shutdownable;
+
+public interface DataGenerator extends Shutdownable{
 
   void createZeebeDataAsync(boolean manuallyCalled);
-
+  
+  public static final DataGenerator DO_NOTHING = new DataGenerator() {
+    
+    @Override
+    public void shutdown() {
+    }
+    
+    @Override
+    public void createZeebeDataAsync(boolean manuallyCalled) {
+    }
+  };
 }

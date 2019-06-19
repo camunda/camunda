@@ -322,18 +322,6 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       .open();
   }
 
-  @PreDestroy
-  private void shutdownScheduler() {
-    scheduler.shutdown();
-    try {
-      if (!scheduler.awaitTermination(2, TimeUnit.MINUTES)) {
-        scheduler.shutdownNow();
-      }
-    } catch (InterruptedException e) {
-      scheduler.shutdownNow();
-    }
-  }
-
   private void cancelSomeInstances() {
     final Iterator<Long> iterator = workflowInstanceKeys.iterator();
     while (iterator.hasNext()) {

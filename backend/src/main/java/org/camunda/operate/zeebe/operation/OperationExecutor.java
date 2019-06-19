@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
+
+import org.camunda.operate.Shutdownable;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.es.writer.BatchOperationWriter;
@@ -29,7 +31,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
-public class OperationExecutor extends Thread {
+public class OperationExecutor extends Thread implements Shutdownable{
 
   private static final Logger logger = LoggerFactory.getLogger(OperationExecutor.class);
 
@@ -56,9 +58,12 @@ public class OperationExecutor extends Thread {
     }
   }
 
-  @PreDestroy
+  //@PreDestroy
+  @Override
   public void shutdown() {
+    logger.info("Shutdown OperationExecutor");
     shutdown = true;
+    operationsTaskExecutor.shutdown();
   }
 
   @Override

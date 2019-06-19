@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class PartitionHolderTest {
   
   Optional<Set<Integer>> zeebePartitionIds, elasticSearchPartitionIds;
-  int sleeped = 0;
+  int slept = 0;
 
   // Mock the involved components
   PartitionHolder partitionHolder = new PartitionHolder() {
@@ -33,13 +33,13 @@ public class PartitionHolderTest {
     
     @Override
     protected void sleepFor(long milliseconds) {
-      sleeped++;
+      slept++;
     }
   };
   
   @Before
   public void setUp() {
-    sleeped = 0;
+    slept = 0;
     zeebePartitionIds = null;
     elasticSearchPartitionIds = null;
   }
@@ -50,7 +50,7 @@ public class PartitionHolderTest {
     elasticSearchPartitionIds = Optional.empty();
     
     assertThat(partitionHolder.getPartitionIds()).isEmpty();
-    assertThat(sleeped).isEqualTo(PartitionHolder.MAX_RETRY);
+    assertThat(slept).isEqualTo(PartitionHolder.MAX_RETRY);
   }
   
   @Test
@@ -59,7 +59,7 @@ public class PartitionHolderTest {
     elasticSearchPartitionIds = Optional.empty();
     
     assertThat(partitionHolder.getPartitionIds()).isNotEmpty().contains(5,6,7,8,9,10);
-    assertThat(sleeped).isEqualTo(0);
+    assertThat(slept).isEqualTo(0);
   }
   
   @Test
@@ -68,11 +68,11 @@ public class PartitionHolderTest {
     elasticSearchPartitionIds = Optional.of(new HashSet<Integer>(CollectionUtil.fromTo(1, 5)));
     
     assertThat(partitionHolder.getPartitionIds()).isNotEmpty().contains(1,2,3,4,5);
-    assertThat(sleeped).isEqualTo(0);
+    assertThat(slept).isEqualTo(0);
     // But then zeebePartitions are there
     zeebePartitionIds = Optional.of(new HashSet<Integer>(CollectionUtil.fromTo(2, 4)));
     assertThat(partitionHolder.getPartitionIds()).containsAll(zeebePartitionIds.get());
-    assertThat(sleeped).isEqualTo(0);
+    assertThat(slept).isEqualTo(0);
   }
   
   @Test
@@ -81,7 +81,7 @@ public class PartitionHolderTest {
     elasticSearchPartitionIds = Optional.of(new HashSet<Integer>(CollectionUtil.fromTo(1, 5)));
     
     assertThat(partitionHolder.getPartitionIds()).isNotEmpty().contains(1,2,3,4,5);
-    assertThat(sleeped).isEqualTo(0);
+    assertThat(slept).isEqualTo(0);
   }
   
   @Test
@@ -90,7 +90,7 @@ public class PartitionHolderTest {
     elasticSearchPartitionIds = Optional.of(new HashSet<Integer>(CollectionUtil.fromTo(1, 5)));
     
     assertThat(partitionHolder.getPartitionIds()).containsAll(zeebePartitionIds.get());
-    assertThat(sleeped).isEqualTo(0);
+    assertThat(slept).isEqualTo(0);
   }
 
 }

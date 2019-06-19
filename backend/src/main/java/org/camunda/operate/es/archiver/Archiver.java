@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import org.camunda.operate.Shutdownable;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceDependant;
 import org.camunda.operate.exceptions.OperateRuntimeException;
@@ -43,7 +45,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 import static org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders.bucketSort;
 
 @Component
-public class Archiver extends Thread {
+public class Archiver extends Thread implements Shutdownable{
 
   private static final Logger logger = LoggerFactory.getLogger(ArchiverHelper.class);
 
@@ -70,8 +72,10 @@ public class Archiver extends Thread {
     }
   }
 
-  @PreDestroy
+  //@PreDestroy
+  @Override
   public void shutdown() {
+    logger.info("Shutdown Archiver");
     shutdown = true;
   }
 

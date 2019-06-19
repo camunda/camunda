@@ -58,7 +58,7 @@ public class ElasticsearchConnector {
     return createEsClient(operateProperties.getZeebeElasticsearch().getHost(), operateProperties.getZeebeElasticsearch().getPort());
   }
 
-  @PreDestroy
+  //@PreDestroy
   public void closeEsClients() {
     closeEsClient(esClient());
     closeEsClient(zeebeEsClient());

@@ -34,9 +34,7 @@ public class Application {
   @ConditionalOnMissingBean
   public DataGenerator stubDataGenerator() {
     logger.debug("Create Data generator stub");
-    return manuallyCalled -> {
-      logger.debug("No demo data will be created");
-    };
+    return DataGenerator.DO_NOTHING;
   }
 
 }
