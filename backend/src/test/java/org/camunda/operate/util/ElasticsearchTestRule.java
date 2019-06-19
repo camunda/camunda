@@ -138,7 +138,10 @@ public class ElasticsearchTestRule extends TestWatcher {
       }
       long shouldImportCount = zeebeImporter.getScheduledImportCount();
       long imported = zeebeImporter.getImportedCount();
-      while (shouldImportCount != 0 && imported < shouldImportCount) {
+      //long failed = zeebeImporter.getFailedCount();
+      int waitForImports = 0;
+      while (shouldImportCount != 0 && imported < shouldImportCount && waitForImports < 10) {
+        waitForImports++;
         try {
           Thread.sleep(500L);
           zeebeImporter.performOneRoundOfImport();
