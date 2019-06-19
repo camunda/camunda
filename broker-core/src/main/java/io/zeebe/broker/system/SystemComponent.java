@@ -25,6 +25,8 @@ import static io.zeebe.broker.system.SystemServiceNames.BROKER_HEALTH_CHECK_SERV
 import static io.zeebe.broker.system.SystemServiceNames.BROKER_HTTP_SERVER;
 import static io.zeebe.broker.system.SystemServiceNames.LEADER_MANAGEMENT_REQUEST_HANDLER;
 
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.hotspot.DefaultExports;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -32,6 +34,13 @@ import io.zeebe.broker.system.monitoring.BrokerHttpServerService;
 import io.zeebe.servicecontainer.ServiceContainer;
 
 public class SystemComponent implements Component {
+
+  private static final CollectorRegistry METRICS_REGISTRY = CollectorRegistry.defaultRegistry;
+
+  static {
+    // enable hotspot prometheus metric collection
+    DefaultExports.initialize();
+  }
 
   @Override
   public void init(final SystemContext context) {
@@ -54,7 +63,10 @@ public class SystemComponent implements Component {
         .createService(
             BROKER_HTTP_SERVER,
             new BrokerHttpServerService(
-                monitoringApi.getHost(), monitoringApi.getPort(), healthCheckService))
+                monitoringApi.getHost(),
+                monitoringApi.getPort(),
+                METRICS_REGISTRY,
+                healthCheckService))
         .install();
 
     final LeaderManagementRequestHandler requestHandlerService =

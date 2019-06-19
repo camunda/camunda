@@ -20,12 +20,16 @@ package io.zeebe.broker.system.monitoring;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.prometheus.client.CollectorRegistry;
 
 public class BrokerHttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
+  private final CollectorRegistry metricsRegistry;
   private BrokerHealthCheckService brokerHealthCheckService;
 
-  public BrokerHttpServerInitializer(BrokerHealthCheckService brokerHealthCheckService) {
+  public BrokerHttpServerInitializer(
+      CollectorRegistry metricsRegistry, BrokerHealthCheckService brokerHealthCheckService) {
+    this.metricsRegistry = metricsRegistry;
     this.brokerHealthCheckService = brokerHealthCheckService;
   }
 
@@ -33,6 +37,6 @@ public class BrokerHttpServerInitializer extends ChannelInitializer<SocketChanne
   protected void initChannel(SocketChannel ch) {
     ch.pipeline()
         .addLast("codec", new HttpServerCodec())
-        .addLast("request", new BrokerHttpServerHandler(brokerHealthCheckService));
+        .addLast("request", new BrokerHttpServerHandler(metricsRegistry, brokerHealthCheckService));
   }
 }

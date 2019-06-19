@@ -51,7 +51,7 @@ public class BrokerHttpServerTest {
       final HttpGet request = new HttpGet(url);
       try (CloseableHttpResponse response = client.execute(request)) {
         assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
-        assertThat(EntityUtils.toString(response.getEntity())).contains("zb_broker_info");
+        assertThat(EntityUtils.toString(response.getEntity())).contains("jvm_info");
       }
     } catch (Exception e) {
       fail("Failed to fetch metrics from: " + url, e);
