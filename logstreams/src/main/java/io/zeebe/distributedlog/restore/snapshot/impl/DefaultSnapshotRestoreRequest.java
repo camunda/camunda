@@ -46,4 +46,14 @@ public class DefaultSnapshotRestoreRequest implements SnapshotRestoreRequest {
   public void setChunkIdx(int chunkIdx) {
     this.chunkIdx = chunkIdx;
   }
+
+  @Override
+  public String toString() {
+    return "DefaultSnapshotRestoreRequest{"
+        + "snapshotId="
+        + snapshotId
+        + ", chunkIdx="
+        + chunkIdx
+        + '}';
+  }
 }

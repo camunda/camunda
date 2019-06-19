@@ -128,4 +128,20 @@ public class SnapshotChunkImpl
   public byte[] getContent() {
     return BufferUtil.bufferAsArray(content);
   }
+
+  @Override
+  public String toString() {
+    return "SnapshotChunkImpl{"
+        + "snapshotPosition="
+        + snapshotPosition
+        + ", totalCount="
+        + totalCount
+        + ", chunkName='"
+        + chunkName
+        + '\''
+        + ", checksum="
+        + checksum
+        + "} "
+        + super.toString();
+  }
 }

@@ -261,16 +261,15 @@ public class DefaultDistributedLogstreamService
 
       while (lastPosition < backupPosition) {
         final long latestLocalPosition = lastPosition;
-        logger.trace(
+        logger.debug(
             "Restoring local log from position {} to {}", latestLocalPosition, backupPosition);
-
         try {
           lastPosition = restoreController.restore(lastPosition, backupPosition);
-          logger.trace(
+          logger.debug(
               "Restored local log from position {} to {}", latestLocalPosition, lastPosition);
         } catch (RuntimeException e) {
           lastPosition = logStream.getCommitPosition();
-          logger.debug("Restoring local log failed at position {}. Retrying.", lastPosition, e);
+          logger.debug("Restoring local log failed at position {}, retrying.", lastPosition, e);
         }
       }
 

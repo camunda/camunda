@@ -22,6 +22,7 @@ import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreInfo;
 import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreRequest;
 import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreResponse;
 import java.util.concurrent.CompletableFuture;
+import org.slf4j.Logger;
 
 public interface RestoreServer extends AutoCloseable {
 
@@ -59,8 +60,9 @@ public interface RestoreServer extends AutoCloseable {
      * Handles a single {@link SnapshotRestoreRequest} request.
      *
      * @param request for a snapshot chunk
+     * @param logger server logger
      */
-    SnapshotRestoreResponse onSnapshotRequest(SnapshotRestoreRequest request);
+    SnapshotRestoreResponse onSnapshotRequest(SnapshotRestoreRequest request, Logger logger);
   }
 
   @FunctionalInterface
@@ -77,9 +79,10 @@ public interface RestoreServer extends AutoCloseable {
      * must also include a non null {@link SnapshotRestoreInfo}
      *
      * @param request request to handle
+     * @param logger server logger
      * @return response to return to sender
      */
-    RestoreInfoResponse onRestoreInfoRequest(RestoreInfoRequest request);
+    RestoreInfoResponse onRestoreInfoRequest(RestoreInfoRequest request, Logger logger);
   }
 
   @FunctionalInterface
@@ -100,8 +103,9 @@ public interface RestoreServer extends AutoCloseable {
      * LogReplicationResponse#hasMoreAvailable()} should be true.
      *
      * @param request the request to server
+     * @param logger server logger
      * @return response to return to the sender
      */
-    LogReplicationResponse onReplicationRequest(LogReplicationRequest request);
+    LogReplicationResponse onReplicationRequest(LogReplicationRequest request, Logger logger);
   }
 }

@@ -100,33 +100,30 @@ public class BrokerRestoreServer implements RestoreServer {
 
   @Override
   public CompletableFuture<Void> serve(LogReplicationRequestHandler handler) {
-    logger.trace("Subscribed handler {} to topic {}", logReplicationTopic, handler);
     return communicationService.subscribe(
         logReplicationTopic,
         SbeLogReplicationRequest::new,
-        handler::onReplicationRequest,
+        r -> handler.onReplicationRequest(r, logger),
         SbeLogReplicationResponse::serialize,
         executor);
   }
 
   @Override
   public CompletableFuture<Void> serve(RestoreInfoRequestHandler handler) {
-    logger.trace("Subscribed handler {} to topic {}", restoreInfoTopic, handler);
     return communicationService.subscribe(
         restoreInfoTopic,
         SbeRestoreInfoRequest::new,
-        handler::onRestoreInfoRequest,
+        r -> handler.onRestoreInfoRequest(r, logger),
         SbeRestoreInfoResponse::serialize,
         executor);
   }
 
   @Override
   public CompletableFuture<Void> serve(SnapshotRequestHandler handler) {
-    logger.trace("Subscribed handler {} to topic {}", snapshotRequestTopic, handler);
     return communicationService.subscribe(
         snapshotRequestTopic,
         SbeSnapshotRestoreRequest::new,
-        handler::onSnapshotRequest,
+        r -> handler.onSnapshotRequest(r, logger),
         SbeSnapshotRestoreResponse::serialize,
         executor);
   }

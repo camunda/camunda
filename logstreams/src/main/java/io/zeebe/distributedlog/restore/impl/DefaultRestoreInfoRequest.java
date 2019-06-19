@@ -45,4 +45,14 @@ public class DefaultRestoreInfoRequest implements RestoreInfoRequest {
   public void setBackupPosition(long backupPosition) {
     this.backupPosition = backupPosition;
   }
+
+  @Override
+  public String toString() {
+    return "DefaultRestoreInfoRequest{"
+        + "localPosition="
+        + localPosition
+        + ", backupPosition="
+        + backupPosition
+        + '}';
+  }
 }

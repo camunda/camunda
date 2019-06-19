@@ -25,35 +25,47 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.spi.SnapshotController;
 import java.io.File;
+import org.slf4j.Logger;
 
 public class DefaultRestoreInfoRequestHandler implements RestoreInfoRequestHandler {
   private final SnapshotController snapshotController;
   private final LogStreamReader reader;
+  private final LogStream logStream;
 
   public DefaultRestoreInfoRequestHandler(
       LogStream logStream, SnapshotController snapshotController) {
+    this.logStream = logStream;
     this.reader = new BufferedLogStreamReader(logStream);
     this.snapshotController = snapshotController;
   }
 
   @Override
-  public RestoreInfoResponse onRestoreInfoRequest(RestoreInfoRequest request) {
-    final ReplicationTarget target;
+  public RestoreInfoResponse onRestoreInfoRequest(RestoreInfoRequest request, Logger logger) {
+    RestoreInfoResponse response = DefaultRestoreInfoResponse.NONE;
     final long lastValidSnapshotPosition = snapshotController.getLastValidSnapshotPosition();
+
+    logger.debug("Received restore info request {}", request);
     if (lastValidSnapshotPosition > -1
         && lastValidSnapshotPosition >= request.getLatestLocalPosition()) {
-      target = RestoreInfoResponse.ReplicationTarget.SNAPSHOT;
       final File lastValidSnapshotDirectory = snapshotController.getLastValidSnapshotDirectory();
-      final int numChunks = lastValidSnapshotDirectory.listFiles().length;
-      return new DefaultRestoreInfoResponse(
-          target, new DefaultSnapshotRestoreInfo(lastValidSnapshotPosition, numChunks));
+      final File[] chunks = lastValidSnapshotDirectory.listFiles();
+
+      if (chunks != null && chunks.length > 0) {
+        response =
+            new DefaultRestoreInfoResponse(
+                ReplicationTarget.SNAPSHOT,
+                new DefaultSnapshotRestoreInfo(lastValidSnapshotPosition, chunks.length));
+      }
     } else if (seekToRequestedPositionExclusive(request.getLatestLocalPosition())) {
-      target = RestoreInfoResponse.ReplicationTarget.EVENTS;
-    } else {
-      target = RestoreInfoResponse.ReplicationTarget.NONE;
+      response = new DefaultRestoreInfoResponse(ReplicationTarget.EVENTS);
     }
 
-    return new DefaultRestoreInfoResponse(target);
+    logger.debug(
+        "Responding restore info request with {} (snapshot position: {}, log position: {})",
+        response,
+        lastValidSnapshotPosition,
+        logStream.getCommitPosition());
+    return response;
   }
 
   private boolean seekToRequestedPositionExclusive(long position) {

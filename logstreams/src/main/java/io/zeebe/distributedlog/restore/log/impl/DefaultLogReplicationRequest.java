@@ -40,6 +40,10 @@ public class DefaultLogReplicationRequest implements LogReplicationRequest {
     return includeFromPosition;
   }
 
+  public void setIncludeFromPosition(boolean includeFromPosition) {
+    this.includeFromPosition = includeFromPosition;
+  }
+
   @Override
   public long getFromPosition() {
     return fromPosition;

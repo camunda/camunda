@@ -29,6 +29,7 @@ import io.zeebe.distributedlog.restore.snapshot.impl.InvalidSnapshotRestoreRespo
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import java.util.concurrent.CompletableFuture;
+import org.slf4j.helpers.NOPLogger;
 
 public class ReplicatingRestoreClient implements RestoreClient {
 
@@ -55,14 +56,16 @@ public class ReplicatingRestoreClient implements RestoreClient {
       return CompletableFuture.completedFuture(new InvalidSnapshotRestoreResponse());
     }
     return CompletableFuture.completedFuture(
-        new DefaultSnapshotRequestHandler(replicatorSnapshotController).onSnapshotRequest(request));
+        new DefaultSnapshotRequestHandler(replicatorSnapshotController)
+            .onSnapshotRequest(request, NOPLogger.NOP_LOGGER));
   }
 
   @Override
   public CompletableFuture<LogReplicationResponse> requestLogReplication(
       MemberId server, LogReplicationRequest request) {
     return CompletableFuture.completedFuture(
-        new DefaultLogReplicationRequestHandler(serverLogstream).onReplicationRequest(request));
+        new DefaultLogReplicationRequestHandler(serverLogstream)
+            .onReplicationRequest(request, NOPLogger.NOP_LOGGER));
   }
 
   @Override
@@ -71,7 +74,7 @@ public class ReplicatingRestoreClient implements RestoreClient {
     if (autoResponse) {
       return CompletableFuture.completedFuture(
           new DefaultRestoreInfoRequestHandler(serverLogstream, replicatorSnapshotController)
-              .onRestoreInfoRequest(request));
+              .onRestoreInfoRequest(request, NOPLogger.NOP_LOGGER));
     }
     return restoreInfoResponse;
   }

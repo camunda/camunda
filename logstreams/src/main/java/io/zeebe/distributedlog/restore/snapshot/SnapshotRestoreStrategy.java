@@ -25,11 +25,11 @@ public class SnapshotRestoreStrategy implements RestoreStrategy {
 
   private final MemberId server;
   private final LogReplicator logReplicator;
-  private final Logger log;
+  private final Logger logger;
   private final long backupPosition;
   private final SnapshotRestoreInfo snapshotRestoreInfo;
   private final long latestLocalPosition;
-  private RestoreSnapshotReplicator replicator;
+  private final RestoreSnapshotReplicator replicator;
 
   public SnapshotRestoreStrategy(
       LogReplicator logReplicator,
@@ -38,18 +38,24 @@ public class SnapshotRestoreStrategy implements RestoreStrategy {
       long latestLocalPosition,
       long backupPosition,
       MemberId server,
-      Logger log) {
+      Logger logger) {
     this.logReplicator = logReplicator;
     this.replicator = replicator;
     this.snapshotRestoreInfo = snapshotRestoreInfo;
     this.latestLocalPosition = latestLocalPosition;
     this.backupPosition = backupPosition;
     this.server = server;
-    this.log = log;
+    this.logger = logger;
   }
 
   @Override
   public CompletableFuture<Long> executeRestoreStrategy() {
+    logger.debug(
+        "Restoring snapshot {} from server {} (expecting {} chunks)",
+        snapshotRestoreInfo.getSnapshotId(),
+        server,
+        snapshotRestoreInfo.getNumChunks());
+
     return replicator
         .restore(server, snapshotRestoreInfo.getSnapshotId(), snapshotRestoreInfo.getNumChunks())
         .thenCompose(tuple -> onSnapshotsReplicated(tuple.getLeft(), tuple.getRight()));
@@ -63,7 +69,13 @@ public class SnapshotRestoreStrategy implements RestoreStrategy {
             getFirstEventToBeReplicated(exporterPosition, processedPosition));
     final long toPosition = Math.max(processedPosition, backupPosition);
     // TODO: logstream.deleteAll(). https://github.com/zeebe-io/zeebe/issues/2509
-    log.debug("Restored snapshot. Restoring events from {} to {}", fromPosition, toPosition);
+
+    logger.debug(
+        "Restored snapshot {} from server {}; restoring events from {} to {}",
+        snapshotRestoreInfo.getSnapshotId(),
+        server,
+        fromPosition,
+        toPosition);
     return logReplicator.replicate(
         server, fromPosition, toPosition, fromPosition > latestLocalPosition);
   }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.distributedlog.restore;
+package io.zeebe.distributedlog.restore.impl;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Java6Assertions.assertThat;
@@ -25,11 +25,7 @@ import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.distributedlog.impl.LogstreamConfig;
 import io.zeebe.distributedlog.restore.RestoreInfoResponse.ReplicationTarget;
-import io.zeebe.distributedlog.restore.impl.ControllableSnapshotRestoreContext;
-import io.zeebe.distributedlog.restore.impl.DefaultRestoreInfoResponse;
-import io.zeebe.distributedlog.restore.impl.ReplicatingRestoreClient;
-import io.zeebe.distributedlog.restore.impl.ReplicatingRestoreClientProvider;
-import io.zeebe.distributedlog.restore.impl.RestoreController;
+import io.zeebe.distributedlog.restore.RestoreNodeProvider;
 import io.zeebe.distributedlog.restore.log.LogReplicator;
 import io.zeebe.distributedlog.restore.snapshot.RestoreSnapshotReplicator;
 import io.zeebe.logstreams.state.FileSnapshotConsumer;
@@ -59,15 +55,15 @@ public class RestoreControllerTest {
   private static final String KEY = "test";
   private static final DirectBuffer EVENT = wrapString("FOO");
 
-  public TemporaryFolder temporaryFolderClient = new TemporaryFolder();
-  public LogStreamRule logStreamRuleClient = new LogStreamRule(temporaryFolderClient);
-  public LogStreamWriterRule writerClient = new LogStreamWriterRule(logStreamRuleClient);
-  public LogStreamReaderRule readerClient = new LogStreamReaderRule(logStreamRuleClient);
+  private TemporaryFolder temporaryFolderClient = new TemporaryFolder();
+  private LogStreamRule logStreamRuleClient = new LogStreamRule(temporaryFolderClient);
+  private LogStreamWriterRule writerClient = new LogStreamWriterRule(logStreamRuleClient);
+  private LogStreamReaderRule readerClient = new LogStreamReaderRule(logStreamRuleClient);
 
-  public TemporaryFolder temporaryFolderServer = new TemporaryFolder();
-  public LogStreamRule logStreamRuleServer = new LogStreamRule(temporaryFolderServer);
-  public LogStreamWriterRule writerServer = new LogStreamWriterRule(logStreamRuleServer);
-  public LogStreamReaderRule readerServer = new LogStreamReaderRule(logStreamRuleServer);
+  private TemporaryFolder temporaryFolderServer = new TemporaryFolder();
+  private LogStreamRule logStreamRuleServer = new LogStreamRule(temporaryFolderServer);
+  private LogStreamWriterRule writerServer = new LogStreamWriterRule(logStreamRuleServer);
+  private LogStreamReaderRule readerServer = new LogStreamReaderRule(logStreamRuleServer);
 
   @Rule
   public RuleChain ruleChain =
@@ -85,7 +81,6 @@ public class RestoreControllerTest {
   private StateSnapshotController replicatorSnapshotController;
   private StateStorage receiverStorage;
   private ReplicatingRestoreClient restoreClient;
-  private String clientNodeId = "0";
   private RestoreController restoreController;
 
   @Before
@@ -93,15 +88,16 @@ public class RestoreControllerTest {
     final File runtimeDirectory = temporaryFolderServer.newFolder("runtime");
     final File snapshotsDirectory = temporaryFolderServer.newFolder("snapshots");
     final StateStorage storage = new StateStorage(runtimeDirectory, snapshotsDirectory);
+    final RocksDBWrapper wrapper = new RocksDBWrapper();
+    final File receiverRuntimeDirectory = temporaryFolderClient.newFolder("runtime-receiver");
+    final File receiverSnapshotsDirectory = temporaryFolderClient.newFolder("snapshots-receiver");
+
     replicatorSnapshotController =
         new StateSnapshotController(
             ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), storage, null, 1);
-    final RocksDBWrapper wrapper = new RocksDBWrapper();
     wrapper.wrap(replicatorSnapshotController.openDb());
     wrapper.putInt(KEY, VALUE);
 
-    final File receiverRuntimeDirectory = temporaryFolderClient.newFolder("runtime-receiver");
-    final File receiverSnapshotsDirectory = temporaryFolderClient.newFolder("snapshots-receiver");
     receiverStorage = new StateStorage(receiverRuntimeDirectory, receiverSnapshotsDirectory);
     snapshotRestoreContext = new ControllableSnapshotRestoreContext();
     snapshotRestoreContext.setProcessorStateStorage(receiverStorage);
@@ -115,6 +111,7 @@ public class RestoreControllerTest {
   private RestoreController createRestoreController() {
     final ReplicatingRestoreClientProvider provider =
         new ReplicatingRestoreClientProvider(restoreClient, snapshotRestoreContext);
+    final String clientNodeId = "0";
     LogstreamConfig.putRestoreFactory(clientNodeId, provider);
 
     final RestoreNodeProvider nodeProvider = provider.createNodeProvider(1);
@@ -169,7 +166,8 @@ public class RestoreControllerTest {
     final long snapshotPosition = writerServer.writeEvents(numEventsInSnapshot, EVENT);
     replicatorSnapshotController.takeSnapshot(snapshotPosition);
 
-    snapshotRestoreContext.setPositionSupplier(() -> new Tuple(snapshotPosition, snapshotPosition));
+    snapshotRestoreContext.setPositionSupplier(
+        () -> new Tuple<>(snapshotPosition, snapshotPosition));
 
     final long restoredPosition = restoreController.restore(-1, snapshotPosition);
 
@@ -191,7 +189,8 @@ public class RestoreControllerTest {
     final long snapshotPosition = writerServer.writeEvents(numEventsInSnapshot, EVENT);
     replicatorSnapshotController.takeSnapshot(snapshotPosition);
     final long backupPosition = writerServer.writeEvents(numEventsAfterSnapshotInBackup, EVENT);
-    snapshotRestoreContext.setPositionSupplier(() -> new Tuple(snapshotPosition, snapshotPosition));
+    snapshotRestoreContext.setPositionSupplier(
+        () -> new Tuple<>(snapshotPosition, snapshotPosition));
     // when
     final long restoredPosition = restoreController.restore(-1, backupPosition);
 
@@ -213,7 +212,8 @@ public class RestoreControllerTest {
     final long backupPosition = writerServer.writeEvents(numEventsBeforeBackUp, EVENT);
     final long snapshotPosition = writerServer.writeEvents(numEventsInSnapshotAfterBackup, EVENT);
     replicatorSnapshotController.takeSnapshot(snapshotPosition);
-    snapshotRestoreContext.setPositionSupplier(() -> new Tuple(snapshotPosition, snapshotPosition));
+    snapshotRestoreContext.setPositionSupplier(
+        () -> new Tuple<>(snapshotPosition, snapshotPosition));
 
     // when
     final long restoredPosition = restoreController.restore(-1, backupPosition);
@@ -237,7 +237,7 @@ public class RestoreControllerTest {
     final long backupPosition = writerServer.writeEvents(numEventsNotExported, EVENT);
     replicatorSnapshotController.takeSnapshot(backupPosition);
 
-    snapshotRestoreContext.setPositionSupplier(() -> new Tuple(exporterPosition, backupPosition));
+    snapshotRestoreContext.setPositionSupplier(() -> new Tuple<>(exporterPosition, backupPosition));
 
     // when
     restoreController.restore(-1, backupPosition);
@@ -252,7 +252,7 @@ public class RestoreControllerTest {
     final int numEventsNotExported = 10;
     final long backupPosition = writerServer.writeEvents(numEventsNotExported, EVENT);
     replicatorSnapshotController.takeSnapshot(backupPosition);
-    snapshotRestoreContext.setPositionSupplier(() -> new Tuple(Long.MAX_VALUE, backupPosition));
+    snapshotRestoreContext.setPositionSupplier(() -> new Tuple<>(Long.MAX_VALUE, backupPosition));
 
     // when
     restoreController.restore(-1, backupPosition);
@@ -267,7 +267,7 @@ public class RestoreControllerTest {
     final int numEvents = 10;
     final long backupPosition = writerServer.writeEvents(numEvents, EVENT);
     replicatorSnapshotController.takeSnapshot(backupPosition);
-    snapshotRestoreContext.setPositionSupplier(() -> new Tuple(-1L, backupPosition));
+    snapshotRestoreContext.setPositionSupplier(() -> new Tuple<>(-1L, backupPosition));
 
     // when
     restoreController.restore(-1, backupPosition);
@@ -287,7 +287,8 @@ public class RestoreControllerTest {
     final long backupPosition = writerServer.writeEvents(numEventsNotExportedInBackup, EVENT);
     final long snapshotPosition = writerServer.writeEvents(numEventsNotExportedAfterBackup, EVENT);
     replicatorSnapshotController.takeSnapshot(snapshotPosition);
-    snapshotRestoreContext.setPositionSupplier(() -> new Tuple(exporterPosition, snapshotPosition));
+    snapshotRestoreContext.setPositionSupplier(
+        () -> new Tuple<>(exporterPosition, snapshotPosition));
 
     // when
     restoreController.restore(-1, backupPosition);
@@ -309,17 +310,21 @@ public class RestoreControllerTest {
   }
 
   @Test
-  public void shouldThrowExceptionIfNoneStrategy() {
-    final DefaultRestoreInfoResponse defaultRestoreInfoResponse = new DefaultRestoreInfoResponse();
-    defaultRestoreInfoResponse.setReplicationTarget(ReplicationTarget.NONE);
-    restoreClient.completeRestoreInfoResponse(defaultRestoreInfoResponse);
-
+  public void shouldThrowExceptionIfRequestInfoFailed() {
+    restoreClient.completeRestoreInfoResponse(new RuntimeException());
     assertThatThrownBy(() -> restoreController.restore(-1, 10)).isNotNull();
   }
 
   @Test
-  public void shouldThrowExceptionIfRequestInfoFailed() {
-    restoreClient.completeRestoreInfoResponse(new RuntimeException());
-    assertThatThrownBy(() -> restoreController.restore(-1, 10)).isNotNull();
+  public void shouldDoNothingIfServerHasNothingToReplicate() {
+    // given
+    restoreClient.completeRestoreInfoResponse(
+        new DefaultRestoreInfoResponse(ReplicationTarget.NONE));
+
+    // when
+    final long position = restoreController.restore(-1, 10);
+
+    // then
+    assertThat(position).isEqualTo(-1);
   }
 }

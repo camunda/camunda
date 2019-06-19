@@ -34,7 +34,6 @@ public class SbeRestoreInfoRequest
     implements RestoreInfoRequest {
   private final RestoreInfoRequestDecoder decoder;
   private final RestoreInfoRequestEncoder encoder;
-
   private final DefaultRestoreInfoRequest delegate;
 
   public SbeRestoreInfoRequest() {

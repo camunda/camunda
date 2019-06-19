@@ -35,4 +35,9 @@ public class SuccessSnapshotRestoreResponse implements SnapshotRestoreResponse {
   public boolean isSuccess() {
     return true;
   }
+
+  @Override
+  public String toString() {
+    return "SuccessSnapshotRestoreResponse{" + "snapshotChunk=" + snapshotChunk + '}';
+  }
 }
