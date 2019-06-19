@@ -112,8 +112,8 @@ public class IncidentRecord extends UnifiedRecordValue
   }
 
   @Override
-  public String getErrorType() {
-    return errorTypeProp.getValue().name();
+  public ErrorType getErrorType() {
+    return errorTypeProp.getValue();
   }
 
   @Override
@@ -145,11 +145,6 @@ public class IncidentRecord extends UnifiedRecordValue
 
   public long getVariableScopeKey() {
     return variableScopeKeyProp.getValue();
-  }
-
-  @JsonIgnore
-  public ErrorType getErrorTypeEnum() {
-    return errorTypeProp.getValue();
   }
 
   public long getWorkflowInstanceKey() {

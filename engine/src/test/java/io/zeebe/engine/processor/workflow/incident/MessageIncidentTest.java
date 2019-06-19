@@ -79,7 +79,7 @@ public class MessageIncidentTest {
             .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
-        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR.name())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage("Failed to extract the correlation-key by 'orderId': no value found")
         .hasBpmnProcessId(PROCESS_ID)
         .hasWorkflowInstanceKey(workflowInstanceKey)
@@ -112,7 +112,7 @@ public class MessageIncidentTest {
             .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
-        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR.name())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Failed to extract the correlation-key by 'orderId': the value must be either a string or a number")
         .hasBpmnProcessId(PROCESS_ID)

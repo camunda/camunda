@@ -278,7 +278,7 @@ public class EventSubscriptionIncidentTest {
             .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
-        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR.name())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Failed to extract the correlation-key by '"
                 + CORRELATION_VARIABLE_2
@@ -313,7 +313,7 @@ public class EventSubscriptionIncidentTest {
             .getFirst();
 
     Assertions.assertThat(incidentRecord.getValue())
-        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR.name())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Failed to extract the correlation-key by '"
                 + CORRELATION_VARIABLE_2
