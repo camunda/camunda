@@ -19,6 +19,7 @@ package io.zeebe.engine.processor;
 
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDbTransaction;
+import io.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
@@ -134,6 +135,8 @@ public final class ProcessingStateMachine {
   protected final TypedResponseWriterImpl responseWriter;
   private SideEffectProducer sideEffectProducer;
 
+  private final StreamProcessorMetrics metrics;
+
   public ProcessingStateMachine(ProcessingContext context, BooleanSupplier shouldProcessNext) {
 
     this.actor = context.getActor();
@@ -154,6 +157,8 @@ public final class ProcessingStateMachine {
 
     this.responseWriter =
         new TypedResponseWriterImpl(context.getCommandResponseWriter(), logStream.getPartitionId());
+
+    this.metrics = new StreamProcessorMetrics(logStream.getPartitionId());
   }
 
   // current iteration
@@ -170,6 +175,7 @@ public final class ProcessingStateMachine {
 
   private void skipRecord() {
     actor.submit(this::readNextEvent);
+    metrics.eventSkipped();
   }
 
   void readNextEvent() {
@@ -210,6 +216,8 @@ public final class ProcessingStateMachine {
       typedEvent.wrap(event, metadata, value);
 
       processInTransaction(typedEvent);
+
+      metrics.eventProcessed();
 
       writeEvent();
     } catch (final RecoverableException recoverableException) {
@@ -341,6 +349,7 @@ public final class ProcessingStateMachine {
             onError(t, this::writeEvent);
           } else {
             updateState();
+            metrics.eventWritten();
           }
         });
   }
