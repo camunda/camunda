@@ -212,6 +212,17 @@ public class JsonSerializableToJsonTest {
         "{'resources':[{'resourceType':'BPMN_XML','resourceName':'resource','resource':'Y29udGVudHM='}],'deployedWorkflows':[{'bpmnProcessId':'testProcess','version':12,'workflowKey':123,'resourceName':'resource'}]}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// Empty DeploymentRecord /////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      new Object[] {
+        "Empty DeploymentRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              return new DeploymentRecord();
+            },
+        "{'resources':[],'deployedWorkflows':[]}"
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////// ErrorRecord ///////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       new Object[] {
@@ -226,6 +237,21 @@ public class JsonSerializableToJsonTest {
         "{'exceptionMessage':'test','stacktrace':"
             + JSONParser.quote(STACK_TRACE)
             + ",'errorEventPosition':123,'workflowInstanceKey':4321}"
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////// Empty ErrorRecord /////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      new Object[] {
+        "Empty ErrorRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final ErrorRecord record = new ErrorRecord();
+              record.initErrorRecord(RUNTIME_EXCEPTION, 123);
+              return record;
+            },
+        "{'exceptionMessage':'test','stacktrace':"
+            + JSONParser.quote(STACK_TRACE)
+            + ",'errorEventPosition':123,'workflowInstanceKey':-1}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// IncidentRecord /////////////////////////////////////////
@@ -257,6 +283,18 @@ public class JsonSerializableToJsonTest {
               return record;
             },
         "{'errorType':'IO_MAPPING_ERROR','errorMessage':'error','bpmnProcessId':'process','workflowKey':134,'workflowInstanceKey':10,'elementId':'activity','elementInstanceKey':34,'jobKey':123,'variableScopeKey':34}"
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// Empty IncidentRecord ///////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      new Object[] {
+        "Empty IncidentRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final IncidentRecord record = new IncidentRecord();
+              return record;
+            },
+        "{'errorType':'UNKNOWN','errorMessage':'','bpmnProcessId':'','workflowKey':-1,'workflowInstanceKey':-1,'elementId':'','elementInstanceKey':-1,'jobKey':-1,'variableScopeKey':-1}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -310,7 +348,18 @@ public class JsonSerializableToJsonTest {
             },
         "{'maxJobsToActivate':1,'type':'type','worker':'worker','truncated':true,'jobKeys':[3],'jobs':[{'headers':{'bpmnProcessId':'test-process','workflowKey':13,'workflowDefinitionVersion':12,'workflowInstanceKey':1234,'elementId':'activity','elementInstanceKey':123},'type':'type','worker':'worker','variables':'{\"foo\":\"bar\"}','retries':3,'errorMessage':'failed message','customHeaders':{},'deadline':1000}],'timeout':2}"
       },
-
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty JobBatchRecord //////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty JobBatchRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final String type = "type";
+              return new JobBatchRecord().setType(type);
+            },
+        "{'worker':'','type':'type','maxJobsToActivate':-1,'truncated':false,'jobKeys':[],'jobs':[],'timeout':-1}"
+      },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////// JobRecord /////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -357,6 +406,14 @@ public class JsonSerializableToJsonTest {
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////// Empty JobRecord ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty JobRecord",
+        (Supplier<UnifiedRecordValue>) () -> new JobRecord(),
+        "{'type':'','headers':{'workflowDefinitionVersion':-1,'elementId':'','bpmnProcessId':'','workflowKey':-1,'workflowInstanceKey':-1,'elementInstanceKey':-1},'variables':'{}','worker':'','retries':-1,'errorMessage':'','customHeaders':{},'deadline':-1}"
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// MessageRecord /////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
@@ -378,6 +435,26 @@ public class JsonSerializableToJsonTest {
               return record;
             },
         "{'timeToLive':12,'correlationKey':'test-key','variables':'{\"foo\":\"bar\"}','messageId':'test-id','name':'test-message'}"
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty MessageRecord ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty MessageRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final String correlationKey = "test-key";
+              final String messageName = "test-message";
+              final long timeToLive = 12;
+
+              final MessageRecord record =
+                  new MessageRecord()
+                      .setTimeToLive(timeToLive)
+                      .setCorrelationKey(correlationKey)
+                      .setName(messageName);
+              return record;
+            },
+        "{'timeToLive':12,'correlationKey':'test-key','variables':'{}','messageId':'','name':'test-message'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -403,6 +480,20 @@ public class JsonSerializableToJsonTest {
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty MessageStartEventSubscriptionRecord /////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty MessageStartEventSubscriptionRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final int workflowKey = 22334;
+
+              return new MessageStartEventSubscriptionRecord().setWorkflowKey(workflowKey);
+            },
+        "{'workflowKey':22334,'messageName':'','startEventId':''}"
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// MessageSubscriptionRecord /////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
@@ -425,6 +516,23 @@ public class JsonSerializableToJsonTest {
               return record;
             },
         "{'workflowInstanceKey':1,'elementInstanceKey':1,'messageName':'name','correlationKey':'key'}"
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty MessageSubscriptionRecord
+      // /////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty MessageSubscriptionRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final long elementInstanceKey = 13L;
+              final long workflowInstanceKey = 1L;
+
+              return new MessageSubscriptionRecord()
+                  .setWorkflowInstanceKey(workflowInstanceKey)
+                  .setElementInstanceKey(elementInstanceKey);
+            },
+        "{'workflowInstanceKey':1,'elementInstanceKey':13,'messageName':'','correlationKey':''}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -452,6 +560,23 @@ public class JsonSerializableToJsonTest {
               return record;
             },
         "{'elementInstanceKey':123,'messageName':'test-message','workflowInstanceKey':1345,'variables':'{\"foo\":\"bar\"}'}"
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////// Empty WorkflowInstanceSubscriptionRecord ///////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty WorkflowInstanceSubscriptionRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final long elementInstanceKey = 123;
+              final long workflowInstanceKey = 1345;
+
+              return new WorkflowInstanceSubscriptionRecord()
+                  .setWorkflowInstanceKey(workflowInstanceKey)
+                  .setElementInstanceKey(elementInstanceKey);
+            },
+        "{'elementInstanceKey':123,'messageName':'','workflowInstanceKey':1345,'variables':'{}'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -529,6 +654,20 @@ public class JsonSerializableToJsonTest {
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty VariableDocumentRecord //////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty VariableDocumentRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final long scopeKey = 3;
+
+              return new VariableDocumentRecord().setScopeKey(scopeKey);
+            },
+        "{'updateSemantics':'PROPAGATE','document':{},'scopeKey':3}"
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// WorkflowInstanceCreationRecord ////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
@@ -553,6 +692,18 @@ public class JsonSerializableToJsonTest {
               return record;
             },
         "{'variables':{'foo':'bar','baz':'boz'},'bpmnProcessId':'process','key':1,'version':1,'instanceKey':2}"
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty WorkflowInstanceCreationRecord //////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty WorkflowInstanceCreationRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              return new WorkflowInstanceCreationRecord();
+            },
+        "{'variables':{},'bpmnProcessId':'','key':-1,'version':-1,'instanceKey':-1}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -582,6 +733,18 @@ public class JsonSerializableToJsonTest {
               return record;
             },
         "{'bpmnProcessId':'test-process','version':12,'workflowKey':13,'workflowInstanceKey':1234,'elementId':'activity','flowScopeKey':123,'bpmnElementType':'SERVICE_TASK'}"
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty WorkflowInstanceRecord //////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty WorkflowInstanceRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              return new WorkflowInstanceRecord();
+            },
+        "{'bpmnProcessId':'','version':-1,'workflowKey':-1,'workflowInstanceKey':-1,'elementId':'','flowScopeKey':-1,'bpmnElementType':'UNSPECIFIED'}"
       },
     };
     return contents;

@@ -25,7 +25,6 @@ import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.msgpack.value.StringValue;
 import io.zeebe.msgpack.value.ValueArray;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.protocol.record.value.JobRecordValue;
@@ -41,8 +40,9 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
 
   private final StringProperty typeProp = new StringProperty("type");
   private final StringProperty workerProp = new StringProperty("worker", "");
-  private final LongProperty timeoutProp = new LongProperty("timeout", Protocol.INSTANT_NULL_VALUE);
-  private final IntegerProperty maxJobsToActivateProp = new IntegerProperty("maxJobsToActivate", 1);
+  private final LongProperty timeoutProp = new LongProperty("timeout", -1);
+  private final IntegerProperty maxJobsToActivateProp =
+      new IntegerProperty("maxJobsToActivate", -1);
   private final ArrayProperty<LongValue> jobKeysProp =
       new ArrayProperty<>("jobKeys", new LongValue());
   private final ArrayProperty<JobRecord> jobsProp = new ArrayProperty<>("jobs", new JobRecord());
