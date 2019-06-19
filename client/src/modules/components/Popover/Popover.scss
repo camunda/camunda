@@ -11,13 +11,13 @@
   white-space: nowrap;
   overflow: hidden;
   text-align: left;
-  padding-right: 25px;
+  padding-right: 30px;
 
   .downIcon {
     position: absolute;
     right: 0;
     display: inline-block;
-    margin-right: 5px;
+    margin-right: 7px;
   }
 }
 
@@ -34,6 +34,7 @@
     @include scrollable;
   }
 }
+
 .Popover__dialog-arrow,
 .Popover__dialog-arrow-border {
   bottom: -11px;
@@ -52,6 +53,7 @@
   border-width: 10px;
   margin-left: -10px;
 }
+
 .Popover__dialog-arrow-border {
   border-color: rgba(194, 225, 245, 0);
   border-bottom-color: lightgray;

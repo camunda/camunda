@@ -147,25 +147,21 @@
     float: right;
     margin: 0px 0 0 10px;
 
-    .Button {
+    > .Button {
       padding: 6px 20px;
     }
   }
 
   .createAllButton {
     .activateButton {
-      padding-right: 40px;
       color: white;
       background-color: $cam-green;
       border: 1px solid $cam-green;
 
+      &.is-active,
       &:hover {
         background-color: darken($cam-green, 10%);
         border: 1px solid darken($cam-green, 10%);
-      }
-
-      .Icon {
-        margin-right: 10px;
       }
     }
 

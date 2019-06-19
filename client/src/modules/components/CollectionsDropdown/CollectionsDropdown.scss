@@ -1,7 +1,7 @@
 .CollectionsDropdown {
-  .Button {
+  .activateButton {
     border-radius: 15px;
-    border: 1px solid transparent;
+    border: none;
     background: none;
     position: relative;
     height: 26px;
@@ -23,6 +23,7 @@
 
     &:active {
       background: rgba(#d8dce3, 0.8);
+      border: none;
     }
 
     .downIcon {

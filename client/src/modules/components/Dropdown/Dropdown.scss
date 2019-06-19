@@ -1,21 +1,11 @@
 @import 'shared-styles/shared-styles.scss';
 
-.dark {
-  .Dropdown {
-    &.is-open .activateButton {
-      color: #ddd;
-      background-color: #333;
-      border: 1px solid #333;
-    }
-  }
-}
-
 .Dropdown {
   display: inline-block;
   position: relative;
 
   .activateButton {
-    padding-right: 25px;
+    padding-right: 30px;
     padding-left: 20px;
     text-align: left;
 
@@ -23,17 +13,11 @@
       position: absolute;
       right: 0;
       display: inline-block;
-      margin-right: 5px;
+      margin-right: 7px;
     }
   }
 
   &.is-open {
-    .activateButton {
-      color: #111;
-      background-color: #e6e6e6;
-      border: 1px solid #adadad;
-    }
-
     .menu {
       visibility: visible;
       opacity: 1;

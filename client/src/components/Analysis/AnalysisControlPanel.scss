@@ -9,7 +9,8 @@
     display: inline-block;
     margin: 0 0.5em;
     line-height: normal;
-    width: auto;
+    width: 15%;
+    min-width: 200px;
 
     .Popover__button {
       padding-left: 20px;
