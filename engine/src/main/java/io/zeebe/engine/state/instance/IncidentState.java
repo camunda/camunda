@@ -21,6 +21,7 @@ import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
+import io.zeebe.engine.metrics.IncidentMetrics;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import java.util.function.ObjLongConsumer;
@@ -47,7 +48,9 @@ public class IncidentState {
 
   private final ColumnFamily<DbLong, DbLong> jobIncidentColumnFamily;
 
-  public IncidentState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+  private final IncidentMetrics metrics;
+
+  public IncidentState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext, int partitionId) {
     incidentKey = new DbLong();
     incidenRecordToRead = new UnpackedObjectValue();
     incidenRecordToRead.wrapObject(new IncidentRecord());
@@ -67,6 +70,8 @@ public class IncidentState {
     jobKey = new DbLong();
     jobIncidentColumnFamily =
         zeebeDb.createColumnFamily(ZbColumnFamilies.INCIDENT_JOBS, dbContext, jobKey, incidentKey);
+
+    metrics = new IncidentMetrics(partitionId);
   }
 
   public void createIncident(long incidentKey, IncidentRecord incident) {
@@ -81,6 +86,8 @@ public class IncidentState {
       elementInstanceKey.wrapLong(incident.getElementInstanceKey());
       workflowInstanceIncidentColumnFamily.put(elementInstanceKey, this.incidentKey);
     }
+
+    metrics.incidentCreated();
   }
 
   public IncidentRecord getIncidentRecord(long incidentKey) {
@@ -106,6 +113,8 @@ public class IncidentState {
         elementInstanceKey.wrapLong(incidentRecord.getElementInstanceKey());
         workflowInstanceIncidentColumnFamily.delete(elementInstanceKey);
       }
+
+      metrics.incidentResolved();
     }
   }
 

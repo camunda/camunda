@@ -78,7 +78,7 @@ public class ZeebeState {
     messageSubscriptionState = new MessageSubscriptionState(zeebeDb, dbContext);
     messageStartEventSubscriptionState = new MessageStartEventSubscriptionState(zeebeDb, dbContext);
     workflowInstanceSubscriptionState = new WorkflowInstanceSubscriptionState(zeebeDb, dbContext);
-    incidentState = new IncidentState(zeebeDb, dbContext);
+    incidentState = new IncidentState(zeebeDb, dbContext, partitionId);
     blackList = new BlackList(zeebeDb, dbContext);
 
     lastProcessedEventKey = new DbString();
