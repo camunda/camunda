@@ -191,6 +191,7 @@ public class ProcessDefinitionRetrievalIT {
     assertThat(actualXml, is(Bpmn.convertToString(modelInstance)));
   }
 
+
   @Test
   public void getProcessDefinitionXmlByKeyAndAllVersion() {
     // given
@@ -225,6 +226,40 @@ public class ProcessDefinitionRetrievalIT {
 
     // then
     assertThat(actualXml, is(Bpmn.convertToString(modelInstance)));
+  }
+
+  @Test
+  public void getProcessDefinitionXmlByKeyAndAllVersionWithMoreThanTen() {
+
+    final String definitionKey = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
+
+    // given 12 definitions (11 + 1 latest)
+    for (int i = 0; i < 11; i++) {
+      deploySimpleServiceTaskProcessDefinition(definitionKey);
+    }
+
+    BpmnModelInstance latestModelInstance = Bpmn.createExecutableProcess(definitionKey)
+      .startEvent()
+      .name("Add name to ensure that this is the latest version!")
+      .serviceTask()
+      .camundaExpression("${true}")
+      .endEvent()
+      .done();
+    engineRule.deployProcessAndGetProcessDefinition(latestModelInstance);
+
+    embeddedOptimizeRule.getConfigurationService().setEngineImportProcessDefinitionXmlMaxPageSize(12);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    String actualXml =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetProcessDefinitionXmlRequest(definitionKey, ALL_VERSIONS)
+        .execute(String.class, 200);
+
+    // then: we get the latest version xml
+    assertThat(actualXml, is(Bpmn.convertToString(latestModelInstance)));
   }
 
   private String deploySimpleServiceTaskProcessDefinition(String processId) {

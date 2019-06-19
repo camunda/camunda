@@ -20,11 +20,15 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.script.Script;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.ScriptSortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +39,7 @@ import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_XML;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.TENANT_ID;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -190,10 +195,16 @@ public class ProcessDefinitionReader {
 
   private String getLatestVersionToKey(String key) {
     log.debug("Fetching latest process definition for key [{}]", key);
+
+    Script script = createDefaultScript(
+      "Integer.parseInt(doc['" + PROCESS_DEFINITION_VERSION + "'].value)",
+      Collections.emptyMap()
+    );
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(termQuery(PROCESS_DEFINITION_KEY, key))
-      .sort(PROCESS_DEFINITION_VERSION, SortOrder.DESC)
+      .sort(SortBuilders.scriptSort(script, ScriptSortBuilder.ScriptSortType.NUMBER).order(SortOrder.DESC))
       .size(1);
+
     SearchRequest searchRequest =
       new SearchRequest(getOptimizeIndexAliasForType(PROC_DEF_TYPE))
         .types(PROC_DEF_TYPE)

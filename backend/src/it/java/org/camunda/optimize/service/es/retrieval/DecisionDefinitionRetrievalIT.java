@@ -171,6 +171,37 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     assertThat(actualXml, is(Dmn.convertToString(modelInstance2)));
   }
 
+  @Test
+  public void getDecisionDefinitionXmlByKeyAndAllVersionReturnsLatestWithMoreThanTen() {
+    // given
+    final String decisionDefinitionKey = DECISION_DEFINITION_KEY + System.currentTimeMillis();
+
+    // given 12 definitions (11 + 1 latest)
+    for (int i = 0; i < 11; i++) {
+      deployAndStartSimpleDecisionDefinition(decisionDefinitionKey);
+    }
+
+    final DmnModelInstance latestModelInstance = createSimpleDmnModel(decisionDefinitionKey);
+    latestModelInstance.getDefinitions().getDrgElements().stream().findFirst()
+      .ifPresent(drgElement -> drgElement.setName("Add name to ensure that this is the latest version!"));
+    engineRule.deployDecisionDefinition(latestModelInstance);
+
+    embeddedOptimizeRule.getConfigurationService().setEngineImportDecisionDefinitionXmlMaxPageSize(12);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    String actualXml =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetDecisionDefinitionXmlRequest(decisionDefinitionKey, ALL_VERSIONS)
+        .execute(String.class, 200);
+
+    // then: we get the latest version xml
+    assertThat(actualXml, is(Dmn.convertToString(latestModelInstance)));
+  }
+
+
   private void addDecisionDefinitionWithoutXmlToElasticsearch() {
     final DecisionDefinitionOptimizeDto decisionDefinitionWithoutXml = new DecisionDefinitionOptimizeDto()
       .setId("aDecDefId")
