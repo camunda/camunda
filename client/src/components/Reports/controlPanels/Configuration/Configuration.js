@@ -9,6 +9,7 @@ import React from 'react';
 import {Popover, Icon, Button, ColorPicker} from 'components';
 import * as visualizations from './visualizations';
 import ShowInstanceCount from './ShowInstanceCount';
+import UserTaskDurationTime from './UserTaskDurationTime';
 import AggregationType from './AggregationType';
 import VisibleNodesFilter from './VisibleNodesFilter';
 import NodeStatus from './NodeStatus';
@@ -30,6 +31,7 @@ export default class Configuration extends React.Component {
     this.updateConfiguration(
       convertToChangeset({
         aggregationType: 'avg',
+        userTaskDurationTime: 'total',
         flowNodeExecutionState: 'all',
         precision: null,
         targetValue: {
@@ -101,6 +103,7 @@ export default class Configuration extends React.Component {
               />
             )}
             <AggregationType report={report} onChange={this.updateConfiguration} />
+            <UserTaskDurationTime report={report} onChange={this.updateConfiguration} />
             {Component && <Component report={report} onChange={this.updateConfiguration} />}
             <NodeStatus report={report} onChange={this.updateConfiguration} />
             <VisibleNodesFilter report={report} onChange={this.updateConfiguration} />

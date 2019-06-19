@@ -7,12 +7,12 @@
 import {reportConfig, formatters, isDurationReport} from 'services';
 import {getRelativeValue} from '../service';
 
-const {formatReportResult} = formatters;
+const {formatReportResult, camelCaseToLabel} = formatters;
 
 export default function processDefaultData({formatter = v => v, report}) {
   const {data, result, reportType} = report;
   const {
-    configuration: {hideAbsoluteValue, hideRelativeValue, xml},
+    configuration: {hideAbsoluteValue, hideRelativeValue, xml, userTaskDurationTime},
     view,
     groupBy
   } = data;
@@ -27,6 +27,9 @@ export default function processDefaultData({formatter = v => v, report}) {
 
   if (view.entity === 'userTask') {
     labels[0] = 'User Task';
+    if (view.property === 'duration') {
+      labels[1] = camelCaseToLabel(userTaskDurationTime) + ' Duration';
+    }
   }
 
   const displayRelativeValue = view.property === 'frequency' && !hideRelativeValue;
