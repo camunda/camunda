@@ -74,9 +74,8 @@ public interface IncidentRecordValue extends RecordValue {
   long getJobKey();
 
   /**
-   * @return the key of the element instance to use in order to update the correct variables before.
-   *     Can be <code>-1</code> if the incident record is part of a {@link IncidentIntent#RESOLVE}
-   *     command.
+   * @return the key of the variable scope on which the variables need to be updated. Can be <code>
+   *     -1</code> if the incident record is part of a {@link IncidentIntent#RESOLVE} command.
    */
   long getVariableScopeKey();
 }
