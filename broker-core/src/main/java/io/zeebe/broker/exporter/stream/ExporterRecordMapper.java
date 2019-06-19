@@ -36,7 +36,6 @@ import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
 import io.zeebe.broker.exporter.record.value.job.HeadersImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.value.LongValue;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.Workflow;
@@ -184,7 +183,7 @@ public class ExporterRecordMapper {
             jobHeaders.getWorkflowDefinitionVersion());
 
     final Instant deadline;
-    if (record.getDeadlineLong() != Protocol.INSTANT_NULL_VALUE) {
+    if (record.getDeadlineLong() > 0) {
       deadline = Instant.ofEpochMilli(record.getDeadlineLong());
     } else {
       deadline = null;
