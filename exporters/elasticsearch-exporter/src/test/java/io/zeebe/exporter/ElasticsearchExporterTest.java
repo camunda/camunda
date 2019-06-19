@@ -74,7 +74,6 @@ public class ElasticsearchExporterTest {
     config.index.jobBatch = true;
     config.index.message = true;
     config.index.messageSubscription = true;
-    config.index.raft = true;
     config.index.variable = true;
     config.index.variableDocument = true;
     config.index.workflowInstance = true;
@@ -111,7 +110,6 @@ public class ElasticsearchExporterTest {
     config.index.jobBatch = true;
     config.index.message = true;
     config.index.messageSubscription = true;
-    config.index.raft = true;
     config.index.variable = true;
     config.index.variableDocument = true;
     config.index.workflowInstance = true;
@@ -151,7 +149,6 @@ public class ElasticsearchExporterTest {
     config.index.jobBatch = false;
     config.index.message = false;
     config.index.messageSubscription = false;
-    config.index.raft = false;
     config.index.variable = false;
     config.index.variableDocument = false;
     config.index.workflowInstance = false;

@@ -137,7 +137,6 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
     configuration.index.jobBatch = true;
     configuration.index.message = true;
     configuration.index.messageSubscription = true;
-    configuration.index.raft = true;
     configuration.index.variable = true;
     configuration.index.workflowInstance = true;
     configuration.index.workflowInstanceSubscription = true;

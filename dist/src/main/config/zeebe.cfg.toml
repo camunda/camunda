@@ -305,6 +305,5 @@
 #  job = true
 #  message = false
 #  messageSubscription = false
-#  raft = false
 #  workflowInstance = true
 #  workflowInstanceSubscription = false

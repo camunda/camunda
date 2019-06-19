@@ -17,9 +17,6 @@
         "position": {
           "type": "long"
         },
-        "raftTerm": {
-          "type": "integer"
-        },
         "sourceRecordPosition": {
           "type": "long"
         },
