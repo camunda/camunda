@@ -35,7 +35,6 @@
       <validValue name="DEPLOYMENT">4</validValue>
       <validValue name="WORKFLOW_INSTANCE">5</validValue>
       <validValue name="INCIDENT">6</validValue>
-      <validValue name="NOOP">7</validValue>
       <validValue name="MESSAGE">10</validValue>
       <validValue name="MESSAGE_SUBSCRIPTION">11</validValue>
       <validValue name="WORKFLOW_INSTANCE_SUBSCRIPTION">12</validValue>

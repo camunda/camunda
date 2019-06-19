@@ -84,8 +84,6 @@ public class TestStreams {
 
   static {
     TypedEventRegistry.EVENT_REGISTRY.forEach((v, c) -> VALUE_TYPES.put(c, v));
-
-    VALUE_TYPES.put(UnpackedObject.class, ValueType.NOOP);
   }
 
   private final TemporaryFolder dataDirectory;

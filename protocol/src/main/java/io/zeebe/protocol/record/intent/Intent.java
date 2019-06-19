@@ -62,8 +62,6 @@ public interface Intent {
         return DeploymentIntent.from(intent);
       case INCIDENT:
         return IncidentIntent.from(intent);
-      case NOOP:
-        return Intent.UNKNOWN;
       case JOB:
         return JobIntent.from(intent);
       case WORKFLOW_INSTANCE:
@@ -107,8 +105,6 @@ public interface Intent {
         return DeploymentIntent.valueOf(intent);
       case INCIDENT:
         return IncidentIntent.valueOf(intent);
-      case NOOP:
-        return Intent.UNKNOWN;
       case JOB:
         return JobIntent.valueOf(intent);
       case WORKFLOW_INSTANCE:
