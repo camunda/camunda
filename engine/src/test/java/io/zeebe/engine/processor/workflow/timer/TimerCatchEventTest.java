@@ -381,7 +381,7 @@ public class TimerCatchEventTest {
 
     Assertions.assertThat(timerRecord.getValue())
         .hasElementInstanceKey(activityRecord.getKey())
-        .hasHandlerFlowNodeId("timer");
+        .hasTargetElementId("timer");
 
     assertThat(timerRecord.getValue().getDueDate())
         .isBetween(
@@ -442,7 +442,7 @@ public class TimerCatchEventTest {
     // then
     assertThat(timerRescheduled.getKey()).isGreaterThan(timerCreated.getKey());
     Assertions.assertThat(timerRescheduled.getValue())
-        .hasHandlerFlowNodeId(timerCreated.getValue().getHandlerFlowNodeId())
+        .hasTargetElementId(timerCreated.getValue().getTargetElementId())
         .hasElementInstanceKey(timerCreated.getValue().getElementInstanceKey());
 
     assertThat(timerRescheduled.getValue().getDueDate())
@@ -500,7 +500,7 @@ public class TimerCatchEventTest {
                 .withWorkflowInstanceKey(workflowInstanceKey)
                 .limit(4))
         .hasSize(4)
-        .extracting(r -> r.getValue().getHandlerFlowNodeId())
+        .extracting(r -> r.getValue().getTargetElementId())
         .containsExactlyInAnyOrder("timer-1", "timer-2", "timer-2", "timer-2");
   }
 

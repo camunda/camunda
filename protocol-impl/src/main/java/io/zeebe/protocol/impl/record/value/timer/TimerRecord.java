@@ -31,7 +31,7 @@ public class TimerRecord extends UnifiedRecordValue
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
   private final LongProperty dueDateProp = new LongProperty("dueDate");
-  private final StringProperty handlerNodeId = new StringProperty("handlerFlowNodeId");
+  private final StringProperty targetElementId = new StringProperty("targetElementId");
   private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions");
   private final LongProperty workflowKeyProp = new LongProperty("workflowKey");
 
@@ -39,14 +39,14 @@ public class TimerRecord extends UnifiedRecordValue
     this.declareProperty(elementInstanceKeyProp)
         .declareProperty(workflowInstanceKeyProp)
         .declareProperty(dueDateProp)
-        .declareProperty(handlerNodeId)
+        .declareProperty(targetElementId)
         .declareProperty(repetitionsProp)
         .declareProperty(workflowKeyProp);
   }
 
   @JsonIgnore
-  public DirectBuffer getHandlerNodeId() {
-    return handlerNodeId.getValue();
+  public DirectBuffer getTargetElementIdBuffer() {
+    return targetElementId.getValue();
   }
 
   public long getWorkflowInstanceKey() {
@@ -69,8 +69,8 @@ public class TimerRecord extends UnifiedRecordValue
   }
 
   @Override
-  public String getHandlerFlowNodeId() {
-    return BufferUtil.bufferAsString(handlerNodeId.getValue());
+  public String getTargetElementId() {
+    return BufferUtil.bufferAsString(targetElementId.getValue());
   }
 
   @Override
@@ -88,8 +88,8 @@ public class TimerRecord extends UnifiedRecordValue
     return this;
   }
 
-  public TimerRecord setHandlerNodeId(DirectBuffer handlerNodeId) {
-    this.handlerNodeId.setValue(handlerNodeId);
+  public TimerRecord setTargetElementId(DirectBuffer targetElementId) {
+    this.targetElementId.setValue(targetElementId);
     return this;
   }
 

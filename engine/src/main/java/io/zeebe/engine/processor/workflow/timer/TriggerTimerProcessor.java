@@ -123,7 +123,10 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     return workflowState
         .getEventScopeInstanceState()
         .triggerEvent(
-            eventScopeKey, eventKey, timer.getHandlerNodeId(), DocumentValue.EMPTY_DOCUMENT);
+            eventScopeKey,
+            eventKey,
+            timer.getTargetElementIdBuffer(),
+            DocumentValue.EMPTY_DOCUMENT);
   }
 
   private long prepareEventOccurredEvent(
@@ -137,7 +140,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
       eventOccurredRecord
           .setBpmnElementType(BpmnElementType.START_EVENT)
           .setWorkflowKey(timer.getWorkflowKey())
-          .setElementId(timer.getHandlerNodeId());
+          .setElementId(timer.getTargetElementIdBuffer());
     } else {
       eventOccurredKey = elementInstanceKey;
       eventOccurredRecord.wrap(
@@ -160,7 +163,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
           workflowState.getWorkflowByKey(timer.getWorkflowKey()).getWorkflow().getStartEvents();
 
       for (ExecutableCatchEventElement startEvent : startEvents) {
-        if (startEvent.getId().equals(timer.getHandlerNodeId())) {
+        if (startEvent.getId().equals(timer.getTargetElementIdBuffer())) {
           return startEvent;
         }
       }
@@ -170,7 +173,9 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
 
       if (elementInstance != null) {
         return getCatchEventById(
-            workflowState, elementInstance.getValue().getWorkflowKey(), timer.getHandlerNodeId());
+            workflowState,
+            elementInstance.getValue().getWorkflowKey(),
+            timer.getTargetElementIdBuffer());
       }
     }
     return null;

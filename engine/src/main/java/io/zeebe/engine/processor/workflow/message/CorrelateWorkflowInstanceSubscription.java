@@ -136,7 +136,7 @@ public final class CorrelateWorkflowInstanceSubscription
             .triggerEvent(
                 subscriptionRecord.getElementInstanceKey(),
                 eventKey,
-                subscription.getHandlerNodeId(),
+                subscription.getTargetElementId(),
                 record.getValue().getVariablesBuffer());
 
     if (isOccurred) {
