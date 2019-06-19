@@ -37,9 +37,6 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    */
   long getSourceRecordPosition();
 
-  /** @return the id of the producer which produced this event */
-  int getProducerId();
-
   /**
    * Retrieves the key of the record.
    *

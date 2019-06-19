@@ -58,7 +58,6 @@ public class CopiedRecords {
         rawEvent.getKey(),
         rawEvent.getPosition(),
         rawEvent.getSourceEventPosition(),
-        rawEvent.getTimestamp(),
-        rawEvent.getProducerId());
+        rawEvent.getTimestamp());
   }
 }

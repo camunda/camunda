@@ -74,11 +74,6 @@ public class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecor
   }
 
   @Override
-  public int getProducerId() {
-    throw new UnsupportedOperationException("not yet implemented");
-  }
-
-  @Override
   public Instant getTimestamp() {
     throw new UnsupportedOperationException("not yet implemented");
   }

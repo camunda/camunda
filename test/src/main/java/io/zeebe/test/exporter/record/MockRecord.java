@@ -23,7 +23,6 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
 
   private long position = 0;
   private long sourceRecordPosition = -1;
-  private int producerId = 0;
   private long key = -1;
   private Instant timestamp = Instant.now();
   private MockRecordMetadata metadata = new MockRecordMetadata();
@@ -34,14 +33,12 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
   public MockRecord(
       long position,
       long sourceRecordPosition,
-      int producerId,
       long key,
       Instant timestamp,
       MockRecordMetadata metadata,
       MockRecordValueWithVariables value) {
     this.position = position;
     this.sourceRecordPosition = sourceRecordPosition;
-    this.producerId = producerId;
     this.key = key;
     this.timestamp = timestamp;
     this.metadata = metadata;
@@ -65,16 +62,6 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
 
   public MockRecord setSourceRecordPosition(long sourceRecordPosition) {
     this.sourceRecordPosition = sourceRecordPosition;
-    return this;
-  }
-
-  @Override
-  public int getProducerId() {
-    return producerId;
-  }
-
-  public MockRecord setProducerId(int producerId) {
-    this.producerId = producerId;
     return this;
   }
 
@@ -125,8 +112,6 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
         + position
         + ", sourceRecordPosition="
         + sourceRecordPosition
-        + ", producerId="
-        + producerId
         + ", key="
         + key
         + ", timestamp="
@@ -150,7 +135,6 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
     final MockRecord record = (MockRecord) o;
     return getPosition() == record.getPosition()
         && getSourceRecordPosition() == record.getSourceRecordPosition()
-        && getProducerId() == record.getProducerId()
         && getKey() == record.getKey()
         && Objects.equals(getTimestamp(), record.getTimestamp())
         && Objects.equals(getMetadata(), record.getMetadata())
@@ -162,7 +146,6 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
     return Objects.hash(
         getPosition(),
         getSourceRecordPosition(),
-        getProducerId(),
         getKey(),
         getTimestamp(),
         getMetadata(),
