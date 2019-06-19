@@ -21,7 +21,7 @@ export default function TenantPopover({tenants, selected, onChange}) {
   if (noneSelected) {
     label = 'Select...';
   }
-  if (selected.length === 1) {
+  if (selected.length === 1 && tenants.length !== 0) {
     label = tenants.find(({id}) => id === selected[0]).name;
   }
   if (tenants.length < 2) {
