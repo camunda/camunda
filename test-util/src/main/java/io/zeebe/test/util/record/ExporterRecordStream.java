@@ -63,10 +63,6 @@ public abstract class ExporterRecordStream<
     return filter(r -> r.getSourceRecordPosition() == sourceRecordPosition);
   }
 
-  public S withProducerId(final int producerId) {
-    return filter(r -> r.getProducerId() == producerId);
-  }
-
   public S withRecordKey(final long key) {
     return filter(r -> r.getKey() == key);
   }

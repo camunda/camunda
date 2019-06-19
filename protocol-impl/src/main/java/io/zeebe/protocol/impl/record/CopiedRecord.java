@@ -30,7 +30,6 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
   private final long position;
   private final long sourcePosition;
   private final long timestamp;
-  private final int producerId;
 
   public CopiedRecord(
       T recordValue,
@@ -38,15 +37,13 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
       long key,
       long position,
       long sourcePosition,
-      long timestamp,
-      int producerId) {
+      long timestamp) {
     this.metadata = recordMetadata;
     this.recordValue = recordValue;
     this.key = key;
     this.position = position;
     this.sourcePosition = sourcePosition;
     this.timestamp = timestamp;
-    this.producerId = producerId;
   }
 
   @Override
@@ -78,11 +75,6 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
   @Override
   public RecordMetadata getMetadata() {
     return metadata;
-  }
-
-  @Override
-  public int getProducerId() {
-    return producerId;
   }
 
   @Override

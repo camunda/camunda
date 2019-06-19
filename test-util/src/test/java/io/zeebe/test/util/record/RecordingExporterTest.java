@@ -75,11 +75,6 @@ public class RecordingExporterTest {
     }
 
     @Override
-    public int getProducerId() {
-      return 0;
-    }
-
-    @Override
     public long getKey() {
       return 0;
     }

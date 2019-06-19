@@ -138,12 +138,11 @@ public class JsonSerializableToJsonTest {
               final int position = 4321;
               final int sourcePosition = 231;
               final long timestamp = 2191L;
-              final int producerId = 23;
 
               return new CopiedRecord<>(
-                  record, recordMetadata, key, position, sourcePosition, timestamp, producerId);
+                  record, recordMetadata, key, position, sourcePosition, timestamp);
             },
-        "{'metadata':{'recordType':'COMMAND','intent':'CREATE','partitionId':2,'valueType':'DEPLOYMENT','rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails'},'key':1234,'position':4321,'producerId':23,'sourceRecordPosition':231,'value':{'deployedWorkflows':[{'bpmnProcessId':'testProcess','version':12,'resourceName':'resource','workflowKey':123}],'resources':[{'resourceName':'resource','resourceType':'BPMN_XML','resource':'Y29udGVudHM='}]},'timestamp':2191}"
+        "{'metadata':{'recordType':'COMMAND','intent':'CREATE','partitionId':2,'valueType':'DEPLOYMENT','rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails'},'key':1234,'position':4321,'sourceRecordPosition':231,'value':{'deployedWorkflows':[{'bpmnProcessId':'testProcess','version':12,'resourceName':'resource','workflowKey':123}],'resources':[{'resourceName':'resource','resourceType':'BPMN_XML','resource':'Y29udGVudHM='}]},'timestamp':2191}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// RecordMetadata /////////////////////////////////////////

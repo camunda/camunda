@@ -68,11 +68,6 @@ public class TypedEventImpl implements TypedRecord {
   }
 
   @Override
-  public int getProducerId() {
-    return rawEvent.getProducerId();
-  }
-
-  @Override
   public Instant getTimestamp() {
     return Instant.ofEpochMilli(rawEvent.getTimestamp());
   }

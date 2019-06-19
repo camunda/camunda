@@ -20,9 +20,6 @@
         "sourceRecordPosition": {
           "type": "long"
         },
-        "producerId": {
-          "type": "integer"
-        },
         "key": {
           "type": "long"
         },
