@@ -17,7 +17,6 @@ package io.zeebe.test.util.record;
 
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.value.JobBatchRecordValue;
-import java.time.Duration;
 import java.util.stream.Stream;
 
 public class JobBatchRecordStream
@@ -34,21 +33,5 @@ public class JobBatchRecordStream
 
   public JobBatchRecordStream withType(final String type) {
     return valueFilter(v -> type.equals(v.getType()));
-  }
-
-  public JobBatchRecordStream withWorker(final String worker) {
-    return valueFilter(v -> worker.equals(v.getWorker()));
-  }
-
-  public JobBatchRecordStream withTimeout(final Duration timeout) {
-    return valueFilter(v -> timeout.equals(v.getTimeout()));
-  }
-
-  public JobBatchRecordStream withTimeout(final long timeout) {
-    return valueFilter(v -> Duration.ofMillis(timeout).equals(v.getTimeout()));
-  }
-
-  public JobBatchRecordStream withMaxJobsToActivate(final int maxJobsToActivate) {
-    return valueFilter(v -> v.getMaxJobsToActivate() == maxJobsToActivate);
   }
 }

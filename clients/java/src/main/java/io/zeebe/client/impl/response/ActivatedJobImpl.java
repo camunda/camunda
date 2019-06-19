@@ -20,7 +20,6 @@ import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.response.JobHeaders;
 import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
-import java.time.Instant;
 import java.util.Map;
 
 public class ActivatedJobImpl implements ActivatedJob {
@@ -33,7 +32,7 @@ public class ActivatedJobImpl implements ActivatedJob {
   private final Map<String, Object> customHeaders;
   private final String worker;
   private final int retries;
-  private final Instant deadline;
+  private final long deadline;
   private final String variables;
 
   public ActivatedJobImpl(ZeebeObjectMapper objectMapper, GatewayOuterClass.ActivatedJob job) {
@@ -45,7 +44,7 @@ public class ActivatedJobImpl implements ActivatedJob {
     customHeaders = objectMapper.fromJsonAsMap(job.getCustomHeaders());
     worker = job.getWorker();
     retries = job.getRetries();
-    deadline = Instant.ofEpochMilli(job.getDeadline());
+    deadline = job.getDeadline();
     variables = job.getVariables();
   }
 
@@ -80,7 +79,7 @@ public class ActivatedJobImpl implements ActivatedJob {
   }
 
   @Override
-  public Instant getDeadline() {
+  public long getDeadline() {
     return deadline;
   }
 

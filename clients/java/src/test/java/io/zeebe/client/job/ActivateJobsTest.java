@@ -26,7 +26,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.zeebe.gateway.protocol.GatewayOuterClass.JobHeaders;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
@@ -101,7 +100,7 @@ public class ActivateJobsTest extends ClientTest {
     assertThat(job.getCustomHeaders()).isEqualTo(fromJsonAsMap(activatedJob1.getCustomHeaders()));
     assertThat(job.getWorker()).isEqualTo(activatedJob1.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob1.getRetries());
-    assertThat(job.getDeadline()).isEqualTo(Instant.ofEpochMilli(activatedJob1.getDeadline()));
+    assertThat(job.getDeadline()).isEqualTo(activatedJob1.getDeadline());
     assertThat(job.getVariables()).isEqualTo(activatedJob1.getVariables());
 
     job = response.getJobs().get(1);
@@ -111,7 +110,7 @@ public class ActivateJobsTest extends ClientTest {
     assertThat(job.getCustomHeaders()).isEqualTo(fromJsonAsMap(activatedJob2.getCustomHeaders()));
     assertThat(job.getWorker()).isEqualTo(activatedJob2.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob2.getRetries());
-    assertThat(job.getDeadline()).isEqualTo(Instant.ofEpochMilli(activatedJob2.getDeadline()));
+    assertThat(job.getDeadline()).isEqualTo(activatedJob2.getDeadline());
     assertThat(job.getVariables()).isEqualTo(activatedJob2.getVariables());
 
     final ActivateJobsRequest request = gatewayService.getLastRequest();

@@ -91,7 +91,7 @@ public class ActivateJobsTest extends GatewayTest {
     final JobBatchRecord brokerRequestValue = brokerRequest.getRequestWriter();
     assertThat(brokerRequestValue.getMaxJobsToActivate()).isEqualTo(maxJobsToActivate);
     assertThat(brokerRequestValue.getTypeBuffer()).isEqualTo(wrapString(jobType));
-    assertThat(brokerRequestValue.getTimeoutLong()).isEqualTo(timeout.toMillis());
+    assertThat(brokerRequestValue.getTimeout()).isEqualTo(timeout.toMillis());
     assertThat(brokerRequestValue.getWorkerBuffer()).isEqualTo(wrapString(worker));
     assertThat(brokerRequestValue.variables())
         .extracting(v -> BufferUtil.bufferAsString(v.getValue()))

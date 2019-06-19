@@ -118,7 +118,7 @@ public class ResponseMapper {
               .setCustomHeaders(bufferAsJson(job.getCustomHeadersBuffer()))
               .setWorker(bufferAsString(job.getWorkerBuffer()))
               .setRetries(job.getRetries())
-              .setDeadline(job.getDeadlineLong())
+              .setDeadline(job.getDeadline())
               .setVariables(bufferAsJson(job.getVariablesBuffer()))
               .build();
 

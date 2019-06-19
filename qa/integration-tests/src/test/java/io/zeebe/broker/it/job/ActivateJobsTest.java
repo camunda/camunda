@@ -40,7 +40,6 @@ import io.zeebe.util.collection.Tuple;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -124,7 +123,7 @@ public class ActivateJobsTest {
             ActivatedJob::getVariablesAsMap)
         .containsOnly(tuple(JOB_TYPE, worker, CUSTOM_HEADERS, VARIABLES));
 
-    final List<Instant> deadlines =
+    final List<Long> deadlines =
         jobRecords(JobIntent.ACTIVATED)
             .limit(amount)
             .map(r -> r.getValue().getDeadline())

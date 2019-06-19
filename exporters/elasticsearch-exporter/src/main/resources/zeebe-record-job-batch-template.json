@@ -19,7 +19,7 @@
               "type": "keyword"
             },
             "timeout": {
-              "type": "date"
+              "type": "long"
             },
             "maxJobsToActivate": {
               "type": "integer"

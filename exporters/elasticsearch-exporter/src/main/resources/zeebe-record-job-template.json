@@ -48,7 +48,7 @@
               "type": "long"
             },
             "deadline": {
-              "type": "date"
+              "type": "long"
             },
             "variables": {
               "type": "text"

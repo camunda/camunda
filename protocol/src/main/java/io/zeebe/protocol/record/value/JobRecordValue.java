@@ -18,7 +18,6 @@ package io.zeebe.protocol.record.value;
 import io.zeebe.protocol.record.RecordValueWithVariables;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.value.job.Headers;
-import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -47,11 +46,12 @@ public interface JobRecordValue extends RecordValueWithVariables {
   int getRetries();
 
   /**
-   * @return the time until when the job is exclusively assigned to this worker. If the deadline is
-   *     exceeded, it can happen that the job is handed to another worker and the work is performed
-   *     twice.
+   * @return the unix timestamp until when the job is exclusively assigned to this worker (time unit
+   *     is milliseconds since unix epoch). If the deadline is exceeded, it can happen that the job
+   *     is handed to another worker and the work is performed twice. If this property is not set it
+   *     will return '-1'.
    */
-  Instant getDeadline();
+  long getDeadline();
 
   /** @return the job worker error message if the job is failed */
   String getErrorMessage();

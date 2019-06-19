@@ -16,7 +16,6 @@
 package io.zeebe.protocol.impl.record.value.job;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
@@ -30,7 +29,6 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceRelated;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.protocol.record.value.job.Headers;
 import io.zeebe.util.buffer.BufferUtil;
-import java.time.Instant;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -76,8 +74,8 @@ public class JobRecord extends UnifiedRecordValue
     return customHeadersProp.getValue();
   }
 
-  @JsonProperty("deadline")
-  public long getDeadlineLong() {
+  @Override
+  public long getDeadline() {
     return deadlineProp.getValue();
   }
 
@@ -114,13 +112,6 @@ public class JobRecord extends UnifiedRecordValue
   @Override
   public int getRetries() {
     return retriesProp.getValue();
-  }
-
-  @Override
-  @JsonIgnore
-  public Instant getDeadline() {
-    final long deadline = deadlineProp.getValue();
-    return deadline > 0 ? Instant.ofEpochMilli(deadline) : null;
   }
 
   @Override

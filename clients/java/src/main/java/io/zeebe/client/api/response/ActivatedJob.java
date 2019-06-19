@@ -15,7 +15,6 @@
  */
 package io.zeebe.client.api.response;
 
-import java.time.Instant;
 import java.util.Map;
 
 public interface ActivatedJob {
@@ -43,11 +42,11 @@ public interface ActivatedJob {
   int getRetries();
 
   /**
-   * @return the time until when the job is exclusively assigned to this worker. If the deadline is
-   *     exceeded, it can happen that the job is handed to another worker and the work is performed
-   *     twice.
+   * @return the unix timestamp until when the job is exclusively assigned to this worker (time unit
+   *     * is milliseconds since unix epoch). If the deadline is exceeded, it can happen that the
+   *     job is handed to another worker and the work is performed twice.
    */
-  Instant getDeadline();
+  long getDeadline();
 
   /** @return JSON-formatted variables */
   String getVariables();

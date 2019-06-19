@@ -16,7 +16,6 @@
 package io.zeebe.protocol.impl.record.value.job;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
@@ -29,7 +28,6 @@ import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.util.buffer.BufferUtil;
-import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -83,8 +81,8 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
     return variablesProp;
   }
 
-  @JsonProperty("timeout")
-  public long getTimeoutLong() {
+  @Override
+  public long getTimeout() {
     return timeoutProp.getValue();
   }
 
@@ -100,12 +98,6 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
   @Override
   public String getWorker() {
     return BufferUtil.bufferAsString(workerProp.getValue());
-  }
-
-  @Override
-  @JsonIgnore
-  public Duration getTimeout() {
-    return Duration.ofMillis(timeoutProp.getValue());
   }
 
   public int getMaxJobsToActivate() {
