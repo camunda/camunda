@@ -236,7 +236,7 @@ public class TestStreams {
     return new FluentLogWriter(logStream);
   }
 
-  protected StateStorageFactory getStateStorageFactory(LogStream stream) {
+  public StateStorageFactory getStateStorageFactory(LogStream stream) {
     File rocksDBDirectory;
     try {
       rocksDBDirectory = dataDirectory.newFolder(stream.getLogName(), "state");
