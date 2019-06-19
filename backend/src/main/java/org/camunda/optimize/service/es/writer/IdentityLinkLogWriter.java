@@ -183,8 +183,6 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
                                                    final String processInstanceId,
                                                    final List<UserTaskInstanceDto> userTasks)
     throws IOException {
-
-    final ImmutableMap<String, Object> scriptParameters = ImmutableMap.of(USER_TASKS, mapToParameterSet(userTasks));
     final Script updateScript = createUpdateScript(userTasks);
 
     final UserTaskInstanceDto firstUserTaskInstance = userTasks.stream().findFirst()
@@ -241,7 +239,7 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
       ,
       // @formatter:on
       ImmutableMap.of(
-        "userTasks", mapToParameterSet(userTasksWithAssigneeAndCandidateGroups)
+        USER_TASKS, mapToParameterSet(userTasksWithAssigneeAndCandidateGroups)
       )
     );
   }
