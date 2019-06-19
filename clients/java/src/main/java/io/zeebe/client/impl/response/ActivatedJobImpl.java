@@ -29,7 +29,7 @@ public class ActivatedJobImpl implements ActivatedJob {
   private final long key;
   private final String type;
   private final JobHeaders headers;
-  private final Map<String, Object> customHeaders;
+  private final Map<String, String> customHeaders;
   private final String worker;
   private final int retries;
   private final long deadline;
@@ -41,7 +41,7 @@ public class ActivatedJobImpl implements ActivatedJob {
     key = job.getKey();
     type = job.getType();
     headers = new JobHeadersImpl(job.getJobHeaders());
-    customHeaders = objectMapper.fromJsonAsMap(job.getCustomHeaders());
+    customHeaders = objectMapper.fromJsonAsStringMap(job.getCustomHeaders());
     worker = job.getWorker();
     retries = job.getRetries();
     deadline = job.getDeadline();
@@ -64,7 +64,7 @@ public class ActivatedJobImpl implements ActivatedJob {
   }
 
   @Override
-  public Map<String, Object> getCustomHeaders() {
+  public Map<String, String> getCustomHeaders() {
     return customHeaders;
   }
 

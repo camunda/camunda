@@ -34,6 +34,8 @@ public class ExporterObjectMapper {
 
   private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =
       new TypeReference<Map<String, Object>>() {};
+  private static final TypeReference<Map<String, Object>> STRING_MAP_TYPE_REFERENCE =
+      new TypeReference<Map<String, Object>>() {};
 
   private final ObjectMapper msgpackObjectMapper;
   private final ObjectMapper jsonObjectMapper;
@@ -101,6 +103,14 @@ public class ExporterObjectMapper {
   public Map<String, Object> fromMsgpackAsMap(InputStream inputStream) {
     try {
       return msgpackObjectMapper.readValue(inputStream, MAP_TYPE_REFERENCE);
+    } catch (IOException e) {
+      throw new RuntimeException("Failed deserialize Msgpack JSON to map", e);
+    }
+  }
+
+  public Map<String, String> fromMsgpackAsStringMap(InputStream inputStream) {
+    try {
+      return msgpackObjectMapper.readValue(inputStream, STRING_MAP_TYPE_REFERENCE);
     } catch (IOException e) {
       throw new RuntimeException("Failed deserialize Msgpack JSON to map", e);
     }

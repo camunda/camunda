@@ -31,6 +31,10 @@ var (
 		"foo":   "bar",
 		"hello": "world",
 	}
+    expectedJsonAsMapVariables = map[string]interface{}{
+        "foo":   "bar",
+        "hello": "world",
+    }
 	expectedJsonAsStruct = MyType{
 		Foo:   "bar",
 		Hello: "world",
@@ -46,7 +50,7 @@ func TestJob_GetVariablesAsMap(t *testing.T) {
 	if err != nil {
 		t.Error("Failed to get variables as map", err)
 	}
-	if reflect.DeepEqual(variables, expectedJsonAsMap) {
+	if !reflect.DeepEqual(variables, expectedJsonAsMapVariables) {
 		t.Error("Failed to get variables as map, got", variables, "instead of", expectedJsonAsMap)
 	}
 }
@@ -66,7 +70,7 @@ func TestJob_GetCustomHeadersAsMap(t *testing.T) {
 	if err != nil {
 		t.Error("Failed to get custom headers as map", err)
 	}
-	if reflect.DeepEqual(customHeaders, expectedJsonAsMap) {
+	if !reflect.DeepEqual(customHeaders, expectedJsonAsMap) {
 		t.Error("Failed to get custom headers as map, got", customHeaders, "instead of", expectedJsonAsMap)
 	}
 }
