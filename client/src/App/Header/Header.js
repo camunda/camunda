@@ -120,8 +120,8 @@ class Header extends React.Component {
       const response = await fetchWorkflowCoreStatistics();
       const {running, withIncidents} = response.data;
 
-      counts.runningInstancesCount = running;
-      counts.incidentsCount = withIncidents;
+      counts.runningInstancesCount = running || 0;
+      counts.incidentsCount = withIncidents || 0;
     }
 
     this.setState(counts);

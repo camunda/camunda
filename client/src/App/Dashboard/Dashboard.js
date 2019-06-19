@@ -80,9 +80,8 @@ class Dashboard extends Component {
       <Fragment>
         <Header
           active="dashboard"
-          runningInstancesCount={running || 0}
-          activeInstancesCount={active || 0}
-          incidentsCount={withIncidents || 0}
+          runningInstancesCount={running}
+          incidentsCount={withIncidents}
         />
         <Styled.Dashboard>
           <VisuallyHiddenH1>Camunda Operate Dashboard</VisuallyHiddenH1>
