@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.processinstance.duration.groupby.date;
 
+import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
@@ -32,6 +33,7 @@ import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsNull.notNullValue;
 
 
 public class ProcessInstanceDurationByStartDateReportEvaluationIT
@@ -173,6 +175,52 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
       is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(4).getValue(), is(nullValue()));
+  }
+
+  @Test
+  public void evaluateReportWithSeveralRunningAndCompletedProcessInstances() throws SQLException {
+    // given 1 completed + 2 running process instances
+    final OffsetDateTime now = OffsetDateTime.now();
+
+    final ProcessDefinitionEngineDto processDefinition = deployTwoRunningAndOneCompletedUserTaskProcesses(now);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+      .setDateInterval(GroupByDateUnit.DAY)
+      .setProcessDefinitionKey(processDefinition.getKey())
+      .setProcessDefinitionVersion(processDefinition.getVersionAsString())
+      .setReportDataType(getTestReportDataType())
+      .build();
+
+    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+
+
+    // then
+    assertThat(result.getProcessInstanceCount(), is(3L));
+    assertThat(result.getIsComplete(), is(true));
+
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(3));
+
+    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(truncateToStartOfUnit(now, ChronoUnit.DAYS))));
+    assertThat(resultData.get(0).getValue(), is(1000L));
+
+    assertThat(
+      resultData.get(1).getKey(),
+      is(localDateTimeToString(truncateToStartOfUnit(now.minusDays(1), ChronoUnit.DAYS)))
+    );
+    assertThat(resultData.get(1).getValue(), is(nullValue()));
+
+    assertThat(
+      resultData.get(2).getKey(),
+      is(localDateTimeToString(truncateToStartOfUnit(now.minusDays(2), ChronoUnit.DAYS)))
+    );
+    assertThat(resultData.get(2).getValue(), is(nullValue()));
   }
 
 }

@@ -51,6 +51,7 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 
 public abstract class AbstractCountProcessInstanceFrequencyByDateCommand
   extends ProcessReportCommand<SingleProcessMapReportResult>
@@ -76,6 +77,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateCommand
     );
 
     BoolQueryBuilder query = setupBaseQuery(processReportData);
+    query.must(existsQuery(getDateField()));
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)

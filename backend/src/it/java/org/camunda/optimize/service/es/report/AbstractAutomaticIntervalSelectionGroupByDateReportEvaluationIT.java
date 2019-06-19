@@ -336,26 +336,6 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     return processDefinition;
   }
 
-  private ProcessDefinitionEngineDto startProcessInstancesInStartDayRange(ZonedDateTime min,
-                                                                          ZonedDateTime max) throws SQLException {
-    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
-    ProcessInstanceEngineDto procInstMin = engineRule.startProcessInstance(processDefinition.getId());
-    ProcessInstanceEngineDto procInstMax = engineRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseRule.changeProcessInstanceStartDate(procInstMin.getId(), min.toOffsetDateTime());
-    engineDatabaseRule.changeProcessInstanceStartDate(procInstMax.getId(), max.toOffsetDateTime());
-    return processDefinition;
-  }
-
-  private ProcessDefinitionEngineDto startProcessInstancesInEndDayRange(ZonedDateTime min,
-                                                                        ZonedDateTime max) throws SQLException {
-    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
-    ProcessInstanceEngineDto procInstMin = engineRule.startProcessInstance(processDefinition.getId());
-    ProcessInstanceEngineDto procInstMax = engineRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseRule.changeProcessInstanceEndDate(procInstMin.getId(), min.toOffsetDateTime());
-    engineDatabaseRule.changeProcessInstanceEndDate(procInstMax.getId(), max.toOffsetDateTime());
-    return processDefinition;
-  }
-
   protected abstract void updateProcessInstanceDate(ZonedDateTime min,
                                                     ProcessInstanceEngineDto procInstMin) throws SQLException;
 

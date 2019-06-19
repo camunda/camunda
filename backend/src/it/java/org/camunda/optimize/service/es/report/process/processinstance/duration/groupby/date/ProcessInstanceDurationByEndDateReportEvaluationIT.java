@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.processinstance.duration.groupby.date;
 
+import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
@@ -12,8 +13,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUn
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
@@ -32,6 +35,7 @@ import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateEx
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsNull.notNullValue;
 
 
 public class ProcessInstanceDurationByEndDateReportEvaluationIT
@@ -203,6 +207,41 @@ public class ProcessInstanceDurationByEndDateReportEvaluationIT
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData.size(), is(0));
 
+  }
+
+  @Test
+  public void evaluateReportWithSeveralRunningAndCompletedProcessInstances() throws SQLException {
+    // given 1 completed + 2 running process instances
+    final OffsetDateTime now = OffsetDateTime.now();
+
+    final ProcessDefinitionEngineDto processDefinition = deployTwoRunningAndOneCompletedUserTaskProcesses(now);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+      .setDateInterval(GroupByDateUnit.DAY)
+      .setProcessDefinitionKey(processDefinition.getKey())
+      .setProcessDefinitionVersion(processDefinition.getVersionAsString())
+      .setReportDataType(getTestReportDataType())
+      .build();
+
+    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+
+
+    // then
+    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getIsComplete(), is(true));
+
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(1));
+
+    ZonedDateTime startOfToday = truncateToStartOfUnit(now, ChronoUnit.DAYS);
+    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
+    assertThat(resultData.get(0).getValue(), is(1000L));
   }
 }
 

@@ -132,6 +132,20 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     assertThat(resultData.get(0).getValue(), is(1L));
   }
 
+
+  protected ProcessDefinitionEngineDto deployTwoRunningAndOneCompletedUserTaskProcesses(final OffsetDateTime now) throws
+                                                                                                                  SQLException {
+    final ProcessDefinitionEngineDto processDefinition = deploySimpleOneUserTasksDefinition();
+
+    final ProcessInstanceEngineDto processInstance1 = engineRule.startProcessInstance(processDefinition.getId());
+    engineRule.finishAllRunningUserTasks(processInstance1.getId());
+    final ProcessInstanceEngineDto processInstance2 = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstance2.getId(), now.minusDays(1));
+    final ProcessInstanceEngineDto processInstance3 = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstance3.getId(), now.minusDays(2));
+    return processDefinition;
+  }
+
   @Test
   public void resultIsSortedInDescendingOrder() throws Exception {
     // given
@@ -727,7 +741,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     return id;
   }
 
-  private String localDateTimeToString(ZonedDateTime time) {
+  protected String localDateTimeToString(ZonedDateTime time) {
     return embeddedOptimizeRule.getDateTimeFormatter().format(time);
   }
 }

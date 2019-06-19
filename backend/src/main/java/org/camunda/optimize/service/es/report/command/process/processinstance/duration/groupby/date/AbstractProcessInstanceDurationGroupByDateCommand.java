@@ -51,6 +51,7 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 
 public abstract class AbstractProcessInstanceDurationGroupByDateCommand
   extends ProcessReportCommand<SingleProcessMapDurationReportResult>
@@ -86,6 +87,7 @@ public abstract class AbstractProcessInstanceDurationGroupByDateCommand
     );
 
     BoolQueryBuilder query = setupBaseQuery(processReportData);
+    query.must(existsQuery(getDateField()));
 
     GroupByDateUnit groupByDateUnit = getGroupByDateUnit(processReportData);
 

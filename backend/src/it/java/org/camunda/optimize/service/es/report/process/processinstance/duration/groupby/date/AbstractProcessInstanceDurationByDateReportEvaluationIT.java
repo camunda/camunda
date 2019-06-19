@@ -901,4 +901,21 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     });
   }
 
+  protected ProcessDefinitionEngineDto deployTwoRunningAndOneCompletedUserTaskProcesses(final OffsetDateTime now) throws
+                                                                                                                  SQLException {
+    final ProcessDefinitionEngineDto processDefinition = deploySimpleOneUserTasksDefinition();
+
+    final ProcessInstanceEngineDto processInstance1 = engineRule.startProcessInstance(processDefinition.getId());
+    engineRule.finishAllRunningUserTasks(processInstance1.getId());
+
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstance1.getId(), now.minusSeconds(1));
+    engineDatabaseRule.changeProcessInstanceEndDate(processInstance1.getId(), now);
+
+    final ProcessInstanceEngineDto processInstance2 = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstance2.getId(), now.minusDays(1));
+    final ProcessInstanceEngineDto processInstance3 = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeProcessInstanceStartDate(processInstance3.getId(), now.minusDays(2));
+    return processDefinition;
+  }
+
 }

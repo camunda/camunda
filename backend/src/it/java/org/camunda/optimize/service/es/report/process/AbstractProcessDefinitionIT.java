@@ -43,6 +43,7 @@ public class AbstractProcessDefinitionIT {
   protected static final String BUSINESS_KEY = "aBusinessKey";
   protected static final String END_EVENT = "endEvent";
   protected static final String START_EVENT = "startEvent";
+  protected static final String USER_TASK = "userTask";
   protected static final String DEFAULT_VARIABLE_NAME = "foo";
   protected static final String DEFAULT_VARIABLE_VALUE = "bar";
   protected static final VariableType DEFAULT_VARIABLE_TYPE = VariableType.STRING;
@@ -84,11 +85,24 @@ public class AbstractProcessDefinitionIT {
 
   protected ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcess() {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .startEvent("startEvent")
-      .userTask("userTask")
+      .startEvent(START_EVENT)
+      .userTask(USER_TASK)
       .endEvent()
       .done();
     return engineRule.deployAndStartProcess(processModel);
+  }
+
+  protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition() {
+    return deploySimpleOneUserTasksDefinition("aProcess", null);
+  }
+
+  protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition(String key, String tenantId) {
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(key)
+      .startEvent(START_EVENT)
+      .userTask(USER_TASK)
+      .endEvent(END_EVENT)
+      .done();
+    return engineRule.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
