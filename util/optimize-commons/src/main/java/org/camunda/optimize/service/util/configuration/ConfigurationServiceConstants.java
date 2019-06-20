@@ -40,6 +40,7 @@ public interface ConfigurationServiceConstants {
   String ENGINE_IMPORT_DECISION_DEFINITION_XML_MAX_PAGE_SIZE = "$.import.data.decision-definition-xml.maxPageSize";
   String ENGINE_IMPORT_DECISION_INSTANCE_MAX_PAGE_SIZE = "$.import.data.decision-instance.maxPageSize";
   String IMPORT_DMN_DATA = "$.import.data.dmn.enabled";
+  String IMPORT_USER_TASK_WORKER_DATA = "$.import.data.user-task-worker.enabled";
 
   String VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.variableImport.basePackages";
   String ENGINE_REST_FILTER_PLUGIN_BASE_PACKAGES = "$.plugin.engineRestFilter.basePackages";

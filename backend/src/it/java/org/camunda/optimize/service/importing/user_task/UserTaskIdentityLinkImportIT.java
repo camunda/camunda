@@ -15,6 +15,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -32,6 +33,37 @@ import static org.hamcrest.Matchers.contains;
 
 
 public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
+
+  @Test
+  public void importOfUserTaskWorkerDataCanBeDisabled() throws IOException {
+    // given
+    embeddedOptimizeRule.getConfigurationService().setImportUserTaskWorkerDataEnabled(false);
+    embeddedOptimizeRule.reloadConfiguration();
+    deployAndStartOneUserTaskProcess();
+    String defaultCandidateGroup = "defaultCandidateGroupId";
+    engineRule.createGroup(defaultCandidateGroup);
+    engineRule.addCandidateGroupForAllRunningUserTasks(defaultCandidateGroup);
+    engineRule.finishAllRunningUserTasks();
+
+    // when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // then
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    for (SearchHit searchHitFields : idsResp.getHits()) {
+      final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
+        searchHitFields.getSourceAsString(), ProcessInstanceDto.class
+      );
+      persistedProcessInstanceDto.getUserTasks().forEach(task -> {
+        assertThat(task.getAssignee(), nullValue());
+        assertThat(task.getCandidateGroups().size(), is(0));
+        assertThat(task.getCandidateGroupOperations().size(), is(0));
+        assertThat(task.getAssigneeOperations().size(), is(0));
+      });
+    }
+  }
 
   @Test
   public void identityLinksLogsAreImported() throws Exception {

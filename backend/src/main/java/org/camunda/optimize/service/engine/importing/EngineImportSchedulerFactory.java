@@ -121,9 +121,11 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
     mediators.add(
       beanFactory.getBean(CompletedUserTaskEngineImportMediator.class, engineContext)
     );
-    mediators.add(
-      beanFactory.getBean(IdentityLinkLogEngineImportMediator.class, engineContext)
-    );
+    if (configurationService.getImportUserTaskWorkerDataEnabled()) {
+      mediators.add(
+        beanFactory.getBean(IdentityLinkLogEngineImportMediator.class, engineContext)
+      );
+    }
     mediators.add(
       beanFactory.getBean(RunningUserTaskInstanceEngineImportMediator.class, engineContext)
     );

@@ -126,6 +126,10 @@ import:
       # Determines if the DMN/decision data, such as decision definitions and instances
       # should be imported.
       enabled: true
+    user-task-worker:
+      # Determines if the user task worker data, such as assignee or candidate group of
+      # a user task, should be imported.
+      enabled: true
 
 serialization:
   # Define a custom date format that should be used for

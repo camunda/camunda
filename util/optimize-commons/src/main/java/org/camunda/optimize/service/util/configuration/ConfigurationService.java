@@ -131,6 +131,7 @@ public class ConfigurationService {
   private Integer engineImportDecisionInstanceMaxPageSize;
   private Integer importIndexAutoStorageIntervalInSec;
   private Boolean importDmnDataEnabled;
+  private Boolean importUserTaskWorkerDataEnabled;
 
   // plugin base packages
   private List<String> variableImportPluginBasePackages;
@@ -928,6 +929,16 @@ public class ConfigurationService {
       importDmnDataEnabled = configJsonContext.read(ConfigurationServiceConstants.IMPORT_DMN_DATA, Boolean.class);
     }
     return importDmnDataEnabled;
+  }
+
+  public Boolean getImportUserTaskWorkerDataEnabled() {
+    if (importUserTaskWorkerDataEnabled == null) {
+      importUserTaskWorkerDataEnabled = configJsonContext.read(
+        ConfigurationServiceConstants.IMPORT_USER_TASK_WORKER_DATA,
+        Boolean.class
+      );
+    }
+    return importUserTaskWorkerDataEnabled;
   }
 
   public String getAlertEmailAddress() {

@@ -142,6 +142,10 @@ import:
       # Determines if the DMN/decision data, such as decision definitions and instances
       # should be imported.
       enabled: true
+    user-task-worker:
+      # Determines if the user task worker data, such as assignee or candidate group of
+      # a user task, should be imported.
+      enabled: true
   # Number of threads being used to process the import jobs per data type that are writing data to elasticsearch.
   elasticsearchJobExecutorThreadCount: 1
   # Adjust the queue size of the import jobs per data type that store data to elasticsearch.
