@@ -16,7 +16,6 @@
 package io.zeebe.protocol.record.value;
 
 import io.zeebe.protocol.record.RecordValueWithVariables;
-import io.zeebe.protocol.record.intent.WorkflowInstanceRelated;
 
 public interface WorkflowInstanceCreationRecordValue
     extends RecordValueWithVariables, WorkflowInstanceRelated {

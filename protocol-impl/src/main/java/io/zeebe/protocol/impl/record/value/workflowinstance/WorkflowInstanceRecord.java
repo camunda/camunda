@@ -21,9 +21,9 @@ import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.record.intent.WorkflowInstanceRelated;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.WorkflowInstanceRelated;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
