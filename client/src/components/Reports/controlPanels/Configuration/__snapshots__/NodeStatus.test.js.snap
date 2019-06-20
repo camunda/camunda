@@ -29,3 +29,33 @@ exports[`should render a status selection for flow node reports 1`] = `
   </Select>
 </fieldset>
 `;
+
+exports[`should render a status selection reports grouped by assignee 1`] = `
+<fieldset
+  className="NodeStatus"
+>
+  <legend>
+    Flow Node Status
+  </legend>
+  <Select
+    onChange={[Function]}
+    value="completed"
+  >
+    <Option
+      value="running"
+    >
+      Running
+    </Option>
+    <Option
+      value="completed"
+    >
+      Completed
+    </Option>
+    <Option
+      value="all"
+    >
+      All
+    </Option>
+  </Select>
+</fieldset>
+`;

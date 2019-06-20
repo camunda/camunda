@@ -27,6 +27,18 @@ it('should render a status selection for flow node reports', () => {
   expect(node).toMatchSnapshot();
 });
 
+it('should render a status selection reports grouped by assignee', () => {
+  const node = shallow(
+    <NodeStatus
+      report={{
+        data: {groupBy: {type: 'assignee'}, configuration: {flowNodeExecutionState: 'completed'}}
+      }}
+    />
+  );
+
+  expect(node).toMatchSnapshot();
+});
+
 it('should not crash when no groupBy is set (e.g. for combined reports)', () => {
   shallow(<NodeStatus report={{data: {}}} />);
 });

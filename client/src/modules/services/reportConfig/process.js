@@ -23,12 +23,11 @@ export const view = [
     ]
   },
   {
-    label: 'User Task Duration',
-    group: 'fn',
+    label: 'User Task',
+    group: 'userTask',
     options: [
-      {label: 'Idle', data: {property: 'idleDuration', entity: 'userTask'}},
-      {label: 'Work', data: {property: 'workDuration', entity: 'userTask'}},
-      {label: 'Total', data: {property: 'duration', entity: 'userTask'}}
+      {label: 'Count', data: {property: 'frequency', entity: 'userTask'}},
+      {label: 'Duration', data: {property: 'duration', entity: 'userTask'}}
     ]
   }
 ];
@@ -60,7 +59,9 @@ export const groupBy = [
       {label: 'Hour', data: {type: 'endDate', value: {unit: 'hour'}}}
     ]
   },
-  {label: 'Variable', group: 'variable', options: 'variable'}
+  {label: 'Variable', group: 'variable', options: 'variable'},
+  {label: 'Assignee', group: 'user', data: {type: 'assignee', value: null}},
+  {label: 'Candidate Group', group: 'user', data: {type: 'candidateGroup', value: null}}
 ];
 
 export const visualization = [
@@ -83,5 +84,9 @@ export const combinations = {
   },
   fn: {
     fn: ['table', 'chart', 'heat']
+  },
+  userTask: {
+    fn: ['table', 'chart', 'heat'],
+    user: ['table', 'chart']
   }
 };

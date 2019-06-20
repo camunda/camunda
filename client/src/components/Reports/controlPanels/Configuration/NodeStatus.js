@@ -14,7 +14,7 @@ export default function NodeStatus({
   },
   onChange
 }) {
-  if (groupBy && groupBy.type === 'flowNodes') {
+  if (groupBy && ['flowNodes', 'assignee', 'candidateGroup'].includes(groupBy.type)) {
     return (
       <fieldset className="NodeStatus">
         <legend>Flow Node Status</legend>
