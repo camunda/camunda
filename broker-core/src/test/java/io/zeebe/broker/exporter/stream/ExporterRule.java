@@ -22,12 +22,12 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
-import io.zeebe.broker.util.RecordStream;
-import io.zeebe.broker.util.TestStreams;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZbColumnFamilies;
+import io.zeebe.engine.util.RecordStream;
+import io.zeebe.engine.util.TestStreams;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
@@ -96,7 +96,7 @@ public class ExporterRule implements TestRule {
     final LogStream stream = streams.getLogStream(STREAM_NAME);
 
     final StateStorage stateStorage =
-        streams.getStateStorageFactory().create(EXPORTER_PROCESSOR_ID, PROCESSOR_NAME);
+        streams.getStateStorageFactory(stream).create(EXPORTER_PROCESSOR_ID, PROCESSOR_NAME);
     final StateSnapshotController snapshotController =
         spy(new StateSnapshotController(zeebeDbFactory, stateStorage));
     capturedZeebeDb = spy(snapshotController.openDb());
