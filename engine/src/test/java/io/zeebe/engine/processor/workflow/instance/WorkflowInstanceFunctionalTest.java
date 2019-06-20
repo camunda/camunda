@@ -26,7 +26,6 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordMetadata;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
@@ -426,8 +425,7 @@ public class WorkflowInstanceFunctionalTest {
             .collect(Collectors.toList());
 
     assertThat(workflowEvents)
-        .extracting(Record::getMetadata)
-        .extracting(RecordMetadata::getIntent)
+        .extracting(Record::getIntent)
         .containsExactly(
             WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,

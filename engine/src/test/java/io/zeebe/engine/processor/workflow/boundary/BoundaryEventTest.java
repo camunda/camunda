@@ -28,7 +28,6 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
@@ -136,12 +135,11 @@ public class BoundaryEventTest {
                 r ->
                     r.getValue() instanceof WorkflowInstanceRecord
                         && ((WorkflowInstanceRecord) r.getValue()).getElementId().equals("timer")
-                        && r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+                        && r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .asList();
 
     assertThat(records)
-        .extracting(Record::getMetadata)
-        .extracting(RecordMetadata::getValueType, RecordMetadata::getIntent)
+        .extracting(Record::getValueType, Record::getIntent)
         .containsSequence(
             tuple(ValueType.TIMER, TimerIntent.TRIGGERED),
             tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.EVENT_OCCURRED),
@@ -261,12 +259,11 @@ public class BoundaryEventTest {
                 r ->
                     r.getValue() instanceof WorkflowInstanceRecord
                         && ((WorkflowInstanceRecord) r.getValue()).getElementId().equals("timer")
-                        && r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                        && r.getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED)
             .asList();
 
     assertThat(records)
-        .extracting(Record::getMetadata)
-        .extracting(RecordMetadata::getValueType, RecordMetadata::getIntent)
+        .extracting(Record::getValueType, Record::getIntent)
         .endsWith(
             tuple(ValueType.TIMER, TimerIntent.TRIGGERED),
             tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.EVENT_OCCURRED),
@@ -309,12 +306,11 @@ public class BoundaryEventTest {
                 r ->
                     r.getValue() instanceof WorkflowInstanceRecord
                         && ((WorkflowInstanceRecord) r.getValue()).getElementId().equals("task")
-                        && r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                        && r.getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED)
             .asList();
 
     assertThat(records)
-        .extracting(Record::getMetadata)
-        .extracting(RecordMetadata::getValueType, RecordMetadata::getIntent)
+        .extracting(Record::getValueType, Record::getIntent)
         .containsSubsequence(
             tuple(ValueType.TIMER, TimerIntent.TRIGGERED),
             tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.EVENT_OCCURRED),

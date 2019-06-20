@@ -96,7 +96,7 @@ public class MessageCorrelationMultiplePartitionsTest {
     assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
                 .limit(30))
-        .extracting(r -> tuple(r.getMetadata().getPartitionId(), r.getValue().getCorrelationKey()))
+        .extracting(r -> tuple(r.getPartitionId(), r.getValue().getCorrelationKey()))
         .containsOnly(
             tuple(START_PARTITION_ID, CORRELATION_KEYS.get(START_PARTITION_ID)),
             tuple(START_PARTITION_ID + 1, CORRELATION_KEYS.get(START_PARTITION_ID + 1)),

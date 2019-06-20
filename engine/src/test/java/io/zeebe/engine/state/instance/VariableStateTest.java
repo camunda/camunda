@@ -27,7 +27,6 @@ import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.VariablesState.VariableListener;
 import io.zeebe.engine.util.ZeebeStateRule;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.MsgPackUtil;
@@ -676,9 +675,6 @@ public class VariableStateTest {
     final TypedRecord<WorkflowInstanceRecord> typedRecord = mock(TypedRecord.class);
     when(typedRecord.getKey()).thenReturn(key);
     when(typedRecord.getValue()).thenReturn(workflowInstanceRecord);
-    final RecordMetadata metadata = new RecordMetadata();
-    metadata.intent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    when(typedRecord.getMetadata()).thenReturn(metadata);
 
     return typedRecord;
   }

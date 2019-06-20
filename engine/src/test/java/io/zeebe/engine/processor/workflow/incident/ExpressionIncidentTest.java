@@ -26,7 +26,6 @@ import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
@@ -185,7 +184,7 @@ public class ExpressionIncidentTest {
     final List<Record<IncidentRecordValue>> incidentRecords =
         RecordingExporter.incidentRecords()
             .withRecordKey(incidentEvent.getKey())
-            .limit(r -> r.getMetadata().getIntent() == IncidentIntent.RESOLVED)
+            .limit(r -> r.getIntent() == IncidentIntent.RESOLVED)
             .collect(Collectors.toList());
 
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceRecords =
@@ -196,7 +195,6 @@ public class ExpressionIncidentTest {
 
     // RESOLVE triggers RESOLVED
     assertThat(incidentRecords)
-        .extracting(Record::getMetadata)
         .extracting(m -> tuple(m.getRecordType(), m.getIntent()))
         .containsSubsequence(
             tuple(RecordType.COMMAND, IncidentIntent.RESOLVE),
@@ -204,8 +202,7 @@ public class ExpressionIncidentTest {
 
     // GATEWAY_ACTIVATED triggers SEQUENCE_FLOW_TAKEN, END_EVENT_OCCURED and COMPLETED
     assertThat(workflowInstanceRecords)
-        .extracting(Record::getMetadata)
-        .extracting(RecordMetadata::getIntent)
+        .extracting(Record::getIntent)
         .containsSubsequence(
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
@@ -243,7 +240,7 @@ public class ExpressionIncidentTest {
     final Record<IncidentRecordValue> secondIncident =
         RecordingExporter.incidentRecords()
             .withWorkflowInstanceKey(workflowInstanceKey)
-            .skipUntil(r -> r.getMetadata().getIntent() == IncidentIntent.RESOLVED)
+            .skipUntil(r -> r.getIntent() == IncidentIntent.RESOLVED)
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
 
@@ -255,8 +252,8 @@ public class ExpressionIncidentTest {
     final List<Record<IncidentRecordValue>> incidentRecords =
         RecordingExporter.incidentRecords()
             .withRecordKey(secondIncident.getKey())
-            .skipUntil(r -> r.getMetadata().getIntent() == IncidentIntent.CREATED)
-            .limit(r -> r.getMetadata().getIntent() == IncidentIntent.RESOLVED)
+            .skipUntil(r -> r.getIntent() == IncidentIntent.CREATED)
+            .limit(r -> r.getIntent() == IncidentIntent.RESOLVED)
             .collect(Collectors.toList());
 
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceRecords =
@@ -264,14 +261,13 @@ public class ExpressionIncidentTest {
             .withWorkflowInstanceKey(workflowInstanceKey)
             .skipUntil(
                 r ->
-                    r.getMetadata().getIntent() == ELEMENT_COMPLETED
+                    r.getIntent() == ELEMENT_COMPLETED
                         && r.getValue().getBpmnElementType() == BpmnElementType.EXCLUSIVE_GATEWAY)
             .limitToWorkflowInstanceCompleted()
             .collect(Collectors.toList());
 
     // RESOLVE triggers RESOLVED
     assertThat(incidentRecords)
-        .extracting(Record::getMetadata)
         .extracting(m -> tuple(m.getRecordType(), m.getIntent()))
         .containsSubsequence(
             tuple(RecordType.COMMAND, IncidentIntent.RESOLVE),
@@ -279,8 +275,7 @@ public class ExpressionIncidentTest {
 
     // SEQUENCE_FLOW_TAKEN triggers the rest of the process
     assertThat(workflowInstanceRecords)
-        .extracting(Record::getMetadata)
-        .extracting(RecordMetadata::getIntent)
+        .extracting(Record::getIntent)
         .containsSubsequence(
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
             WorkflowInstanceIntent.ELEMENT_ACTIVATING,

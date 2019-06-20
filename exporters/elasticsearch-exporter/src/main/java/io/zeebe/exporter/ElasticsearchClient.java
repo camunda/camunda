@@ -204,13 +204,13 @@ public class ElasticsearchClient {
   }
 
   protected String indexFor(final Record<?> record) {
-    return indexPrefixForValueType(record.getMetadata().getValueType())
+    return indexPrefixForValueType(record.getValueType())
         + INDEX_DELIMITER
         + formatter.format(record.getTimestamp());
   }
 
   protected String idFor(final Record<?> record) {
-    return record.getMetadata().getPartitionId() + "-" + record.getPosition();
+    return record.getPartitionId() + "-" + record.getPosition();
   }
 
   protected String typeFor(final Record<?> record) {

@@ -19,7 +19,6 @@ import static io.zeebe.test.util.record.RecordingExporter.records;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.RejectionType;
@@ -85,43 +84,33 @@ public class RecordingExporterTest {
     }
 
     @Override
-    public RecordMetadata getMetadata() {
-      return new RecordMetadata() {
-        @Override
-        public Intent getIntent() {
-          return null;
-        }
+    public Intent getIntent() {
+      return null;
+    }
 
-        @Override
-        public int getPartitionId() {
-          return 0;
-        }
+    @Override
+    public int getPartitionId() {
+      return 0;
+    }
 
-        @Override
-        public RecordType getRecordType() {
-          return null;
-        }
+    @Override
+    public RecordType getRecordType() {
+      return null;
+    }
 
-        @Override
-        public RejectionType getRejectionType() {
-          return null;
-        }
+    @Override
+    public RejectionType getRejectionType() {
+      return null;
+    }
 
-        @Override
-        public String getRejectionReason() {
-          return null;
-        }
+    @Override
+    public String getRejectionReason() {
+      return null;
+    }
 
-        @Override
-        public ValueType getValueType() {
-          return VALUE_TYPE;
-        }
-
-        @Override
-        public String toJson() {
-          return null;
-        }
-      };
+    @Override
+    public ValueType getValueType() {
+      return VALUE_TYPE;
     }
 
     @Override

@@ -133,7 +133,6 @@ public class WorkflowInstanceClient {
             RecordingExporter.workflowInstanceRecords()
                 .withWorkflowInstanceKey(workflowInstanceKey)
                 .getFirst()
-                .getMetadata()
                 .getPartitionId();
       }
 

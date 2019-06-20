@@ -78,7 +78,6 @@ public class DeploymentCreatedProcessorTest {
                 .onlyMessageStartEventSubscriptionRecords()
                 .limit(1)
                 .getFirst()
-                .getMetadata()
                 .getIntent())
         .isEqualTo(MessageStartEventSubscriptionIntent.OPEN);
   }
@@ -98,7 +97,6 @@ public class DeploymentCreatedProcessorTest {
                 .onlyMessageStartEventSubscriptionRecords()
                 .limit(1)
                 .getFirst()
-                .getMetadata()
                 .getIntent())
         .isEqualTo(MessageStartEventSubscriptionIntent.OPEN);
   }

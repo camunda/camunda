@@ -142,42 +142,7 @@ public class JsonSerializableToJsonTest {
               return new CopiedRecord<>(
                   record, recordMetadata, key, position, sourcePosition, timestamp);
             },
-        "{'metadata':{'recordType':'COMMAND','intent':'CREATE','partitionId':2,'valueType':'DEPLOYMENT','rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails'},'key':1234,'position':4321,'sourceRecordPosition':231,'value':{'deployedWorkflows':[{'bpmnProcessId':'testProcess','version':12,'resourceName':'resource','workflowKey':123}],'resources':[{'resourceName':'resource','resourceType':'BPMN_XML','resource':'Y29udGVudHM='}]},'timestamp':2191}"
-      },
-      /////////////////////////////////////////////////////////////////////////////////////////////
-      //////////////////////////////////// RecordMetadata /////////////////////////////////////////
-      /////////////////////////////////////////////////////////////////////////////////////////////
-      new Object[] {
-        "RecordMetadata",
-        (Supplier<JsonSerializable>)
-            () -> {
-              final RecordMetadata recordMetadata = new RecordMetadata();
-
-              final DeploymentIntent intent = DeploymentIntent.CREATE;
-              final int partitionId = 2;
-              final int protocolVersion = 1;
-              final ValueType valueType = ValueType.DEPLOYMENT;
-
-              final RecordType recordType = RecordType.COMMAND;
-              final String rejectionReason = "fails";
-              final RejectionType rejectionType = RejectionType.INVALID_ARGUMENT;
-              final int requestId = 23;
-              final int requestStreamId = 1;
-
-              recordMetadata
-                  .intent(intent)
-                  .partitionId(partitionId)
-                  .protocolVersion(protocolVersion)
-                  .valueType(valueType)
-                  .recordType(recordType)
-                  .rejectionReason(rejectionReason)
-                  .rejectionType(rejectionType)
-                  .requestId(requestId)
-                  .requestStreamId(requestStreamId);
-
-              return recordMetadata;
-            },
-        "{'recordType':'COMMAND','intent':'CREATE','partitionId':2,'valueType':'DEPLOYMENT','rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails'}"
+        "{'recordType':'COMMAND','intent':'CREATE','partitionId':2,'valueType':'DEPLOYMENT','rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','key':1234,'position':4321,'sourceRecordPosition':231,'value':{'deployedWorkflows':[{'bpmnProcessId':'testProcess','version':12,'resourceName':'resource','workflowKey':123}],'resources':[{'resourceName':'resource','resourceType':'BPMN_XML','resource':'Y29udGVudHM='}]},'timestamp':2191}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// DeploymentRecord ///////////////////////////////////////

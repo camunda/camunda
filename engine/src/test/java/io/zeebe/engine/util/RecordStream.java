@@ -127,6 +127,6 @@ public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
     return onlyWorkflowInstanceRecords()
         .onlyEvents()
         .filter(r -> elementIdBuffer.equals(r.getValue().getElementIdBuffer()))
-        .map(r -> (WorkflowInstanceIntent) r.getMetadata().getIntent());
+        .map(r -> (WorkflowInstanceIntent) r.getIntent());
   }
 }

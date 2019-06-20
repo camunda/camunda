@@ -374,7 +374,7 @@ public class WorkflowInstanceVariableTest {
         .extracting(
             record ->
                 tuple(
-                    record.getMetadata().getIntent(),
+                    record.getIntent(),
                     record.getValue().getWorkflowKey(),
                     record.getValue().getName(),
                     record.getValue().getValue()))

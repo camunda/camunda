@@ -16,7 +16,6 @@
 package io.zeebe.test.util.record;
 
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.RejectionType;
@@ -35,24 +34,20 @@ public abstract class ExporterRecordStream<
     super(wrappedStream);
   }
 
-  public S metadataFilter(final Predicate<RecordMetadata> predicate) {
-    return filter(r -> predicate.test(r.getMetadata()));
-  }
-
   public S valueFilter(final Predicate<T> predicate) {
     return filter(r -> predicate.test(r.getValue()));
   }
 
   public S onlyCommands() {
-    return metadataFilter(m -> m.getRecordType() == RecordType.COMMAND);
+    return filter(m -> m.getRecordType() == RecordType.COMMAND);
   }
 
   public S onlyCommandRejections() {
-    return metadataFilter(m -> m.getRecordType() == RecordType.COMMAND_REJECTION);
+    return filter(m -> m.getRecordType() == RecordType.COMMAND_REJECTION);
   }
 
   public S onlyEvents() {
-    return metadataFilter(m -> m.getRecordType() == RecordType.EVENT);
+    return filter(m -> m.getRecordType() == RecordType.EVENT);
   }
 
   public S withPosition(final long position) {
@@ -76,26 +71,26 @@ public abstract class ExporterRecordStream<
   }
 
   public S withIntent(final Intent intent) {
-    return metadataFilter(m -> m.getIntent() == intent);
+    return filter(m -> m.getIntent() == intent);
   }
 
   public S withPartitionId(final int partitionId) {
-    return metadataFilter(m -> m.getPartitionId() == partitionId);
+    return filter(m -> m.getPartitionId() == partitionId);
   }
 
   public S withRecordType(final RecordType recordType) {
-    return metadataFilter(m -> m.getRecordType() == recordType);
+    return filter(m -> m.getRecordType() == recordType);
   }
 
   public S withRejectionType(final RejectionType rejectionType) {
-    return metadataFilter(m -> m.getRejectionType() == rejectionType);
+    return filter(m -> m.getRejectionType() == rejectionType);
   }
 
   public S withRejectionReason(final String rejectionReason) {
-    return metadataFilter(m -> rejectionReason.equals(m.getRejectionReason()));
+    return filter(m -> rejectionReason.equals(m.getRejectionReason()));
   }
 
   public S withValueType(final ValueType valueType) {
-    return metadataFilter(m -> m.getValueType() == valueType);
+    return filter(m -> m.getValueType() == valueType);
   }
 }

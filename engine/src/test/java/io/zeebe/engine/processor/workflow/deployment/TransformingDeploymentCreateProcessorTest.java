@@ -94,10 +94,10 @@ public class TransformingDeploymentCreateProcessorTest {
         rule.events().onlyDeploymentRecords().collect(Collectors.toList());
 
     Assertions.assertThat(collect)
-        .extracting(r -> r.getMetadata().getIntent())
+        .extracting(Record::getIntent)
         .containsExactly(DeploymentIntent.CREATE, DeploymentIntent.CREATED);
     Assertions.assertThat(collect)
-        .extracting(r -> r.getMetadata().getRecordType())
+        .extracting(Record::getRecordType)
         .containsExactly(RecordType.COMMAND, RecordType.EVENT);
 
     Assertions.assertThat(workflowState.getWorkflows().size()).isEqualTo(1);

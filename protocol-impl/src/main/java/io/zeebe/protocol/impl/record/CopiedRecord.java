@@ -19,31 +19,47 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.Intent;
 import java.time.Instant;
 
 public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
 
   private final T recordValue;
-  private final RecordMetadata metadata;
 
   private final long key;
   private final long position;
   private final long sourcePosition;
   private final long timestamp;
 
+  private final RecordType recordType;
+  private final Intent intent;
+  private final int partitionId;
+  protected ValueType valueType;
+  private final RejectionType rejectionType;
+  private final String rejectionReason;
+
   public CopiedRecord(
       T recordValue,
-      RecordMetadata recordMetadata,
+      RecordMetadata metadata,
       long key,
       long position,
       long sourcePosition,
       long timestamp) {
-    this.metadata = recordMetadata;
     this.recordValue = recordValue;
     this.key = key;
     this.position = position;
     this.sourcePosition = sourcePosition;
     this.timestamp = timestamp;
+
+    this.intent = metadata.getIntent();
+    this.recordType = metadata.getRecordType();
+    this.partitionId = metadata.getPartitionId();
+    this.rejectionType = metadata.getRejectionType();
+    this.rejectionReason = metadata.getRejectionReason();
+    this.valueType = metadata.getValueType();
   }
 
   @Override
@@ -73,8 +89,33 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
   }
 
   @Override
-  public RecordMetadata getMetadata() {
-    return metadata;
+  public Intent getIntent() {
+    return intent;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public RecordType getRecordType() {
+    return recordType;
+  }
+
+  @Override
+  public RejectionType getRejectionType() {
+    return rejectionType;
+  }
+
+  @Override
+  public String getRejectionReason() {
+    return rejectionReason;
+  }
+
+  @Override
+  public ValueType getValueType() {
+    return valueType;
   }
 
   @Override

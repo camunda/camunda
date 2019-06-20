@@ -87,7 +87,7 @@ public class MessageCorrelationMultiplePartitionsTest {
     assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
                 .limit(30))
-        .extracting(r -> tuple(r.getMetadata().getPartitionId(), r.getValue().getCorrelationKey()))
+        .extracting(r -> tuple(r.getPartitionId(), r.getValue().getCorrelationKey()))
         .containsOnly(
             tuple(START_PARTITION_ID, CORRELATION_KEY_PARTITION_0),
             tuple(START_PARTITION_ID + 1, CORRELATION_KEY_PARTITION_1),
@@ -107,7 +107,7 @@ public class MessageCorrelationMultiplePartitionsTest {
 
     // then
     assertThat(RecordingExporter.messageRecords(MessageIntent.PUBLISHED).limit(30))
-        .extracting(r -> tuple(r.getMetadata().getPartitionId(), r.getValue().getCorrelationKey()))
+        .extracting(r -> tuple(r.getPartitionId(), r.getValue().getCorrelationKey()))
         .containsOnly(
             tuple(START_PARTITION_ID, CORRELATION_KEY_PARTITION_0),
             tuple(START_PARTITION_ID + 1, CORRELATION_KEY_PARTITION_1),
@@ -173,7 +173,7 @@ public class MessageCorrelationMultiplePartitionsTest {
     assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
                 .limit(30))
-        .extracting(r -> tuple(r.getMetadata().getPartitionId(), r.getValue().getCorrelationKey()))
+        .extracting(r -> tuple(r.getPartitionId(), r.getValue().getCorrelationKey()))
         .containsOnly(
             tuple(START_PARTITION_ID, CORRELATION_KEY_PARTITION_0),
             tuple(START_PARTITION_ID + 1, CORRELATION_KEY_PARTITION_1),

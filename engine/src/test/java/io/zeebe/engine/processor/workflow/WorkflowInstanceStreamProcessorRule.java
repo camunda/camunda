@@ -164,7 +164,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
 
     return awaitAndGetFirstWorkflowInstanceRecord(
         r ->
-            r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATING
+            r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATING
                 && r.getKey() == createdRecord.getValue().getWorkflowInstanceKey());
   }
 
@@ -179,7 +179,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
         ValueType.WORKFLOW_INSTANCE_CREATION,
         (e) ->
             e.getSourceRecordPosition() == position
-                && e.getMetadata().getIntent() == WorkflowInstanceCreationIntent.CREATED,
+                && e.getIntent() == WorkflowInstanceCreationIntent.CREATED,
         new WorkflowInstanceCreationRecord());
   }
 

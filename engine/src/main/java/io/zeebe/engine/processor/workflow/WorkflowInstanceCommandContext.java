@@ -38,7 +38,7 @@ public class WorkflowInstanceCommandContext {
   }
 
   public WorkflowInstanceIntent getCommand() {
-    return (WorkflowInstanceIntent) record.getMetadata().getIntent();
+    return (WorkflowInstanceIntent) record.getIntent();
   }
 
   public TypedRecord<WorkflowInstanceRecord> getRecord() {

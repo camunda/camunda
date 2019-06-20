@@ -139,7 +139,7 @@ public class ParallelGatewayTest {
             .collect(Collectors.toList());
 
     assertThat(workflowInstanceEvents)
-        .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
             tuple("end", WorkflowInstanceIntent.ELEMENT_COMPLETED),
             tuple("end", WorkflowInstanceIntent.ELEMENT_COMPLETED),
@@ -170,7 +170,7 @@ public class ParallelGatewayTest {
             .collect(Collectors.toList());
 
     assertThat(workflowInstanceEvents)
-        .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
         .containsSequence(
             tuple("fork", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
             tuple("fork", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
@@ -207,7 +207,7 @@ public class ParallelGatewayTest {
             .collect(Collectors.toList());
 
     assertThat(workflowInstanceEvents)
-        .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
         .containsSequence(
             tuple("fork", WorkflowInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETING));
@@ -228,7 +228,7 @@ public class ParallelGatewayTest {
             .collect(Collectors.toList());
 
     assertThat(events)
-        .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
             tuple("flow1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple("join", WorkflowInstanceIntent.ELEMENT_ACTIVATING))
@@ -279,11 +279,11 @@ public class ParallelGatewayTest {
             .limit(
                 r ->
                     "join".equals(r.getValue().getElementId())
-                        && WorkflowInstanceIntent.ELEMENT_COMPLETED == r.getMetadata().getIntent())
+                        && WorkflowInstanceIntent.ELEMENT_COMPLETED == r.getIntent())
             .collect(Collectors.toList());
 
     assertThat(events)
-        .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
+        .extracting(e -> e.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
             tuple("joinFlow1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple("joinFlow1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
@@ -316,7 +316,7 @@ public class ParallelGatewayTest {
         RecordingExporter.workflowInstanceRecords()
             .filter(
                 r ->
-                    r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED
+                    r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED
                         && r.getValue().getBpmnElementType() == BpmnElementType.SERVICE_TASK)
             .limit(2)
             .collect(Collectors.toList());

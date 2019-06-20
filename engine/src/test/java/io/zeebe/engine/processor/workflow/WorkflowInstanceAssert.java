@@ -69,7 +69,7 @@ public class WorkflowInstanceAssert
         actual.stream()
             .filter(
                 r ->
-                    r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_TERMINATING
+                    r.getIntent() == WorkflowInstanceIntent.ELEMENT_TERMINATING
                         && elementIdBuffer.equals(r.getValue().getElementIdBuffer()))
             .findFirst();
 
@@ -96,7 +96,7 @@ public class WorkflowInstanceAssert
             .filter(r -> r.getSourceRecordPosition() > terminatingRecord.getPosition())
             .map(r -> recordsByPosition.get(r.getSourceRecordPosition()))
             .filter(r -> r.getValue().getFlowScopeKey() == instanceKey)
-            .filter(r -> isFlowEvaluatingState(r.getMetadata().getIntent()))
+            .filter(r -> isFlowEvaluatingState(r.getIntent()))
             .findFirst();
 
     if (firstViolatingRecord.isPresent()) {

@@ -25,7 +25,6 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -77,10 +76,9 @@ public class CreateDeploymentMultiplePartitionsTest {
     // then
     assertThat(deployment.getKey()).isGreaterThanOrEqualTo(0L);
 
-    final RecordMetadata metadata = deployment.getMetadata();
-    assertThat(metadata.getPartitionId()).isEqualTo(PARTITION_ID);
-    assertThat(metadata.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(metadata.getIntent()).isEqualTo(DeploymentIntent.DISTRIBUTED);
+    assertThat(deployment.getPartitionId()).isEqualTo(PARTITION_ID);
+    assertThat(deployment.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.DISTRIBUTED);
 
     ENGINE
         .getPartitionIds()
@@ -118,13 +116,12 @@ public class CreateDeploymentMultiplePartitionsTest {
     final List<Record<DeploymentRecordValue>> deploymentRecords =
         RecordingExporter.deploymentRecords()
             .withRecordKey(deploymentKey1)
-            .limit(r -> r.getMetadata().getIntent() == DeploymentIntent.DISTRIBUTED)
+            .limit(r -> r.getIntent() == DeploymentIntent.DISTRIBUTED)
             .withIntent(DeploymentIntent.DISTRIBUTE)
             .asList();
 
     assertThat(deploymentRecords).hasSize(1);
-    assertThat(deploymentRecords.get(0).getMetadata().getPartitionId())
-        .isEqualTo(DEPLOYMENT_PARTITION);
+    assertThat(deploymentRecords.get(0).getPartitionId()).isEqualTo(DEPLOYMENT_PARTITION);
   }
 
   @Test
@@ -139,14 +136,11 @@ public class CreateDeploymentMultiplePartitionsTest {
         ENGINE.deployment().withYamlResource("simple-workflow.yaml", yamlWorkflow).deploy();
 
     // then
-    org.assertj.core.api.Assertions.assertThat(distributedDeployment.getKey())
-        .isGreaterThanOrEqualTo(0L);
+    assertThat(distributedDeployment.getKey()).isGreaterThanOrEqualTo(0L);
 
-    final RecordMetadata metadata = distributedDeployment.getMetadata();
-
-    assertThat(metadata.getPartitionId()).isEqualTo(PARTITION_ID);
-    assertThat(metadata.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(metadata.getIntent()).isEqualTo(DeploymentIntent.DISTRIBUTED);
+    assertThat(distributedDeployment.getPartitionId()).isEqualTo(PARTITION_ID);
+    assertThat(distributedDeployment.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(distributedDeployment.getIntent()).isEqualTo(DeploymentIntent.DISTRIBUTED);
 
     ENGINE
         .getPartitionIds()
@@ -186,8 +180,8 @@ public class CreateDeploymentMultiplePartitionsTest {
             .deploy();
 
     // then
-    assertThat(deployment.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(deployment.getMetadata().getIntent()).isEqualTo(DeploymentIntent.DISTRIBUTED);
+    assertThat(deployment.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.DISTRIBUTED);
 
     final List<Record<DeploymentRecordValue>> createdDeployments =
         RecordingExporter.deploymentRecords()
@@ -361,7 +355,7 @@ public class CreateDeploymentMultiplePartitionsTest {
             .getFirst();
 
     assertThat(deploymentCreatedEvent.getKey()).isEqualTo(expectedKey);
-    assertThat(deploymentCreatedEvent.getMetadata().getPartitionId()).isEqualTo(expectedPartition);
+    assertThat(deploymentCreatedEvent.getPartitionId()).isEqualTo(expectedPartition);
 
     deploymentAssert.accept(deploymentCreatedEvent);
   }

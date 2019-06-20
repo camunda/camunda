@@ -137,7 +137,7 @@ public class ZeebeState {
   }
 
   public boolean tryToBlacklist(TypedRecord<?> typedRecord, Consumer<Long> onBlacklistingInstance) {
-    final Intent intent = typedRecord.getMetadata().getIntent();
+    final Intent intent = typedRecord.getIntent();
     if (shouldBeBlacklisted(intent)) {
       final UnpackedObject value = typedRecord.getValue();
       if (value instanceof WorkflowInstanceRelated) {

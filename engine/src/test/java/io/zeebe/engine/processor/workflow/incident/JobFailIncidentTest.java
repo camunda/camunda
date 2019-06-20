@@ -27,7 +27,6 @@ import io.zeebe.engine.util.client.JobClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
@@ -280,7 +279,7 @@ public class JobFailIncidentTest {
     final Record<JobRecordValue> republishedEvent =
         RecordingExporter.jobRecords()
             .withWorkflowInstanceKey(workflowInstanceKey)
-            .skipUntil(job -> job.getMetadata().getIntent() == JobIntent.RETRIES_UPDATED)
+            .skipUntil(job -> job.getIntent() == JobIntent.RETRIES_UPDATED)
             .withIntent(JobIntent.ACTIVATED)
             .getFirst();
     assertThat(republishedEvent.getKey()).isEqualTo(jobEvent.getKey());
@@ -301,9 +300,7 @@ public class JobFailIncidentTest {
             .collect(Collectors.toList());
 
     assertThat(jobEvents)
-        .extracting(Record::getMetadata)
-        .extracting(
-            RecordMetadata::getRecordType, RecordMetadata::getValueType, RecordMetadata::getIntent)
+        .extracting(Record::getRecordType, Record::getValueType, Record::getIntent)
         .containsExactly(
             tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.CREATE),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.CREATED),

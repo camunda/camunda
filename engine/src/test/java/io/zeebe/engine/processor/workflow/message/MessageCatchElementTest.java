@@ -188,9 +188,8 @@ public class MessageCatchElementTest {
     final Record<MessageSubscriptionRecordValue> messageSubscription =
         getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.OPENED);
 
-    assertThat(messageSubscription.getMetadata().getValueType())
-        .isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
-    assertThat(messageSubscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(messageSubscription.getValueType()).isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
+    assertThat(messageSubscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
     Assertions.assertThat(messageSubscription.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)
@@ -207,10 +206,9 @@ public class MessageCatchElementTest {
     final Record<WorkflowInstanceSubscriptionRecordValue> workflowInstanceSubscription =
         getFirstWorkflowInstanceSubscriptionRecord(WorkflowInstanceSubscriptionIntent.OPENED);
 
-    assertThat(workflowInstanceSubscription.getMetadata().getValueType())
+    assertThat(workflowInstanceSubscription.getValueType())
         .isEqualTo(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
-    assertThat(workflowInstanceSubscription.getMetadata().getRecordType())
-        .isEqualTo(RecordType.EVENT);
+    assertThat(workflowInstanceSubscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
     Assertions.assertThat(workflowInstanceSubscription.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)
@@ -238,9 +236,8 @@ public class MessageCatchElementTest {
     final Record<WorkflowInstanceSubscriptionRecordValue> subscription =
         getFirstWorkflowInstanceSubscriptionRecord(WorkflowInstanceSubscriptionIntent.CORRELATED);
 
-    assertThat(subscription.getMetadata().getValueType())
-        .isEqualTo(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
-    assertThat(subscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(subscription.getValueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
+    assertThat(subscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
     Assertions.assertThat(subscription.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)
@@ -268,8 +265,8 @@ public class MessageCatchElementTest {
     final Record<MessageSubscriptionRecordValue> subscription =
         getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.CORRELATED);
 
-    assertThat(subscription.getMetadata().getValueType()).isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
-    assertThat(subscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(subscription.getValueType()).isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
+    assertThat(subscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
     Assertions.assertThat(subscription.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)
@@ -295,7 +292,7 @@ public class MessageCatchElementTest {
     final Record<MessageSubscriptionRecordValue> messageSubscription =
         getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.CLOSED);
 
-    assertThat(messageSubscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(messageSubscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
     Assertions.assertThat(messageSubscription.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)
@@ -317,7 +314,7 @@ public class MessageCatchElementTest {
     final Record<WorkflowInstanceSubscriptionRecordValue> subscription =
         getFirstWorkflowInstanceSubscriptionRecord(WorkflowInstanceSubscriptionIntent.CLOSED);
 
-    assertThat(subscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(subscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
     Assertions.assertThat(subscription.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)

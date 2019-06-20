@@ -115,9 +115,7 @@ public class ExporterManagerTest {
   private boolean isDeploymentExported(long deploymentKey1) {
     return TestExporter.records.stream()
         .anyMatch(
-            r ->
-                r.getKey() == deploymentKey1
-                    && r.getMetadata().getIntent() == DeploymentIntent.DISTRIBUTED);
+            r -> r.getKey() == deploymentKey1 && r.getIntent() == DeploymentIntent.DISTRIBUTED);
   }
 
   public static class TestExporter extends DebugLogExporter {

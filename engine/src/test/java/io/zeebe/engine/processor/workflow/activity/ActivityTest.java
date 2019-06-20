@@ -140,17 +140,17 @@ public class ActivityTest {
                 r ->
                     r.getValue() instanceof WorkflowInstanceRecord
                         && ((WorkflowInstanceRecord) r.getValue()).getElementId().equals("task")
-                        && r.getMetadata().getIntent() == ELEMENT_ACTIVATING)
+                        && r.getIntent() == ELEMENT_ACTIVATING)
             .limit(
                 r ->
                     r.getValue() instanceof WorkflowInstanceRecord
                         && ((WorkflowInstanceRecord) r.getValue()).getElementId().equals("task")
-                        && r.getMetadata().getIntent() == ELEMENT_ACTIVATED)
+                        && r.getIntent() == ELEMENT_ACTIVATED)
             .asList();
 
     assertThat(records).hasSize(4);
     assertThat(records)
-        .extracting(r -> r.getMetadata().getIntent())
+        .extracting(Record::getIntent)
         .contains(ELEMENT_ACTIVATING, TimerIntent.CREATE, TimerIntent.CREATE, ELEMENT_ACTIVATED);
   }
 
@@ -242,16 +242,16 @@ public class ActivityTest {
                 r ->
                     r.getValue() instanceof WorkflowInstanceRecord
                         && ((WorkflowInstanceRecord) r.getValue()).getElementId().equals("task")
-                        && r.getMetadata().getIntent() == leavingState,
+                        && r.getIntent() == leavingState,
                 r ->
                     r.getValue() instanceof WorkflowInstanceRecord
                         && ((WorkflowInstanceRecord) r.getValue()).getElementId().equals("task")
-                        && r.getMetadata().getIntent() == leftState)
+                        && r.getIntent() == leftState)
             .asList();
 
     // then
     assertThat(records)
-        .extracting(r -> r.getMetadata().getIntent())
+        .extracting(Record::getIntent)
         .contains(leavingState, TimerIntent.CANCEL, TimerIntent.CANCEL, leftState);
   }
 }

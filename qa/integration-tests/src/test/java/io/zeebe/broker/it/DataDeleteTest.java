@@ -89,7 +89,7 @@ public class DataDeleteTest {
     TestUtil.waitUntil(
         () ->
             TestExporter.records.stream()
-                    .filter(r -> r.getMetadata().getIntent() == MessageIntent.PUBLISHED)
+                    .filter(r -> r.getIntent() == MessageIntent.PUBLISHED)
                     .limit(finalMessagesSent)
                     .count()
                 == finalMessagesSent);

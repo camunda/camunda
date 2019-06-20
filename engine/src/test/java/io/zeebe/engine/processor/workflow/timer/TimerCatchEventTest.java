@@ -116,7 +116,7 @@ public class TimerCatchEventTest {
                 .withWorkflowInstanceKey(workflowInstanceKey)
                 .withElementId("timer")
                 .limit(5))
-        .extracting(r -> r.getMetadata().getIntent())
+        .extracting(Record::getIntent)
         .containsExactly(
             WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
@@ -126,7 +126,7 @@ public class TimerCatchEventTest {
 
     assertThat(
             RecordingExporter.timerRecords().withWorkflowInstanceKey(workflowInstanceKey).limit(4))
-        .extracting(r -> r.getMetadata().getIntent())
+        .extracting(Record::getIntent)
         .containsExactly(
             TimerIntent.CREATE, TimerIntent.CREATED, TimerIntent.TRIGGER, TimerIntent.TRIGGERED);
   }

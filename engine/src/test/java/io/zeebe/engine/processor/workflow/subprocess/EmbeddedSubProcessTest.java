@@ -116,12 +116,12 @@ public class EmbeddedSubProcessTest {
             .withWorkflowInstanceKey(workflowInstanceKey)
             .limit(
                 r ->
-                    r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED
+                    r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED
                         && "subProcessTask".equals(r.getValue().getElementId()))
             .asList();
 
     assertThat(workflowInstanceEvents)
-        .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
+        .extracting(Record::getIntent, e -> e.getValue().getElementId())
         .containsExactly(
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "ONE_TASK_SUBPROCESS"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "ONE_TASK_SUBPROCESS"),
@@ -175,7 +175,7 @@ public class EmbeddedSubProcessTest {
             .collect(Collectors.toList());
 
     assertThat(workflowInstanceEvents)
-        .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
+        .extracting(Record::getIntent, e -> e.getValue().getElementId())
         .containsExactly(
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "ONE_TASK_SUBPROCESS"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "ONE_TASK_SUBPROCESS"),
@@ -280,7 +280,7 @@ public class EmbeddedSubProcessTest {
             .asList();
 
     assertThat(workflowInstanceEvents)
-        .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
+        .extracting(Record::getIntent, e -> e.getValue().getElementId())
         .containsSubsequence(
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "outerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "outerSubProcess"),
@@ -361,7 +361,7 @@ public class EmbeddedSubProcessTest {
             .asList();
 
     assertThat(workflowInstanceEvents)
-        .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
+        .extracting(Record::getIntent, e -> e.getValue().getElementId())
         .containsSubsequence(
             tuple(WorkflowInstanceIntent.EVENT_OCCURRED, "outerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_TERMINATING, "outerSubProcess"),

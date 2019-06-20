@@ -27,7 +27,6 @@ import io.zeebe.engine.util.client.PublishMessageClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
@@ -545,7 +544,7 @@ public class MessageCorrelationTest {
 
     // then
     assertThat(RecordingExporter.workflowInstanceRecords().limitToWorkflowInstanceCompleted())
-        .filteredOn(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        .filteredOn(r -> r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED)
         .extracting(Record::getValue)
         .extracting(WorkflowInstanceRecordValue::getElementId)
         .contains("msg1End")
@@ -570,7 +569,7 @@ public class MessageCorrelationTest {
 
     // then
     assertThat(RecordingExporter.workflowInstanceRecords().limitToWorkflowInstanceCompleted())
-        .filteredOn(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        .filteredOn(r -> r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED)
         .extracting(Record::getValue)
         .extracting(WorkflowInstanceRecordValue::getElementId)
         .contains("taskEnd")
@@ -595,7 +594,7 @@ public class MessageCorrelationTest {
 
     // then
     assertThat(RecordingExporter.workflowInstanceRecords().limitToWorkflowInstanceCompleted())
-        .filteredOn(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        .filteredOn(r -> r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED)
         .extracting(Record::getValue)
         .extracting(WorkflowInstanceRecordValue::getElementId)
         .contains("msg2End")
@@ -618,8 +617,7 @@ public class MessageCorrelationTest {
 
     assertThat(events)
         .filteredOn(r -> r.getValue().getElementId().equals("receive-message"))
-        .extracting(Record::getMetadata)
-        .extracting(RecordMetadata::getIntent)
+        .extracting(Record::getIntent)
         .containsExactly(
             WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
@@ -642,8 +640,7 @@ public class MessageCorrelationTest {
 
     assertThat(events)
         .filteredOn(r -> r.getValue().getElementId().equals("receive-message"))
-        .extracting(Record::getMetadata)
-        .extracting(RecordMetadata::getIntent)
+        .extracting(Record::getIntent)
         .containsExactly(
             WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
@@ -666,7 +663,7 @@ public class MessageCorrelationTest {
             .collect(Collectors.toList());
 
     assertThat(events)
-        .extracting(r -> tuple(r.getValue().getElementId(), r.getMetadata().getIntent()))
+        .extracting(r -> tuple(r.getValue().getElementId(), r.getIntent()))
         .containsSequence(
             tuple("task", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
             tuple("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED),

@@ -67,9 +67,8 @@ public class TimerStreamProcessorTest {
     // then
     final Record<TimerRecord> rejection = findTimerCommandRejection();
 
-    Assertions.assertThat(rejection.getMetadata().getIntent()).isEqualTo(TimerIntent.TRIGGER);
-    Assertions.assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.NOT_FOUND);
+    Assertions.assertThat(rejection.getIntent()).isEqualTo(TimerIntent.TRIGGER);
+    Assertions.assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -83,9 +82,8 @@ public class TimerStreamProcessorTest {
     // then
     final Record<TimerRecord> rejection = findTimerCommandRejection();
 
-    Assertions.assertThat(rejection.getMetadata().getIntent()).isEqualTo(TimerIntent.TRIGGER);
-    Assertions.assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.NOT_FOUND);
+    Assertions.assertThat(rejection.getIntent()).isEqualTo(TimerIntent.TRIGGER);
+    Assertions.assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -99,9 +97,8 @@ public class TimerStreamProcessorTest {
     // then
     final Record<TimerRecord> rejection = findTimerCommandRejection();
 
-    Assertions.assertThat(rejection.getMetadata().getIntent()).isEqualTo(TimerIntent.CANCEL);
-    Assertions.assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.NOT_FOUND);
+    Assertions.assertThat(rejection.getIntent()).isEqualTo(TimerIntent.CANCEL);
+    Assertions.assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   private Record<TimerRecord> timerRecordForActivity(final String activityId) {

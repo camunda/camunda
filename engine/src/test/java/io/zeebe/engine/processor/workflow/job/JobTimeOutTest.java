@@ -25,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordMetadata;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.value.JobRecordValue;
@@ -73,8 +72,7 @@ public class JobTimeOutTest {
 
     assertThat(jobEvents).extracting(Record::getKey).contains(jobKey);
     assertThat(jobEvents)
-        .extracting(Record::getMetadata)
-        .extracting(RecordMetadata::getIntent)
+        .extracting(Record::getIntent)
         .containsExactly(
             JobIntent.CREATE,
             JobIntent.CREATED,
@@ -99,7 +97,7 @@ public class JobTimeOutTest {
     // then activated again
     final Record jobActivated =
         RecordingExporter.jobRecords()
-            .skipUntil(j -> j.getMetadata().getIntent() == TIME_OUT)
+            .skipUntil(j -> j.getIntent() == TIME_OUT)
             .withIntent(ACTIVATED)
             .getFirst();
 

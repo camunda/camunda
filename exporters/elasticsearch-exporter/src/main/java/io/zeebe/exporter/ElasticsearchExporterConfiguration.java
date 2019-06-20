@@ -16,7 +16,6 @@
 package io.zeebe.exporter;
 
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 
@@ -134,9 +133,8 @@ public class ElasticsearchExporterConfiguration {
   }
 
   public boolean shouldIndexRecord(Record<?> record) {
-    final RecordMetadata metadata = record.getMetadata();
-    return shouldIndexRecordType(metadata.getRecordType())
-        && shouldIndexValueType(metadata.getValueType());
+    return shouldIndexRecordType(record.getRecordType())
+        && shouldIndexValueType(record.getValueType());
   }
 
   public boolean shouldIndexValueType(ValueType valueType) {

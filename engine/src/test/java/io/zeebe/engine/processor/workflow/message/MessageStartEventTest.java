@@ -102,7 +102,7 @@ public class MessageStartEventTest {
         RecordingExporter.workflowInstanceRecords().limit(5).asList();
 
     assertThat(records)
-        .extracting(r -> r.getMetadata().getIntent())
+        .extracting(Record::getIntent)
         .containsExactly(
             WorkflowInstanceIntent.EVENT_OCCURRED, // message
             WorkflowInstanceIntent.ELEMENT_ACTIVATING, // workflow instance
@@ -275,7 +275,7 @@ public class MessageStartEventTest {
     final List<Record<WorkflowInstanceRecordValue>> records =
         RecordingExporter.workflowInstanceRecords().limit(5).asList();
 
-    assertThat(records.stream().map(r -> r.getMetadata().getIntent()))
+    assertThat(records.stream().map(Record::getIntent))
         .containsExactly(
             WorkflowInstanceIntent.EVENT_OCCURRED, // message
             WorkflowInstanceIntent.ELEMENT_ACTIVATING, // workflow instance

@@ -61,14 +61,14 @@ public class WorkflowInstanceRecordStream
   public WorkflowInstanceRecordStream limitToWorkflowInstanceCompleted() {
     return limit(
         r ->
-            r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED
+            r.getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED
                 && r.getKey() == r.getValue().getWorkflowInstanceKey());
   }
 
   public WorkflowInstanceRecordStream limitToWorkflowInstanceTerminated() {
     return limit(
         r ->
-            r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_TERMINATED
+            r.getIntent() == WorkflowInstanceIntent.ELEMENT_TERMINATED
                 && r.getKey() == r.getValue().getWorkflowInstanceKey());
   }
 

@@ -26,7 +26,6 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordMetadata;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
@@ -164,8 +163,7 @@ public class TimerStartEventTest {
                 .withWorkflowKey(workflowKey)
                 .skipUntil(r -> r.getPosition() >= triggerRecordPosition)
                 .limit(2))
-        .extracting(Record::getMetadata)
-        .extracting(RecordMetadata::getIntent)
+        .extracting(Record::getIntent)
         .containsExactly(TimerIntent.TRIGGER, TimerIntent.TRIGGERED);
 
     assertThat(
@@ -173,8 +171,7 @@ public class TimerStartEventTest {
                 .withWorkflowKey(workflowKey)
                 .skipUntil(r -> r.getPosition() >= triggerRecordPosition)
                 .limit(4))
-        .extracting(Record::getMetadata)
-        .extracting(RecordMetadata::getIntent)
+        .extracting(Record::getIntent)
         .containsExactly(
             WorkflowInstanceIntent.EVENT_OCCURRED, // causes the instance creation
             WorkflowInstanceIntent.ELEMENT_ACTIVATING, // causes the flow node activation

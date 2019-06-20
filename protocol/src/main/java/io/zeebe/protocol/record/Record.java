@@ -15,6 +15,7 @@
  */
 package io.zeebe.protocol.record;
 
+import io.zeebe.protocol.record.intent.Intent;
 import java.time.Instant;
 
 /** Represents a record published to the log stream. */
@@ -54,13 +55,29 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    */
   Instant getTimestamp();
 
+  /** @return the intent of the record */
+  Intent getIntent();
+
+  /** @return the partition ID on which the record was published */
+  int getPartitionId();
+
+  /** @return the type of the record (event, command or command rejection) */
+  RecordType getRecordType();
+
   /**
-   * Retrieves relevant metadata of the record, such as the type of the value ({@link ValueType}),
-   * the type of record ({@link RecordType}), etc.
-   *
-   * @return record metadata
+   * @return the type of rejection if {@link #getRecordType()} returns {@link
+   *     RecordType#COMMAND_REJECTION} or else <code>null</code>.
    */
-  RecordMetadata getMetadata();
+  RejectionType getRejectionType();
+
+  /**
+   * @return the reason why a command was rejected if {@link #getRecordType()} returns {@link
+   *     RecordType#COMMAND_REJECTION} or else <code>null</code>.
+   */
+  String getRejectionReason();
+
+  /** @return the type of the record (e.g. job, workflow, workflow instance, etc.) */
+  ValueType getValueType();
 
   /**
    * Returns the raw value of the record, which should implement one of the interfaces in the {@link

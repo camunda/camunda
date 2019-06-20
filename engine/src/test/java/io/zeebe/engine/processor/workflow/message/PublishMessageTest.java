@@ -71,7 +71,7 @@ public class PublishMessageTest {
     assertThat(MsgPackUtil.asMsgPackReturnArray(publishedRecord.getValue().getVariables()))
         .isEqualTo(EMTPY_OBJECT);
 
-    Assertions.assertThat(publishedRecord.getMetadata())
+    Assertions.assertThat(publishedRecord)
         .hasIntent(MessageIntent.PUBLISHED)
         .hasRecordType(RecordType.EVENT)
         .hasValueType(ValueType.MESSAGE);
@@ -189,10 +189,8 @@ public class PublishMessageTest {
         messageClient.withId("shouldRejectToPublishSameMessageWithId").expectRejection().publish();
 
     // then
-    assertThat(rejectedCommand.getMetadata().getRecordType())
-        .isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(rejectedCommand.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.ALREADY_EXISTS);
+    assertThat(rejectedCommand.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejectedCommand.getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
   }
 
   @Test

@@ -73,7 +73,7 @@ public class DeploymentCreateProcessorTest {
         rule.events().onlyDeploymentRecords().collect(Collectors.toList());
     //
     Assertions.assertThat(collect)
-        .extracting(r -> r.getMetadata().getIntent())
+        .extracting(Record::getIntent)
         .containsExactly(
             DeploymentIntent.CREATE,
             DeploymentIntent.CREATED,
@@ -81,7 +81,7 @@ public class DeploymentCreateProcessorTest {
             DeploymentIntent.CREATE);
     //
     Assertions.assertThat(collect)
-        .extracting(r -> r.getMetadata().getRecordType())
+        .extracting(Record::getRecordType)
         .containsExactly(
             RecordType.COMMAND, RecordType.EVENT, RecordType.COMMAND, RecordType.COMMAND_REJECTION);
   }
@@ -103,7 +103,7 @@ public class DeploymentCreateProcessorTest {
         rule.events().onlyDeploymentRecords().collect(Collectors.toList());
 
     Assertions.assertThat(collect)
-        .extracting(r -> r.getMetadata().getIntent())
+        .extracting(Record::getIntent)
         .containsExactly(
             DeploymentIntent.CREATE,
             DeploymentIntent.CREATED,
@@ -111,7 +111,7 @@ public class DeploymentCreateProcessorTest {
             DeploymentIntent.CREATED);
 
     Assertions.assertThat(collect)
-        .extracting(r -> r.getMetadata().getRecordType())
+        .extracting(Record::getRecordType)
         .containsExactly(
             RecordType.COMMAND, RecordType.EVENT, RecordType.COMMAND, RecordType.EVENT);
   }
@@ -130,11 +130,7 @@ public class DeploymentCreateProcessorTest {
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("processId")
             .startEvent()
-            .serviceTask(
-                "test",
-                task -> {
-                  task.zeebeTaskType("type");
-                })
+            .serviceTask("test", task -> task.zeebeTaskType("type"))
             .endEvent()
             .done();
 
