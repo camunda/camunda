@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.user_task.groupby.assignee;
+package org.camunda.optimize.service.es.report.process.user_task.duration.groupby.candidate_group;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -53,8 +53,6 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -63,22 +61,22 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 @RunWith(JUnitParamsRunner.class)
-public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT extends AbstractProcessDefinitionIT {
+public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   private static final String START_EVENT = "startEvent";
   private static final String END_EVENT = "endEvent";
   private static final String PROCESS_DEFINITION_KEY = "123";
   private static final String USER_TASK1 = "userTask1";
   private static final String USER_TASK2 = "userTask2";
-  public static final String SECOND_USER = "secondUser";
-  private static final String SECOND_USERS_PASSWORD = "fooPassword";
+
+  protected static final String FIRST_CANDIDATE_GROUP = "firstGroup";
+  protected static final String SECOND_CANDIDATE_GROUP = "secondGroup";
   private final List<AggregationType> aggregationTypes = Arrays.asList(AggregationType.values());
 
   @Before
   public void init() {
-    // create second user
-    engineRule.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
-    engineRule.grantAllAuthorizations(SECOND_USER);
+    engineRule.createGroup(FIRST_CANDIDATE_GROUP);
+    engineRule.createGroup(SECOND_CANDIDATE_GROUP);
   }
 
   @Test
@@ -86,7 +84,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto);
 
     final long setDuration = 20L;
     changeDuration(processInstanceDto, setDuration);
@@ -112,12 +110,53 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(2));
     assertThat(
-      result.getDataEntryForKey(DEFAULT_USERNAME).get().getValue(),
+      result.getDataEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(setDuration))
     );
     assertThat(
-      result.getDataEntryForKey(SECOND_USER).get().getValue(),
+      result.getDataEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(setDuration))
+    );
+
+    assertThat(result.getProcessInstanceCount(), is(1L));
+  }
+
+  @Test
+  public void reportEvaluationForMultipleCandidateGroups() {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    // finish first task
+    engineRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineRule.finishAllRunningUserTasks(processInstanceDto.getId());
+    // finish second task with
+    engineRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineRule.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineRule.finishAllRunningUserTasks(processInstanceDto.getId());
+
+    changeDuration(processInstanceDto, USER_TASK1, 10L);
+    changeDuration(processInstanceDto, USER_TASK2, 20L);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+
+    // when
+    final ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
+      evaluateDurationMapReport(reportData);
+
+    // then
+    final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(2));
+    assertThat(
+      result.getDataEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(10L, 20L))
+    );
+    assertThat(
+      result.getDataEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(20L))
     );
 
     assertThat(result.getProcessInstanceCount(), is(1L));
@@ -128,12 +167,12 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
     final Long[] setDurations = new Long[]{10L, 30L};
     changeDuration(processInstanceDto1, setDurations[0]);
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
     changeDuration(processInstanceDto2, setDurations[1]);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -146,11 +185,11 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // then
     assertThat(result.getData().size(), is(2));
     assertThat(
-      result.getDataEntryForKey(DEFAULT_USERNAME).get().getValue(),
+      result.getDataEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(setDurations))
     );
     assertThat(
-      result.getDataEntryForKey(SECOND_USER).get().getValue(),
+      result.getDataEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(setDurations))
     );
 
@@ -162,12 +201,12 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
     final Long[] setDurations = new Long[]{10L, 30L};
     changeDuration(processInstanceDto1, setDurations[0]);
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
     changeDuration(processInstanceDto2, setDurations[1]);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -180,7 +219,10 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       evaluateDurationMapReportForAllAggTypes(reportData);
 
     // then
-    assertDurationMapReportResults(results, ImmutableMap.of(DEFAULT_USERNAME, setDurations, SECOND_USER, setDurations));
+    assertDurationMapReportResults(
+      results,
+      ImmutableMap.of(FIRST_CANDIDATE_GROUP, setDurations, SECOND_CANDIDATE_GROUP, setDurations)
+    );
     assertThat(results.get(MIN).getProcessInstanceCount(), is(2L));
   }
 
@@ -190,12 +232,12 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
     changeDuration(processInstanceDto1, USER_TASK1, 10L);
     changeDuration(processInstanceDto1, USER_TASK2, 20L);
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK1, 10L);
     changeDuration(processInstanceDto2, USER_TASK2, 20L);
 
@@ -210,11 +252,11 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     assertThat(result.getIsComplete(), is(true));
     assertThat(result.getData().size(), is(2));
     assertThat(
-      result.getDataEntryForKey(DEFAULT_USERNAME).get().getValue(),
+      result.getDataEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(10L))
     );
     assertThat(
-      result.getDataEntryForKey(SECOND_USER).get().getValue(),
+      result.getDataEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(20L))
     );
   }
@@ -225,12 +267,12 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
     changeDuration(processInstanceDto1, USER_TASK1, 10L);
     changeDuration(processInstanceDto1, USER_TASK2, 20L);
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK1, 10L);
     changeDuration(processInstanceDto2, USER_TASK2, 20L);
 
@@ -246,7 +288,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // then
     assertDurationMapReportResults(
       results,
-      ImmutableMap.of(DEFAULT_USERNAME, new Long[]{10L}, SECOND_USER, new Long[]{20L})
+      ImmutableMap.of(FIRST_CANDIDATE_GROUP, new Long[]{10L}, SECOND_CANDIDATE_GROUP, new Long[]{20L})
     );
     assertThat(results.get(MIN).getIsComplete(), is(true));
   }
@@ -257,12 +299,12 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
     changeDuration(processInstanceDto1, USER_TASK1, 10L);
     changeDuration(processInstanceDto1, USER_TASK2, 20L);
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK1, 10L);
     changeDuration(processInstanceDto2, USER_TASK2, 20L);
 
@@ -288,12 +330,12 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
     changeDuration(processInstanceDto1, USER_TASK1, 10L);
     changeDuration(processInstanceDto1, USER_TASK2, 20L);
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK1, 10L);
     changeDuration(processInstanceDto2, USER_TASK2, 20L);
 
@@ -326,12 +368,12 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
     changeDuration(processInstanceDto1, USER_TASK1, 10L);
     changeDuration(processInstanceDto1, USER_TASK2, 20L);
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK1, 10L);
     changeDuration(processInstanceDto2, USER_TASK2, 20L);
 
@@ -363,12 +405,12 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
     changeDuration(processInstanceDto1, USER_TASK1, 10L);
     changeDuration(processInstanceDto1, USER_TASK2, 20L);
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK1, 100L);
     changeDuration(processInstanceDto2, USER_TASK2, 2L);
 
@@ -396,11 +438,11 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     assertThat(latestDefinition.getVersion(), is(2));
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(firstDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
     changeDuration(processInstanceDto1, 20L);
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(latestDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
     changeDuration(processInstanceDto2, 40L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -413,11 +455,11 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     //then
     assertThat(result.getData().size(), is(2));
     assertThat(
-      result.getDataEntryForKey(DEFAULT_USERNAME).get().getValue(),
+      result.getDataEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(20L, 40L))
     );
     assertThat(
-      result.getDataEntryForKey(SECOND_USER).get().getValue(),
+      result.getDataEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(40L))
     );
 
@@ -431,11 +473,11 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     assertThat(latestDefinition.getVersion(), is(2));
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(firstDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
     changeDuration(processInstanceDto1, 20L);
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(latestDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
     changeDuration(processInstanceDto2, 40L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -448,11 +490,11 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     //then
     assertThat(result.getData().size(), is(2));
     assertThat(
-      result.getDataEntryForKey(DEFAULT_USERNAME).get().getValue(),
+      result.getDataEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(20L, 40L))
     );
     assertThat(
-      result.getDataEntryForKey(SECOND_USER).get().getValue(),
+      result.getDataEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(20L))
     );
   }
@@ -463,10 +505,10 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
     final ProcessDefinitionEngineDto processDefinition2 = deployOneUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition1.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
     changeDuration(processInstanceDto1, 40L);
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition2.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
     changeDuration(processInstanceDto2, 20L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -481,7 +523,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     //then
     assertThat(result.getData().size(), is(1));
     assertThat(
-      result.getDataEntryForKey(DEFAULT_USERNAME).get().getValue(),
+      result.getDataEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(20L, 40L))
     );
   }
@@ -491,18 +533,18 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // given
     final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition1.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
     changeDuration(processInstanceDto1, 40L);
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition1.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
     changeDuration(processInstanceDto2, 40L);
 
     final ProcessDefinitionEngineDto processDefinition2 = deployOneUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto3 = engineRule.startProcessInstance(processDefinition2.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto3);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto3);
     changeDuration(processInstanceDto3, 20L);
     final ProcessInstanceEngineDto processInstanceDto4 = engineRule.startProcessInstance(processDefinition2.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto4);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto4);
     changeDuration(processInstanceDto4, 20L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -517,13 +559,13 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // then
     assertThat(result1.getData().size(), is(1));
     assertThat(
-      result1.getDataEntryForKey(DEFAULT_USERNAME).get().getValue(),
+      result1.getDataEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(40L))
     );
 
     assertThat(result2.getData().size(), is(1));
     assertThat(
-      result2.getDataEntryForKey(DEFAULT_USERNAME).get().getValue(),
+      result2.getDataEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(20L))
     );
   }
@@ -555,13 +597,13 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto);
     changeDuration(processInstanceDto, 100L);
     processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto);
     changeDuration(processInstanceDto, 300L);
     processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto);
+    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto);
     changeDuration(processInstanceDto, 600L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -573,7 +615,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       evaluateDurationMapReportForAllAggTypes(reportData);
 
     // then
-    assertDurationMapReportResults(results, ImmutableMap.of(DEFAULT_USERNAME, new Long[]{100L, 300L, 600L}));
+    assertDurationMapReportResults(results, ImmutableMap.of(FIRST_CANDIDATE_GROUP, new Long[]{100L, 300L, 600L}));
   }
 
   @Test
@@ -596,13 +638,13 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     Map<String, Long> expectedTotalDurationValues;
   }
 
-  private static Map<String, Long> getExpectedResultsMap(Long userTask1Results, Long userTask2Results) {
+  private static Map<String, Long> getExpectedResultsMap(Long candidateGroup1Results, Long candidateGroup2Results) {
     Map<String, Long> result = new HashMap<>();
-    if (nonNull(userTask1Results)) {
-      result.put(DEFAULT_USERNAME, userTask1Results);
+    if (nonNull(candidateGroup1Results)) {
+      result.put(FIRST_CANDIDATE_GROUP, candidateGroup1Results);
     }
-    if (nonNull(userTask2Results)) {
-      result.put(SECOND_USER, userTask2Results);
+    if (nonNull(candidateGroup2Results)) {
+      result.put(SECOND_CANDIDATE_GROUP, candidateGroup2Results);
     }
     return result;
   }
@@ -627,15 +669,15 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     ExecutionStateTestValues allStateValues = new ExecutionStateTestValues();
     allStateValues.executionState = FlowNodeExecutionState.ALL;
     allStateValues.expectedIdleDurationValues = getExpectedResultsMap(
-      calculateExpectedValueGivenDurationsDefaultAggr(100L, 200L),
+      calculateExpectedValueGivenDurationsDefaultAggr(100L, 200L, 200L),
       200L
     );
     allStateValues.expectedWorkDurationValues = getExpectedResultsMap(
-      calculateExpectedValueGivenDurationsDefaultAggr(100L, 500L),
+      calculateExpectedValueGivenDurationsDefaultAggr(100L, 500L, 500L),
       500L
     );
     allStateValues.expectedTotalDurationValues = getExpectedResultsMap(
-      calculateExpectedValueGivenDurationsDefaultAggr(100L, 700L),
+      calculateExpectedValueGivenDurationsDefaultAggr(100L, 700L, 700L),
       700L
     );
 
@@ -656,15 +698,18 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     // finish first running task, second now runs but unclaimed
+    engineRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
     engineRule.finishAllRunningUserTasks(processInstanceDto.getId());
     changeDuration(processInstanceDto, USER_TASK1, 100L);
-    engineRule.claimAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId());
+    engineRule.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineRule.claimAllRunningUserTasks(processInstanceDto.getId());
     changeUserTaskStartDate(processInstanceDto, now, USER_TASK2, 700L);
     changeUserTaskClaimDate(processInstanceDto, now, USER_TASK2, 500L);
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
     // claim first running task
-    engineRule.claimAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto2.getId());
+    engineRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineRule.claimAllRunningUserTasks(processInstanceDto2.getId());
 
     changeUserTaskStartDate(processInstanceDto2, now, USER_TASK1, 700L);
     changeUserTaskClaimDate(processInstanceDto2, now, USER_TASK1, 500L);
@@ -691,7 +736,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       // @formatter:off
         .createExecutableProcess("processWithMultiInstanceUserTask")
         .startEvent()
-          .userTask(DEFAULT_USERNAME).multiInstance().cardinality("2").multiInstanceDone()
+          .userTask(USER_TASK1).multiInstance().cardinality("2").multiInstanceDone()
         .endEvent()
         .done();
     // @formatter:on
@@ -700,6 +745,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       processWithMultiInstanceUserTask
     );
     final ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    engineRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
     engineRule.finishAllRunningUserTasks(processInstanceDto.getId());
     changeDuration(processInstanceDto, 10L);
 
@@ -713,7 +759,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // then
     assertThat(result.getData().size(), is(1));
     assertThat(
-      result.getDataEntryForKey(DEFAULT_USERNAME).get().getValue(),
+      result.getDataEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(10L))
     );
   }
@@ -725,6 +771,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     for (int i = 0; i < 11; i++) {
       final ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+      engineRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
       engineRule.finishAllRunningUserTasks(processInstanceDto.getId());
       changeDuration(processInstanceDto, 10L);
     }
@@ -739,7 +786,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // then
     assertThat(result.getData().size(), is(1));
     assertThat(
-      result.getDataEntryForKey(DEFAULT_USERNAME).get().getValue(),
+      result.getDataEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(10L))
     );
   }
@@ -749,6 +796,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    engineRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
     engineRule.finishAllRunningUserTasks(processInstanceDto.getId());
     changeDuration(processInstanceDto, 10L);
 
@@ -776,7 +824,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
     assertThat(
-      result.getDataEntryForKey(DEFAULT_USERNAME).get().getValue(),
+      result.getDataEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(10L))
     );
   }
@@ -876,11 +924,13 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   }
 
 
-  private void finishTwoUserTasksOneWithDefaultAndSecondUser(final ProcessInstanceEngineDto processInstanceDto1) {
+  private void finishTwoUserTasksOneWithFirstAndSecondGroup(final ProcessInstanceEngineDto processInstanceDto1) {
     // finish first task
-    engineRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
+    engineRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineRule.finishAllRunningUserTasks(processInstanceDto1.getId());
     // finish second task with
-    engineRule.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto1.getId());
+    engineRule.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineRule.finishAllRunningUserTasks(processInstanceDto1.getId());
   }
 
   private String deployAndStartMultiTenantUserTaskProcess(final List<String> deployedTenants) {
@@ -904,7 +954,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   private ProcessDefinitionEngineDto deployOneUserTasksDefinition(String key, String tenantId) {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(key)
       .startEvent(START_EVENT)
-      .userTask(DEFAULT_USERNAME)
+      .userTask(USER_TASK1)
       .endEvent(END_EVENT)
       .done();
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance, tenantId);

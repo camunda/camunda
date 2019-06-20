@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.user_task.groupby.candidate_group;
+package org.camunda.optimize.service.es.report.process.user_task.duration.groupby.assignee;
 
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
@@ -16,12 +16,13 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskWorkDurationMapGroupByCandidateGroupReport;
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskWorkDurationMapGroupByAssigneeReport;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
-public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
-  extends AbstractUserTaskDurationByCandidateGroupReportEvaluationIT {
+public class UserTaskWorkDurationByAssigneeReportEvaluationIT
+  extends AbstractUserTaskDurationByAssigneeReportEvaluationIT {
 
   @Override
   protected UserTaskDurationTime getUserTaskDurationTime() {
@@ -61,7 +62,7 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
 
   @Override
   protected ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
-    return createUserTaskWorkDurationMapGroupByCandidateGroupReport(processDefinitionKey, version);
+    return createUserTaskWorkDurationMapGroupByAssigneeReport(processDefinitionKey, version);
   }
 
   private void changeUserOperationClaimTimestamp(final ProcessInstanceEngineDto processInstanceDto,
@@ -82,12 +83,12 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
   protected void assertEvaluateReportWithExecutionState(final ProcessDurationReportMapResultDto result,
                                                         final ExecutionStateTestValues expectedValues) {
     assertThat(
-      result.getDataEntryForKey(FIRST_CANDIDATE_GROUP).orElse(new MapResultEntryDto<>("foo", null)).getValue(),
-      is(expectedValues.getExpectedWorkDurationValues().get(FIRST_CANDIDATE_GROUP))
+      result.getDataEntryForKey(DEFAULT_USERNAME).orElse(new MapResultEntryDto<>("foo", null)).getValue(),
+      is(expectedValues.getExpectedWorkDurationValues().get(DEFAULT_USERNAME))
     );
     assertThat(
-      result.getDataEntryForKey(SECOND_CANDIDATE_GROUP).orElse(new MapResultEntryDto<>("foo", null)).getValue(),
-      is(expectedValues.getExpectedWorkDurationValues().get(SECOND_CANDIDATE_GROUP))
+      result.getDataEntryForKey(SECOND_USER).orElse(new MapResultEntryDto<>("foo", null)).getValue(),
+      is(expectedValues.getExpectedWorkDurationValues().get(SECOND_USER))
     );
   }
 

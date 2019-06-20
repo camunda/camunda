@@ -51,4 +51,11 @@ public class ProcessViewDtoCreator {
     return view;
   }
 
+  public static ProcessViewDto createUserTaskFrequencyView() {
+    final ProcessViewDto view = new ProcessViewDto();
+    view.setEntity(ProcessViewEntity.USER_TASK);
+    view.setProperty(ProcessViewProperty.FREQUENCY);
+    return view;
+  }
+
 }

@@ -11,7 +11,8 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import java.util.Map;
 import java.util.function.Function;
 
-public abstract class UserTaskGroupingCommand extends FlowNodeDurationGroupingCommand {
+public abstract class UserTaskFrequencyGroupingCommand extends FlowNodeFrequencyGroupingCommand {
+
   @Override
   protected Function<ProcessDefinitionOptimizeDto, Map<String, String>> getGetFlowNodeNameExtractor() {
     return ProcessDefinitionOptimizeDto::getUserTaskNames;

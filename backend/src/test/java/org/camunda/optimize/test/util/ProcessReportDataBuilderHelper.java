@@ -32,6 +32,7 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByVariable;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createCountProcessInstanceFrequencyView;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createUserTaskDurationView;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createUserTaskFrequencyView;
 
 
 public class ProcessReportDataBuilderHelper {
@@ -370,6 +371,54 @@ public class ProcessReportDataBuilderHelper {
     reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.TOTAL);
 
     return reportDataViewRaw;
+  }
+
+  public static ProcessReportDataDto createUserTaskFrequencyMapGroupByUserTaskReport(
+    final String processDefinitionKey,
+    final String processDefinitionVersion
+  ) {
+    final ProcessViewDto view = createUserTaskFrequencyView();
+    final ProcessGroupByDto groupByDto = createGroupByFlowNode();
+
+    return createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
+      view,
+      groupByDto
+    );
+  }
+
+  public static ProcessReportDataDto createUserTaskFrequencyMapGroupByAssigneeReport(
+    final String processDefinitionKey,
+    final String processDefinitionVersion
+  ) {
+    final ProcessViewDto view = createUserTaskFrequencyView();
+    final ProcessGroupByDto groupByDto = createGroupByAssignee();
+
+    return createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
+      view,
+      groupByDto
+    );
+  }
+
+  public static ProcessReportDataDto createUserTaskFrequencyMapGroupByCandidateGroupReport(
+    final String processDefinitionKey,
+    final String processDefinitionVersion
+  ) {
+    final ProcessViewDto view = createUserTaskFrequencyView();
+    final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
+
+    return createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
+      view,
+      groupByDto
+    );
   }
 
   public static ProcessReportDataDto createUserTaskIdleDurationMapGroupByUserTaskReport(

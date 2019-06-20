@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.user_task.groupby.usertask;
+package org.camunda.optimize.service.es.report.process.user_task.duration.groupby.usertask;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -706,7 +706,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(10L))
+      is(calculateExpectedValueGivenDurationsDefaultAggr(10L, 10L))
     );
   }
 

@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.user_task.groupby.usertask;
+package org.camunda.optimize.service.es.report.process.user_task.duration.groupby.usertask;
 
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
@@ -15,16 +15,17 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskWorkDurationMapGroupByUserTaskReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskIdleDurationMapGroupByUserTaskReport;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
-public class UserTaskWorkDurationByUserTaskReportEvaluationIT
+public class UserTaskIdleDurationByUserTaskReportEvaluationIT
   extends AbstractUserTaskDurationByUserTaskReportEvaluationIT {
+
 
   @Override
   protected UserTaskDurationTime getUserTaskDurationTime() {
-    return UserTaskDurationTime.WORK;
+    return UserTaskDurationTime.IDLE;
   }
 
   @Override
@@ -46,21 +47,18 @@ public class UserTaskWorkDurationByUserTaskReportEvaluationIT
                                 final long duration) {
     engineRule.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
       .forEach(
-        historicUserTaskInstanceDto -> {
-          if (historicUserTaskInstanceDto.getEndTime() != null) {
-            changeUserOperationClaimTimestamp(
-              processInstanceDto,
-              duration,
-              historicUserTaskInstanceDto
-            );
-          }
-        }
+        historicUserTaskInstanceDto ->
+          changeUserOperationClaimTimestamp(
+            processInstanceDto,
+            duration,
+            historicUserTaskInstanceDto
+          )
       );
   }
 
   @Override
   protected ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
-    return createUserTaskWorkDurationMapGroupByUserTaskReport(processDefinitionKey, version);
+    return createUserTaskIdleDurationMapGroupByUserTaskReport(processDefinitionKey, version);
   }
 
   private void changeUserOperationClaimTimestamp(final ProcessInstanceEngineDto processInstanceDto,
@@ -70,7 +68,7 @@ public class UserTaskWorkDurationByUserTaskReportEvaluationIT
       engineDatabaseRule.changeUserTaskClaimOperationTimestamp(
         processInstanceDto.getId(),
         historicUserTaskInstanceDto.getId(),
-        historicUserTaskInstanceDto.getEndTime().minus(millis, ChronoUnit.MILLIS)
+        historicUserTaskInstanceDto.getStartTime().plus(millis, ChronoUnit.MILLIS)
       );
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException(e);
@@ -82,12 +80,11 @@ public class UserTaskWorkDurationByUserTaskReportEvaluationIT
                                                         final ExecutionStateTestValues expectedValues) {
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(expectedValues.getExpectedWorkDurationValues().get(USER_TASK_1))
+      is(expectedValues.getExpectedIdleDurationValues().get(USER_TASK_1))
     );
     assertThat(
       result.getDataEntryForKey(USER_TASK_2).get().getValue(),
-      is(expectedValues.getExpectedWorkDurationValues().get(USER_TASK_2))
+      is(expectedValues.getExpectedIdleDurationValues().get(USER_TASK_2))
     );
   }
-
 }

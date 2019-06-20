@@ -23,6 +23,7 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createCountProcessInstanceFrequencyView;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createRawDataView;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createUserTaskDurationView;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createUserTaskFrequencyView;
 
 public class ProcessReportDataCreator {
 
@@ -37,20 +38,30 @@ public class ProcessReportDataCreator {
     return reportData;
   }
 
+  public static ProcessReportDataDto createUserTaskFrequencyGroupedByUserTaskReport() {
+    final ProcessViewDto view = createUserTaskFrequencyView();
+    final ProcessGroupByDto groupByDto = createGroupByFlowNode();
+
+    final ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    return reportData;
+  }
+
   public static ProcessReportDataDto createUserTaskIdleDurationGroupByUserTaskReport(AggregationType aggroType) {
-    return createUserTaskGroupedByUserTaskReport(aggroType, UserTaskDurationTime.IDLE);
+    return createUserTaskDurationGroupedByUserTaskReport(aggroType, UserTaskDurationTime.IDLE);
   }
 
   public static ProcessReportDataDto createUserTaskTotalDurationGroupByUserTaskReport(AggregationType aggroType) {
-    return createUserTaskGroupedByUserTaskReport(aggroType, UserTaskDurationTime.TOTAL);
+    return createUserTaskDurationGroupedByUserTaskReport(aggroType, UserTaskDurationTime.TOTAL);
   }
 
   public static ProcessReportDataDto createUserTaskWorkDurationGroupByUserTaskReport(AggregationType aggroType) {
-    return createUserTaskGroupedByUserTaskReport(aggroType, UserTaskDurationTime.WORK);
+    return createUserTaskDurationGroupedByUserTaskReport(aggroType, UserTaskDurationTime.WORK);
   }
 
-  private static ProcessReportDataDto createUserTaskGroupedByUserTaskReport(final AggregationType aggroType,
-                                                                            final UserTaskDurationTime userTaskDurationTime) {
+  private static ProcessReportDataDto createUserTaskDurationGroupedByUserTaskReport(final AggregationType aggroType,
+                                                                                    final UserTaskDurationTime userTaskDurationTime) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByFlowNode();
 
@@ -62,20 +73,30 @@ public class ProcessReportDataCreator {
     return reportData;
   }
 
+  public static ProcessReportDataDto createUserTaskFrequencyGroupByAssigneeReport() {
+    final ProcessViewDto view = createUserTaskFrequencyView();
+    final ProcessGroupByDto groupByDto = createGroupByAssignee();
+
+    final ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    return reportData;
+  }
+
   public static ProcessReportDataDto createUserTaskIdleDurationGroupByAssigneeReport(AggregationType aggroType) {
-    return createUserTaskGroupByAssigneeReport(aggroType, UserTaskDurationTime.IDLE);
+    return createUserTaskDurationGroupByAssigneeReport(aggroType, UserTaskDurationTime.IDLE);
   }
 
   public static ProcessReportDataDto createUserTaskTotalDurationGroupByAssigneeReport(AggregationType aggroType) {
-    return createUserTaskGroupByAssigneeReport(aggroType, UserTaskDurationTime.TOTAL);
+    return createUserTaskDurationGroupByAssigneeReport(aggroType, UserTaskDurationTime.TOTAL);
   }
 
   public static ProcessReportDataDto createUserTaskWorkDurationGroupByAssigneeReport(AggregationType aggroType) {
-    return createUserTaskGroupByAssigneeReport(aggroType, UserTaskDurationTime.WORK);
+    return createUserTaskDurationGroupByAssigneeReport(aggroType, UserTaskDurationTime.WORK);
   }
 
-  private static ProcessReportDataDto createUserTaskGroupByAssigneeReport(final AggregationType aggroType,
-                                                                          final UserTaskDurationTime userTaskDurationTime) {
+  private static ProcessReportDataDto createUserTaskDurationGroupByAssigneeReport(final AggregationType aggroType,
+                                                                                  final UserTaskDurationTime userTaskDurationTime) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByAssignee();
 
@@ -87,20 +108,30 @@ public class ProcessReportDataCreator {
     return reportData;
   }
 
+  public static ProcessReportDataDto createUserTaskFrequencyGroupByCandidateGroupReport() {
+    final ProcessViewDto view = createUserTaskFrequencyView();
+    final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
+
+    final ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    return reportData;
+  }
+
   public static ProcessReportDataDto createUserTaskIdleDurationGroupByCandidateGroupReport(AggregationType aggroType) {
-    return createUserTaskGroupByCandidateGroupReport(aggroType, UserTaskDurationTime.IDLE);
+    return createUserTaskDurationGroupByCandidateGroupReport(aggroType, UserTaskDurationTime.IDLE);
   }
 
   public static ProcessReportDataDto createUserTaskTotalDurationGroupByCandidateGroupReport(AggregationType aggroType) {
-    return createUserTaskGroupByCandidateGroupReport(aggroType, UserTaskDurationTime.TOTAL);
+    return createUserTaskDurationGroupByCandidateGroupReport(aggroType, UserTaskDurationTime.TOTAL);
   }
 
   public static ProcessReportDataDto createUserTaskWorkDurationGroupByCandidateGroupReport(AggregationType aggroType) {
-    return createUserTaskGroupByCandidateGroupReport(aggroType, UserTaskDurationTime.WORK);
+    return createUserTaskDurationGroupByCandidateGroupReport(aggroType, UserTaskDurationTime.WORK);
   }
 
-  private static ProcessReportDataDto createUserTaskGroupByCandidateGroupReport(final AggregationType aggroType,
-                                                                                final UserTaskDurationTime userTaskDurationTime) {
+  private static ProcessReportDataDto createUserTaskDurationGroupByCandidateGroupReport(final AggregationType aggroType,
+                                                                                        final UserTaskDurationTime userTaskDurationTime) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
 

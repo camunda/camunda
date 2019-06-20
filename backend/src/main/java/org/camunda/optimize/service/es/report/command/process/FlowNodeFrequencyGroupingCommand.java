@@ -11,7 +11,10 @@ import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.process.util.GroupByFlowNodeCommandUtil;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 
-public abstract class FlowNodeCountGroupingCommand extends ProcessReportCommand<SingleProcessMapReportResult> {
+import java.util.Map;
+import java.util.function.Function;
+
+public abstract class FlowNodeFrequencyGroupingCommand extends ProcessReportCommand<SingleProcessMapReportResult> {
 
   @Override
   protected SingleProcessMapReportResult filterResultData(final CommandContext<SingleProcessReportDefinitionDto> commandContext,
@@ -27,9 +30,13 @@ public abstract class FlowNodeCountGroupingCommand extends ProcessReportCommand<
     // For those flow nodes, count value is set to null.
     // A value of 0 doesn't work, because the heatmap shows still a little heat for a 0 value.
     GroupByFlowNodeCommandUtil.enrichResultData(
-      commandContext, evaluationResult, () -> null, ProcessDefinitionOptimizeDto::getFlowNodeNames
+      commandContext, evaluationResult, () -> null, getGetFlowNodeNameExtractor()
     );
     return evaluationResult;
+  }
+
+  protected Function<ProcessDefinitionOptimizeDto, Map<String, String>> getGetFlowNodeNameExtractor() {
+    return ProcessDefinitionOptimizeDto::getFlowNodeNames;
   }
 
 }

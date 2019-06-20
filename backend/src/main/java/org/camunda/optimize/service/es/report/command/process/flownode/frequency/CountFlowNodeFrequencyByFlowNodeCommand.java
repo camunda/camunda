@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowN
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
-import org.camunda.optimize.service.es.report.command.process.FlowNodeCountGroupingCommand;
+import org.camunda.optimize.service.es.report.command.process.FlowNodeFrequencyGroupingCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -40,7 +40,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
-public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeCountGroupingCommand {
+public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeFrequencyGroupingCommand {
 
   private static final String MI_BODY = "multiInstanceBody";
 

@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.user_task.groupby.assignee;
+package org.camunda.optimize.service.es.report.process.user_task.duration.groupby.candidate_group;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -14,13 +14,12 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 
 import java.sql.SQLException;
 
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskTotalDurationMapGroupByAssigneeReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskTotalDurationMapGroupByCandidateGroupReport;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
-public class UserTaskTotalDurationByAssigneeReportEvaluationIT
-  extends AbstractUserTaskDurationByAssigneeReportEvaluationIT {
+public class UserTaskTotalDurationByCandidateGroupReportEvaluationIT
+  extends AbstractUserTaskDurationByCandidateGroupReportEvaluationIT {
 
   @Override
   protected UserTaskDurationTime getUserTaskDurationTime() {
@@ -49,19 +48,19 @@ public class UserTaskTotalDurationByAssigneeReportEvaluationIT
 
   @Override
   protected ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
-    return createUserTaskTotalDurationMapGroupByAssigneeReport(processDefinitionKey, version);
+    return createUserTaskTotalDurationMapGroupByCandidateGroupReport(processDefinitionKey, version);
   }
 
   @Override
   protected void assertEvaluateReportWithExecutionState(final ProcessDurationReportMapResultDto result,
                                                         final ExecutionStateTestValues expectedValues) {
     assertThat(
-      result.getDataEntryForKey(DEFAULT_USERNAME).orElse(new MapResultEntryDto<>("foo", null)).getValue(),
-      is(expectedValues.getExpectedTotalDurationValues().get(DEFAULT_USERNAME))
+      result.getDataEntryForKey(FIRST_CANDIDATE_GROUP).map(MapResultEntryDto::getValue).orElse(null),
+      is(expectedValues.getExpectedTotalDurationValues().get(FIRST_CANDIDATE_GROUP))
     );
     assertThat(
-      result.getDataEntryForKey(SECOND_USER).orElse(new MapResultEntryDto<>("foo", null)).getValue(),
-      is(expectedValues.getExpectedTotalDurationValues().get(SECOND_USER))
+      result.getDataEntryForKey(SECOND_CANDIDATE_GROUP).map(MapResultEntryDto::getValue).orElse(null),
+      is(expectedValues.getExpectedTotalDurationValues().get(SECOND_CANDIDATE_GROUP))
     );
   }
 
