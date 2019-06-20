@@ -115,7 +115,7 @@ pipeline {
                 container('maven') {
                     sh ("""
                         cd ./util/dependency-doc-creation/
-                        ./createOptimizeDependencyFiles.sh
+                        ./createOptimizeDependencyFiles.sh useCISettings
                         
                         mv backend-dependencies.md ./curr_backend-dependencies.md
                         mv frontend-dependencies.md ./curr_frontend-dependencies.md
@@ -130,7 +130,7 @@ pipeline {
                         
                         git checkout `git log -1 --before=\\"\$(date -d "yesterday" +%d.%m.%Y)\\" --pretty=format:"%h"`
                         
-                        ./createOptimizeDependencyFiles.sh
+                        ./createOptimizeDependencyFiles.sh useCISettings
 
                         # diff returns status code 1 if there is difference, so the script crashes
                         # || : executes a null operator if diff fails, so the script continues running
