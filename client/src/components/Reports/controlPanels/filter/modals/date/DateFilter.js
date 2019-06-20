@@ -177,7 +177,7 @@ export default class DateFilter extends React.Component {
     );
   }
 
-  setDynamicUnit = ({target: {value}}) => this.setState({dynamicUnit: value});
+  setDynamicUnit = value => this.setState({dynamicUnit: value});
   setDynamicValue = ({target: {value}}) => {
     this.setState({
       dynamicValue: value,

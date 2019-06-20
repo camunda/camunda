@@ -55,7 +55,7 @@ it('should reevaluate the report when changing execution status', () => {
     />
   );
 
-  node.find('Select').simulate('change', {target: {value: 'running'}});
+  node.find('Select').simulate('change', 'running');
 
   expect(spy).toHaveBeenCalledWith({flowNodeExecutionState: {$set: 'running'}}, true);
 });

@@ -39,7 +39,7 @@ it('should reevaluate the report when changing the aggregation type', () => {
     />
   );
 
-  node.find('Select').simulate('change', {target: {value: 'max'}});
+  node.find('Select').simulate('change', 'max');
 
   expect(spy).toHaveBeenCalledWith({aggregationType: {$set: 'max'}}, true);
 });

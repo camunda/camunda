@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {LoadingIndicator, Dropdown} from 'components';
+import {LoadingIndicator, Select} from 'components';
 
 import DefinitionSelection from './DefinitionSelection';
 
@@ -108,7 +108,7 @@ it('should set key and version, if process definition is already available', asy
       {tenants: [{id: null, name: 'Not defined'}], version: '1'}
     ]
   });
-  expect(node.find('.version')).toHaveProp('label', '2');
+  expect(node.find('.version')).toHaveProp('value', '2');
 });
 
 it('should call onChange function on change of the definition', async () => {
@@ -150,22 +150,17 @@ it('should display all option in version selection if enabled', async () => {
 
   expect(
     node
-      .find(Dropdown)
-      .last()
+      .find(Select)
       .childAt(0)
+      .dive()
       .text()
   ).toBe('all');
 });
 
-it('should not display all option in version selection if disabled', async () => {
+it('should not display all options in version selection if disabled', async () => {
   const node = await shallow(<DefinitionSelection {...props} />);
 
-  expect(
-    node
-      .find(Dropdown)
-      .last()
-      .children()
-  ).toHaveLength(0);
+  expect(node.find(Select).children()).toHaveLength(0);
 });
 
 it('should show a note if the selected ProcDef version is ALL', async () => {

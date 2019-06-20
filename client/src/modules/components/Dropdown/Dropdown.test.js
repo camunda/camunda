@@ -12,7 +12,8 @@ import Dropdown from './Dropdown';
 jest.mock('components', () => {
   return {
     Button: ({active, ...props}) => <button {...props} />,
-    Icon: () => <span />
+    Icon: () => <span />,
+    Select: () => ({Submenu: <div />})
   };
 });
 

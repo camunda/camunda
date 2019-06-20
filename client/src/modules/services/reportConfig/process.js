@@ -5,72 +5,105 @@
  */
 
 export const view = [
-  {label: 'Raw Data', group: 'raw', data: {property: 'rawData', entity: null}},
+  {key: 'rawData', label: 'Raw Data', group: 'raw', data: {property: 'rawData', entity: null}},
   {
     label: 'Process Instance',
     group: 'pi',
     options: [
-      {label: 'Count', data: {property: 'frequency', entity: 'processInstance'}},
-      {label: 'Duration', data: {property: 'duration', entity: 'processInstance'}}
+      {
+        key: 'pi_frequency',
+        label: 'Count',
+        data: {property: 'frequency', entity: 'processInstance'}
+      },
+      {
+        key: 'pi_duration',
+        label: 'Duration',
+        data: {property: 'duration', entity: 'processInstance'}
+      }
     ]
   },
   {
     label: 'Flow Node',
     group: 'fn',
     options: [
-      {label: 'Count', data: {property: 'frequency', entity: 'flowNode'}},
-      {label: 'Duration', data: {property: 'duration', entity: 'flowNode'}}
+      {
+        key: 'fn_frequency',
+        label: 'Count',
+        data: {property: 'frequency', entity: 'flowNode'}
+      },
+      {key: 'fn_duration', label: 'Duration', data: {property: 'duration', entity: 'flowNode'}}
     ]
   },
   {
     label: 'User Task',
     group: 'userTask',
     options: [
-      {label: 'Count', data: {property: 'frequency', entity: 'userTask'}},
-      {label: 'Duration', data: {property: 'duration', entity: 'userTask'}}
+      {
+        key: 'userTask_frequency',
+        label: 'Count',
+        data: {property: 'frequency', entity: 'userTask'}
+      },
+      {
+        key: 'userTask_duration',
+        label: 'Duration',
+        data: {property: 'duration', entity: 'userTask'}
+      }
     ]
   }
 ];
 
 export const groupBy = [
-  {label: 'None', group: 'none', data: {type: 'none', value: null}},
-  {label: 'Flow Nodes', group: 'fn', data: {type: 'flowNodes', value: null}},
+  {key: 'none', label: 'None', group: 'none', data: {type: 'none', value: null}},
+  {key: 'fn_flowNodes', label: 'Flow Nodes', group: 'fn', data: {type: 'flowNodes', value: null}},
   {
     label: 'Start Date of Process Instance',
     group: 'date',
     options: [
-      {label: 'Automatic', data: {type: 'startDate', value: {unit: 'automatic'}}},
-      {label: 'Year', data: {type: 'startDate', value: {unit: 'year'}}},
-      {label: 'Month', data: {type: 'startDate', value: {unit: 'month'}}},
-      {label: 'Week', data: {type: 'startDate', value: {unit: 'week'}}},
-      {label: 'Day', data: {type: 'startDate', value: {unit: 'day'}}},
-      {label: 'Hour', data: {type: 'startDate', value: {unit: 'hour'}}}
+      {
+        key: 'startDate_automatic',
+        label: 'Automatic',
+        data: {type: 'startDate', value: {unit: 'automatic'}}
+      },
+      {key: 'startDate_year', label: 'Year', data: {type: 'startDate', value: {unit: 'year'}}},
+      {key: 'startDate_month', label: 'Month', data: {type: 'startDate', value: {unit: 'month'}}},
+      {key: 'startDate_week', label: 'Week', data: {type: 'startDate', value: {unit: 'week'}}},
+      {key: 'startDate_day', label: 'Day', data: {type: 'startDate', value: {unit: 'day'}}},
+      {key: 'startDate_hour', label: 'Hour', data: {type: 'startDate', value: {unit: 'hour'}}}
     ]
   },
   {
     label: 'End Date of Process Instance',
     group: 'date',
     options: [
-      {label: 'Automatic', data: {type: 'endDate', value: {unit: 'automatic'}}},
-      {label: 'Year', data: {type: 'endDate', value: {unit: 'year'}}},
-      {label: 'Month', data: {type: 'endDate', value: {unit: 'month'}}},
-      {label: 'Week', data: {type: 'endDate', value: {unit: 'week'}}},
-      {label: 'Day', data: {type: 'endDate', value: {unit: 'day'}}},
-      {label: 'Hour', data: {type: 'endDate', value: {unit: 'hour'}}}
+      {
+        key: 'endDate_automatic',
+        label: 'Automatic',
+        data: {type: 'endDate', value: {unit: 'automatic'}}
+      },
+      {key: 'endDate_year', label: 'Year', data: {type: 'endDate', value: {unit: 'year'}}},
+      {key: 'endDate_month', label: 'Month', data: {type: 'endDate', value: {unit: 'month'}}},
+      {key: 'endDate_week', label: 'Week', data: {type: 'endDate', value: {unit: 'week'}}},
+      {key: 'endDate_day', label: 'Day', data: {type: 'endDate', value: {unit: 'day'}}},
+      {key: 'endDate_hour', label: 'Hour', data: {type: 'endDate', value: {unit: 'hour'}}}
     ]
   },
   {label: 'Variable', group: 'variable', options: 'variable'},
-  {label: 'Assignee', group: 'user', data: {type: 'assignee', value: null}},
-  {label: 'Candidate Group', group: 'user', data: {type: 'candidateGroup', value: null}}
+  {key: 'user_assignee', label: 'Assignee', group: 'user', data: {type: 'assignee', value: null}},
+  {
+    key: 'user_group',
+    label: 'Candidate Group',
+    group: 'user',
+    data: {type: 'candidateGroup', value: null}
+  }
 ];
 
 export const visualization = [
-  {label: 'Number', group: 'number', data: 'number'},
-  {label: 'Table', group: 'table', data: 'table'},
-  {label: 'Bar Chart', group: 'chart', data: 'bar'},
-  {label: 'Line Chart', group: 'chart', data: 'line'},
-  {label: 'Pie Chart', group: 'chart', data: 'pie'},
-  {label: 'Heatmap', group: 'heat', data: 'heat'}
+  {key: 'number', label: 'Number', group: 'number', data: 'number'},
+  {key: 'table', label: 'Table', group: 'table', data: 'table'},
+  {key: 'bar', label: 'Bar Chart', group: 'chart', data: 'bar'},
+  {key: 'line', label: 'Line Chart', group: 'chart', data: 'line'},
+  {key: 'pie', label: 'Pie Chart', group: 'chart', data: 'pie'},
+  {key: 'heat', label: 'Heatmap', group: 'heat', data: 'heat'}
 ];
 
 export const combinations = {

@@ -20,7 +20,7 @@ export default function NodeStatus({
         <legend>Flow Node Status</legend>
         <Select
           value={configuration.flowNodeExecutionState}
-          onChange={evt => onChange({flowNodeExecutionState: {$set: evt.target.value}}, true)}
+          onChange={value => onChange({flowNodeExecutionState: {$set: value}}, true)}
         >
           <Select.Option value="running">Running</Select.Option>
           <Select.Option value="completed">Completed</Select.Option>

@@ -7,7 +7,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {Button, Icon} from 'components';
+import {Button, Icon, Select} from 'components';
 import DropdownOption from './DropdownOption';
 import Submenu from './Submenu';
 
@@ -153,7 +153,7 @@ export default class Dropdown extends React.Component {
   };
 
   render() {
-    const {open, scrollable, listStyles} = this.state;
+    const {open, scrollable, menuStyle, listStyles} = this.state;
 
     return (
       <div
@@ -180,12 +180,12 @@ export default class Dropdown extends React.Component {
           className="menu"
           aria-labelledby={this.props.id ? this.props.id + '-button' : ''}
           ref={this.menuContainer}
-          style={this.state.menuStyle}
+          style={menuStyle}
         >
           <ul className={classnames({scrollable})} style={listStyles}>
             {React.Children.map(this.props.children, (child, idx) => (
               <li key={idx}>
-                {child && child.type === Submenu
+                {child && (child.type === Submenu || child.type === Select.Submenu)
                   ? React.cloneElement(child, {
                       open:
                         this.state.fixedSubmenu === idx ||

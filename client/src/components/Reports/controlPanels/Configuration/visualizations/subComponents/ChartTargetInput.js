@@ -63,7 +63,7 @@ export default function ChartTargetInput({onChange, report}) {
         <Select
           className="dataUnitSelect"
           value={targetValue[type].unit}
-          onChange={({target: {value}}) => setValues('unit', value)}
+          onChange={value => setValues('unit', value)}
           disabled={!targetValue.active}
         >
           <Select.Option value="millis">Milliseconds</Select.Option>

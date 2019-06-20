@@ -5,28 +5,28 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import Select from './Select';
 
 it('should render without crashing', () => {
-  mount(<Select />);
+  shallow(<Select />);
 });
 
 it('should render a .Select className by default', () => {
-  const node = mount(<Select />);
+  const node = shallow(<Select />);
 
-  expect(node.find('select')).toMatchSelector('.Select');
+  expect(node).toMatchSelector('.Select');
 });
 
 it('should merge and render additional classNames as provided as a property', () => {
-  const node = mount(<Select className="foo" />);
+  const node = shallow(<Select className="foo" />);
 
-  expect(node.find('select')).toMatchSelector('.Select.foo');
+  expect(node).toMatchSelector('.Select.foo');
 });
 
 it('should render child elements and their props', () => {
-  const node = mount(
+  const node = shallow(
     <Select>
       <Select.Option id="test_option" value="1">
         Option One
@@ -35,11 +35,35 @@ it('should render child elements and their props', () => {
   );
 
   expect(node.find('#test_option')).toExist();
-  expect(node.find('option[value="1"]')).toExist();
+  expect(node.find('Option[value="1"]')).toExist();
 });
 
-it('should translate the isInvalid props to is-invalid className', () => {
-  const node = mount(<Select className="foo" isInvalid />);
+it('should select option onClick and add checked property', () => {
+  const node = shallow(
+    <Select>
+      <Select.Option value="1">Option One</Select.Option>
+    </Select>
+  );
 
-  expect(node.find('select')).toHaveClassName('is-invalid');
+  node.find('Option').simulate('click', {target: {getAttribute: () => '1'}});
+
+  expect(node.find('Option').props().checked).toBeTruthy();
+  expect(node.state().selected).toBe('1');
+  expect(node.instance().label).toBe('Option One');
+});
+
+it('should select submenu option onClick and set checked property on the submenu and the option', () => {
+  const node = shallow(
+    <Select>
+      <Select.Submenu label="submenu">
+        <Select.Option value="1">Option One</Select.Option>
+      </Select.Submenu>
+    </Select>
+  );
+
+  node.find('Option').simulate('click', {target: {getAttribute: () => '1'}});
+  expect(node.find('Submenu').props().checked).toBeTruthy();
+  expect(node.find('Option').props().checked).toBeTruthy();
+  expect(node.state().selected).toBe('1');
+  expect(node.instance().label).toBe('submenu : Option One');
 });

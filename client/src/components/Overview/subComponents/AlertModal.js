@@ -262,7 +262,7 @@ export default function AlertModal(reports) {
                     <Select
                       value={thresholdOperator}
                       className="thresholdSelect"
-                      onChange={({target: {value}}) => this.setState({thresholdOperator: value})}
+                      onChange={value => this.setState({thresholdOperator: value})}
                     >
                       <Select.Option value=">">above</Select.Option>
                       <Select.Option value="<">below</Select.Option>
@@ -290,7 +290,7 @@ export default function AlertModal(reports) {
                 />
                 <Select
                   value={checkInterval.unit}
-                  onChange={({target: {value}}) =>
+                  onChange={value =>
                     this.setState(update(this.state, {checkInterval: {unit: {$set: value}}}))
                   }
                 >
@@ -334,7 +334,7 @@ export default function AlertModal(reports) {
                     />
                     <Select
                       value={reminder.unit}
-                      onChange={({target: {value}}) =>
+                      onChange={value =>
                         this.setState(update(this.state, {reminder: {unit: {$set: value}}}))
                       }
                     >

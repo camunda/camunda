@@ -95,8 +95,8 @@ it('should save the changes target values', async () => {
 
   await node.setProps({open: true});
 
-  node.instance().setTarget('value', 'a')({target: {value: '34'}});
-  node.instance().setTarget('unit', 'a')({target: {value: 'years'}});
+  node.instance().setTarget('value', 'a')('34');
+  node.instance().setTarget('unit', 'a')('years');
 
   spy.mockClear();
 
@@ -125,7 +125,7 @@ it('should set isInvalid property for input if value is invalid', async () => {
   node.setProps({open: true});
   await flushPromises();
 
-  node.instance().setTarget('value', 'a')({target: {value: 'invalid'}});
+  node.instance().setTarget('value', 'a')('invalid');
 
   await node.update();
 

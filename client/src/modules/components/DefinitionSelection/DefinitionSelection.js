@@ -7,7 +7,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {BPMNDiagram, LoadingIndicator, Popover, Dropdown, Typeahead} from 'components';
+import {BPMNDiagram, LoadingIndicator, Popover, Select, Typeahead} from 'components';
 
 import {loadDefinitions, extractDefinitionName, capitalize} from 'services';
 
@@ -64,14 +64,6 @@ export default class DefinitionSelection extends React.Component {
 
   canRenderDiagram = () =>
     this.props.renderDiagram && this.props.definitionKey && this.props.definitionVersion;
-
-  createProcDefVersionTitle = () => {
-    if (this.props.definitionVersion) {
-      return this.getVersion().toLowerCase();
-    } else {
-      return 'Select...';
-    }
-  };
 
   getAvailableTenants = () => {
     const definition = this.findSelectedKeyGroup(this.props.definitionKey);
@@ -168,13 +160,14 @@ export default class DefinitionSelection extends React.Component {
               </div>
               <div className="entry">
                 <span className="label">Version</span>
-                <Dropdown
-                  label={this.createProcDefVersionTitle()}
+                <Select
                   className="version"
                   disabled={!selectedKey}
+                  onChange={version => this.changeVersion(version, this.getAvailableTenants())}
+                  value={this.getVersion()}
                 >
                   {this.renderAllVersions(selectedKey)}
-                </Dropdown>
+                </Select>
               </div>
               <div className="tenant entry">
                 <span className="label">Tenant</span>
@@ -208,9 +201,9 @@ export default class DefinitionSelection extends React.Component {
     key &&
     this.findSelectedKeyGroup(key)
       .versions.filter(({version}) => this.props.enableAllVersionSelection || version !== 'ALL')
-      .map(({version, tenants}) => (
-        <Dropdown.Option key={version} onClick={() => this.changeVersion(version, tenants)}>
+      .map(({version}) => (
+        <Select.Option key={version} value={version}>
           {version.toLowerCase()}
-        </Dropdown.Option>
+        </Select.Option>
       ));
 }

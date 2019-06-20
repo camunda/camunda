@@ -93,7 +93,7 @@ export default class DurationFilter extends React.Component {
     );
   }
 
-  setOperator = ({target: {value: operator}}) => this.setState({operator});
-  setUnit = ({target: {value: unit}}) => this.setState({unit});
+  setOperator = operator => this.setState({operator});
+  setUnit = unit => this.setState({unit});
   setValue = ({target: {value}}) => this.setState({value});
 }

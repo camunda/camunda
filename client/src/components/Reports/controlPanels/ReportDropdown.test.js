@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Dropdown} from 'components';
+import {Select} from 'components';
 import {reportConfig} from 'services';
 
 import ReportDropdown from './ReportDropdown';
@@ -49,11 +49,11 @@ it('should disable options which would create a wrong combination', () => {
 
   const node = shallow(<ReportDropdown {...config} />);
 
-  expect(node.find(Dropdown.Option)).toBeDisabled();
+  expect(node.find(Select.Option)).toBeDisabled();
 });
 
 it('should disable the variable groupby submenu if there are no variables', () => {
   const node = shallow(<ReportDropdown {...config} field="groupBy" />);
 
-  expect(node.find(Dropdown.Submenu)).toBeDisabled();
+  expect(node.find(Select.Submenu)).toBeDisabled();
 });

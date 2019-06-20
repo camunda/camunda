@@ -101,7 +101,7 @@ export default class DurationHeatmapModal extends React.Component {
     return obj;
   };
 
-  setTarget = (type, id) => ({target: {value}}) => {
+  setTarget = (type, id) => value => {
     if (this.state.values[id]) {
       this.setState(
         update(this.state, {
@@ -159,8 +159,8 @@ export default class DurationHeatmapModal extends React.Component {
             />
             <Select
               value={settings.unit}
-              onChange={evt => {
-                this.setTarget('unit', id)(evt);
+              onChange={value => {
+                this.setTarget('unit', id)(value);
                 this.updateFocus(id);
               }}
             >
