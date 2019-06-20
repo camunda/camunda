@@ -58,11 +58,11 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
   @Test
   public void testWorkflowCreated() {
     //when
-    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
+    final Long workflowId = deployWorkflow("demoProcess_v_1.bpmn");
 
     //then
     final WorkflowEntity workflowEntity = workflowReader.getWorkflow(workflowId);
-    assertThat(workflowEntity.getId()).isEqualTo(workflowId);
+    assertThat(workflowEntity.getWorkflowId()).isEqualTo(workflowId);
     assertThat(workflowEntity.getBpmnProcessId()).isEqualTo("demoProcess");
     assertThat(workflowEntity.getVersion()).isEqualTo(1);
     assertThat(workflowEntity.getBpmnXml()).isNotEmpty();
@@ -78,7 +78,7 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
     deployWorkflow("demoProcess_v_1.bpmn", "processWithGateway.bpmn");
 
     //then
-    final Map<String, WorkflowEntity> workflows = workflowReader.getWorkflows();
+    final Map<Long, WorkflowEntity> workflows = workflowReader.getWorkflows();
     assertThat(workflows).hasSize(2);
 
     assertThat(workflows.values()).extracting("bpmnProcessId").containsExactlyInAnyOrder(bpmnProcessId1, bpmnProcessId2);
@@ -87,7 +87,7 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
   @Test
   public void testWorkflowGetDiagram() throws Exception {
     //given
-    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
+    final Long workflowId = deployWorkflow("demoProcess_v_1.bpmn");
 
     MockHttpServletRequestBuilder request = get(String.format(QUERY_WORKFLOW_XML_URL, workflowId));
 
@@ -111,12 +111,12 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
     final String orderProcessId = "orderProcess";
     final String orderProcessName = "Order process";
     final String loanProcessId = "loanProcess";
-    final String demoProcessV1Id = createAndDeployProcess(super.getClient(), demoProcessId, "Demo process");
-    final String demoProcessV2Id = createAndDeployProcess(super.getClient(), demoProcessId, demoProcessName);
-    final String orderProcessV1Id = createAndDeployProcess(super.getClient(), orderProcessId, orderProcessName);
-    final String orderProcessV2Id = createAndDeployProcess(super.getClient(), orderProcessId, orderProcessName);
-    final String orderProcessV3Id = createAndDeployProcess(super.getClient(), orderProcessId, orderProcessName);
-    final String loanProcessV1Id = createAndDeployProcess(super.getClient(), loanProcessId, null);
+    final Long demoProcessV1Id = createAndDeployProcess(super.getClient(), demoProcessId, "Demo process");
+    final Long demoProcessV2Id = createAndDeployProcess(super.getClient(), demoProcessId, demoProcessName);
+    final Long orderProcessV1Id = createAndDeployProcess(super.getClient(), orderProcessId, orderProcessName);
+    final Long orderProcessV2Id = createAndDeployProcess(super.getClient(), orderProcessId, orderProcessName);
+    final Long orderProcessV3Id = createAndDeployProcess(super.getClient(), orderProcessId, orderProcessName);
+    final Long loanProcessV1Id = createAndDeployProcess(super.getClient(), loanProcessId, null);
 
     //when
     elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, loanProcessV1Id);
@@ -140,7 +140,7 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
     assertThat(demoProcessWorkflowGroup.getWorkflows()).hasSize(2);
     assertThat(demoProcessWorkflowGroup.getName()).isEqualTo(demoProcessName);
     assertThat(demoProcessWorkflowGroup.getWorkflows()).isSortedAccordingTo((w1, w2) -> Integer.valueOf(w2.getVersion()).compareTo(w1.getVersion()));
-    assertThat(demoProcessWorkflowGroup.getWorkflows()).extracting(WorkflowIndex.ID).containsExactlyInAnyOrder(demoProcessV1Id, demoProcessV2Id);
+    assertThat(demoProcessWorkflowGroup.getWorkflows()).extracting(WorkflowIndex.ID).containsExactlyInAnyOrder(demoProcessV1Id.toString(), demoProcessV2Id.toString());
 
     assertThat(workflowGroupDtos).filteredOn(wg -> wg.getBpmnProcessId().equals(orderProcessId)).hasSize(1);
     final WorkflowGroupDto orderProcessWorkflowGroup =
@@ -148,7 +148,7 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
     assertThat(orderProcessWorkflowGroup.getWorkflows()).hasSize(3);
     assertThat(orderProcessWorkflowGroup.getName()).isEqualTo(orderProcessName);
     assertThat(orderProcessWorkflowGroup.getWorkflows()).isSortedAccordingTo((w1, w2) -> Integer.valueOf(w2.getVersion()).compareTo(w1.getVersion()));
-    assertThat(orderProcessWorkflowGroup.getWorkflows()).extracting(WorkflowIndex.ID).containsExactlyInAnyOrder(orderProcessV1Id, orderProcessV2Id, orderProcessV3Id);
+    assertThat(orderProcessWorkflowGroup.getWorkflows()).extracting(WorkflowIndex.ID).containsExactlyInAnyOrder(orderProcessV1Id.toString(), orderProcessV2Id.toString(), orderProcessV3Id.toString());
 
 
     assertThat(workflowGroupDtos).filteredOn(wg -> wg.getBpmnProcessId().equals(loanProcessId)).hasSize(1);
@@ -156,10 +156,10 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
       workflowGroupDtos.stream().filter(wg -> wg.getBpmnProcessId().equals(loanProcessId)).findFirst().get();
     assertThat(loanProcessWorkflowGroup.getName()).isNull();
     assertThat(loanProcessWorkflowGroup.getWorkflows()).hasSize(1);
-    assertThat(loanProcessWorkflowGroup.getWorkflows().get(0).getId()).isEqualTo(loanProcessV1Id);
+    assertThat(loanProcessWorkflowGroup.getWorkflows().get(0).getId()).isEqualTo(loanProcessV1Id.toString());
   }
 
-  private String createAndDeployProcess(ZeebeClient zeebeClient, String bpmnProcessId, String name) {
+  private Long createAndDeployProcess(ZeebeClient zeebeClient, String bpmnProcessId, String name) {
     ProcessBuilder executableProcess = Bpmn.createExecutableProcess(bpmnProcessId);
     if (name != null) {
       executableProcess = executableProcess.name(name);

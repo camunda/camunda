@@ -23,7 +23,7 @@ public class WorkflowCache {
   
   private static final Logger logger = LoggerFactory.getLogger(WorkflowCache.class);
 
-  private LinkedHashMap<String, WorkflowEntity> cache = new LinkedHashMap<>();
+  private LinkedHashMap<Long, WorkflowEntity> cache = new LinkedHashMap<>();
 
   private static final int CACHE_MAX_SIZE = 100;
   private static final int MAX_ATTEMPTS = 5;
@@ -32,7 +32,7 @@ public class WorkflowCache {
   @Autowired
   private WorkflowReader workflowReader;
 
-  public String getWorkflowNameOrDefaultValue(String workflowId, String defaultValue) {
+  public String getWorkflowNameOrDefaultValue(Long workflowId, String defaultValue) {
     final WorkflowEntity cachedWorkflowData = cache.get(workflowId);
     String workflowName = defaultValue;
     if (cachedWorkflowData != null) {
@@ -52,7 +52,7 @@ public class WorkflowCache {
     return workflowName;
   }
   
-  private Optional<WorkflowEntity> readWorkflowById(String workflowId) {
+  private Optional<WorkflowEntity> readWorkflowById(Long workflowId) {
     try {
       return Optional.of(workflowReader.getWorkflow(workflowId));
     } catch (NotFoundException nfe) {
@@ -60,7 +60,7 @@ public class WorkflowCache {
     }
   }
 
-  public Optional<WorkflowEntity> findOrWaitWorkflow(String workflowId, int attempts, long sleepInMilliseconds) {
+  public Optional<WorkflowEntity> findOrWaitWorkflow(Long workflowId, int attempts, long sleepInMilliseconds) {
     int attemptsCount = 0;
     Optional<WorkflowEntity> foundWorkflow = Optional.empty();
     while (!foundWorkflow.isPresent() && attemptsCount < attempts) {
@@ -80,10 +80,10 @@ public class WorkflowCache {
     return foundWorkflow;
   }
 
-  public void putToCache(String workflowId, WorkflowEntity workflow) {
+  public void putToCache(Long workflowId, WorkflowEntity workflow) {
     if (cache.size() >= CACHE_MAX_SIZE) {
       // remove 1st element
-      final Iterator<String> iterator = cache.keySet().iterator();
+      final Iterator<Long> iterator = cache.keySet().iterator();
       if (iterator.hasNext()) {
         iterator.next();
         iterator.remove();

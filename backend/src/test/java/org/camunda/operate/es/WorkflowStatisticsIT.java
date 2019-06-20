@@ -12,7 +12,6 @@ import static org.camunda.operate.util.TestUtil.createWorkflowInstance;
 import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.camunda.operate.entities.ActivityState;
@@ -25,6 +24,7 @@ import org.camunda.operate.rest.dto.ActivityStatisticsDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceCoreStatisticsDto;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
+import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.junit.Rule;
@@ -38,13 +38,16 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
   private static final String QUERY_WORKFLOW_STATISTICS_URL = "/api/workflow-instances/statistics";
   private static final String QUERY_WORKFLOW_CORE_STATISTICS_URL = "/api/workflow-instances/core-statistics";
+  
+  private static final Long WORKFLOW_ID_DEMO_PROCESS = 42L;
+  private static final Long WORKFLOW_ID_OTHER_PROCESS = 27L;
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
   @Test
   public void testOneWorkflowStatistics() throws Exception {
-    String workflowId = "demoProcess";
+    Long workflowId = WORKFLOW_ID_DEMO_PROCESS;
 
     createData(workflowId);
 
@@ -53,7 +56,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
   @Test
   public void testStatisticsWithQuery() throws Exception {
-    String workflowId = "demoProcess";
+    Long workflowId = WORKFLOW_ID_DEMO_PROCESS;
 
     createData(workflowId);
 
@@ -91,12 +94,12 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
   @Test
   public void testFailStatisticsWithMoreThanOneWorkflowId() throws Exception {
-    String workflowId = "demoProcess";
+    Long workflowId = WORKFLOW_ID_DEMO_PROCESS;
 
     createData(workflowId);
 
     final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
-    query.getQueries().get(0).setWorkflowIds(Arrays.asList(workflowId, "otherWorkflowId"));
+    query.getQueries().get(0).setWorkflowIds(CollectionUtil.toSafeListOfStrings(workflowId, WORKFLOW_ID_OTHER_PROCESS));
 
     MvcResult mvcResult = postRequestThatShouldFail(QUERY_WORKFLOW_STATISTICS_URL, query);
 
@@ -106,7 +109,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
   @Test
   public void testFailStatisticsWithWorkflowIdAndBpmnProcessId() throws Exception {
-    String workflowId = "1";
+    Long workflowId = 1L;
     String bpmnProcessId = "demoProcess";
     final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
     query.getQueries().get(0).setBpmnProcessId(bpmnProcessId);
@@ -119,7 +122,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
   @Test
   public void testFailStatisticsWithNoQuery() throws Exception {
-    String workflowId = "demoProcess";
+    Long workflowId = WORKFLOW_ID_DEMO_PROCESS;
 
     createData(workflowId);
 
@@ -132,7 +135,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
   @Test
   public void testFailStatisticsWithMoreThanOneQuery() throws Exception {
-    String workflowId = "demoProcess";
+    Long workflowId = WORKFLOW_ID_DEMO_PROCESS;
 
     createData(workflowId);
 
@@ -144,7 +147,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("Exactly one query must be specified in the request.");
   }
 
-  private ListViewRequestDto createGetAllWorkflowInstancesQuery(String workflowId) {
+  private ListViewRequestDto createGetAllWorkflowInstancesQuery(Long workflowId) {
     ListViewQueryDto q = new ListViewQueryDto();
     q.setRunning(true);
     q.setActive(true);
@@ -153,7 +156,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     q.setCompleted(true);
     q.setCanceled(true);
     if (workflowId != null) {
-      q.setWorkflowIds(Arrays.asList(workflowId));
+      q.setWorkflowIds(CollectionUtil.toSafeListOfStrings(workflowId));
     }
     ListViewRequestDto request = new ListViewRequestDto();
     request.getQueries().add(q);
@@ -187,8 +190,8 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
   @Test
   public void testTwoWorkflowsStatistics() throws Exception {
-    String workflowId1 = "demoProcess";
-    String workflowId2 = "sampleProcess";
+    Long workflowId1 = WORKFLOW_ID_DEMO_PROCESS;
+    Long workflowId2 = WORKFLOW_ID_OTHER_PROCESS;
 
     createData(workflowId1);
     createData(workflowId2);
@@ -206,7 +209,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
    * taskE  - 1 active  -             - 1 with incident
    * end    -           -             -                   - 2 finished
    */
-  private void createData(String workflowId) {
+  private void createData(Long workflowId) {
 
     List<OperateEntity> entities = new ArrayList<>();
 
@@ -315,8 +318,8 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     assertEquals(coreStatistics.getWithIncidents().longValue(), 0L);
     
     // given test data
-    createData("demoProcess");
-    createData("sampleProcess");
+    createData(WORKFLOW_ID_DEMO_PROCESS);
+    createData(WORKFLOW_ID_OTHER_PROCESS);
     
     // when request core-statistics
     coreStatistics = mockMvcTestRule.fromResponse(getRequest(QUERY_WORKFLOW_CORE_STATISTICS_URL), WorkflowInstanceCoreStatisticsDto.class);

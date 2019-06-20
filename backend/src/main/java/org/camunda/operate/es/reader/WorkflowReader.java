@@ -14,6 +14,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.IdsQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -48,8 +49,9 @@ public class WorkflowReader extends AbstractReader {
    * @param workflowId
    * @return
    */
-  public String getDiagram(String workflowId) {
-    final IdsQueryBuilder q = idsQuery().addIds(workflowId);
+  //TODO: Refactor ES-Schema
+  public String getDiagram(Long workflowId) {
+    final IdsQueryBuilder q = idsQuery().addIds(workflowId.toString());
 
     final SearchRequest searchRequest = new SearchRequest(workflowType.getAlias())
       .source(new SearchSourceBuilder()
@@ -79,12 +81,10 @@ public class WorkflowReader extends AbstractReader {
    * @param workflowId
    * @return
    */
-  public WorkflowEntity getWorkflow(String workflowId) {
-    final IdsQueryBuilder q = idsQuery().addIds(workflowId);
-
+  public WorkflowEntity getWorkflow(Long workflowId) {
     final SearchRequest searchRequest = new SearchRequest(workflowType.getAlias())
       .source(new SearchSourceBuilder()
-        .query(q));
+        .query(QueryBuilders.termQuery(WorkflowIndex.WORKFLOW_ID, workflowId)));
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -120,7 +120,7 @@ public class WorkflowReader extends AbstractReader {
         .size(ElasticsearchUtil.TERMS_AGG_SIZE)
         .subAggregation(
           topHits(workflowsAggName)
-            .fetchSource(new String[] { WorkflowIndex.ID, WorkflowIndex.NAME, WorkflowIndex.VERSION, WorkflowIndex.BPMN_PROCESS_ID  }, null)
+            .fetchSource(new String[] { WorkflowIndex.ID, WorkflowIndex.WORKFLOW_ID, WorkflowIndex.NAME, WorkflowIndex.VERSION, WorkflowIndex.BPMN_PROCESS_ID  }, null)
             .size(ElasticsearchUtil.TOPHITS_AGG_SIZE)
             .sort(WorkflowIndex.VERSION, SortOrder.DESC));
 
@@ -158,9 +158,9 @@ public class WorkflowReader extends AbstractReader {
    * Returns map of Workflow entities by workflow ids.
    * @return
    */
-  public Map<String, WorkflowEntity> getWorkflows() {
+  public Map<Long, WorkflowEntity> getWorkflows() {
 
-    Map<String, WorkflowEntity> map = new HashMap<>();
+    Map<Long, WorkflowEntity> map = new HashMap<>();
 
     final SearchRequest searchRequest = new SearchRequest(workflowType.getAlias())
       .source(new SearchSourceBuilder());
@@ -168,7 +168,7 @@ public class WorkflowReader extends AbstractReader {
     try {
       final List<WorkflowEntity> workflowsList = scroll(searchRequest);
       for (WorkflowEntity workflowEntity: workflowsList) {
-        map.put(workflowEntity.getId(), workflowEntity);
+        map.put(workflowEntity.getWorkflowId(), workflowEntity);
       }
       return map;
     } catch (IOException e) {

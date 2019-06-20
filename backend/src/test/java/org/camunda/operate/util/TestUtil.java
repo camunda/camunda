@@ -49,7 +49,7 @@ public abstract class TestUtil {
     return createWorkflowInstance(state, null);
   }
 
-  public static WorkflowInstanceForListViewEntity createWorkflowInstance(WorkflowInstanceState state, String workflowId) {
+  public static WorkflowInstanceForListViewEntity createWorkflowInstance(WorkflowInstanceState state, Long workflowId) {
     WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
     
     Long id = random.nextLong();
@@ -69,7 +69,7 @@ public abstract class TestUtil {
       workflowInstance.setWorkflowVersion(random.nextInt(10));
     } else {
       final int i = random.nextInt(10);
-      workflowInstance.setWorkflowId(String.valueOf(i));
+      workflowInstance.setWorkflowId(Long.valueOf(i));
       workflowInstance.setBpmnProcessId("testProcess" + i);
       workflowInstance.setWorkflowName(UUID.randomUUID().toString());
       workflowInstance.setWorkflowVersion(i);
@@ -139,7 +139,7 @@ public abstract class TestUtil {
     return createWorkflowInstanceEntity(state, null);
   }
 
-  public static WorkflowInstanceForListViewEntity createWorkflowInstanceEntity(WorkflowInstanceState state, String workflowId) {
+  public static WorkflowInstanceForListViewEntity createWorkflowInstanceEntity(WorkflowInstanceState state, Long workflowId) {
     WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
     workflowInstance.setId(UUID.randomUUID().toString());
     final int i = random.nextInt(10);
@@ -201,9 +201,12 @@ public abstract class TestUtil {
 
   public static List<WorkflowEntity> createWorkflowVersions(String bpmnProcessId, String name, int versionsCount) {
     List<WorkflowEntity> result = new ArrayList<>();
+    Random workflowIdGenerator =  new Random();
     for (int i = 1; i <= versionsCount; i++) {
       WorkflowEntity workflowEntity = new WorkflowEntity();
-      workflowEntity.setId(UUID.randomUUID().toString());
+      Long workflowId = workflowIdGenerator.nextLong();
+      workflowEntity.setWorkflowId(workflowId);
+      workflowEntity.setId(workflowId.toString());
       workflowEntity.setBpmnProcessId(bpmnProcessId);
       workflowEntity.setName(name + i);
       workflowEntity.setVersion(i);

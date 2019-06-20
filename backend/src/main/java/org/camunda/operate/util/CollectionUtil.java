@@ -6,10 +6,13 @@
 package org.camunda.operate.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.camunda.operate.exceptions.OperateRuntimeException;
 
@@ -24,6 +27,14 @@ public abstract class CollectionUtil {
       }
     }
     return listOfNotNulls;
+  }
+  
+  @SuppressWarnings("unchecked")
+  public static <T> List<T> withoutNulls(List<T> list){
+    if(list!=null) {
+      return list.stream().filter( obj -> obj != null).collect(Collectors.toList());
+    }
+    return Collections.EMPTY_LIST;
   }
 
   public static <T, S> Map<T,List<S>> addToMap(Map<T, List<S>> map, T key, S value) {
@@ -40,6 +51,22 @@ public abstract class CollectionUtil {
       result.put(keyValuePairs[i].toString(), keyValuePairs[i+1]);
     }
     return result;
+  }
+  
+  public static List<String> toSafeListOfStrings(List<?> list){
+      return withoutNulls(list).stream().map(obj -> obj.toString()).collect(Collectors.toList());
+  }
+   
+  public static List<String> toSafeListOfStrings(Object... objects){
+    return toSafeListOfStrings(Arrays.asList(objects));
+  }
+  
+  public static List<Long> toSafeListOfLongs(List<String> list){
+    return withoutNulls(list).stream().map(obj -> Long.valueOf(obj)).collect(Collectors.toList());
+  }
+  
+  public static List<Long> toSafeListOfLongs(String... strings){
+    return toSafeListOfLongs(Arrays.asList(strings));
   }
 
   public static <T> void addNotNull(Collection<T> collection, T object) {

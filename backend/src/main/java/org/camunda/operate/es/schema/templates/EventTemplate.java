@@ -64,7 +64,7 @@ public class EventTemplate extends AbstractTemplateCreator implements WorkflowIn
         .field("type", "long")
       .endObject()
       .startObject(WORKFLOW_ID)
-        .field("type", "keyword")
+        .field("type", "long")
       .endObject()
       .startObject(WORKFLOW_INSTANCE_ID)
         .field("type", "keyword")

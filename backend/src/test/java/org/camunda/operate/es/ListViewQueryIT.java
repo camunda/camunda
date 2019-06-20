@@ -556,9 +556,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   @Test
   public void testQueryByWorkflowIds() throws Exception {
     //given
-    String wfId1 = "1";
-    String wfId2 = "2";
-    String wfId3 = "3";
+    Long wfId1 = 1L, wfId2 = 2L, wfId3 = 3L;
     final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
     workflowInstance1.setWorkflowId(wfId1);
     final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
@@ -570,7 +568,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     elasticsearchTestRule.persistNew(workflowInstance1, workflowInstance2, workflowInstance3, workflowInstance4);
 
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setWorkflowIds(Arrays.asList(wfId1, wfId3)));
+    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setWorkflowIds(Arrays.asList(wfId1.toString(), wfId3.toString())));
 
     //when
     MvcResult mvcResult = postRequest(query(0, 100),query);
@@ -998,17 +996,17 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 //  }
   
   private void createWorkflowInstanceWithUpperLowerCaseWorkflowname() {
-    WorkflowInstanceForListViewEntity upperWorkflow = createWorkflowInstance(WorkflowInstanceState.ACTIVE, "UPPER_WORKFLOW_ID");
+    WorkflowInstanceForListViewEntity upperWorkflow = createWorkflowInstance(WorkflowInstanceState.ACTIVE, 42L);
     upperWorkflow.setWorkflowName("UPPER_LOWER_WORKFLOW_NAME");
     
-    WorkflowInstanceForListViewEntity lowerWorkflow = createWorkflowInstance(WorkflowInstanceState.ACTIVE, "lower_workflow_id");
+    WorkflowInstanceForListViewEntity lowerWorkflow = createWorkflowInstance(WorkflowInstanceState.ACTIVE, 23L);
     lowerWorkflow.setWorkflowName("upper_lower_workflow_name");
     
     elasticsearchTestRule.persistNew(upperWorkflow,lowerWorkflow);
   }
   
   private void createWorkflowInstanceWithoutWorkflowname() {
-    WorkflowInstanceForListViewEntity workflowWithoutName = createWorkflowInstance(WorkflowInstanceState.ACTIVE, "doesnotmatter");
+    WorkflowInstanceForListViewEntity workflowWithoutName = createWorkflowInstance(WorkflowInstanceState.ACTIVE, 27L);
     workflowWithoutName.setBpmnProcessId("lower_workflow_id");
     workflowWithoutName.setWorkflowName(workflowWithoutName.getBpmnProcessId());
    
@@ -1021,7 +1019,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     createWorkflowInstanceWithUpperLowerCaseWorkflowname();
     createWorkflowInstanceWithoutWorkflowname();
     //running instance with one activity and without incidents
-    final String workflowId = "someWorkflowId";
+    final Long workflowId = 27L;
     runningInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
     final ActivityInstanceForListViewEntity activityInstance1 = createActivityInstance(runningInstance.getId(), ActivityState.ACTIVE);
     vars.add(createVariable(runningInstance.getId(), runningInstance.getId(), "var1", "X"));

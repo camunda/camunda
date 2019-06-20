@@ -14,6 +14,7 @@ import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.rest.dto.OperationDto;
+import org.camunda.operate.util.StringUtils;
 
 public class ListViewWorkflowInstanceDto {
 
@@ -128,7 +129,8 @@ public class ListViewWorkflowInstanceDto {
     } else {
       workflowInstance.setState(WorkflowInstanceStateDto.INCIDENT);
     }
-    workflowInstance.setWorkflowId(workflowInstanceEntity.getWorkflowId());
+
+    workflowInstance.setWorkflowId(StringUtils.toStringOrNull(workflowInstanceEntity.getWorkflowId()));
     workflowInstance.setBpmnProcessId(workflowInstanceEntity.getBpmnProcessId());
     workflowInstance.setWorkflowName(workflowInstanceEntity.getWorkflowName());
     workflowInstance.setWorkflowVersion(workflowInstanceEntity.getWorkflowVersion());

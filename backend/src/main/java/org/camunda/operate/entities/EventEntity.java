@@ -12,7 +12,7 @@ public class EventEntity extends OperateZeebeEntity {
   /**
    * Workflow data.
    */
-  private String workflowId;
+  private Long workflowId;
   private String workflowInstanceId;
   private String bpmnProcessId;
 
@@ -34,11 +34,14 @@ public class EventEntity extends OperateZeebeEntity {
    */
   private EventMetadataEntity metadata;
 
-  public String getWorkflowId() {
+  public Long getWorkflowId() {
+    if(workflowId==null) {
+      return Long.valueOf(getId()); // FIXME - Refactor ES
+    }
     return workflowId;
   }
 
-  public void setWorkflowId(String workflowId) {
+  public void setWorkflowId(Long workflowId) {
     this.workflowId = workflowId;
   }
 

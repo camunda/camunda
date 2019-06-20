@@ -81,7 +81,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
     final String taskA = "taskA";
     final String taskC = "taskC";
     final String errorMessage = "Some error";
-    final String workflowId = deployWorkflow("processWithGateway.bpmn");
+    final Long workflowId = deployWorkflow("processWithGateway.bpmn");
 
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, "{\"a\": \"b\"}");
 
@@ -139,7 +139,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
     String activityId = "taskA";
 
     String processId = "demoProcess";
-    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
+    final Long workflowId = deployWorkflow("demoProcess_v_1.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, null);
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
 
@@ -190,17 +190,17 @@ public class EventIT extends OperateZeebeIntegrationTest {
   }
 
   public void assertEvent(List<EventEntity> eventEntities, EventSourceType eventSourceType, EventType eventType,
-    int count, String processId, String workflowId, long workflowInstanceKey) {
+    int count, String processId, Long workflowId, long workflowInstanceKey) {
     assertEvent(eventEntities, eventSourceType, eventType, count, processId, workflowId, workflowInstanceKey, null);
   }
 
   public void assertEvent(List<EventEntity> eventEntities, EventSourceType eventSourceType, EventType eventType,
-    int count, String processId, String workflowId, long workflowInstanceKey, String activityId) {
+    int count, String processId, Long workflowId, long workflowInstanceKey, String activityId) {
     assertEvent(eventEntities, eventSourceType, eventType, count, processId, workflowId, workflowInstanceKey, activityId, null);
   }
 
   public void assertEvent(List<EventEntity> eventEntities, EventSourceType eventSourceType, EventType eventType,
-    int count, String processId, String workflowId, long workflowInstanceKey, String activityId, String errorMessage) {
+    int count, String processId, Long workflowId, long workflowInstanceKey, String activityId, String errorMessage) {
     String assertionName = String.format("%s.%s", eventSourceType, eventType);
     final Predicate<EventEntity> eventEntityFilterCriteria = eventEntity -> {
       boolean b = true;

@@ -34,7 +34,7 @@ public abstract class ZeebeTestUtil {
    * @param classpathResources
    * @return workflow id
    */
-  public static String deployWorkflow(ZeebeClient client, String... classpathResources) {
+  public static Long deployWorkflow(ZeebeClient client, String... classpathResources) {
     if (classpathResources.length == 0) {
       return null;
     }
@@ -47,7 +47,7 @@ public abstract class ZeebeTestUtil {
         .send()
         .join();
     logger.debug("Deployment of resource [{}] was performed", (Object[])classpathResources);
-    return String.valueOf(deploymentEvent.getWorkflows().get(classpathResources.length - 1).getWorkflowKey());
+    return deploymentEvent.getWorkflows().get(classpathResources.length - 1).getWorkflowKey();
   }
 
   /**
@@ -56,7 +56,7 @@ public abstract class ZeebeTestUtil {
    * @param workflowModel
    * @return workflow id
    */
-  public static String deployWorkflow(ZeebeClient client, BpmnModelInstance workflowModel, String resourceName) {
+  public static Long deployWorkflow(ZeebeClient client, BpmnModelInstance workflowModel, String resourceName) {
     DeployWorkflowCommandStep1 deployWorkflowCommandStep1 = client.newDeployCommand()
       .addWorkflowModel(workflowModel, resourceName);
     final DeploymentEvent deploymentEvent =
@@ -64,7 +64,7 @@ public abstract class ZeebeTestUtil {
         .send()
         .join();
     logger.debug("Deployment of resource [{}] was performed", resourceName);
-    return String.valueOf(deploymentEvent.getWorkflows().get(0).getWorkflowKey());
+    return deploymentEvent.getWorkflows().get(0).getWorkflowKey();
   }
 
   /**

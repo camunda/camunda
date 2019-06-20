@@ -17,6 +17,7 @@ public class WorkflowIndex extends AbstractIndexCreator {
   public static final String INDEX_NAME = "workflow";
 
   public static final String ID = "id";
+  public static final String WORKFLOW_ID ="workflowId";
   public static final String KEY = "key";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String NAME = "name";
@@ -40,6 +41,9 @@ public class WorkflowIndex extends AbstractIndexCreator {
     XContentBuilder newBuilder = xContentBuilder
       .startObject(ID)
         .field("type", "keyword")
+      .endObject()
+      .startObject(WORKFLOW_ID)
+        .field("type", "long")
       .endObject()
       .startObject(KEY)
         .field("type", "keyword")

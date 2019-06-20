@@ -61,8 +61,8 @@ public class ElasticsearchChecks {
   public Predicate<Object[]> getWorkflowIsDeployedCheck() {
     return objects -> {
       assertThat(objects).hasSize(1);
-      assertThat(objects[0]).isInstanceOf(String.class);
-      String workflowId = (String)objects[0];
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      Long workflowId = (Long)objects[0];
       try {
         final WorkflowEntity workflow = workflowReader.getWorkflow(workflowId);
         return workflow != null;

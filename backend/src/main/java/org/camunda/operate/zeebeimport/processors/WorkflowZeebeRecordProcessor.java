@@ -121,6 +121,7 @@ public class WorkflowZeebeRecordProcessor {
     WorkflowEntity workflowEntity = new WorkflowEntity();
 
     workflowEntity.setId(String.valueOf(workflow.getWorkflowKey()));
+    workflowEntity.setWorkflowId(workflow.getWorkflowKey());
     workflowEntity.setBpmnProcessId(workflow.getBpmnProcessId());
     workflowEntity.setVersion(workflow.getVersion());
 

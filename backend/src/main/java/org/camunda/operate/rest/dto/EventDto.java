@@ -128,7 +128,7 @@ public class EventDto {
     eventDto.setDateTime(eventEntity.getDateTime());
     eventDto.setEventSourceType(eventEntity.getEventSourceType());
     eventDto.setEventType(eventEntity.getEventType());
-    eventDto.setWorkflowId(eventEntity.getWorkflowId());
+    eventDto.setWorkflowId(eventEntity.getWorkflowId().toString());//TODO: Refactor ES-Schema
     eventDto.setWorkflowInstanceId(eventEntity.getWorkflowInstanceId());
 
     EventMetadataEntity eventMetadataEntity = eventEntity.getMetadata();

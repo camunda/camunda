@@ -40,11 +40,11 @@ public class EventsRestServiceTest extends OperateIntegrationTest {
   @Test
   public void testGetEvents() throws Exception {
     //given
-    final String testWorkflowId = "testWorkflowId";
+    final Long testWorkflowId = 42L;
     final String testWorkflowInstanceId = "testWorkflowInstanceId";
     final EventSourceType testEventSourceType = EventSourceType.WORKFLOW_INSTANCE;
     final EventType testEventType = EventType.CREATED;
-    final EventQueryDto eventQuery = new EventQueryDto(testWorkflowId);
+    final EventQueryDto eventQuery = new EventQueryDto(testWorkflowInstanceId);
 
     final ArrayList<EventEntity> eventEntities = new ArrayList<>();
     eventEntities.add(MockUtil.createEventEntity(testWorkflowId, testWorkflowInstanceId, testEventSourceType, testEventType));
@@ -60,7 +60,7 @@ public class EventsRestServiceTest extends OperateIntegrationTest {
     assertThat(eventDtos.size()).isEqualTo(1);
     final EventDto eventDto = eventDtos.get(0);
     assertThat(eventDto.getId()).isNotEmpty();
-    assertThat(eventDto.getWorkflowId()).isEqualTo(testWorkflowId);
+    assertThat(eventDto.getWorkflowId()).isEqualTo(testWorkflowId.toString());
     assertThat(eventDto.getWorkflowInstanceId()).isEqualTo(testWorkflowInstanceId);
     assertThat(eventDto.getEventSourceType()).isEqualTo(testEventSourceType);
     assertThat(eventDto.getEventType()).isEqualTo(testEventType);

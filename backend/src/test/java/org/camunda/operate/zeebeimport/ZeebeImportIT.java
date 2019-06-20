@@ -29,6 +29,7 @@ import org.camunda.operate.rest.dto.listview.WorkflowInstanceStateDto;
 import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
+import org.camunda.operate.util.StringUtils;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.junit.After;
@@ -117,7 +118,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   public void testWorkflowNameAndVersionAreLoaded() {
     // having
     String processId = "demoProcess";
-    final String workflowId = ZeebeTestUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
+    final Long workflowId = ZeebeTestUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
@@ -148,7 +149,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
           .zeebeTaskType("taskA")
         .endEvent().done();
 
-    final String workflowId = deployWorkflow(model,"emptyNameProcess.bpmn");
+    final Long workflowId = deployWorkflow(model,"emptyNameProcess.bpmn");
     
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
@@ -165,7 +166,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     // having
     String activityId = "taskA";
     String processId = "demoProcess";
-    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
+    final Long workflowId = deployWorkflow("demoProcess_v_1.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     //create an incident
     ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
@@ -200,7 +201,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     //assert list view data
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
     assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.INCIDENT);
-    assertThat(wi.getWorkflowId()).isEqualTo(workflowId);
+    assertThat(wi.getWorkflowId()).isEqualTo(StringUtils.toStringOrNull(workflowId));
     assertThat(wi.getWorkflowName()).isEqualTo("Demo process");
     assertThat(wi.getWorkflowVersion()).isEqualTo(1);
     assertThat(wi.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));

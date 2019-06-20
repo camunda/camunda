@@ -61,9 +61,10 @@ public class ListViewTemplate extends AbstractTemplateCreator {
       .startObject(WORKFLOW_INSTANCE_ID)
         .field("type", "keyword")
       .endObject()
+    //TODO: Refactor ES-Schema
       //workflow instance fields
       .startObject(WORKFLOW_ID)
-        .field("type", "keyword")
+        .field("type", "long")
       .endObject()
       // WORKFLOW_NAME index is stored as lowercase keyword: https://www.elastic.co/guide/en/elasticsearch/reference/current/keyword.html
       .startObject(WORKFLOW_NAME)

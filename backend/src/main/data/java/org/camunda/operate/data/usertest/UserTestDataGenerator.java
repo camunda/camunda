@@ -528,8 +528,8 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
   
   protected void createWorkflowWithoutInstances() {
-    String workflowKeyVersion1 = ZeebeTestUtil.deployWorkflow(client, "usertest/withoutInstancesProcess_v_1.bpmn");
-    String workflowKeyVersion2 = ZeebeTestUtil.deployWorkflow(client, "usertest/withoutInstancesProcess_v_2.bpmn");
+    Long workflowKeyVersion1 = ZeebeTestUtil.deployWorkflow(client, "usertest/withoutInstancesProcess_v_1.bpmn");
+    Long workflowKeyVersion2 = ZeebeTestUtil.deployWorkflow(client, "usertest/withoutInstancesProcess_v_2.bpmn");
     logger.info("Created workflow 'withoutInstancesProcess' version 1: {} and version 2: {}", workflowKeyVersion1, workflowKeyVersion2);
   }
   

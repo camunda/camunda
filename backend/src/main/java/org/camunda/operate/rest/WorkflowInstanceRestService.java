@@ -5,12 +5,13 @@
  */
 package org.camunda.operate.rest;
 
+import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+
 import java.util.Collection;
 import java.util.List;
+
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.SequenceFlowEntity;
-import org.camunda.operate.entities.VariableEntity;
-import org.camunda.operate.es.reader.ActivityInstanceReader;
 import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.SequenceFlowReader;
@@ -22,15 +23,16 @@ import org.camunda.operate.rest.dto.ActivityStatisticsDto;
 import org.camunda.operate.rest.dto.SequenceFlowDto;
 import org.camunda.operate.rest.dto.VariableDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceCoreStatisticsDto;
-import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.incidents.IncidentResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
+import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationResponseDto;
 import org.camunda.operate.rest.exception.InvalidRequestException;
+import org.camunda.operate.util.CollectionUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,11 +41,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.SwaggerDefinition;
 import io.swagger.annotations.Tag;
-import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
 
 @Api(tags = {"Workflow instances"})
 @SwaggerDefinition(tags = {
@@ -63,10 +65,7 @@ public class WorkflowInstanceRestService {
 
   @Autowired
   private ListViewReader listViewReader;
-
-  @Autowired
-  private ActivityInstanceReader activityInstanceReader;
-
+  
   @Autowired
   private IncidentReader incidentReader;
 
@@ -148,7 +147,7 @@ public class WorkflowInstanceRestService {
     if (queries.size() != 1) {
       throw new InvalidRequestException("Exactly one query must be specified in the request.");
     }
-    final List<String> workflowIds = queries.get(0).getWorkflowIds();
+    final List<Long> workflowIds = CollectionUtil.toSafeListOfLongs(queries.get(0).getWorkflowIds());
     final String bpmnProcessId = queries.get(0).getBpmnProcessId();
     final Integer workflowVersion = queries.get(0).getWorkflowVersion();
 

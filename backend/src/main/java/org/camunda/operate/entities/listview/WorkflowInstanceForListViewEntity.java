@@ -13,7 +13,7 @@ import org.camunda.operate.es.schema.templates.ListViewTemplate;
 public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
 
   private String workflowInstanceId;
-  private String workflowId;
+  private Long workflowId;
   private String workflowName;
   private Integer workflowVersion;
   private String bpmnProcessId;
@@ -33,11 +33,11 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
     this.workflowInstanceId = workflowInstanceId;
   }
 
-  public String getWorkflowId() {
+  public Long getWorkflowId() {
     return workflowId;
   }
 
-  public void setWorkflowId(String workflowId) {
+  public void setWorkflowId(Long workflowId) {
     this.workflowId = workflowId;
   }
 

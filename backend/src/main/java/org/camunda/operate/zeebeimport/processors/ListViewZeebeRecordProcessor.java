@@ -134,7 +134,7 @@ public class ListViewZeebeRecordProcessor {
     wiEntity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
     wiEntity.setKey(recordValue.getWorkflowInstanceKey());
     wiEntity.setPartitionId(record.getMetadata().getPartitionId());
-    wiEntity.setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));
+    wiEntity.setWorkflowId(recordValue.getWorkflowKey());
     wiEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
     wiEntity.setWorkflowVersion(recordValue.getVersion());
  

@@ -129,14 +129,14 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     return jobKey;
   }
 
-  protected String deployWorkflow(String... classpathResources) {
-    final String workflowId = ZeebeTestUtil.deployWorkflow(getClient(), classpathResources);
+  protected Long deployWorkflow(String... classpathResources) {
+    final Long workflowId = ZeebeTestUtil.deployWorkflow(getClient(), classpathResources);
     elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowId);
     return workflowId;
   }
 
-  protected String deployWorkflow(BpmnModelInstance workflow, String resourceName) {
-    final String workflowId = ZeebeTestUtil.deployWorkflow(getClient(), workflow, resourceName);
+  protected Long deployWorkflow(BpmnModelInstance workflow, String resourceName) {
+    final Long workflowId = ZeebeTestUtil.deployWorkflow(getClient(), workflow, resourceName);
     elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowId);
     return workflowId;
   }

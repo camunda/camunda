@@ -220,7 +220,7 @@ public class ListViewReader {
 
     QueryBuilder workflowIdQuery = null;
     if (query.getWorkflowIds() != null && !query.getWorkflowIds().isEmpty()) {
-      workflowIdQuery = createWorkflowIdsQuery(query.getWorkflowIds());
+      workflowIdQuery = termsQuery(ListViewTemplate.WORKFLOW_ID,query.getWorkflowIds());
     }
 
     QueryBuilder bpmnProcessIdQuery = null;
@@ -259,10 +259,6 @@ public class ListViewReader {
 
   private QueryBuilder createExcludeIdsQuery(List<String> excludeIds) {
     return boolQuery().mustNot(termsQuery(ListViewTemplate.ID, excludeIds));
-  }
-
-  private QueryBuilder createWorkflowIdsQuery(List<String> workflowIds) {
-    return termsQuery(ListViewTemplate.WORKFLOW_ID, workflowIds);
   }
 
   private QueryBuilder createEndDateQuery(ListViewQueryDto query) {

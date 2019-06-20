@@ -54,14 +54,14 @@ public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
 
   @Test
   public void testWorkflowDoesNotExist() {
-    final String processNameDefault = workflowCache.getWorkflowNameOrDefaultValue("2","default_value");
+    final String processNameDefault = workflowCache.getWorkflowNameOrDefaultValue(2L,"default_value");
     assertThat(processNameDefault).isEqualTo("default_value");
   }
 
   @Test
   public void testWorkflowVersionAndNameReturnedAndReused() {
-    String workflowKey1 = ZeebeTestUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
-    String workflowKey2 = ZeebeTestUtil.deployWorkflow(zeebeClient, "processWithGateway.bpmn");
+    Long workflowKey1 = ZeebeTestUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
+    Long workflowKey2 = ZeebeTestUtil.deployWorkflow(zeebeClient, "processWithGateway.bpmn");
 
     elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowKey1);
     elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowKey2);
