@@ -24,7 +24,6 @@ import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
-import io.zeebe.gateway.protocol.GatewayOuterClass.JobHeaders;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -35,20 +34,16 @@ public class ActivateJobsTest extends ClientTest {
   @Test
   public void shouldActivateJobs() {
     // given
-    final JobHeaders jobHeaders1 =
-        JobHeaders.newBuilder()
+    final ActivatedJob activatedJob1 =
+        ActivatedJob.newBuilder()
+            .setKey(12)
+            .setType("foo")
             .setWorkflowInstanceKey(123)
             .setBpmnProcessId("test1")
             .setWorkflowDefinitionVersion(2)
             .setWorkflowKey(23)
             .setElementId("foo")
             .setElementInstanceKey(23213)
-            .build();
-    final ActivatedJob activatedJob1 =
-        ActivatedJob.newBuilder()
-            .setKey(12)
-            .setType("foo")
-            .setJobHeaders(jobHeaders1)
             .setCustomHeaders("{\"version\": \"1\"}")
             .setWorker("worker1")
             .setRetries(34)
@@ -56,20 +51,16 @@ public class ActivateJobsTest extends ClientTest {
             .setVariables("{\"key\": \"val\"}")
             .build();
 
-    final JobHeaders jobHeaders2 =
-        JobHeaders.newBuilder()
+    final ActivatedJob activatedJob2 =
+        ActivatedJob.newBuilder()
+            .setKey(42)
+            .setType("foo")
             .setWorkflowInstanceKey(333)
             .setBpmnProcessId("test3")
             .setWorkflowDefinitionVersion(23)
             .setWorkflowKey(11)
             .setElementId("bar")
             .setElementInstanceKey(111)
-            .build();
-    final ActivatedJob activatedJob2 =
-        ActivatedJob.newBuilder()
-            .setKey(42)
-            .setType("foo")
-            .setJobHeaders(jobHeaders2)
             .setCustomHeaders("{\"key\": \"value\"}")
             .setWorker("worker1")
             .setRetries(334)
@@ -96,7 +87,13 @@ public class ActivateJobsTest extends ClientTest {
     io.zeebe.client.api.response.ActivatedJob job = response.getJobs().get(0);
     assertThat(job.getKey()).isEqualTo(activatedJob1.getKey());
     assertThat(job.getType()).isEqualTo(activatedJob1.getType());
-    assertThat(job.getHeaders()).isEqualToComparingFieldByField(activatedJob1.getJobHeaders());
+    assertThat(job.getBpmnProcessId()).isEqualTo(activatedJob1.getBpmnProcessId());
+    assertThat(job.getElementId()).isEqualTo(activatedJob1.getElementId());
+    assertThat(job.getElementInstanceKey()).isEqualTo(activatedJob1.getElementInstanceKey());
+    assertThat(job.getWorkflowDefinitionVersion())
+        .isEqualTo(activatedJob1.getWorkflowDefinitionVersion());
+    assertThat(job.getWorkflowKey()).isEqualTo(activatedJob1.getWorkflowKey());
+    assertThat(job.getWorkflowInstanceKey()).isEqualTo(activatedJob1.getWorkflowInstanceKey());
     assertThat(job.getCustomHeaders()).isEqualTo(fromJsonAsMap(activatedJob1.getCustomHeaders()));
     assertThat(job.getWorker()).isEqualTo(activatedJob1.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob1.getRetries());
@@ -106,7 +103,13 @@ public class ActivateJobsTest extends ClientTest {
     job = response.getJobs().get(1);
     assertThat(job.getKey()).isEqualTo(activatedJob2.getKey());
     assertThat(job.getType()).isEqualTo(activatedJob2.getType());
-    assertThat(job.getHeaders()).isEqualToComparingFieldByField(activatedJob2.getJobHeaders());
+    assertThat(job.getBpmnProcessId()).isEqualTo(activatedJob2.getBpmnProcessId());
+    assertThat(job.getElementId()).isEqualTo(activatedJob2.getElementId());
+    assertThat(job.getElementInstanceKey()).isEqualTo(activatedJob2.getElementInstanceKey());
+    assertThat(job.getWorkflowDefinitionVersion())
+        .isEqualTo(activatedJob2.getWorkflowDefinitionVersion());
+    assertThat(job.getWorkflowKey()).isEqualTo(activatedJob2.getWorkflowKey());
+    assertThat(job.getWorkflowInstanceKey()).isEqualTo(activatedJob2.getWorkflowInstanceKey());
     assertThat(job.getCustomHeaders()).isEqualTo(fromJsonAsMap(activatedJob2.getCustomHeaders()));
     assertThat(job.getWorker()).isEqualTo(activatedJob2.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob2.getRetries());

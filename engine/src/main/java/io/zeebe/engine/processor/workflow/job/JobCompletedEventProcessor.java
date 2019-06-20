@@ -23,7 +23,6 @@ import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.protocol.impl.record.value.job.JobHeaders;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
@@ -43,8 +42,7 @@ public final class JobCompletedEventProcessor implements TypedRecordProcessor<Jo
       final TypedStreamWriter streamWriter) {
 
     final JobRecord jobEvent = record.getValue();
-    final JobHeaders jobHeaders = jobEvent.getJobHeaders();
-    final long elementInstanceKey = jobHeaders.getElementInstanceKey();
+    final long elementInstanceKey = jobEvent.getElementInstanceKey();
     final ElementInstance elementInstance =
         workflowState.getElementInstanceState().getInstance(elementInstanceKey);
 

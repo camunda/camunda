@@ -57,15 +57,7 @@ public class JobWorkerCreator {
     @Override
     public void handle(final JobClient client, final ActivatedJob job) {
       // here: business logic that is executed with every job
-      System.out.println(
-          String.format(
-              "[type: %s, key: %s, lockExpirationTime: %d]\n[headers: %s]\n[variables: %s]\n===",
-              job.getType(),
-              job.getKey(),
-              job.getDeadline(),
-              job.getHeaders(),
-              job.getVariables()));
-
+      System.out.println(job);
       client.newCompleteCommand(job.getKey()).send().join();
     }
   }

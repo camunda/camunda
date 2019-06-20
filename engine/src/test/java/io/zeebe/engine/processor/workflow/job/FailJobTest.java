@@ -75,7 +75,7 @@ public class FailJobTest {
         ENGINE
             .job()
             .withKey(jobKey)
-            .ofInstance(job.getHeaders().getWorkflowInstanceKey())
+            .ofInstance(job.getWorkflowInstanceKey())
             .withRetries(retries)
             .fail();
 
@@ -105,7 +105,7 @@ public class FailJobTest {
         ENGINE
             .job()
             .withKey(jobKey)
-            .ofInstance(job.getHeaders().getWorkflowInstanceKey())
+            .ofInstance(job.getWorkflowInstanceKey())
             .withRetries(retries)
             .withErrorMessage("failed job")
             .fail();
@@ -137,7 +137,7 @@ public class FailJobTest {
         ENGINE
             .job()
             .withKey(jobKey)
-            .ofInstance(job.getValue().getHeaders().getWorkflowInstanceKey())
+            .ofInstance(job.getValue().getWorkflowInstanceKey())
             .withRetries(3)
             .fail();
     ENGINE.jobs().withType(jobType).activate();

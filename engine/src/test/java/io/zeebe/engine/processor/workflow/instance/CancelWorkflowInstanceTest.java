@@ -36,7 +36,6 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.protocol.record.value.job.Headers;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -352,12 +351,13 @@ public class CancelWorkflowInstanceTest {
     assertThat(jobCancelCmd.getSourceRecordPosition()).isEqualTo(terminateActivity.getPosition());
     assertThat(jobCanceledEvent.getSourceRecordPosition()).isEqualTo(jobCancelCmd.getPosition());
 
-    final Headers headers = jobCanceledEvent.getValue().getHeaders();
-    Assertions.assertThat(headers)
+    final JobRecordValue jobCanceledEventValue = jobCanceledEvent.getValue();
+    assertThat(jobCanceledEventValue.getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
+
+    Assertions.assertThat(jobCanceledEventValue)
         .hasElementId("task")
         .hasWorkflowDefinitionVersion(1)
-        .hasBpmnProcessId("WORKFLOW")
-        .hasWorkflowInstanceKey(workflowInstanceKey);
+        .hasBpmnProcessId("WORKFLOW");
   }
 
   @Test

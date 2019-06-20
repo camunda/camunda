@@ -151,7 +151,7 @@ public class CancelWorkflowInstanceTest {
         RecordingExporter.jobRecords().withType("test").getFirst();
 
     // when - then
-    final long elementInstanceKey = record.getValue().getHeaders().getElementInstanceKey();
+    final long elementInstanceKey = record.getValue().getElementInstanceKey();
     assertThatThrownBy(
             () -> {
               clientRule.getClient().newCancelInstanceCommand(elementInstanceKey).send().join();

@@ -112,7 +112,7 @@ public class GrpcClientRule extends ExternalResource {
     final long workflowInstanceKey = createWorkflowInstance(workflowKey, variables);
 
     return RecordingExporter.jobRecords(JobIntent.CREATED)
-        .filter(j -> j.getValue().getHeaders().getWorkflowInstanceKey() == workflowInstanceKey)
+        .filter(j -> j.getValue().getWorkflowInstanceKey() == workflowInstanceKey)
         .withType(type)
         .getFirst()
         .getKey();

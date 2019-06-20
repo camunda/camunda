@@ -83,23 +83,6 @@ message ActivatedJob {
   int64 key = 1;
   // the type of the job (should match what was requested)
   string type = 2;
-  // a set of headers tying the job to a workflow instance/task instance
-  JobHeaders jobHeaders = 3;
-  // a set of custom headers defined during modelling; returned as a serialized
-  // JSON document
-  string customHeaders = 4;
-  // the name of the worker which activated this job
-  string worker = 5;
-  // the amount of retries left to this job (should always be positive)
-  int32 retries = 6;
-  // when the job can be activated again, sent as a UNIX epoch timestamp
-  int64 deadline = 7;
-  // JSON document, computed at activation time, consisting of all visible variables to
-  // the task scope
-  string payload = 8;
-}
-
-message JobHeaders {
   // the job's workflow instance key
   int64 workflowInstanceKey = 1;
   // the bpmn process ID of the job workflow definition
@@ -113,6 +96,18 @@ message JobHeaders {
   // the unique key identifying the associated task, unique within the scope of the
   // workflow instance
   int64 elementInstanceKey = 6;
+  // a set of custom headers defined during modelling; returned as a serialized
+  // JSON document
+  string customHeaders = 4;
+  // the name of the worker which activated this job
+  string worker = 5;
+  // the amount of retries left to this job (should always be positive)
+  int32 retries = 6;
+  // when the job can be activated again, sent as a UNIX epoch timestamp
+  int64 deadline = 7;
+  // JSON document, computed at activation time, consisting of all visible variables to
+  // the task scope
+  string payload = 8;
 }
 ```
 
@@ -463,7 +458,7 @@ Updates all the variables of a particular scope (e.g. workflow instance, flow el
 message SetVariablesRequest {
   // the unique identifier of a particular element; can be the workflow instance key (as
   // obtained during instance creation), or a given element, such as a service task (see
-  // elementInstanceKey on the JobHeaders message)
+  // elementInstanceKey on the job message)
   int64 elementInstanceKey = 1;
   // a JSON serialized document describing variables as key value pairs; the root of the document
   // must be an object

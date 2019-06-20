@@ -287,8 +287,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
             environmentRule
                 .events()
                 .onlyJobRecords()
-                .filter(
-                    r -> r.getValue().getJobHeaders().getElementIdBuffer().equals(activityIdBuffer))
+                .filter(r -> r.getValue().getElementIdBuffer().equals(activityIdBuffer))
                 .withIntent(state);
 
     waitUntil(() -> lookupStream.get().findFirst().isPresent());

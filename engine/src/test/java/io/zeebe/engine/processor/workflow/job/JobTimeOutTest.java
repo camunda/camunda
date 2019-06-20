@@ -127,13 +127,13 @@ public class JobTimeOutTest {
     final long jobKey1 =
         jobRecords(JobIntent.CREATED)
             .withType(jobType)
-            .filter(r -> r.getValue().getHeaders().getWorkflowInstanceKey() == instanceKey1)
+            .filter(r -> r.getValue().getWorkflowInstanceKey() == instanceKey1)
             .getFirst()
             .getKey();
     final long jobKey2 =
         jobRecords(JobIntent.CREATED)
             .withType(jobType)
-            .filter(r -> r.getValue().getHeaders().getWorkflowInstanceKey() == instanceKey2)
+            .filter(r -> r.getValue().getWorkflowInstanceKey() == instanceKey2)
             .getFirst()
             .getKey();
     final long timeout = 10L;
@@ -157,7 +157,7 @@ public class JobTimeOutTest {
         RecordingExporter.jobRecords(ACTIVATED)
             .filter(
                 r -> {
-                  final long wfInstanceKey = r.getValue().getHeaders().getWorkflowInstanceKey();
+                  final long wfInstanceKey = r.getValue().getWorkflowInstanceKey();
                   return wfInstanceKey == instanceKey1 || wfInstanceKey == instanceKey2;
                 })
             .limit(4)
@@ -172,7 +172,7 @@ public class JobTimeOutTest {
         RecordingExporter.jobRecords(JobIntent.TIMED_OUT)
             .filter(
                 r -> {
-                  final long wfInstanceKey = r.getValue().getHeaders().getWorkflowInstanceKey();
+                  final long wfInstanceKey = r.getValue().getWorkflowInstanceKey();
                   return wfInstanceKey == instanceKey1 || wfInstanceKey == instanceKey2;
                 })
             .limit(2)

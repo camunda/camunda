@@ -38,7 +38,6 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.protocol.record.value.JobRecordValue;
-import io.zeebe.protocol.record.value.job.Headers;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -150,7 +149,7 @@ public class ActivateJobsTest {
     final long expectedJobKey =
         jobRecords(JobIntent.CREATED)
             .withType(taskType)
-            .filter(r -> r.getValue().getHeaders().getWorkflowInstanceKey() == firstInstanceKey)
+            .filter(r -> r.getValue().getWorkflowInstanceKey() == firstInstanceKey)
             .getFirst()
             .getKey();
 
@@ -382,16 +381,16 @@ public class ActivateJobsTest {
 
     assertThat(job.getVariables()).isEqualTo(JSON_VARIABLES);
 
-    final Headers jobRecordHeaders = jobRecord.getValue().getHeaders();
-    Assertions.assertThat(job.getHeaders())
-        .hasBpmnProcessId(jobRecordHeaders.getBpmnProcessId())
-        .hasWorkflowDefinitionVersion(jobRecordHeaders.getWorkflowDefinitionVersion())
-        .hasWorkflowKey(jobRecordHeaders.getWorkflowKey())
-        .hasWorkflowInstanceKey(jobRecordHeaders.getWorkflowInstanceKey())
-        .hasElementId(jobRecordHeaders.getElementId())
-        .hasElementInstanceKey(jobRecordHeaders.getElementInstanceKey());
+    final JobRecordValue jobRecordValue = jobRecord.getValue();
+    assertThat(job.getWorkflowInstanceKey()).isEqualTo(jobRecordValue.getWorkflowInstanceKey());
+    Assertions.assertThat(job)
+        .hasBpmnProcessId(jobRecordValue.getBpmnProcessId())
+        .hasWorkflowDefinitionVersion(jobRecordValue.getWorkflowDefinitionVersion())
+        .hasWorkflowKey(jobRecordValue.getWorkflowKey())
+        .hasElementId(jobRecordValue.getElementId())
+        .hasElementInstanceKey(jobRecordValue.getElementInstanceKey());
 
-    assertThat(job.getCustomHeaders()).isEqualTo(jobRecord.getValue().getCustomHeaders());
+    assertThat(job.getCustomHeaders()).isEqualTo(jobRecordValue.getCustomHeaders());
   }
 
   @Test
@@ -457,7 +456,7 @@ public class ActivateJobsTest {
 
     return jobRecords(JobIntent.CREATED)
         .withType(type)
-        .filter(r -> instanceKeys.contains(r.getValue().getHeaders().getWorkflowInstanceKey()))
+        .filter(r -> instanceKeys.contains(r.getValue().getWorkflowInstanceKey()))
         .limit(amount)
         .map(Record::getKey)
         .collect(Collectors.toList());
@@ -473,9 +472,7 @@ public class ActivateJobsTest {
         () ->
             jobRecords(JobIntent.CREATED)
                     .filter(
-                        r ->
-                            workflowInstanceKeys.contains(
-                                r.getValue().getHeaders().getWorkflowInstanceKey()))
+                        r -> workflowInstanceKeys.contains(r.getValue().getWorkflowInstanceKey()))
                     .withType(jobType)
                     .limit(jobAmount)
                     .count()

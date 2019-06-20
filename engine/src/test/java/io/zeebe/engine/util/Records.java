@@ -168,7 +168,7 @@ public class Records {
 
   public static JobRecord job(final int instanceKey) {
     final JobRecord event = new JobRecord();
-    event.getJobHeaders().setWorkflowInstanceKey(instanceKey);
+    event.setWorkflowInstanceKey(instanceKey);
     return event;
   }
 

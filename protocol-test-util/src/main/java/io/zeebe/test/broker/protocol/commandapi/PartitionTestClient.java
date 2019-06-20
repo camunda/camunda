@@ -276,7 +276,7 @@ public class PartitionTestClient {
 
     return RecordingExporter.jobRecords(JobIntent.CREATED)
         .withType(type)
-        .filter(j -> j.getValue().getHeaders().getWorkflowInstanceKey() == workflowInstance)
+        .filter(j -> j.getValue().getWorkflowInstanceKey() == workflowInstance)
         .getFirst()
         .getKey();
   }
@@ -339,7 +339,7 @@ public class PartitionTestClient {
     completeJob(
         jobType,
         MsgPackUtil.asMsgPackReturnArray("{}"),
-        r -> r.getValue().getHeaders().getWorkflowInstanceKey() == workflowInstanceKey);
+        r -> r.getValue().getWorkflowInstanceKey() == workflowInstanceKey);
   }
 
   public void completeJobOfType(final String jobType) {
