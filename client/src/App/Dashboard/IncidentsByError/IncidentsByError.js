@@ -9,7 +9,6 @@ import PropTypes from 'prop-types';
 
 import Collapse from '../Collapse';
 import {getFilterQueryString} from 'modules/utils/filter';
-import InstancesBar from 'modules/components/InstancesBar';
 import PanelListItem from '../PanelListItem';
 
 import * as Styled from './styled';
@@ -36,7 +35,7 @@ export default class IncidentsByError extends React.Component {
 
   renderIncidentsPerWorkflow = (errorMessage, items) => {
     return (
-      <Styled.VersionList>
+      <Styled.VersionUl>
         {items.map(item => {
           const name = item.name || item.bpmnProcessId;
           const query = getFilterQueryString({
@@ -68,7 +67,7 @@ export default class IncidentsByError extends React.Component {
             </Styled.VersionLi>
           );
         })}
-      </Styled.VersionList>
+      </Styled.VersionUl>
     );
   };
 

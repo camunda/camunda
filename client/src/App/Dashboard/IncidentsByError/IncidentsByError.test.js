@@ -5,9 +5,13 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
+import {BrowserRouter as Router} from 'react-router-dom';
+import {shallow, mount} from 'enzyme';
+
 import IncidentsByError from './IncidentsByError';
-import PanelListItem from '../PanelListItem';
+import InstancesBar from 'modules/components/InstancesBar';
+import ExpandButton from 'modules/components/ExpandButton';
+import {ThemeProvider} from 'modules/theme';
 import Collapse from '../Collapse';
 import * as Styled from './styled';
 
@@ -22,8 +26,11 @@ const InstancesByErrorMessage = [
     workflows: [createWorkflow()]
   }),
   createInstanceByError({
-    errorMessage: 'JSON path $.paid has no result.',
-    workflows: [createWorkflow(), createWorkflow()]
+    errorMessage: 'No space left on device.',
+    workflows: [
+      createWorkflow({name: 'workflowA', version: 42}),
+      createWorkflow({name: 'workflowB', version: 23})
+    ]
   })
 ];
 
@@ -50,56 +57,62 @@ describe('IncidentsByError', () => {
     expect(secondStatistic.find(Collapse).length).toBe(1);
   });
 
-  it.skip('passes the right data to the statistics collapse', () => {
-    const node = shallow(<IncidentsByError incidents={mockIncidentsByError} />);
-    const secondStatistic = node.find('[data-test="incident-byError-1"]');
-
-    const collapseNode = secondStatistic.find(Collapse);
-    const headerCollapseNode = collapseNode.props().header;
-    const contentCollapseNode = collapseNode.props().content;
-    const headerNode = shallow(headerCollapseNode);
-    const headerStatistic = headerNode.find(PanelListItem);
-    const contentNode = shallow(contentCollapseNode);
-
-    //collapse button node
-    expect(collapseNode.props().buttonTitle).toBe(
-      'Expand 36 Instances with error "JSON path $.paid has no result."'
+  it('should render incident items correctly', () => {
+    const node = mount(
+      <Router>
+        <ThemeProvider>
+          <IncidentsByError incidents={mockIncidentsByError} />
+        </ThemeProvider>
+      </Router>
     );
 
-    // header anchor
-    const encodedFilter = encodeURIComponent(
-      '{"errorMessage":"JSON path $.paid has no result.","incidents":true}'
-    );
-    expect(headerNode.props().to).toBe(`/instances?filter=${encodedFilter}`);
-    expect(headerNode.props().title).toBe(
-      'View 36 Instances with error JSON path $.paid has no result.'
+    const firstIncidentItem = node
+      .find('[data-test="incident-byError-0"]')
+      .last();
+    const firstIncidentLink = firstIncidentItem.find('a').props().href;
+    const firstEncodedFilter = encodeURIComponent(
+      `{"errorMessage":"JSON path '$.paid' has no result.","incidents":true}`
     );
 
-    expect(headerStatistic.props().label).toContain(
-      mockIncidentsByError[1].errorMessage
+    const secondIncidentItem = node
+      .find('[data-test="incident-byError-1"]')
+      .last();
+    const secondIncidentLink = secondIncidentItem.find('a').props().href;
+    const secondEncodedFilter = encodeURIComponent(
+      `{"errorMessage":"No space left on device.","incidents":true}`
     );
-    expect(headerStatistic.props().incidentsCount).toBe(
-      mockIncidentsByError[1].instancesWithErrorCount
-    );
-    // should render a list with 2 items
-    expect(contentNode.type()).toBe('ul');
-    expect(contentNode.find(Styled.VersionLi).length).toBe(2);
 
-    // should render two statistics
-    expect(contentNode.find(PanelListItem).length).toBe(2);
-    // should pass the right props to a statistic
+    expect(firstIncidentLink).toBe(`/instances?filter=${firstEncodedFilter}`);
+    expect(firstIncidentItem.find(InstancesBar).text()).toContain(
+      "JSON path '$.paid' has no result."
+    );
 
-    const unitIncidentByErrorNode = contentNode.find(PanelListItem).at(0);
+    expect(secondIncidentLink).toBe(`/instances?filter=${secondEncodedFilter}`);
+    expect(secondIncidentItem.find(InstancesBar).text()).toContain(
+      'No space left on device.'
+    );
+  });
 
-    expect(unitIncidentByErrorNode.props().label).toContain(
-      `Version ${mockIncidentsByError[1].workflows[0].version}`
+  it('should render all versions of incidents correctly', () => {
+    const node = mount(
+      <Router>
+        <ThemeProvider>
+          <IncidentsByError incidents={mockIncidentsByError} />
+        </ThemeProvider>
+      </Router>
     );
-    expect(unitIncidentByErrorNode.props().label).toContain(
-      mockIncidentsByError[1].workflows[0].name
-    );
-    expect(unitIncidentByErrorNode.props().perUnit).toBe(true);
-    expect(unitIncidentByErrorNode.props().incidentsCount).toBe(
-      mockIncidentsByError[1].workflows[0].instancesWithActiveIncidentsCount
-    );
+
+    const secondIncidentItem = node
+      .find('[data-test="incident-byError-1"]')
+      .last();
+
+    secondIncidentItem.find(ExpandButton).simulate('click');
+
+    const expandedVersionLi = node.find(Styled.VersionLiInstancesBar);
+
+    expect(expandedVersionLi.length).toBe(2);
+
+    expect(expandedVersionLi.at(0).text()).toContain('workflowA – Version 42');
+    expect(expandedVersionLi.at(1).text()).toContain('workflowB – Version 23');
   });
 });

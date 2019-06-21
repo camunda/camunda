@@ -12,7 +12,7 @@ export const Li = styled.li`
   margin: 0 10px 10px 0;
 `;
 
-export const VersionList = styled.ul`
+export const VersionUl = styled.ul`
   margin-top: 8px;
   margin-bottom: 16px;
 `;
