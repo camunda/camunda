@@ -10,7 +10,7 @@
     "react": "^16.8.6",
     "react-contenteditable": "^3.2.6",
     "react-dom": "^16.8.6",
-    "react-router-dom": "^4.3.1",
+    "react-router-dom": "^5.0.1",
     "react-transition-group": "^2.5.3",
     "sanitize-html": "^1.20.1",
     "styled-components": "^4.0.3"
