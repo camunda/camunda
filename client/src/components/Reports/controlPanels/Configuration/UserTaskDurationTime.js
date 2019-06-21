@@ -20,7 +20,7 @@ export default function UserTaskDurationTime({
         <legend>User Task Duration Time</legend>
         <Select
           value={configuration.userTaskDurationTime}
-          onChange={evt => onChange({userTaskDurationTime: {$set: evt.target.value}}, true)}
+          onChange={value => onChange({userTaskDurationTime: {$set: value}}, true)}
         >
           <Select.Option value="idle">Idle</Select.Option>
           <Select.Option value="work">Work</Select.Option>

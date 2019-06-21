@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import ReportDropdown from './ReportDropdown';
+import ReportSelect from './ReportSelect';
 
 import ReportControlPanel from './ReportControlPanel';
 import {getFlowNodeNames, loadProcessDefinitionXml} from 'services';
@@ -67,7 +67,7 @@ it('should call the provided updateReport property function when a setting chang
   const node = shallow(<ReportControlPanel report={report} updateReport={spy} />);
 
   node
-    .find(ReportDropdown)
+    .find(ReportSelect)
     .at(0)
     .prop('onChange')('newSetting');
 
@@ -79,15 +79,15 @@ it('should disable the groupBy and visualization Selects if view is not selected
     <ReportControlPanel report={{...report, data: {...report.data, view: ''}}} />
   );
 
-  expect(node.find(ReportDropdown).at(1)).toBeDisabled();
-  expect(node.find(ReportDropdown).at(2)).toBeDisabled();
+  expect(node.find(ReportSelect).at(1)).toBeDisabled();
+  expect(node.find(ReportSelect).at(2)).toBeDisabled();
 });
 
 it('should not disable the groupBy and visualization Selects if view is selected', () => {
   const node = shallow(<ReportControlPanel report={report} />);
 
-  expect(node.find(ReportDropdown).at(1)).not.toBeDisabled();
-  expect(node.find(ReportDropdown).at(2)).not.toBeDisabled();
+  expect(node.find(ReportSelect).at(1)).not.toBeDisabled();
+  expect(node.find(ReportSelect).at(2)).not.toBeDisabled();
 });
 
 it('should load the variables of the process', () => {
@@ -109,7 +109,7 @@ it('should include variables in the groupby options', () => {
   const variables = [{name: 'Var1'}, {name: 'Var2'}];
   node.setState({variables});
 
-  const groupbyDropdown = node.find(ReportDropdown).at(1);
+  const groupbyDropdown = node.find(ReportSelect).at(1);
 
   expect(groupbyDropdown.prop('variables')).toEqual({variable: variables});
 });

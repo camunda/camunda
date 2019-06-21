@@ -10,7 +10,7 @@ import {shallow} from 'enzyme';
 import {Select} from 'components';
 import {reportConfig} from 'services';
 
-import ReportDropdown from './ReportDropdown';
+import ReportSelect from './ReportSelect';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -47,13 +47,13 @@ const config = {
 it('should disable options which would create a wrong combination', () => {
   reportConfig.process.isAllowed.mockReturnValue(false);
 
-  const node = shallow(<ReportDropdown {...config} />);
+  const node = shallow(<ReportSelect {...config} />);
 
   expect(node.find(Select.Option)).toBeDisabled();
 });
 
 it('should disable the variable groupby submenu if there are no variables', () => {
-  const node = shallow(<ReportDropdown {...config} field="groupBy" />);
+  const node = shallow(<ReportSelect {...config} field="groupBy" />);
 
   expect(node.find(Select.Submenu)).toBeDisabled();
 });

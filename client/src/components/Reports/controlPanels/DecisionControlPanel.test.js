@@ -10,7 +10,7 @@ import {shallow} from 'enzyme';
 import {DefinitionSelection} from 'components';
 
 import DecisionControlPanel from './DecisionControlPanel';
-import ReportDropdown from './ReportDropdown';
+import ReportSelect from './ReportSelect';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -59,7 +59,7 @@ it('should call the provided updateReport property function when a setting chang
   const node = shallow(<DecisionControlPanel report={report} updateReport={spy} />);
 
   node
-    .find(ReportDropdown)
+    .find(ReportSelect)
     .at(0)
     .prop('onChange')('newSetting');
 
@@ -71,21 +71,21 @@ it('should disable the groupBy and visualization Selects if view is not selected
     <DecisionControlPanel report={{...report, data: {...report.data, view: ''}}} />
   );
 
-  expect(node.find(ReportDropdown).at(1)).toBeDisabled();
-  expect(node.find(ReportDropdown).at(2)).toBeDisabled();
+  expect(node.find(ReportSelect).at(1)).toBeDisabled();
+  expect(node.find(ReportSelect).at(2)).toBeDisabled();
 });
 
 it('should not disable the groupBy and visualization Selects if view is selected', () => {
   const node = shallow(<DecisionControlPanel report={report} />);
 
-  expect(node.find(ReportDropdown).at(1)).not.toBeDisabled();
-  expect(node.find(ReportDropdown).at(2)).not.toBeDisabled();
+  expect(node.find(ReportSelect).at(1)).not.toBeDisabled();
+  expect(node.find(ReportSelect).at(2)).not.toBeDisabled();
 });
 
 it('should include variables in the groupby options', () => {
   const node = shallow(<DecisionControlPanel report={report} />);
 
-  const groupbyDropdown = node.find(ReportDropdown).at(1);
+  const groupbyDropdown = node.find(ReportSelect).at(1);
 
   expect(groupbyDropdown.prop('variables')).toBeDefined();
 });

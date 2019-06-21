@@ -9,7 +9,7 @@ import {DefinitionSelection} from 'components';
 import {formatters} from 'services';
 
 import {Configuration} from './Configuration';
-import ReportDropdown from './ReportDropdown';
+import ReportSelect from './ReportSelect';
 
 import {DecisionFilter} from './filter';
 
@@ -126,7 +126,7 @@ export default class DecisionControlPanel extends React.Component {
             return (
               <li className="select" key={field}>
                 <span className="label">{formatters.convertCamelToSpaces(field)}</span>
-                <ReportDropdown
+                <ReportSelect
                   type="decision"
                   field={field}
                   value={data[field]}

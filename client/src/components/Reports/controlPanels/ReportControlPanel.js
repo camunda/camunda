@@ -7,7 +7,7 @@
 import React from 'react';
 import {DefinitionSelection} from 'components';
 
-import ReportDropdown from './ReportDropdown';
+import ReportSelect from './ReportSelect';
 
 import {Filter} from './filter';
 import {getFlowNodeNames, reportConfig, formatters, loadProcessDefinitionXml} from 'services';
@@ -142,7 +142,7 @@ export default class ReportControlPanel extends React.Component {
             return (
               <li className="select" key={field}>
                 <span className="label">{formatters.convertCamelToSpaces(field)}</span>
-                <ReportDropdown
+                <ReportSelect
                   type="process"
                   field={field}
                   value={data[field]}

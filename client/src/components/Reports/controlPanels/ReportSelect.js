@@ -10,9 +10,9 @@ import {Select} from 'components';
 import {reportConfig} from 'services';
 import equal from 'deep-equal';
 
-import './ReportDropdown.scss';
+import './ReportSelect.scss';
 
-export default function ReportDropdown({
+export default function ReportSelect({
   type,
   field,
   value,
@@ -31,12 +31,10 @@ export default function ReportDropdown({
     <Select
       onChange={value => {
         const foundOption = findSelectedOption(options, 'key', value);
-        if (foundOption) {
-          onChange(foundOption.data);
-        }
+        onChange(foundOption.data);
       }}
       value={selectedOption ? selectedOption.key : null}
-      className="ReportDropdown"
+      className="ReportSelect"
       disabled={disabled}
     >
       {options.map(({key, data, label, options}, idx) => {
