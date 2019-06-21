@@ -17,6 +17,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
@@ -52,6 +53,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -68,7 +70,8 @@ public class SimpleEngineClient {
   private CloseableHttpClient client;
   private String engineRestEndpoint;
   private ObjectMapper objectMapper = new ObjectMapper();
-
+  private static final String[] tenants = {"tenant1", "tenant2", "tenant3"};
+  private static final String[] users = {"mary", "john", "peter"};
 
   public SimpleEngineClient(String engineRestEndpoint) {
     this.engineRestEndpoint = engineRestEndpoint;
@@ -83,6 +86,26 @@ public class SimpleEngineClient {
     objectMapper.registerModule(javaTimeModule);
     javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(DATE_TIME_FORMATTER));
     javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(DATE_TIME_FORMATTER));
+  }
+
+  public void initializeTenants() {
+    for (String tenant : tenants) {
+      HttpPost createTenantPost = new HttpPost(engineRestEndpoint + "/tenant/create");
+      try {
+        log.info("Creating tenant " + tenant);
+        createTenantPost.setEntity(new StringEntity("{\"id\": \"" + tenant + "\", \"name\": \""+ tenant +"\"}"));
+        createTenantPost.addHeader("Content-Type", "application/json");
+        client.execute(createTenantPost);
+        for (String user : users) {
+          if (ThreadLocalRandom.current().nextBoolean()) {
+            HttpPut userTenantPut = new HttpPut(engineRestEndpoint + "/tenant/" + tenant + "/user-members/" + user);
+            client.execute(userTenantPut);
+          }
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
   }
 
   public List<String> deployProcesses(BpmnModelInstance modelInstance, int nVersions) {
@@ -229,7 +252,7 @@ public class SimpleEngineClient {
     post.addHeader("content-type", "application/json");
     post.setEntity(new StringEntity(convertVariableMapToJsonString(variables), StandardCharsets.UTF_8));
     try (CloseableHttpResponse response = client.execute(post)) {
-
+      post.setURI(new URI(post.getURI().toString() + "?tenant-id=tenant" + ThreadLocalRandom.current().nextInt(1, 4)));
       if (response.getStatusLine().getStatusCode() != 200) {
         throw new RuntimeException("Could not start the process definition " + procDefId +
                                      ". Reason: " + response.getStatusLine().getReasonPhrase());
@@ -270,6 +293,7 @@ public class SimpleEngineClient {
       .addTextBody("deployment-name", "deployment")
       .addTextBody("enable-duplicate-filtering", "false")
       .addTextBody("deployment-source", "process application")
+      .addTextBody("tenant-id", "tenant" + ThreadLocalRandom.current().nextInt(1, 4))
       .addBinaryBody(
         "data",
         process.getBytes(StandardCharsets.UTF_8),
