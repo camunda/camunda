@@ -9,6 +9,7 @@ import {mount} from 'enzyme';
 
 import Submenu from './Submenu';
 import DropdownOption from './DropdownOption';
+import {findLetterOption} from './service';
 
 jest.mock('./DropdownOption', () => {
   return props => {
@@ -19,6 +20,8 @@ jest.mock('./DropdownOption', () => {
     );
   };
 });
+
+jest.mock('./service', () => ({findLetterOption: jest.fn()}));
 
 console.error = jest.fn();
 
@@ -136,4 +139,20 @@ it('should show a scrollbar when submenu is bigger than the viewport height', ()
   node.update();
   expect(node.state().styles.top).toBe('-30px');
   expect(node.find('.childrenContainer')).toHaveClassName('scrollable');
+});
+
+it('should invoke findLetterOption when typing a character', () => {
+  const node = mount(<Submenu open={true} />);
+
+  node.instance().containerRef = {
+    current: {
+      querySelectorAll: () => []
+    }
+  };
+
+  const container = node.find('.childrenContainer');
+
+  container.simulate('keyDown', {key: 'f', keyCode: 70});
+  expect(findLetterOption.mock.calls[0][1]).toBe('f');
+  expect(findLetterOption.mock.calls[0][2]).toBe(0);
 });

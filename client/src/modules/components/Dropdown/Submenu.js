@@ -8,6 +8,7 @@ import React from 'react';
 import classnames from 'classnames';
 
 import DropdownOption from './DropdownOption';
+import {findLetterOption} from './service';
 
 import {Icon} from 'components';
 
@@ -55,6 +56,7 @@ export default class Submenu extends React.Component {
 
   onKeyDown = evt => {
     evt.stopPropagation();
+
     if (evt.key !== 'Tab') {
       evt.preventDefault();
     }
@@ -79,6 +81,19 @@ export default class Submenu extends React.Component {
       const previous = document.activeElement.previousElementSibling;
       if (previous) {
         previous.focus();
+      }
+    }
+
+    if (String.fromCharCode(evt.keyCode).match(/(\w)/g)) {
+      const options = Array.from(this.containerRef.current.querySelectorAll('.DropdownOption'));
+      const matchedOption = findLetterOption(
+        options,
+        evt.key,
+        options.indexOf(document.activeElement) + 1
+      );
+
+      if (matchedOption) {
+        matchedOption.focus();
       }
     }
   };

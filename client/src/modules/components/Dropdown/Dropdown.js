@@ -10,6 +10,7 @@ import classnames from 'classnames';
 import {Button, Icon, Select} from 'components';
 import DropdownOption from './DropdownOption';
 import Submenu from './Submenu';
+import {findLetterOption} from './service';
 
 import './Dropdown.scss';
 
@@ -104,7 +105,9 @@ export default class Dropdown extends React.Component {
   };
 
   handleKeyPress = evt => {
-    const options = [...this.container.querySelectorAll('.activateButton, li > :not([disabled])')];
+    const options = Array.from(
+      this.container.querySelectorAll('.activateButton, li > :not([disabled])')
+    );
 
     evt = evt || window.event;
     const selectedOption = options.indexOf(document.activeElement);
@@ -149,6 +152,17 @@ export default class Dropdown extends React.Component {
 
     if (evt.key === 'ArrowUp') {
       options[Math.max(selectedOption - 1, 0)].focus();
+    }
+
+    if (String.fromCharCode(evt.keyCode).match(/(\w)/g)) {
+      const matchedOption = findLetterOption(
+        options.slice(1),
+        evt.key,
+        options.indexOf(document.activeElement)
+      );
+      if (matchedOption) {
+        matchedOption.focus();
+      }
     }
   };
 

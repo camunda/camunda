@@ -8,6 +8,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import Dropdown from './Dropdown';
+import {findLetterOption} from './service';
 
 jest.mock('components', () => {
   return {
@@ -28,6 +29,8 @@ jest.mock('./Submenu', () => props => (
     Submenu: {JSON.stringify(props)}
   </div>
 ));
+
+jest.mock('./service', () => ({findLetterOption: jest.fn()}));
 
 function setupRefs(node) {
   node.instance().footerRef = {
@@ -404,4 +407,24 @@ it('should not add scrollable class when the item is flipped and there is enough
   node.update();
 
   expect(node.find('.menu > ul').first()).not.toHaveClassName('scrollable');
+});
+
+it('should invoke findLetterOption when typing a character', () => {
+  const node = mount(
+    <Dropdown>
+      <Dropdown.Option>foo</Dropdown.Option>
+      <Dropdown.Option>far</Dropdown.Option>
+      <Dropdown.Option>bar</Dropdown.Option>
+    </Dropdown>
+  );
+
+  node
+    .find(Dropdown.Option)
+    .last()
+    .getDOMNode()
+    .focus();
+
+  node.simulate('keyDown', {key: 'f', keyCode: 70});
+  expect(findLetterOption.mock.calls[0][1]).toBe('f');
+  expect(findLetterOption.mock.calls[0][2]).toBe(3);
 });
