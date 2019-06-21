@@ -49,7 +49,7 @@ public class ActivateJobsTest extends ClientTest {
             .setKey(12)
             .setType("foo")
             .setJobHeaders(jobHeaders1)
-            .setCustomHeaders("{\"version\": 1}")
+            .setCustomHeaders("{\"version\": \"1\"}")
             .setWorker("worker1")
             .setRetries(34)
             .setDeadline(1231)

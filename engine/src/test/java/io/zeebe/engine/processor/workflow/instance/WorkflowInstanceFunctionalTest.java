@@ -337,7 +337,7 @@ public class WorkflowInstanceFunctionalTest {
         .hasElementId(taskId)
         .hasWorkflowInstanceKey(workflowInstanceKey);
 
-    final Map<String, Object> customHeaders = event.getValue().getCustomHeaders();
+    final Map<String, String> customHeaders = event.getValue().getCustomHeaders();
     assertThat(customHeaders).containsEntry("a", "b").containsEntry("c", "d");
   }
 

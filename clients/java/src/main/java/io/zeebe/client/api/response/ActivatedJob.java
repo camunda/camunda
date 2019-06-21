@@ -33,7 +33,7 @@ public interface ActivatedJob {
   JobHeaders getHeaders();
 
   /** @return user-defined headers associated with this job */
-  Map<String, Object> getCustomHeaders();
+  Map<String, String> getCustomHeaders();
 
   /** @return the assigned worker to complete the job */
   String getWorker();

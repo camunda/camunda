@@ -100,8 +100,8 @@ public class JobRecord extends UnifiedRecordValue
   }
 
   @Override
-  public Map<String, Object> getCustomHeaders() {
-    return MsgPackConverter.convertToMap(customHeadersProp.getValue());
+  public Map<String, String> getCustomHeaders() {
+    return MsgPackConverter.convertToStringMap(customHeadersProp.getValue());
   }
 
   @Override

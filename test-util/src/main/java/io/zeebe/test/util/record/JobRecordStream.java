@@ -41,11 +41,11 @@ public class JobRecordStream
     return valueFilter(v -> headers.equals(v.getHeaders()));
   }
 
-  public JobRecordStream withCustomHeaders(final Map<String, Object> customHeaders) {
+  public JobRecordStream withCustomHeaders(final Map<String, String> customHeaders) {
     return valueFilter(v -> customHeaders.equals(v.getCustomHeaders()));
   }
 
-  public JobRecordStream withCustomHeader(final String key, final Object value) {
+  public JobRecordStream withCustomHeader(final String key, final String value) {
     return valueFilter(v -> value.equals(v.getCustomHeaders().get(key)));
   }
 

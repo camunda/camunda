@@ -28,6 +28,9 @@ public class ZeebeObjectMapper extends ObjectMapper {
   private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =
       new TypeReference<Map<String, Object>>() {};
 
+  private static final TypeReference<Map<String, String>> STRING_MAP_TYPE_REFERENCE =
+      new TypeReference<Map<String, String>>() {};
+
   public <T> T fromJson(String json, Class<T> typeClass) {
     try {
       return readValue(json, typeClass);
@@ -43,6 +46,15 @@ public class ZeebeObjectMapper extends ObjectMapper {
     } catch (IOException e) {
       throw new InternalClientException(
           String.format("Failed to deserialize json '%s' to 'Map<String, Object>'", json), e);
+    }
+  }
+
+  public Map<String, String> fromJsonAsStringMap(String json) {
+    try {
+      return readValue(json, STRING_MAP_TYPE_REFERENCE);
+    } catch (IOException e) {
+      throw new InternalClientException(
+          String.format("Failed to deserialize json '%s' to 'Map<String, String>'", json), e);
     }
   }
 

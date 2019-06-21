@@ -42,8 +42,13 @@ import org.agrona.DirectBuffer;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public final class MsgPackConverter {
+
   private static final JsonEncoding JSON_ENCODING = JsonEncoding.UTF8;
   private static final Charset JSON_CHARSET = StandardCharsets.UTF_8;
+  private static final TypeReference<HashMap<String, Object>> OBJECT_MAP_TYPE_REFERENCE =
+      new TypeReference<HashMap<String, Object>>() {};
+  private static final TypeReference<HashMap<String, String>> STRING_MAP_TYPE_REFERENCE =
+      new TypeReference<HashMap<String, String>>() {};
 
   /*
    * Extract from jackson doc:
@@ -149,11 +154,18 @@ public final class MsgPackConverter {
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   public static Map<String, Object> convertToMap(DirectBuffer buffer) {
+    return convertToMap(OBJECT_MAP_TYPE_REFERENCE, buffer);
+  }
+
+  public static Map<String, String> convertToStringMap(DirectBuffer buffer) {
+    return convertToMap(STRING_MAP_TYPE_REFERENCE, buffer);
+  }
+
+  private static <T extends Object> Map<String, T> convertToMap(
+      TypeReference<HashMap<String, T>> typeRef, DirectBuffer buffer) {
     final byte[] msgpackBytes = BufferUtil.bufferAsArray(buffer);
     final byte[] jsonBytes = convertToJsonBytes(new ByteArrayInputStream(msgpackBytes));
 
-    final TypeReference<HashMap<String, Object>> typeRef =
-        new TypeReference<HashMap<String, Object>>() {};
     try {
       return JSON_OBJECT_MAPPER.readValue(jsonBytes, typeRef);
     } catch (IOException e) {

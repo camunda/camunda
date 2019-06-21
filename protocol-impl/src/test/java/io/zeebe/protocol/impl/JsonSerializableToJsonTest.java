@@ -392,7 +392,7 @@ public class JsonSerializableToJsonTest {
               record.setCustomHeaders(wrapArray(MsgPackConverter.convertToMsgPack(customHeaders)));
               return record;
             },
-        "{'headers':{'bpmnProcessId':'test-process','workflowKey':13,'workflowDefinitionVersion':12,'workflowInstanceKey':1234,'elementId':'activity','elementInstanceKey':123},'worker':'myWorker','type':'myType','variables':'{\"foo\":\"bar\"}','retries':12,'errorMessage':'failed message','customHeaders':{'workerVersion':42},'deadline':13}"
+        "{'headers':{'bpmnProcessId':'test-process','workflowKey':13,'workflowDefinitionVersion':12,'workflowInstanceKey':1234,'elementId':'activity','elementInstanceKey':123},'worker':'myWorker','type':'myType','variables':'{\"foo\":\"bar\"}','retries':12,'errorMessage':'failed message','customHeaders':{'workerVersion':\"42\"},'deadline':13}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
