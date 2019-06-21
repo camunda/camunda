@@ -17,15 +17,12 @@ package io.zeebe.transport.impl.actor;
 
 import io.zeebe.transport.TransportListener;
 import io.zeebe.transport.impl.sender.Sender;
-import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.future.ActorFuture;
 
 public abstract class ActorContext {
   private Conductor conductor;
   private Sender sender;
   private Receiver receiver;
-
-  private MetricsManager metricsManager;
 
   public void setConductor(Conductor clientConductor) {
     this.conductor = clientConductor;
@@ -73,14 +70,6 @@ public abstract class ActorContext {
 
   public Receiver getReceiver() {
     return receiver;
-  }
-
-  public MetricsManager getMetricsManager() {
-    return metricsManager;
-  }
-
-  public void setMetricsManager(MetricsManager metricsManager) {
-    this.metricsManager = metricsManager;
   }
 
   public Sender getSender() {

@@ -25,8 +25,6 @@ import io.zeebe.logstreams.impl.log.index.LogBlockIndexContext;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocators;
-import io.zeebe.util.metrics.Metric;
-import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.ActorConditions;
@@ -58,7 +56,6 @@ public class LogBlockIndexWriter extends Actor {
   private final LogStorage logStorage;
   private final LogBlockIndex blockIndex;
   private final LogBlockIndexContext indexContext;
-  private final MetricsManager metricsManager;
 
   /** Defines the block size for which an index will be created. */
   private final int indexBlockSize;
@@ -94,18 +91,11 @@ public class LogBlockIndexWriter extends Actor {
   private final Duration snapshotInterval;
   private long snapshotEventPosition = -1;
 
-  private Metric snapshotsCreated;
-
   public LogBlockIndexWriter(
-      String name,
-      LogStreamBuilder builder,
-      LogStorage logStorage,
-      LogBlockIndex blockIndex,
-      MetricsManager metricsManager) {
+      String name, LogStreamBuilder builder, LogStorage logStorage, LogBlockIndex blockIndex) {
     this.name = name;
     this.logStorage = logStorage;
     this.blockIndex = blockIndex;
-    this.metricsManager = metricsManager;
     this.commitPosition = builder.getCommitPosition();
     this.onCommitPositionUpdatedConditions = builder.getOnCommitPositionUpdatedConditions();
 
@@ -128,13 +118,6 @@ public class LogBlockIndexWriter extends Actor {
 
   @Override
   protected void onActorStarting() {
-    snapshotsCreated =
-        metricsManager
-            .newMetric("logstream_blockidx_snapshots")
-            .type("counter")
-            .label("logName", getName())
-            .create();
-
     try {
       final long snapshotPosition = blockIndex.getLastPosition();
       final long snapshotBlockAddress =
@@ -281,7 +264,6 @@ public class LogBlockIndexWriter extends Actor {
         blockIndex.writeSnapshot(snapshotEventPosition);
 
         LOG.trace("Created snapshot of block index {}.", name);
-        snapshotsCreated.incrementOrdered();
       }
     } catch (Exception e) {
       LOG.warn("Failed to create snapshot of block index {}", name, e);
@@ -297,10 +279,5 @@ public class LogBlockIndexWriter extends Actor {
     resetCurrentBlock();
     allocatedBuffer.close();
     onCommitPositionUpdatedConditions.removeConsumer(onCommitCondition);
-    snapshotsCreated.close();
-  }
-
-  public Metric getSnapshotsCreated() {
-    return snapshotsCreated;
   }
 }

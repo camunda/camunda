@@ -1,5 +1,5 @@
 /*
- * Zeebe Broker Core
+ * Zeebe Workflow Engine
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,32 +15,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.exporter.stream;
+package io.zeebe.engine.metrics;
 
 import io.prometheus.client.Counter;
 
-public class ExporterMetrics {
+public class StreamProcessorMetrics {
 
-  private static final Counter EXPORTER_EVENTS =
+  private static final Counter STREAM_PROCESSOR_EVENTS =
       Counter.build()
           .namespace("zeebe")
-          .name("exporter_events_total")
-          .help("Number of events processed by exporter")
+          .name("stream_processor_events_total")
+          .help("Number of events processed by stream processor")
           .labelNames("action", "partition")
           .register();
 
   private final String partitionIdLabel;
 
-  public ExporterMetrics(int partitionId) {
-    partitionIdLabel = String.valueOf(partitionId);
+  public StreamProcessorMetrics(int partitionId) {
+    this.partitionIdLabel = String.valueOf(partitionId);
   }
 
   private void event(String action) {
-    EXPORTER_EVENTS.labels(action, partitionIdLabel).inc();
+    STREAM_PROCESSOR_EVENTS.labels(action, partitionIdLabel).inc();
   }
 
-  public void eventExported() {
-    event("exported");
+  public void eventProcessed() {
+    event("processed");
+  }
+
+  public void eventWritten() {
+    event("written");
   }
 
   public void eventSkipped() {

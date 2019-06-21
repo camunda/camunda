@@ -55,6 +55,7 @@
     <version.msgpack>0.8.16</version.msgpack>
     <version.netty>4.1.36.Final</version.netty>
     <version.objenesis>3.0.1</version.objenesis>
+    <version.prometheus>0.6.0</version.prometheus>
     <version.protobuf>3.8.0</version.protobuf>
     <version.rocksdbjni>6.0.1</version.rocksdbjni>
     <version.sbe>1.12.7</version.sbe>
@@ -452,6 +453,24 @@
         <groupId>pl.allegro.tech</groupId>
         <artifactId>embedded-elasticsearch</artifactId>
         <version>${version.embedded-elasticsearch}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.prometheus</groupId>
+        <artifactId>simpleclient</artifactId>
+        <version>${version.prometheus}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.prometheus</groupId>
+        <artifactId>simpleclient_common</artifactId>
+        <version>${version.prometheus}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.prometheus</groupId>
+        <artifactId>simpleclient_hotspot</artifactId>
+        <version>${version.prometheus}</version>
       </dependency>
 
     </dependencies>

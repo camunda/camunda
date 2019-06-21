@@ -29,7 +29,6 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
@@ -93,21 +92,14 @@ public class AsyncSnapshotingTest {
 
     when(mockStreamProcessor.getLastWrittenPositionAsync())
         .thenReturn(CompletableActorFuture.completed(99L), CompletableActorFuture.completed(100L));
-
-    final StreamProcessorMetrics streamProcessorMetrics =
-        new StreamProcessorMetrics(new MetricsManager(), "1");
-    when(mockStreamProcessor.getMetrics()).thenReturn(streamProcessorMetrics);
   }
 
   private void createAsyncSnapshotDirector(ActorScheduler actorScheduler) {
-    final SnapshotMetrics metrics =
-        new SnapshotMetrics(logStreamRule.getActorScheduler().getMetricsManager(), "1");
-
     noopDeletionService = spy(new NoopDeletionService());
     snapshotController.setDeletionService(noopDeletionService);
     asyncSnapshotDirector =
         new AsyncSnapshotDirector(
-            mockStreamProcessor, snapshotController, logStream, Duration.ofMinutes(1), metrics);
+            mockStreamProcessor, snapshotController, logStream, Duration.ofMinutes(1));
     actorScheduler.submitActor(this.asyncSnapshotDirector).join();
   }
 

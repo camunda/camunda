@@ -188,6 +188,7 @@
       <groupId>io.netty</groupId>
       <artifactId>netty-transport</artifactId>
     </dependency>
+
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>atomix</artifactId>
@@ -211,6 +212,21 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>atomix-utils</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient_common</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient_hotspot</artifactId>
     </dependency>
 
     <dependency>

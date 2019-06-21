@@ -16,7 +16,6 @@
 package io.zeebe.util.sched;
 
 import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
-import io.zeebe.util.sched.metrics.ActorThreadMetrics;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -43,8 +42,6 @@ public abstract class ActorThreadGroup {
 
     for (int t = 0; t < numOfThreads; t++) {
       final String threadName = String.format("%s-%d", groupName, t);
-      final ActorThreadMetrics metrics =
-          new ActorThreadMetrics(threadName, builder.getMetricsManager());
       final TaskScheduler taskScheduler = createTaskScheduler(tasks, builder);
 
       final ActorThread thread =
@@ -56,7 +53,6 @@ public abstract class ActorThreadGroup {
                   this,
                   taskScheduler,
                   builder.getActorClock(),
-                  metrics,
                   builder.getActorTimerQueue());
 
       threads[t] = thread;

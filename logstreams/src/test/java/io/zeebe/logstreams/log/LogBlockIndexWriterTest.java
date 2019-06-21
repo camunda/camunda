@@ -20,7 +20,6 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Java6Assertions.assertThat;
 
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
-import io.zeebe.logstreams.impl.LogBlockIndexWriter;
 import io.zeebe.logstreams.impl.LogEntryDescriptor;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndexContext;
@@ -28,7 +27,6 @@ import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
-import io.zeebe.util.metrics.Metric;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import org.agrona.DirectBuffer;
@@ -137,7 +135,7 @@ public class LogBlockIndexWriterTest {
 
     // when
     logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
-    waitUntil(() -> getSnapshotCount() > 0);
+    waitUntil(this::hasSnapshotWritten);
 
     // then
     assertThat(stateStorage.list()).hasSize(1);
@@ -155,7 +153,7 @@ public class LogBlockIndexWriterTest {
     assertThat(stateStorage.list()).isEmpty();
 
     logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
-    waitUntil(() -> getSnapshotCount() > 0);
+    waitUntil(this::hasSnapshotWritten);
 
     // then
     assertThat(stateStorage.list()).hasSize(1);
@@ -238,7 +236,7 @@ public class LogBlockIndexWriterTest {
     waitUntil(() -> blockIndex.getLastPosition() == lastBlockPosition);
     logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
 
-    waitUntil(() -> getSnapshotCount() > 0);
+    waitUntil(this::hasSnapshotWritten);
     logStreamRule.closeLogStream();
 
     // when
@@ -261,7 +259,7 @@ public class LogBlockIndexWriterTest {
     waitUntil(() -> !blockIndex.isEmpty(indexContext));
 
     logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
-    waitUntil(() -> getSnapshotCount() > 0);
+    waitUntil(this::hasSnapshotWritten);
 
     final long commitPosition = logStreamRule.getCommitPosition();
     logStreamRule.closeLogStream();
@@ -302,9 +300,7 @@ public class LogBlockIndexWriterTest {
     return new UnsafeBuffer(buffer, headerLength, EVENT_SIZE);
   }
 
-  private long getSnapshotCount() {
-    final LogBlockIndexWriter indexWriter = logStreamRule.getLogStream().getLogBlockIndexWriter();
-    final Metric snapshotsCreated = indexWriter.getSnapshotsCreated();
-    return snapshotsCreated.get();
+  private boolean hasSnapshotWritten() {
+    return !stateStorage.list().isEmpty();
   }
 }

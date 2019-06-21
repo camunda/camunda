@@ -27,7 +27,6 @@ import io.zeebe.logstreams.impl.log.fs.FsLogStorageConfiguration;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.collection.Tuple;
-import io.zeebe.util.metrics.MetricsManager;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -66,7 +65,7 @@ public class FsLogStorageTest {
 
     fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, false);
 
-    fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), 0);
+    fsLogStorage = new FsLogStorage(fsStorageConfig, 0);
   }
 
   @Test
@@ -139,7 +138,7 @@ public class FsLogStorageTest {
   @Test
   public void shouldDeleteLogOnCloseStorage() {
     fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, true);
-    fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), 0);
+    fsLogStorage = new FsLogStorage(fsStorageConfig, 0);
 
     fsLogStorage.open();
 

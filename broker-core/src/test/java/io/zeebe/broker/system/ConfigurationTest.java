@@ -30,12 +30,14 @@ import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_DIRE
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_EMBED_GATEWAY;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_INITIAL_CONTACT_POINTS;
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_METRICS_HTTP_SERVER;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_NODE_ID;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PARTITIONS_COUNT;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_REPLICATION_FACTOR;
+import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_COMMAND_API_PORT;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_HOST;
+import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_INTERNAL_API_PORT;
+import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_MONITORING_API_PORT;
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,10 +47,7 @@ import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.EmbeddedGatewayCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
-import io.zeebe.broker.system.configuration.MetricsCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
-import io.zeebe.broker.system.configuration.SocketBindingCommandApiCfg;
-import io.zeebe.broker.system.configuration.SocketBindingInternalCfg;
 import io.zeebe.util.Environment;
 import io.zeebe.util.TomlConfigurationReader;
 import java.io.ByteArrayInputStream;
@@ -70,10 +69,6 @@ public class ConfigurationTest {
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   public Map<String, String> environment = new HashMap<>();
-
-  public static final int CLIENT_PORT = SocketBindingCommandApiCfg.DEFAULT_PORT;
-  public static final int METRICS_PORT = MetricsCfg.DEFAULT_PORT;
-  public static final int ATOMIX_PORT = SocketBindingInternalCfg.DEFAULT_PORT;
 
   @Test
   public void shouldUseSpecifiedClusterName() {
@@ -111,7 +106,11 @@ public class ConfigurationTest {
 
   @Test
   public void shouldUseDefaultPorts() {
-    assertPorts("default", CLIENT_PORT, ATOMIX_PORT, METRICS_PORT);
+    assertPorts(
+        "default",
+        DEFAULT_COMMAND_API_PORT,
+        DEFAULT_INTERNAL_API_PORT,
+        DEFAULT_MONITORING_API_PORT);
   }
 
   @Test
@@ -122,7 +121,11 @@ public class ConfigurationTest {
   @Test
   public void shouldUsePortOffset() {
     final int offset = 50;
-    assertPorts("port-offset", CLIENT_PORT + offset, ATOMIX_PORT + offset, METRICS_PORT + offset);
+    assertPorts(
+        "port-offset",
+        DEFAULT_COMMAND_API_PORT + offset,
+        DEFAULT_INTERNAL_API_PORT + offset,
+        DEFAULT_MONITORING_API_PORT + offset);
   }
 
   @Test
@@ -135,7 +138,11 @@ public class ConfigurationTest {
   public void shouldUsePortOffsetFromEnvironment() {
     environment.put(ENV_PORT_OFFSET, "5");
     final int offset = 50;
-    assertPorts("default", CLIENT_PORT + offset, ATOMIX_PORT + offset, METRICS_PORT + offset);
+    assertPorts(
+        "default",
+        DEFAULT_COMMAND_API_PORT + offset,
+        DEFAULT_INTERNAL_API_PORT + offset,
+        DEFAULT_MONITORING_API_PORT + offset);
   }
 
   @Test
@@ -148,14 +155,22 @@ public class ConfigurationTest {
   @Test
   public void shouldIgnoreInvalidPortOffsetFromEnvironment() {
     environment.put(ENV_PORT_OFFSET, "a");
-    assertPorts("default", CLIENT_PORT, ATOMIX_PORT, METRICS_PORT);
+    assertPorts(
+        "default",
+        DEFAULT_COMMAND_API_PORT,
+        DEFAULT_INTERNAL_API_PORT,
+        DEFAULT_MONITORING_API_PORT);
   }
 
   @Test
   public void shouldOverridePortOffsetFromEnvironment() {
     environment.put(ENV_PORT_OFFSET, "7");
     final int offset = 70;
-    assertPorts("port-offset", CLIENT_PORT + offset, ATOMIX_PORT + offset, METRICS_PORT + offset);
+    assertPorts(
+        "port-offset",
+        DEFAULT_COMMAND_API_PORT + offset,
+        DEFAULT_INTERNAL_API_PORT + offset,
+        DEFAULT_MONITORING_API_PORT + offset);
   }
 
   @Test
@@ -231,7 +246,7 @@ public class ConfigurationTest {
         "gatewayHost",
         "commandHost",
         "internalHost",
-        "metricsHost");
+        "monitoringHost");
   }
 
   @Test
@@ -255,7 +270,7 @@ public class ConfigurationTest {
   public void shouldNotOverrideSpecifiedHostsFromEnvironment() {
     environment.put(ENV_HOST, "myHost");
     assertHost(
-        "specific-hosts", "myHost", "gatewayHost", "commandHost", "internalHost", "metricsHost");
+        "specific-hosts", "myHost", "gatewayHost", "commandHost", "internalHost", "monitoringHost");
   }
 
   @Test
@@ -461,36 +476,6 @@ public class ConfigurationTest {
     assertThat(gatewayCfg.isEnable()).isTrue();
   }
 
-  @Test
-  public void shouldReadDefaultEnableMetricsHttpServer() {
-    // when
-    final MetricsCfg metricsCfg = readConfig("default").getMetrics();
-
-    // then
-    assertThat(metricsCfg.isEnableHttpServer()).isTrue();
-  }
-
-  @Test
-  public void shouldReadDisableMetricsHttpServer() {
-    // when
-    final MetricsCfg metricsCfg = readConfig("disabled-metrics-http-server").getMetrics();
-
-    // then
-    assertThat(metricsCfg.isEnableHttpServer()).isFalse();
-  }
-
-  @Test
-  public void shouldDisableMetricsHttpServerViaEnvironment() {
-    // given
-    environment.put(ENV_METRICS_HTTP_SERVER, "false");
-
-    // when
-    final MetricsCfg metricsCfg = readConfig("default").getMetrics();
-
-    // then
-    assertThat(metricsCfg.isEnableHttpServer()).isFalse();
-  }
-
   private BrokerCfg readConfig(final String name) {
     final String configPath = "/system/" + name + ".toml";
     final InputStream resourceAsStream = ConfigurationTest.class.getResourceAsStream(configPath);
@@ -514,12 +499,12 @@ public class ConfigurationTest {
   }
 
   private void assertPorts(
-      final String configFileName, final int command, final int internal, final int metrics) {
+      final String configFileName, final int command, final int internal, final int monitoring) {
     final BrokerCfg brokerCfg = readConfig(configFileName);
     final NetworkCfg network = brokerCfg.getNetwork();
     assertThat(network.getCommandApi().getPort()).isEqualTo(command);
     assertThat(network.getInternalApi().getPort()).isEqualTo(internal);
-    assertThat(brokerCfg.getMetrics().getPort()).isEqualTo(metrics);
+    assertThat(network.getMonitoringApi().getPort()).isEqualTo(monitoring);
   }
 
   private void assertHost(final String configFileName, final String host) {
@@ -532,14 +517,14 @@ public class ConfigurationTest {
       final String gateway,
       final String command,
       final String internal,
-      final String metrics) {
+      final String monitoring) {
     final BrokerCfg brokerCfg = readConfig(configFileName);
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
     assertThat(networkCfg.getHost()).isEqualTo(host);
     assertThat(brokerCfg.getGateway().getNetwork().getHost()).isEqualTo(gateway);
     assertThat(networkCfg.getCommandApi().getHost()).isEqualTo(command);
     assertThat(networkCfg.getInternalApi().getHost()).isEqualTo(internal);
-    assertThat(brokerCfg.getMetrics().getHost()).isEqualTo(metrics);
+    assertThat(networkCfg.getMonitoringApi().getHost()).isEqualTo(monitoring);
   }
 
   private void assertContactPoints(final String configFileName, final String... contactPoints) {

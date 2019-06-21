@@ -50,7 +50,7 @@ public class CompleteProcessor implements CommandProcessor<JobRecord> {
       final JobRecord job = state.getJob(jobKey);
       job.setVariables(command.getValue().getVariablesBuffer());
 
-      state.delete(jobKey, job);
+      state.complete(jobKey, job);
       commandControl.accept(JobIntent.COMPLETED, job);
     }
   }

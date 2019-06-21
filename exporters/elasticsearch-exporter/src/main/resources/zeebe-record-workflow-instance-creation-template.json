@@ -18,17 +18,14 @@
             "version": {
               "type": "integer"
             },
-            "key": {
+            "workflowKey": {
               "type": "long"
             },
-            "instanceKey": {
+            "workflowInstanceKey": {
               "type": "long"
             },
             "variables": {
-              "type": "object",
-              "dynamic": false,
-              "store": true,
-              "index": true
+              "enabled": false
             }
           }
         }

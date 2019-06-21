@@ -19,6 +19,7 @@ package io.zeebe.engine.processor;
 
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDbTransaction;
+import io.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
@@ -110,7 +111,6 @@ public final class ProcessingStateMachine {
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
 
   private final ActorControl actor;
-  private final StreamProcessorMetrics metrics;
   private final EventFilter eventFilter;
   private final LogStream logStream;
   private final LogStreamReader logStreamReader;
@@ -135,10 +135,9 @@ public final class ProcessingStateMachine {
   protected final TypedResponseWriterImpl responseWriter;
   private SideEffectProducer sideEffectProducer;
 
-  public ProcessingStateMachine(
-      ProcessingContext context,
-      StreamProcessorMetrics metrics,
-      BooleanSupplier shouldProcessNext) {
+  private final StreamProcessorMetrics metrics;
+
+  public ProcessingStateMachine(ProcessingContext context, BooleanSupplier shouldProcessNext) {
 
     this.actor = context.getActor();
     this.eventFilter = context.getEventFilter();
@@ -151,7 +150,6 @@ public final class ProcessingStateMachine {
     this.dbContext = context.getDbContext();
     this.abortCondition = context.getAbortCondition();
 
-    this.metrics = metrics;
     this.writeRetryStrategy = new AbortableRetryStrategy(actor);
     this.sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);
     this.updateStateRetryStrategy = new RecoverableRetryStrategy(actor);
@@ -159,6 +157,8 @@ public final class ProcessingStateMachine {
 
     this.responseWriter =
         new TypedResponseWriterImpl(context.getCommandResponseWriter(), logStream.getPartitionId());
+
+    this.metrics = new StreamProcessorMetrics(logStream.getPartitionId());
   }
 
   // current iteration
@@ -175,7 +175,7 @@ public final class ProcessingStateMachine {
 
   private void skipRecord() {
     actor.submit(this::readNextEvent);
-    metrics.incrementEventsSkippedCount();
+    metrics.eventSkipped();
   }
 
   void readNextEvent() {
@@ -217,7 +217,8 @@ public final class ProcessingStateMachine {
 
       processInTransaction(typedEvent);
 
-      metrics.incrementEventsProcessedCount();
+      metrics.eventProcessed();
+
       writeEvent();
     } catch (final RecoverableException recoverableException) {
       // recoverable
@@ -347,8 +348,8 @@ public final class ProcessingStateMachine {
             LOG.error(ERROR_MESSAGE_WRITE_EVENT_ABORTED, currentEvent, t);
             onError(t, this::writeEvent);
           } else {
-            metrics.incrementEventsWrittenCount();
             updateState();
+            metrics.eventWritten();
           }
         });
   }

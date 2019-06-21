@@ -39,7 +39,6 @@ import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
 import io.zeebe.util.allocation.AllocatedBuffer;
-import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.sched.ActorCondition;
 import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -63,11 +62,9 @@ public class SubscriptionPeekBlockTest {
   ByteBuffer rawBuffer;
   ByteBuffer rawBufferView;
   BlockPeek blockPeekSpy;
-  Dispatcher dispatcherMock;
 
   Subscription subscription;
   private ActorCondition dataConsumed;
-  private Metric metric;
 
   @Before
   public void setup() {
@@ -90,16 +87,9 @@ public class SubscriptionPeekBlockTest {
     when(logBuffer.createRawBufferView()).thenReturn(rawBufferView);
 
     dataConsumed = mock(ActorCondition.class);
-    metric = mock(Metric.class);
     subscription =
         new Subscription(
-            subscriberPositionMock,
-            mock(AtomicPosition.class),
-            0,
-            "0",
-            dataConsumed,
-            logBuffer,
-            metric);
+            subscriberPositionMock, mock(AtomicPosition.class), 0, "0", dataConsumed, logBuffer);
   }
 
   @Test
@@ -136,8 +126,7 @@ public class SubscriptionPeekBlockTest {
             A_FRAGMENT_LENGTH,
             A_PARTITION_ID,
             nextFragmentOffset(fragOffset),
-            1,
-            metric);
+            1);
     // and the position was not increased
     verifyNoMoreInteractions(subscriberPositionMock);
   }
@@ -251,8 +240,7 @@ public class SubscriptionPeekBlockTest {
             2 * A_FRAGMENT_LENGTH,
             A_PARTITION_ID,
             nextFragOffset,
-            2,
-            metric);
+            2);
     // and the position was increased by the fragment length of the two fragments
     verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, nextFragOffset));
   }
@@ -299,8 +287,7 @@ public class SubscriptionPeekBlockTest {
             A_FRAGMENT_LENGTH,
             A_PARTITION_ID,
             secondFragOffset,
-            1,
-            metric);
+            1);
     // and the position was increased by the fragment length of the one fragment
     verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, secondFragOffset));
   }
@@ -345,8 +332,7 @@ public class SubscriptionPeekBlockTest {
             A_FRAGMENT_LENGTH,
             A_PARTITION_ID,
             secondFragOffset,
-            2,
-            metric);
+            2);
   }
 
   @Test
@@ -390,8 +376,7 @@ public class SubscriptionPeekBlockTest {
             2 * A_FRAGMENT_LENGTH,
             A_PARTITION_ID,
             nextFragOffset,
-            2,
-            metric);
+            2);
   }
 
   @Test
@@ -464,8 +449,7 @@ public class SubscriptionPeekBlockTest {
             A_FRAGMENT_LENGTH,
             nextPartionId,
             nextFragOffset,
-            1,
-            metric);
+            1);
     // and the position was rolled over to the next partition
     verify(subscriberPositionMock)
         .proposeMaxOrdered(position(nextPartionId, nextFragOffset)); // is secondFragOffset somehow
@@ -540,8 +524,7 @@ public class SubscriptionPeekBlockTest {
             A_FRAGMENT_LENGTH,
             A_PARTITION_ID,
             nextFragOffset,
-            1,
-            metric);
+            1);
     // and the position was rolled over to the next fragement after the padding
     verify(subscriberPositionMock)
         .proposeMaxOrdered(position(A_PARTITION_ID, nextFragOffset)); // is secondFragOffset somehow
@@ -618,8 +601,7 @@ public class SubscriptionPeekBlockTest {
             2 * A_FRAGMENT_LENGTH,
             A_PARTITION_ID,
             nextFragOffset,
-            2,
-            metric);
+            2);
     // and the position was increased by the fragment length of the two fragments
     verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, nextFragOffset));
   }
@@ -706,8 +688,7 @@ public class SubscriptionPeekBlockTest {
             A_FRAGMENT_LENGTH,
             A_PARTITION_ID,
             secondFragOffset,
-            2,
-            metric);
+            2);
     // and the position was increased by the fragment length of the two fragments
     verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, secondFragOffset));
   }

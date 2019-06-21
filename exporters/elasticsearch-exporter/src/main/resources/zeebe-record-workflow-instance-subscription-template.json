@@ -22,7 +22,7 @@
               "type": "keyword"
             },
             "variables": {
-              "type": "text"
+              "enabled": false
             }
           }
         }

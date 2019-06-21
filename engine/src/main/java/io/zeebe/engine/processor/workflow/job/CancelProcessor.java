@@ -40,7 +40,7 @@ public class CancelProcessor implements CommandProcessor<JobRecord> {
     final JobRecord job = command.getValue();
 
     if (state.exists(jobKey)) {
-      state.delete(jobKey, job);
+      state.cancel(jobKey, job);
       commandControl.accept(JobIntent.CANCELED, job);
     } else {
       commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));

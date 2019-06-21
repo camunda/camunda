@@ -30,13 +30,9 @@
  */
 package io.zeebe.util.sched;
 
-import static io.zeebe.util.sched.metrics.SchedulerMetrics.SHOULD_ENABLE_JUMBO_TASK_DETECTION;
-import static io.zeebe.util.sched.metrics.SchedulerMetrics.TASK_MAX_EXECUTION_TIME_NANOS;
-
 import io.zeebe.util.BoundedArrayQueue;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.clock.DefaultActorClock;
-import io.zeebe.util.sched.metrics.ActorThreadMetrics;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
@@ -50,8 +46,6 @@ import sun.misc.Unsafe;
 @SuppressWarnings("restriction")
 public class ActorThread extends Thread implements Consumer<Runnable> {
   static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
-
-  private final ActorThreadMetrics metrics;
 
   private volatile ActorThreadState state;
 
@@ -91,7 +85,6 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
       ActorThreadGroup threadGroup,
       TaskScheduler taskScheduler,
       ActorClock clock,
-      ActorThreadMetrics metrics,
       ActorTimerQueue timerQueue) {
     setName(name);
     this.state = ActorThreadState.NEW;
@@ -99,7 +92,6 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     this.clock = clock != null ? clock : new DefaultActorClock();
     this.timerJobQueue = timerQueue != null ? timerQueue : new ActorTimerQueue(this.clock);
     this.actorThreadGroup = threadGroup;
-    this.metrics = metrics;
     this.taskScheduler = taskScheduler;
   }
 
@@ -116,7 +108,6 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     }
 
     state = ActorThreadState.TERMINATED;
-    metrics.close();
 
     terminationFuture.complete(null);
   }
@@ -144,9 +135,6 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   private void executeCurrentTask() {
     MDC.put("actor-name", currentTask.getName());
     idleStrategy.onTaskExecuted();
-    metrics.incrementTaskExecutionCount();
-
-    final long nanoTimeBeforeTask = clock.getNanoTime();
 
     boolean resubmit = false;
 
@@ -163,19 +151,6 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
       MDC.remove("actor-name");
 
       clock.update();
-      final long taskExecutionTime = clock.getNanoTime() - nanoTimeBeforeTask;
-
-      // FIXME: if the task was woken up concurrently, we do not own it anymore and cannot report
-      // metrics
-      if (currentTask.isCollectTaskMetrics()) {
-        currentTask.reportExecutionTime(taskExecutionTime);
-      }
-
-      if (SHOULD_ENABLE_JUMBO_TASK_DETECTION) {
-        if (TASK_MAX_EXECUTION_TIME_NANOS < taskExecutionTime) {
-          currentTask.warnMaxTaskExecutionTimeExceeded(taskExecutionTime);
-        }
-      }
     }
 
     if (resubmit) {
@@ -208,7 +183,6 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
       if (!isIdle) {
         clock.update();
         idleTimeStart = clock.getNanoTime();
-        metrics.recordRunnerBusyTime(idleTimeStart - busyTimeStart);
         isIdle = true;
       }
 
@@ -220,7 +194,6 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
 
       if (isIdle) {
         busyTimeStart = clock.getNanoTime();
-        metrics.recordRunnerIdleTime(busyTimeStart - idleTimeStart);
         isIdle = false;
       }
     }
@@ -273,10 +246,6 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
 
   public int getRunnerId() {
     return threadId;
-  }
-
-  public ActorThreadMetrics getMetrics() {
-    return metrics;
   }
 
   @Override

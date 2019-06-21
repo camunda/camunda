@@ -17,37 +17,37 @@
  */
 package io.zeebe.broker.system.monitoring;
 
-import io.zeebe.broker.system.configuration.MetricsCfg;
+import io.prometheus.client.CollectorRegistry;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.util.metrics.MetricsManager;
 
 public class BrokerHttpServerService implements Service<BrokerHttpServer> {
 
-  private BrokerHttpServer brokerHttpServer;
-  private MetricsCfg configuration;
+  private final String host;
+  private final int port;
+  private final CollectorRegistry metricsRegistry;
   private BrokerHealthCheckService brokerHealthCheckService;
 
+  private BrokerHttpServer brokerHttpServer;
+
   public BrokerHttpServerService(
-      MetricsCfg cfg, BrokerHealthCheckService brokerHealthCheckService) {
-    this.configuration = cfg;
+      String host,
+      int port,
+      CollectorRegistry metricsRegistry,
+      BrokerHealthCheckService brokerHealthCheckService) {
+    this.host = host;
+    this.port = port;
+    this.metricsRegistry = metricsRegistry;
     this.brokerHealthCheckService = brokerHealthCheckService;
   }
 
   @Override
   public void start(ServiceStartContext startContext) {
-    final MetricsManager metricsManager = startContext.getScheduler().getMetricsManager();
-
     startContext.run(
-        () -> {
-          brokerHttpServer =
-              new BrokerHttpServer(
-                  metricsManager,
-                  brokerHealthCheckService,
-                  configuration.getHost(),
-                  configuration.getPort());
-        });
+        () ->
+            brokerHttpServer =
+                new BrokerHttpServer(host, port, metricsRegistry, brokerHealthCheckService));
   }
 
   @Override

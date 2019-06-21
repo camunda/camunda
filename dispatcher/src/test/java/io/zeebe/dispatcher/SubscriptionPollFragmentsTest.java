@@ -42,7 +42,6 @@ import static org.mockito.Mockito.when;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
-import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.sched.ActorCondition;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -83,8 +82,7 @@ public class SubscriptionPollFragmentsTest {
             0,
             "0",
             onConsumed,
-            mock(LogBuffer.class),
-            mock(Metric.class));
+            mock(LogBuffer.class));
   }
 
   @Test

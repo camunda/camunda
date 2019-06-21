@@ -28,7 +28,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.logstreams.impl.CompleteEventsInBlockProcessor;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorageConfiguration;
-import io.zeebe.util.metrics.MetricsManager;
 import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -61,7 +60,7 @@ public class CompleteInBlockProcessorTest {
     processor = new CompleteEventsInBlockProcessor();
     logPath = tempFolder.getRoot().getAbsolutePath();
     fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, false);
-    fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), 0);
+    fsLogStorage = new FsLogStorage(fsStorageConfig, 0);
 
     final ByteBuffer writeBuffer = ByteBuffer.allocate(192);
     final MutableDirectBuffer directBuffer = new UnsafeBuffer(0, 0);

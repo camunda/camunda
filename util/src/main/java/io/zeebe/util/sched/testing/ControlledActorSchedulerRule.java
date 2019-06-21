@@ -27,7 +27,6 @@ import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.metrics.ActorThreadMetrics;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -130,11 +129,9 @@ public class ControlledActorSchedulerRule extends ExternalResource {
         ActorThreadGroup threadGroup,
         TaskScheduler taskScheduler,
         ActorClock clock,
-        ActorThreadMetrics metrics,
         ActorTimerQueue timerQueue) {
       controlledThread =
-          new ControlledActorThread(
-              name, id, threadGroup, taskScheduler, clock, metrics, timerQueue);
+          new ControlledActorThread(name, id, threadGroup, taskScheduler, clock, timerQueue);
       return controlledThread;
     }
   }

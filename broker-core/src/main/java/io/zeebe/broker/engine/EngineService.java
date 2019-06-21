@@ -27,12 +27,21 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.transport.commandapi.CommandResponseWriterImpl;
-import io.zeebe.engine.processor.*;
+import io.zeebe.engine.processor.AsyncSnapshotingDirectorService;
+import io.zeebe.engine.processor.ProcessingContext;
+import io.zeebe.engine.processor.StreamProcessor;
+import io.zeebe.engine.processor.StreamProcessorServiceNames;
+import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.processor.workflow.EngineProcessors;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.DurationUtil;
 import io.zeebe.util.sched.ActorControl;
@@ -100,10 +109,7 @@ public class EngineService implements Service<EngineService> {
 
     final AsyncSnapshotingDirectorService snapshotDirectorService =
         new AsyncSnapshotingDirectorService(
-            partition.getPartitionId(),
-            partition.getLogStream(),
-            partition.getSnapshotController(),
-            snapshotPeriod);
+            partition.getLogStream(), partition.getSnapshotController(), snapshotPeriod);
 
     final ServiceName<AsyncSnapshotingDirectorService> snapshotDirectorServiceName =
         StreamProcessorServiceNames.asyncSnapshotingDirectorService(logName);

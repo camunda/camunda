@@ -32,7 +32,6 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.ReflectUtil;
-import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
@@ -65,7 +64,6 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   // processing
   private final ProcessingContext processingContext;
-  private StreamProcessorMetrics metrics;
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private final LogStreamReader logStreamReader;
   private ProcessingStateMachine processingStateMachine;
@@ -119,17 +117,10 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   public ActorFuture<Void> openAsync() {
     if (isOpened.compareAndSet(false, true)) {
-      return actorScheduler.submitActor(this, true);
+      return actorScheduler.submitActor(this);
     } else {
       return CompletableActorFuture.completed(null);
     }
-  }
-
-  @Override
-  protected void onActorStarting() {
-    final MetricsManager metricsManager = actorScheduler.getMetricsManager();
-    processingContext.metricsManager(metricsManager);
-    metrics = new StreamProcessorMetrics(metricsManager, Integer.toString(partitionId));
   }
 
   @Override
@@ -147,8 +138,7 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
     }
 
     try {
-      processingStateMachine =
-          new ProcessingStateMachine(processingContext, metrics, this::isOpened);
+      processingStateMachine = new ProcessingStateMachine(processingContext, this::isOpened);
 
       final ReProcessingStateMachine reProcessingStateMachine =
           new ReProcessingStateMachine(processingContext);
@@ -239,7 +229,6 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   @Override
   protected void onActorClosing() {
-    metrics.close();
     processingContext.getLogStreamReader().close();
 
     if (onCommitPositionUpdatedCondition != null) {
@@ -277,10 +266,6 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   public ActorFuture<Long> getLastWrittenPositionAsync() {
     return actor.call(processingStateMachine::getLastWrittenEventPosition);
-  }
-
-  public StreamProcessorMetrics getMetrics() {
-    return metrics;
   }
 
   private enum Phase {

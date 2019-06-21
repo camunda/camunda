@@ -37,7 +37,6 @@ import io.zeebe.distributedlog.impl.DistributedLogstreamServiceConfig;
 import io.zeebe.engine.processor.AsyncSnapshotDirector;
 import io.zeebe.engine.processor.CommandResponseWriter;
 import io.zeebe.engine.processor.ReadonlyProcessingContext;
-import io.zeebe.engine.processor.SnapshotMetrics;
 import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.TypedEventRegistry;
@@ -296,10 +295,9 @@ public class TestStreams {
             .join();
     openFuture.join();
 
-    final SnapshotMetrics metrics = new SnapshotMetrics(actorScheduler.getMetricsManager(), "1");
     asyncSnapshotDirector =
         new AsyncSnapshotDirector(
-            processorService, currentSnapshotController, stream, snapshotInterval, metrics);
+            processorService, currentSnapshotController, stream, snapshotInterval);
     actorScheduler.submitActor(asyncSnapshotDirector);
 
     return processorService;

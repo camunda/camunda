@@ -47,7 +47,7 @@
               "type": "long"
             },
             "variables": {
-              "type": "text"
+              "enabled": false
             },
             "errorMessage": {
               "type": "text"

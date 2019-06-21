@@ -73,6 +73,7 @@
 # configure the hosts and ports the broker should bind to. The broker exposes two sockets:
 # 1. command: the socket which is used for gateway-to-broker communication
 # 2. internal: the socket which is used for broker-to-broker communication
+# 3. monitoring: the socket which is used to monitor the broker
 
 # Controls the default host the broker should bind to. Can be overwritten on a
 # per binding basis for client, management and replication
@@ -106,6 +107,13 @@
 
 # Sets the port used for internal broker-to-broker communication
 # port = 26502
+
+[network.monitoringApi]
+# Overrides the host used for exposing monitoring information
+# host = "localhost"
+
+# Sets the port used for exposing monitoring information
+# port = 9600
 
 
 [data]
@@ -216,18 +224,6 @@
 # The default value is 2.
 #ioThreadCount = 2
 
-[metrics]
-
-# Controls if the prometheus metrics should be exporter over HTTP
-# This setting can also be overridden using the environment variable ZEEBE_METRICS_HTTP_SERVER.
-# enableHttpServer = true
-
-# Host to export metrics on, defaults to network.host
-# host = "0.0.0.0"
-
-# Port to export metrics on
-# port = 9600
-
 # Configure exporters below; note that configuration parsing conventions do not apply to exporter
 # arguments, which will be parsed as normal TOML.
 #
@@ -296,7 +292,11 @@
 #  deployment = true
 #  incident = true
 #  job = true
+#  jobBatch = false
 #  message = false
 #  messageSubscription = false
+#  variable = true
+#  variableDocument = false
 #  workflowInstance = true
+#  workflowInstanceCreation = false
 #  workflowInstanceSubscription = false

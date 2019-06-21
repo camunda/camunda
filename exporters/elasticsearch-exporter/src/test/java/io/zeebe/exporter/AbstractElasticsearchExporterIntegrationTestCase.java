@@ -138,7 +138,9 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
     configuration.index.message = true;
     configuration.index.messageSubscription = true;
     configuration.index.variable = true;
+    configuration.index.variableDocument = true;
     configuration.index.workflowInstance = true;
+    configuration.index.workflowInstanceCreation = true;
     configuration.index.workflowInstanceSubscription = true;
 
     return configuration;

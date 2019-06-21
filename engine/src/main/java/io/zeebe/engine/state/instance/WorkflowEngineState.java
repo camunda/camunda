@@ -17,23 +17,21 @@
  */
 package io.zeebe.engine.state.instance;
 
+import io.zeebe.engine.metrics.WorkflowEngineMetrics;
 import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.workflow.UpdateVariableStreamWriter;
 import io.zeebe.engine.processor.workflow.WorkflowInstanceLifecycle;
-import io.zeebe.engine.processor.workflow.WorkflowInstanceMetrics;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.util.metrics.MetricsManager;
 
 public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
   private final WorkflowState workflowState;
   private ElementInstanceState elementInstanceState;
-  private WorkflowInstanceMetrics metrics;
+  private WorkflowEngineMetrics metrics;
 
   public WorkflowEngineState(WorkflowState workflowState) {
     this.workflowState = workflowState;
@@ -41,21 +39,14 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
   @Override
   public void onOpen(ReadonlyProcessingContext processingContext) {
-    final MetricsManager metricsManager = processingContext.getMetricsManager();
-    final LogStream logStream = processingContext.getLogStream();
-
-    this.metrics = new WorkflowInstanceMetrics(metricsManager, logStream.getPartitionId());
     this.elementInstanceState = workflowState.getElementInstanceState();
+
+    this.metrics = new WorkflowEngineMetrics(processingContext.getLogStream().getPartitionId());
 
     final UpdateVariableStreamWriter updateVariableStreamWriter =
         new UpdateVariableStreamWriter(processingContext.getLogStreamWriter());
 
     elementInstanceState.getVariablesState().setListener(updateVariableStreamWriter);
-  }
-
-  @Override
-  public void onClose() {
-    metrics.close();
   }
 
   public void onEventProduced(
@@ -85,7 +76,7 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
       updateElementInstance(key, state, value);
     }
 
-    recordElementInstanceMetrics(key, state, value);
+    recordMetrics(state, value);
   }
 
   private void updateElementInstance(
@@ -109,16 +100,17 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
     }
   }
 
-  private void recordElementInstanceMetrics(
-      long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
-    if (key == value.getWorkflowInstanceKey()) {
-      if (state == WorkflowInstanceIntent.ELEMENT_TERMINATED) {
-        metrics.countInstanceCanceled();
-      } else if (state == WorkflowInstanceIntent.ELEMENT_COMPLETED) {
-        metrics.countInstanceCompleted();
-      } else if (state == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
-        metrics.countInstanceCreated();
-      }
+  private void recordMetrics(WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
+    switch (state) {
+      case ELEMENT_ACTIVATED:
+        metrics.elementInstanceActivated(value.getBpmnElementType());
+        break;
+      case ELEMENT_COMPLETED:
+        metrics.elementInstanceCompleted(value.getBpmnElementType());
+        break;
+      case ELEMENT_TERMINATED:
+        metrics.elementInstanceTerminated(value.getBpmnElementType());
+        break;
     }
   }
 

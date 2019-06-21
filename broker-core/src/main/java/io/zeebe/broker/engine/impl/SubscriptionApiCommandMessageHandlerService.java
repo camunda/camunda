@@ -54,7 +54,7 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
   @Override
   public void start(ServiceStartContext context) {
     atomix = atomixInjector.getValue();
-    context.async(context.getScheduler().submitActor(this, true));
+    context.async(context.getScheduler().submitActor(this));
   }
 
   @Override

@@ -124,6 +124,11 @@
       <artifactId>sbe-tool</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient</artifactId>
+    </dependency>
+
     <!--    TEST DEPENDENCIES-->
 
     <dependency>

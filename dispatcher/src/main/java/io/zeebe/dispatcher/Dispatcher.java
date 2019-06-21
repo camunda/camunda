@@ -23,8 +23,6 @@ import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_E
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.dispatcher.impl.log.LogBufferAppender;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
-import io.zeebe.util.metrics.Metric;
-import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.FutureUtil;
@@ -47,7 +45,6 @@ public class Dispatcher extends Actor implements AutoCloseable {
   protected final LogBuffer logBuffer;
   protected final LogBufferAppender logAppender;
 
-  protected final MetricsManager metricsManager;
   protected final AtomicPosition publisherLimit;
   protected final AtomicPosition publisherPosition;
   protected final String[] defaultSubscriptionNames;
@@ -76,8 +73,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
       int logWindowLength,
       String[] subscriptionNames,
       int mode,
-      String name,
-      MetricsManager metricsManager) {
+      String name) {
     this.logBuffer = logBuffer;
     this.logAppender = logAppender;
     this.publisherLimit = publisherLimit;
@@ -85,7 +81,6 @@ public class Dispatcher extends Actor implements AutoCloseable {
     this.logWindowLength = logWindowLength;
     this.mode = mode;
     this.name = name;
-    this.metricsManager = metricsManager;
 
     this.partitionSize = logBuffer.getPartitionSize();
     this.maxFrameLength = partitionSize / 16;
@@ -385,16 +380,8 @@ public class Dispatcher extends Actor implements AutoCloseable {
     position.set(position(logBuffer.getActivePartitionIdVolatile(), 0));
     final AtomicPosition limit = determineLimit(subscriptionId);
 
-    final Metric fragmentsRead =
-        metricsManager
-            .newMetric("buffer_fragments_read")
-            .type("counter")
-            .label("subscription", subscriptionName)
-            .label("buffer", getName())
-            .create();
-
     return new Subscription(
-        position, limit, subscriptionId, subscriptionName, onConsumption, logBuffer, fragmentsRead);
+        position, limit, subscriptionId, subscriptionName, onConsumption, logBuffer);
   }
 
   protected AtomicPosition determineLimit(int subscriptionId) {
@@ -443,7 +430,6 @@ public class Dispatcher extends Actor implements AutoCloseable {
     // close subscription
     subscriptionToClose.isClosed = true;
     subscriptionToClose.position.reset();
-    subscriptionToClose.fragmentsConsumedMetric.close();
 
     // remove from list
     final int len = subscriptions.length;

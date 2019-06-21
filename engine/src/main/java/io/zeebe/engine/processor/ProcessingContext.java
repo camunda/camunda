@@ -23,7 +23,6 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorControl;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
@@ -31,7 +30,6 @@ import java.util.function.BooleanSupplier;
 public class ProcessingContext implements ReadonlyProcessingContext {
 
   private ActorControl actor;
-  private MetricsManager metricsManager;
   private EventFilter eventFilter;
   private LogStream logStream;
   private LogStreamReader logStreamReader;
@@ -100,11 +98,6 @@ public class ProcessingContext implements ReadonlyProcessingContext {
     return this;
   }
 
-  public ProcessingContext metricsManager(MetricsManager metricsManager) {
-    this.metricsManager = metricsManager;
-    return this;
-  }
-
   public ActorControl getActor() {
     return actor;
   }
@@ -147,9 +140,5 @@ public class ProcessingContext implements ReadonlyProcessingContext {
 
   public BooleanSupplier getAbortCondition() {
     return abortCondition;
-  }
-
-  public MetricsManager getMetricsManager() {
-    return metricsManager;
   }
 }
