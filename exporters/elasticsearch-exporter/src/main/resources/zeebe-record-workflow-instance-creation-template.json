@@ -25,10 +25,7 @@
               "type": "long"
             },
             "variables": {
-              "type": "object",
-              "dynamic": false,
-              "store": true,
-              "index": true
+              "enabled": false
             }
           }
         }

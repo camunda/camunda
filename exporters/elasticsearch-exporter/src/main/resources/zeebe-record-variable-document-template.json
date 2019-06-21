@@ -16,10 +16,7 @@
               "type": "long"
             },
             "document": {
-              "type": "object",
-              "dynamic": false,
-              "store": true,
-              "index": true
+              "enabled": false
             },
             "updateSemantics": {
               "type": "keyword"
