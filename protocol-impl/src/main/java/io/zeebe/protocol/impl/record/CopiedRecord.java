@@ -45,6 +45,7 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
       T recordValue,
       RecordMetadata metadata,
       long key,
+      int partitionId,
       long position,
       long sourcePosition,
       long timestamp) {
@@ -56,7 +57,7 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
 
     this.intent = metadata.getIntent();
     this.recordType = metadata.getRecordType();
-    this.partitionId = metadata.getPartitionId();
+    this.partitionId = partitionId;
     this.rejectionType = metadata.getRejectionType();
     this.rejectionReason = metadata.getRejectionReason();
     this.valueType = metadata.getValueType();
@@ -126,5 +127,10 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
   @Override
   public String toJson() {
     return MsgPackConverter.convertJsonSerializableObjectToJson(this);
+  }
+
+  @Override
+  public String toString() {
+    return toJson();
   }
 }

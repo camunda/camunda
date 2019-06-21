@@ -15,7 +15,6 @@
  */
 package io.zeebe.protocol.impl.record;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.record.MessageHeaderDecoder;
 import io.zeebe.protocol.record.MessageHeaderEncoder;
@@ -46,7 +45,6 @@ public class RecordMetadata implements BufferWriter, BufferReader {
   private RecordType recordType = RecordType.NULL_VAL;
   private short intentValue = Intent.NULL_VAL;
   private Intent intent = null;
-  private int partitionId;
   private int requestStreamId;
   protected long requestId;
   private int protocolVersion = Protocol.PROTOCOL_VERSION; // always the current version by default
@@ -68,7 +66,6 @@ public class RecordMetadata implements BufferWriter, BufferReader {
 
     decoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-    partitionId = decoder.partitionId();
     recordType = decoder.recordType();
     requestStreamId = decoder.requestStreamId();
     requestId = decoder.requestId();
@@ -109,7 +106,6 @@ public class RecordMetadata implements BufferWriter, BufferReader {
     encoder.wrap(buffer, offset);
 
     encoder
-        .partitionId(partitionId)
         .recordType(recordType)
         .requestStreamId(requestStreamId)
         .requestId(requestId)
@@ -202,26 +198,11 @@ public class RecordMetadata implements BufferWriter, BufferReader {
     return this;
   }
 
-  @JsonIgnore
-  public DirectBuffer getRejectionReasonBuffer() {
-    return rejectionReason;
-  }
-
-  public RecordMetadata partitionId(int partitionId) {
-    this.partitionId = partitionId;
-    return this;
-  }
-
-  public int getPartitionId() {
-    return partitionId;
-  }
-
   public String getRejectionReason() {
     return BufferUtil.bufferAsString(rejectionReason);
   }
 
   public RecordMetadata reset() {
-    partitionId = RecordMetadataEncoder.partitionIdNullValue();
     recordType = RecordType.NULL_VAL;
     requestId = RecordMetadataEncoder.requestIdNullValue();
     requestStreamId = RecordMetadataEncoder.requestStreamIdNullValue();
@@ -234,17 +215,10 @@ public class RecordMetadata implements BufferWriter, BufferReader {
     return this;
   }
 
-  public boolean hasRequestMetadata() {
-    return requestId != RecordMetadataEncoder.requestIdNullValue()
-        && requestStreamId != RecordMetadataEncoder.requestStreamIdNullValue();
-  }
-
   @Override
   public String toString() {
     return "RecordMetadata{"
-        + "partitionId="
-        + partitionId
-        + ", recordType="
+        + "recordType="
         + recordType
         + ", intentValue="
         + intentValue

@@ -280,12 +280,7 @@ public class SubscriptionCommandMessageHandler
 
     logStreamWriter.wrap(logStream);
 
-    recordMetadata
-        .reset()
-        .partitionId(partitionId)
-        .recordType(RecordType.COMMAND)
-        .valueType(valueType)
-        .intent(intent);
+    recordMetadata.reset().recordType(RecordType.COMMAND).valueType(valueType).intent(intent);
 
     final long position =
         logStreamWriter.key(-1).metadataWriter(recordMetadata).valueWriter(command).tryWrite();

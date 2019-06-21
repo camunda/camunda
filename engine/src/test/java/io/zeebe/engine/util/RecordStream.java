@@ -19,6 +19,7 @@ package io.zeebe.engine.util;
 
 import io.zeebe.engine.processor.CopiedRecords;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -52,69 +53,72 @@ public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
     return new RecordStream(filter(r -> Records.hasIntent(r, intent)));
   }
 
-  public LoggedEvent withPosition(final long position) {
-    return filter(e -> e.getPosition() == position)
-        .findFirst()
-        .orElseThrow(() -> new AssertionError("No event found with getPosition " + position));
-  }
-
   public TypedRecordStream<JobRecord> onlyJobRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isJobRecord).map(CopiedRecords::createCopiedRecord));
+        filter(Records::isJobRecord)
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<IncidentRecord> onlyIncidentRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isIncidentRecord).map(CopiedRecords::createCopiedRecord));
+        filter(Records::isIncidentRecord)
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<DeploymentRecord> onlyDeploymentRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isDeploymentRecord).map(CopiedRecords::createCopiedRecord));
+        filter(Records::isDeploymentRecord)
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<WorkflowInstanceRecord> onlyWorkflowInstanceRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isWorkflowInstanceRecord).map(CopiedRecords::createCopiedRecord));
+        filter(Records::isWorkflowInstanceRecord)
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<MessageRecord> onlyMessageRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isMessageRecord).map(CopiedRecords::createCopiedRecord));
+        filter(Records::isMessageRecord)
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<MessageSubscriptionRecord> onlyMessageSubscriptionRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isMessageSubscriptionRecord).map(CopiedRecords::createCopiedRecord));
+        filter(Records::isMessageSubscriptionRecord)
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<MessageStartEventSubscriptionRecord>
       onlyMessageStartEventSubscriptionRecords() {
     return new TypedRecordStream<>(
         filter(Records::isMessageStartEventSubscriptionRecord)
-            .map(CopiedRecords::createCopiedRecord));
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<WorkflowInstanceSubscriptionRecord>
       onlyWorkflowInstanceSubscriptionRecords() {
     return new TypedRecordStream<>(
         filter(Records::isWorkflowInstanceSubscriptionRecord)
-            .map(CopiedRecords::createCopiedRecord));
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<TimerRecord> onlyTimerRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isTimerRecord).map(CopiedRecords::createCopiedRecord));
+        filter(Records::isTimerRecord)
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<WorkflowInstanceCreationRecord> onlyWorkflowInstanceCreationRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isWorkflowInstanceCreationRecord).map(CopiedRecords::createCopiedRecord));
+        filter(Records::isWorkflowInstanceCreationRecord)
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<ErrorRecord> onlyErrorRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isErrorRecord).map(CopiedRecords::createCopiedRecord));
+        filter(Records::isErrorRecord)
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   /**

@@ -66,11 +66,7 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
       throw new RuntimeException("Missing value type mapping for record: " + value.getClass());
     }
 
-    metadata
-        .partitionId(stream.getPartitionId())
-        .recordType(type)
-        .valueType(valueType)
-        .intent(intent);
+    metadata.recordType(type).valueType(valueType).intent(intent);
   }
 
   protected void appendRecord(

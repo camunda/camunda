@@ -18,6 +18,7 @@
 package io.zeebe.engine.processor;
 
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RecordType;
@@ -78,7 +79,7 @@ public class TypedEventImpl implements TypedRecord {
 
   @Override
   public int getPartitionId() {
-    return metadata.getPartitionId();
+    return Protocol.decodePartitionId(getKey());
   }
 
   @Override

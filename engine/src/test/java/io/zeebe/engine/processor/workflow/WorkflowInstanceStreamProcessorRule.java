@@ -39,6 +39,7 @@ import io.zeebe.engine.util.TypedRecordStream;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Process;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -203,7 +204,10 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
                 environmentRule
                     .events()
                     .filter(r -> Records.isRecordOfType(r, valueType))
-                    .map(e -> (Record<T>) CopiedRecords.createCopiedRecord(e))
+                    .map(
+                        e ->
+                            (Record<T>)
+                                CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, e))
                     .filter(matcher)
                     .findFirst())
         .until(Optional::isPresent)
@@ -217,7 +221,10 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
                 environmentRule
                     .events()
                     .filter(r -> Records.isRecordOfType(r, valueType))
-                    .map(e -> (Record<T>) CopiedRecords.createCopiedRecord(e))
+                    .map(
+                        e ->
+                            (Record<T>)
+                                CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, e))
                     .filter(e -> matcher.apply(e))
                     .findFirst())
         .until(Optional::isPresent)
