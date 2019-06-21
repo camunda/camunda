@@ -18,7 +18,6 @@ package io.zeebe.test;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -195,11 +194,7 @@ public class WorkflowInstanceAssert
 
   private static Predicate<Record<WorkflowInstanceRecordValue>> intent(
       List<WorkflowInstanceIntent> intents) {
-    return record -> {
-      final Intent intent = record.getMetadata().getIntent();
-
-      return intents.contains(intent);
-    };
+    return record -> intents.contains(record.getIntent());
   }
 
   private static Predicate<Record<WorkflowInstanceRecordValue>> elementId(List<String> elementIds) {

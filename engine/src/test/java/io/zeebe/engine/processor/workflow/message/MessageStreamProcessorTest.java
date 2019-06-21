@@ -90,10 +90,8 @@ public class MessageStreamProcessorTest {
     // then
     final Record<MessageSubscriptionRecord> rejection = awaitAndGetFirstSubscriptionRejection();
 
-    Assertions.assertThat(rejection.getMetadata().getIntent())
-        .isEqualTo(MessageSubscriptionIntent.OPEN);
-    Assertions.assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.INVALID_STATE);
+    Assertions.assertThat(rejection.getIntent()).isEqualTo(MessageSubscriptionIntent.OPEN);
+    Assertions.assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
 
     verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
         .openWorkflowInstanceSubscription(
@@ -187,10 +185,8 @@ public class MessageStreamProcessorTest {
     // then
     final Record<MessageSubscriptionRecord> rejection = awaitAndGetFirstSubscriptionRejection();
 
-    Assertions.assertThat(rejection.getMetadata().getIntent())
-        .isEqualTo(MessageSubscriptionIntent.CORRELATE);
-    Assertions.assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.NOT_FOUND);
+    Assertions.assertThat(rejection.getIntent()).isEqualTo(MessageSubscriptionIntent.CORRELATE);
+    Assertions.assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -213,10 +209,8 @@ public class MessageStreamProcessorTest {
     // then
     final Record<MessageSubscriptionRecord> rejection = awaitAndGetFirstSubscriptionRejection();
 
-    Assertions.assertThat(rejection.getMetadata().getIntent())
-        .isEqualTo(MessageSubscriptionIntent.CLOSE);
-    Assertions.assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.NOT_FOUND);
+    Assertions.assertThat(rejection.getIntent()).isEqualTo(MessageSubscriptionIntent.CLOSE);
+    Assertions.assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
 
     // cannot verify messageName buffer since it is a view around another buffer which is changed
     // by the time we perform the verification.

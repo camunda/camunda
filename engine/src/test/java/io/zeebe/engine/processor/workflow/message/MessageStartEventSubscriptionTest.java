@@ -95,7 +95,7 @@ public class MessageStartEventSubscriptionTest {
         RecordingExporter.messageStartEventSubscriptionRecords().limit(6).asList();
 
     final List<Intent> intents =
-        subscriptions.stream().map(s -> s.getMetadata().getIntent()).collect(Collectors.toList());
+        subscriptions.stream().map(Record::getIntent).collect(Collectors.toList());
 
     assertThat(intents)
         .containsExactly(

@@ -324,7 +324,7 @@ public final class ProcessingStateMachine {
         String.format(PROCESSING_ERROR_MESSAGE, typedEvent, exception.getMessage());
     LOG.error(errorMessage, exception);
 
-    if (typedEvent.getMetadata().getRecordType() == RecordType.COMMAND) {
+    if (typedEvent.getRecordType() == RecordType.COMMAND) {
       logStreamWriter.appendRejection(typedEvent, RejectionType.PROCESSING_ERROR, errorMessage);
       responseWriter.writeRejectionOnCommand(
           typedEvent, RejectionType.PROCESSING_ERROR, errorMessage);

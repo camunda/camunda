@@ -27,7 +27,6 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
@@ -80,9 +79,7 @@ public class FailJobTest {
             .fail();
 
     // then
-    Assertions.assertThat(failRecord.getMetadata())
-        .hasRecordType(RecordType.EVENT)
-        .hasIntent(FAILED);
+    Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
     Assertions.assertThat(failRecord.getValue())
         .hasWorker(job.getWorker())
         .hasType(job.getType())
@@ -111,9 +108,7 @@ public class FailJobTest {
             .fail();
 
     // then
-    Assertions.assertThat(failedRecord.getMetadata())
-        .hasRecordType(RecordType.EVENT)
-        .hasIntent(FAILED);
+    Assertions.assertThat(failedRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
     Assertions.assertThat(failedRecord.getValue())
         .hasWorker(job.getWorker())
         .hasType(job.getType())
@@ -143,14 +138,12 @@ public class FailJobTest {
     ENGINE.jobs().withType(jobType).activate();
 
     // then
-    Assertions.assertThat(failRecord.getMetadata())
-        .hasRecordType(RecordType.EVENT)
-        .hasIntent(FAILED);
+    Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
 
     // and the job is published again
     final Record republishedEvent =
         RecordingExporter.jobRecords()
-            .skipUntil(j -> j.getMetadata().getIntent() == FAILED)
+            .skipUntil(j -> j.getIntent() == FAILED)
             .withIntent(ACTIVATED)
             .getFirst();
 
@@ -161,9 +154,7 @@ public class FailJobTest {
     final List<Record> jobEvents =
         RecordingExporter.jobRecords().limit(6).collect(Collectors.toList());
     assertThat(jobEvents)
-        .extracting(Record::getMetadata)
-        .extracting(
-            RecordMetadata::getRecordType, RecordMetadata::getValueType, RecordMetadata::getIntent)
+        .extracting(Record::getRecordType, Record::getValueType, Record::getIntent)
         .containsExactly(
             tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.CREATE),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.CREATED),
@@ -176,9 +167,7 @@ public class FailJobTest {
         RecordingExporter.jobBatchRecords().limit(4).collect(Collectors.toList());
 
     assertThat(jobActivateCommands)
-        .extracting(Record::getMetadata)
-        .extracting(
-            RecordMetadata::getRecordType, RecordMetadata::getValueType, RecordMetadata::getIntent)
+        .extracting(Record::getRecordType, Record::getValueType, Record::getIntent)
         .containsExactly(
             tuple(RecordType.COMMAND, ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE),
             tuple(RecordType.EVENT, ValueType.JOB_BATCH, JobBatchIntent.ACTIVATED),
@@ -196,7 +185,7 @@ public class FailJobTest {
         ENGINE.job().withKey(key).withRetries(3).expectRejection().fail();
 
     // then
-    Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -212,8 +201,8 @@ public class FailJobTest {
         ENGINE.job().withKey(jobKey).withRetries(3).expectRejection().fail();
 
     // then
-    Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.INVALID_STATE);
-    assertThat(jobRecord.getMetadata().getRejectionReason()).contains("is marked as failed");
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(jobRecord.getRejectionReason()).contains("is marked as failed");
   }
 
   @Test
@@ -226,8 +215,8 @@ public class FailJobTest {
         ENGINE.job().withKey(job.getKey()).withRetries(3).expectRejection().fail();
 
     // then
-    Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.INVALID_STATE);
-    assertThat(jobRecord.getMetadata().getRejectionReason()).contains("must be activated first");
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(jobRecord.getRejectionReason()).contains("must be activated first");
   }
 
   @Test
@@ -249,6 +238,6 @@ public class FailJobTest {
         ENGINE.job().withKey(jobKey).withRetries(3).expectRejection().fail();
 
     // then
-    Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 }

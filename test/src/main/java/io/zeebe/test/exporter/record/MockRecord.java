@@ -16,6 +16,10 @@
 package io.zeebe.test.exporter.record;
 
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.Intent;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -80,12 +84,41 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
     return timestamp;
   }
 
+  @Override
+  public Intent getIntent() {
+    return metadata.getIntent();
+  }
+
+  @Override
+  public int getPartitionId() {
+    return metadata.getPartitionId();
+  }
+
+  @Override
+  public RecordType getRecordType() {
+    return metadata.getRecordType();
+  }
+
+  @Override
+  public RejectionType getRejectionType() {
+    return metadata.getRejectionType();
+  }
+
+  @Override
+  public String getRejectionReason() {
+    return metadata.getRejectionReason();
+  }
+
+  @Override
+  public ValueType getValueType() {
+    return metadata.getValueType();
+  }
+
   public MockRecord setTimestamp(Instant timestamp) {
     this.timestamp = timestamp;
     return this;
   }
 
-  @Override
   public MockRecordMetadata getMetadata() {
     return metadata;
   }

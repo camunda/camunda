@@ -17,7 +17,6 @@ package io.zeebe.protocol.impl.record;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.record.MessageHeaderDecoder;
 import io.zeebe.protocol.record.MessageHeaderEncoder;
 import io.zeebe.protocol.record.RecordMetadataDecoder;
@@ -34,8 +33,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class RecordMetadata
-    implements BufferWriter, BufferReader, io.zeebe.protocol.record.RecordMetadata {
+public class RecordMetadata implements BufferWriter, BufferReader {
   public static final int BLOCK_LENGTH =
       MessageHeaderEncoder.ENCODED_LENGTH + RecordMetadataEncoder.BLOCK_LENGTH;
 
@@ -90,7 +88,6 @@ public class RecordMetadata
   }
 
   @Override
-  @JsonIgnore
   public int getLength() {
     return BLOCK_LENGTH
         + RecordMetadataEncoder.rejectionReasonHeaderLength()
@@ -130,7 +127,6 @@ public class RecordMetadata
     }
   }
 
-  @JsonIgnore
   public long getRequestId() {
     return requestId;
   }
@@ -140,7 +136,6 @@ public class RecordMetadata
     return this;
   }
 
-  @JsonIgnore
   public int getRequestStreamId() {
     return requestStreamId;
   }
@@ -155,7 +150,6 @@ public class RecordMetadata
     return this;
   }
 
-  @JsonIgnore
   public int getProtocolVersion() {
     return protocolVersion;
   }
@@ -218,19 +212,12 @@ public class RecordMetadata
     return this;
   }
 
-  @Override
   public int getPartitionId() {
     return partitionId;
   }
 
-  @Override
   public String getRejectionReason() {
     return BufferUtil.bufferAsString(rejectionReason);
-  }
-
-  @Override
-  public String toJson() {
-    return MsgPackConverter.convertJsonSerializableObjectToJson(this);
   }
 
   public RecordMetadata reset() {

@@ -24,7 +24,6 @@ import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordMetadata;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
@@ -243,8 +242,7 @@ public class ExclusiveGatewayTest {
             .asList();
 
     assertThat(workflowEvents)
-        .extracting(Record::getMetadata)
-        .extracting(RecordMetadata::getIntent)
+        .extracting(Record::getIntent)
         .containsExactly(
             WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
@@ -315,7 +313,7 @@ public class ExclusiveGatewayTest {
             .collect(Collectors.toList());
 
     assertThat(completedEvents)
-        .extracting(r -> r.getMetadata().getIntent())
+        .extracting(Record::getIntent)
         .containsExactly(
             WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,

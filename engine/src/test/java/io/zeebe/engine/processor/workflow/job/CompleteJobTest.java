@@ -27,7 +27,6 @@ import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.JobIntent;
@@ -75,11 +74,11 @@ public class CompleteJobTest {
             .complete();
 
     // then
-    final RecordMetadata metadata = jobCompletedRecord.getMetadata();
     final JobRecordValue recordValue = jobCompletedRecord.getValue();
 
-    assertThat(metadata.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(metadata.getIntent()).isEqualTo(JobIntent.COMPLETED);
+    Assertions.assertThat(jobCompletedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.COMPLETED);
 
     Assertions.assertThat(recordValue)
         .hasWorker(batchRecord.getValue().getWorker())
@@ -103,7 +102,7 @@ public class CompleteJobTest {
             .complete();
 
     // then
-    Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -121,7 +120,7 @@ public class CompleteJobTest {
             .complete();
 
     // then
-    Assertions.assertThat(completedRecord.getMetadata())
+    Assertions.assertThat(completedRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(JobIntent.COMPLETED);
     assertThat(completedRecord.getValue().getVariables())
@@ -143,7 +142,7 @@ public class CompleteJobTest {
             .complete();
 
     // then
-    Assertions.assertThat(completedRecord.getMetadata())
+    Assertions.assertThat(completedRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(JobIntent.COMPLETED);
     assertThat(MsgPackConverter.convertToMsgPack(completedRecord.getValue().getVariables()))
@@ -165,7 +164,7 @@ public class CompleteJobTest {
             .complete();
 
     // then
-    Assertions.assertThat(completedRecord.getMetadata())
+    Assertions.assertThat(completedRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(JobIntent.COMPLETED);
     assertThat(MsgPackConverter.convertToMsgPack(completedRecord.getValue().getVariables()))
@@ -190,7 +189,7 @@ public class CompleteJobTest {
             .complete();
 
     // then
-    Assertions.assertThat(completedRecord.getMetadata())
+    Assertions.assertThat(completedRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(JobIntent.COMPLETED);
     MsgPackUtil.assertEquality(
@@ -239,7 +238,7 @@ public class CompleteJobTest {
         ENGINE.job().withKey(jobKey).withVariables(variables).expectRejection().complete();
 
     // then
-    Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -262,6 +261,6 @@ public class CompleteJobTest {
             .complete();
 
     // then
-    Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.INVALID_STATE);
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.INVALID_STATE);
   }
 }

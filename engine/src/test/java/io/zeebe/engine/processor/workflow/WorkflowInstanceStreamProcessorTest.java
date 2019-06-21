@@ -36,6 +36,7 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
@@ -48,7 +49,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
-import org.assertj.core.api.Assertions;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -134,10 +134,9 @@ public class WorkflowInstanceStreamProcessorTest {
     final Record<WorkflowInstanceRecord> rejection =
         envRule.events().onlyWorkflowInstanceRecords().onlyRejections().findFirst().get();
 
-    Assertions.assertThat(rejection.getMetadata().getIntent())
-        .isEqualTo(WorkflowInstanceIntent.CANCEL);
-    assertThat(rejection.getMetadata().getRejectionReason())
-        .isEqualTo(
+    Assertions.assertThat(rejection)
+        .hasIntent(WorkflowInstanceIntent.CANCEL)
+        .hasRejectionReason(
             "Expected to cancel a workflow instance with key '"
                 + createdEvent.getKey()
                 + "', but no such workflow was found");
@@ -266,10 +265,8 @@ public class WorkflowInstanceStreamProcessorTest {
     final Record<WorkflowInstanceSubscriptionRecord> rejection =
         streamProcessorRule.awaitAndGetFirstSubscriptionRejection();
 
-    Assertions.assertThat(rejection.getMetadata().getIntent())
-        .isEqualTo(WorkflowInstanceSubscriptionIntent.OPEN);
-    Assertions.assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getIntent()).isEqualTo(WorkflowInstanceSubscriptionIntent.OPEN);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
   }
 
   @Test
@@ -302,10 +299,8 @@ public class WorkflowInstanceStreamProcessorTest {
     final Record<WorkflowInstanceSubscriptionRecord> rejection =
         streamProcessorRule.awaitAndGetFirstSubscriptionRejection();
 
-    Assertions.assertThat(rejection.getMetadata().getIntent())
-        .isEqualTo(WorkflowInstanceSubscriptionIntent.CORRELATE);
-    Assertions.assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejection.getIntent()).isEqualTo(WorkflowInstanceSubscriptionIntent.CORRELATE);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
 
     final ArgumentCaptor<DirectBuffer> captor = ArgumentCaptor.forClass(DirectBuffer.class);
 
@@ -363,12 +358,10 @@ public class WorkflowInstanceStreamProcessorTest {
     final Record<WorkflowInstanceSubscriptionRecord> rejection =
         streamProcessorRule.awaitAndGetFirstSubscriptionRejection();
 
-    Assertions.assertThat(rejection.getMetadata().getIntent())
-        .isEqualTo(WorkflowInstanceSubscriptionIntent.CORRELATE);
+    assertThat(rejection.getIntent()).isEqualTo(WorkflowInstanceSubscriptionIntent.CORRELATE);
     // since we mock the message partition, we never get the acknowledged CLOSE command, so our
     // subscription remains in closing state
-    Assertions.assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
   }
 
   @Test
@@ -436,10 +429,8 @@ public class WorkflowInstanceStreamProcessorTest {
     final Record<WorkflowInstanceSubscriptionRecord> rejection =
         streamProcessorRule.awaitAndGetFirstSubscriptionRejection();
 
-    Assertions.assertThat(rejection.getMetadata().getIntent())
-        .isEqualTo(WorkflowInstanceSubscriptionIntent.CLOSE);
-    Assertions.assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejection.getIntent()).isEqualTo(WorkflowInstanceSubscriptionIntent.CLOSE);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -459,16 +450,15 @@ public class WorkflowInstanceStreamProcessorTest {
     streamProcessorRule.awaitElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     // then
-    Assertions.assertThat(envRule.events().onlyTimerRecords().collect(Collectors.toList()))
-        .extracting(Record::getMetadata)
-        .extracting(m -> tuple(m.getRecordType(), m.getIntent()))
+    assertThat(envRule.events().onlyTimerRecords().collect(Collectors.toList()))
+        .extracting(r -> tuple(r.getRecordType(), r.getIntent()))
         .containsExactly(
             tuple(RecordType.COMMAND, TimerIntent.CREATE),
             tuple(RecordType.EVENT, TimerIntent.CREATED),
             tuple(RecordType.COMMAND, TimerIntent.TRIGGER),
             tuple(RecordType.COMMAND_REJECTION, TimerIntent.TRIGGER));
     // ensures timer1 node never exists as far as execution goes
-    Assertions.assertThat(
+    assertThat(
             envRule
                 .events()
                 .onlyWorkflowInstanceRecords()
@@ -507,7 +497,7 @@ public class WorkflowInstanceStreamProcessorTest {
     streamProcessorRule.awaitElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     // then
-    Assertions.assertThat(
+    assertThat(
             envRule
                 .events()
                 .onlyWorkflowInstanceRecords()

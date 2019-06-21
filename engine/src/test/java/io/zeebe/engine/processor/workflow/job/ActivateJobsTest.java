@@ -91,7 +91,7 @@ public class ActivateJobsTest {
         ENGINE.jobs().withType(taskType).withMaxJobsToActivate(0).expectRejection().activate();
 
     // then
-    Assertions.assertThat(batchRecord.getMetadata())
+    Assertions.assertThat(batchRecord)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
             "Expected to activate job batch with max jobs to activate to be greater than zero, but it was '0'");
@@ -109,7 +109,7 @@ public class ActivateJobsTest {
             .activate();
 
     // then
-    Assertions.assertThat(batchRecord.getMetadata())
+    Assertions.assertThat(batchRecord)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
             "Expected to activate job batch with timeout to be greater than zero, but it was '0'");
@@ -122,7 +122,7 @@ public class ActivateJobsTest {
         ENGINE.jobs().withType("").expectRejection().activate();
 
     // then
-    Assertions.assertThat(batchRecord.getMetadata())
+    Assertions.assertThat(batchRecord)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
             "Expected to activate job batch with type to be present, but it was blank");
@@ -135,7 +135,7 @@ public class ActivateJobsTest {
         ENGINE.jobs().withType(taskType).byWorker("").expectRejection().activate();
 
     // then
-    Assertions.assertThat(batchRecord.getMetadata())
+    Assertions.assertThat(batchRecord)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
             "Expected to activate job batch with worker to be present, but it was blank");
@@ -171,7 +171,7 @@ public class ActivateJobsTest {
     final List<Long> jobKeys = batchRecord.getValue().getJobKeys();
 
     // then
-    assertThat(batchRecord.getMetadata().getIntent()).isEqualTo(JobBatchIntent.ACTIVATED);
+    assertThat(batchRecord.getIntent()).isEqualTo(JobBatchIntent.ACTIVATED);
 
     assertThat(jobKeys).hasSize(1);
     assertThat(jobs).hasSize(1);

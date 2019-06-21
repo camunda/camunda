@@ -20,6 +20,10 @@ package io.zeebe.engine.util;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.Intent;
 import java.time.Instant;
 
 public class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecord<T> {
@@ -45,11 +49,6 @@ public class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecor
     this.key = key;
   }
 
-  @Override
-  public RecordMetadata getMetadata() {
-    return metadata;
-  }
-
   public void setMetadata(RecordMetadata metadata) {
     this.metadata = metadata;
   }
@@ -57,6 +56,16 @@ public class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecor
   @Override
   public T getValue() {
     return value;
+  }
+
+  @Override
+  public int getRequestStreamId() {
+    return metadata.getRequestStreamId();
+  }
+
+  @Override
+  public long getRequestId() {
+    return metadata.getRequestId();
   }
 
   public void setValue(T value) {
@@ -76,6 +85,36 @@ public class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecor
   @Override
   public Instant getTimestamp() {
     throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
+  public Intent getIntent() {
+    return metadata.getIntent();
+  }
+
+  @Override
+  public int getPartitionId() {
+    return metadata.getPartitionId();
+  }
+
+  @Override
+  public RecordType getRecordType() {
+    return metadata.getRecordType();
+  }
+
+  @Override
+  public RejectionType getRejectionType() {
+    return metadata.getRejectionType();
+  }
+
+  @Override
+  public String getRejectionReason() {
+    return metadata.getRejectionReason();
+  }
+
+  @Override
+  public ValueType getValueType() {
+    return metadata.getValueType();
   }
 
   @Override

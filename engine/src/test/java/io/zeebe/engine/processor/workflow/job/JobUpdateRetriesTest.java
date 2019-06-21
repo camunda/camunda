@@ -64,7 +64,7 @@ public class JobUpdateRetriesTest {
         ENGINE.job().withKey(jobKey).withRetries(NEW_RETRIES).updateRetries();
 
     // then
-    Assertions.assertThat(updatedRecord.getMetadata())
+    Assertions.assertThat(updatedRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(JobIntent.RETRIES_UPDATED);
     assertThat(updatedRecord.getKey()).isEqualTo(jobKey);
@@ -83,7 +83,7 @@ public class JobUpdateRetriesTest {
         ENGINE.job().withKey(123).withRetries(NEW_RETRIES).expectRejection().updateRetries();
 
     // then
-    Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -100,7 +100,7 @@ public class JobUpdateRetriesTest {
         ENGINE.job().withKey(jobKey).withRetries(NEW_RETRIES).expectRejection().updateRetries();
 
     // then
-    Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -115,8 +115,8 @@ public class JobUpdateRetriesTest {
         ENGINE.job().withKey(jobKey).withRetries(NEW_RETRIES).updateRetries();
 
     // then
-    assertThat(response.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getMetadata().getIntent()).isEqualTo(JobIntent.RETRIES_UPDATED);
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(JobIntent.RETRIES_UPDATED);
     assertThat(response.getKey()).isEqualTo(jobKey);
     assertThat(response.getValue().getRetries()).isEqualTo(NEW_RETRIES);
   }
@@ -131,8 +131,8 @@ public class JobUpdateRetriesTest {
         ENGINE.job().withKey(jobKey).withRetries(NEW_RETRIES).updateRetries();
 
     // then
-    assertThat(response.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getMetadata().getIntent()).isEqualTo(JobIntent.RETRIES_UPDATED);
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(JobIntent.RETRIES_UPDATED);
     assertThat(response.getKey()).isEqualTo(jobKey);
     assertThat(response.getValue().getRetries()).isEqualTo(NEW_RETRIES);
   }
@@ -151,7 +151,7 @@ public class JobUpdateRetriesTest {
         ENGINE.job().withKey(jobKey).withRetries(0).expectRejection().updateRetries();
 
     // then
-    Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.INVALID_ARGUMENT);
   }
 
   @Test
@@ -168,6 +168,6 @@ public class JobUpdateRetriesTest {
         ENGINE.job().withKey(jobKey).withRetries(-1).expectRejection().updateRetries();
 
     // then
-    Assertions.assertThat(jobRecord.getMetadata()).hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.INVALID_ARGUMENT);
   }
 }

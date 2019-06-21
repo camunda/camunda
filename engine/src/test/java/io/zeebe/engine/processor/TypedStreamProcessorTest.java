@@ -195,8 +195,7 @@ public class TypedStreamProcessorTest {
             .getFirst();
 
     assertThat(deploymentRejection.getKey()).isEqualTo(failingKey);
-    assertThat(deploymentRejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.PROCESSING_ERROR);
+    assertThat(deploymentRejection.getRejectionType()).isEqualTo(RejectionType.PROCESSING_ERROR);
   }
 
   protected DeploymentRecord deployment(final String name, final ResourceType resourceType) {

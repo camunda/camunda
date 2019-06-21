@@ -144,11 +144,11 @@ public class EventbasedGatewayTest {
                 .withWorkflowInstanceKey(workflowInstanceKey)
                 .skipUntil(
                     r ->
-                        r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED
+                        r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED
                             && r.getValue().getBpmnElementType()
                                 == BpmnElementType.EVENT_BASED_GATEWAY)
                 .limitToWorkflowInstanceCompleted())
-        .extracting(r -> tuple(r.getValue().getElementId(), r.getMetadata().getIntent()))
+        .extracting(r -> tuple(r.getValue().getElementId(), r.getIntent()))
         .containsExactly(
             tuple("gateway", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
             tuple("gateway", WorkflowInstanceIntent.EVENT_OCCURRED),
@@ -255,7 +255,7 @@ public class EventbasedGatewayTest {
             .asList();
 
     assertThat(records)
-        .extracting(r -> r.getMetadata().getIntent(), r -> r.getValue().getElementId())
+        .extracting(Record::getIntent, r -> r.getValue().getElementId())
         .containsSubsequence(
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "timer-1"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "to-end1"),
@@ -292,8 +292,7 @@ public class EventbasedGatewayTest {
                 .withHandlerNodeId(timers.get(1))
                 .withWorkflowInstanceKey(workflowInstanceKey)
                 .onlyCommandRejections()
-                .getFirst()
-                .getMetadata())
+                .getFirst())
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRecordType(RecordType.COMMAND_REJECTION);
   }
@@ -323,7 +322,7 @@ public class EventbasedGatewayTest {
             .asList();
 
     assertThat(records)
-        .extracting(r -> r.getMetadata().getIntent(), r -> r.getValue().getElementId())
+        .extracting(r -> r.getIntent(), r -> r.getValue().getElementId())
         .containsSubsequence(
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "message-1"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "to-end1"),
@@ -463,8 +462,7 @@ public class EventbasedGatewayTest {
                     WorkflowInstanceSubscriptionIntent.CORRELATE)
                 .withMessageName(messageNames.get(1))
                 .onlyCommandRejections()
-                .getFirst()
-                .getMetadata())
+                .getFirst())
         .hasRecordType(RecordType.COMMAND_REJECTION)
         .hasRejectionType(RejectionType.INVALID_STATE);
   }

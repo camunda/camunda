@@ -382,7 +382,7 @@ public class MappingIncidentTest {
         RecordingExporter.incidentRecords()
             .onlyEvents()
             .withWorkflowInstanceKey(workflowInstanceKey)
-            .skipUntil(e -> e.getMetadata().getIntent() == RESOLVED)
+            .skipUntil(e -> e.getIntent() == RESOLVED)
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
 
@@ -422,7 +422,7 @@ public class MappingIncidentTest {
         RecordingExporter.incidentRecords()
             .onlyEvents()
             .withWorkflowInstanceKey(workflowInstanceKey)
-            .skipUntil(e -> e.getMetadata().getIntent() == RESOLVED)
+            .skipUntil(e -> e.getIntent() == RESOLVED)
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
 

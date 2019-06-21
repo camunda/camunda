@@ -71,7 +71,7 @@ public class WorkflowInstanceCreationRecordStream
       long workflowInstanceKey) {
     return limit(
         r ->
-            r.getMetadata().getIntent() == WorkflowInstanceCreationIntent.CREATED
+            r.getIntent() == WorkflowInstanceCreationIntent.CREATED
                 && r.getValue().getWorkflowInstanceKey() == workflowInstanceKey);
   }
 }

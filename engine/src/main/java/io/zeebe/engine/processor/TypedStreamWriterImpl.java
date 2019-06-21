@@ -58,7 +58,7 @@ public class TypedStreamWriterImpl extends TypedCommandWriterImpl implements Typ
     appendRecord(
         command.getKey(),
         RecordType.COMMAND_REJECTION,
-        command.getMetadata().getIntent(),
+        command.getIntent(),
         rejectionType,
         reason,
         command.getValue(),
@@ -74,7 +74,7 @@ public class TypedStreamWriterImpl extends TypedCommandWriterImpl implements Typ
     appendRecord(
         command.getKey(),
         RecordType.COMMAND_REJECTION,
-        command.getMetadata().getIntent(),
+        command.getIntent(),
         rejectionType,
         reason,
         command.getValue(),

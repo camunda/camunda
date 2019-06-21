@@ -20,6 +20,10 @@ package io.zeebe.engine.processor;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.Intent;
 import java.time.Instant;
 
 @SuppressWarnings({"rawtypes"})
@@ -48,18 +52,53 @@ public class TypedEventImpl implements TypedRecord {
   }
 
   @Override
-  public RecordMetadata getMetadata() {
-    return metadata;
-  }
-
-  @Override
   public UnifiedRecordValue getValue() {
     return value;
   }
 
   @Override
+  public int getRequestStreamId() {
+    return metadata.getRequestStreamId();
+  }
+
+  @Override
+  public long getRequestId() {
+    return metadata.getRequestId();
+  }
+
+  @Override
   public String toString() {
     return "TypedEventImpl{" + "metadata=" + metadata + ", value=" + value + '}';
+  }
+
+  @Override
+  public Intent getIntent() {
+    return metadata.getIntent();
+  }
+
+  @Override
+  public int getPartitionId() {
+    return metadata.getPartitionId();
+  }
+
+  @Override
+  public RecordType getRecordType() {
+    return metadata.getRecordType();
+  }
+
+  @Override
+  public RejectionType getRejectionType() {
+    return metadata.getRejectionType();
+  }
+
+  @Override
+  public String getRejectionReason() {
+    return metadata.getRejectionReason();
+  }
+
+  @Override
+  public ValueType getValueType() {
+    return metadata.getValueType();
   }
 
   @Override

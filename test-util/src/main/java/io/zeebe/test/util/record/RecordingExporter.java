@@ -96,7 +96,7 @@ public class RecordingExporter implements Exporter {
     final Spliterator<Record<?>> spliterator =
         Spliterators.spliteratorUnknownSize(new RecordIterator(), Spliterator.ORDERED);
     return StreamSupport.stream(spliterator, false)
-        .filter(r -> r.getMetadata().getValueType() == valueType)
+        .filter(r -> r.getValueType() == valueType)
         .map(r -> (Record<T>) r);
   }
 

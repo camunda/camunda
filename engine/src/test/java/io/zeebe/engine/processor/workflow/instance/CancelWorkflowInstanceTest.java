@@ -124,16 +124,13 @@ public class CancelWorkflowInstanceTest {
     final List<Record<WorkflowInstanceRecordValue>> workflowEvents =
         RecordingExporter.workflowInstanceRecords()
             .withWorkflowInstanceKey(workflowInstanceKey)
-            .skipUntil(r -> r.getMetadata().getIntent() == CANCEL)
-            .limit(
-                r ->
-                    r.getKey() == workflowInstanceKey
-                        && r.getMetadata().getIntent() == ELEMENT_TERMINATED)
+            .skipUntil(r -> r.getIntent() == CANCEL)
+            .limit(r -> r.getKey() == workflowInstanceKey && r.getIntent() == ELEMENT_TERMINATED)
             .asList();
 
     assertThat(workflowEvents)
         .hasSize(5)
-        .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
+        .extracting(e -> e.getValue().getElementId(), e -> e.getIntent())
         .containsSequence(
             tuple("", CANCEL),
             tuple("WORKFLOW", WorkflowInstanceIntent.ELEMENT_TERMINATING),
@@ -163,8 +160,8 @@ public class CancelWorkflowInstanceTest {
             .cancel();
 
     // then
-    assertThat(rejectedCancel.getMetadata().getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
-    assertThat(rejectedCancel.getMetadata().getRejectionReason())
+    assertThat(rejectedCancel.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejectedCancel.getRejectionReason())
         .isEqualTo(
             "Expected to cancel a workflow instance with key '"
                 + task.getKey()
@@ -190,13 +187,13 @@ public class CancelWorkflowInstanceTest {
     final List<Record<WorkflowInstanceRecordValue>> workflowEvents =
         RecordingExporter.workflowInstanceRecords()
             .withWorkflowInstanceKey(workflowInstanceKey)
-            .skipUntil(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.CANCEL)
+            .skipUntil(r -> r.getIntent() == WorkflowInstanceIntent.CANCEL)
             .limitToWorkflowInstanceTerminated()
             .asList();
 
     assertThat(workflowEvents)
         .hasSize(7)
-        .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
+        .extracting(e -> e.getValue().getElementId(), e -> e.getIntent())
         .containsSequence(
             tuple("", WorkflowInstanceIntent.CANCEL),
             tuple("SUB_PROCESS_WORKFLOW", WorkflowInstanceIntent.ELEMENT_TERMINATING),
@@ -257,9 +254,9 @@ public class CancelWorkflowInstanceTest {
     final List<Record<WorkflowInstanceRecordValue>> terminatedElements =
         RecordingExporter.workflowInstanceRecords()
             .withWorkflowInstanceKey(workflowInstanceKey)
-            .skipUntil(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.CANCEL)
+            .skipUntil(r -> r.getIntent() == WorkflowInstanceIntent.CANCEL)
             .limitToWorkflowInstanceTerminated()
-            .filter(r -> r.getMetadata().getIntent() == ELEMENT_TERMINATED)
+            .filter(r -> r.getIntent() == ELEMENT_TERMINATED)
             .asList();
 
     assertThat(terminatedElements).hasSize(3);
@@ -367,10 +364,9 @@ public class CancelWorkflowInstanceTest {
         ENGINE.workflowInstance().withInstanceKey(-1).onPartition(1).expectRejection().cancel();
 
     // then
-    assertThat(rejectedCancel.getMetadata().getRecordType())
-        .isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(rejectedCancel.getMetadata().getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
-    assertThat(rejectedCancel.getMetadata().getRejectionReason())
+    assertThat(rejectedCancel.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejectedCancel.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejectedCancel.getRejectionReason())
         .isEqualTo(
             "Expected to cancel a workflow instance with key '-1', but no such workflow was found");
 
@@ -410,10 +406,9 @@ public class CancelWorkflowInstanceTest {
         ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).expectRejection().cancel();
 
     // then
-    assertThat(rejectedCancel.getMetadata().getRecordType())
-        .isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(rejectedCancel.getMetadata().getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
-    assertThat(rejectedCancel.getMetadata().getRejectionReason())
+    assertThat(rejectedCancel.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejectedCancel.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejectedCancel.getRejectionReason())
         .isEqualTo(
             "Expected to cancel a workflow instance with key '"
                 + workflowInstanceKey
@@ -438,10 +433,9 @@ public class CancelWorkflowInstanceTest {
         ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).expectRejection().cancel();
 
     // then
-    assertThat(rejectedCancel.getMetadata().getRecordType())
-        .isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(rejectedCancel.getMetadata().getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
-    assertThat(rejectedCancel.getMetadata().getRejectionReason())
+    assertThat(rejectedCancel.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejectedCancel.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejectedCancel.getRejectionReason())
         .isEqualTo(
             "Expected to cancel a workflow instance with key '"
                 + workflowInstanceKey

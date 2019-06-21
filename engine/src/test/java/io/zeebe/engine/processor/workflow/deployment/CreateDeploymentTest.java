@@ -26,9 +26,9 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.zeebe.model.bpmn.instance.Message;
+import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
@@ -42,7 +42,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -76,12 +75,12 @@ public class CreateDeploymentTest {
         ENGINE.deployment().withXmlResource(WORKFLOW).deploy();
 
     // then
-    Assertions.assertThat(deployment.getKey()).isGreaterThanOrEqualTo(0L);
+    assertThat(deployment.getKey()).isGreaterThanOrEqualTo(0L);
 
-    final RecordMetadata metadata = deployment.getMetadata();
-    Assertions.assertThat(metadata.getPartitionId()).isEqualTo(DEPLOYMENT_PARTITION);
-    Assertions.assertThat(metadata.getRecordType()).isEqualTo(RecordType.EVENT);
-    Assertions.assertThat(metadata.getIntent()).isEqualTo(DeploymentIntent.DISTRIBUTED);
+    Assertions.assertThat(deployment)
+        .hasPartitionId(DEPLOYMENT_PARTITION)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(DeploymentIntent.DISTRIBUTED);
   }
 
   @Test
@@ -170,7 +169,7 @@ public class CreateDeploymentTest {
         ENGINE.deployment().withXmlResource(process).deploy();
 
     // then
-    assertThat(deployment.getMetadata().getIntent()).isEqualTo(DeploymentIntent.DISTRIBUTED);
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.DISTRIBUTED);
   }
 
   @Test
@@ -185,7 +184,7 @@ public class CreateDeploymentTest {
         ENGINE.deployment().withXmlResource(process).deploy();
 
     // then
-    assertThat(deployment.getMetadata().getIntent()).isEqualTo(DeploymentIntent.DISTRIBUTED);
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.DISTRIBUTED);
   }
 
   @Test
@@ -202,7 +201,7 @@ public class CreateDeploymentTest {
         ENGINE.deployment().withXmlResource(process).deploy();
 
     // then
-    assertThat(deployment.getMetadata().getIntent()).isEqualTo(DeploymentIntent.DISTRIBUTED);
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.DISTRIBUTED);
   }
 
   @Test
@@ -216,7 +215,7 @@ public class CreateDeploymentTest {
         ENGINE.deployment().withXmlResource(process).expectRejection().deploy();
 
     // then
-    Assertions.assertThat(rejectedDeployment.getMetadata().getRecordType())
+    Assertions.assertThat(rejectedDeployment.getRecordType())
         .isEqualTo(RecordType.COMMAND_REJECTION);
   }
 
@@ -231,14 +230,12 @@ public class CreateDeploymentTest {
         ENGINE.deployment().withXmlResource(resource).expectRejection().deploy();
 
     // then
-    Assertions.assertThat(rejectedDeployment.getKey())
-        .isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-
-    final RecordMetadata metadata = rejectedDeployment.getMetadata();
-    Assertions.assertThat(metadata.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    Assertions.assertThat(metadata.getIntent()).isEqualTo(DeploymentIntent.CREATE);
-    Assertions.assertThat(metadata.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    Assertions.assertThat(metadata.getRejectionReason())
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
         .contains("ERROR: Must have at least one start event");
   }
 
@@ -254,14 +251,12 @@ public class CreateDeploymentTest {
         ENGINE.deployment().withXmlResource(resource).expectRejection().deploy();
 
     // then
-    Assertions.assertThat(rejectedDeployment.getKey())
-        .isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-
-    final RecordMetadata metadata = rejectedDeployment.getMetadata();
-    Assertions.assertThat(metadata.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    Assertions.assertThat(metadata.getIntent()).isEqualTo(DeploymentIntent.CREATE);
-    Assertions.assertThat(metadata.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    Assertions.assertThat(metadata.getRejectionReason())
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
         .contains("Element: flow2 > conditionExpression")
         .contains("ERROR: Condition expression is invalid");
   }
@@ -283,13 +278,11 @@ public class CreateDeploymentTest {
             .deploy();
 
     // then
-    Assertions.assertThat(rejectedDeployment.getKey())
-        .isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-
-    final RecordMetadata metadata = rejectedDeployment.getMetadata();
-    Assertions.assertThat(metadata.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    Assertions.assertThat(metadata.getIntent()).isEqualTo(DeploymentIntent.CREATE);
-    Assertions.assertThat(metadata.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
   }
 
   @Test
@@ -299,13 +292,11 @@ public class CreateDeploymentTest {
         ENGINE.deployment().expectRejection().deploy();
 
     // then
-    Assertions.assertThat(rejectedDeployment.getKey())
-        .isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-
-    final RecordMetadata metadata = rejectedDeployment.getMetadata();
-    Assertions.assertThat(metadata.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    Assertions.assertThat(metadata.getIntent()).isEqualTo(DeploymentIntent.CREATE);
-    Assertions.assertThat(metadata.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
   }
 
   @Test
@@ -319,13 +310,11 @@ public class CreateDeploymentTest {
             .deploy();
 
     // then
-    Assertions.assertThat(rejectedDeployment.getKey())
-        .isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-
-    final RecordMetadata metadata = rejectedDeployment.getMetadata();
-    Assertions.assertThat(metadata.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    Assertions.assertThat(metadata.getIntent()).isEqualTo(DeploymentIntent.CREATE);
-    Assertions.assertThat(metadata.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
   }
 
   @Test

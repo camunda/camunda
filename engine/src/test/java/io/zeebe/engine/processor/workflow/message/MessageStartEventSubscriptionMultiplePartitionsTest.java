@@ -57,7 +57,7 @@ public class MessageStartEventSubscriptionMultiplePartitionsTest {
 
     final List<Integer> partitionIds = engine.getPartitionIds();
     assertThat(subscriptions)
-        .extracting(r -> r.getMetadata().getPartitionId())
+        .extracting(Record::getPartitionId)
         .containsExactlyInAnyOrderElementsOf(partitionIds);
   }
 

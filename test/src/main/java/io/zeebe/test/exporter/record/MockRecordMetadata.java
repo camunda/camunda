@@ -15,7 +15,6 @@
  */
 package io.zeebe.test.exporter.record;
 
-import io.zeebe.protocol.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
@@ -23,7 +22,7 @@ import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
 import java.util.Objects;
 
-public class MockRecordMetadata extends ExporterMappedObject implements RecordMetadata, Cloneable {
+public class MockRecordMetadata extends ExporterMappedObject implements Cloneable {
 
   private Intent intent = WorkflowInstanceCreationIntent.CREATE;
   private int partitionId = 0;
@@ -49,7 +48,6 @@ public class MockRecordMetadata extends ExporterMappedObject implements RecordMe
     this.valueType = valueType;
   }
 
-  @Override
   public Intent getIntent() {
     return intent;
   }
@@ -59,7 +57,6 @@ public class MockRecordMetadata extends ExporterMappedObject implements RecordMe
     return this;
   }
 
-  @Override
   public int getPartitionId() {
     return partitionId;
   }
@@ -69,7 +66,6 @@ public class MockRecordMetadata extends ExporterMappedObject implements RecordMe
     return this;
   }
 
-  @Override
   public RecordType getRecordType() {
     return recordType;
   }
@@ -79,7 +75,6 @@ public class MockRecordMetadata extends ExporterMappedObject implements RecordMe
     return this;
   }
 
-  @Override
   public RejectionType getRejectionType() {
     return rejectionType;
   }
@@ -89,7 +84,6 @@ public class MockRecordMetadata extends ExporterMappedObject implements RecordMe
     return this;
   }
 
-  @Override
   public String getRejectionReason() {
     return rejectionReason;
   }
@@ -99,7 +93,6 @@ public class MockRecordMetadata extends ExporterMappedObject implements RecordMe
     return this;
   }
 
-  @Override
   public ValueType getValueType() {
     return valueType;
   }

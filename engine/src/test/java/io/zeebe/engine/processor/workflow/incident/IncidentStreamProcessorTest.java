@@ -55,8 +55,7 @@ public class IncidentStreamProcessorTest {
     final List<Record<IncidentRecord>> incidentEvents =
         envRule.events().onlyIncidentRecords().collect(Collectors.toList());
     Assertions.assertThat(incidentEvents)
-        .extracting(r -> r.getMetadata())
-        .extracting(m -> m.getRecordType(), m -> m.getIntent())
+        .extracting(Record::getRecordType, Record::getIntent)
         .containsExactly(
             tuple(RecordType.COMMAND, IncidentIntent.CREATE),
             tuple(RecordType.COMMAND_REJECTION, IncidentIntent.CREATE));
@@ -77,8 +76,7 @@ public class IncidentStreamProcessorTest {
     final List<Record<IncidentRecord>> incidentEvents =
         envRule.events().onlyIncidentRecords().collect(Collectors.toList());
     Assertions.assertThat(incidentEvents)
-        .extracting(r -> r.getMetadata())
-        .extracting(m -> m.getRecordType(), m -> m.getIntent())
+        .extracting(Record::getRecordType, Record::getIntent)
         .containsExactly(
             tuple(RecordType.COMMAND, IncidentIntent.CREATE),
             tuple(RecordType.COMMAND_REJECTION, IncidentIntent.CREATE));
@@ -99,8 +97,7 @@ public class IncidentStreamProcessorTest {
     final List<Record<IncidentRecord>> incidentEvents =
         envRule.events().onlyIncidentRecords().collect(Collectors.toList());
     Assertions.assertThat(incidentEvents)
-        .extracting(r -> r.getMetadata())
-        .extracting(m -> m.getRecordType(), m -> m.getIntent())
+        .extracting(Record::getRecordType, Record::getIntent)
         .containsExactly(
             tuple(RecordType.COMMAND, IncidentIntent.RESOLVE),
             tuple(RecordType.COMMAND_REJECTION, IncidentIntent.RESOLVE));

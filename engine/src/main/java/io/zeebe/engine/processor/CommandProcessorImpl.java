@@ -56,7 +56,7 @@ public class CommandProcessorImpl<T extends UnifiedRecordValue>
     entityKey = command.getKey();
     wrappedProcessor.onCommand(command, this, streamWriter);
 
-    final boolean respond = command.getMetadata().hasRequestMetadata();
+    final boolean respond = command.hasRequestMetadata();
 
     if (isAccepted) {
       streamWriter.appendFollowUpEvent(entityKey, newState, updatedValue);

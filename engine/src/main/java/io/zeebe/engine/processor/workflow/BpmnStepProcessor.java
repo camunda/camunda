@@ -65,7 +65,7 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
     processRecordValue(
         record.getKey(),
         record.getValue(),
-        (WorkflowInstanceIntent) record.getMetadata().getIntent(),
+        (WorkflowInstanceIntent) record.getIntent(),
         streamWriter,
         sideEffect);
   }

@@ -26,7 +26,6 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordMetadata;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
@@ -105,8 +104,7 @@ public class ExporterManagerPartitionTest {
 
     @Override
     public void export(final Record record) {
-      final RecordMetadata metadata = record.getMetadata();
-      if (metadata.getValueType() == ValueType.JOB && metadata.getIntent() == JobIntent.CREATED) {
+      if (record.getValueType() == ValueType.JOB && record.getIntent() == JobIntent.CREATED) {
         exportLatch.countDown();
       }
 

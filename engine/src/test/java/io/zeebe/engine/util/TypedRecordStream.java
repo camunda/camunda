@@ -37,21 +37,18 @@ public class TypedRecordStream<T extends UnifiedRecordValue>
   }
 
   public TypedRecordStream<T> onlyCommands() {
-    return new TypedRecordStream<>(
-        filter(r -> r.getMetadata().getRecordType() == RecordType.COMMAND));
+    return new TypedRecordStream<>(filter(r -> r.getRecordType() == RecordType.COMMAND));
   }
 
   public TypedRecordStream<T> onlyEvents() {
-    return new TypedRecordStream<>(
-        filter(r -> r.getMetadata().getRecordType() == RecordType.EVENT));
+    return new TypedRecordStream<>(filter(r -> r.getRecordType() == RecordType.EVENT));
   }
 
   public TypedRecordStream<T> onlyRejections() {
-    return new TypedRecordStream<>(
-        filter(r -> r.getMetadata().getRecordType() == RecordType.COMMAND_REJECTION));
+    return new TypedRecordStream<>(filter(r -> r.getRecordType() == RecordType.COMMAND_REJECTION));
   }
 
   public TypedRecordStream<T> withIntent(Intent intent) {
-    return new TypedRecordStream<>(filter(r -> r.getMetadata().getIntent() == intent));
+    return new TypedRecordStream<>(filter(r -> r.getIntent() == intent));
   }
 }
