@@ -251,9 +251,11 @@ public class EngineRule extends ExternalResource {
   private static class ProcessingExporterTransistor implements StreamProcessorLifecycleAware {
 
     private BufferedLogStreamReader logStreamReader;
+    private int partitionId;
 
     @Override
     public void onOpen(ReadonlyProcessingContext context) {
+      partitionId = context.getLogStream().getPartitionId();
       final ActorControl actor = context.getActor();
 
       final ActorCondition onCommitCondition =
@@ -268,7 +270,7 @@ public class EngineRule extends ExternalResource {
       while (logStreamReader.hasNext()) {
         final LoggedEvent rawEvent = logStreamReader.next();
 
-        final CopiedRecord typedRecord = CopiedRecords.createCopiedRecord(rawEvent);
+        final CopiedRecord typedRecord = CopiedRecords.createCopiedRecord(partitionId, rawEvent);
 
         RECORDING_EXPORTER.export(typedRecord);
       }

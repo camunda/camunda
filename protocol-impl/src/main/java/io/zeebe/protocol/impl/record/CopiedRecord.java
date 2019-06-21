@@ -17,7 +17,6 @@ package io.zeebe.protocol.impl.record;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
@@ -46,6 +45,7 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
       T recordValue,
       RecordMetadata metadata,
       long key,
+      int partitionId,
       long position,
       long sourcePosition,
       long timestamp) {
@@ -57,7 +57,7 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
 
     this.intent = metadata.getIntent();
     this.recordType = metadata.getRecordType();
-    this.partitionId = Protocol.decodePartitionId(key);
+    this.partitionId = partitionId;
     this.rejectionType = metadata.getRejectionType();
     this.rejectionReason = metadata.getRejectionReason();
     this.valueType = metadata.getValueType();
@@ -127,5 +127,10 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
   @Override
   public String toJson() {
     return MsgPackConverter.convertJsonSerializableObjectToJson(this);
+  }
+
+  @Override
+  public String toString() {
+    return toJson();
   }
 }

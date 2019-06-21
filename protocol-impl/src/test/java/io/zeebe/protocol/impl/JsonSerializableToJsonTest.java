@@ -138,7 +138,7 @@ public class JsonSerializableToJsonTest {
               final long timestamp = 2191L;
 
               return new CopiedRecord<>(
-                  record, recordMetadata, key, position, sourcePosition, timestamp);
+                  record, recordMetadata, key, 0, position, sourcePosition, timestamp);
             },
         "{'partitionId':0,'recordType':'COMMAND','intent':'CREATE','valueType':'DEPLOYMENT','rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','key':1234,'position':4321,'sourceRecordPosition':231,'value':{'deployedWorkflows':[{'bpmnProcessId':'testProcess','version':12,'resourceName':'resource','workflowKey':123}],'resources':[{'resourceName':'resource','resourceType':'BPMN_XML','resource':'Y29udGVudHM='}]},'timestamp':2191}"
       },

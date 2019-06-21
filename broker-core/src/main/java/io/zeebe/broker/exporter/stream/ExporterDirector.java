@@ -92,11 +92,9 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     this.containers =
         context.getDescriptors().stream().map(ExporterContainer::new).collect(Collectors.toList());
 
-    this.recordExporter = new RecordExporter(containers);
-
     this.logStream = context.getLogStream();
     this.partitionId = logStream.getPartitionId();
-
+    this.recordExporter = new RecordExporter(containers, partitionId);
     this.logStreamReader = context.getLogStreamReader();
     this.exportingRetryStrategy = new AbortableRetryStrategy(actor);
     this.recordWrapStrategy = new EndlessRetryStrategy(actor);
@@ -362,13 +360,15 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
 
     private final RecordMetadata rawMetadata = new RecordMetadata();
     private final List<ExporterContainer> containers;
+    private final int partitionId;
 
     private Record record;
     private boolean shouldExport;
     private int exporterIndex;
 
-    RecordExporter(List<ExporterContainer> containers) {
+    RecordExporter(List<ExporterContainer> containers, int partitionId) {
       this.containers = containers;
+      this.partitionId = partitionId;
     }
 
     void wrap(LoggedEvent rawEvent) {
@@ -376,7 +376,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
 
       shouldExport = EVENT_REGISTRY.containsKey(rawMetadata.getValueType());
       if (shouldExport) {
-        record = CopiedRecords.createCopiedRecord(rawEvent);
+        record = CopiedRecords.createCopiedRecord(partitionId, rawEvent);
         exporterIndex = 0;
       }
     }

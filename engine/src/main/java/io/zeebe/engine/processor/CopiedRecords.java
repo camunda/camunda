@@ -29,7 +29,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class CopiedRecords {
 
-  public static CopiedRecord createCopiedRecord(LoggedEvent rawEvent) {
+  public static CopiedRecord createCopiedRecord(int partitionId, LoggedEvent rawEvent) {
     // we have to access the underlying buffer and copy the metadata and value bytes
     // otherwise next event will overwrite the event before, since UnpackedObject
     // and RecordMetadata has properties (buffers, StringProperty etc.) which only wraps the given
@@ -56,6 +56,7 @@ public class CopiedRecords {
         recordValue,
         metadata,
         rawEvent.getKey(),
+        partitionId,
         rawEvent.getPosition(),
         rawEvent.getSourceEventPosition(),
         rawEvent.getTimestamp());
