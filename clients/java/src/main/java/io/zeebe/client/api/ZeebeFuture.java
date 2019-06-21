@@ -15,6 +15,8 @@
  */
 package io.zeebe.client.api;
 
+import io.zeebe.client.api.command.ClientException;
+import io.zeebe.client.api.command.ClientStatusException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -23,16 +25,16 @@ public interface ZeebeFuture<T> extends Future<T> {
   /**
    * Like {@link #get()} but throws runtime exceptions.
    *
-   * @throws io.zeebe.client.cmd.ClientStatusException on gRPC errors
-   * @throws io.zeebe.client.cmd.ClientException on unexpected errors
+   * @throws ClientStatusException on gRPC errors
+   * @throws ClientException on unexpected errors
    */
   T join();
 
   /**
    * Like {@link #get(long, TimeUnit)} but throws runtime exceptions.
    *
-   * @throws io.zeebe.client.cmd.ClientStatusException on gRPC errors
-   * @throws io.zeebe.client.cmd.ClientException on unexpected errors
+   * @throws ClientStatusException on gRPC errors
+   * @throws ClientException on unexpected errors
    */
   T join(long timeout, TimeUnit unit);
 }

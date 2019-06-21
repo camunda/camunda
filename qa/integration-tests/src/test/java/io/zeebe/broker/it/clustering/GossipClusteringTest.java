@@ -18,7 +18,7 @@ package io.zeebe.broker.it.clustering;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.GrpcClientRule;
-import io.zeebe.client.api.commands.BrokerInfo;
+import io.zeebe.client.api.response.BrokerInfo;
 import io.zeebe.transport.SocketAddress;
 import java.util.List;
 import org.junit.Rule;

@@ -15,7 +15,7 @@
  */
 package io.zeebe.client;
 
-import io.zeebe.client.api.subscription.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
+import io.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import java.time.Duration;
 import java.util.Properties;
 

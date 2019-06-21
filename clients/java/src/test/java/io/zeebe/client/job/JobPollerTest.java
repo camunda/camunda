@@ -16,7 +16,7 @@
 package io.zeebe.client.job;
 
 import io.zeebe.client.impl.ZeebeObjectMapper;
-import io.zeebe.client.impl.subscription.JobPoller;
+import io.zeebe.client.impl.worker.JobPoller;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import java.time.Duration;

@@ -18,7 +18,7 @@ package io.zeebe.client.workflow;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
 import java.time.Duration;

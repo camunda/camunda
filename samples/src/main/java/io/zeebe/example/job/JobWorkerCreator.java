@@ -17,10 +17,10 @@ package io.zeebe.example.job;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.client.api.subscription.JobHandler;
-import io.zeebe.client.api.subscription.JobWorker;
+import io.zeebe.client.api.worker.JobClient;
+import io.zeebe.client.api.worker.JobHandler;
+import io.zeebe.client.api.worker.JobWorker;
 import java.time.Duration;
 import java.util.Scanner;
 

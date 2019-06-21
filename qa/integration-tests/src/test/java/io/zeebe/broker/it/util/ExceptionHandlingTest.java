@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import io.grpc.StatusRuntimeException;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.api.command.ClientException;
 import java.net.ConnectException;
 import java.util.concurrent.ExecutionException;
 import org.junit.Rule;

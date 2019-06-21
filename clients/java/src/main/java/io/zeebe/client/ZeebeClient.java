@@ -15,17 +15,17 @@
  */
 package io.zeebe.client;
 
-import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.commands.ActivateJobsCommandStep1;
-import io.zeebe.client.api.commands.CancelWorkflowInstanceCommandStep1;
-import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1;
-import io.zeebe.client.api.commands.DeployWorkflowCommandStep1;
-import io.zeebe.client.api.commands.PublishMessageCommandStep1;
-import io.zeebe.client.api.commands.ResolveIncidentCommandStep1;
-import io.zeebe.client.api.commands.SetVariablesCommandStep1;
-import io.zeebe.client.api.commands.TopologyRequestStep1;
-import io.zeebe.client.api.commands.UpdateRetriesJobCommandStep1;
-import io.zeebe.client.api.subscription.JobWorkerBuilderStep1;
+import io.zeebe.client.api.command.ActivateJobsCommandStep1;
+import io.zeebe.client.api.command.CancelWorkflowInstanceCommandStep1;
+import io.zeebe.client.api.command.CreateWorkflowInstanceCommandStep1;
+import io.zeebe.client.api.command.DeployWorkflowCommandStep1;
+import io.zeebe.client.api.command.PublishMessageCommandStep1;
+import io.zeebe.client.api.command.ResolveIncidentCommandStep1;
+import io.zeebe.client.api.command.SetVariablesCommandStep1;
+import io.zeebe.client.api.command.TopologyRequestStep1;
+import io.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
+import io.zeebe.client.api.worker.JobClient;
+import io.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 

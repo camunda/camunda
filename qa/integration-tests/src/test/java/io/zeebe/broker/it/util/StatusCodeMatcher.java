@@ -16,7 +16,7 @@
 package io.zeebe.broker.it.util;
 
 import io.grpc.Status.Code;
-import io.zeebe.client.cmd.ClientStatusException;
+import io.zeebe.client.api.command.ClientStatusException;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 

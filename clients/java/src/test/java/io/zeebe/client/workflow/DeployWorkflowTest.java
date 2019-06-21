@@ -20,10 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.base.Charsets;
-import io.zeebe.client.api.commands.Workflow;
-import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.cmd.ClientException;
-import io.zeebe.client.impl.events.WorkflowImpl;
+import io.zeebe.client.api.command.ClientException;
+import io.zeebe.client.api.response.DeploymentEvent;
+import io.zeebe.client.api.response.Workflow;
+import io.zeebe.client.impl.response.WorkflowImpl;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;

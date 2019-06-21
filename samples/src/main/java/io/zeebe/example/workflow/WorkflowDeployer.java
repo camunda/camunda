@@ -17,7 +17,7 @@ package io.zeebe.example.workflow;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.response.DeploymentEvent;
 
 public class WorkflowDeployer {
 
