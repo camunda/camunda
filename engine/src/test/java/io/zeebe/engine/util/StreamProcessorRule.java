@@ -51,7 +51,6 @@ public class StreamProcessorRule implements TestRule {
   private static final Logger LOG = new ZbLogger("io.zeebe.broker.test");
 
   private static final int PARTITION_ID = 0;
-  private static final int STREAM_PROCESSOR_ID = 1;
 
   // environment
   private final TemporaryFolder tempFolder = new TemporaryFolder();
@@ -124,7 +123,6 @@ public class StreamProcessorRule implements TestRule {
       int partitionId, TypedRecordProcessorFactory factory) {
     return streams.startStreamProcessor(
         getLogName(partitionId),
-        STREAM_PROCESSOR_ID,
         zeebeDbFactory,
         (processingContext -> {
           zeebeState = processingContext.getZeebeState();
@@ -217,30 +215,6 @@ public class StreamProcessorRule implements TestRule {
         .recordType(RecordType.EVENT)
         .sourceRecordPosition(sourceEventPosition)
         .intent(intent)
-        .producerId(STREAM_PROCESSOR_ID)
-        .write();
-  }
-
-  public long writeWorkflowInstanceEventWithDifferentProducerId(
-      WorkflowInstanceIntent intent, int instanceKey, int producer) {
-    return streams
-        .newRecord(getLogName(startPartitionId))
-        .event(workflowInstance(instanceKey))
-        .recordType(RecordType.EVENT)
-        .intent(intent)
-        .producerId(producer)
-        .write();
-  }
-
-  public long writeWorkflowInstanceEventWithDifferentProducerIdAndSource(
-      WorkflowInstanceIntent intent, int instanceKey, int producer, long sourceEventPosition) {
-    return streams
-        .newRecord(getLogName(startPartitionId))
-        .event(workflowInstance(instanceKey))
-        .recordType(RecordType.EVENT)
-        .sourceRecordPosition(sourceEventPosition)
-        .intent(intent)
-        .producerId(producer)
         .write();
   }
 
@@ -250,7 +224,6 @@ public class StreamProcessorRule implements TestRule {
         .event(workflowInstance(instanceKey))
         .recordType(RecordType.EVENT)
         .intent(intent)
-        .producerId(STREAM_PROCESSOR_ID)
         .write();
   }
 
@@ -261,7 +234,6 @@ public class StreamProcessorRule implements TestRule {
         .key(key)
         .intent(intent)
         .event(value)
-        .producerId(STREAM_PROCESSOR_ID)
         .write();
   }
 
@@ -271,7 +243,6 @@ public class StreamProcessorRule implements TestRule {
         .recordType(RecordType.EVENT)
         .intent(intent)
         .event(value)
-        .producerId(STREAM_PROCESSOR_ID)
         .write();
   }
 

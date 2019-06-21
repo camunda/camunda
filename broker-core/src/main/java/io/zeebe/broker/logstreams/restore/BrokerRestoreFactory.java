@@ -22,7 +22,6 @@ import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionGroup;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionService;
-import io.zeebe.broker.engine.EngineService;
 import io.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.zeebe.distributedlog.StorageConfiguration;
 import io.zeebe.distributedlog.impl.LogstreamConfig;
@@ -69,8 +68,7 @@ public class BrokerRestoreFactory implements RestoreFactory {
     final StorageConfiguration configuration =
         LogstreamConfig.getConfig(localMemberId, partitionId).join();
     final StateStorage restoreStateStorage =
-        new StateStorageFactory(configuration.getStatesDirectory())
-            .create(partitionId, EngineService.PROCESSOR_NAME, "-restore-log");
+        new StateStorageFactory(configuration.getStatesDirectory()).createTemporary("-restore-log");
 
     final SnapshotController stateSnapshotController =
         new StateSnapshotController(DefaultZeebeDbFactory.DEFAULT_DB_FACTORY, restoreStateStorage);

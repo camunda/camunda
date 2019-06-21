@@ -25,13 +25,11 @@ public class StreamProcessorMetrics {
   private final Metric eventsWrittenCountMetric;
   private final Metric eventsSkippedCountMetric;
 
-  public StreamProcessorMetrics(
-      final MetricsManager metricsManager, final String processorName, final String partitionId) {
+  public StreamProcessorMetrics(final MetricsManager metricsManager, final String partitionId) {
     eventsProcessedCountMetric =
         metricsManager
             .newMetric("streamprocessor_events_count")
             .type("counter")
-            .label("processor", processorName)
             .label("action", "processed")
             .label("partition", partitionId)
             .create();
@@ -40,7 +38,6 @@ public class StreamProcessorMetrics {
         metricsManager
             .newMetric("streamprocessor_events_count")
             .type("counter")
-            .label("processor", processorName)
             .label("action", "written")
             .label("partition", partitionId)
             .create();
@@ -49,7 +46,6 @@ public class StreamProcessorMetrics {
         metricsManager
             .newMetric("streamprocessor_events_count")
             .type("counter")
-            .label("processor", processorName)
             .label("action", "skipped")
             .label("partition", partitionId)
             .create();

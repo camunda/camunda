@@ -17,22 +17,18 @@
  */
 package io.zeebe.broker.exporter.stream;
 
-import io.zeebe.engine.processor.SnapshotMetrics;
 import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.metrics.MetricsManager;
 
 public class ExporterMetrics {
   private final Metric eventsExportedCountMetric;
   private final Metric eventsSkippedCountMetric;
-  private final SnapshotMetrics snapshotMetrics;
 
-  public ExporterMetrics(
-      final MetricsManager metricsManager, final String processorName, final String partitionId) {
+  public ExporterMetrics(final MetricsManager metricsManager, final String partitionId) {
     eventsExportedCountMetric =
         metricsManager
             .newMetric("exporter_events_count")
             .type("counter")
-            .label("processor", processorName)
             .label("action", "exported")
             .label("partition", partitionId)
             .create();
@@ -41,18 +37,14 @@ public class ExporterMetrics {
         metricsManager
             .newMetric("exporter_events_count")
             .type("counter")
-            .label("processor", processorName)
             .label("action", "skipped")
             .label("partition", partitionId)
             .create();
-
-    snapshotMetrics = new SnapshotMetrics(metricsManager, processorName, partitionId);
   }
 
   public void close() {
     eventsExportedCountMetric.close();
     eventsSkippedCountMetric.close();
-    snapshotMetrics.close();
   }
 
   public void incrementEventsExportedCount() {
@@ -61,9 +53,5 @@ public class ExporterMetrics {
 
   public void incrementEventsSkippedCount() {
     eventsSkippedCountMetric.incrementOrdered();
-  }
-
-  public SnapshotMetrics getSnapshotMetrics() {
-    return snapshotMetrics;
   }
 }

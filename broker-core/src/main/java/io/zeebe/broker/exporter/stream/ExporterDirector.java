@@ -128,7 +128,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   @Override
   protected void onActorStarting() {
     final MetricsManager metricsManager = actorScheduler.getMetricsManager();
-    metrics = new ExporterMetrics(metricsManager, getName(), Integer.toString(partitionId));
+    metrics = new ExporterMetrics(metricsManager, Integer.toString(partitionId));
 
     this.logStreamReader.wrap(logStream);
   }

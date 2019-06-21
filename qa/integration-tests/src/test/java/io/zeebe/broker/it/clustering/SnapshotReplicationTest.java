@@ -141,7 +141,7 @@ public class SnapshotReplicationTest {
 
   private File getSnapshotsDirectory(Broker broker) {
     final String dataDir = broker.getConfig().getData().getDirectories().get(0);
-    return new File(dataDir, "partition-1/state/1_zb-stream-processor/snapshots");
+    return new File(dataDir, "partition-1/state/snapshots");
   }
 
   protected void waitForValidSnapshotAtBroker(Broker broker) {

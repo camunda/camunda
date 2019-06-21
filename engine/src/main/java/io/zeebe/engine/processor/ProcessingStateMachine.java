@@ -92,13 +92,13 @@ public final class ProcessingStateMachine {
   private static final String ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED =
       "Expected to execute side effects for event '{}' successfully, but exception was thrown.";
   private static final String ERROR_MESSAGE_UPDATE_STATE_FAILED =
-      "Expected to successfully update state for event '{}' with processor '{}', but caught an exception. Retry.";
+      "Expected to successfully update state for event '{}', but caught an exception. Retry.";
   private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
-      "Expected to find event processor for event '{}' with processor '{}', but caught an exception. Skip this event.";
+      "Expected to find event processor for event '{}', but caught an exception. Skip this event.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT =
-      "Expected to successfully process event '{}' with processor '{}', but caught an exception. Skip this event.";
+      "Expected to successfully process event '{}' with processor, but caught an exception. Skip this event.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING =
-      "Expected to process event '{}' successfully on stream processor '{}', but caught recoverable exception. Retry processing.";
+      "Expected to process event '{}' successfully on stream processor, but caught recoverable exception. Retry processing.";
   private static final String PROCESSING_ERROR_MESSAGE =
       "Expected to process event '%s' without errors, but exception occurred with message '%s' .";
 
@@ -110,8 +110,6 @@ public final class ProcessingStateMachine {
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
 
   private final ActorControl actor;
-  private final int producerId;
-  private final String streamProcessorName;
   private final StreamProcessorMetrics metrics;
   private final EventFilter eventFilter;
   private final LogStream logStream;
@@ -143,8 +141,6 @@ public final class ProcessingStateMachine {
       BooleanSupplier shouldProcessNext) {
 
     this.actor = context.getActor();
-    this.producerId = context.getProducerId();
-    this.streamProcessorName = context.getStreamProcessorName();
     this.eventFilter = context.getEventFilter();
     this.recordProcessorMap = context.getRecordProcessorMap();
     this.eventCache = context.getEventCache();
@@ -225,14 +221,10 @@ public final class ProcessingStateMachine {
       writeEvent();
     } catch (final RecoverableException recoverableException) {
       // recoverable
-      LOG.error(
-          ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING,
-          event,
-          streamProcessorName,
-          recoverableException);
+      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING, event, recoverableException);
       actor.runDelayed(PROCESSING_RETRY_DELAY, () -> processEvent(currentEvent));
     } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, event, streamProcessorName, e);
+      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, event, e);
       onError(e, this::writeEvent);
     }
   }
@@ -245,7 +237,7 @@ public final class ProcessingStateMachine {
           recordProcessorMap.get(
               metadata.getRecordType(), metadata.getValueType(), metadata.getIntent().value());
     } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, event, streamProcessorName, e);
+      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, event, e);
     }
 
     return typedRecordProcessor;
@@ -277,7 +269,7 @@ public final class ProcessingStateMachine {
   private void resetOutput(long sourceRecordPosition) {
     responseWriter.reset();
     logStreamWriter.reset();
-    logStreamWriter.configureSourceContext(producerId, sourceRecordPosition);
+    logStreamWriter.configureSourceContext(sourceRecordPosition);
   }
 
   public void setSideEffectProducer(final SideEffectProducer sideEffectProducer) {
@@ -384,8 +376,7 @@ public final class ProcessingStateMachine {
         retryFuture,
         (bool, throwable) -> {
           if (throwable != null) {
-            LOG.error(
-                ERROR_MESSAGE_UPDATE_STATE_FAILED, currentEvent, streamProcessorName, throwable);
+            LOG.error(ERROR_MESSAGE_UPDATE_STATE_FAILED, currentEvent, throwable);
             onError(throwable, this::updateState);
           } else {
             executeSideEffects();

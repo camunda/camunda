@@ -93,13 +93,13 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
     this.partitionId = logStream.getPartitionId();
   }
 
-  public static StreamProcessorBuilder builder(int processorId, String name) {
-    return new StreamProcessorBuilder(processorId, name);
+  public static StreamProcessorBuilder builder() {
+    return new StreamProcessorBuilder();
   }
 
   @Override
   public String getName() {
-    return processingContext.getStreamProcessorName();
+    return "stream-processor";
   }
 
   @Override
@@ -129,7 +129,7 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
   protected void onActorStarting() {
     final MetricsManager metricsManager = actorScheduler.getMetricsManager();
     processingContext.metricsManager(metricsManager);
-    metrics = new StreamProcessorMetrics(metricsManager, getName(), Integer.toString(partitionId));
+    metrics = new StreamProcessorMetrics(metricsManager, Integer.toString(partitionId));
   }
 
   @Override

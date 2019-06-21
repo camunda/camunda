@@ -18,7 +18,6 @@ package io.zeebe.logstreams.impl;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
@@ -37,8 +36,6 @@ import org.agrona.MutableDirectBuffer;
  *  +---------------------------------------------------------------+
  *  |                            POSITION                           |
  *  |                                                               |
- *  +---------------------------------------------------------------+
- *  |                           PRODUCER ID                         |
  *  +---------------------------------------------------------------+
  *  |                      SOURCE EVENT POSITION                    |
  *  |                                                               |
@@ -65,8 +62,6 @@ public class LogEntryDescriptor {
 
   public static final int POSITION_OFFSET;
 
-  public static final int PRODUCER_ID_OFFSET;
-
   public static final int SOURCE_EVENT_POSITION_OFFSET;
 
   public static final int KEY_OFFSET;
@@ -90,9 +85,6 @@ public class LogEntryDescriptor {
 
     POSITION_OFFSET = offset;
     offset += SIZE_OF_LONG;
-
-    PRODUCER_ID_OFFSET = offset;
-    offset += SIZE_OF_INT;
 
     SOURCE_EVENT_POSITION_OFFSET = offset;
     offset += SIZE_OF_LONG;
@@ -133,19 +125,6 @@ public class LogEntryDescriptor {
   public static void setPosition(
       final MutableDirectBuffer buffer, final int offset, final long position) {
     buffer.putLong(positionOffset(offset), position, Protocol.ENDIANNESS);
-  }
-
-  public static int producerIdOffset(final int offset) {
-    return PRODUCER_ID_OFFSET + offset;
-  }
-
-  public static int getProducerId(final DirectBuffer buffer, final int offset) {
-    return buffer.getInt(producerIdOffset(offset), Protocol.ENDIANNESS);
-  }
-
-  public static void setProducerId(
-      final MutableDirectBuffer buffer, final int offset, final int producerId) {
-    buffer.putInt(producerIdOffset(offset), producerId, Protocol.ENDIANNESS);
   }
 
   public static int sourceEventPositionOffset(final int offset) {

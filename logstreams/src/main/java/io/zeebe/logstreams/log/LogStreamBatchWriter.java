@@ -61,9 +61,6 @@ public interface LogStreamBatchWriter extends LogStreamWriter {
   /** Set the source event for all log entries. */
   LogStreamBatchWriter sourceRecordPosition(long position);
 
-  /** Set the producer id for all log entries. */
-  LogStreamBatchWriter producerId(int producerId);
-
   /** Returns the builder to add a new log entry to the batch. */
   LogEntryBuilder event();
 

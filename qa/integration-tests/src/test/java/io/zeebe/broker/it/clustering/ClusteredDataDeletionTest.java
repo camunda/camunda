@@ -160,7 +160,7 @@ public class ClusteredDataDeletionTest {
 
   private File getSnapshotsDirectory(Broker broker) {
     final String dataDir = broker.getConfig().getData().getDirectories().get(0);
-    return new File(dataDir, "partition-1/state/1_zb-stream-processor/snapshots");
+    return new File(dataDir, "partition-1/state/snapshots");
   }
 
   private File getSegmentsDirectory(Broker broker) {

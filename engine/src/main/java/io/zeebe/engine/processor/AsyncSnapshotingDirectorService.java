@@ -50,9 +50,7 @@ public class AsyncSnapshotingDirectorService implements Service<AsyncSnapshoting
     final StreamProcessor streamProcessor = streamProcessorInjector.getValue();
     final SnapshotMetrics snapshotMetrics =
         new SnapshotMetrics(
-            startContext.getScheduler().getMetricsManager(),
-            streamProcessor.getName(),
-            String.valueOf(partitionId));
+            startContext.getScheduler().getMetricsManager(), String.valueOf(partitionId));
 
     asyncSnapshotDirector =
         new AsyncSnapshotDirector(

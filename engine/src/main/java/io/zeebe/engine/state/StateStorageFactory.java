@@ -36,20 +36,20 @@ public class StateStorageFactory {
     this.rootDirectory = rootDirectory;
   }
 
-  public StateStorage create(final int processorId, final String processorName) {
-    return create(processorId, processorName, null);
+  public StateStorage create() {
+    return create(null);
   }
 
-  public StateStorage create(
-      final int processorId, final String processorName, final String tmpSuffix) {
-    final String name = String.format("%d_%s", processorId, processorName);
-    final File processorDirectory = new File(rootDirectory, name);
+  public StateStorage createTemporary(String tmpSuffix) {
+    return create(tmpSuffix);
+  }
 
-    final File runtimeDirectory = new File(processorDirectory, DEFAULT_RUNTIME_PATH);
-    final File snapshotsDirectory = new File(processorDirectory, DEFAULT_SNAPSHOTS_PATH);
+  private StateStorage create(final String tmpSuffix) {
+    final File runtimeDirectory = new File(rootDirectory, DEFAULT_RUNTIME_PATH);
+    final File snapshotsDirectory = new File(rootDirectory, DEFAULT_SNAPSHOTS_PATH);
 
-    if (!processorDirectory.exists()) {
-      processorDirectory.mkdir();
+    if (!runtimeDirectory.exists()) {
+      runtimeDirectory.mkdir();
     }
 
     if (!snapshotsDirectory.exists()) {

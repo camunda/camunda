@@ -95,7 +95,6 @@ public class TestStreams {
 
   private final ActorScheduler actorScheduler;
 
-  private static final String PROCESSOR_NAME = "processor";
   private final CommandResponseWriter mockCommandResponseWriter;
   private ZeebeDb zeebeDb;
   private AsyncSnapshotDirector asyncSnapshotDirector;
@@ -252,29 +251,21 @@ public class TestStreams {
 
   public StreamProcessor startStreamProcessor(
       final String log,
-      final int streamProcessorId,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory) {
     final LogStream stream = getLogStream(log);
     return buildStreamProcessor(
-        streamProcessorId,
-        stream,
-        zeebeDbFactory,
-        typedRecordProcessorFactory,
-        MAX_SNAPSHOTS,
-        SNAPSHOT_INTERVAL);
+        stream, zeebeDbFactory, typedRecordProcessorFactory, MAX_SNAPSHOTS, SNAPSHOT_INTERVAL);
   }
 
   private StreamProcessor buildStreamProcessor(
-      int streamProcessorId,
       LogStream stream,
       ZeebeDbFactory zeebeDbFactory,
       TypedRecordProcessorFactory factory,
       final int maxSnapshot,
       final Duration snapshotInterval) {
 
-    final StateStorage stateStorage =
-        getStateStorageFactory(stream).create(streamProcessorId, PROCESSOR_NAME);
+    final StateStorage stateStorage = getStateStorageFactory(stream).create();
     final StateSnapshotController currentSnapshotController =
         spy(new StateSnapshotController(zeebeDbFactory, stateStorage, maxSnapshot));
     snapshotControllerMap.put(stream.getLogName(), currentSnapshotController);
@@ -283,7 +274,7 @@ public class TestStreams {
 
     zeebeDb = currentSnapshotController.openDb();
     final StreamProcessor processorService =
-        StreamProcessor.builder(streamProcessorId, PROCESSOR_NAME)
+        StreamProcessor.builder()
             .logStream(stream)
             .zeebeDb(zeebeDb)
             .actorScheduler(actorScheduler)
@@ -305,8 +296,7 @@ public class TestStreams {
             .join();
     openFuture.join();
 
-    final SnapshotMetrics metrics =
-        new SnapshotMetrics(actorScheduler.getMetricsManager(), PROCESSOR_NAME, "1");
+    final SnapshotMetrics metrics = new SnapshotMetrics(actorScheduler.getMetricsManager(), "1");
     asyncSnapshotDirector =
         new AsyncSnapshotDirector(
             processorService, currentSnapshotController, stream, snapshotInterval, metrics);
@@ -321,7 +311,7 @@ public class TestStreams {
 
   public void closeProcessor(String streamName) throws Exception {
     asyncSnapshotDirector.closeAsync().join();
-    serviceContainer.removeService(streamProcessorService(streamName, PROCESSOR_NAME)).join();
+    serviceContainer.removeService(streamProcessorService(streamName)).join();
     zeebeDb.close();
   }
 
@@ -332,7 +322,6 @@ public class TestStreams {
     protected LogStream logStream;
     protected long key = -1;
     private long sourceRecordPosition = -1;
-    private int producerId = -1;
 
     public FluentLogWriter(final LogStream logStream) {
       this.logStream = logStream;
@@ -347,11 +336,6 @@ public class TestStreams {
 
     public FluentLogWriter requestId(final long requestId) {
       this.metadata.requestId(requestId);
-      return this;
-    }
-
-    public FluentLogWriter producerId(final int producerId) {
-      this.producerId = producerId;
       return this;
     }
 
@@ -390,7 +374,6 @@ public class TestStreams {
       final LogStreamRecordWriter writer = new LogStreamWriterImpl(logStream);
 
       writer.sourceRecordPosition(sourceRecordPosition);
-      writer.producerId(producerId);
 
       if (key >= 0) {
         writer.key(key);

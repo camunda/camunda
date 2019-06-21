@@ -351,49 +351,6 @@ public class LogStreamBatchWriterTest {
   }
 
   @Test
-  public void shouldWriteEventWithProducerId() {
-    // when
-    final long position =
-        writer
-            .producerId(123)
-            .event()
-            .key(1)
-            .value(EVENT_VALUE_1)
-            .done()
-            .event()
-            .key(2)
-            .value(EVENT_VALUE_2)
-            .done()
-            .tryWrite();
-
-    // then
-    assertThat(getWrittenEvents(position))
-        .extracting(LoggedEvent::getProducerId)
-        .containsExactly(123, 123);
-  }
-
-  @Test
-  public void shouldWriteEventWithoutProducerId() {
-    // when
-    final long position =
-        writer
-            .event()
-            .key(1)
-            .value(EVENT_VALUE_1)
-            .done()
-            .event()
-            .key(2)
-            .value(EVENT_VALUE_2)
-            .done()
-            .tryWrite();
-
-    // then
-    assertThat(getWrittenEvents(position))
-        .extracting(LoggedEvent::getProducerId)
-        .containsExactly(-1, -1);
-  }
-
-  @Test
   public void shouldWriteEventWithTimestamp() throws InterruptedException, ExecutionException {
     // given
     final long timestamp = System.currentTimeMillis() + 10;

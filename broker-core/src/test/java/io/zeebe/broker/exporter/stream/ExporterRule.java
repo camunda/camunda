@@ -95,8 +95,7 @@ public class ExporterRule implements TestRule {
   public void startExporterDirector(List<ExporterDescriptor> exporterDescriptors) {
     final LogStream stream = streams.getLogStream(STREAM_NAME);
 
-    final StateStorage stateStorage =
-        streams.getStateStorageFactory(stream).create(EXPORTER_PROCESSOR_ID, PROCESSOR_NAME);
+    final StateStorage stateStorage = streams.getStateStorageFactory(stream).create();
     final StateSnapshotController snapshotController =
         spy(new StateSnapshotController(zeebeDbFactory, stateStorage));
     capturedZeebeDb = spy(snapshotController.openDb());
