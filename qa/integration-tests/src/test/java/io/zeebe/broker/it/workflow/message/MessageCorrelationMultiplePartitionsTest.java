@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.response.DeploymentEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.intent.MessageIntent;

@@ -19,9 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.api.commands.Workflow;
-import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.api.command.ClientException;
+import io.zeebe.client.api.response.DeploymentEvent;
+import io.zeebe.client.api.response.Workflow;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;

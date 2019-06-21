@@ -18,7 +18,7 @@ package io.zeebe.broker.it.util;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 
-import io.zeebe.client.cmd.ClientStatusException;
+import io.zeebe.client.api.command.ClientStatusException;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;

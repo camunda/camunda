@@ -26,7 +26,7 @@ import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.client.api.subscription.JobWorker;
+import io.zeebe.client.api.worker.JobWorker;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;

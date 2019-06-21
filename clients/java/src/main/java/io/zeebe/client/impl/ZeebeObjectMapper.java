@@ -18,7 +18,7 @@ package io.zeebe.client.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.client.cmd.InternalClientException;
+import io.zeebe.client.api.command.InternalClientException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;

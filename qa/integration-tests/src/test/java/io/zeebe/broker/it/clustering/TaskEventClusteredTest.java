@@ -19,7 +19,7 @@ import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.ZeebeAssertHelper;
-import io.zeebe.client.api.commands.BrokerInfo;
+import io.zeebe.client.api.response.BrokerInfo;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;

@@ -23,11 +23,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.zeebe.client.api.commands.BrokerInfo;
-import io.zeebe.client.api.commands.PartitionBrokerRole;
-import io.zeebe.client.api.commands.PartitionInfo;
-import io.zeebe.client.api.commands.Topology;
-import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.api.command.ClientException;
+import io.zeebe.client.api.response.BrokerInfo;
+import io.zeebe.client.api.response.PartitionBrokerRole;
+import io.zeebe.client.api.response.PartitionInfo;
+import io.zeebe.client.api.response.Topology;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import java.time.Duration;
