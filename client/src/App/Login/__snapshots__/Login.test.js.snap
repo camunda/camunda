@@ -2,14 +2,12 @@
 
 exports[`Login redirection should redirect to home page on successful login 1`] = `
 <Redirect
-  push={false}
   to="/"
 />
 `;
 
 exports[`Login redirection should redirect to referrer page on successful login 1`] = `
 <Redirect
-  push={false}
   to="/some/page"
 />
 `;
