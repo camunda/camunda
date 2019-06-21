@@ -11,6 +11,7 @@ import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom24To25;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom25To26;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,11 +23,11 @@ import java.util.Set;
 public class UpgradeMain {
 
   private static final Set<String> ANSWER_OPTIONS_YES = Collections.unmodifiableSet(
-      new HashSet<>(Arrays.asList("y", "yes"))
+    new HashSet<>(Arrays.asList("y", "yes"))
   );
 
   private static final Set<String> ANSWER_OPTIONS_NO = Collections.unmodifiableSet(
-      new HashSet<>(Arrays.asList("n", "no"))
+    new HashSet<>(Arrays.asList("n", "no"))
   );
 
   private static Map<String, Upgrade> upgrades = new HashMap<>();
@@ -48,8 +49,17 @@ public class UpgradeMain {
     if (upgrade == null) {
       String errorMessage =
         "It was not possible to upgrade Optimize to version " + targetVersion + ".\n" +
-        "Either this is the wrong upgrade jar or the jar is flawed. \n" +
-        "Please contact the Optimize support for help!";
+          "Either this is the wrong upgrade jar or the jar is flawed. \n" +
+          "Please contact the Optimize support for help!";
+      throw new UpgradeRuntimeException(errorMessage);
+    }
+
+    try {
+      upgrade.checkTargetRequiredVersions();
+    } catch (Exception e) {
+      String errorMessage =
+        "It was not possible to upgrade Optimize to version " + targetVersion + ".\n" +
+          e.getMessage();
       throw new UpgradeRuntimeException(errorMessage);
     }
 
@@ -88,7 +98,7 @@ public class UpgradeMain {
     System.out.print(message);
 
     String answer = "";
-    while(!ANSWER_OPTIONS_YES.contains(answer)) {
+    while (!ANSWER_OPTIONS_YES.contains(answer)) {
       Scanner console = new Scanner(System.in);
       answer = console.next().trim().toLowerCase();
       System.out.println();

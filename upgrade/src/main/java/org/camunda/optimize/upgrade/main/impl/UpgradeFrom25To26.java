@@ -5,11 +5,18 @@
  */
 package org.camunda.optimize.upgrade.main.impl;
 
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.main.Upgrade;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+
+import static org.camunda.optimize.service.util.ESVersionChecker.checkESVersionSupport;
 
 
 public class UpgradeFrom25To26 implements Upgrade {
@@ -19,6 +26,9 @@ public class UpgradeFrom25To26 implements Upgrade {
 
   private Logger logger = LoggerFactory.getLogger(getClass());
 
+  private ConfigurationService configurationService = new ConfigurationService();
+  private RestHighLevelClient client = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
+
   @Override
   public String getInitialVersion() {
     return FROM_VERSION;
@@ -27,6 +37,12 @@ public class UpgradeFrom25To26 implements Upgrade {
   @Override
   public String getTargetVersion() {
     return TO_VERSION;
+  }
+
+  @Override
+  public void checkTargetRequiredVersions() throws IOException {
+    checkESVersionSupport(client);
+
   }
 
   @Override
