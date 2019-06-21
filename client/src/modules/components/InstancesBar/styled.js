@@ -56,7 +56,7 @@ const greenTextStyle = css`
 `;
 
 export const IncidentsCount = themed(styled.div`
-  width: 96px;
+  min-width: 96px;
 
   ${props => (props.hasIncidents ? redTextStyle : greyTextStyle)}
 `);
