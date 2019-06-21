@@ -133,7 +133,6 @@ public class CommandApiMessageHandler implements ServerMessageHandler, ServerReq
           .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
     }
 
-    eventMetadata.partitionId(partitionId);
     eventMetadata.recordType(RecordType.COMMAND);
     eventMetadata.intent(Intent.fromProtocolValue(eventType, intent));
     eventMetadata.valueType(eventType);

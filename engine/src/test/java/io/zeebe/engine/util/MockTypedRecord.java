@@ -18,6 +18,7 @@
 package io.zeebe.engine.util;
 
 import io.zeebe.engine.processor.TypedRecord;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RecordType;
@@ -94,7 +95,7 @@ public class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecor
 
   @Override
   public int getPartitionId() {
-    return metadata.getPartitionId();
+    return Protocol.decodePartitionId(key);
   }
 
   @Override

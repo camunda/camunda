@@ -381,7 +381,6 @@ public class TestStreams {
         writer.keyNull();
       }
 
-      metadata.partitionId(logStream.getPartitionId());
       writer.metadataWriter(metadata);
       writer.valueWriter(value);
 

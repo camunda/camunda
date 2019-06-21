@@ -92,7 +92,6 @@ public class JsonSerializableToJsonTest {
               final RecordMetadata recordMetadata = new RecordMetadata();
 
               final DeploymentIntent intent = DeploymentIntent.CREATE;
-              final int partitionId = 2;
               final int protocolVersion = 1;
               final ValueType valueType = ValueType.DEPLOYMENT;
 
@@ -104,7 +103,6 @@ public class JsonSerializableToJsonTest {
 
               recordMetadata
                   .intent(intent)
-                  .partitionId(partitionId)
                   .protocolVersion(protocolVersion)
                   .valueType(valueType)
                   .recordType(recordType)
@@ -142,7 +140,7 @@ public class JsonSerializableToJsonTest {
               return new CopiedRecord<>(
                   record, recordMetadata, key, position, sourcePosition, timestamp);
             },
-        "{'recordType':'COMMAND','intent':'CREATE','partitionId':2,'valueType':'DEPLOYMENT','rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','key':1234,'position':4321,'sourceRecordPosition':231,'value':{'deployedWorkflows':[{'bpmnProcessId':'testProcess','version':12,'resourceName':'resource','workflowKey':123}],'resources':[{'resourceName':'resource','resourceType':'BPMN_XML','resource':'Y29udGVudHM='}]},'timestamp':2191}"
+        "{'partitionId':0,'recordType':'COMMAND','intent':'CREATE','valueType':'DEPLOYMENT','rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','key':1234,'position':4321,'sourceRecordPosition':231,'value':{'deployedWorkflows':[{'bpmnProcessId':'testProcess','version':12,'resourceName':'resource','workflowKey':123}],'resources':[{'resourceName':'resource','resourceType':'BPMN_XML','resource':'Y29udGVudHM='}]},'timestamp':2191}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// DeploymentRecord ///////////////////////////////////////

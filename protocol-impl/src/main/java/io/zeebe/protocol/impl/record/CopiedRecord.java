@@ -17,6 +17,7 @@ package io.zeebe.protocol.impl.record;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
@@ -56,7 +57,7 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
 
     this.intent = metadata.getIntent();
     this.recordType = metadata.getRecordType();
-    this.partitionId = metadata.getPartitionId();
+    this.partitionId = Protocol.decodePartitionId(key);
     this.rejectionType = metadata.getRejectionType();
     this.rejectionReason = metadata.getRejectionReason();
     this.valueType = metadata.getValueType();
