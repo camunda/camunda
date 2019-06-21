@@ -73,6 +73,8 @@ message ActivateJobsRequest {
 #### Output: ActivateJobsResponse
 
 ```protobuf
+
+
 message ActivateJobsResponse {
   // list of activated jobs
   repeated ActivatedJob jobs = 1;
@@ -84,30 +86,30 @@ message ActivatedJob {
   // the type of the job (should match what was requested)
   string type = 2;
   // the job's workflow instance key
-  int64 workflowInstanceKey = 1;
+  int64 workflowInstanceKey = 3;
   // the bpmn process ID of the job workflow definition
-  string bpmnProcessId = 2;
+  string bpmnProcessId = 4;
   // the version of the job workflow definition
-  int32 workflowDefinitionVersion = 3;
+  int32 workflowDefinitionVersion = 5;
   // the key of the job workflow definition
-  int64 workflowKey = 4;
+  int64 workflowKey = 6;
   // the associated task element ID
-  string elementId = 5;
+  string elementId = 7;
   // the unique key identifying the associated task, unique within the scope of the
   // workflow instance
-  int64 elementInstanceKey = 6;
+  int64 elementInstanceKey = 8;
   // a set of custom headers defined during modelling; returned as a serialized
   // JSON document
-  string customHeaders = 4;
+  string customHeaders = 9;
   // the name of the worker which activated this job
-  string worker = 5;
+  string worker = 10;
   // the amount of retries left to this job (should always be positive)
-  int32 retries = 6;
+  int32 retries = 11;
   // when the job can be activated again, sent as a UNIX epoch timestamp
-  int64 deadline = 7;
+  int64 deadline = 12;
   // JSON document, computed at activation time, consisting of all visible variables to
   // the task scope
-  string payload = 8;
+  string variables = 13;
 }
 ```
 
