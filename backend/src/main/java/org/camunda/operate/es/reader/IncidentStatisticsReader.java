@@ -90,7 +90,7 @@ public class IncidentStatisticsReader extends AbstractReader {
 
       List<? extends Bucket> buckets = ((Terms) searchResponse.getAggregations().get("workflowIds")).getBuckets();
       for (Bucket bucket : buckets) {
-        Long workflowId = Long.valueOf(bucket.getKeyAsString());// TODO: Refactor ES-Schema
+        Long workflowId = (Long) bucket.getKey();
         long incidents = bucket.getDocCount();
         results.put(workflowId, new IncidentByWorkflowStatisticsDto(workflowId.toString(),incidents, 0));
       }
@@ -118,7 +118,7 @@ public class IncidentStatisticsReader extends AbstractReader {
       
       List<? extends Bucket> buckets = ((Terms) searchResponse.getAggregations().get("workflowIds")).getBuckets();
       for (Bucket bucket : buckets) {
-        Long workflowId = Long.valueOf(bucket.getKeyAsString()); //TODO: Refactor ES-Schema
+        Long workflowId = (Long)bucket.getKey(); 
         long runningCount = bucket.getDocCount();
         IncidentByWorkflowStatisticsDto statistic = results.get(workflowId);
         if (statistic != null) {
