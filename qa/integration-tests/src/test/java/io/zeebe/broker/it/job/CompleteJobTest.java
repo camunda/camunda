@@ -69,12 +69,7 @@ public class CompleteJobTest {
     clientRule.getClient().newCompleteCommand(jobKey).send().join();
 
     // then
-    ZeebeAssertHelper.assertJobCompleted(
-        "test",
-        (job) -> {
-          assertThat(job.getVariables()).isEqualTo("{}");
-          assertThat(job.getVariablesAsMap()).isEmpty();
-        });
+    ZeebeAssertHelper.assertJobCompleted("test", (job) -> assertThat(job.getVariables()).isEmpty());
   }
 
   @Test
@@ -83,12 +78,7 @@ public class CompleteJobTest {
     clientRule.getClient().newCompleteCommand(jobKey).variables("null").send().join();
 
     // then
-    ZeebeAssertHelper.assertJobCompleted(
-        "test",
-        (job) -> {
-          assertThat(job.getVariables()).isEqualTo("{}");
-          assertThat(job.getVariablesAsMap()).isEmpty();
-        });
+    ZeebeAssertHelper.assertJobCompleted("test", (job) -> assertThat(job.getVariables()).isEmpty());
   }
 
   @Test
@@ -98,11 +88,7 @@ public class CompleteJobTest {
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
-        "test",
-        (job) -> {
-          assertThat(job.getVariables()).isEqualTo("{\"foo\":\"bar\"}");
-          assertThat(job.getVariablesAsMap()).containsOnly(entry("foo", "bar"));
-        });
+        "test", (job) -> assertThat(job.getVariables()).containsOnly(entry("foo", "bar")));
   }
 
   @Test
@@ -130,11 +116,7 @@ public class CompleteJobTest {
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
-        "test",
-        (job) -> {
-          assertThat(job.getVariables()).isEqualTo("{\"foo\":\"bar\"}");
-          assertThat(job.getVariablesAsMap()).containsOnly(entry("foo", "bar"));
-        });
+        "test", (job) -> assertThat(job.getVariables()).containsOnly(entry("foo", "bar")));
   }
 
   @Test
@@ -147,11 +129,7 @@ public class CompleteJobTest {
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
-        "test",
-        (job) -> {
-          assertThat(job.getVariables()).isEqualTo("{\"foo\":\"bar\"}");
-          assertThat(job.getVariablesAsMap()).containsOnly(entry("foo", "bar"));
-        });
+        "test", (job) -> assertThat(job.getVariables()).containsOnly(entry("foo", "bar")));
   }
 
   @Test

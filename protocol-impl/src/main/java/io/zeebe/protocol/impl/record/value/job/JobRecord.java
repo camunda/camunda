@@ -128,13 +128,7 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
   }
 
   @Override
-  public String getVariables() {
-    return MsgPackConverter.convertToJson(variableProp.getValue());
-  }
-
-  @Override
-  @JsonIgnore
-  public Map<String, Object> getVariablesAsMap() {
+  public Map<String, Object> getVariables() {
     return MsgPackConverter.convertToMap(variableProp.getValue());
   }
 

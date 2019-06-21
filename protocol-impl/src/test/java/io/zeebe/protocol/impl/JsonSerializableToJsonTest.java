@@ -298,7 +298,7 @@ public class JsonSerializableToJsonTest {
 
               return record;
             },
-        "{'maxJobsToActivate':1,'type':'type','worker':'worker','truncated':true,'jobKeys':[3],'jobs':[{'bpmnProcessId':'test-process','workflowKey':13,'workflowDefinitionVersion':12,'workflowInstanceKey':1234,'elementId':'activity','elementInstanceKey':123,'type':'type','worker':'worker','variables':'{\"foo\":\"bar\"}','retries':3,'errorMessage':'failed message','customHeaders':{},'deadline':1000}],'timeout':2}"
+        "{'maxJobsToActivate':1,'type':'type','worker':'worker','truncated':true,'jobKeys':[3],'jobs':[{'bpmnProcessId':'test-process','workflowKey':13,'workflowDefinitionVersion':12,'workflowInstanceKey':1234,'elementId':'activity','elementInstanceKey':123,'type':'type','worker':'worker','variables':{'foo':'bar'},'retries':3,'errorMessage':'failed message','customHeaders':{},'deadline':1000}],'timeout':2}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// Empty JobBatchRecord //////////////////////////////////////
@@ -352,7 +352,7 @@ public class JsonSerializableToJsonTest {
               record.setCustomHeaders(wrapArray(MsgPackConverter.convertToMsgPack(customHeaders)));
               return record;
             },
-        "{'bpmnProcessId':'test-process','workflowKey':13,'workflowDefinitionVersion':12,'workflowInstanceKey':1234,'elementId':'activity','elementInstanceKey':123,'worker':'myWorker','type':'myType','variables':'{\"foo\":\"bar\"}','retries':12,'errorMessage':'failed message','customHeaders':{'workerVersion':'42'},'deadline':13}"
+        "{'bpmnProcessId':'test-process','workflowKey':13,'workflowDefinitionVersion':12,'workflowInstanceKey':1234,'elementId':'activity','elementInstanceKey':123,'worker':'myWorker','type':'myType','variables':{'foo':'bar'},'retries':12,'errorMessage':'failed message','customHeaders':{'workerVersion':'42'},'deadline':13}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -361,7 +361,7 @@ public class JsonSerializableToJsonTest {
       {
         "Empty JobRecord",
         (Supplier<UnifiedRecordValue>) JobRecord::new,
-        "{'type':'','workflowDefinitionVersion':-1,'elementId':'','bpmnProcessId':'','workflowKey':-1,'workflowInstanceKey':-1,'elementInstanceKey':-1,'variables':'{}','worker':'','retries':-1,'errorMessage':'','customHeaders':{},'deadline':-1}"
+        "{'type':'','workflowDefinitionVersion':-1,'elementId':'','bpmnProcessId':'','workflowKey':-1,'workflowInstanceKey':-1,'elementInstanceKey':-1,'variables':{},'worker':'','retries':-1,'errorMessage':'','customHeaders':{},'deadline':-1}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// MessageRecord /////////////////////////////////////////////
@@ -382,7 +382,7 @@ public class JsonSerializableToJsonTest {
                   .setTimeToLive(timeToLive)
                   .setMessageId(wrapString(messageId));
             },
-        "{'timeToLive':12,'correlationKey':'test-key','variables':'{\"foo\":\"bar\"}','messageId':'test-id','name':'test-message'}"
+        "{'timeToLive':12,'correlationKey':'test-key','variables':{'foo':'bar'},'messageId':'test-id','name':'test-message'}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// Empty MessageRecord ///////////////////////////////////////
@@ -400,7 +400,7 @@ public class JsonSerializableToJsonTest {
                   .setCorrelationKey(correlationKey)
                   .setName(messageName);
             },
-        "{'timeToLive':12,'correlationKey':'test-key','variables':'{}','messageId':'','name':'test-message'}"
+        "{'timeToLive':12,'correlationKey':'test-key','variables':{},'messageId':'','name':'test-message'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -497,7 +497,7 @@ public class JsonSerializableToJsonTest {
                   .setWorkflowInstanceKey(workflowInstanceKey)
                   .setVariables(VARIABLES_MSGPACK);
             },
-        "{'elementInstanceKey':123,'messageName':'test-message','workflowInstanceKey':1345,'variables':'{\"foo\":\"bar\"}'}"
+        "{'elementInstanceKey':123,'messageName':'test-message','workflowInstanceKey':1345,'variables':{'foo':'bar'}}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -514,7 +514,7 @@ public class JsonSerializableToJsonTest {
                   .setWorkflowInstanceKey(workflowInstanceKey)
                   .setElementInstanceKey(elementInstanceKey);
             },
-        "{'elementInstanceKey':123,'messageName':'','workflowInstanceKey':1345,'variables':'{}'}"
+        "{'elementInstanceKey':123,'messageName':'','workflowInstanceKey':1345,'variables':{}}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -618,7 +618,7 @@ public class JsonSerializableToJsonTest {
                           MsgPackConverter.convertToMsgPack("{'foo':'bar','baz':'boz'}")))
                   .setWorkflowInstanceKey(instanceKey);
             },
-        "{'variables':'{\"foo\":\"bar\",\"baz\":\"boz\"}','bpmnProcessId':'process','workflowKey':1,'version':1,'workflowInstanceKey':2}"
+        "{'variables':{'foo':'bar','baz':'boz'},'bpmnProcessId':'process','workflowKey':1,'version':1,'workflowInstanceKey':2}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -627,7 +627,7 @@ public class JsonSerializableToJsonTest {
       {
         "Empty WorkflowInstanceCreationRecord",
         (Supplier<UnifiedRecordValue>) WorkflowInstanceCreationRecord::new,
-        "{'variables':\"{}\",'bpmnProcessId':'','workflowKey':-1,'version':-1,'workflowInstanceKey':-1}"
+        "{'variables':{},'bpmnProcessId':'','workflowKey':-1,'version':-1,'workflowInstanceKey':-1}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////

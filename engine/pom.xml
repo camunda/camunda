@@ -93,12 +93,6 @@
       <artifactId>jackson-dataformat-yaml</artifactId>
     </dependency>
 
-
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-    </dependency>
-
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-msgpack-json-path</artifactId>

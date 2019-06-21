@@ -34,7 +34,6 @@ import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.protocol.record.value.JobRecordValue;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -227,11 +226,7 @@ public class FailJobTest {
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
-    ENGINE
-        .job()
-        .withKey(jobKey)
-        .withVariables(MsgPackUtil.asMsgPack(job.getVariables()))
-        .complete();
+    ENGINE.job().withKey(jobKey).complete();
 
     // when
     final Record<JobRecordValue> jobRecord =

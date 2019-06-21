@@ -17,14 +17,12 @@
  */
 package io.zeebe.engine.processor.workflow.job;
 
-import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.ThrowableAssert.catchThrowable;
 
-import io.zeebe.engine.processor.workflow.MsgPackConstants;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.msgpack.spec.MsgPackHelper;
-import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
@@ -32,10 +30,8 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.protocol.record.value.JobRecordValue;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -43,7 +39,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class CompleteJobTest {
-  private static final String JSON_VARIABLES = "{\"foo\":\"bar\"}";
+
   private static final String PROCESS_ID = "process";
   private static String jobType;
 
@@ -67,11 +63,7 @@ public class CompleteJobTest {
 
     // when
     final Record<JobRecordValue> jobCompletedRecord =
-        ENGINE
-            .job()
-            .withKey(batchRecord.getValue().getJobKeys().get(0))
-            .withVariables(MsgPackConstants.MSGPACK_VARIABLES)
-            .complete();
+        ENGINE.job().withKey(batchRecord.getValue().getJobKeys().get(0)).complete();
 
     // then
     final JobRecordValue recordValue = jobCompletedRecord.getValue();
@@ -93,13 +85,7 @@ public class CompleteJobTest {
     final int key = 123;
 
     // when
-    final Record<JobRecordValue> jobRecord =
-        ENGINE
-            .job()
-            .withKey(key)
-            .withVariables(MsgPackConstants.MSGPACK_VARIABLES)
-            .expectRejection()
-            .complete();
+    final Record<JobRecordValue> jobRecord = ENGINE.job().withKey(key).expectRejection().complete();
 
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
@@ -116,15 +102,14 @@ public class CompleteJobTest {
         ENGINE
             .job()
             .withKey(batchRecord.getValue().getJobKeys().get(0))
-            .withVariables(MsgPackConstants.MSGPACK_VARIABLES)
+            .withVariables("{'foo':'bar'}")
             .complete();
 
     // then
     Assertions.assertThat(completedRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(JobIntent.COMPLETED);
-    assertThat(completedRecord.getValue().getVariables())
-        .isEqualTo(MsgPackConverter.convertToJson(MsgPackConstants.MSGPACK_VARIABLES));
+    assertThat(completedRecord.getValue().getVariables()).containsExactly(entry("foo", "bar"));
   }
 
   @Test
@@ -145,8 +130,7 @@ public class CompleteJobTest {
     Assertions.assertThat(completedRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(JobIntent.COMPLETED);
-    assertThat(MsgPackConverter.convertToMsgPack(completedRecord.getValue().getVariables()))
-        .isEqualTo(MsgPackHelper.EMTPY_OBJECT);
+    assertThat(completedRecord.getValue().getVariables()).isEmpty();
   }
 
   @Test
@@ -167,33 +151,7 @@ public class CompleteJobTest {
     Assertions.assertThat(completedRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(JobIntent.COMPLETED);
-    assertThat(MsgPackConverter.convertToMsgPack(completedRecord.getValue().getVariables()))
-        .isEqualTo(MsgPackHelper.EMTPY_OBJECT);
-  }
-
-  @Test
-  public void shouldCompleteJobWithNoVariables() {
-    // given
-    final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
-    final Record<JobRecordValue> activated =
-        jobRecords(JobIntent.ACTIVATED).withRecordKey(job.getKey()).getFirst();
-
-    // when
-    final DirectBuffer variables = MsgPackUtil.asMsgPack(activated.getValue().getVariables());
-    final Record<JobRecordValue> completedRecord =
-        ENGINE
-            .job()
-            .withKey(batchRecord.getValue().getJobKeys().get(0))
-            .withVariables(variables)
-            .complete();
-
-    // then
-    Assertions.assertThat(completedRecord)
-        .hasRecordType(RecordType.EVENT)
-        .hasIntent(JobIntent.COMPLETED);
-    MsgPackUtil.assertEquality(
-        MsgPackHelper.EMTPY_OBJECT, completedRecord.getValue().getVariables());
+    assertThat(completedRecord.getValue().getVariables()).isEmpty();
   }
 
   @Test
@@ -228,14 +186,12 @@ public class CompleteJobTest {
     ENGINE.createJob(jobType, PROCESS_ID);
     final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
 
-    final DirectBuffer variables =
-        MsgPackUtil.asMsgPack(batchRecord.getValue().getJobs().get(0).getVariables());
     final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    ENGINE.job().withKey(jobKey).withVariables(variables).complete();
+    ENGINE.job().withKey(jobKey).complete();
 
     // when
     final Record<JobRecordValue> jobRecord =
-        ENGINE.job().withKey(jobKey).withVariables(variables).expectRejection().complete();
+        ENGINE.job().withKey(jobKey).expectRejection().complete();
 
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
@@ -252,13 +208,7 @@ public class CompleteJobTest {
     ENGINE.job().withKey(jobKey).fail();
 
     final Record<JobRecordValue> jobRecord =
-        ENGINE
-            .job()
-            .withKey(jobKey)
-            .withVariables(
-                MsgPackUtil.asMsgPack(batchRecord.getValue().getJobs().get(0).getVariables()))
-            .expectRejection()
-            .complete();
+        ENGINE.job().withKey(jobKey).expectRejection().complete();
 
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.INVALID_STATE);

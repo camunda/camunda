@@ -17,6 +17,8 @@
  */
 package io.zeebe.engine.processor.workflow.variable.mapping;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
@@ -111,7 +113,8 @@ public class JobInputMappingTest {
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
 
-    JsonUtil.assertEquality(jobCreated.getValue().getVariables(), expectedVariables);
+    assertThat(jobCreated.getValue().getVariables())
+        .isEqualTo(JsonUtil.fromJsonAsMap(expectedVariables));
   }
 
   private static Consumer<ServiceTaskBuilder> mapping(Consumer<ServiceTaskBuilder> mappingBuilder) {

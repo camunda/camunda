@@ -19,9 +19,7 @@ import java.util.Map;
 
 /** Shared behaviour for all record values containing a variables document. */
 public interface RecordValueWithVariables extends RecordValue {
-  /** @return JSON-formatted variables */
-  String getVariables();
 
-  /** @return de-serialized variables as map */
-  Map<String, Object> getVariablesAsMap();
+  /** @return the variables of this record. Can be empty. */
+  Map<String, Object> getVariables();
 }

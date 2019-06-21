@@ -19,6 +19,7 @@ package io.zeebe.engine.processor.workflow.message;
 
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
@@ -215,7 +216,7 @@ public class MessageCatchElementTest {
         .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName("order canceled");
 
-    assertThat(workflowInstanceSubscription.getValue().getVariables()).isEqualTo("{}");
+    assertThat(workflowInstanceSubscription.getValue().getVariables()).isEmpty();
   }
 
   @Test
@@ -244,7 +245,7 @@ public class MessageCatchElementTest {
         .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName("order canceled");
 
-    assertThat(subscription.getValue().getVariables()).isEqualTo("{\"foo\":\"bar\"}");
+    assertThat(subscription.getValue().getVariables()).containsExactly(entry("foo", "bar"));
   }
 
   @Test
