@@ -18,10 +18,10 @@
 package io.zeebe.broker.system;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.fail;
 
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import java.io.IOException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -44,7 +44,7 @@ public class BrokerHttpServerTest {
   }
 
   @Test
-  public void shouldGetMetrics() {
+  public void shouldGetMetrics() throws IOException {
     final String url = baseUrl + "/metrics";
 
     try (CloseableHttpClient client = HttpClients.createDefault()) {
@@ -53,13 +53,11 @@ public class BrokerHttpServerTest {
         assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
         assertThat(EntityUtils.toString(response.getEntity())).contains("jvm_info");
       }
-    } catch (Exception e) {
-      fail("Failed to fetch metrics from: " + url, e);
     }
   }
 
   @Test
-  public void shouldGetReadyStatus() {
+  public void shouldGetReadyStatus() throws IOException {
     final String url = baseUrl + "/ready";
 
     try (CloseableHttpClient client = HttpClients.createDefault()) {
@@ -67,8 +65,6 @@ public class BrokerHttpServerTest {
       try (CloseableHttpResponse response = client.execute(request)) {
         assertThat(response.getStatusLine().getStatusCode()).isEqualTo(204);
       }
-    } catch (Exception e) {
-      fail("Failed to fetch ready status from: " + url, e);
     }
   }
 }
