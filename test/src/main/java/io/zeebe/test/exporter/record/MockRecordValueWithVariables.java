@@ -29,27 +29,13 @@ public class MockRecordValueWithVariables extends MockRecordValue
     this.variables = variables;
   }
 
-  @Override
-  public String getVariables() {
-    if (variables != null) {
-      return OBJECT_MAPPER.toJson(variables);
-    }
-
-    return null;
-  }
-
-  public MockRecordValueWithVariables setVariables(String variablesAsJson) {
-    this.variables = OBJECT_MAPPER.fromJsonAsMap(variablesAsJson);
-    return this;
-  }
-
   public MockRecordValueWithVariables setVariables(Map<String, Object> variables) {
     this.variables = variables;
     return this;
   }
 
   @Override
-  public Map<String, Object> getVariablesAsMap() {
+  public Map<String, Object> getVariables() {
     return variables;
   }
 }

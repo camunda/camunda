@@ -55,7 +55,7 @@ public class WorkflowInstanceCreationRecordStream
   }
 
   public WorkflowInstanceCreationRecordStream withVariables(Map<String, Object> variables) {
-    return valueFilter(v -> v.getVariablesAsMap().equals(variables));
+    return valueFilter(v -> v.getVariables().equals(variables));
   }
 
   public WorkflowInstanceCreationRecordStream withVariables(Map.Entry<String, Object>... entries) {
@@ -64,7 +64,7 @@ public class WorkflowInstanceCreationRecordStream
 
   public WorkflowInstanceCreationRecordStream withVariables(
       Predicate<Map<String, Object>> matcher) {
-    return valueFilter(v -> matcher.test(v.getVariablesAsMap()));
+    return valueFilter(v -> matcher.test(v.getVariables()));
   }
 
   public WorkflowInstanceCreationRecordStream limitToWorkflowInstanceCreated(

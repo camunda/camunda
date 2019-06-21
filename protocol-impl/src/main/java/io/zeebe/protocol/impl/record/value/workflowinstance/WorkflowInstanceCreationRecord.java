@@ -65,14 +65,8 @@ public class WorkflowInstanceCreationRecord extends UnifiedRecordValue
   }
 
   @Override
-  @JsonIgnore
-  public Map<String, Object> getVariablesAsMap() {
+  public Map<String, Object> getVariables() {
     return MsgPackConverter.convertToMap(variablesProperty.getValue());
-  }
-
-  @Override
-  public String getVariables() {
-    return MsgPackConverter.convertToJson(variablesProperty.getValue());
   }
 
   @JsonIgnore

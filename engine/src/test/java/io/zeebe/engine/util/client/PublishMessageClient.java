@@ -19,6 +19,7 @@ package io.zeebe.engine.util.client;
 
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.protocol.impl.SubscriptionUtil;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.MessageIntent;
@@ -27,6 +28,7 @@ import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class PublishMessageClient {
 
@@ -89,6 +91,11 @@ public class PublishMessageClient {
 
   public PublishMessageClient withVariables(DirectBuffer variables) {
     messageRecord.setVariables(variables);
+    return this;
+  }
+
+  public PublishMessageClient withVariables(String variables) {
+    messageRecord.setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
     return this;
   }
 

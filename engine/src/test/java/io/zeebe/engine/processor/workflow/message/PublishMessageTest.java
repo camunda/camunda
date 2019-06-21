@@ -17,23 +17,14 @@
  */
 package io.zeebe.engine.processor.workflow.message;
 
-import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.engine.processor.workflow.MsgPackConstants;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.engine.util.client.PublishMessageClient;
-import io.zeebe.protocol.record.Assertions;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.*;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.value.MessageRecordValue;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.Before;
@@ -68,8 +59,7 @@ public class PublishMessageTest {
 
     // then
     assertThat(publishedRecord.getKey()).isEqualTo(publishedRecord.getKey());
-    assertThat(MsgPackUtil.asMsgPackReturnArray(publishedRecord.getValue().getVariables()))
-        .isEqualTo(EMTPY_OBJECT);
+    assertThat(publishedRecord.getValue().getVariables()).isEmpty();
 
     Assertions.assertThat(publishedRecord)
         .hasIntent(MessageIntent.PUBLISHED)
@@ -87,16 +77,10 @@ public class PublishMessageTest {
   public void shouldPublishMessageWithVariables() throws Exception {
     // when
     final Record<MessageRecordValue> publishedRecord =
-        messageClient.withVariables(MsgPackConstants.MSGPACK_VARIABLES).publish();
+        messageClient.withVariables("{'foo':'bar'}").publish();
 
     // then
-    final ObjectMapper objectMapper = new ObjectMapper();
-    objectMapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
-    final JsonNode expectedJson = objectMapper.readTree(MsgPackConstants.JSON_DOCUMENT);
-
-    final JsonNode actualJson = objectMapper.readTree(publishedRecord.getValue().getVariables());
-
-    assertThat(actualJson).isEqualTo(expectedJson);
+    assertThat(publishedRecord.getValue().getVariables()).containsExactly(entry("foo", "bar"));
   }
 
   @Test

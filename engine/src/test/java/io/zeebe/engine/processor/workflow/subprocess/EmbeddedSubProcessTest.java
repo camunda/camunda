@@ -24,7 +24,6 @@ import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.SubProcessBuilder;
-import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobIntent;
@@ -90,8 +89,6 @@ public class EmbeddedSubProcessTest {
             .withWorkflowInstanceKey(workflowInstanceKey)
             .withIntent(JobIntent.CREATED)
             .getFirst();
-    MsgPackUtil.assertEquality(
-        DocumentValue.EMPTY_DOCUMENT, jobCreatedEvent.getValue().getVariables());
 
     Assertions.assertThat(jobCreatedEvent.getValue()).hasElementId("subProcessTask");
   }

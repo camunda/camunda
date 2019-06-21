@@ -23,13 +23,13 @@ import static io.zeebe.test.util.record.RecordingExporter.jobBatchRecords;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static io.zeebe.test.util.record.RecordingExporter.workflowInstanceRecords;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.engine.processor.workflow.message.command.VarDataEncodingEncoder;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
-import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RejectionType;
@@ -38,7 +38,6 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.protocol.record.value.JobRecordValue;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -49,7 +48,6 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.internal.bytebuddy.utility.RandomString;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -57,8 +55,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class ActivateJobsTest {
-  private static final String JSON_VARIABLES = "{\"foo\":\"bar\"}";
-  private static final byte[] VARIABLES_MSG_PACK = MsgPackUtil.asMsgPackReturnArray(JSON_VARIABLES);
+
   private static final String LONG_CUSTOM_HEADER_VALUE = RandomString.make(128);
 
   private static final String PROCESS_ID = "process";
@@ -144,7 +141,7 @@ public class ActivateJobsTest {
   public void shouldActivateSingleJob() {
     // given
     ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
-    final long firstInstanceKey = createWorkflowInstances(3, VARIABLES_MSG_PACK).get(0);
+    final long firstInstanceKey = createWorkflowInstances(3, "{'foo':'bar'}").get(0);
 
     final long expectedJobKey =
         jobRecords(JobIntent.CREATED)
@@ -177,7 +174,7 @@ public class ActivateJobsTest {
     assertThat(jobKeys.get(0)).isEqualTo(expectedJobKey);
     assertThat(jobs.get(0)).hasRetries(3).hasWorker(worker).hasType(taskType);
 
-    assertThat(jobs.get(0).getVariables()).isEqualTo(JSON_VARIABLES);
+    assertThat(jobs.get(0).getVariables()).containsExactly(entry("foo", "bar"));
 
     final Record<JobRecordValue> jobRecord =
         jobRecords(JobIntent.ACTIVATED)
@@ -284,7 +281,7 @@ public class ActivateJobsTest {
     }
     ENGINE.deployment().withXmlResource(PROCESS_ID, builder.done()).deploy();
 
-    final List<Long> workflowInstanceKeys = createWorkflowInstances(jobAmount, VARIABLES_MSG_PACK);
+    final List<Long> workflowInstanceKeys = createWorkflowInstances(jobAmount, "{}");
 
     // when activating and completing all jobs
     waitForJobs(jobType, jobAmount, workflowInstanceKeys);
@@ -319,7 +316,7 @@ public class ActivateJobsTest {
             .done();
 
     ENGINE.deployment().withXmlResource(PROCESS_ID, modelInstance).deploy();
-    final long workflowInstanceKey = createWorkflowInstances(1, VARIABLES_MSG_PACK).get(0);
+    final long workflowInstanceKey = createWorkflowInstances(1, "{}").get(0);
     RecordingExporter.jobRecords(JobIntent.CREATED)
         .withWorkflowInstanceKey(workflowInstanceKey)
         .getFirst();
@@ -349,7 +346,7 @@ public class ActivateJobsTest {
     final long deadline = clock.getCurrentTime().plus(timeout).toEpochMilli();
 
     ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
-    createWorkflowInstances(1, VARIABLES_MSG_PACK);
+    createWorkflowInstances(1, "{'foo':'bar'}");
     final Record<JobRecordValue> jobRecord =
         jobRecords(JobIntent.CREATED).withType(taskType).getFirst();
 
@@ -379,7 +376,7 @@ public class ActivateJobsTest {
         .hasRetries(3)
         .hasDeadline(deadline);
 
-    assertThat(job.getVariables()).isEqualTo(JSON_VARIABLES);
+    assertThat(job.getVariables()).containsExactly(entry("foo", "bar"));
 
     final JobRecordValue jobRecordValue = jobRecord.getValue();
     assertThat(job.getWorkflowInstanceKey()).isEqualTo(jobRecordValue.getWorkflowInstanceKey());
@@ -397,8 +394,7 @@ public class ActivateJobsTest {
   public void shouldLimitJobsInBatch() {
     // given
     final int variablesSize = VarDataEncodingEncoder.lengthMaxValue() / 3;
-    final byte[] variables =
-        MsgPackUtil.asMsgPackReturnArray("{\"key\": \"" + RandomString.make(variablesSize) + "\"}");
+    final String variables = "{'key': '" + RandomString.make(variablesSize) + "'}";
 
     // when
     deployAndCreateJobs(taskType, 3, variables);
@@ -411,11 +407,7 @@ public class ActivateJobsTest {
   }
 
   private Record<JobRecordValue> completeJob(long jobKey) {
-    return ENGINE
-        .job()
-        .withKey(jobKey)
-        .withVariables(new UnsafeBuffer(VARIABLES_MSG_PACK))
-        .complete();
+    return ENGINE.job().withKey(jobKey).complete();
   }
 
   private Long activateJob(String type) {
@@ -436,7 +428,7 @@ public class ActivateJobsTest {
     return activateJobs(taskType, amount);
   }
 
-  private List<Long> createWorkflowInstances(int amount, byte[] variables) {
+  private List<Long> createWorkflowInstances(int amount, String variables) {
     return IntStream.range(0, amount)
         .boxed()
         .map(
@@ -444,13 +436,13 @@ public class ActivateJobsTest {
                 ENGINE
                     .workflowInstance()
                     .ofBpmnProcessId(PROCESS_ID)
-                    .withVariables(MsgPackConverter.convertToJson(variables))
+                    .withVariables(variables)
                     .create())
         .collect(Collectors.toList());
   }
 
   private List<Long> deployAndCreateJobs(
-      final String type, final int amount, final byte[] variables) {
+      final String type, final int amount, final String variables) {
     ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(type)).deploy();
     final List<Long> instanceKeys = createWorkflowInstances(amount, variables);
 
@@ -463,7 +455,7 @@ public class ActivateJobsTest {
   }
 
   private List<Long> deployAndCreateJobs(String type, int amount) {
-    return deployAndCreateJobs(type, amount, VARIABLES_MSG_PACK);
+    return deployAndCreateJobs(type, amount, "{'foo':'bar'}");
   }
 
   private void waitForJobs(

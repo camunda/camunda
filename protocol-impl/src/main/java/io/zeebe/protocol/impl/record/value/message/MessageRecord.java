@@ -82,13 +82,7 @@ public class MessageRecord extends UnifiedRecordValue implements MessageRecordVa
   }
 
   @Override
-  public String getVariables() {
-    return MsgPackConverter.convertToJson(variablesProp.getValue());
-  }
-
-  @Override
-  @JsonIgnore
-  public Map<String, Object> getVariablesAsMap() {
+  public Map<String, Object> getVariables() {
     return MsgPackConverter.convertToMap(variablesProp.getValue());
   }
 

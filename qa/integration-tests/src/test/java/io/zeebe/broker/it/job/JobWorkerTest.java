@@ -20,6 +20,7 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.test.util.record.RecordingExporter.jobBatchRecords;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
@@ -36,12 +37,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import org.junit.Before;
 import org.junit.Rule;
@@ -159,7 +155,7 @@ public class JobWorkerTest {
     waitUntil(() -> jobRecords(JobIntent.COMPLETED).exists());
 
     final Record<JobRecordValue> completedRecord = jobRecords(JobIntent.COMPLETED).getFirst();
-    assertThat(completedRecord.getValue().getVariables()).isEqualTo("{\"a\":3}");
+    assertThat(completedRecord.getValue().getVariables()).containsExactly(entry("a", 3));
     assertThat(completedRecord.getValue()).hasCustomHeaders(Collections.singletonMap("b", "2"));
   }
 
