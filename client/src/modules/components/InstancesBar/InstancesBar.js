@@ -23,7 +23,7 @@ function InstancesBar(props) {
           {incidentsCount}
         </Styled.IncidentsCount>
         <Styled.Label>{label}</Styled.Label>
-        {activeCount && (
+        {activeCount >= 0 && (
           <Styled.ActiveCount hasActive={hasActive}>
             {activeCount}
           </Styled.ActiveCount>
