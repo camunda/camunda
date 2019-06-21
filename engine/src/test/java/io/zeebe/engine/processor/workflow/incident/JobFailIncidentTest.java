@@ -294,8 +294,7 @@ public class JobFailIncidentTest {
             .filter(
                 r ->
                     r.getKey() == jobEvent.getKey()
-                        || r.getValue().getHeaders().getWorkflowInstanceKey()
-                            == workflowInstanceKey)
+                        || r.getValue().getWorkflowInstanceKey() == workflowInstanceKey)
             .limit(8)
             .collect(Collectors.toList());
 

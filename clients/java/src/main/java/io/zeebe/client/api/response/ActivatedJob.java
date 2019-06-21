@@ -25,12 +25,23 @@ public interface ActivatedJob {
   /** @return the type of the job */
   String getType();
 
-  /**
-   * @return broker-defined headers associated with this job. For example, if this job is created in
-   *     the context of workflow instance, the header provide context information on which activity
-   *     is executed, etc.
-   */
-  JobHeaders getHeaders();
+  /** @return key of the workflow instance */
+  long getWorkflowInstanceKey();
+
+  /** @return BPMN process id of the workflow */
+  String getBpmnProcessId();
+
+  /** @return version of the workflow */
+  int getWorkflowDefinitionVersion();
+
+  /** @return key of the workflow */
+  long getWorkflowKey();
+
+  /** @return id of the workflow element */
+  String getElementId();
+
+  /** @return key of the element instance */
+  long getElementInstanceKey();
 
   /** @return user-defined headers associated with this job */
   Map<String, String> getCustomHeaders();

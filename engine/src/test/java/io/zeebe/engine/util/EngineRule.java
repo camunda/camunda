@@ -191,7 +191,7 @@ public class EngineRule extends ExternalResource {
 
     return jobRecords(JobIntent.CREATED)
         .withType(type)
-        .filter(r -> r.getValue().getHeaders().getWorkflowInstanceKey() == instanceKey)
+        .filter(r -> r.getValue().getWorkflowInstanceKey() == instanceKey)
         .getFirst();
   }
 

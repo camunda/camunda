@@ -65,7 +65,6 @@ public class ServiceTaskElementActivatedHandler<T extends ExecutableServiceTask>
         .setRetries(serviceTask.getRetries())
         .setVariables(DocumentValue.EMPTY_DOCUMENT)
         .setCustomHeaders(headers)
-        .getJobHeaders()
         .setBpmnProcessId(value.getBpmnProcessIdBuffer())
         .setWorkflowDefinitionVersion(value.getVersion())
         .setWorkflowKey(value.getWorkflowKey())

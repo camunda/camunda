@@ -24,7 +24,6 @@ import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.ElementInstanceState;
-import io.zeebe.protocol.impl.record.value.job.JobHeaders;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 
 public final class JobCreatedProcessor implements TypedRecordProcessor<JobRecord> {
@@ -41,8 +40,7 @@ public final class JobCreatedProcessor implements TypedRecordProcessor<JobRecord
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter) {
 
-    final JobHeaders jobHeaders = record.getValue().getJobHeaders();
-    final long elementInstanceKey = jobHeaders.getElementInstanceKey();
+    final long elementInstanceKey = record.getValue().getElementInstanceKey();
     if (elementInstanceKey > 0) {
       final ElementInstanceState elementInstanceState = workflowState.getElementInstanceState();
       final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);

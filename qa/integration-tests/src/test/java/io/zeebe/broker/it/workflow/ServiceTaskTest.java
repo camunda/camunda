@@ -29,7 +29,6 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.client.api.response.JobHeaders;
 import io.zeebe.client.api.subscription.JobHandler;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -138,14 +137,13 @@ public class ServiceTaskTest {
             .get();
 
     final ActivatedJob jobEvent = recordingJobHandler.getHandledJobs().get(0);
-    final JobHeaders headers = jobEvent.getHeaders();
-    assertThat(headers.getBpmnProcessId()).isEqualTo("process");
-    assertThat(headers.getWorkflowDefinitionVersion()).isEqualTo(1);
-    assertThat(headers.getWorkflowKey()).isEqualTo(workflowInstance.getWorkflowKey());
-    assertThat(headers.getWorkflowInstanceKey())
+    assertThat(jobEvent.getBpmnProcessId()).isEqualTo("process");
+    assertThat(jobEvent.getWorkflowDefinitionVersion()).isEqualTo(1);
+    assertThat(jobEvent.getWorkflowKey()).isEqualTo(workflowInstance.getWorkflowKey());
+    assertThat(jobEvent.getWorkflowInstanceKey())
         .isEqualTo(workflowInstance.getWorkflowInstanceKey());
-    assertThat(headers.getElementId()).isEqualTo("task");
-    assertThat(headers.getElementInstanceKey()).isEqualTo(record.getKey());
+    assertThat(jobEvent.getElementId()).isEqualTo("task");
+    assertThat(jobEvent.getElementInstanceKey()).isEqualTo(record.getKey());
 
     assertThat(jobEvent.getCustomHeaders()).containsOnly(entry("cust1", "a"), entry("cust2", "b"));
   }

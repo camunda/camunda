@@ -32,7 +32,6 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.protocol.record.value.job.Headers;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -94,8 +93,7 @@ public class EmbeddedSubProcessTest {
     MsgPackUtil.assertEquality(
         DocumentValue.EMPTY_DOCUMENT, jobCreatedEvent.getValue().getVariables());
 
-    final Headers headers = jobCreatedEvent.getValue().getHeaders();
-    Assertions.assertThat(headers).hasElementId("subProcessTask");
+    Assertions.assertThat(jobCreatedEvent.getValue()).hasElementId("subProcessTask");
   }
 
   @Test
@@ -242,8 +240,7 @@ public class EmbeddedSubProcessTest {
             .withIntent(JobIntent.CREATED)
             .getFirst();
 
-    final Headers headers = jobCreatedEvent.getValue().getHeaders();
-    Assertions.assertThat(headers).hasElementId("task");
+    Assertions.assertThat(jobCreatedEvent.getValue()).hasElementId("task");
   }
 
   @Test

@@ -240,7 +240,7 @@ public class ActivateJobsTest {
     final List<Long> jobKeys =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withType(type)
-            .filter(r -> r.getValue().getHeaders().getWorkflowKey() == workflowKey)
+            .filter(r -> r.getValue().getWorkflowKey() == workflowKey)
             .limit(amount)
             .map(Record::getKey)
             .collect(Collectors.toList());

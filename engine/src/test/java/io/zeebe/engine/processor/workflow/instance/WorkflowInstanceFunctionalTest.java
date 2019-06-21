@@ -292,11 +292,14 @@ public class WorkflowInstanceFunctionalTest {
 
     assertThat(createJobCmd.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
     assertThat(createJobCmd.getSourceRecordPosition()).isEqualTo(activityActivated.getPosition());
-    Assertions.assertThat(createJobCmd.getValue()).hasRetries(5).hasType(taskType);
-    Assertions.assertThat(createJobCmd.getValue().getHeaders())
+
+    final JobRecordValue jobRecordValue = createJobCmd.getValue();
+    assertThat(jobRecordValue.getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
+    Assertions.assertThat(jobRecordValue)
+        .hasRetries(5)
+        .hasType(taskType)
         .hasBpmnProcessId(processId)
-        .hasElementId(taskId)
-        .hasWorkflowInstanceKey(workflowInstanceKey);
+        .hasElementId(taskId);
   }
 
   @Test
@@ -331,10 +334,9 @@ public class WorkflowInstanceFunctionalTest {
             .withType(taskType)
             .getFirst();
 
-    Assertions.assertThat(event.getValue().getHeaders())
-        .hasBpmnProcessId(processId)
-        .hasElementId(taskId)
-        .hasWorkflowInstanceKey(workflowInstanceKey);
+    final JobRecordValue jobRecordValue = event.getValue();
+    assertThat(jobRecordValue.getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
+    Assertions.assertThat(jobRecordValue).hasBpmnProcessId(processId).hasElementId(taskId);
 
     final Map<String, String> customHeaders = event.getValue().getCustomHeaders();
     assertThat(customHeaders).containsEntry("a", "b").containsEntry("c", "d");

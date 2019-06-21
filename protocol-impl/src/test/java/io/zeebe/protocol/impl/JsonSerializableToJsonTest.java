@@ -288,10 +288,7 @@ public class JsonSerializableToJsonTest {
                   .setVariables(VARIABLES_MSGPACK)
                   .setRetries(3)
                   .setErrorMessage("failed message")
-                  .setDeadline(1000L);
-
-              jobRecord
-                  .getJobHeaders()
+                  .setDeadline(1000L)
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setWorkflowKey(workflowKey)
                   .setWorkflowDefinitionVersion(workflowDefinitionVersion)
@@ -301,7 +298,7 @@ public class JsonSerializableToJsonTest {
 
               return record;
             },
-        "{'maxJobsToActivate':1,'type':'type','worker':'worker','truncated':true,'jobKeys':[3],'jobs':[{'headers':{'bpmnProcessId':'test-process','workflowKey':13,'workflowDefinitionVersion':12,'workflowInstanceKey':1234,'elementId':'activity','elementInstanceKey':123},'type':'type','worker':'worker','variables':'{\"foo\":\"bar\"}','retries':3,'errorMessage':'failed message','customHeaders':{},'deadline':1000}],'timeout':2}"
+        "{'maxJobsToActivate':1,'type':'type','worker':'worker','truncated':true,'jobKeys':[3],'jobs':[{'bpmnProcessId':'test-process','workflowKey':13,'workflowDefinitionVersion':12,'workflowInstanceKey':1234,'elementId':'activity','elementInstanceKey':123,'type':'type','worker':'worker','variables':'{\"foo\":\"bar\"}','retries':3,'errorMessage':'failed message','customHeaders':{},'deadline':1000}],'timeout':2}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// Empty JobBatchRecord //////////////////////////////////////
@@ -344,20 +341,18 @@ public class JsonSerializableToJsonTest {
                       .setVariables(VARIABLES_MSGPACK)
                       .setRetries(retries)
                       .setDeadline(deadline)
-                      .setErrorMessage("failed message");
-              record
-                  .getJobHeaders()
-                  .setBpmnProcessId(wrapString(bpmnProcessId))
-                  .setWorkflowKey(workflowKey)
-                  .setWorkflowDefinitionVersion(workflowDefinitionVersion)
-                  .setWorkflowInstanceKey(workflowInstanceKey)
-                  .setElementId(wrapString(elementId))
-                  .setElementInstanceKey(activityInstanceKey);
+                      .setErrorMessage("failed message")
+                      .setBpmnProcessId(wrapString(bpmnProcessId))
+                      .setWorkflowKey(workflowKey)
+                      .setWorkflowDefinitionVersion(workflowDefinitionVersion)
+                      .setWorkflowInstanceKey(workflowInstanceKey)
+                      .setElementId(wrapString(elementId))
+                      .setElementInstanceKey(activityInstanceKey);
 
               record.setCustomHeaders(wrapArray(MsgPackConverter.convertToMsgPack(customHeaders)));
               return record;
             },
-        "{'headers':{'bpmnProcessId':'test-process','workflowKey':13,'workflowDefinitionVersion':12,'workflowInstanceKey':1234,'elementId':'activity','elementInstanceKey':123},'worker':'myWorker','type':'myType','variables':'{\"foo\":\"bar\"}','retries':12,'errorMessage':'failed message','customHeaders':{'workerVersion':\"42\"},'deadline':13}"
+        "{'bpmnProcessId':'test-process','workflowKey':13,'workflowDefinitionVersion':12,'workflowInstanceKey':1234,'elementId':'activity','elementInstanceKey':123,'worker':'myWorker','type':'myType','variables':'{\"foo\":\"bar\"}','retries':12,'errorMessage':'failed message','customHeaders':{'workerVersion':'42'},'deadline':13}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -366,7 +361,7 @@ public class JsonSerializableToJsonTest {
       {
         "Empty JobRecord",
         (Supplier<UnifiedRecordValue>) JobRecord::new,
-        "{'type':'','headers':{'workflowDefinitionVersion':-1,'elementId':'','bpmnProcessId':'','workflowKey':-1,'workflowInstanceKey':-1,'elementInstanceKey':-1},'variables':'{}','worker':'','retries':-1,'errorMessage':'','customHeaders':{},'deadline':-1}"
+        "{'type':'','workflowDefinitionVersion':-1,'elementId':'','bpmnProcessId':'','workflowKey':-1,'workflowInstanceKey':-1,'elementInstanceKey':-1,'variables':'{}','worker':'','retries':-1,'errorMessage':'','customHeaders':{},'deadline':-1}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// MessageRecord /////////////////////////////////////////////
