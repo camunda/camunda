@@ -106,7 +106,7 @@ message CreateWorkflowInstanceResponse {
   int32 version = 3;
   // the unique identifier of the created workflow instance; to be used wherever a request
   // needs a workflow instance key (e.g. CancelWorkflowInstanceRequest)
-  int64 workflowInstanceKey = 5;
+  int64 workflowInstanceKey = 4;
 }
 
 message DeployWorkflowRequest {
@@ -226,7 +226,7 @@ message Partition {
   // the unique ID of this partition
   int32 partitionId = 1;
   // the role of the broker for this partition
-  PartitionBrokerRole role = 3;
+  PartitionBrokerRole role = 2;
 }
 
 message UpdateJobRetriesRequest {
