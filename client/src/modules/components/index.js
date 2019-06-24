@@ -28,6 +28,7 @@ export {DefinitionSelection} from './DefinitionSelection';
 export {TargetValueBadge} from './TargetValueBadge';
 export {ErrorPage} from './ErrorPage';
 export {ErrorMessage} from './ErrorMessage';
+export {InfoMessage} from './InfoMessage';
 export {Typeahead} from './Typeahead';
 export {Labeled} from './Labeled';
 export {LabeledInput} from './LabeledInput';

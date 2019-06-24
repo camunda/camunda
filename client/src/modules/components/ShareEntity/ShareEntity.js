@@ -77,9 +77,7 @@ export default class ShareEntity extends React.Component {
         <form>
           <div className="ShareEntity__enable">
             <div className="ShareEntity__enable-text">Enable sharing </div>
-            <div className="ShareEntity__enable-switch">
-              <Switch checked={this.state.isShared} onChange={this.toggleValue} />
-            </div>
+            <Switch checked={this.state.isShared} onChange={this.toggleValue} />
           </div>
           <div className={'ShareEntity__link-area' + (this.disabled() ? '--disabled' : '')}>
             <div className="ShareEntity__icon-container">

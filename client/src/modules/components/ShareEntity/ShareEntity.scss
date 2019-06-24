@@ -11,17 +11,12 @@
   display: flex;
   justify-content: space-between;
   flex-direction: row;
-  line-height: 30px;
+  padding-bottom: 10px;
 }
 
 .ShareEntity__enable-text {
   vertical-align: middle;
   font-weight: bold;
-}
-
-.ShareEntity__enable-switch {
-  vertical-align: middle;
-  display: table-cell;
 }
 
 .ShareEntity__icon {

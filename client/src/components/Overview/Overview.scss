@@ -29,16 +29,10 @@
   .ToggleCollapse {
     background: none;
     border: 1px solid transparent;
-    box-shadow: none;
     padding: 0;
     text-align: left;
     color: inherit;
     display: flex;
-
-    &.focus-visible {
-      border: 1px solid $cam-blue;
-      box-shadow: 0 0 5px rgba($cam-blue, 1);
-    }
 
     .collapseIcon {
       position: absolute;
@@ -115,7 +109,6 @@
         color: #6a727e;
         &:focus {
           outline: none;
-          box-shadow: 0 0 5px #00a8ff;
         }
 
         &:hover {
@@ -127,7 +120,6 @@
         width: 100%;
         border-radius: 15px;
         padding-left: 35px;
-        box-shadow: none;
 
         &:not(:valid) ~ .searchClear {
           display: none;
@@ -219,7 +211,7 @@
         }
       }
 
-      &:not(:hover) .CollectionsDropdown .Button:not(:focus) {
+      &:not(:hover) .CollectionsDropdown:not(.is-open) .Button:not(:focus) {
         .noCollection,
         .noCollection ~ .downIcon {
           visibility: hidden;
@@ -336,8 +328,7 @@
             background: rgba(#d8dce3, 0.8);
           }
           &:focus {
-            outline: none;
-            box-shadow: 0 0 5px rgba($cam-blue, 1);
+            border: 1px solid #ddd;
           }
         }
 

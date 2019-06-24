@@ -97,15 +97,6 @@ $modal-padding-h: 20px;
   &:hover {
     opacity: 1;
   }
-
-  &:focus {
-    outline: none;
-  }
-
-  &.focus-visible {
-    border: 1px solid $cam-blue;
-    box-shadow: 0 0 5px rgba($cam-blue, 1);
-  }
 }
 
 .Modal__content {

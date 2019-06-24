@@ -8,14 +8,8 @@ textarea {
   color: #333;
   border: 1px solid lightgray;
   font-size: 0.875em;
-  padding: 6px 12px;
+  padding: 6px 10px;
   border-radius: 3px;
-
-  &:focus {
-    outline: none;
-    border: 1px solid $cam-blue;
-    box-shadow: 0 0 5px rgba($cam-blue, 1);
-  }
 
   &[disabled],
   &[disabled='disabled'] {
@@ -27,7 +21,5 @@ textarea {
 
   &.isInvalid {
     border: 1px solid $cam-red;
-    background-color: lighten($cam-red, 55);
-    color: $cam-red;
   }
 }

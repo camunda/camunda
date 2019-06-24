@@ -28,15 +28,6 @@ a.Button {
   text-decoration: none;
   display: inline-block;
 
-  &:focus {
-    outline: none;
-  }
-
-  &.focus-visible {
-    border: 1px solid $cam-blue;
-    box-shadow: 0 0 5px rgba($cam-blue, 1);
-  }
-
   &.Button--link {
     display: inline;
     align-items: normal;
@@ -55,13 +46,6 @@ a.Button {
       border-color: $cam-blue;
       border-style: none;
       text-decoration: underline;
-    }
-
-    &:focus {
-      border: none;
-      box-shadow: none;
-      outline: 1px dotted #212121;
-      outline: 5px auto -webkit-focus-ring-color;
     }
   }
 }

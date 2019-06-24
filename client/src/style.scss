@@ -53,6 +53,25 @@ a:visited {
   color: $cam-blue;
 }
 
+a.focus-visible,
+button.focus-visible,
+select.focus-visible,
+input:focus {
+  outline: none;
+  border-radius: 3px;
+  box-shadow: #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+  transition: box-shadow 0.05s ease-out 0s;
+}
+
+button,
+select,
+a,
+input {
+  &:focus {
+    outline: none;
+  }
+}
+
 button {
   margin: 0;
 }

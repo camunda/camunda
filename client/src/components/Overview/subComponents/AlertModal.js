@@ -7,7 +7,17 @@
 import React from 'react';
 import update from 'immutability-helper';
 
-import {Modal, Button, Labeled, Input, LabeledInput, Select, Typeahead, Message} from 'components';
+import {
+  Modal,
+  InfoMessage,
+  Button,
+  Labeled,
+  Input,
+  LabeledInput,
+  Select,
+  Typeahead,
+  Message
+} from 'components';
 import {emailNotificationIsEnabled} from './service';
 import {getOptimizeVersion} from 'services';
 
@@ -252,9 +262,7 @@ export default function AlertModal(reports) {
                     formatter={({name}) => name}
                   />
                 </Labeled>
-                <div className="AlertModal__report-selection-note">
-                  Note: you can only create an alert for a report visualized as Number
-                </div>
+                <InfoMessage>Alerts only available for reports visualised as numbers</InfoMessage>
               </div>
               <div className="AlertModal__inputGroup">
                 <div className="AlertModal__combinedInput">
