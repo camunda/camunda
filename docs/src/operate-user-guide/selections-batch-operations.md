@@ -2,11 +2,13 @@
 
 In some cases, you’ll need to retry or cancel many workflow instances at once. Operate also supports this type of batch operation.
 
-Imagine a case where many workflow instances have an incident. The underlying problem has been resolved–perhaps, for example, a microservice was down and was unable to complete work–but now all affected workflow instances are stuck until they’re “retried”.
+Imagine a case where many workflow instances have an incident incident caused by the same issue. At some point, the underlying problem will have been resolved (for example, maybe a microservice was down for an extended period of time then was brought back up). 
+
+But even though the underlying problem was resolved, the affected workflow instances are stuck until they’re “retried”.
 
 ![operate-batch-retry](/operate-user-guide/img/Operate-Batch-Many-Instances-With-Incident.png)
 
-Next, we’ll create a _selection_ in Operate. A selection is simply a set of workflow instances on which you can carry out a batch retry or batch cancellation. To create a selection, check the box next to the relevant workflow instances, then click on the blue “Create Selection” button. 
+Let's create a _selection_ in Operate. A selection is simply a set of workflow instances on which you can carry out a batch retry or batch cancellation. To create a selection, check the box next to the workflow instances you'd like to include, then click on the blue “Create Selection” button. 
 
 ![operate-batch-retry](/operate-user-guide/img/Operate-Batch-Create-Selection.png)
 
@@ -22,6 +24,6 @@ When you’re ready to carry out an operation, you can simply return to the sele
 
 ![operate-batch-retry](/operate-user-guide/img/Operate-Batch-Cancel-Or-Retry.png)
 
-If the operation was successful, the state of the workflow instances will be updated to show as active and without incident.
+If the operation was successful, the state of the workflow instances will be updated to active and without incident.
 
 ![operate-batch-retry](/operate-user-guide/img/Operate-Batch-Retry-Successful.png)

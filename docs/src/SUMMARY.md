@@ -79,3 +79,4 @@
     * [Getting Familiar With Operate](operate-user-guide/basic-operate-navigation.md)
     * [Variables & Incidents](operate-user-guide/resolve-incidents-update-variables.md)
     * [Selections & Batch Operations](operate-user-guide/selections-batch-operations.md)
+    * [Feedback & Questions](operate-user-guide/operate-feedback-and-questions.md)
