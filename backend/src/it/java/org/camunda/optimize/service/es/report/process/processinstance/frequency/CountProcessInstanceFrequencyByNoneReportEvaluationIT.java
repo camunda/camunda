@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -241,7 +242,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
   }
 
   @Test
-  public void frequencyReportCanAlsoBeEvaluatedIfAggregationTypeIsDifferentFromDefault() {
+  public void frequencyReportCanAlsoBeEvaluatedIfAggregationTypeAndUserTaskDurationTimeIsDifferentFromDefault() {
 
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -253,6 +254,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
       processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
     );
     reportData.getConfiguration().setAggregationType(AggregationType.MAX);
+    reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
     ProcessReportEvaluationResultDto<ProcessReportNumberResultDto> evaluationResponse =
       evaluateNumberReport(reportData);
 

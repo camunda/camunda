@@ -17,6 +17,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.Objects.nonNull;
+
 
 @Data
 public class SingleReportConfigurationDto {
@@ -44,15 +46,27 @@ public class SingleReportConfigurationDto {
   @JsonIgnore
   public String createCommandKey(ProcessViewDto viewDto) {
     String configurationCommandKey = "";
-    List<String> configsToConsiderForCommand = new ArrayList<>();
-    if (viewDto != null && viewDto.getProperty() != null &&
-        viewDto.getProperty().equals(ProcessViewProperty.DURATION)) {
+    final List<String> configsToConsiderForCommand = new ArrayList<>();
+    if (isDurationCommand(viewDto)) {
       configsToConsiderForCommand.add(this.aggregationType.getId());
     }
-    if (viewDto != null && viewDto.getEntity() != null &&
-        viewDto.getEntity().equals(ProcessViewEntity.USER_TASK)) {
+    if (isUserTaskDurationCommand(viewDto)) {
       configsToConsiderForCommand.add(this.userTaskDurationTime.getId());
     }
     return String.join("-", configsToConsiderForCommand);
+  }
+
+  private boolean isUserTaskDurationCommand(ProcessViewDto viewDto) {
+    return isUserTaskCommand(viewDto) && isDurationCommand(viewDto);
+  }
+
+  private boolean isDurationCommand(ProcessViewDto viewDto) {
+    return nonNull(viewDto) && nonNull(viewDto.getProperty()) &&
+      viewDto.getProperty().equals(ProcessViewProperty.DURATION);
+  }
+
+  private boolean isUserTaskCommand(ProcessViewDto viewDto) {
+    return nonNull(viewDto) && nonNull(viewDto.getEntity()) &&
+      viewDto.getEntity().equals(ProcessViewEntity.USER_TASK);
   }
 }

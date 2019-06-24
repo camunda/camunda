@@ -14,7 +14,9 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -562,6 +564,36 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     // then
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
+    assertThat(getExecutedFlowNodeCount(result), is(1L));
+    assertThat(
+      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
+      is(1L)
+    );
+  }
+
+  @Test
+  public void canAlsoBeEvaluatedIfAggregationTypeAndUserTaskDurationTimeIsDifferentFromDefault() {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    finishAllUserTasks(processInstanceDto);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    reportData.getConfiguration().setAggregationType(AggregationType.MAX);
+    reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
+    final ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse =
+      evaluateCountMapReport(reportData);
+
+    // then
+    final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+
+    final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getData(), is(notNullValue()));
     assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
       result.getDataEntryForKey(USER_TASK_1).get().getValue(),
