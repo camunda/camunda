@@ -91,13 +91,13 @@ public class JobState {
   public void create(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
     createJob(key, record, type);
+    metrics.jobCreated();
   }
 
   private void createJob(long key, JobRecord record, DirectBuffer type) {
     resetVariablesAndUpdateJobRecord(key, record);
     updateJobState(State.ACTIVATABLE);
     makeJobActivatable(type);
-    metrics.jobCreated();
   }
 
   /**
