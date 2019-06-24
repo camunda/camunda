@@ -1,4 +1,4 @@
-# Install and Start Operate
+# Install & Start Operate
 
 ## Running via Docker (Local Development)
 

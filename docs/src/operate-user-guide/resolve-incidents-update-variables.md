@@ -1,4 +1,4 @@
-# Resolve Incidents And Update Variables
+# Resolve Incidents & Update Variables
 
 Every workflow instance created for the workflow model used in the Getting Started tutorial requires an `orderValue` so that the XOR gateway evaluation will happen properly. 
 
