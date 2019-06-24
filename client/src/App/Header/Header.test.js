@@ -319,6 +319,41 @@ describe('Header', () => {
           .text()
       ).toEqual(INCIDENTS_COUNT.toString());
     });
+
+    it('should show zero numbers when fetch error occured', async () => {
+      instancesApi.fetchWorkflowCoreStatistics.mockImplementation(() => ({
+        data: {},
+        error: new Error('error')
+      }));
+
+      // given
+      const mockProps = {
+        getStateLocally: () => {},
+        ...mockCollapsablePanelProps,
+        ...mockValues
+      };
+
+      const node = mountComponent(<Header {...mockProps} />);
+
+      // when
+      await flushPromises();
+      node.update();
+
+      // then
+      expect(instancesApi.fetchWorkflowCoreStatistics).toBeCalled();
+      expect(
+        node
+          .find('[data-test="header-link-incidents"]')
+          .find('Badge')
+          .text()
+      ).toEqual('0');
+      expect(
+        node
+          .find('[data-test="header-link-instances"]')
+          .find('Badge')
+          .text()
+      ).toEqual('0');
+    });
   });
 
   describe('links', () => {
