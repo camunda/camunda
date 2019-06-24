@@ -70,7 +70,7 @@ public class UpdateVariableDocumentProcessor implements CommandProcessor<Variabl
       CommandControl<VariableDocumentRecord> controller) {
     try {
       getUpdateOperation(record.getUpdateSemantics())
-          .apply(record.getScopeKey(), workflowKey, record.getDocumentBuffer());
+          .apply(record.getScopeKey(), workflowKey, record.getVariablesBuffer());
       return true;
     } catch (MsgpackReaderException e) {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
@@ -99,6 +99,6 @@ public class UpdateVariableDocumentProcessor implements CommandProcessor<Variabl
 
   @FunctionalInterface
   private interface UpdateOperation {
-    void apply(long scopeKey, long workflowKey, DirectBuffer document);
+    void apply(long scopeKey, long workflowKey, DirectBuffer variables);
   }
 }

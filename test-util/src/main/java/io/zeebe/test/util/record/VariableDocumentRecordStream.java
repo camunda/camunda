@@ -46,15 +46,16 @@ public class VariableDocumentRecordStream
     return valueFilter(v -> v.getUpdateSemantics() == updateSemantics);
   }
 
-  public VariableDocumentRecordStream withDocument(Map<String, Object> document) {
-    return valueFilter(v -> v.getDocument().equals(document));
+  public VariableDocumentRecordStream withVariables(Map<String, Object> variables) {
+    return valueFilter(v -> v.getVariables().equals(variables));
   }
 
-  public VariableDocumentRecordStream withDocument(Map.Entry<String, Object>... entries) {
-    return withDocument(Maps.of(entries));
+  public VariableDocumentRecordStream withVariables(Map.Entry<String, Object>... entries) {
+    return withVariables(Maps.of(entries));
   }
 
-  public VariableDocumentRecordStream withDocument(Predicate<Map<String, Object>> documentMatcher) {
-    return valueFilter(v -> documentMatcher.test(v.getDocument()));
+  public VariableDocumentRecordStream withVariables(
+      Predicate<Map<String, Object>> variablesMatcher) {
+    return valueFilter(v -> variablesMatcher.test(v.getVariables()));
   }
 }

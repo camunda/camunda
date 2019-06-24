@@ -575,10 +575,10 @@ public class JsonSerializableToJsonTest {
 
               return new VariableDocumentRecord()
                   .setUpdateSemantics(VariableDocumentUpdateSemantic.LOCAL)
-                  .setDocument(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value)))
+                  .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value)))
                   .setScopeKey(scopeKey);
             },
-        "{'updateSemantics':'LOCAL','document':{'foo':1},'scopeKey':3}"
+        "{'updateSemantics':'LOCAL','variables':{'foo':1},'scopeKey':3}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -592,7 +592,7 @@ public class JsonSerializableToJsonTest {
 
               return new VariableDocumentRecord().setScopeKey(scopeKey);
             },
-        "{'updateSemantics':'PROPAGATE','document':{},'scopeKey':3}"
+        "{'updateSemantics':'PROPAGATE','variables':{},'scopeKey':3}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////

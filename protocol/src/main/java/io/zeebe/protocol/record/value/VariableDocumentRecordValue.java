@@ -15,13 +15,16 @@
  */
 package io.zeebe.protocol.record.value;
 
-import io.zeebe.protocol.record.RecordValue;
-import java.util.Map;
+import io.zeebe.protocol.record.RecordValueWithVariables;
 
-public interface VariableDocumentRecordValue extends RecordValue {
+public interface VariableDocumentRecordValue extends RecordValueWithVariables {
+
+  /** @return the scope key associated with the variable document */
   long getScopeKey();
 
+  /**
+   * @return the semantic of how this variable document is applied, see {@link
+   *     VariableDocumentUpdateSemantic}
+   */
   VariableDocumentUpdateSemantic getUpdateSemantics();
-
-  Map<String, Object> getDocument();
 }

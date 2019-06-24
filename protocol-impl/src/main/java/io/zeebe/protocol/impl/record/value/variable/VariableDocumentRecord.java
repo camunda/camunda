@@ -35,17 +35,17 @@ public class VariableDocumentRecord extends UnifiedRecordValue
           "updateSemantics",
           VariableDocumentUpdateSemantic.class,
           VariableDocumentUpdateSemantic.PROPAGATE);
-  private final DocumentProperty documentProperty = new DocumentProperty("document");
+  private final DocumentProperty variablesProperty = new DocumentProperty("variables");
 
   public VariableDocumentRecord() {
     this.declareProperty(scopeKeyProperty)
         .declareProperty(updateSemanticsProperty)
-        .declareProperty(documentProperty);
+        .declareProperty(variablesProperty);
   }
 
   public VariableDocumentRecord wrap(VariableDocumentRecord other) {
     this.setScopeKey(other.getScopeKey())
-        .setDocument(other.getDocumentBuffer())
+        .setVariables(other.getVariablesBuffer())
         .setUpdateSemantics(other.getUpdateSemantics());
 
     return this;
@@ -55,18 +55,13 @@ public class VariableDocumentRecord extends UnifiedRecordValue
     return scopeKeyProperty.getValue();
   }
 
-  public VariableDocumentUpdateSemantic getUpdateSemantics() {
-    return updateSemanticsProperty.getValue();
-  }
-
-  @Override
-  public Map<String, Object> getDocument() {
-    return MsgPackConverter.convertToMap(documentProperty.getValue());
-  }
-
   public VariableDocumentRecord setScopeKey(long scopeKey) {
     scopeKeyProperty.setValue(scopeKey);
     return this;
+  }
+
+  public VariableDocumentUpdateSemantic getUpdateSemantics() {
+    return updateSemanticsProperty.getValue();
   }
 
   public VariableDocumentRecord setUpdateSemantics(VariableDocumentUpdateSemantic updateSemantics) {
@@ -74,13 +69,18 @@ public class VariableDocumentRecord extends UnifiedRecordValue
     return this;
   }
 
-  @JsonIgnore
-  public DirectBuffer getDocumentBuffer() {
-    return documentProperty.getValue();
+  @Override
+  public Map<String, Object> getVariables() {
+    return MsgPackConverter.convertToMap(variablesProperty.getValue());
   }
 
-  public VariableDocumentRecord setDocument(DirectBuffer document) {
-    documentProperty.setValue(document);
+  @JsonIgnore
+  public DirectBuffer getVariablesBuffer() {
+    return variablesProperty.getValue();
+  }
+
+  public VariableDocumentRecord setVariables(DirectBuffer variables) {
+    variablesProperty.setValue(variables);
     return this;
   }
 
@@ -97,24 +97,11 @@ public class VariableDocumentRecord extends UnifiedRecordValue
     final VariableDocumentRecord that = (VariableDocumentRecord) o;
     return Objects.equals(scopeKeyProperty, that.scopeKeyProperty)
         && Objects.equals(updateSemanticsProperty, that.updateSemanticsProperty)
-        && Objects.equals(documentProperty, that.documentProperty);
+        && Objects.equals(variablesProperty, that.variablesProperty);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(scopeKeyProperty, updateSemanticsProperty, documentProperty);
-  }
-
-  @Override
-  public String toString() {
-    return "VariableDocumentRecord{"
-        + "scopeKey="
-        + getScopeKey()
-        + ", mergeSemantics="
-        + getUpdateSemantics()
-        + ", document="
-        + getDocumentBuffer()
-        + "} "
-        + super.toString();
+    return Objects.hash(scopeKeyProperty, updateSemanticsProperty, variablesProperty);
   }
 }

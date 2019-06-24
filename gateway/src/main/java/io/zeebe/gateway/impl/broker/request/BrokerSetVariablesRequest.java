@@ -36,8 +36,8 @@ public class BrokerSetVariablesRequest extends BrokerExecuteCommand<VariableDocu
     return this;
   }
 
-  public BrokerSetVariablesRequest setDocument(DirectBuffer document) {
-    requestDto.setDocument(document);
+  public BrokerSetVariablesRequest setVariables(DirectBuffer variables) {
+    requestDto.setVariables(variables);
     return this;
   }
 
