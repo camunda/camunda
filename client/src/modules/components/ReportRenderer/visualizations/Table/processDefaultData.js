@@ -25,11 +25,8 @@ export default function processDefaultData({formatter = v => v, report}) {
     config.getLabelFor(config.options.view, view, xml)
   ];
 
-  if (view.entity === 'userTask') {
+  if (view.entity === 'userTask' && groupBy.type === 'flowNodes') {
     labels[0] = 'User Task';
-    if (view.property === 'duration') {
-      labels[1] = camelCaseToLabel(userTaskDurationTime) + ' Duration';
-    }
   }
 
   const displayRelativeValue = view.property === 'frequency' && !hideRelativeValue;
