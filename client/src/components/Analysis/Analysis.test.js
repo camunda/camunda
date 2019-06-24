@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {mount, shallow} from 'enzyme';
 
 import {loadFrequencyData} from './service';
 
@@ -132,4 +132,19 @@ it('should show a warning message when there are incompatible filters', async ()
   const node = await mount(<Analysis />);
   await node.update();
   expect(node.find('Message')).toExist();
+});
+
+it('should not reset the xml when adding a filter', async () => {
+  const node = shallow(<Analysis />);
+
+  await node.instance().updateConfig({
+    processDefinitionKey: 'someKey',
+    processDefinitionVersion: 'someVersion',
+    tenantIds: ['a', 'b']
+  });
+  await node.instance().updateConfig({
+    filter: [{type: 'completedInstancesOnly', data: null}]
+  });
+
+  expect(node.state().xml).not.toBe(null);
 });

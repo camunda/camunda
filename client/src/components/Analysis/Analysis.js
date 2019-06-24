@@ -116,28 +116,30 @@ export default class Analysis extends React.Component {
   };
 
   updateConfig = async updates => {
+    const newConfig = {...this.state.config, ...updates};
+
+    const changes = {
+      config: newConfig
+    };
+
     if (updates.processDefinitionKey && updates.processDefinitionVersion && updates.tenantIds) {
-      this.setState({
-        config: {...this.state.config, ...updates},
-        xml: await loadProcessDefinitionXml(
-          updates.processDefinitionKey,
-          updates.processDefinitionVersion,
-          updates.tenantIds[0]
-        ),
-        gateway: null,
-        endEvent: null
-      });
+      changes.xml = await loadProcessDefinitionXml(
+        updates.processDefinitionKey,
+        updates.processDefinitionVersion,
+        updates.tenantIds[0]
+      );
+      changes.gateway = null;
+      changes.endEvent = null;
     } else if (
-      !updates.processDefinitionKey ||
-      !updates.processDefinitionVersion ||
-      !updates.tenantIds
+      !newConfig.processDefinitionKey ||
+      !newConfig.processDefinitionVersion ||
+      !newConfig.tenantIds
     ) {
-      this.setState({
-        config: {...this.state.config, ...updates},
-        xml: null,
-        gateway: null,
-        endEvent: null
-      });
+      changes.xml = null;
+      changes.gateway = null;
+      changes.endEvent = null;
     }
+
+    this.setState(changes);
   };
 }
