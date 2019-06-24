@@ -111,7 +111,7 @@ public class RequestMapper {
     final BrokerSetVariablesRequest brokerRequest = new BrokerSetVariablesRequest();
 
     brokerRequest.setElementInstanceKey(grpcRequest.getElementInstanceKey());
-    brokerRequest.setDocument(ensureJsonSet(grpcRequest.getVariables()));
+    brokerRequest.setVariables(ensureJsonSet(grpcRequest.getVariables()));
     brokerRequest.setLocal(grpcRequest.getLocal());
 
     return brokerRequest;

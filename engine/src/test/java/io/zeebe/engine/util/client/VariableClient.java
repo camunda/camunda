@@ -44,7 +44,7 @@ public class VariableClient {
   }
 
   public VariableClient withDocument(Map<String, Object> variables) {
-    variableDocumentRecord.setDocument(
+    variableDocumentRecord.setVariables(
         new UnsafeBuffer(MsgPackUtil.asMsgPack(variables).byteArray()));
     return this;
   }

@@ -97,7 +97,7 @@ public class UpdateVariableDocumentTest {
                 .withIntent(VariableDocumentIntent.UPDATED)
                 .withScopeKey(activatedEvent.getKey())
                 .withUpdateSemantics(VariableDocumentUpdateSemantic.PROPAGATE)
-                .withDocument(document)
+                .withVariables(document)
                 .getFirst())
         .isNotNull();
   }

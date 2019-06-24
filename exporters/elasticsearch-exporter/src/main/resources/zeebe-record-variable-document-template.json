@@ -15,11 +15,11 @@
             "scopeKey": {
               "type": "long"
             },
-            "document": {
-              "enabled": false
-            },
             "updateSemantics": {
               "type": "keyword"
+            },
+            "variables": {
+              "enabled": false
             }
           }
         }
