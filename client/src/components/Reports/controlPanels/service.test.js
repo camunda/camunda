@@ -17,6 +17,26 @@ it('Should correctly check for duration heatmap', () => {
   ).toBeTruthy();
 });
 
+it('should work for user task reports', () => {
+  expect(
+    isDurationHeatmap({
+      view: {entity: 'userTask', property: 'duration'},
+      visualization: 'heat',
+      processDefinitionKey: 'test',
+      processDefinitionVersion: 'test'
+    })
+  ).toBeTruthy();
+
+  expect(
+    isDurationHeatmap({
+      view: {entity: 'userTask', property: 'frequency'},
+      visualization: 'heat',
+      processDefinitionKey: 'test',
+      processDefinitionVersion: 'test'
+    })
+  ).toBeFalsy();
+});
+
 it('should correclty check for process instance duration reports', () => {
   expect(
     isProcessInstanceDuration({view: {entity: 'processInstance', property: 'duration'}})
