@@ -14,10 +14,6 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-
-import static org.camunda.optimize.service.util.ESVersionChecker.checkESVersionSupport;
-
 
 public class UpgradeFrom25To26 implements Upgrade {
 
@@ -37,12 +33,6 @@ public class UpgradeFrom25To26 implements Upgrade {
   @Override
   public String getTargetVersion() {
     return TO_VERSION;
-  }
-
-  @Override
-  public void checkTargetRequiredVersions() throws IOException {
-    checkESVersionSupport(client);
-
   }
 
   @Override

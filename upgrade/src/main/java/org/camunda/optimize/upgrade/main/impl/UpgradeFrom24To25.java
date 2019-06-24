@@ -53,7 +53,6 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.US
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_CANDIDATE_GROUPS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_CANDIDATE_GROUP_OPERATIONS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_CLAIM_DATE;
-import static org.camunda.optimize.service.util.ESVersionChecker.checkESVersionSupport;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
@@ -89,11 +88,6 @@ public class UpgradeFrom24To25 implements Upgrade {
       log.error("Error while executing upgrade", e);
       System.exit(2);
     }
-  }
-
-  @Override
-  public void checkTargetRequiredVersions() throws IOException{
-      checkESVersionSupport(client);
   }
 
   public UpgradePlan buildUpgradePlan() {

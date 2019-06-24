@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 
+import static org.camunda.optimize.service.util.ESVersionChecker.checkESVersionSupport;
+
 
 public class ValidationService {
   private static final String ENVIRONMENT_CONFIG_FILE = "environment-config.yaml";
@@ -33,7 +35,8 @@ public class ValidationService {
     configurationService.validateNoDeprecatedConfigKeysUsed();
   }
 
-  public void validateVersions(final RestHighLevelClient restClient, final String fromVersion, final String toVersion) {
+  public void validateSchemaVersions(final RestHighLevelClient restClient, final String fromVersion,
+                                     final String toVersion) {
 
     final String schemaVersion = metadataService.readMetadata(restClient)
       .orElseThrow(() -> new UpgradeRuntimeException("No Optimize Metadata present."))
@@ -47,6 +50,17 @@ public class ValidationService {
 
     if (toVersion == null || toVersion.isEmpty()) {
       throw new UpgradeRuntimeException("New schema version is not allowed to be empty or null!");
+    }
+  }
+
+  public void validateESVersion(final RestHighLevelClient restClient, final String toVersion) {
+    try {
+      checkESVersionSupport(restClient);
+    } catch (Exception e) {
+      String errorMessage =
+        "It was not possible to upgrade Optimize to version " + toVersion + ".\n" +
+          e.getMessage();
+      throw new UpgradeRuntimeException(errorMessage);
     }
   }
 

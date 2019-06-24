@@ -54,15 +54,6 @@ public class UpgradeMain {
       throw new UpgradeRuntimeException(errorMessage);
     }
 
-    try {
-      upgrade.checkTargetRequiredVersions();
-    } catch (Exception e) {
-      String errorMessage =
-        "It was not possible to upgrade Optimize to version " + targetVersion + ".\n" +
-          e.getMessage();
-      throw new UpgradeRuntimeException(errorMessage);
-    }
-
     if (Arrays.stream(args).noneMatch(arg -> arg.contains("skip-warning"))) {
       printWarning(upgrade.getInitialVersion(), upgrade.getTargetVersion());
     }

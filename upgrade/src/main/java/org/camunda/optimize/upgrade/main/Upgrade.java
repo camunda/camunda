@@ -5,14 +5,11 @@
  */
 package org.camunda.optimize.upgrade.main;
 
-import java.io.IOException;
-
 public interface Upgrade {
 
   String getInitialVersion();
+
   String getTargetVersion();
 
   void performUpgrade();
-
-  void checkTargetRequiredVersions() throws IOException;
 }

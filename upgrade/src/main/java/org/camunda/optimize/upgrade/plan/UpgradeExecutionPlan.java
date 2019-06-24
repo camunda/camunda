@@ -66,7 +66,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
 
   @Override
   public void execute() {
-    validationService.validateVersions(client, fromVersion, toVersion);
+    validateVersions();
 
     schemaManager.initializeSchema(client);
 
@@ -89,6 +89,11 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     }
 
     updateOptimizeVersion();
+  }
+
+  private void validateVersions() {
+    validationService.validateSchemaVersions(client, fromVersion, toVersion);
+    validationService.validateESVersion(client, toVersion);
   }
 
   public List<TypeMappingCreator> getMappings() {
