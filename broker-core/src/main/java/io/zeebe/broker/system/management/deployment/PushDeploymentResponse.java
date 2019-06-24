@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.system.management.deployment;
 
-import io.zeebe.clustering.management.PushDeploymentRequestEncoder;
 import io.zeebe.clustering.management.PushDeploymentResponseDecoder;
 import io.zeebe.clustering.management.PushDeploymentResponseEncoder;
 import io.zeebe.engine.util.SbeBufferWriterReader;
@@ -80,6 +79,6 @@ public class PushDeploymentResponse
     super.reset();
 
     partitionId = PushDeploymentResponseEncoder.partitionIdNullValue();
-    deploymentKey = PushDeploymentRequestEncoder.deploymentKeyNullValue();
+    deploymentKey = PushDeploymentResponseEncoder.deploymentKeyNullValue();
   }
 }

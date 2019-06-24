@@ -17,10 +17,13 @@
  */
 package io.zeebe.broker.system.management.deployment;
 
+import io.atomix.core.Atomix;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.engine.impl.DeploymentDistributorImpl;
 import io.zeebe.clustering.management.MessageHeaderDecoder;
 import io.zeebe.clustering.management.PushDeploymentRequestDecoder;
+import io.zeebe.engine.processor.workflow.DeploymentResponder;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
@@ -41,7 +44,8 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class PushDeploymentRequestHandler implements Function<byte[], CompletableFuture<byte[]>> {
+public class PushDeploymentRequestHandler
+    implements Function<byte[], CompletableFuture<byte[]>>, DeploymentResponder {
 
   private static final Logger LOG = Loggers.WORKFLOW_REPOSITORY_LOGGER;
 
@@ -52,11 +56,16 @@ public class PushDeploymentRequestHandler implements Function<byte[], Completabl
 
   private final Int2ObjectHashMap<Partition> leaderPartitions;
   private final ActorControl actor;
+  private final Atomix atomix;
+  private final PushDeploymentResponse deploymentResponse = new PushDeploymentResponse();
 
   public PushDeploymentRequestHandler(
-      final Int2ObjectHashMap<Partition> leaderPartitions, final ActorControl actor) {
+      final Int2ObjectHashMap<Partition> leaderPartitions,
+      final ActorControl actor,
+      final Atomix atomix) {
     this.leaderPartitions = leaderPartitions;
     this.actor = actor;
+    this.atomix = atomix;
   }
 
   @Override
@@ -92,6 +101,16 @@ public class PushDeploymentRequestHandler implements Function<byte[], Completabl
           }
         });
     return responseFuture;
+  }
+
+  @Override
+  public void sendDeploymentResponse(final long deploymentKey, final int partitionId) {
+    deploymentResponse.reset();
+    deploymentResponse.deploymentKey(deploymentKey).partitionId(partitionId);
+    final String topic = DeploymentDistributorImpl.getDeploymentResponseTopic(deploymentKey);
+
+    atomix.getEventService().broadcast(topic, deploymentResponse.toBytes());
+    LOG.trace("Send deployment response on topic {}", topic);
   }
 
   private void handleValidRequest(

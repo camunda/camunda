@@ -112,17 +112,18 @@ public class EngineRule extends ExternalResource {
     when(deploymentDistribution.getDeployment()).thenReturn(deploymentBuffer);
 
     forEachPartition(
-        partitonId -> {
-          final int currentPartitionId = partitonId;
+        partitionId -> {
+          final int currentPartitionId = partitionId;
           environmentRule.startTypedStreamProcessor(
-              partitonId,
+              partitionId,
               (processingContext) ->
                   EngineProcessors.createEngineProcessors(
                           processingContext,
                           partitionCount,
                           new SubscriptionCommandSender(
                               currentPartitionId, new PartitionCommandSenderImpl()),
-                          new DeploymentDistributionImpl())
+                          new DeploymentDistributionImpl(),
+                          (key, partition) -> {})
                       .withListener(new ProcessingExporterTransistor()));
         });
   }

@@ -55,7 +55,10 @@ public class DeploymentCreatedProcessorTest {
           workflowState = zeebeState.getWorkflowState();
 
           DeploymentEventProcessors.addDeploymentCreateProcessor(
-              typedRecordProcessors, workflowState);
+              typedRecordProcessors,
+              workflowState,
+              (key, partition) -> {},
+              Protocol.DEPLOYMENT_PARTITION + 1);
           typedRecordProcessors.onEvent(
               ValueType.DEPLOYMENT,
               DeploymentIntent.CREATED,

@@ -21,6 +21,7 @@ import static io.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.processor.workflow.CatchEventBehavior;
+import io.zeebe.engine.processor.workflow.DeploymentResponder;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.protocol.record.ValueType;
@@ -28,9 +29,14 @@ import io.zeebe.protocol.record.ValueType;
 public class DeploymentEventProcessors {
 
   public static void addDeploymentCreateProcessor(
-      TypedRecordProcessors typedRecordProcessors, WorkflowState workflowState) {
+      TypedRecordProcessors typedRecordProcessors,
+      WorkflowState workflowState,
+      DeploymentResponder deploymentResponder,
+      final int partitionId) {
     typedRecordProcessors.onCommand(
-        ValueType.DEPLOYMENT, CREATE, new DeploymentCreateProcessor(workflowState));
+        ValueType.DEPLOYMENT,
+        CREATE,
+        new DeploymentCreateProcessor(workflowState, deploymentResponder, partitionId));
   }
 
   public static void addTransformingDeploymentProcessor(
