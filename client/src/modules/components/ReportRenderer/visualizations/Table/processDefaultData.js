@@ -7,12 +7,12 @@
 import {reportConfig, formatters, isDurationReport} from 'services';
 import {getRelativeValue} from '../service';
 
-const {formatReportResult, camelCaseToLabel} = formatters;
+const {formatReportResult} = formatters;
 
 export default function processDefaultData({formatter = v => v, report}) {
   const {data, result, reportType} = report;
   const {
-    configuration: {hideAbsoluteValue, hideRelativeValue, xml, userTaskDurationTime},
+    configuration: {hideAbsoluteValue, hideRelativeValue, xml},
     view,
     groupBy
   } = data;
