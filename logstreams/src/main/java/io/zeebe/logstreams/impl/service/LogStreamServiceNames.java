@@ -18,9 +18,7 @@ package io.zeebe.logstreams.impl.service;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
-import io.zeebe.logstreams.impl.LogBlockIndexWriter;
 import io.zeebe.logstreams.impl.LogStorageAppender;
-import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.ServiceName;
@@ -51,16 +49,6 @@ public class LogStreamServiceNames {
     return ServiceName.newServiceName(
         String.format("logstream.%s.distributed.log", logName),
         DistributedLogstreamPartition.class);
-  }
-
-  public static final ServiceName<LogBlockIndex> logBlockIndexServiceName(String logName) {
-    return ServiceName.newServiceName(
-        String.format("logstream.%s.blockIdx", logName), LogBlockIndex.class);
-  }
-
-  public static final ServiceName<LogBlockIndexWriter> logBlockIndexWriterService(String logName) {
-    return ServiceName.newServiceName(
-        String.format("logstream.%s.blockIdx.writer", logName), LogBlockIndexWriter.class);
   }
 
   public static final ServiceName<Dispatcher> logWriteBufferServiceName(String logName) {

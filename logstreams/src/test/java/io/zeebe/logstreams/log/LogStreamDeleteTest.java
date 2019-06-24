@@ -19,7 +19,6 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 import static io.zeebe.logstreams.log.LogStreamTest.writeEvent;
-import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -29,17 +28,13 @@ import static org.mockito.Mockito.mock;
 import io.zeebe.distributedlog.DistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
-import io.zeebe.distributedlog.impl.DistributedLogstreamServiceConfig;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor;
-import io.zeebe.logstreams.impl.log.index.LogBlockIndexContext;
-import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -58,8 +53,6 @@ public class LogStreamDeleteTest {
   @Rule public ExpectedException thrown = ExpectedException.none();
 
   public TemporaryFolder tempFolder = new TemporaryFolder();
-  public TemporaryFolder snapshotFolder = new TemporaryFolder();
-  public TemporaryFolder indexFolder = new TemporaryFolder();
 
   public AutoCloseableRule closeables = new AutoCloseableRule();
   public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
@@ -68,8 +61,6 @@ public class LogStreamDeleteTest {
   @Rule
   public RuleChain chain =
       RuleChain.outerRule(tempFolder)
-          .around(snapshotFolder)
-          .around(indexFolder)
           .around(actorScheduler)
           .around(serviceContainer)
           .around(closeables);
@@ -78,19 +69,13 @@ public class LogStreamDeleteTest {
   private long secondPosition;
   private long thirdPosition;
   private long fourthPosition;
-  private LogBlockIndexContext indexContext;
 
   protected LogStream buildLogStream(final Consumer<LogStreamBuilder> streamConfig) {
-    final StateStorage stateStorage =
-        new StateStorage(indexFolder.getRoot(), snapshotFolder.getRoot());
-
     final LogStreamBuilder builder = new LogStreamBuilder(PARTITION_ID);
     builder
         .logName("test-log-name")
         .serviceContainer(serviceContainer.get())
-        .logRootPath(tempFolder.getRoot().getAbsolutePath())
-        .snapshotPeriod(Duration.ofMinutes(5))
-        .indexStateStorage(stateStorage);
+        .logRootPath(tempFolder.getRoot().getAbsolutePath());
 
     streamConfig.accept(builder);
 
@@ -98,8 +83,7 @@ public class LogStreamDeleteTest {
 
     final DistributedLogstreamPartition mockDistLog = mock(DistributedLogstreamPartition.class);
 
-    final DistributedLogstreamService distributedLogImpl =
-        new DefaultDistributedLogstreamService(new DistributedLogstreamServiceConfig());
+    final DistributedLogstreamService distributedLogImpl = new DefaultDistributedLogstreamService();
 
     final String nodeId = "0";
     try {
@@ -198,26 +182,6 @@ public class LogStreamDeleteTest {
   }
 
   @Test
-  public void shouldDeleteUntilLastBlockIndexAddress() {
-    // given
-    final LogStream logStream = prepareLogstream();
-
-    // when
-    logStream.delete(Long.MAX_VALUE);
-
-    // then - segment 0 and 1 are removed
-    assertThat(events(logStream).count()).isEqualTo(2);
-
-    assertThat(events(logStream).filter(e -> e.getPosition() == firstPosition).findAny()).isEmpty();
-    assertThat(events(logStream).filter(e -> e.getPosition() == secondPosition).findAny())
-        .isEmpty();
-
-    assertThat(events(logStream).findFirst().get().getPosition()).isEqualTo(thirdPosition);
-    assertThat(events(logStream).filter(e -> e.getPosition() == fourthPosition).findAny())
-        .isNotEmpty();
-  }
-
-  @Test
   public void shouldNotDeleteOnNegativePosition() {
     // given
     final LogStream logStream = prepareLogstream();
@@ -245,10 +209,7 @@ public class LogStreamDeleteTest {
             - FsLogSegmentDescriptor.METADATA_LENGTH
             - alignedLength(HEADER_BLOCK_LENGTH + 2 + 8)
             - 1);
-    final int idxSize = (segmentSize - FsLogSegmentDescriptor.METADATA_LENGTH);
-    final LogStream logStream =
-        buildLogStream(
-            c -> c.logSegmentSize(segmentSize).readBlockSize(idxSize).indexBlockSize(idxSize));
+    final LogStream logStream = buildLogStream(c -> c.logSegmentSize(segmentSize));
     logStream.openAppender().join();
     closeables.manage(logStream);
     final byte[] largeEvent = new byte[remainingCapacity];
@@ -270,7 +231,6 @@ public class LogStreamDeleteTest {
     fourthPosition = writeEvent(logStream, BufferUtil.wrapArray(largeEvent));
 
     logStream.setCommitPosition(fourthPosition);
-    waitUntil(() -> logStream.getLogBlockIndex().getLastPosition() >= fourthPosition);
 
     return logStream;
   }

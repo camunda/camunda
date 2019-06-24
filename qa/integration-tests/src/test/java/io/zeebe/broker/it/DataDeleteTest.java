@@ -52,7 +52,6 @@ public class DataDeleteTest {
     data.setMaxSnapshots(MAX_SNAPSHOTS);
     data.setSnapshotPeriod(SNAPSHOT_PERIOD_SECONDS + "s");
     data.setLogSegmentSize("8k");
-    data.setIndexBlockSize("2K");
 
     final ExporterCfg exporterCfg = new ExporterCfg();
     exporterCfg.setClassName(TestExporter.class.getName());

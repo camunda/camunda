@@ -28,12 +28,10 @@ import static org.mockito.Mockito.mock;
 import io.zeebe.distributedlog.DistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
-import io.zeebe.distributedlog.impl.DistributedLogstreamServiceConfig;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -51,8 +49,6 @@ import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.RemoteAddressImpl;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;
@@ -105,34 +101,19 @@ public class CommandApiMessageHandlerTest {
     MockitoAnnotations.initMocks(this);
 
     serverOutput = new BufferingServerOutput();
-    File runtime = null;
-    File snapshots = null;
-
-    try {
-      runtime = tempFolder.newFolder("index", "runtime");
-      snapshots = tempFolder.newFolder("index", "snapshots");
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
-    final StateStorage stateStorage = new StateStorage(runtime, snapshots);
-
     final String logName = "test";
-
     logStream =
         LogStreams.createFsLogStream(LOG_STREAM_PARTITION_ID)
             .logRootPath(tempFolder.getRoot().getAbsolutePath())
             .serviceContainer(serviceContainerRule.get())
             .logName(logName)
-            .indexStateStorage(stateStorage)
             .build()
             .join();
 
     // Create distributed log service
     final DistributedLogstreamPartition mockDistLog = mock(DistributedLogstreamPartition.class);
 
-    distributedLogImpl =
-        new DefaultDistributedLogstreamService(new DistributedLogstreamServiceConfig());
+    distributedLogImpl = new DefaultDistributedLogstreamService();
 
     final String nodeId = "0";
     try {

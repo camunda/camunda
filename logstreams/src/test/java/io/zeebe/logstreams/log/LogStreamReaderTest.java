@@ -319,7 +319,6 @@ public class LogStreamReaderTest {
   @Test
   public void shouldLimitAllocate() {
     // mock logStorage to always return insufficient capacity to increase buffer til max
-    final LogStream logStream = logStreamRule.getLogStream();
     final LogStorage logStorage = mock(LogStorage.class);
     when(logStorage.read(any(), anyLong(), any()))
         .thenReturn(LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY);
@@ -331,6 +330,6 @@ public class LogStreamReaderTest {
             + BufferedLogStreamReader.MAX_BUFFER_CAPACITY);
 
     // when
-    ((BufferedLogStreamReader) reader).wrap(logStorage, logStream.getLogBlockIndex());
+    ((BufferedLogStreamReader) reader).wrap(logStorage);
   }
 }

@@ -21,7 +21,6 @@ import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.util.sched.ActorScheduler;
 import java.util.function.Function;
 
 public class FsLogStorageService implements Service<LogStorage> {
@@ -42,7 +41,6 @@ public class FsLogStorageService implements Service<LogStorage> {
 
   @Override
   public void start(final ServiceStartContext startContext) {
-    final ActorScheduler scheduler = startContext.getScheduler();
     logStorage = logStorageStubber.apply(new FsLogStorage(config, partitionId));
 
     startContext.run(logStorage::open);

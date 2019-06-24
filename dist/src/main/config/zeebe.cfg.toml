@@ -126,9 +126,6 @@
 # ├── segments                      (the actual data as segment files)
 # │   ├── 00.data
 # │   └── 01.data
-# ├── index                      	(log block index state and snapshots)
-# │   ├── runtime
-# │   └── snapshots
 # └── state                     	(stream processor state and snapshots)
 #     └── stream-processor
 #		  ├── runtime
@@ -145,9 +142,6 @@
 
 # The size of data log segment files.
 # logSegmentSize = "512M"
-
-# The size of block index segments.
-# indexBlockSize = "4M"
 
 # How often we take snapshots of streams (time unit)
 # snapshotPeriod = "15m"

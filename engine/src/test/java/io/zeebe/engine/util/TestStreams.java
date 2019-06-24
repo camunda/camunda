@@ -33,7 +33,6 @@ import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.distributedlog.DistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
-import io.zeebe.distributedlog.impl.DistributedLogstreamServiceConfig;
 import io.zeebe.engine.processor.AsyncSnapshotDirector;
 import io.zeebe.engine.processor.CommandResponseWriter;
 import io.zeebe.engine.processor.ReadonlyProcessingContext;
@@ -130,17 +129,12 @@ public class TestStreams {
   }
 
   public LogStream createLogStream(final String name, final int partitionId) {
-    File segments = null, index = null, snapshots = null;
-
+    File segments = null;
     try {
       segments = dataDirectory.newFolder(name, "segments");
-      index = dataDirectory.newFolder(name, "index", "runtime");
-      snapshots = dataDirectory.newFolder(name, "index", "snapshots");
     } catch (IOException e) {
       e.printStackTrace();
     }
-
-    final StateStorage stateStorage = new StateStorage(index, snapshots);
 
     final LogStream logStream =
         spy(
@@ -149,15 +143,13 @@ public class TestStreams {
                 .serviceContainer(serviceContainer)
                 .logName(name)
                 .deleteOnClose(true)
-                .indexStateStorage(stateStorage)
                 .build()
                 .join());
 
     // Create distributed log service
     final DistributedLogstreamPartition mockDistLog = mock(DistributedLogstreamPartition.class);
 
-    final DistributedLogstreamService distributedLogImpl =
-        new DefaultDistributedLogstreamService(new DistributedLogstreamServiceConfig());
+    final DistributedLogstreamService distributedLogImpl = new DefaultDistributedLogstreamService();
 
     // initialize private members
     final String nodeId = "0";
