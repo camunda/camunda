@@ -191,7 +191,9 @@ export default function Variables({
                       data-test={name}
                       hasActiveOperation={hasActiveOperation}
                     >
-                      <Styled.TD isBold={true}>{name}</Styled.TD>
+                      <Styled.TD isBold={true}>
+                        <Styled.VariableName>{name}</Styled.VariableName>
+                      </Styled.TD>
                       {key === name && editMode === MODE.EDIT ? (
                         renderInlineEdit(propValue, name)
                       ) : (

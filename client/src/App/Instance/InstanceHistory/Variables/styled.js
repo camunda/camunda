@@ -87,6 +87,7 @@ export const TD = themed(styled.td`
   })};
   font-weight: ${props => (props.isBold ? 'bold' : 'normal')};
   padding-left: 17px;
+  padding-bottom: 2px;
   padding-right: 9px;
   height: 32px;
   &:not(:nth-child(2)) {
@@ -123,7 +124,10 @@ export const TR = themed(styled.tr`
   }
 
   > td:first-child {
+    overflow-x: auto;
+    max-width: 200px;
     min-width: 200px;
+    width: 200px;
   }
 
   ${({hasActiveOperation}) =>
@@ -157,6 +161,13 @@ export const THead = themed(styled.thead`
   }
 `);
 
+export const VariableName = styled.span`
+  height: 100%;
+  display: flex;
+  overflow-x: auto;
+  padding-top: 5px;
+`;
+
 export const VariablesFooter = styled(Panel.Footer)`
   position: absolute;
   bottom: 0;
@@ -189,7 +200,9 @@ export const TextInput = styled(BasicInput)`
 export const DisplayText = styled.div`
   padding: 4px 0px;
   max-height: 80px;
-  overflow-y: auto;
+  max-width: 27vw;
+
+  overflow: auto;
 `;
 
 const textAreaStyles = css`
@@ -200,7 +213,7 @@ const textAreaStyles = css`
 `;
 
 export const EditTextarea = styled(BasicTextarea)`
-  padding: 2px 11px 2px 7px;
+  padding: 4px 11px 2px 7px;
   height: auto;
   ${textAreaStyles};
 `;
@@ -217,7 +230,6 @@ export const EditButtonsTD = styled.td`
   padding-top: 6px;
   display: flex;
   justify-content: flex-end;
-  width: 100px;
 `;
 
 export const AddButtonsTD = styled(EditButtonsTD)`
