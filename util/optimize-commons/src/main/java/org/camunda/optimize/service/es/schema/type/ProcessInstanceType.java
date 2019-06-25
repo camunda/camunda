@@ -166,14 +166,12 @@ public class ProcessInstanceType extends StrictTypeMappingCreator implements Def
             .endObject()
             .startObject(EVENTS)
               .field("type", "nested")
-              .field("include_in_all", false)
               .startObject("properties");
                 addNestedEventField(newBuilder)
               .endObject()
             .endObject()
             .startObject(USER_TASKS)
               .field("type", "nested")
-              .field("include_in_all", false)
               .startObject("properties");
                 addNestedUserTaskField(newBuilder)
               .endObject()
@@ -215,7 +213,6 @@ public class ProcessInstanceType extends StrictTypeMappingCreator implements Def
     XContentBuilder newBuilder = builder
         .startObject(STRING_VARIABLES)
           .field("type", "nested")
-          .field("include_in_all", false)
           .startObject("properties");
             addNestedVariableField(newBuilder, "keyword")
           .endObject()
@@ -338,7 +335,6 @@ public class ProcessInstanceType extends StrictTypeMappingCreator implements Def
       .endObject()
       .startObject(USER_OPERATIONS)
         .field("type", "nested")
-        .field("include_in_all", false)
         .startObject("properties");
           addNestedUserOperationsField(builder)
         .endObject()
@@ -351,14 +347,12 @@ public class ProcessInstanceType extends StrictTypeMappingCreator implements Def
       .endObject()
       .startObject(USER_TASK_ASSIGNEE_OPERATIONS)
         .field("type", "nested")
-        .field("include_in_all", false)
         .startObject("properties");
           addNestedAssigneeOperations(builder)
         .endObject()
       .endObject()
       .startObject(USER_TASK_CANDIDATE_GROUP_OPERATIONS)
         .field("type", "nested")
-        .field("include_in_all", false)
         .startObject("properties");
           addNestedCandidateGroupOperations(builder)
         .endObject()

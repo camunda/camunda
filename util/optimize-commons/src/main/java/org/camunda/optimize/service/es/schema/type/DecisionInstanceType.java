@@ -124,14 +124,12 @@ public class DecisionInstanceType extends StrictTypeMappingCreator implements De
             .endObject()
             .startObject(INPUTS)
               .field("type", "nested")
-              .field("include_in_all", false)
               .startObject("properties");
                 addNestedInputField(newBuilder)
               .endObject()
             .endObject()
             .startObject(OUTPUTS)
               .field("type", "nested")
-              .field("include_in_all", false)
               .startObject("properties");
                 addNestedOutputField(newBuilder)
               .endObject()
