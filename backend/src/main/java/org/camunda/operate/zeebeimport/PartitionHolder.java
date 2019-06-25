@@ -122,7 +122,7 @@ public class PartitionHolder {
     try {
       final SearchResponse searchResponse = zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT);
       final HashSet<Integer> partitionIds = ((Terms) searchResponse.getAggregations().get(aggName)).getBuckets().stream()
-          .collect(HashSet::new, (set, bucket) -> set.add((Integer)bucket.getKeyAsNumber()), (set1, set2) -> set1.addAll(set2));
+          .collect(HashSet::new, (set, bucket) -> set.add(bucket.getKeyAsNumber().intValue()), (set1, set2) -> set1.addAll(set2));
       logger.debug("Following partition ids were found: {}", partitionIds);
       if(!partitionIds.isEmpty()) {
         return Optional.of(partitionIds);
