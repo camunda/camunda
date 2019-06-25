@@ -26,7 +26,6 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.util.RecordStream;
 import io.zeebe.engine.util.TestStreams;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -120,17 +119,12 @@ public class ExporterRule implements TestRule {
         .dependency(LogStreamServiceNames.logStreamServiceName(STREAM_NAME))
         .dependency(LogStreamServiceNames.logWriteBufferServiceName(STREAM_NAME))
         .dependency(LogStreamServiceNames.logStorageServiceName(STREAM_NAME))
-        .dependency(LogStreamServiceNames.logBlockIndexServiceName(STREAM_NAME))
         .install()
         .join();
   }
 
   public ControlledActorClock getClock() {
     return clock;
-  }
-
-  public RecordStream events() {
-    return new RecordStream(streams.events(STREAM_NAME));
   }
 
   public ExportersState getExportersState() {

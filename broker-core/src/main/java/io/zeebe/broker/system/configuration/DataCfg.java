@@ -29,8 +29,6 @@ public class DataCfg implements ConfigurationEntry {
 
   private String logSegmentSize = "512M";
 
-  private String indexBlockSize = "4M";
-
   private String snapshotPeriod = "15m";
 
   private String snapshotReplicationPeriod = "5m";
@@ -63,14 +61,6 @@ public class DataCfg implements ConfigurationEntry {
 
   public void setLogSegmentSize(String logSegmentSize) {
     this.logSegmentSize = logSegmentSize;
-  }
-
-  public String getIndexBlockSize() {
-    return indexBlockSize;
-  }
-
-  public void setIndexBlockSize(final String indexBlockSize) {
-    this.indexBlockSize = indexBlockSize;
   }
 
   public String getSnapshotPeriod() {
@@ -112,9 +102,6 @@ public class DataCfg implements ConfigurationEntry {
         + directories
         + ", logSegmentSize='"
         + logSegmentSize
-        + '\''
-        + ", indexBlockSize='"
-        + indexBlockSize
         + '\''
         + ", snapshotPeriod='"
         + snapshotPeriod

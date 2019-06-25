@@ -31,26 +31,19 @@ import java.util.Optional;
  * files. Knows where to put new configuration files when a new raft is started.
  */
 public class StorageConfigurationManager extends Actor {
-  private static final String PARTITION_METAFILE_NAME = "partition.json";
   private static final String PARTITION_LOG_DIR = "segments";
   private static final String PARTITION_STATES_DIR = "state";
-  private static final String PARTITION_INDEX_ROOT_DIR = "index";
-  private static final String PARTITION_INDEX_RUNTIME_DIR = "runtime";
-  private static final String PARTITION_INDEX_SNAPSHOTS_DIR = "snapshots";
 
   private final List<StorageConfiguration> configurations = new ArrayList<>();
 
   private final int[] partitionCountPerDataDirectory;
-  private final String indexBlockSize;
   private final List<String> directories;
   private final String segmentSize;
 
-  public StorageConfigurationManager(
-      List<String> dataDirectories, String segmentSize, final String indexBlockSize) {
+  public StorageConfigurationManager(List<String> dataDirectories, String segmentSize) {
     this.directories = dataDirectories;
     this.segmentSize = segmentSize;
     this.partitionCountPerDataDirectory = new int[dataDirectories.size()];
-    this.indexBlockSize = indexBlockSize;
   }
 
   @Override
@@ -67,30 +60,12 @@ public class StorageConfigurationManager extends Actor {
         dataDirectory.listFiles((d, f) -> new File(d, f).isDirectory());
 
     for (File partitionDirectory : partitionDirectories) {
-      final File configFile = new File(partitionDirectory, PARTITION_METAFILE_NAME);
+      final File logDirectory = new File(partitionDirectory, PARTITION_LOG_DIR);
+      final File statesDirectory = new File(partitionDirectory, PARTITION_STATES_DIR);
 
-      if (configFile.exists()) {
-        final File logDirectory = new File(partitionDirectory, PARTITION_LOG_DIR);
-        final File statesDirectory = new File(partitionDirectory, PARTITION_STATES_DIR);
-        final File indexDirectory = new File(partitionDirectory, PARTITION_INDEX_ROOT_DIR);
-        final File indexRuntimeDirectory = new File(indexDirectory, PARTITION_INDEX_RUNTIME_DIR);
-        final File indexSnapshotsDirectory =
-            new File(indexDirectory, PARTITION_INDEX_SNAPSHOTS_DIR);
-
-        configurations.add(
-            new StorageConfiguration(
-                configFile,
-                logDirectory,
-                indexSnapshotsDirectory,
-                statesDirectory,
-                indexRuntimeDirectory));
-        partitionCountPerDataDirectory[offset]++;
-      }
+      configurations.add(new StorageConfiguration(logDirectory, statesDirectory));
+      partitionCountPerDataDirectory[offset]++;
     }
-  }
-
-  public ActorFuture<List<StorageConfiguration>> getConfigurations() {
-    return actor.call(() -> new ArrayList<>(configurations));
   }
 
   // get existing or create new
@@ -115,37 +90,18 @@ public class StorageConfigurationManager extends Actor {
             try {
               partitionDirectory.mkdir();
 
-              final File metafile = new File(partitionDirectory, PARTITION_METAFILE_NAME);
-
               final File logDirectory = new File(partitionDirectory, PARTITION_LOG_DIR);
               logDirectory.mkdir();
 
               final File statesDirectory = new File(partitionDirectory, PARTITION_STATES_DIR);
               statesDirectory.mkdir();
 
-              final File indexDirectory = new File(partitionDirectory, PARTITION_INDEX_ROOT_DIR);
-              indexDirectory.mkdir();
-
-              final File indexRuntimeDirectory =
-                  new File(indexDirectory, PARTITION_INDEX_RUNTIME_DIR);
-              indexRuntimeDirectory.mkdir();
-
-              final File indexSnapshotsDirectory =
-                  new File(indexDirectory, PARTITION_INDEX_SNAPSHOTS_DIR);
-              indexSnapshotsDirectory.mkdir();
-
               final StorageConfiguration storage =
-                  new StorageConfiguration(
-                      metafile,
-                      logDirectory,
-                      indexSnapshotsDirectory,
-                      statesDirectory,
-                      indexRuntimeDirectory);
+                  new StorageConfiguration(logDirectory, statesDirectory);
 
               storage
                   .setPartitionId(partitionId)
-                  .setLogSegmentSize(new ByteValue(segmentSize).toBytes())
-                  .setIndexBlockSize(new ByteValue(indexBlockSize).toBytes());
+                  .setLogSegmentSize(new ByteValue(segmentSize).toBytes());
 
               configurations.add(storage);
 
@@ -182,13 +138,6 @@ public class StorageConfigurationManager extends Actor {
     }
 
     return minOffset;
-  }
-
-  public ActorFuture<Void> deleteConfiguration(StorageConfiguration configuration) {
-    return actor.call(
-        () -> {
-          configurations.remove(configuration);
-        });
   }
 
   public ActorFuture<Void> close() {

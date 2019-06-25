@@ -67,7 +67,6 @@ public class DistributedLogstreamType
 
   @Override
   public PrimitiveService newService(ServiceConfig serviceConfig) {
-    return new DefaultDistributedLogstreamService(
-        (DistributedLogstreamServiceConfig) serviceConfig);
+    return new DefaultDistributedLogstreamService();
   }
 }

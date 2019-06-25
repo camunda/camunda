@@ -95,11 +95,9 @@ public class DistributedLogRule extends ExternalResource {
       rootDirectory = Files.createTempDirectory("dl-test-" + nodeId + "-");
     } catch (Exception e) {
     }
-    final String memberId = String.valueOf(nodeId);
-
     config =
         new StorageConfigurationManager(
-            Collections.singletonList(rootDirectory.toAbsolutePath().toString()), "512M", "4M");
+            Collections.singletonList(rootDirectory.toAbsolutePath().toString()), "512M");
   }
 
   public Node getNode() {

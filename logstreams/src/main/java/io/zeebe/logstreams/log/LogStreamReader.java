@@ -82,6 +82,19 @@ public interface LogStreamReader extends Iterator<LoggedEvent>, CloseableSilentl
   long getPosition();
 
   /**
+   * The last log storage address, from which the last block of events was read.
+   *
+   * <p/>
+   * Useful if you want to found out the related block address, then just seek to a given position
+   * and call {@link #lastReadAddress).
+   *
+   * *Note:* The returned address is not the exact log event address.
+   *
+   * @return the last log storage address, from which the last block of events was read.
+   */
+  long lastReadAddress();
+
+  /**
    * Returns true if the log stream reader was closed.
    *
    * @return true if closed, false otherwise

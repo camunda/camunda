@@ -16,19 +16,13 @@
 package io.zeebe.logstreams.log;
 
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.impl.LogBlockIndexWriter;
 import io.zeebe.logstreams.impl.LogStorageAppender;
-import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.future.ActorFuture;
 
 /**
  * Represents a stream of events from a log storage.
- *
- * <p>Opening the log stream will start the indexing of the current existing log storage. The log
- * storage will separated into blocks, these blocks will be indexed by an LogController. The
- * LogBlockIndex is available and can be accessed via {@link LogStream#getLogBlockIndex()}.
  *
  * <p>The LogStream will append available events to the log storage with the help of an
  * LogController. The events are read from a given Dispatcher, if available. This can be stopped
@@ -71,13 +65,6 @@ public interface LogStream extends AutoCloseable {
   LogStorage getLogStorage();
 
   /**
-   * Returns the LogBlockIndex object, which is used for indexing the LogStorage.
-   *
-   * @return the log block index
-   */
-  LogBlockIndex getLogBlockIndex();
-
-  /**
    * Returns the writeBuffer, which is used by the LogStreamController to stream the content into
    * the log storage.
    *
@@ -92,14 +79,6 @@ public interface LogStream extends AutoCloseable {
    * @return the log stream controller
    */
   LogStorageAppender getLogStorageAppender();
-
-  /**
-   * Returns the log block index controller, which creates periodically the block index for the log
-   * storage.
-   *
-   * @return the log block index controller
-   */
-  LogBlockIndexWriter getLogBlockIndexWriter();
 
   /** Stops the streaming to the log storage. New events are no longer append to the log storage. */
   ActorFuture<Void> closeAppender();

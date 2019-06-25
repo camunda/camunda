@@ -110,6 +110,14 @@
       </dependency>
 
       <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-logstreams</artifactId>
+        <version>${project.version}</version>
+        <classifier>tests</classifier>
+        <type>test-jar</type>
+      </dependency>
+
+      <dependency>
         <groupId>org.agrona</groupId>
         <artifactId>agrona</artifactId>
         <version>${version.agrona}</version>

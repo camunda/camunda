@@ -28,13 +28,10 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.distributedlog.DistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
-import io.zeebe.distributedlog.impl.DistributedLogstreamServiceConfig;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
-import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
@@ -52,8 +49,6 @@ public class LogStreamTest {
   @Rule public ExpectedException thrown = ExpectedException.none();
 
   public TemporaryFolder tempFolder = new TemporaryFolder();
-  public TemporaryFolder snapshotFolder = new TemporaryFolder();
-  public TemporaryFolder indexFolder = new TemporaryFolder();
 
   public AutoCloseableRule closeables = new AutoCloseableRule();
   public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
@@ -62,23 +57,16 @@ public class LogStreamTest {
   @Rule
   public RuleChain chain =
       RuleChain.outerRule(tempFolder)
-          .around(snapshotFolder)
-          .around(indexFolder)
           .around(actorScheduler)
           .around(serviceContainer)
           .around(closeables);
 
   protected LogStream buildLogStream(final Consumer<LogStreamBuilder> streamConfig) {
-    final StateStorage stateStorage =
-        new StateStorage(indexFolder.getRoot(), snapshotFolder.getRoot());
-
     final LogStreamBuilder builder = new LogStreamBuilder(PARTITION_ID);
     builder
         .logName("test-log-name")
         .serviceContainer(serviceContainer.get())
-        .logRootPath(tempFolder.getRoot().getAbsolutePath())
-        .snapshotPeriod(Duration.ofMinutes(5))
-        .indexStateStorage(stateStorage);
+        .logRootPath(tempFolder.getRoot().getAbsolutePath());
 
     streamConfig.accept(builder);
 
@@ -86,8 +74,7 @@ public class LogStreamTest {
 
     final DistributedLogstreamPartition mockDistLog = mock(DistributedLogstreamPartition.class);
 
-    final DistributedLogstreamService distributedLogImpl =
-        new DefaultDistributedLogstreamService(new DistributedLogstreamServiceConfig());
+    final DistributedLogstreamService distributedLogImpl = new DefaultDistributedLogstreamService();
 
     final String nodeId = "0";
     try {
@@ -153,8 +140,6 @@ public class LogStreamTest {
     assertThat(logStream.getPartitionId()).isEqualTo(PARTITION_ID);
     assertThat(logStream.getLogName()).isEqualTo("test-log-name");
 
-    assertThat(logStream.getLogBlockIndexWriter()).isNotNull();
-    assertThat(logStream.getLogBlockIndex()).isNotNull();
     assertThat(logStream.getLogStorage()).isNotNull();
     assertThat(logStream.getLogStorage().isOpen()).isTrue();
 
@@ -215,7 +200,7 @@ public class LogStreamTest {
   }
 
   @Test
-  public void shouldSetCommitPosition() throws Exception {
+  public void shouldSetCommitPosition() {
     // given
     final LogStream logStream = buildLogStream();
 
