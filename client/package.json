@@ -21,7 +21,6 @@
     "test": "react-scripts test --env=jsdom",
     "test:ci": "CI=true react-scripts test --env=jsdom --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
     "eject": "react-scripts eject",
-    "precommit": "lint-staged",
     "styleguide": "styleguidist server"
   },
   "jest-junit": {
@@ -60,5 +59,10 @@
     "not dead",
     "not ie <= 11",
     "not op_mini all"
-  ]
+  ],
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  }
 }
