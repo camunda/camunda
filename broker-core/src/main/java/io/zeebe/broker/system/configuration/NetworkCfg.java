@@ -20,6 +20,9 @@ package io.zeebe.broker.system.configuration;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
 
+import io.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
+import io.zeebe.broker.system.configuration.SocketBindingCfg.InternalApiCfg;
+import io.zeebe.broker.system.configuration.SocketBindingCfg.MonitoringApiCfg;
 import io.zeebe.util.Environment;
 
 public class NetworkCfg implements ConfigurationEntry {
@@ -32,9 +35,9 @@ public class NetworkCfg implements ConfigurationEntry {
   private String host = DEFAULT_HOST;
   private int portOffset = 0;
 
-  private SocketBindingCfg commandApi = new SocketBindingCfg(DEFAULT_COMMAND_API_PORT);
-  private SocketBindingCfg internalApi = new SocketBindingCfg(DEFAULT_INTERNAL_API_PORT);
-  private SocketBindingCfg monitoringApi = new SocketBindingCfg(DEFAULT_MONITORING_API_PORT);
+  private CommandApiCfg commandApi = new CommandApiCfg();
+  private InternalApiCfg internalApi = new InternalApiCfg();
+  private MonitoringApiCfg monitoringApi = new MonitoringApiCfg();
 
   @Override
   public void init(
@@ -70,7 +73,7 @@ public class NetworkCfg implements ConfigurationEntry {
     return commandApi;
   }
 
-  public void setCommandApi(final SocketBindingCfg commandApi) {
+  public void setCommandApi(final CommandApiCfg commandApi) {
     this.commandApi = commandApi;
   }
 
@@ -78,7 +81,7 @@ public class NetworkCfg implements ConfigurationEntry {
     return monitoringApi;
   }
 
-  public void setMonitoringApi(SocketBindingCfg monitoringApi) {
+  public void setMonitoringApi(MonitoringApiCfg monitoringApi) {
     this.monitoringApi = monitoringApi;
   }
 
@@ -86,7 +89,7 @@ public class NetworkCfg implements ConfigurationEntry {
     return internalApi;
   }
 
-  public void setInternalApi(SocketBindingCfg internalApi) {
+  public void setInternalApi(InternalApiCfg internalApi) {
     this.internalApi = internalApi;
   }
 
