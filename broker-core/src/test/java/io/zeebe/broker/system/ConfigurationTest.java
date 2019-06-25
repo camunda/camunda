@@ -54,6 +54,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,7 +79,7 @@ public class ConfigurationTest {
   @Test
   public void shouldUseClusterNameFromEnvironment() {
     environment.put(ENV_CLUSTER_NAME, "test-cluster");
-    assertClusterName("default", "test-cluster");
+    assertDefaultClusterName("test-cluster");
   }
 
   @Test
@@ -89,7 +90,7 @@ public class ConfigurationTest {
   @Test
   public void shouldUseNodeIdFromEnvironment() {
     environment.put(ENV_NODE_ID, "42");
-    assertNodeId("default", 42);
+    assertDefaultNodeId(42);
   }
 
   @Test
@@ -101,16 +102,13 @@ public class ConfigurationTest {
   @Test
   public void shouldIgnoreInvalidNodeIdFromEnvironment() {
     environment.put(ENV_NODE_ID, "a");
-    assertNodeId("default", DEFAULT_NODE_ID);
+    assertDefaultNodeId(DEFAULT_NODE_ID);
   }
 
   @Test
   public void shouldUseDefaultPorts() {
-    assertPorts(
-        "default",
-        DEFAULT_COMMAND_API_PORT,
-        DEFAULT_INTERNAL_API_PORT,
-        DEFAULT_MONITORING_API_PORT);
+    assertDefaultPorts(
+        DEFAULT_COMMAND_API_PORT, DEFAULT_INTERNAL_API_PORT, DEFAULT_MONITORING_API_PORT);
   }
 
   @Test
@@ -138,8 +136,7 @@ public class ConfigurationTest {
   public void shouldUsePortOffsetFromEnvironment() {
     environment.put(ENV_PORT_OFFSET, "5");
     final int offset = 50;
-    assertPorts(
-        "default",
+    assertDefaultPorts(
         DEFAULT_COMMAND_API_PORT + offset,
         DEFAULT_INTERNAL_API_PORT + offset,
         DEFAULT_MONITORING_API_PORT + offset);
@@ -155,11 +152,8 @@ public class ConfigurationTest {
   @Test
   public void shouldIgnoreInvalidPortOffsetFromEnvironment() {
     environment.put(ENV_PORT_OFFSET, "a");
-    assertPorts(
-        "default",
-        DEFAULT_COMMAND_API_PORT,
-        DEFAULT_INTERNAL_API_PORT,
-        DEFAULT_MONITORING_API_PORT);
+    assertDefaultPorts(
+        DEFAULT_COMMAND_API_PORT, DEFAULT_INTERNAL_API_PORT, DEFAULT_MONITORING_API_PORT);
   }
 
   @Test
@@ -206,36 +200,24 @@ public class ConfigurationTest {
   @Test
   public void shouldEnableDebugLogExporter() {
     // given
-    final ExporterCfg exporterCfg = DebugLogExporter.defaultConfig(false);
     environment.put(ENV_DEBUG_EXPORTER, "true");
 
-    // when
-    final BrokerCfg brokerCfg = readConfig("default");
-
     // then
-    assertThat(brokerCfg.getExporters())
-        .usingRecursiveFieldByFieldElementComparator()
-        .contains(exporterCfg);
+    assertDefaultDebugLogExporter(false);
   }
 
   @Test
   public void shouldEnableDebugLogExporterWithPrettyOption() {
     // given
-    final ExporterCfg exporterCfg = DebugLogExporter.defaultConfig(true);
     environment.put(ENV_DEBUG_EXPORTER, "pretty");
 
-    // when
-    final BrokerCfg brokerCfg = readConfig("default");
-
     // then
-    assertThat(brokerCfg.getExporters())
-        .usingRecursiveFieldByFieldElementComparator()
-        .contains(exporterCfg);
+    assertDefaultDebugLogExporter(true);
   }
 
   @Test
   public void shouldUseDefaultHost() {
-    assertHost("default", DEFAULT_HOST);
+    assertDefaultHost(DEFAULT_HOST);
   }
 
   @Test
@@ -257,7 +239,7 @@ public class ConfigurationTest {
   @Test
   public void shouldUseHostFromEnvironment() {
     environment.put(ENV_HOST, "2.2.2.2");
-    assertHost("default", "2.2.2.2");
+    assertDefaultHost("2.2.2.2");
   }
 
   @Test
@@ -275,7 +257,7 @@ public class ConfigurationTest {
 
   @Test
   public void shouldUseDefaultContactPoints() {
-    assertContactPoints("default", DEFAULT_CONTACT_POINTS);
+    assertDefaultContactPoints(DEFAULT_CONTACT_POINTS);
   }
 
   @Test
@@ -286,7 +268,7 @@ public class ConfigurationTest {
   @Test
   public void shouldUseContactPointsFromEnvironment() {
     environment.put(ENV_INITIAL_CONTACT_POINTS, "foo,bar");
-    assertContactPoints("default", "foo", "bar");
+    assertDefaultContactPoints("foo", "bar");
   }
 
   @Test
@@ -315,7 +297,7 @@ public class ConfigurationTest {
 
   @Test
   public void shouldUseDefaultDirectories() {
-    assertDirectories("default", DEFAULT_DIRECTORY);
+    assertDefaultDirectories(DEFAULT_DIRECTORY);
   }
 
   @Test
@@ -326,7 +308,7 @@ public class ConfigurationTest {
   @Test
   public void shouldUseDirectoriesFromEnvironment() {
     environment.put(ENV_DIRECTORIES, "foo,bar");
-    assertDirectories("default", "foo", "bar");
+    assertDefaultDirectories("foo", "bar");
   }
 
   @Test
@@ -349,16 +331,12 @@ public class ConfigurationTest {
 
   @Test
   public void shouldReadDefaultSystemClusterConfiguration() {
-    // given
-    final BrokerCfg cfg = readConfig("default");
-    final ClusterCfg cfgCluster = cfg.getCluster();
-
-    // when - then
-    assertThat(cfgCluster.getInitialContactPoints()).isEmpty();
-    assertThat(cfgCluster.getNodeId()).isEqualTo(DEFAULT_NODE_ID);
-    assertThat(cfgCluster.getPartitionsCount()).isEqualTo(DEFAULT_PARTITIONS_COUNT);
-    assertThat(cfgCluster.getReplicationFactor()).isEqualTo(DEFAULT_REPLICATION_FACTOR);
-    assertThat(cfgCluster.getClusterSize()).isEqualTo(DEFAULT_CLUSTER_SIZE);
+    assertDefaultSystemClusterConfiguration(
+        DEFAULT_NODE_ID,
+        DEFAULT_PARTITIONS_COUNT,
+        DEFAULT_REPLICATION_FACTOR,
+        DEFAULT_CLUSTER_SIZE,
+        Collections.emptyList());
   }
 
   @Test
@@ -448,32 +426,20 @@ public class ConfigurationTest {
 
   @Test
   public void shouldReadDefaultEmbedGateway() {
-    // when
-    final EmbeddedGatewayCfg gatewayCfg = readConfig("default").getGateway();
-
-    // then
-    assertThat(gatewayCfg.isEnable()).isTrue();
+    assertDefaultEmbeddedGatewayEnabled(true);
   }
 
   @Test
   public void shouldReadEmbedGateway() {
-    // when
-    final EmbeddedGatewayCfg gatewayCfg = readConfig("disabled-gateway").getGateway();
-
-    // then
-    assertThat(gatewayCfg.isEnable()).isFalse();
+    assertEmbeddedGatewayEnabled("disabled-gateway", false);
   }
 
   @Test
   public void shouldSetEmbedGatewayViaEnvironment() {
     // given
     environment.put(ENV_EMBED_GATEWAY, "true");
-
-    // when
-    final EmbeddedGatewayCfg gatewayCfg = readConfig("disabled-gateway").getGateway();
-
     // then
-    assertThat(gatewayCfg.isEnable()).isTrue();
+    assertEmbeddedGatewayEnabled("disabled-gateway", true);
   }
 
   private BrokerCfg readConfig(final String name) {
@@ -488,14 +454,29 @@ public class ConfigurationTest {
     return config;
   }
 
+  private void assertDefaultNodeId(final int nodeId) {
+    assertNodeId("default", nodeId);
+    assertNodeId("empty", nodeId);
+  }
+
   private void assertNodeId(final String configFileName, final int nodeId) {
     final BrokerCfg cfg = readConfig(configFileName);
     assertThat(cfg.getCluster().getNodeId()).isEqualTo(nodeId);
   }
 
+  private void assertDefaultClusterName(String clusterName) {
+    assertClusterName("default", clusterName);
+    assertClusterName("empty", clusterName);
+  }
+
   private void assertClusterName(final String configFileName, final String clusterName) {
     final BrokerCfg cfg = readConfig(configFileName);
     assertThat(cfg.getCluster().getClusterName()).isEqualTo(clusterName);
+  }
+
+  private void assertDefaultPorts(final int command, final int internal, final int monitoring) {
+    assertPorts("default", command, internal, monitoring);
+    assertPorts("empty", command, internal, monitoring);
   }
 
   private void assertPorts(
@@ -505,6 +486,11 @@ public class ConfigurationTest {
     assertThat(network.getCommandApi().getPort()).isEqualTo(command);
     assertThat(network.getInternalApi().getPort()).isEqualTo(internal);
     assertThat(network.getMonitoringApi().getPort()).isEqualTo(monitoring);
+  }
+
+  private void assertDefaultHost(final String host) {
+    assertHost("default", host);
+    assertHost("empty", host);
   }
 
   private void assertHost(final String configFileName, final String host) {
@@ -527,6 +513,15 @@ public class ConfigurationTest {
     assertThat(networkCfg.getMonitoringApi().getHost()).isEqualTo(monitoring);
   }
 
+  private void assertDefaultContactPoints(final String... contactPoints) {
+    assertDefaultContactPoints(Arrays.asList(contactPoints));
+  }
+
+  private void assertDefaultContactPoints(final List<String> contactPoints) {
+    assertContactPoints("default", contactPoints);
+    assertContactPoints("empty", contactPoints);
+  }
+
   private void assertContactPoints(final String configFileName, final String... contactPoints) {
     assertContactPoints(configFileName, Arrays.asList(contactPoints));
   }
@@ -534,6 +529,11 @@ public class ConfigurationTest {
   private void assertContactPoints(final String configFileName, final List<String> contactPoints) {
     final ClusterCfg cfg = readConfig(configFileName).getCluster();
     assertThat(cfg.getInitialContactPoints()).containsExactlyElementsOf(contactPoints);
+  }
+
+  private void assertDefaultDirectories(final String... directories) {
+    assertDirectories("default", directories);
+    assertDirectories("empty", directories);
   }
 
   private void assertDirectories(final String configFileName, final String... directories) {
@@ -547,5 +547,58 @@ public class ConfigurationTest {
             .map(d -> Paths.get(BROKER_BASE, d).toString())
             .collect(Collectors.toList());
     assertThat(cfg.getDirectories()).containsExactlyElementsOf(expected);
+  }
+
+  private void assertDefaultEmbeddedGatewayEnabled(boolean enabled) {
+    assertEmbeddedGatewayEnabled("default", enabled);
+    assertEmbeddedGatewayEnabled("empty", enabled);
+  }
+
+  private void assertEmbeddedGatewayEnabled(String configFileName, boolean enabled) {
+    final EmbeddedGatewayCfg gatewayCfg = readConfig(configFileName).getGateway();
+    assertThat(gatewayCfg.isEnable()).isEqualTo(enabled);
+  }
+
+  private void assertDefaultDebugLogExporter(boolean prettyPrint) {
+    assertDebugLogExporter("default", prettyPrint);
+    assertDebugLogExporter("empty", prettyPrint);
+  }
+
+  private void assertDebugLogExporter(String configFileName, boolean prettyPrint) {
+    final ExporterCfg exporterCfg = DebugLogExporter.defaultConfig(prettyPrint);
+    final BrokerCfg brokerCfg = readConfig(configFileName);
+
+    assertThat(brokerCfg.getExporters())
+        .usingRecursiveFieldByFieldElementComparator()
+        .contains(exporterCfg);
+  }
+
+  private void assertDefaultSystemClusterConfiguration(
+      int nodeId,
+      int partitionsCount,
+      int replicationFactor,
+      int clusterSize,
+      List<String> initialContactPoints) {
+    assertSystemClusterConfiguration(
+        "default", nodeId, partitionsCount, replicationFactor, clusterSize, initialContactPoints);
+    assertSystemClusterConfiguration(
+        "empty", nodeId, partitionsCount, replicationFactor, clusterSize, initialContactPoints);
+  }
+
+  private void assertSystemClusterConfiguration(
+      String configFileName,
+      int nodeId,
+      int partitionsCount,
+      int replicationFactor,
+      int clusterSize,
+      List<String> initialContactPoints) {
+    final BrokerCfg cfg = readConfig(configFileName);
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    assertThat(cfgCluster.getNodeId()).isEqualTo(nodeId);
+    assertThat(cfgCluster.getPartitionsCount()).isEqualTo(partitionsCount);
+    assertThat(cfgCluster.getReplicationFactor()).isEqualTo(replicationFactor);
+    assertThat(cfgCluster.getClusterSize()).isEqualTo(clusterSize);
+    assertThat(cfgCluster.getInitialContactPoints()).isEqualTo(initialContactPoints);
   }
 }
