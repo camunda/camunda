@@ -329,8 +329,8 @@ public class JsonSerializableToJsonTest {
               final String elementId = "activity";
               final int activityInstanceKey = 123;
 
-              final Map<String, Object> customHeaders =
-                  Collections.singletonMap("workerVersion", 42);
+              final Map<String, String> customHeaders =
+                  Collections.singletonMap("workerVersion", "42");
 
               final JobRecord record =
                   new JobRecord()
