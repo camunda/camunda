@@ -2,52 +2,27 @@
 ## 0.19.0-alpha2 (2019-06-25)
 
 
-#### Features
-
-* **broker:**  filter duplicated deployments ([c34e5995](https://github.com/zeebe-io/zeebe/commit/c34e59958afc858b1f164b086a6245820215bec5))
-
 #### Breaking Changes
 
 * **broker:**
-  *  rename keys in workflow instance creation mapping ([d32286b1](https://github.com/zeebe-io/zeebe/commit/d32286b15bc0ca8e557532bf02644a78eea67cfe), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  disable variable indexing in elasticsearch exporter mappings ([44a38909](https://github.com/zeebe-io/zeebe/commit/44a38909bb729cdef144472c9d8fa4a04868bd0d), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  disable indexing of deployment resource in elasticsearch ([8465e6a0](https://github.com/zeebe-io/zeebe/commit/8465e6a0fcc1ed5286b6da8e66f7935fcc92125d), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  remove metrics file writer ([2aae727d](https://github.com/zeebe-io/zeebe/commit/2aae727d229a2fd4718496a3ec328585712eb164), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-* **clients/java:**  reorganize packages ([cdccc34c](https://github.com/zeebe-io/zeebe/commit/cdccc34c2fd8daa41b398b5bc46a20aea337f096), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-* **protocol:**
-  *  rename document to variables in VariableDocumentRecord ([41975975](https://github.com/zeebe-io/zeebe/commit/41975975c207385b57622da5d71c2c5df98acce6), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  flatten RecordMetadata into Record ([6593979f](https://github.com/zeebe-io/zeebe/commit/6593979f19174861fe49c58204bc556cef1503fd), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  squash job headers into record value ([46c8061d](https://github.com/zeebe-io/zeebe/commit/46c8061d82120cecdbd6add93268e9b6b6a5a65c), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  change custom headers to Map<String,String> ([2d05e3bd](https://github.com/zeebe-io/zeebe/commit/2d05e3bdf56b15efa3f3b6ac5a1056cf0deb9126), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  IncidentRecord return ErrorType instead of String ([79e2c080](https://github.com/zeebe-io/zeebe/commit/79e2c080e4b7d4d1368db896f63dd0b473baf598), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  remove producer id from record ([ff6b1dd5](https://github.com/zeebe-io/zeebe/commit/ff6b1dd5b6516110c105e7dd949d154a519f3179), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  rework WorkflowInstanceCreationRecordValue ([7ee99e7e](https://github.com/zeebe-io/zeebe/commit/7ee99e7e91939ee58d94dcdf6bd36e1bbbb1a06a), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-* **protocol-impl:**
-  *  use -1 as deadline default ([018924a5](https://github.com/zeebe-io/zeebe/commit/018924a585af671f32430348944fea7bc8c2f3ce), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  rename handlerFlowNodeId to targetElementId ([1cd845d7](https://github.com/zeebe-io/zeebe/commit/1cd845d73fd1486d51f977767302480001b47a26), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-
-#### Bug Fixes
-
-* **broker:**
-  *  rename keys in workflow instance creation mapping ([d32286b1](https://github.com/zeebe-io/zeebe/commit/d32286b15bc0ca8e557532bf02644a78eea67cfe), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  disable variable indexing in elasticsearch exporter mappings ([44a38909](https://github.com/zeebe-io/zeebe/commit/44a38909bb729cdef144472c9d8fa4a04868bd0d), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  disable indexing of deployment resource in elasticsearch ([8465e6a0](https://github.com/zeebe-io/zeebe/commit/8465e6a0fcc1ed5286b6da8e66f7935fcc92125d), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  remove metrics file writer ([2aae727d](https://github.com/zeebe-io/zeebe/commit/2aae727d229a2fd4718496a3ec328585712eb164), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+  *  rename keys in workflow instance creation mapping ([d32286b1](https://github.com/zeebe-io/zeebe/commit/d32286b15bc0ca8e557532bf02644a78eea67cfe))
+  *  disable variable indexing in elasticsearch exporter mappings ([44a38909](https://github.com/zeebe-io/zeebe/commit/44a38909bb729cdef144472c9d8fa4a04868bd0d))
+  *  disable indexing of deployment resource in elasticsearch ([8465e6a0](https://github.com/zeebe-io/zeebe/commit/8465e6a0fcc1ed5286b6da8e66f7935fcc92125d))
+  *  remove metrics file writer ([2aae727d](https://github.com/zeebe-io/zeebe/commit/2aae727d229a2fd4718496a3ec328585712eb164))
+  *  rename document to variables in VariableDocumentRecord ([41975975](https://github.com/zeebe-io/zeebe/commit/41975975c207385b57622da5d71c2c5df98acce6))
+  *  flatten RecordMetadata into Record ([6593979f](https://github.com/zeebe-io/zeebe/commit/6593979f19174861fe49c58204bc556cef1503fd))
+  *  squash job headers into record value ([46c8061d](https://github.com/zeebe-io/zeebe/commit/46c8061d82120cecdbd6add93268e9b6b6a5a65c))
+  *  change custom headers to Map<String,String> ([2d05e3bd](https://github.com/zeebe-io/zeebe/commit/2d05e3bdf56b15efa3f3b6ac5a1056cf0deb9126))
+  *  IncidentRecord return ErrorType instead of String ([79e2c080](https://github.com/zeebe-io/zeebe/commit/79e2c080e4b7d4d1368db896f63dd0b473baf598))
+  *  remove producer id from record ([ff6b1dd5](https://github.com/zeebe-io/zeebe/commit/ff6b1dd5b6516110c105e7dd949d154a519f3179))
+  *  change return type of Record#getVariables() to map ([d0e9bf200](https://github.com/zeebe-io/zeebe/commit/d0e9bf2000728bc9bb420b525072a29f3a5530f9))
+  *  rework WorkflowInstanceCreationRecordValue ([7ee99e7e](https://github.com/zeebe-io/zeebe/commit/7ee99e7e91939ee58d94dcdf6bd36e1bbbb1a06a))
 * **clients/go:**  flatten job headers ([1a1555de](https://github.com/zeebe-io/zeebe/commit/1a1555de62ce38cf0ddcacd7577ed8160d8a1ac1))
-* **clients/java:**  reorganize packages ([cdccc34c](https://github.com/zeebe-io/zeebe/commit/cdccc34c2fd8daa41b398b5bc46a20aea337f096), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-* **protocol:**
-  *  rename document to variables in VariableDocumentRecord ([41975975](https://github.com/zeebe-io/zeebe/commit/41975975c207385b57622da5d71c2c5df98acce6), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  flatten RecordMetadata into Record ([6593979f](https://github.com/zeebe-io/zeebe/commit/6593979f19174861fe49c58204bc556cef1503fd), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  squash job headers into record value ([46c8061d](https://github.com/zeebe-io/zeebe/commit/46c8061d82120cecdbd6add93268e9b6b6a5a65c), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  change custom headers to Map<String,String> ([2d05e3bd](https://github.com/zeebe-io/zeebe/commit/2d05e3bdf56b15efa3f3b6ac5a1056cf0deb9126), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  use of long instead of time objects ([2a907aaa](https://github.com/zeebe-io/zeebe/commit/2a907aaa1866be2306f70075dff5f6f24b48f9ae))
-  *  IncidentRecord return ErrorType instead of String ([79e2c080](https://github.com/zeebe-io/zeebe/commit/79e2c080e4b7d4d1368db896f63dd0b473baf598), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  remove producer id from record ([ff6b1dd5](https://github.com/zeebe-io/zeebe/commit/ff6b1dd5b6516110c105e7dd949d154a519f3179), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  rework WorkflowInstanceCreationRecordValue ([7ee99e7e](https://github.com/zeebe-io/zeebe/commit/7ee99e7e91939ee58d94dcdf6bd36e1bbbb1a06a), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-* **protocol-impl:**
-  *  use -1 as deadline default ([018924a5](https://github.com/zeebe-io/zeebe/commit/018924a585af671f32430348944fea7bc8c2f3ce), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  rename handlerFlowNodeId to targetElementId ([1cd845d7](https://github.com/zeebe-io/zeebe/commit/1cd845d73fd1486d51f977767302480001b47a26), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **clients/java:**  reorganize packages ([cdccc34c](https://github.com/zeebe-io/zeebe/commit/cdccc34c2fd8daa41b398b5bc46a20aea337f096))
 
+#### Features
+
+* **broker:**  filter duplicated deployments ([c34e5995](https://github.com/zeebe-io/zeebe/commit/c34e59958afc858b1f164b086a6245820215bec5))
 
 
 <a name="0.19.0-alpha1"></a>
