@@ -72,7 +72,6 @@ export const NodeContainer = themed(styled.div`
   })};
 
   position: absolute;
-  height: 100%;
   width: inherit;
   min-width: 100%;
   min-height: min-content;
