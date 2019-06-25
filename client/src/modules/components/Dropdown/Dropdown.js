@@ -154,7 +154,7 @@ export default class Dropdown extends React.Component {
       options[Math.max(selectedOption - 1, 0)].focus();
     }
 
-    if (String.fromCharCode(evt.keyCode).match(/(\w)/g)) {
+    if (/^\w$/.test(evt.key)) {
       const matchedOption = findLetterOption(
         options.slice(1),
         evt.key,

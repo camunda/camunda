@@ -16,5 +16,7 @@ export function findLetterOption(options, letter, startIndex) {
 }
 
 function findOptionFromIndex(options, letter, startIndex) {
-  return options.slice(startIndex).find(el => el.textContent[0].toLowerCase() === letter);
+  return options
+    .slice(startIndex)
+    .find(el => el.textContent[0].toLowerCase() === letter.toLowerCase());
 }
