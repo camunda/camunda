@@ -1,6 +1,10 @@
 .DateFilter__inputs {
   margin-bottom: 36px;
   text-align: center;
+
+  .Select {
+    width: 110px;
+  }
 }
 .DateFilter__modal {
   .Labeled .label {

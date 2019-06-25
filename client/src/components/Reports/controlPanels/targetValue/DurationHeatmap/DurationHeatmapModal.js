@@ -148,7 +148,7 @@ export default class DurationHeatmapModal extends React.Component {
               value={settings.value}
               type="number"
               ref={this.storeInputReferenceFor(id)}
-              onChange={this.setTarget('value', id)}
+              onChange={evt => this.setTarget('value', id)(evt.target.value)}
               onFocus={() => {
                 this.updateFocus(id);
               }}

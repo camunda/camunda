@@ -73,14 +73,24 @@ export default class Select extends React.Component {
     }
   };
 
+  ignoreFragment = children => {
+    if (children && children.type === React.Fragment) {
+      return children.props.children;
+    }
+
+    return children;
+  };
+
   render() {
+    const children = this.ignoreFragment(this.props.children);
+
     return (
       <Dropdown
         {...this.props}
         label={this.state.selectedLabel}
         className={classnames('Select', this.props.className)}
       >
-        {this.renderChildrenWithProps(this.props.children)}
+        {this.renderChildrenWithProps(children)}
       </Dropdown>
     );
   }

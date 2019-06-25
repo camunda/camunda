@@ -210,10 +210,13 @@ export default class Dropdown extends React.Component {
               </li>
             ))}
           </ul>
-          <ul className="fixedList">
-            {this.props.fixedOptions &&
-              this.props.fixedOptions.map((item, idx) => <li key={idx}>{item}</li>)}
-          </ul>
+          {this.props.fixedOptions && (
+            <ul className="fixedList">
+              {this.props.fixedOptions.map((item, idx) => (
+                <li key={idx}>{item}</li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     );
