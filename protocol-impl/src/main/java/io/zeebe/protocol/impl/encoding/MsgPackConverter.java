@@ -17,23 +17,14 @@ package io.zeebe.protocol.impl.encoding;
 
 import static io.zeebe.util.StringUtil.getBytes;
 
-import com.fasterxml.jackson.core.JsonEncoding;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.core.JsonParser.Feature;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.JsonSerializable;
 import io.zeebe.util.buffer.BufferUtil;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -164,12 +155,11 @@ public final class MsgPackConverter {
   private static <T extends Object> Map<String, T> convertToMap(
       TypeReference<HashMap<String, T>> typeRef, DirectBuffer buffer) {
     final byte[] msgpackBytes = BufferUtil.bufferAsArray(buffer);
-    final byte[] jsonBytes = convertToJsonBytes(new ByteArrayInputStream(msgpackBytes));
 
     try {
-      return JSON_OBJECT_MAPPER.readValue(jsonBytes, typeRef);
+      return MESSSAGE_PACK_OBJECT_MAPPER.readValue(msgpackBytes, typeRef);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Failed to deserialize MessagePack to Map", e);
     }
   }
 
@@ -178,7 +168,7 @@ public final class MsgPackConverter {
       return MESSSAGE_PACK_OBJECT_MAPPER.writeValueAsBytes(value);
     } catch (IOException e) {
       throw new RuntimeException(
-          String.format("Failed to serialize object '%s' to Msgpack", value), e);
+          String.format("Failed to serialize object '%s' to MessagePack", value), e);
     }
   }
 
