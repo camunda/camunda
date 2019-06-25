@@ -73,7 +73,7 @@ public class WorkflowZeebeRecordProcessor {
   private WorkflowIndex workflowIndex;
 
   public void processDeploymentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
-    final String intentStr = record.getMetadata().getIntent().name();
+    final String intentStr = record.getIntent().name();
 
     if (STATES.contains(intentStr)) {
       DeploymentRecordValueImpl recordValue = (DeploymentRecordValueImpl)record.getValue();

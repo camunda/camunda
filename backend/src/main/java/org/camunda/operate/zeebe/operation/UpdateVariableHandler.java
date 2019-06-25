@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.zeebe.operation;
 
+import io.zeebe.client.api.command.ClientException;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.exceptions.PersistenceException;
@@ -14,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.cmd.ClientException;
 
 /**
  * Update the variable.

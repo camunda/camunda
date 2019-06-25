@@ -107,7 +107,7 @@ public class ElasticsearchBulkProcessor {
         Map<Long, List<RecordImpl<JobRecordValueImpl>>> groupedJobRecords =
             zeebeRecords.stream()
                 .map(obj -> (RecordImpl<JobRecordValueImpl>) obj)
-                .collect(Collectors.groupingBy(obj -> obj.getValue().getHeaders().getElementInstanceKey()));
+                .collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey()));
         eventZeebeRecordProcessor.processJobRecord(groupedJobRecords, bulkRequest);
         break;
       default:

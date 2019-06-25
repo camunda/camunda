@@ -5,24 +5,82 @@
  */
 package org.camunda.operate.zeebeimport.record.value;
 
-import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 import org.camunda.operate.zeebeimport.record.RecordValueWithPayloadImpl;
-import org.camunda.operate.zeebeimport.record.value.job.HeadersImpl;
 import io.zeebe.protocol.record.value.JobRecordValue;
-import io.zeebe.protocol.record.value.job.Headers;
 
 public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements JobRecordValue {
+
+  private String bpmnProcessId;
+  private String elementId;
+  private long elementInstanceKey;
+  private long workflowInstanceKey;
+  private long workflowKey;
+  private int workflowDefinitionVersion;
+
   private String type;
   private String worker;
-  private Instant deadline;
-  private HeadersImpl headers;
-  private Map<String, Object> customHeaders;
+  private long deadline;
+  private Map<String, String> customHeaders;
   private int retries;
   private String errorMessage;
 
   public JobRecordValueImpl() {
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  @Override
+  public String getElementId() {
+    return elementId;
+  }
+
+  @Override
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
+  }
+
+  @Override
+  public long getWorkflowInstanceKey() {
+    return workflowInstanceKey;
+  }
+
+  @Override
+  public long getWorkflowKey() {
+    return workflowKey;
+  }
+
+  @Override
+  public int getWorkflowDefinitionVersion() {
+    return workflowDefinitionVersion;
+  }
+
+  public void setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+  }
+
+  public void setElementId(String elementId) {
+    this.elementId = elementId;
+  }
+
+  public void setElementInstanceKey(long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
+  }
+
+  public void setWorkflowInstanceKey(long workflowInstanceKey) {
+    this.workflowInstanceKey = workflowInstanceKey;
+  }
+
+  public void setWorkflowKey(long workflowKey) {
+    this.workflowKey = workflowKey;
+  }
+
+  public void setWorkflowDefinitionVersion(int workflowDefinitionVersion) {
+    this.workflowDefinitionVersion = workflowDefinitionVersion;
   }
 
   @Override
@@ -31,12 +89,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   }
 
   @Override
-  public Headers getHeaders() {
-    return headers;
-  }
-
-  @Override
-  public Map<String, Object> getCustomHeaders() {
+  public Map<String, String> getCustomHeaders() {
     return customHeaders;
   }
 
@@ -51,7 +104,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   }
 
   @Override
-  public Instant getDeadline() {
+  public long getDeadline() {
     return deadline;
   }
 
@@ -68,15 +121,11 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     this.worker = worker;
   }
 
-  public void setDeadline(Instant deadline) {
+  public void setDeadline(long deadline) {
     this.deadline = deadline;
   }
 
-  public void setHeaders(HeadersImpl headers) {
-    this.headers = headers;
-  }
-
-  public void setCustomHeaders(Map<String, Object> customHeaders) {
+  public void setCustomHeaders(Map<String, String> customHeaders) {
     this.customHeaders = customHeaders;
   }
 
@@ -100,23 +149,45 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
       return false;
     }
     final JobRecordValueImpl that = (JobRecordValueImpl) o;
-    return retries == that.retries
+    return elementInstanceKey == that.elementInstanceKey
+        && workflowInstanceKey == that.workflowInstanceKey
+        && workflowKey == that.workflowKey
+        && workflowDefinitionVersion == that.workflowDefinitionVersion
+        && retries == that.retries
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(elementId, that.elementId)
         && Objects.equals(type, that.type)
         && Objects.equals(worker, that.worker)
         && Objects.equals(deadline, that.deadline)
-        && Objects.equals(headers, that.headers)
         && Objects.equals(customHeaders, that.customHeaders);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), type, worker, deadline, headers, customHeaders, retries);
+    return Objects.hash(super.hashCode(), bpmnProcessId, elementId,
+        elementInstanceKey, workflowInstanceKey, workflowKey,
+        workflowDefinitionVersion, type, worker, deadline,
+        customHeaders, retries);
   }
 
   @Override
   public String toString() {
     return "JobRecordValueImpl{"
-        + "type='"
+        + "bpmnProcessId='"
+        + bpmnProcessId
+        + '\''
+        + ", elementId='"
+        + elementId
+        + '\''
+        + ", elementInstanceKey="
+        + elementInstanceKey
+        + ", workflowInstanceKey="
+        + workflowInstanceKey
+        + ", workflowKey="
+        + workflowKey
+        + ", workflowDefinitionVersion="
+        + workflowDefinitionVersion
+        + ", type='"
         + type
         + '\''
         + ", worker='"
@@ -124,8 +195,6 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         + '\''
         + ", deadline="
         + deadline
-        + ", headers="
-        + headers
         + ", customHeaders="
         + customHeaders
         + ", retries="

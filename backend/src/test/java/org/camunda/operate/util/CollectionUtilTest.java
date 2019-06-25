@@ -11,11 +11,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.util.Arrays;
-import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.junit.Test;
 
-import io.zeebe.client.api.commands.Workflow;
 
 public class CollectionUtilTest {
 

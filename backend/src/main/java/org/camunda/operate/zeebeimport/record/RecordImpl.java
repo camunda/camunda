@@ -5,21 +5,86 @@
  */
 package org.camunda.operate.zeebeimport.record;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
 import java.time.Instant;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordValue;
 
 public class RecordImpl<T extends RecordValue> implements Record<T> {
+
+  private int partitionId;
+  @JsonDeserialize(using = StringToIntentSerializer.class)
+  private Intent intent;
+  private RecordType recordType;
+  private RejectionType rejectionType;
+  private String rejectionReason;
+  private ValueType valueType;
+
   private long key;
   private long position;
   private Instant timestamp;
-  private int producerId;
   private long sourceRecordPosition;
 
-  private RecordMetadataImpl metadata;
   private T value;
 
   public RecordImpl() {
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public Intent getIntent() {
+    return intent;
+  }
+
+  @Override
+  public RecordType getRecordType() {
+    return recordType;
+  }
+
+  @Override
+  public RejectionType getRejectionType() {
+    return rejectionType;
+  }
+
+  @Override
+  public String getRejectionReason() {
+    return rejectionReason;
+  }
+
+  @Override
+  public ValueType getValueType() {
+    return valueType;
+  }
+
+  public void setPartitionId(int partitionId) {
+    this.partitionId = partitionId;
+  }
+
+  public void setIntent(Intent intent) {
+    this.intent = intent;
+  }
+
+  public void setRecordType(RecordType recordType) {
+    this.recordType = recordType;
+  }
+
+  public void setRejectionType(RejectionType rejectionType) {
+    this.rejectionType = rejectionType;
+  }
+
+  public void setRejectionReason(String rejectionReason) {
+    this.rejectionReason = rejectionReason;
+  }
+
+  public void setValueType(ValueType valueType) {
+    this.valueType = valueType;
   }
 
   @Override
@@ -38,18 +103,8 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   }
 
   @Override
-  public int getProducerId() {
-    return producerId;
-  }
-
-  @Override
   public long getSourceRecordPosition() {
     return sourceRecordPosition;
-  }
-
-  @Override
-  public RecordMetadataImpl getMetadata() {
-    return metadata;
   }
 
   @Override
@@ -69,16 +124,8 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
     this.timestamp = timestamp;
   }
 
-  public void setProducerId(int producerId) {
-    this.producerId = producerId;
-  }
-
   public void setSourceRecordPosition(long sourceRecordPosition) {
     this.sourceRecordPosition = sourceRecordPosition;
-  }
-
-  public void setMetadata(RecordMetadataImpl metadata) {
-    this.metadata = metadata;
   }
 
   public void setValue(T value) {
@@ -93,18 +140,27 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   @Override
   public String toString() {
     return "RecordImpl{"
-        + "key="
+        + "partitionId="
+        + partitionId
+        + ", intent="
+        + intent
+        + ", recordType="
+        + recordType
+        + ", rejectionType="
+        + rejectionType
+        + ", rejectionReason='"
+        + rejectionReason
+        + '\''
+        + ", valueType="
+        + valueType
+        + ", key="
         + key
         + ", position="
         + position
         + ", timestamp="
         + timestamp
-        + ", producerId="
-        + producerId
         + ", sourceRecordPosition="
         + sourceRecordPosition
-        + ", metadata="
-        + metadata
         + ", value="
         + value
         + '}';

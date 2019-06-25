@@ -5,30 +5,24 @@
  */
 package org.camunda.operate.zeebeimport.record;
 
-import java.util.Map;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.RecordValueWithVariables;
+import java.util.Map;
+import java.util.Objects;
 
 public abstract class RecordValueWithPayloadImpl implements RecordValue, RecordValueWithVariables {
-  private String variables;
+  private Map<String, Object> variables;
 
   public RecordValueWithPayloadImpl() {
   }
 
   @Override
-  public String getVariables() {
+  public Map<String, Object> getVariables() {
     return variables;
   }
 
-  public void setVariables(String variables) {
+  public void setVariables(Map<String, Object> variables) {
     this.variables = variables;
-  }
-
-  @Override
-  @JsonIgnore
-  public Map<String, Object> getVariablesAsMap() {
-    throw new UnsupportedOperationException("getVariablesAsMap operation is not supported");
   }
 
   @Override
@@ -45,7 +39,7 @@ public abstract class RecordValueWithPayloadImpl implements RecordValue, RecordV
 
     RecordValueWithPayloadImpl that = (RecordValueWithPayloadImpl) o;
 
-    return variables != null ? variables.equals(that.variables) : that.variables == null;
+    return Objects.equals(variables, that.variables);
   }
 
   @Override

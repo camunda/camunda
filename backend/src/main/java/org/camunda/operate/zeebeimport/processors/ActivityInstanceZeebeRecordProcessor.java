@@ -60,7 +60,7 @@ public class ActivityInstanceZeebeRecordProcessor {
   private ActivityInstanceTemplate activityInstanceTemplate;
 
   public void processIncidentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
-    final String intentStr = record.getMetadata().getIntent().name();
+    final String intentStr = record.getIntent().name();
     IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
 
     //update activity instance
@@ -73,7 +73,7 @@ public class ActivityInstanceZeebeRecordProcessor {
     for (Map.Entry<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
       ActivityInstanceEntity actEntity = null;
       for (RecordImpl record: wiRecordsEntry.getValue()) {
-        final String intentStr = record.getMetadata().getIntent().name();
+        final String intentStr = record.getIntent().name();
         WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
         if (!isProcessEvent(recordValue) && !intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())) {
           actEntity = updateActivityInstance(record, intentStr, recordValue, actEntity);
@@ -90,7 +90,7 @@ public class ActivityInstanceZeebeRecordProcessor {
       entity = new ActivityInstanceEntity();
     }
     entity.setId(IdUtil.getId(record.getKey(), record));
-    entity.setPartitionId(record.getMetadata().getPartitionId());
+    entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
     entity.setScopeId(IdUtil.getId(recordValue.getFlowScopeKey(), record));
@@ -120,7 +120,7 @@ public class ActivityInstanceZeebeRecordProcessor {
     ActivityInstanceEntity entity = new ActivityInstanceEntity();
     entity.setId(IdUtil.getId(recordValue.getElementInstanceKey(), record));
     entity.setKey(recordValue.getElementInstanceKey());
-    entity.setPartitionId(record.getMetadata().getPartitionId());
+    entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
     if (intentStr.equals(IncidentIntent.CREATED.name())) {

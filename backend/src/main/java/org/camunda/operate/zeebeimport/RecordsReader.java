@@ -54,7 +54,7 @@ public class RecordsReader {
 
   private static final Logger logger = LoggerFactory.getLogger(RecordsReader.class);
 
-  public static final String PARTITION_ID_FIELD_NAME = "metadata." + ImportPositionIndex.PARTITION_ID;
+  public static final String PARTITION_ID_FIELD_NAME = ImportPositionIndex.PARTITION_ID;
 
   /**
    * Partition id.

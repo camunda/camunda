@@ -5,6 +5,17 @@
  */
 package org.camunda.operate.zeebeimport.processors;
 
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
+import static org.camunda.operate.entities.EventType.ELEMENT_ACTIVATING;
+import static org.camunda.operate.entities.EventType.ELEMENT_COMPLETING;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -30,18 +41,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordMetadata;
-import io.zeebe.protocol.record.value.job.Headers;
-import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.intent.JobIntent;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
-import static org.camunda.operate.entities.EventType.ELEMENT_ACTIVATING;
-import static org.camunda.operate.entities.EventType.ELEMENT_COMPLETING;
 
 @Component
 public class EventZeebeRecordProcessor {
@@ -80,7 +79,7 @@ public class EventZeebeRecordProcessor {
 
   public void processIncidentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
-    final String intentStr = record.getMetadata().getIntent().name();
+    final String intentStr = record.getIntent().name();
 
     if (INCIDENT_EVENTS.contains(intentStr)) {
       processIncident(record, recordValue, bulkRequest);
@@ -94,7 +93,7 @@ public class EventZeebeRecordProcessor {
       List<RecordImpl<JobRecordValueImpl>> jobRecords = wiRecordsEntry.getValue();
       if (jobRecords.size() >= 1) {
         for (int i = jobRecords.size() - 1; i>=0; i-- ) {
-          final String intentStr = jobRecords.get(i).getMetadata().getIntent().name();
+          final String intentStr = jobRecords.get(i).getIntent().name();
           if (JOB_EVENTS.contains(intentStr)) {
             JobRecordValueImpl recordValue = jobRecords.get(i).getValue();
             processJob(jobRecords.get(i), recordValue, bulkRequest);
@@ -112,7 +111,7 @@ public class EventZeebeRecordProcessor {
       List<RecordImpl<WorkflowInstanceRecordValueImpl>> wiRecords = wiRecordsEntry.getValue();
       if (wiRecords.size() >= 1) {
         for (int i = wiRecords.size() - 1; i>=0; i-- ) {
-          final String intentStr = wiRecords.get(i).getMetadata().getIntent().name();
+          final String intentStr = wiRecords.get(i).getIntent().name();
           if (WORKFLOW_INSTANCE_STATES.contains(intentStr)) {
             WorkflowInstanceRecordValueImpl recordValue = wiRecords.get(i).getValue();
             processWorkflowInstance(wiRecords.get(i), recordValue, bulkRequest);
@@ -149,24 +148,21 @@ public class EventZeebeRecordProcessor {
 
     loadEventGeneralData(record, eventEntity);
 
-    //check headers to get context info
-    Headers headers = recordValue.getHeaders();
-
-    final long workflowKey = headers.getWorkflowKey();
+    final long workflowKey = recordValue.getWorkflowKey();
     if (workflowKey > 0) {
       eventEntity.setWorkflowId(workflowKey);
     }
 
-    final long workflowInstanceKey = headers.getWorkflowInstanceKey();
+    final long workflowInstanceKey = recordValue.getWorkflowInstanceKey();
     if (workflowInstanceKey > 0) {
       eventEntity.setWorkflowInstanceId(IdUtil.getId(workflowInstanceKey, record));
     }
 
-    eventEntity.setBpmnProcessId(headers.getBpmnProcessId());
+    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
 
-    eventEntity.setActivityId(headers.getElementId());
+    eventEntity.setActivityId(recordValue.getElementId());
 
-    final long activityInstanceKey = headers.getElementInstanceKey();
+    final long activityInstanceKey = recordValue.getElementInstanceKey();
     if (activityInstanceKey > 0) {
       eventEntity.setActivityInstanceId(IdUtil.getId(activityInstanceKey, record));
     }
@@ -181,9 +177,9 @@ public class EventZeebeRecordProcessor {
       eventMetadata.setJobId(String.valueOf(record.getKey()));
     }
 
-    Instant jobDeadline = recordValue.getDeadline();
-    if (jobDeadline != null) {
-      eventMetadata.setJobDeadline(DateUtil.toOffsetDateTime(jobDeadline));
+    long jobDeadline = recordValue.getDeadline();
+    if (jobDeadline >= 0) {
+      eventMetadata.setJobDeadline(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(jobDeadline)));
     }
 
     eventEntity.setMetadata(eventMetadata);
@@ -219,14 +215,12 @@ public class EventZeebeRecordProcessor {
 
 
   private void loadEventGeneralData(Record record, EventEntity eventEntity) {
-    RecordMetadata metadata = record.getMetadata();
-
     eventEntity.setId(String.valueOf(record.getPosition()));
     eventEntity.setKey(record.getKey());
-    eventEntity.setPartitionId(record.getMetadata().getPartitionId());
-    eventEntity.setEventSourceType(EventSourceType.fromZeebeValueType(metadata.getValueType()));
+    eventEntity.setPartitionId(record.getPartitionId());
+    eventEntity.setEventSourceType(EventSourceType.fromZeebeValueType(record.getValueType()));
     eventEntity.setDateTime(DateUtil.toOffsetDateTime(record.getTimestamp()));
-    eventEntity.setEventType(EventType.fromZeebeIntent(record.getMetadata().getIntent().name()));
+    eventEntity.setEventType(EventType.fromZeebeIntent(record.getIntent().name()));
   }
 
   private void persistEvent(EventEntity entity, BulkRequest bulkRequest) throws PersistenceException {

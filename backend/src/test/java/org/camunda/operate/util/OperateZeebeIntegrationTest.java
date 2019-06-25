@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.util;
 
+import io.zeebe.client.api.worker.JobWorker;
 import java.util.function.Predicate;
 import org.camunda.operate.zeebeimport.ImportPositionHolder;
 import org.camunda.operate.zeebeimport.PartitionHolder;
@@ -16,7 +17,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;

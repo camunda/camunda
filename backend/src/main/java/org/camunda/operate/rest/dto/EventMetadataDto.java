@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.rest.dto;
 
+import io.zeebe.protocol.record.value.ErrorType;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
@@ -19,12 +20,12 @@ public class EventMetadataDto {
   private Integer jobRetries;
   private String jobWorker;
   private OffsetDateTime jobDeadline;
-  private Map<String, Object> jobCustomHeaders;
+  private Map<String, String> jobCustomHeaders;
   
   /**
   * Incident data.
   */
-  private String incidentErrorType;
+  private ErrorType incidentErrorType;
   private String incidentErrorMessage;
   private String jobId;
 
@@ -60,19 +61,19 @@ public class EventMetadataDto {
     this.jobDeadline = jobDeadline;
   }
 
-  public Map<String, Object> getJobCustomHeaders() {
+  public Map<String, String> getJobCustomHeaders() {
     return jobCustomHeaders;
   }
 
-  public void setJobCustomHeaders(Map<String, Object> jobCustomHeaders) {
+  public void setJobCustomHeaders(Map<String, String> jobCustomHeaders) {
     this.jobCustomHeaders = jobCustomHeaders;
   }
 
-  public String getIncidentErrorType() {
+  public ErrorType getIncidentErrorType() {
     return incidentErrorType;
   }
 
-  public void setIncidentErrorType(String incidentErrorType) {
+  public void setIncidentErrorType(ErrorType incidentErrorType) {
     this.incidentErrorType = incidentErrorType;
   }
 

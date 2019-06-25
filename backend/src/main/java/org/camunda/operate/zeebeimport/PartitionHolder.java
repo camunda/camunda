@@ -7,6 +7,7 @@ package org.camunda.operate.zeebeimport;
 
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
+import io.zeebe.client.api.response.Topology;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -27,7 +28,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.commands.Topology;
 
 @Component
 public class PartitionHolder {
@@ -38,7 +38,7 @@ public class PartitionHolder {
 
   private static final Logger logger = LoggerFactory.getLogger(PartitionHolder.class);
 
-  public static final String PARTITION_ID_FIELD_NAME = "metadata." + ImportPositionIndex.PARTITION_ID;
+  public static final String PARTITION_ID_FIELD_NAME = ImportPositionIndex.PARTITION_ID;
 
   private Set<Integer> partitionIds = new HashSet<>();
 

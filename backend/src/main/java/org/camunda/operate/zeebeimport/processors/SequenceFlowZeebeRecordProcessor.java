@@ -35,7 +35,7 @@ public class SequenceFlowZeebeRecordProcessor {
   private SequenceFlowTemplate sequenceFlowTemplate;
 
   public void processSequenceFlowRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
-    final String intentStr = record.getMetadata().getIntent().name();
+    final String intentStr = record.getIntent().name();
     if (intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name())) {
       WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
       persistSequenceFlow(record, recordValue, bulkRequest);
@@ -46,7 +46,7 @@ public class SequenceFlowZeebeRecordProcessor {
     SequenceFlowEntity entity = new SequenceFlowEntity();
     entity.setId(IdUtil.getId(record.getKey(), record));
     entity.setKey(record.getKey());
-    entity.setPartitionId(record.getMetadata().getPartitionId());
+    entity.setPartitionId(record.getPartitionId());
     entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
     entity.setActivityId(recordValue.getElementId());
     bulkRequest.add(getSequenceFlowInsertQuery(entity));

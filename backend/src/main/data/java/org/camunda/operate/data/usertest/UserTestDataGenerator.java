@@ -5,6 +5,13 @@
  */
 package org.camunda.operate.data.usertest;
 
+import io.zeebe.client.api.command.ClientException;
+import io.zeebe.client.api.command.FailJobCommandStep1;
+import io.zeebe.client.api.command.FinalCommandStep;
+import io.zeebe.client.api.response.ActivatedJob;
+import io.zeebe.client.api.worker.JobClient;
+import io.zeebe.client.api.worker.JobHandler;
+import io.zeebe.client.api.worker.JobWorker;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;
@@ -26,13 +33,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.commands.FailJobCommandStep1;
-import io.zeebe.client.api.commands.FinalCommandStep;
-import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.client.api.subscription.JobHandler;
-import io.zeebe.client.api.subscription.JobWorker;
-import io.zeebe.client.cmd.ClientException;
 
 @Component("dataGenerator")
 @Profile("usertest-data")
@@ -342,7 +342,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       .newWorker()
       .jobType("checkPayment")
       .handler((jobClient, job) -> {
-        if (!canProgress(job.getHeaders().getWorkflowInstanceKey()))
+        if (!canProgress(job.getWorkflowInstanceKey()))
           return;
         final int scenario = random.nextInt(5);
         switch (scenario){
@@ -368,7 +368,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     return client.newWorker()
       .jobType("checkItems")
       .handler((jobClient, job) -> {
-        if (!canProgress(job.getHeaders().getWorkflowInstanceKey()))
+        if (!canProgress(job.getWorkflowInstanceKey()))
           return;
         final int scenario = random.nextInt(4);
         switch (scenario) {
@@ -391,7 +391,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     return client.newWorker()
       .jobType("shipArticles")
       .handler((jobClient, job) -> {
-        if (!canProgress(job.getHeaders().getWorkflowInstanceKey()))
+        if (!canProgress(job.getWorkflowInstanceKey()))
           return;
         final int scenario = random.nextInt(2);
         switch (scenario) {
@@ -412,7 +412,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     return client.newWorker()
       .jobType("registerCabinBag")
       .handler((jobClient, job) -> {
-        if (!canProgress(job.getHeaders().getWorkflowInstanceKey()))
+        if (!canProgress(job.getWorkflowInstanceKey()))
           return;
         final int scenario = random.nextInt(4);
         switch (scenario) {
@@ -435,7 +435,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     return client.newWorker()
       .jobType("determineLuggageWeight")
       .handler((jobClient, job) -> {
-        if (!canProgress(job.getHeaders().getWorkflowInstanceKey()))
+        if (!canProgress(job.getWorkflowInstanceKey()))
           return;
         jobClient.newCompleteCommand(job.getKey()).variables("{\"luggageWeight\":" + (random.nextInt(10) + 20) + "}").send().join();
       })
@@ -449,7 +449,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       .jobType(taskType)
       .handler((jobClient, job) ->
       {
-        if (!canProgress(job.getHeaders().getWorkflowInstanceKey()))
+        if (!canProgress(job.getWorkflowInstanceKey()))
           return;
         final int scenarioCount = random.nextInt(3);
         switch (scenarioCount) {
@@ -475,7 +475,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     return client.newWorker()
       .jobType("reviewLoanRequest")
       .handler((jobClient, job) -> {
-        if (!canProgress(job.getHeaders().getWorkflowInstanceKey()))
+        if (!canProgress(job.getWorkflowInstanceKey()))
           return;
         final int scenarioCount = random.nextInt(3);
         switch (scenarioCount) {
@@ -501,7 +501,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     return client.newWorker()
       .jobType("checkSchufa")
       .handler((jobClient, job) -> {
-        if (!canProgress(job.getHeaders().getWorkflowInstanceKey()))
+        if (!canProgress(job.getWorkflowInstanceKey()))
           return;
         final int scenarioCount = random.nextInt(3);
         switch (scenarioCount) {
@@ -669,7 +669,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     @Override
     public void handle(JobClient jobClient, ActivatedJob job) {
-      if (!taskCompleted && workflowInstanceKey == job.getHeaders().getWorkflowInstanceKey()) {
+      if (!taskCompleted && workflowInstanceKey == job.getWorkflowInstanceKey()) {
         if (payload == null) {
           jobClient.newCompleteCommand(job.getKey()).variables(job.getVariables()).send().join();
         } else {
@@ -696,7 +696,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     @Override
     public void handle(JobClient jobClient, ActivatedJob job) {
-      if (!taskFailed && workflowInstanceKey == job.getHeaders().getWorkflowInstanceKey()) {
+      if (!taskFailed && workflowInstanceKey == job.getWorkflowInstanceKey()) {
         FinalCommandStep failCmd = jobClient.newFailCommand(job.getKey()).retries(0);
         if (errorMessage != null) {
           failCmd = ((FailJobCommandStep1.FailJobCommandStep2) failCmd).errorMessage(errorMessage);

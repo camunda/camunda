@@ -5,15 +5,15 @@
  */
 package org.camunda.operate.util;
 
+import io.zeebe.client.api.command.ClientException;
+import io.zeebe.client.api.response.PartitionInfo;
+import io.zeebe.client.api.response.Topology;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.commands.PartitionInfo;
-import io.zeebe.client.api.commands.Topology;
-import io.zeebe.client.cmd.ClientException;
 import io.zeebe.test.EmbeddedBrokerRule;
 
 public class ZeebeClientRule extends ExternalResource {

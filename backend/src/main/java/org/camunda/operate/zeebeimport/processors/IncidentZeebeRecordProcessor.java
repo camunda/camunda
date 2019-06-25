@@ -54,7 +54,7 @@ public class IncidentZeebeRecordProcessor {
   }
 
   private void persistIncident(Record record, IncidentRecordValueImpl recordValue, BulkRequest bulkRequest) throws PersistenceException {
-    final String intentStr = record.getMetadata().getIntent().name();
+    final String intentStr = record.getIntent().name();
     final String incidentId = IdUtil.getId(record.getKey(), record);
     if (intentStr.equals(RESOLVED.toString())) {
 
@@ -77,7 +77,7 @@ public class IncidentZeebeRecordProcessor {
         incident.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
       }
       incident.setErrorMessage(recordValue.getErrorMessage());
-      incident.setErrorType(ErrorType.valueOf(recordValue.getErrorType()));
+      incident.setErrorType(recordValue.getErrorType());
       incident.setFlowNodeId(recordValue.getElementId());
       if (recordValue.getElementInstanceKey() > 0) {
         incident.setFlowNodeInstanceId(IdUtil.getId(recordValue.getElementInstanceKey(), record));

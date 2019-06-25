@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.data.develop;
 
+import io.zeebe.client.api.worker.JobWorker;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +15,6 @@ import org.camunda.operate.util.ZeebeTestUtil;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.subscription.JobWorker;
 
 @Component("dataGenerator")
 @Profile("dev-data")

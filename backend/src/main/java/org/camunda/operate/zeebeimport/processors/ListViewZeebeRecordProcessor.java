@@ -75,7 +75,7 @@ public class ListViewZeebeRecordProcessor {
   private BatchOperationWriter batchOperationWriter;
 
   public void processIncidentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
-    final String intentStr = record.getMetadata().getIntent().name();
+    final String intentStr = record.getIntent().name();
     IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
 
     //update activity instance
@@ -98,7 +98,7 @@ public class ListViewZeebeRecordProcessor {
       String workflowInstanceId = null;
       for (RecordImpl record: wiRecordsEntry.getValue()) {
         workflowInstanceId = IdUtil.getId(wiRecordsEntry.getKey(), record);
-        final String intentStr = record.getMetadata().getIntent().name();
+        final String intentStr = record.getIntent().name();
         WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
         if (isProcessEvent(recordValue)) {
           //complete operation
@@ -133,7 +133,7 @@ public class ListViewZeebeRecordProcessor {
     wiEntity.setId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
     wiEntity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
     wiEntity.setKey(recordValue.getWorkflowInstanceKey());
-    wiEntity.setPartitionId(record.getMetadata().getPartitionId());
+    wiEntity.setPartitionId(record.getPartitionId());
     wiEntity.setWorkflowId(recordValue.getWorkflowKey());
     wiEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
     wiEntity.setWorkflowVersion(recordValue.getVersion());
@@ -162,7 +162,7 @@ public class ListViewZeebeRecordProcessor {
     }
     ActivityInstanceForListViewEntity entity = entities.get(record.getKey());
     entity.setId(IdUtil.getId(record.getKey(), record));
-    entity.setPartitionId(record.getMetadata().getPartitionId());
+    entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
 
@@ -188,7 +188,7 @@ public class ListViewZeebeRecordProcessor {
     ActivityInstanceForListViewEntity entity = new ActivityInstanceForListViewEntity();
     entity.setId(IdUtil.getId(recordValue.getElementInstanceKey(), record));
     entity.setKey(recordValue.getElementInstanceKey());
-    entity.setPartitionId(record.getMetadata().getPartitionId());
+    entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
@@ -212,7 +212,7 @@ public class ListViewZeebeRecordProcessor {
     VariableForListViewEntity entity = new VariableForListViewEntity();
     entity.setId(IdUtil.getVariableId(recordValue.getScopeKey(), recordValue.getName()));
     entity.setKey(record.getKey());
-    entity.setPartitionId(record.getMetadata().getPartitionId());
+    entity.setPartitionId(record.getPartitionId());
     entity.setScopeId(IdUtil.getId(recordValue.getScopeKey(), record));
     entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
     entity.setVarName(recordValue.getName());
