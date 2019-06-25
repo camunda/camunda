@@ -47,8 +47,10 @@ import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.util.ZbLogger;
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -202,14 +204,42 @@ public class DefaultDistributedLogstreamService
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(blockBuffer);
-    final long appendResult = logStorage.append(buffer);
-    if (appendResult > 0) {
-      updateCommitPosition(commitPosition);
-    } else {
-      logger.error("Append failed {}", appendResult);
+    final long appendResult = appendBlock(buffer);
+    updateCommitPosition(commitPosition);
+    return appendResult;
+  }
+
+  private long appendBlock(ByteBuffer buffer) {
+    long appendResult = -1;
+    boolean notAppended = true;
+    try {
+
+      do {
+        try {
+          appendResult = logStorage.append(buffer);
+          notAppended = false;
+        } catch (IOException ioe) {
+          // we want to retry the append
+          // we avoid recursion, otherwise we can get stack overflow exceptions
+          LOG.error(
+              "Expected to append new buffer, but caught IOException. Will retry this operation.",
+              ioe);
+        }
+      } while (notAppended);
+    } catch (Exception e) {
+      // block the primitive
+      LOG.error(
+          "Expected to append new buffer, but caught an non recoverable exception. Will block the primitive.",
+          e);
+      while (true) {
+        try {
+          new CountDownLatch(1).await();
+        } catch (InterruptedException ex) {
+          LOG.error("Blocking the primitive was interrupted.", ex);
+        }
+      }
     }
-    // the return result is valid only for the leader. If the followers failed to append, they don't
-    // retry
+
     return appendResult;
   }
 

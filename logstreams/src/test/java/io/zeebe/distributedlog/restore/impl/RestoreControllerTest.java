@@ -55,15 +55,15 @@ public class RestoreControllerTest {
   private static final String KEY = "test";
   private static final DirectBuffer EVENT = wrapString("FOO");
 
-  private TemporaryFolder temporaryFolderClient = new TemporaryFolder();
-  private LogStreamRule logStreamRuleClient = new LogStreamRule(temporaryFolderClient);
-  private LogStreamWriterRule writerClient = new LogStreamWriterRule(logStreamRuleClient);
-  private LogStreamReaderRule readerClient = new LogStreamReaderRule(logStreamRuleClient);
+  private final TemporaryFolder temporaryFolderClient = new TemporaryFolder();
+  private final LogStreamRule logStreamRuleClient = new LogStreamRule(temporaryFolderClient);
+  private final LogStreamWriterRule writerClient = new LogStreamWriterRule(logStreamRuleClient);
+  private final LogStreamReaderRule readerClient = new LogStreamReaderRule(logStreamRuleClient);
 
-  private TemporaryFolder temporaryFolderServer = new TemporaryFolder();
-  private LogStreamRule logStreamRuleServer = new LogStreamRule(temporaryFolderServer);
-  private LogStreamWriterRule writerServer = new LogStreamWriterRule(logStreamRuleServer);
-  private LogStreamReaderRule readerServer = new LogStreamReaderRule(logStreamRuleServer);
+  private final TemporaryFolder temporaryFolderServer = new TemporaryFolder();
+  private final LogStreamRule logStreamRuleServer = new LogStreamRule(temporaryFolderServer);
+  private final LogStreamWriterRule writerServer = new LogStreamWriterRule(logStreamRuleServer);
+  private final LogStreamReaderRule readerServer = new LogStreamReaderRule(logStreamRuleServer);
 
   @Rule
   public RuleChain ruleChain =
@@ -122,10 +122,14 @@ public class RestoreControllerTest {
         new LogReplicator(
             (commitPosition, blockBuffer) -> {
               logStreamRuleClient.getLogStream().setCommitPosition(commitPosition);
-              return logStreamRuleClient
-                  .getLogStream()
-                  .getLogStorage()
-                  .append(ByteBuffer.wrap(blockBuffer));
+              try {
+                return logStreamRuleClient
+                    .getLogStream()
+                    .getLogStorage()
+                    .append(ByteBuffer.wrap(blockBuffer));
+              } catch (IOException e) {
+                throw new RuntimeException(e);
+              }
             },
             restoreClient,
             restoreThreadContext,

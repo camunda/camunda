@@ -47,6 +47,10 @@ public class FsLogSegment {
   private static final short STATE_ACTIVE = 1;
 
   private static final short STATE_FILLED = 2;
+  private static final String ERROR_MSG_OUT_OF_SPACE =
+      "Expected to allocate new segment of size %d, but not enough space available (%d)";
+  private static final String ERROR_MSG_INSUFFICIENT_CAPACITY =
+      "Expected to append block with size %d, but actual capacity is insufficient %d.";
 
   protected volatile short state;
 
@@ -151,52 +155,40 @@ public class FsLogSegment {
     return state == STATE_ACTIVE;
   }
 
-  public boolean allocate(int segmentId, int segmentSize) {
-    boolean allocated = false;
+  public void allocate(int segmentId, int segmentSize) throws IOException {
+    final File file = new File(fileName);
+    final long availableSpace = FileUtil.getAvailableSpace(file.getParentFile());
 
-    try {
-      final File file = new File(fileName);
-      final long availableSpace = FileUtil.getAvailableSpace(file.getParentFile());
-
-      if (availableSpace > segmentSize) {
-        openSegment(true);
-
-        setSegmentId(segmentId);
-        setCapacity(segmentSize);
-        setSizeVolatile(METADATA_LENGTH);
-
-        allocated = true;
-      }
-    } catch (Exception e) {
-      LOG.error("Failed to allocate", e);
+    if (availableSpace <= segmentSize) {
+      throw new IOException(String.format(ERROR_MSG_OUT_OF_SPACE, segmentSize, availableSpace));
     }
 
-    return allocated;
+    openSegment(true);
+
+    setSegmentId(segmentId);
+    setCapacity(segmentSize);
+    setSizeVolatile(METADATA_LENGTH);
   }
 
   /**
    * @param block
    * @return the offset at which the block was appended
    */
-  public int append(final ByteBuffer block) {
+  public int append(final ByteBuffer block) throws IOException {
     final int blockLength = block.remaining();
     final int currentSize = getSize();
     final int remainingCapacity = getCapacity() - currentSize;
 
     if (remainingCapacity < blockLength) {
-      return INSUFFICIENT_CAPACITY;
+      throw new IllegalArgumentException(
+          String.format(ERROR_MSG_INSUFFICIENT_CAPACITY, blockLength, remainingCapacity));
     }
 
     int newSize = currentSize;
 
     while (newSize - currentSize < blockLength) {
-      try {
-        final int writtenBytes = fileChannel.write(block, newSize);
-        newSize += writtenBytes;
-      } catch (Exception e) {
-        LOG.error("Failed to write", e);
-        return -1;
-      }
+      final int writtenBytes = fileChannel.write(block, newSize);
+      newSize += writtenBytes;
     }
 
     setSizeOrdered(newSize);

@@ -84,7 +84,7 @@ public class LogStorageAppenderTest {
 
   @Test
   @Ignore // TODO: handle failures in append
-  public void shouldDiscardEventsIfFailToAppend() {
+  public void shouldDiscardEventsIfFailToAppend() throws Exception {
     final Subscription subscription = logStream.getWriteBuffer().openSubscription("test");
 
     final LogStorageAppender logStorageAppender = logStream.getLogStorageAppender();
