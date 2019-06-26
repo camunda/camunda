@@ -10,6 +10,12 @@ import PropTypes from 'prop-types';
 import Collapse from '../Collapse';
 import {getFilterQueryString} from 'modules/utils/filter';
 import PanelListItem from '../PanelListItem';
+import {
+  concatTitle,
+  concatLabel,
+  concatGroupTitle,
+  concatButtonTitle
+} from './service';
 
 import * as Styled from './styled';
 
@@ -44,12 +50,13 @@ export default class IncidentsByError extends React.Component {
             errorMessage,
             incidents: true
           });
-          const title = `View ${
-            item.instancesWithActiveIncidentsCount
-          } Instances with error ${item.errorMessage} in version ${
-            item.version
-          } of Workflow ${name}`;
-
+          const title = concatTitle(
+            name,
+            item.instancesWithActiveIncidentsCount,
+            item.version,
+            errorMessage
+          );
+          const label = concatLabel(name, item.version);
           return (
             <Styled.VersionLi key={item.workflowId}>
               <PanelListItem
@@ -58,7 +65,7 @@ export default class IncidentsByError extends React.Component {
                 boxSize="small"
               >
                 <Styled.VersionLiInstancesBar
-                  label={`${name} – Version ${item.version}`}
+                  label={label}
                   incidentsCount={item.instancesWithActiveIncidentsCount}
                   barHeight={2}
                   size="small"
@@ -77,12 +84,12 @@ export default class IncidentsByError extends React.Component {
       incidents: true
     });
 
-    const title = `View ${instancesWithErrorCount} Instances with error ${errorMessage}`;
+    const title = concatGroupTitle(instancesWithErrorCount, errorMessage);
 
     return (
       <PanelListItem to={`/instances${query}`} title={title}>
         <Styled.LiInstancesBar
-          label={`${errorMessage}`}
+          label={errorMessage}
           incidentsCount={instancesWithErrorCount}
           size="medium"
           barHeight={2}
@@ -95,9 +102,10 @@ export default class IncidentsByError extends React.Component {
     return (
       <ul>
         {this.props.incidents.map((item, index) => {
-          const buttonTitle = `Expand ${
-            item.instancesWithErrorCount
-          } Instances with error "${item.errorMessage}"`;
+          const buttonTitle = concatButtonTitle(
+            item.instancesWithErrorCount,
+            item.errorMessage
+          );
 
           return (
             <Styled.Li
