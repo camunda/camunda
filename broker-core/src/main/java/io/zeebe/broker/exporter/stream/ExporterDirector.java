@@ -39,7 +39,7 @@ import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.LangUtil;
-import io.zeebe.util.retry.AbortableRetryStrategy;
+import io.zeebe.util.retry.BackOffRetryStrategy;
 import io.zeebe.util.retry.EndlessRetryStrategy;
 import io.zeebe.util.retry.RetryStrategy;
 import io.zeebe.util.sched.Actor;
@@ -97,7 +97,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     this.partitionId = logStream.getPartitionId();
     this.recordExporter = new RecordExporter(containers, partitionId);
     this.logStreamReader = context.getLogStreamReader();
-    this.exportingRetryStrategy = new AbortableRetryStrategy(actor);
+    this.exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
     this.recordWrapStrategy = new EndlessRetryStrategy(actor);
 
     this.zeebeDb = context.getZeebeDb();
@@ -399,7 +399,10 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
 
           exporterIndex++;
         } catch (final Exception ex) {
-          container.context.getLogger().error("Error exporting record {}", record, ex);
+          container
+              .context
+              .getLogger()
+              .error("Error on exporting record with key {}", record.getKey(), ex);
           return false;
         }
       }
