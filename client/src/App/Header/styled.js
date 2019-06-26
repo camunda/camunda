@@ -27,7 +27,9 @@ export const LogoIcon = styled(Logo)`
   margin-right: 20px;
 `;
 
-export const Dashboard = themed(styled(withStrippedProps(['isActive'])(Link))`
+export const Dashboard = themed(styled(
+  withStrippedProps(['toggleTheme', 'isActive'])(Link)
+)`
   display: inline-block;
   padding: 0 20px;
   border-right: 1px solid ${separator};
@@ -41,7 +43,9 @@ export const Dashboard = themed(styled(withStrippedProps(['isActive'])(Link))`
   }
 `);
 
-export const Header = themed(styled.header`
+export const Header = themed(styled(
+  withStrippedProps(['toggleTheme'])('header')
+)`
   height: ${HEADER_HEIGHT}px;
   background-color: ${themeStyle({
     dark: Colors.uiDark01,
@@ -65,7 +69,9 @@ export const Header = themed(styled.header`
   z-index: 6;
 `);
 
-export const ListLink = themed(styled(withStrippedProps(['isActive'])(Link))`
+export const ListLink = themed(styled(
+  withStrippedProps(['toggleTheme', 'isActive'])(Link)
+)`
   margin-left: 20px;
   display: flex;
   height: 20px;

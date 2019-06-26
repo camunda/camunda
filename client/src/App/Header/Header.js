@@ -23,6 +23,7 @@ import {
 } from 'modules/constants';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 import {withSelection} from 'modules/contexts/SelectionContext';
+import {ThemeConsumer} from 'modules/theme';
 
 import {isEqual} from 'lodash';
 
@@ -275,13 +276,23 @@ class Header extends React.Component {
 
         <Styled.Detail>{detail}</Styled.Detail>
         <Styled.ProfileDropdown>
-          <Dropdown label={`${firstname} ${lastname}`}>
-            <Dropdown.Option
-              label="Logout"
-              data-test="logout-button"
-              onClick={this.handleLogout}
-            />
-          </Dropdown>
+          <ThemeConsumer>
+            {({toggleTheme}) => (
+              <Dropdown label={`${firstname} ${lastname}`}>
+                <Dropdown.Option
+                  label="Toggle Theme"
+                  data-test="toggle-theme-button"
+                  onClick={toggleTheme}
+                />
+
+                <Dropdown.Option
+                  label="Logout"
+                  data-test="logout-button"
+                  onClick={this.handleLogout}
+                />
+              </Dropdown>
+            )}
+          </ThemeConsumer>
         </Styled.ProfileDropdown>
       </Styled.Header>
     );

@@ -17,15 +17,11 @@ import InstancesContainer from './Instances/InstancesContainer';
 import Instance from './Instance';
 import GlobalStyles from './GlobalStyles';
 
-// Development Utility Component to test the theming.
-import ThemeToggle from 'modules/theme/ThemeToggle';
-
 export default function App(props) {
   return (
     <ThemeProvider>
       <CollapsablePanelProvider>
         <GlobalStyles />
-        <ThemeToggle />
         <Router>
           <Switch>
             <Route path="/login" component={Login} />

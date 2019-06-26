@@ -714,8 +714,8 @@ describe('Header', () => {
       //when
       node.find('button[data-test="dropdown-toggle"]').simulate('click');
       node.update();
-      const onClick = node.find(Dropdown.Option).prop('onClick');
 
+      const onClick = node.find('[data-test="logout-button"]').prop('onClick');
       await onClick();
       node.update();
 
