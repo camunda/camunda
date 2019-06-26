@@ -34,6 +34,7 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
+import io.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.IOException;
 import java.io.InputStream;
@@ -156,6 +157,15 @@ public class CreateDeploymentTest {
     assertThat(deployment.getValue().getDeployedWorkflows())
         .extracting(DeployedWorkflow::getBpmnProcessId)
         .contains(PROCESS_ID, PROCESS_ID_2);
+
+    assertThat(deployment.getValue().getResources())
+        .extracting(DeploymentResource::getResourceName)
+        .contains("process.bpmn", "process2.bpmn");
+
+    assertThat(deployment.getValue().getResources())
+        .extracting(DeploymentResource::getResource)
+        .contains(
+            Bpmn.convertToString(WORKFLOW).getBytes(), Bpmn.convertToString(WORKFLOW_2).getBytes());
   }
 
   @Test
