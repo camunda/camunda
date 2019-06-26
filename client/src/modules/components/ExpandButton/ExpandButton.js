@@ -16,7 +16,7 @@ export default function ExpandButton({
   ...props
 }) {
   return (
-    <Styled.Button {...props}>
+    <Styled.Button {...props} expandTheme={expandTheme}>
       <Styled.Transition timeout={400} in={isExpanded} appear>
         <Styled.Icon expandTheme={expandTheme}>
           <Styled.ArrowIcon />
