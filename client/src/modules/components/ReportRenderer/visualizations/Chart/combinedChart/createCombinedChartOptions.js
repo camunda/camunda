@@ -85,6 +85,9 @@ function findMaxDurationAcrossReports(result) {
     if (typeof report.result.data === 'number') {
       return report.result.data;
     }
+    if (report.result.data === null) {
+      return 0;
+    }
     return Math.max(...Object.values(report.result.data).map(({value}) => value));
   });
 
