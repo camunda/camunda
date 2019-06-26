@@ -10,7 +10,6 @@ import PropTypes from 'prop-types';
 import {isValidJSON} from 'modules/utils';
 import {isRunning} from 'modules/utils/instance';
 
-import CodeModal from 'modules/components/CodeModal';
 import {EMPTY_PLACEHOLDER, NULL_PLACEHOLDER} from './constants';
 
 import * as Styled from './styled';
@@ -27,7 +26,6 @@ export default function Variables({
 
   const [key, setKey] = useState('');
   const [value, setValue] = useState('');
-  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const variablesContentRef = createRef();
 
@@ -40,22 +38,6 @@ export default function Variables({
   function saveVariable() {
     onVariableUpdate(key, value);
     closeEdit();
-  }
-
-  function handleModalOpen() {
-    setIsModalVisible(true);
-    setEditMode(MODE.EDIT);
-  }
-
-  function handleModalClose() {
-    setIsModalVisible(false);
-    closeEdit();
-  }
-
-  function handleModalSave(modifiedValue) {
-    setValue(modifiedValue);
-    onVariableUpdate(key, modifiedValue);
-    handleModalClose();
   }
 
   function handleOpenAddVariable() {
@@ -79,18 +61,9 @@ export default function Variables({
     [editMode]
   );
 
-  function renderEditButtons({modalType, isDisabled}) {
+  function renderEditButtons({isDisabled}) {
     return (
       <>
-        {modalType === MODE.EDIT && (
-          <Styled.EditButton
-            title="Open Modal"
-            data-test="open-modal-btn"
-            onClick={() => handleModalOpen()}
-          >
-            <Styled.ModalIcon />
-          </Styled.EditButton>
-        )}
         <Styled.EditButton
           title="Exit edit mode"
           data-test="exit-edit-inline-btn"
@@ -110,7 +83,7 @@ export default function Variables({
     );
   }
 
-  function renderInlineEdit(propValue, name) {
+  function renderInlineEdit(propValue) {
     const valueHasntChanged = propValue === value;
     return (
       <>
@@ -126,8 +99,7 @@ export default function Variables({
         </Styled.EditInputTD>
         <Styled.EditButtonsTD>
           {renderEditButtons({
-            isDisabled: valueHasntChanged,
-            modalType: MODE.EDIT
+            isDisabled: valueHasntChanged
           })}
         </Styled.EditButtonsTD>
       </>
@@ -160,7 +132,6 @@ export default function Variables({
         </Styled.EditInputTD>
         <Styled.AddButtonsTD>
           {renderEditButtons({
-            modalType: MODE.ADD,
             isDisabled: variableAlreadyExists
           })}
         </Styled.AddButtonsTD>
@@ -242,16 +213,6 @@ export default function Variables({
           <Styled.Plus /> Add Variable
         </Styled.Button>
       </Styled.VariablesFooter>
-      <CodeModal
-        handleModalClose={handleModalClose}
-        handleModalSave={handleModalSave}
-        isModalVisible={isModalVisible}
-        headline={
-          editMode === MODE.ADD ? 'Add Variable' : `Edit Variable "${key}"`
-        }
-        initialValue={value}
-        mode="edit"
-      />
     </Styled.Variables>
   );
 }

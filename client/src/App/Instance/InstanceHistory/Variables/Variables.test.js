@@ -264,26 +264,6 @@ describe('Variables', () => {
       expect(openInlineEditButtons).toHaveLength(0);
     });
 
-    it('should show open-modal button, when edit JSON data', () => {
-      // given
-      const openInlineEditButtons = node.find(
-        "button[data-test='enter-edit-btn']"
-      );
-
-      // when
-      // variable with JSON data:
-      openInlineEditButtons.at(1).simulate('click');
-
-      setProps(node, Variables, {
-        ...mockProps,
-        editMode: MODE.EDIT
-      });
-
-      // then
-      expect(node.find("textarea[data-test='edit-value']")).toExist();
-      expect(node.find("button[data-test='open-modal-btn']")).toExist();
-    });
-
     it('should show inline edit functionality', () => {
       // given
       const openInlineEditButtons = node.find(
