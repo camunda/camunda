@@ -54,11 +54,14 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.service.security.AuthCookieService.createOptimizeAuthCookieValue;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeHeatmapReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper
+  .createFlowNodeDurationGroupByFlowNodeHeatmapReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNone;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByStartDateReport;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByVariableWithProcessPart;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper
+  .createProcessInstanceDurationGroupByStartDateReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper
+  .createProcessInstanceDurationGroupByVariableWithProcessPart;
 
 public class Generator {
   private static Client client;
@@ -93,7 +96,7 @@ public class Generator {
     );
     reportData.setVisualization(ProcessVisualization.NUMBER);
 
-    WebTarget target = client.target("http://localhost:8090/api/report");
+    WebTarget target = client.target("http://localhost:8090/api/report/process/single");
     List<String> reports = createAndUpdateReports(
       target,
       Collections.singletonList(reportData),
@@ -207,7 +210,7 @@ public class Generator {
   }
 
   private static List<String> generateReports() {
-    WebTarget target = client.target("http://localhost:8090/api/report");
+    WebTarget target = client.target("http://localhost:8090/api/report/process/single");
 
     List<ProcessReportDataDto> reportDefinitions = createDifferentReports();
 
@@ -241,7 +244,7 @@ public class Generator {
   }
 
   private static String createCombinedReport(CombinedReportDataDto data) {
-    WebTarget target = client.target("http://localhost:8090/api/report");
+    WebTarget target = client.target("http://localhost:8090/api/report/process/combined");
     Response response = target.request()
       .cookie(OPTIMIZE_AUTHORIZATION, authCookie)
       .post(Entity.json(new CombinedReportDefinitionDto(data)));
@@ -378,7 +381,9 @@ public class Generator {
   private static void
 
   updateReport(String id, ReportDefinitionDto report) {
-    WebTarget target = client.target("http://localhost:8090/api/report/" + id);
+    WebTarget target = client.target("http://localhost:8090/api/report/process/" +
+                                       (report instanceof SingleProcessReportDefinitionDto
+                                       ? "single" : "combined") + "/" + id);
     target.request()
       .cookie(OPTIMIZE_AUTHORIZATION, authCookie)
       .put(Entity.json(report));
