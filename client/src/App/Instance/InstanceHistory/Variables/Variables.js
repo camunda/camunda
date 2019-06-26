@@ -167,7 +167,9 @@ export default function Variables({
                       <Styled.TD isBold={true}>
                         <Styled.VariableName>{name}</Styled.VariableName>
                       </Styled.TD>
-                      {key === name && editMode === MODE.EDIT ? (
+                      {key === name &&
+                      editMode === MODE.EDIT &&
+                      isRunning({state: instanceState}) ? (
                         renderInlineEdit(propValue, name)
                       ) : (
                         <>
