@@ -1,3 +1,9 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
 const fs = require('fs');
 const path = require('path');
 const shell = require('shelljs');
@@ -16,7 +22,7 @@ const dependencies = JSON.parse(fs.readFileSync(depJsonFile));
 
 const lines = toPairs(dependencies)
   // no need to list optimize source code as dependency
-  .filter(([name]) => !name.startsWith('optimize-client'))
+  .filter(([name]) => name !== 'client@0.1.0')
   .reduce((lines, [name, {url: rawUrl, licenses, repository}]) => {
     const libLink = getLibraryLink(name, rawUrl, repository);
 
