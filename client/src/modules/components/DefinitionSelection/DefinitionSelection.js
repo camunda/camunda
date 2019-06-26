@@ -117,6 +117,10 @@ export default class DefinitionSelection extends React.Component {
       } else {
         return `${definition} : ${version}`;
       }
+    } else if (definitionKey && definitionVersion) {
+      return `${
+        this.findSelectedKeyGroup(definitionKey).name
+      } : ${definitionVersion.toLowerCase()} : -`;
     } else {
       return `Select ${capitalize(type)}`;
     }

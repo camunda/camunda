@@ -15,7 +15,8 @@ const {WrappedComponent: BPMNDiagramWithErrorHandling} = ThemedBPMNDiagram;
 const {WrappedComponent: BPMNDiagram} = BPMNDiagramWithErrorHandling;
 
 const props = {
-  mightFail: jest.fn().mockImplementation(async (data, cb) => cb(await data))
+  mightFail: jest.fn().mockImplementation(async (data, cb) => cb(await data)),
+  xml: 'diagram-xml'
 };
 
 // since jest does not offer an out of the box way to flush promises:
@@ -109,12 +110,20 @@ it('should create a Viewer without Navigation if Navigation is disabled', async 
 
   expect(node.instance().viewer).toBeInstanceOf(Viewer);
 });
+
 it('should import the provided xml', async () => {
   const node = mount(<BPMNDiagram {...props} xml={diagramXml} />);
   await flushPromises();
 
   expect(node.instance().viewer.importXML).toHaveBeenCalled();
   expect(node.instance().viewer.importXML.mock.calls[0][0]).toBe(diagramXml);
+});
+
+it('should not create viewer if xml is not provided', async () => {
+  const node = mount(<BPMNDiagram {...props} xml={null} />);
+  await flushPromises();
+
+  expect(node.instance().viewer).not.toBeDefined();
 });
 
 it('should import an updated xml', async () => {

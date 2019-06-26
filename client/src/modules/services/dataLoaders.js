@@ -53,9 +53,14 @@ export async function loadProcessDefinitionXml(
   if (tenantId) {
     payload.tenantId = tenantId;
   }
-  const response = await get('api/process-definition/xml', payload);
 
-  return await response.text();
+  try {
+    const response = await get('api/process-definition/xml', payload);
+
+    return await response.text();
+  } catch (e) {
+    return null;
+  }
 }
 
 export async function loadDecisionDefinitionXml(key, version, tenantId) {
@@ -63,9 +68,13 @@ export async function loadDecisionDefinitionXml(key, version, tenantId) {
   if (tenantId) {
     payload.tenantId = tenantId;
   }
-  const response = await get('api/decision-definition/xml', payload);
+  try {
+    const response = await get('api/decision-definition/xml', payload);
 
-  return await response.text();
+    return await response.text();
+  } catch (e) {
+    return null;
+  }
 }
 
 export async function checkDeleteConflict(id, entity) {

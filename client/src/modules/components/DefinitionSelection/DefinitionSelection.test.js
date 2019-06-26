@@ -205,6 +205,19 @@ it('should construct a popover title', async () => {
   expect(node.find('Popover')).toHaveProp('title', 'Definition : 1');
 });
 
+it('should construct a popover title even without xml', async () => {
+  const node = await shallow(<DefinitionSelection {...props} />);
+
+  await node.setProps({
+    definitionKey: 'foo',
+    definitionVersion: '1',
+    xml: null,
+    tenants: [null]
+  });
+
+  expect(node.find('Popover')).toHaveProp('title', 'Foo : 1 : -');
+});
+
 it('should hide the tenant selection by default', async () => {
   const node = await shallow(<DefinitionSelection {...props} />);
 

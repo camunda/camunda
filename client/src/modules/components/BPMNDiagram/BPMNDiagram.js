@@ -33,11 +33,14 @@ export default themed(
         return (
           <div className="BPMNDiagram" style={this.props.style} ref={this.storeContainer}>
             {this.state.loaded &&
+              this.props.xml &&
               this.props.children &&
               React.Children.map(this.props.children, child =>
                 React.cloneElement(child, {viewer: this.viewer})
               )}
-            {this.state.loaded && <ZoomControls zoom={this.zoom} fit={this.fitDiagram} />}
+            {this.state.loaded && this.props.xml && (
+              <ZoomControls zoom={this.zoom} fit={this.fitDiagram} />
+            )}
             {!this.state.loaded && <LoadingIndicator />}
           </div>
         );
@@ -103,16 +106,20 @@ export default themed(
       };
 
       importXML = xml => {
-        this.setState({loaded: false});
+        if (xml) {
+          this.setState({loaded: false});
 
-        this.props.mightFail(this.findOrCreateViewerFor(xml, this.props.theme), viewer => {
-          this.viewer = viewer;
-          this.viewer.attachTo(this.container);
+          this.props.mightFail(this.findOrCreateViewerFor(xml, this.props.theme), viewer => {
+            this.viewer = viewer;
+            this.viewer.attachTo(this.container);
 
-          this.fitDiagram();
+            this.fitDiagram();
 
+            this.setState({loaded: true});
+          });
+        } else {
           this.setState({loaded: true});
-        });
+        }
       };
 
       componentDidMount() {
