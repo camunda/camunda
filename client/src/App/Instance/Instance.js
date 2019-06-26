@@ -16,6 +16,7 @@ import {compactObject, immutableArraySet} from 'modules/utils';
 import {getWorkflowName} from 'modules/utils/instance';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {formatDate} from 'modules/utils/date';
+import {isRunning} from 'modules/utils/instance';
 import * as api from 'modules/api/instances';
 import {fetchWorkflowXML} from 'modules/api/diagram';
 import {fetchEvents} from 'modules/api/events';
@@ -487,7 +488,7 @@ export default class Instance extends Component {
                 </Styled.FlowNodeInstanceLog>
               </Styled.Panel>
               <Variables
-                instanceState={this.state.instance.state}
+                isRunning={isRunning({state: this.state.instance.state})}
                 variables={variables}
                 editMode={editMode}
                 isEditable={this.areVariablesEditable()}

@@ -8,7 +8,6 @@ import React, {createRef, useState, useEffect} from 'react';
 import PropTypes from 'prop-types';
 
 import {isValidJSON} from 'modules/utils';
-import {isRunning} from 'modules/utils/instance';
 
 import {EMPTY_PLACEHOLDER, NULL_PLACEHOLDER} from './constants';
 
@@ -16,7 +15,7 @@ import * as Styled from './styled';
 
 export default function Variables({
   variables,
-  instanceState,
+  isRunning,
   editMode,
   onVariableUpdate,
   isEditable,
@@ -167,16 +166,14 @@ export default function Variables({
                       <Styled.TD isBold={true}>
                         <Styled.VariableName>{name}</Styled.VariableName>
                       </Styled.TD>
-                      {key === name &&
-                      editMode === MODE.EDIT &&
-                      isRunning({state: instanceState}) ? (
+                      {key === name && editMode === MODE.EDIT && isRunning ? (
                         renderInlineEdit(propValue, name)
                       ) : (
                         <>
                           <Styled.TD>
                             <Styled.DisplayText>{propValue}</Styled.DisplayText>
                           </Styled.TD>
-                          {isRunning({state: instanceState}) && (
+                          {isRunning && (
                             <Styled.EditButtonsTD>
                               {hasActiveOperation ? (
                                 <Styled.Spinner />
@@ -220,7 +217,7 @@ export default function Variables({
 }
 
 Variables.propTypes = {
-  instanceState: PropTypes.string,
+  isRunning: PropTypes.bool,
   variables: PropTypes.array,
   editMode: PropTypes.string.isRequired,
   isEditable: PropTypes.bool.isRequired,

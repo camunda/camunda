@@ -9,7 +9,6 @@ import {mount} from 'enzyme';
 
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {createVariables} from 'modules/testUtils';
-import {STATE} from 'modules/constants';
 
 import {EMPTY_PLACEHOLDER, NULL_PLACEHOLDER} from './constants';
 import Variables from './Variables';
@@ -22,7 +21,7 @@ const MODE = {
 const mockProps = {
   variables: createVariables(),
   editMode: '',
-  instanceState: STATE.ACTIVE,
+  isRunning: true,
   onVariableUpdate: jest.fn(),
   isEditable: true,
   setVariables: jest.fn(),
@@ -244,23 +243,18 @@ describe('Variables', () => {
       );
       expect(openInlineEditButtons).toHaveLength(3);
 
-      node = mountNode({instanceState: STATE.INCIDENT});
+      node = mountNode({isRunning: true});
 
       openInlineEditButtons = node.find("button[data-test='enter-edit-btn']");
       expect(openInlineEditButtons).toHaveLength(3);
     });
 
     it('should NOT show edit in-line buttons for finished instances', () => {
-      node = mountNode({instanceState: STATE.CANCELLED});
+      node = mountNode({isRunning: false});
 
       let openInlineEditButtons = node.find(
         "button[data-test='enter-edit-btn']"
       );
-      expect(openInlineEditButtons).toHaveLength(0);
-
-      node = mountNode({instanceState: STATE.COMPLETED});
-
-      openInlineEditButtons = node.find("button[data-test='enter-edit-btn']");
       expect(openInlineEditButtons).toHaveLength(0);
     });
 
