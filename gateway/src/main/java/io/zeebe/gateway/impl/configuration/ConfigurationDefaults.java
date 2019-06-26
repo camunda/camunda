@@ -28,4 +28,6 @@ public class ConfigurationDefaults {
   public static final String DEFAULT_CLUSTER_MEMBER_ID = "gateway";
   public static final String DEFAULT_CLUSTER_HOST = "0.0.0.0";
   public static final int DEFAULT_CLUSTER_PORT = 26502;
+  public static final boolean DEFAULT_MONITORING_ENABLED = false;
+  public static final int DEFAULT_MONITORING_PORT = 9600;
 }

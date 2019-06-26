@@ -22,6 +22,9 @@ import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEW
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CONTACT_POINT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_HOST;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MANAGEMENT_THREADS;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MONITORING_ENABLED;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MONITORING_HOST;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MONITORING_PORT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_PORT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_REQUEST_TIMEOUT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_TRANSPORT_BUFFER;
@@ -40,6 +43,7 @@ public class GatewayCfgTest {
 
   private static final String DEFAULT_CFG_FILENAME = "/configuration/gateway.default.toml";
   private static final GatewayCfg DEFAULT_CFG = new GatewayCfg();
+  private static final String EMPTY_CFG_FILENAME = "/configuration/gateway.empty.toml";
   private static final String CUSTOM_CFG_FILENAME = "/configuration/gateway.custom.toml";
   private static final GatewayCfg CUSTOM_CFG = new GatewayCfg();
 
@@ -71,6 +75,15 @@ public class GatewayCfgTest {
   }
 
   @Test
+  public void shouldLoadEmptyConfig() {
+    // when
+    final GatewayCfg gatewayCfg = readEmptyConfig();
+
+    // then
+    assertThat(gatewayCfg).isEqualTo(DEFAULT_CFG);
+  }
+
+  @Test
   public void shouldLoadCustomConfig() {
     // when
     final GatewayCfg gatewayCfg = readCustomConfig();
@@ -92,6 +105,9 @@ public class GatewayCfgTest {
     setEnv(ENV_GATEWAY_CLUSTER_MEMBER_ID, "envMember");
     setEnv(ENV_GATEWAY_CLUSTER_HOST, "envHost");
     setEnv(ENV_GATEWAY_CLUSTER_PORT, "12345");
+    setEnv(ENV_GATEWAY_MONITORING_ENABLED, "true");
+    setEnv(ENV_GATEWAY_MONITORING_HOST, "monitorHost");
+    setEnv(ENV_GATEWAY_MONITORING_PORT, "231");
 
     final GatewayCfg expected = new GatewayCfg();
     expected.getNetwork().setHost("zeebe").setPort(5432);
@@ -105,6 +121,7 @@ public class GatewayCfgTest {
         .setHost("envHost")
         .setPort(12345);
     expected.getThreads().setManagementThreads(32);
+    expected.getMonitoring().setEnabled(true).setHost("monitorHost").setPort(231);
 
     // when
     final GatewayCfg gatewayCfg = readCustomConfig();
@@ -119,6 +136,10 @@ public class GatewayCfgTest {
 
   private GatewayCfg readDefaultConfig() {
     return readConfig(DEFAULT_CFG_FILENAME);
+  }
+
+  private GatewayCfg readEmptyConfig() {
+    return readConfig(EMPTY_CFG_FILENAME);
   }
 
   private GatewayCfg readCustomConfig() {

@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Parent</name>
@@ -45,6 +47,7 @@
     <version.httpclient>4.5.9</version.httpclient>
     <version.httpcomponents>4.4.11</version.httpcomponents>
     <version.jackson>2.9.9</version.jackson>
+    <version.java-grpc-prometheus>0.3.0</version.java-grpc-prometheus>
     <version.jmh>1.21</version.jmh>
     <version.junit>4.12</version.junit>
     <version.log4j>2.11.2</version.log4j>
@@ -299,6 +302,12 @@
 
       <dependency>
         <groupId>io.grpc</groupId>
+        <artifactId>grpc-protobuf-lite</artifactId>
+        <version>${version.grpc}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.grpc</groupId>
         <artifactId>grpc-stub</artifactId>
         <version>${version.grpc}</version>
       </dependency>
@@ -477,6 +486,24 @@
         <groupId>io.prometheus</groupId>
         <artifactId>simpleclient_hotspot</artifactId>
         <version>${version.prometheus}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.prometheus</groupId>
+        <artifactId>simpleclient_httpserver</artifactId>
+        <version>${version.prometheus}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>me.dinowernli</groupId>
+        <artifactId>java-grpc-prometheus</artifactId>
+        <version>${version.java-grpc-prometheus}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-all</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
     </dependencies>
@@ -724,7 +751,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore />
+                    <ignore/>
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -822,7 +849,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <dependencyConvergence />
+                  <dependencyConvergence/>
                 </rules>
               </configuration>
             </execution>

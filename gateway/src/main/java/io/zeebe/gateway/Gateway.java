@@ -18,6 +18,7 @@ package io.zeebe.gateway;
 import io.atomix.cluster.AtomixCluster;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.ServerInterceptors;
 import io.grpc.netty.NettyServerBuilder;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
@@ -25,6 +26,8 @@ import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.function.Function;
+import me.dinowernli.grpc.prometheus.Configuration;
+import me.dinowernli.grpc.prometheus.MonitoringServerInterceptor;
 import org.slf4j.Logger;
 
 public class Gateway {
@@ -47,7 +50,6 @@ public class Gateway {
 
   private Server server;
   private BrokerClient brokerClient;
-  private EndpointManager endpointManager;
 
   public Gateway(GatewayCfg gatewayCfg, AtomixCluster atomixCluster) {
     this(
@@ -83,8 +85,20 @@ public class Gateway {
 
     brokerClient = buildBrokerClient();
 
-    endpointManager = new EndpointManager(brokerClient);
-    server = serverBuilderFactory.apply(gatewayCfg).addService(endpointManager).build();
+    final EndpointManager endpointManager = new EndpointManager(brokerClient);
+
+    final ServerBuilder serverBuilder = serverBuilderFactory.apply(gatewayCfg);
+
+    if (gatewayCfg.getMonitoring().isEnabled()) {
+      final MonitoringServerInterceptor monitoringInterceptor =
+          MonitoringServerInterceptor.create(Configuration.allMetrics());
+      serverBuilder.addService(
+          ServerInterceptors.intercept(endpointManager, monitoringInterceptor));
+    } else {
+      serverBuilder.addService(endpointManager);
+    }
+
+    server = serverBuilder.build();
 
     server.start();
   }
