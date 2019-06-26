@@ -8,14 +8,16 @@ import React, {createRef, useState, useEffect} from 'react';
 import PropTypes from 'prop-types';
 
 import {isValidJSON} from 'modules/utils';
+import {isRunning} from 'modules/utils/instance';
 
 import CodeModal from 'modules/components/CodeModal';
-
 import {EMPTY_PLACEHOLDER, NULL_PLACEHOLDER} from './constants';
+
 import * as Styled from './styled';
 
 export default function Variables({
   variables,
+  instanceState,
   editMode,
   onVariableUpdate,
   isEditable,
@@ -201,21 +203,23 @@ export default function Variables({
                           <Styled.TD>
                             <Styled.DisplayText>{propValue}</Styled.DisplayText>
                           </Styled.TD>
-                          <Styled.EditButtonsTD>
-                            {hasActiveOperation ? (
-                              <Styled.Spinner />
-                            ) : (
-                              <Styled.EditButton
-                                title="Enter edit mode"
-                                data-test="enter-edit-btn"
-                                onClick={() =>
-                                  handleOpenEditVariable(name, propValue)
-                                }
-                              >
-                                <Styled.EditIcon />
-                              </Styled.EditButton>
-                            )}
-                          </Styled.EditButtonsTD>
+                          {isRunning({state: instanceState}) && (
+                            <Styled.EditButtonsTD>
+                              {hasActiveOperation ? (
+                                <Styled.Spinner />
+                              ) : (
+                                <Styled.EditButton
+                                  title="Enter edit mode"
+                                  data-test="enter-edit-btn"
+                                  onClick={() =>
+                                    handleOpenEditVariable(name, propValue)
+                                  }
+                                >
+                                  <Styled.EditIcon />
+                                </Styled.EditButton>
+                              )}
+                            </Styled.EditButtonsTD>
+                          )}
                         </>
                       )}
                     </Styled.TR>
@@ -253,6 +257,7 @@ export default function Variables({
 }
 
 Variables.propTypes = {
+  instanceState: PropTypes.string,
   variables: PropTypes.array,
   editMode: PropTypes.string.isRequired,
   isEditable: PropTypes.bool.isRequired,

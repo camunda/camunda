@@ -487,6 +487,7 @@ export default class Instance extends Component {
                 </Styled.FlowNodeInstanceLog>
               </Styled.Panel>
               <Variables
+                instanceState={this.state.instance.state}
                 variables={variables}
                 editMode={editMode}
                 isEditable={this.areVariablesEditable()}

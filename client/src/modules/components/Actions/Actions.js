@@ -10,12 +10,14 @@ import {isEqual} from 'lodash';
 
 import {OPERATION_TYPE, OPERATION_STATE} from 'modules/constants';
 import {applyOperation} from 'modules/api/instances';
-import {getLatestOperation} from 'modules/utils/instance';
+import {
+  getLatestOperation,
+  isWithIncident,
+  isRunning
+} from 'modules/utils/instance';
 
 import ActionStatus from 'modules/components/ActionStatus';
-
 import ActionItems from './ActionItems';
-import {isWithIncident, isRunning} from './service';
 
 import * as Styled from './styled';
 

@@ -7,6 +7,22 @@
 import {STATE} from 'modules/constants';
 
 /**
+ * @returns a boolean showing if the current instance has an incident
+ * @param {*} instance object with full instance data
+ */
+export const isWithIncident = instance => {
+  return instance.state === STATE.INCIDENT;
+};
+
+/**
+ * @returns a boolean showing if the current instance is running.
+ * @param {*} instance object with full instance data
+ */
+export const isRunning = instance => {
+  return instance.state === STATE.ACTIVE || instance.state === STATE.INCIDENT;
+};
+
+/**
  * @returns the last operation from an operations list or an empty {}
  * @param {*} operations array of operations
  */

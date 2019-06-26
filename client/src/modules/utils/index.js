@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {STATE} from 'modules/constants';
+
 export function isValidJSON(text) {
   try {
     JSON.parse(text);
@@ -12,6 +14,14 @@ export function isValidJSON(text) {
     return false;
   }
 }
+
+/**
+ * @returns a boolean showing if the current instance is running.
+ * @param {*} instance object with full instance data
+ */
+export const isRunning = instance => {
+  return instance.state === STATE.ACTIVE || instance.state === STATE.INCIDENT;
+};
 
 /**
  * Similar to lodash's compact(array): Removes entries with falsy values from the object
