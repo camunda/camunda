@@ -21,7 +21,6 @@ import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -50,12 +49,18 @@ public class DeploymentRecord extends UnifiedRecordValue implements DeploymentRe
 
   @Override
   public List<io.zeebe.protocol.record.value.deployment.DeploymentResource> getResources() {
-
     final List<io.zeebe.protocol.record.value.deployment.DeploymentResource> resources =
         new ArrayList<>();
 
-    final Iterator<DeploymentResource> iterator = resourcesProp.iterator();
-    iterator.forEachRemaining(resources::add);
+    for (final DeploymentResource resource : resourcesProp) {
+      final byte[] bytes = new byte[resource.getLength()];
+      final UnsafeBuffer copyBuffer = new UnsafeBuffer(bytes);
+      resource.write(copyBuffer, 0);
+
+      final DeploymentResource copiedResource = new DeploymentResource();
+      copiedResource.wrap(copyBuffer);
+      resources.add(copiedResource);
+    }
 
     return resources;
   }
@@ -64,10 +69,7 @@ public class DeploymentRecord extends UnifiedRecordValue implements DeploymentRe
   public List<DeployedWorkflow> getDeployedWorkflows() {
     final List<DeployedWorkflow> workflows = new ArrayList<>();
 
-    final Iterator<Workflow> iterator = workflowsProp.iterator();
-    while (iterator.hasNext()) {
-      final Workflow workflow = iterator.next();
-
+    for (final Workflow workflow : workflowsProp) {
       final byte[] bytes = new byte[workflow.getLength()];
       final UnsafeBuffer copyBuffer = new UnsafeBuffer(bytes);
       workflow.write(copyBuffer, 0);
