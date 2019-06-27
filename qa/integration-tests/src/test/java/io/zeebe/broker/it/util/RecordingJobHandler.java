@@ -39,7 +39,7 @@ public class RecordingJobHandler implements JobHandler {
   }
 
   @Override
-  public void handle(JobClient client, ActivatedJob job) {
+  public void handle(JobClient client, ActivatedJob job) throws Exception {
     final JobHandler handler = jobHandlers[nextJobHandler];
     nextJobHandler = Math.min(nextJobHandler + 1, jobHandlers.length - 1);
 
