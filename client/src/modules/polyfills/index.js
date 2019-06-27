@@ -22,6 +22,8 @@ import './nodeList_forEach';
 import './array_from';
 import './object_entries';
 
+import 'es6-shim';
+
 elementClosest(window);
 
 if (!Object.values) {
