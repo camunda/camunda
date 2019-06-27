@@ -131,12 +131,9 @@ public class ServiceDependencyResolver {
       final List<ServiceController> dependents = dependentServices.get(dependency);
 
       if (dependents != null) {
+        dependents.remove(controller);
         if (stoppingServices.contains(dependency)) {
-          boolean allStopped = true;
-          for (int i = 0; i < dependents.size() && allStopped; i++) {
-            allStopped &= !startedServices.contains(dependents.get(i).getServiceName());
-          }
-
+          final boolean allStopped = dependents.isEmpty();
           if (allStopped) {
             dependency.fireEvent(ServiceEventType.DEPENDENTS_STOPPED);
           }
@@ -148,8 +145,6 @@ public class ServiceDependencyResolver {
               controller,
               dependency.getServiceName());
         }
-
-        dependents.remove(controller);
       }
     }
 

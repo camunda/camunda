@@ -21,6 +21,7 @@ import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertNotComp
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -30,6 +31,7 @@ import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Before;
 import org.junit.Rule;
@@ -212,6 +214,92 @@ public class DependenciesTest {
     // then
     final InOrder inOrder = inOrder(mockService1, mockService2, mockService3);
     inOrder.verify(mockService1, times(1)).stop(any(ServiceStopContext.class));
+    inOrder.verify(mockService2, times(1)).stop(any(ServiceStopContext.class));
+    inOrder.verify(mockService3, times(1)).stop(any(ServiceStopContext.class));
+  }
+
+  @Test
+  public void shouldStopDependentServicesFirstEvenWhenNotCompletelyStarted() {
+    final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
+    final Service<Object> mockService1 =
+        spy(
+            new Service<Object>() {
+              @Override
+              public Object get() {
+                return null;
+              }
+
+              @Override
+              public void start(ServiceStartContext startContext) {
+                startContext.async(openFuture);
+              }
+            });
+    final Service<Void> mockService1b = mock(Service.class);
+    final Service<Object> mockService2 = mock(Service.class);
+    final Service<Object> mockService3 = mock(Service.class);
+
+    // given
+    final ServiceName<Void> service1b = ServiceName.newServiceName("service1b", Void.class);
+    serviceContainer.createService(service1, mockService1).dependency(service2).install();
+    serviceContainer.createService(service1b, mockService1b).dependency(service2).install();
+    serviceContainer.createService(service2, mockService2).dependency(service3).install();
+    serviceContainer.createService(service3, mockService3).install();
+    actorSchedulerRule.workUntilDone();
+
+    // when
+    serviceContainer.removeService(service3);
+    actorSchedulerRule.workUntilDone();
+
+    openFuture.complete(null);
+    actorSchedulerRule.workUntilDone();
+
+    // then
+    final InOrder inOrder = inOrder(mockService1, mockService1b, mockService2, mockService3);
+    inOrder.verify(mockService1b, times(1)).stop(any(ServiceStopContext.class));
+    inOrder.verify(mockService1, times(1)).stop(any());
+    inOrder.verify(mockService2, times(1)).stop(any(ServiceStopContext.class));
+    inOrder.verify(mockService3, times(1)).stop(any(ServiceStopContext.class));
+  }
+
+  @Test
+  public void shouldStopDependentServicesFirstEvenWhenNotCompletelyStartedOnClose() {
+    final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
+    final Service<Object> mockService1 =
+        spy(
+            new Service<Object>() {
+              @Override
+              public Object get() {
+                return null;
+              }
+
+              @Override
+              public void start(ServiceStartContext startContext) {
+                startContext.async(openFuture);
+              }
+            });
+    final Service<Void> mockService1b = mock(Service.class);
+    final Service<Object> mockService2 = mock(Service.class);
+    final Service<Object> mockService3 = mock(Service.class);
+
+    // given
+    final ServiceName<Void> service1b = ServiceName.newServiceName("service1b", Void.class);
+    serviceContainer.createService(service3, mockService3).install();
+    serviceContainer.createService(service2, mockService2).dependency(service3).install();
+    serviceContainer.createService(service1b, mockService1b).dependency(service2).install();
+    serviceContainer.createService(service1, mockService1).dependency(service2).install();
+    actorSchedulerRule.workUntilDone();
+
+    // when
+    serviceContainer.closeAsync();
+    actorSchedulerRule.workUntilDone();
+
+    openFuture.complete(null);
+    actorSchedulerRule.workUntilDone();
+
+    // then
+    final InOrder inOrder = inOrder(mockService1, mockService1b, mockService2, mockService3);
+    inOrder.verify(mockService1b, times(1)).stop(any(ServiceStopContext.class));
+    inOrder.verify(mockService1, times(1)).stop(any());
     inOrder.verify(mockService2, times(1)).stop(any(ServiceStopContext.class));
     inOrder.verify(mockService3, times(1)).stop(any(ServiceStopContext.class));
   }
