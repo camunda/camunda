@@ -69,6 +69,8 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
   private ProcessingStateMachine processingStateMachine;
 
   private Phase phase = Phase.REPROCESSING;
+  private CompletableActorFuture<Void> openFuture;
+  private CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
 
   protected StreamProcessor(final StreamProcessorBuilder context) {
     this.actorScheduler = context.getActorScheduler();
@@ -107,7 +109,7 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   @Override
   public void start(ServiceStartContext startContext) {
-    startContext.async(openAsync());
+    startContext.async(openAsync(), true);
   }
 
   @Override
@@ -117,10 +119,10 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   public ActorFuture<Void> openAsync() {
     if (isOpened.compareAndSet(false, true)) {
-      return actorScheduler.submitActor(this);
-    } else {
-      return CompletableActorFuture.completed(null);
+      openFuture = new CompletableActorFuture<>();
+      actorScheduler.submitActor(this);
     }
+    return openFuture;
   }
 
   @Override
@@ -133,12 +135,13 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
       lifecycleAwareListeners.forEach(l -> l.onOpen(processingContext));
     } catch (final Throwable e) {
-      onFailure();
+      onFailure(e);
       LangUtil.rethrowUnchecked(e);
     }
 
     try {
       processingStateMachine = new ProcessingStateMachine(processingContext, this::isOpened);
+      openFuture.complete(null);
 
       final ReProcessingStateMachine reProcessingStateMachine =
           new ReProcessingStateMachine(processingContext);
@@ -151,13 +154,13 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
           (v, throwable) -> {
             if (throwable != null) {
               LOG.error("Unexpected error on recovery happens.", throwable);
-              onFailure();
+              onFailure(throwable);
             } else {
               onRecovered();
             }
           });
     } catch (final RuntimeException e) {
-      onFailure();
+      onFailure(e);
       throw e;
     }
   }
@@ -214,10 +217,10 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   public ActorFuture<Void> closeAsync() {
     if (isOpened.compareAndSet(true, false)) {
-      return actor.close();
-    } else {
-      return CompletableActorFuture.completed(null);
+      closeFuture = new CompletableActorFuture<>();
+      actor.close();
     }
+    return closeFuture;
   }
 
   @Override
@@ -239,11 +242,14 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   @Override
   protected void onActorClosed() {
+    closeFuture.complete(null);
     LOG.debug("Closed stream processor controller {}.", getName());
   }
 
-  private void onFailure() {
+  private void onFailure(Throwable throwable) {
     phase = Phase.FAILED;
+    openFuture.completeExceptionally(throwable);
+    closeFuture = new CompletableActorFuture<>();
     isOpened.set(false);
     actor.close();
   }
