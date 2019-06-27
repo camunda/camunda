@@ -12,7 +12,7 @@ import {shim as objectValuesShim} from 'object.values';
 import {shim as arrayIncludesShim} from 'array-includes';
 import {shim as arrayFindShim} from 'array.prototype.find';
 import 'string.prototype.includes';
-import 'element-closest';
+import elementClosest from 'element-closest';
 
 import './array_flat';
 import './array_findIndex';
@@ -21,6 +21,8 @@ import './number_epsilon';
 import './nodeList_forEach';
 import './array_from';
 import './object_entries';
+
+elementClosest(window);
 
 if (!Object.values) {
   objectValuesShim();
