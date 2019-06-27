@@ -155,10 +155,10 @@ export const Fake = themed(styled.span`
 `);
 
 export const Transition = themed(styled(TransitionComponent)`
-  &.transition-enter {
+  &.transition-enter > td > div {
     opacity: 0.25;
   }
-  &.transition-enter-active {
+  &.transition-enter-active > td > div {
     opacity: 1;
     transition: opacity ${({timeout}) => timeout.enter + 'ms'};
   }
