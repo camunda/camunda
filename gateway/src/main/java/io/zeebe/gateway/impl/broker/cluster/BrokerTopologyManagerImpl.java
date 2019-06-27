@@ -20,7 +20,7 @@ import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
 import io.zeebe.gateway.Loggers;
-import io.zeebe.protocol.impl.data.cluster.BrokerInfo;
+import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -103,8 +103,7 @@ public class BrokerTopologyManagerImpl extends Actor
         leaderPartitionId -> newTopology.setPartitionLeader(leaderPartitionId, nodeId),
         followerPartitionId -> newTopology.addPartitionFollower(followerPartitionId, nodeId));
 
-    final String clientAddress =
-        distributedBrokerInfo.getApiAddress(BrokerInfo.COMMAND_API_PROPERTY);
+    final String clientAddress = distributedBrokerInfo.getCommandApiAddress();
     if (clientAddress != null) {
       newTopology.setBrokerAddressIfPresent(nodeId, clientAddress);
       registerEndpoint.accept(nodeId, SocketAddress.from(clientAddress));
