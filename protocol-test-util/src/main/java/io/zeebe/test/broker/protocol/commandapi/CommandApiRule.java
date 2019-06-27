@@ -26,7 +26,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.SubscriptionUtil;
-import io.zeebe.protocol.impl.data.cluster.BrokerInfo;
+import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
@@ -111,10 +111,13 @@ public class CommandApiRule extends ExternalResource {
     waitForTopology();
     getBrokerInfoStream()
         .forEach(
-            brokerInfo ->
+            brokerInfo -> {
+              final String commandApiAddress = brokerInfo.getCommandApiAddress();
+              if (commandApiAddress != null) {
                 transport.registerEndpoint(
-                    brokerInfo.getNodeId(),
-                    SocketAddress.from(brokerInfo.getApiAddress(BrokerInfo.COMMAND_API_PROPERTY))));
+                    brokerInfo.getNodeId(), SocketAddress.from(commandApiAddress));
+              }
+            });
 
     final List<Integer> partitionIds = doRepeatedly(this::getPartitionIds).until(p -> !p.isEmpty());
     defaultPartitionId = partitionIds.get(0);

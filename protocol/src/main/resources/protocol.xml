@@ -61,6 +61,11 @@
       <validValue name="INVALID_STATE">3</validValue>
       <validValue name="PROCESSING_ERROR">4</validValue>
     </enum>
+
+    <enum name="PartitionRole" encodingType="uint8">
+      <validValue name="LEADER">0</validValue>
+      <validValue name="FOLLOWER">1</validValue>
+    </enum>
   </types>
 
   <!-- L1 General Messages 0 - 99 -->
@@ -104,6 +109,21 @@
     <field name="rejectionType" id="7" type="RejectionType"/>
     <!-- populated when RecordType is COMMAND_REJECTION, UTF-8-encoded String -->
     <data name="rejectionReason" id="8" type="varDataEncoding"/>
+  </sbe:message>
+
+  <sbe:message name="BrokerInfo" id="201" description="Broker topology information">
+    <field name="nodeId" id="1" type="int32"/>
+    <field name="partitionsCount" id="2" type="int32"/>
+    <field name="clusterSize" id="3" type="int32"/>
+    <field name="replicationFactor" id="4" type="int32"/>
+    <group name="addresses" id="5">
+      <data name="apiName" id="6" type="varDataEncoding"/>
+      <data name="address" id="7" type="varDataEncoding"/>
+    </group>
+    <group name="partitionRoles" id="8">
+      <field name="partitionId" id="9" type="int32"/>
+      <field name="role" id="10" type="PartitionRole"/>
+    </group>
   </sbe:message>
 
 </sbe:messageSchema>
