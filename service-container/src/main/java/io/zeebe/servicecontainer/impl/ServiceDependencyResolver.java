@@ -108,15 +108,11 @@ public class ServiceDependencyResolver {
 
     final List<ServiceController> dependents = this.dependentServices.get(controller);
     for (ServiceController dependentService : dependents) {
-      dependentService
-          .getChannel()
-          .add(new ServiceEvent(ServiceEventType.DEPENDENCIES_UNAVAILABLE, dependentService));
+      dependentService.fireEvent(ServiceEventType.DEPENDENCIES_UNAVAILABLE);
     }
 
     if (dependents.isEmpty()) {
-      controller
-          .getChannel()
-          .add(new ServiceEvent(ServiceEventType.DEPENDENTS_STOPPED, controller));
+      controller.fireEvent(ServiceEventType.DEPENDENTS_STOPPED);
     }
   }
 
@@ -132,28 +128,39 @@ public class ServiceDependencyResolver {
 
     final List<ServiceController> dependencies = resolvedDependencies.remove(controller);
     for (ServiceController dependency : dependencies) {
-      final List<ServiceController> deps = dependentServices.get(dependency);
+      final List<ServiceController> dependents = dependentServices.get(dependency);
 
-      if (deps != null) {
+      if (dependents != null) {
         if (stoppingServices.contains(dependency)) {
           boolean allStopped = true;
-          for (int i = 0; i < deps.size() && allStopped; i++) {
-            allStopped &= !startedServices.contains(deps.get(i));
+          for (int i = 0; i < dependents.size() && allStopped; i++) {
+            allStopped &= !startedServices.contains(dependents.get(i).getServiceName());
           }
 
           if (allStopped) {
-            dependency
-                .getChannel()
-                .add(new ServiceEvent(ServiceEventType.DEPENDENTS_STOPPED, dependency));
+            dependency.fireEvent(ServiceEventType.DEPENDENTS_STOPPED);
           }
+        } else {
+          // we should investigate this case - this seems to be wrong
+          // added this log to see if this ever happens
+          LOG.error(
+              "Removed service {}, but dependency service {} is not in closing yet, which means we do not remove dependents.",
+              controller,
+              dependency.getServiceName());
         }
 
-        deps.remove(controller);
+        dependents.remove(controller);
       }
     }
 
     installedServices.remove(controller.getServiceName());
-    dependentServices.remove(controller);
+
+    final List<ServiceController> dependents = dependentServices.remove(controller);
+    assert dependents == null || dependents.isEmpty()
+        : "Problem on dependency clean up, not closed dependents: "
+            + dependents
+            + " for controller "
+            + controller.getServiceName();
   }
 
   private void onServiceStarted(ServiceEvent event) {
@@ -220,6 +227,9 @@ public class ServiceDependencyResolver {
       }
     }
     this.resolvedDependencies.put(controller, resolvedDependencies);
+    if (dependencies.isEmpty()) {
+      rootServices.add(controller);
+    }
 
     /** resolve other services' dependencies which depend on this service */
     List<ServiceController> dependents = unresolvedDependencies.remove(controller.getServiceName());
@@ -233,6 +243,12 @@ public class ServiceDependencyResolver {
 
     this.dependentServices.put(controller, dependents);
     checkDependenciesAvailable(controller);
+  }
+
+  private final List<ServiceController> rootServices = new ArrayList<>();
+
+  public List<ServiceController> getRootServices() {
+    return rootServices;
   }
 
   private void checkDependenciesAvailable(ServiceController controller) {
@@ -251,13 +267,8 @@ public class ServiceDependencyResolver {
     }
 
     if (dependenciesAvailable) {
-      controller
-          .getChannel()
-          .add(
-              new ServiceEvent(
-                  ServiceEventType.DEPENDENCIES_AVAILABLE,
-                  controller,
-                  new ArrayList<>(resolvedDependencies)));
+      controller.fireEvent(
+          ServiceEventType.DEPENDENCIES_AVAILABLE, new ArrayList<>(resolvedDependencies));
     }
   }
 
