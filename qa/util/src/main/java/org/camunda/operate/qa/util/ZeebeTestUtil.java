@@ -11,11 +11,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.ZeebeFuture;
-import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1;
-import io.zeebe.client.api.commands.DeployWorkflowCommandStep1;
-import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.api.subscription.JobWorker;
+import io.zeebe.client.api.command.CreateWorkflowInstanceCommandStep1;
+import io.zeebe.client.api.command.DeployWorkflowCommandStep1;
+import io.zeebe.client.api.response.DeploymentEvent;
+import io.zeebe.client.api.response.WorkflowInstanceEvent;
+import io.zeebe.client.api.worker.JobWorker;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 
 public abstract class ZeebeTestUtil {
