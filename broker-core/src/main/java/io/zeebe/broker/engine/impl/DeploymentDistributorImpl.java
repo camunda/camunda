@@ -23,13 +23,14 @@ import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
 import io.zeebe.broker.system.configuration.ClusterCfg;
-import io.zeebe.broker.system.management.deployment.NotLeaderResponse;
 import io.zeebe.broker.system.management.deployment.PushDeploymentRequest;
 import io.zeebe.broker.system.management.deployment.PushDeploymentResponse;
 import io.zeebe.engine.processor.workflow.deployment.distribute.DeploymentDistributor;
 import io.zeebe.engine.processor.workflow.deployment.distribute.PendingDeploymentDistribution;
 import io.zeebe.engine.state.deployment.DeploymentsState;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.encoding.ErrorResponse;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -52,7 +53,7 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
   private final PushDeploymentRequest pushDeploymentRequest = new PushDeploymentRequest();
   private final PushDeploymentResponse pushDeploymentResponse = new PushDeploymentResponse();
 
-  private final NotLeaderResponse notLeaderResponse = new NotLeaderResponse();
+  private final ErrorResponse errorResponse = new ErrorResponse();
 
   private final TopologyPartitionListenerImpl partitionListener;
   private final ActorControl actor;
@@ -190,11 +191,14 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
     if (pushDeploymentResponse.tryWrap(responseBuffer)) {
       pushDeploymentResponse.wrap(responseBuffer);
       handlePushResponse();
-    } else if (notLeaderResponse.tryWrap(responseBuffer)) {
+    } else if (errorResponse.tryWrap(responseBuffer)) {
+      errorResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
       LOG.warn(
-          "Node {} rejected deployment on partition {} as not leader",
+          "Node {} rejected deployment on partition {} due to error of type {} :'{}'",
           partitionLeaderId,
-          partition);
+          partition,
+          errorResponse.getErrorCode().name(),
+          BufferUtil.bufferAsString(errorResponse.getErrorData()));
       handleRetry(partitionLeaderId, partition);
     } else {
       LOG.warn(
