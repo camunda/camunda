@@ -24,7 +24,6 @@ import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
-import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Before;
@@ -79,8 +78,8 @@ public class RecordingExporterTest {
     }
 
     @Override
-    public Instant getTimestamp() {
-      return null;
+    public long getTimestamp() {
+      return -1;
     }
 
     @Override

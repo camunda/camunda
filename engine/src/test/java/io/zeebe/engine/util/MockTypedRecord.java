@@ -25,7 +25,6 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
-import java.time.Instant;
 
 public class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecord<T> {
 
@@ -84,7 +83,7 @@ public class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecor
   }
 
   @Override
-  public Instant getTimestamp() {
+  public long getTimestamp() {
     throw new UnsupportedOperationException("not yet implemented");
   }
 

@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Map;
@@ -219,9 +219,10 @@ public class ElasticsearchClient {
   }
 
   protected String indexFor(final Record<?> record) {
+    final Instant timestamp = Instant.ofEpochMilli(record.getTimestamp());
     return indexPrefixForValueType(record.getValueType())
         + INDEX_DELIMITER
-        + formatter.format(record.getTimestamp());
+        + formatter.format(timestamp);
   }
 
   protected String idFor(final Record<?> record) {

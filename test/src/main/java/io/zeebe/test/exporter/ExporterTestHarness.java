@@ -29,7 +29,6 @@ import io.zeebe.util.ZbLogger;
 import java.io.File;
 import java.io.InputStream;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -287,7 +286,7 @@ public class ExporterTestHarness {
   private MockRecord generateNextRecord(MockRecord seed) {
     return ((MockRecord) seed.clone())
         .setMetadata(new MockRecordMetadata().setPartitionId(partitionId))
-        .setTimestamp(Instant.now())
+        .setTimestamp(System.currentTimeMillis())
         .setPosition(++position);
   }
 

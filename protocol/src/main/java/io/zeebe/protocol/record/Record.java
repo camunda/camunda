@@ -16,7 +16,6 @@
 package io.zeebe.protocol.record;
 
 import io.zeebe.protocol.record.intent.Intent;
-import java.time.Instant;
 
 /** Represents a record published to the log stream. */
 public interface Record<T extends RecordValue> extends JsonSerializable {
@@ -48,12 +47,8 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    */
   long getKey();
 
-  /**
-   * Returns the instant at which the record was published on the partition.
-   *
-   * @return timestamp of the event
-   */
-  Instant getTimestamp();
+  /** @return the unix timestamp at which the record was published on the partition. */
+  long getTimestamp();
 
   /** @return the intent of the record */
   Intent getIntent();

@@ -43,7 +43,7 @@ public class MockRecordStream extends StreamWrapper<MockRecord, MockRecordStream
 
     return nextRecord
         .setPosition(position)
-        .setTimestamp(previousRecord.getTimestamp().plusSeconds(1))
+        .setTimestamp(previousRecord.getTimestamp() + 1)
         .setKey(position);
   }
 }

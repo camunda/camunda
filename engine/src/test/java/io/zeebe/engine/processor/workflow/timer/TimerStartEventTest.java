@@ -448,7 +448,7 @@ public class TimerStartEventTest {
             .withWorkflowKey(slowerDeployment.getWorkflowKey())
             .getFirst();
     timerRecord = slowTimerRecord.getValue();
-    final long writtenTime = slowTimerRecord.getTimestamp().toEpochMilli();
+    final long writtenTime = slowTimerRecord.getTimestamp();
     assertThat(timerRecord.getDueDate()).isBetween(writtenTime, writtenTime + 4000);
 
     // when
@@ -499,7 +499,7 @@ public class TimerStartEventTest {
     engine.increaseTime(Duration.ofSeconds(1));
 
     // then
-    final Instant firstModelTimestamp =
+    final long firstModelTimestamp =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId("process")
             .getFirst()
@@ -517,13 +517,13 @@ public class TimerStartEventTest {
                 .count())
         .isEqualTo(2);
 
-    final Instant secondModelTimestamp =
+    final long secondModelTimestamp =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId("process_3")
             .withWorkflowKey(firstDeployment.getWorkflowKey())
             .getFirst()
             .getTimestamp();
-    assertThat(secondModelTimestamp.isAfter(firstModelTimestamp)).isTrue();
+    assertThat(secondModelTimestamp).isGreaterThan(firstModelTimestamp);
   }
 
   @Test
