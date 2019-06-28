@@ -545,6 +545,37 @@ public class CreateDeploymentTest {
     assertDifferentResources(originalWorkflows.get(0), repeatedWorkflows.get(0));
   }
 
+  @Test
+  public void shouldRejectDeploymentWithDuplicateResources() {
+    // given
+    final BpmnModelInstance definition1 =
+        Bpmn.createExecutableProcess("process1").startEvent().done();
+    final BpmnModelInstance definition2 =
+        Bpmn.createExecutableProcess("process2").startEvent().done();
+    final BpmnModelInstance definition3 =
+        Bpmn.createExecutableProcess("process2")
+            .startEvent()
+            .serviceTask("task", (t) -> t.zeebeTaskType("j").zeebeTaskHeader("k", "v"))
+            .done();
+
+    // when
+    final Record<DeploymentRecordValue> deploymentRejection =
+        ENGINE
+            .deployment()
+            .withXmlResource("p1.bpmn", definition1)
+            .withXmlResource("p2.bpmn", definition2)
+            .withXmlResource("p3.bpmn", definition3)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentRejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to deploy new resources, but encountered the following errors:\n"
+                + "Duplicated process id in resources 'p2.bpmn' and 'p3.bpmn'");
+  }
+
   private DeployedWorkflow findWorkflow(List<DeployedWorkflow> workflows, String processId) {
     return workflows.stream()
         .filter(w -> w.getBpmnProcessId().equals(processId))
