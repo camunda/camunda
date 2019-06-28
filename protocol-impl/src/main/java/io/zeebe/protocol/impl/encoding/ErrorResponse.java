@@ -66,6 +66,17 @@ public class ErrorResponse implements BufferWriter, BufferReader {
     return this;
   }
 
+  public boolean tryWrap(DirectBuffer buffer) {
+    return tryWrap(buffer, 0, buffer.capacity());
+  }
+
+  public boolean tryWrap(DirectBuffer buffer, int offset, int length) {
+    headerDecoder.wrap(buffer, offset);
+
+    return headerDecoder.schemaId() == bodyDecoder.sbeSchemaId()
+        && headerDecoder.templateId() == bodyDecoder.sbeTemplateId();
+  }
+
   @Override
   public void wrap(DirectBuffer buffer, int offset, int length) {
     reset();
@@ -121,5 +132,12 @@ public class ErrorResponse implements BufferWriter, BufferReader {
         .wrap(buffer, offset)
         .errorCode(errorCode)
         .putErrorData(errorData, 0, errorData.capacity());
+  }
+
+  public byte[] toBytes() {
+    final byte[] bytes = new byte[getLength()];
+    final MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+    write(buffer, 0);
+    return bytes;
   }
 }

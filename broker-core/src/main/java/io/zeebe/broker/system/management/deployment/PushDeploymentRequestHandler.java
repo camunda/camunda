@@ -24,12 +24,15 @@ import io.zeebe.clustering.management.PushDeploymentRequestDecoder;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -106,7 +109,7 @@ public class PushDeploymentRequestHandler implements Function<byte[], Completabl
     } else {
       LOG.debug(
           "Rejecting deployment {} for partition {} as not leader", deploymentKey, partitionId);
-      sendNotLeaderRejection(responseFuture);
+      sendNotLeaderRejection(responseFuture, partitionId);
     }
   }
 
@@ -153,8 +156,13 @@ public class PushDeploymentRequestHandler implements Function<byte[], Completabl
     responseFuture.complete(pushResponse.toBytes());
   }
 
-  private void sendNotLeaderRejection(final CompletableFuture<byte[]> responseFuture) {
-    final NotLeaderResponse notLeaderResponse = new NotLeaderResponse();
+  private void sendNotLeaderRejection(
+      final CompletableFuture<byte[]> responseFuture, int partitionId) {
+    final ErrorResponse notLeaderResponse = new ErrorResponse();
+    notLeaderResponse
+        .setErrorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
+        .setErrorData(
+            BufferUtil.wrapString(String.format("Not leader of partition %d", partitionId)));
     responseFuture.complete(notLeaderResponse.toBytes());
   }
 

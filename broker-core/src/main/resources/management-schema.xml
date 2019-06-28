@@ -41,9 +41,6 @@
 
   </types>
 
-  <sbe:message name="NotLeaderResponse" id="0">
-  </sbe:message>
-
   <sbe:message name="ErrorResponse" id="1">
     <field name="code" id="0" type="errorResponseCode"/>
     <data name="data" id="1" type="varDataEncoding"/>
