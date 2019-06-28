@@ -20,7 +20,6 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
-import java.time.Instant;
 import java.util.Objects;
 
 public class MockRecord extends ExporterMappedObject implements Record, Cloneable {
@@ -28,7 +27,7 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
   private long position = 0;
   private long sourceRecordPosition = -1;
   private long key = -1;
-  private Instant timestamp = Instant.now();
+  private long timestamp = -1;
   private MockRecordMetadata metadata = new MockRecordMetadata();
   private MockRecordValueWithVariables value = new MockRecordValueWithVariables();
 
@@ -38,7 +37,7 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
       long position,
       long sourceRecordPosition,
       long key,
-      Instant timestamp,
+      long timestamp,
       MockRecordMetadata metadata,
       MockRecordValueWithVariables value) {
     this.position = position;
@@ -80,7 +79,7 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
   }
 
   @Override
-  public Instant getTimestamp() {
+  public long getTimestamp() {
     return timestamp;
   }
 
@@ -114,7 +113,7 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
     return metadata.getValueType();
   }
 
-  public MockRecord setTimestamp(Instant timestamp) {
+  public MockRecord setTimestamp(long timestamp) {
     this.timestamp = timestamp;
     return this;
   }

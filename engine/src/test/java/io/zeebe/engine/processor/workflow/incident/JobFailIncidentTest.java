@@ -284,8 +284,7 @@ public class JobFailIncidentTest {
             .getFirst();
     assertThat(republishedEvent.getKey()).isEqualTo(jobEvent.getKey());
     assertThat(republishedEvent.getPosition()).isNotEqualTo(jobEvent.getPosition());
-    assertThat(republishedEvent.getTimestamp().toEpochMilli())
-        .isGreaterThanOrEqualTo(jobEvent.getTimestamp().toEpochMilli());
+    assertThat(republishedEvent.getTimestamp()).isGreaterThanOrEqualTo(jobEvent.getTimestamp());
     assertThat(republishedEvent.getValue()).hasRetries(1);
 
     // and the job lifecycle is correct

@@ -22,7 +22,6 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.util.stream.StreamWrapper;
-import java.time.Instant;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -62,12 +61,8 @@ public abstract class ExporterRecordStream<
     return filter(r -> r.getKey() == key);
   }
 
-  public S withTimestamp(final Instant timestamp) {
-    return filter(r -> r.getTimestamp().equals(timestamp));
-  }
-
   public S withTimestamp(final long timestamp) {
-    return withTimestamp(Instant.ofEpochMilli(timestamp));
+    return filter(r -> r.getTimestamp() == timestamp);
   }
 
   public S withIntent(final Intent intent) {

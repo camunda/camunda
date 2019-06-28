@@ -15,12 +15,22 @@
  */
 package io.zeebe.client.api.worker;
 
+import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.ActivatedJob;
 
 /** Implementations MUST be thread-safe. */
 @FunctionalInterface
 public interface JobHandler {
 
-  /** Handles a job. Implements the work to be done whenever a job of a certain type is received. */
-  void handle(JobClient client, ActivatedJob job);
+  /**
+   * Handles a job. Implements the work to be done whenever a job of a certain type is received.
+   *
+   * <p>In case the job handler throws an exception the job is failed and the job retries are
+   * automatically decremented by one. The failed job will contain the exception stacktrace as error
+   * message.
+   *
+   * <p>If the retries reaches zero an incident will be created, which has to be resolved before the
+   * job is available again (see {@link ZeebeClient#newResolveIncidentCommand(long)}
+   */
+  void handle(JobClient client, ActivatedJob job) throws Exception;
 }

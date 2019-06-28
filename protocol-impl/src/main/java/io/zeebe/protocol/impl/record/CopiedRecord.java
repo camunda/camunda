@@ -15,15 +15,12 @@
  */
 package io.zeebe.protocol.impl.record;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
-import java.time.Instant;
 
 public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
 
@@ -78,15 +75,9 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
     return key;
   }
 
-  @JsonProperty("timestamp")
-  public long getTimestampLong() {
-    return timestamp;
-  }
-
   @Override
-  @JsonIgnore
-  public Instant getTimestamp() {
-    return Instant.ofEpochMilli(timestamp);
+  public long getTimestamp() {
+    return timestamp;
   }
 
   @Override
