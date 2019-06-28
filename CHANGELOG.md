@@ -1,25 +1,23 @@
 <a name="0.19.0-alpha3"></a>
 ## 0.19.0-alpha3 (2019-06-28)
 
+#### Breaking Changes
+
+* **broker:**  change type of Record#getTimestamp() to Long ([04414316](https://github.com/zeebe-io/zeebe/commit/04414316f92c82a5a452c7a52d50f7b9893b29d4))
 
 #### Features
 
 * **broker:**
-  *  change type of Record#getTimestamp() to Long ([04414316](https://github.com/zeebe-io/zeebe/commit/04414316f92c82a5a452c7a52d50f7b9893b29d4), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
   *  expose elasticsearch exporter metrics ([62448c75](https://github.com/zeebe-io/zeebe/commit/62448c757edd197c3a6e88722b2f3979016e63cc))
-* **broker-core:**  add exporter back off retry strategy ([9a92c04b](https://github.com/zeebe-io/zeebe/commit/9a92c04bb0d631076c2b7f3dbc08804952e1dbf7))
+  *  add exporter back off retry strategy ([9a92c04b](https://github.com/zeebe-io/zeebe/commit/9a92c04bb0d631076c2b7f3dbc08804952e1dbf7))
 * **clients/java:**  allow job handlers to throw exceptions ([77192a92](https://github.com/zeebe-io/zeebe/commit/77192a92b614bd165c0ce9af70473f08e5d1625e))
 * **gateway:**  add grpc metrics ([aa7f47a6](https://github.com/zeebe-io/zeebe/commit/aa7f47a6f3921503d5647414fcbd8633da880d7f))
 
-#### Breaking Changes
-
-* **broker:**  change type of Record#getTimestamp() to Long ([04414316](https://github.com/zeebe-io/zeebe/commit/04414316f92c82a5a452c7a52d50f7b9893b29d4), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-
 #### Bug Fixes
 
-* **broker:**  reject deployments with duplicate process ids ([46c929e4](https://github.com/zeebe-io/zeebe/commit/46c929e40406c40ba8d81d022da8f4bd43174bd3))
-* **protocol-impl:**  copy deployment resources ([b79697a1](https://github.com/zeebe-io/zeebe/commit/b79697a1046d9e4f59503255d2cafa262f41715c))
-
+* **broker:**
+  *  reject deployments with duplicate process ids ([46c929e4](https://github.com/zeebe-io/zeebe/commit/46c929e40406c40ba8d81d022da8f4bd43174bd3))
+  *  copy deployment resources ([b79697a1](https://github.com/zeebe-io/zeebe/commit/b79697a1046d9e4f59503255d2cafa262f41715c))
 
 
 <a name="0.19.0-alpha2"></a>
