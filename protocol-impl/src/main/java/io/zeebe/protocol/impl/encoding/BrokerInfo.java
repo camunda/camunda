@@ -335,4 +335,20 @@ public class BrokerInfo implements BufferReader, BufferWriter {
         });
     return this;
   }
+
+  @Override
+  public String toString() {
+    return "BrokerInfo{"
+        + "nodeId="
+        + nodeId
+        + ", partitionsCount="
+        + partitionsCount
+        + ", clusterSize="
+        + clusterSize
+        + ", replicationFactor="
+        + replicationFactor
+        + ", partitionRoles="
+        + partitionRoles
+        + '}';
+  }
 }
