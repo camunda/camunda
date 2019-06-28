@@ -1,0 +1,566 @@
+{
+  "definitions": [
+    {
+      "protopath": "gateway.proto",
+      "def": {
+        "enums": [
+          {
+            "name": "WorkflowRequestObject.ResourceType",
+            "enum_fields": [
+              {
+                "name": "FILE"
+              },
+              {
+                "name": "BPMN",
+                "integer": 1
+              },
+              {
+                "name": "YAML",
+                "integer": 2
+              }
+            ]
+          },
+          {
+            "name": "Partition.PartitionBrokerRole",
+            "enum_fields": [
+              {
+                "name": "LEADER"
+              },
+              {
+                "name": "FOLLOWER",
+                "integer": 1
+              }
+            ]
+          }
+        ],
+        "messages": [
+          {
+            "name": "ActivateJobsRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "type",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "worker",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "timeout",
+                "type": "int64"
+              },
+              {
+                "id": 4,
+                "name": "maxJobsToActivate",
+                "type": "int32"
+              },
+              {
+                "id": 5,
+                "name": "fetchVariable",
+                "type": "string",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "ActivateJobsResponse",
+            "fields": [
+              {
+                "id": 1,
+                "name": "jobs",
+                "type": "ActivatedJob",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "ActivatedJob",
+            "fields": [
+              {
+                "id": 1,
+                "name": "key",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "type",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "workflowInstanceKey",
+                "type": "int64"
+              },
+              {
+                "id": 4,
+                "name": "bpmnProcessId",
+                "type": "string"
+              },
+              {
+                "id": 5,
+                "name": "workflowDefinitionVersion",
+                "type": "int32"
+              },
+              {
+                "id": 6,
+                "name": "workflowKey",
+                "type": "int64"
+              },
+              {
+                "id": 7,
+                "name": "elementId",
+                "type": "string"
+              },
+              {
+                "id": 8,
+                "name": "elementInstanceKey",
+                "type": "int64"
+              },
+              {
+                "id": 9,
+                "name": "customHeaders",
+                "type": "string"
+              },
+              {
+                "id": 10,
+                "name": "worker",
+                "type": "string"
+              },
+              {
+                "id": 11,
+                "name": "retries",
+                "type": "int32"
+              },
+              {
+                "id": 12,
+                "name": "deadline",
+                "type": "int64"
+              },
+              {
+                "id": 13,
+                "name": "variables",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "CancelWorkflowInstanceRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "workflowInstanceKey",
+                "type": "int64"
+              }
+            ]
+          },
+          {
+            "name": "CancelWorkflowInstanceResponse"
+          },
+          {
+            "name": "CompleteJobRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "jobKey",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "variables",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "CompleteJobResponse"
+          },
+          {
+            "name": "CreateWorkflowInstanceRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "workflowKey",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "bpmnProcessId",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "version",
+                "type": "int32"
+              },
+              {
+                "id": 4,
+                "name": "variables",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "CreateWorkflowInstanceResponse",
+            "fields": [
+              {
+                "id": 1,
+                "name": "workflowKey",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "bpmnProcessId",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "version",
+                "type": "int32"
+              },
+              {
+                "id": 4,
+                "name": "workflowInstanceKey",
+                "type": "int64"
+              }
+            ]
+          },
+          {
+            "name": "DeployWorkflowRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "workflows",
+                "type": "WorkflowRequestObject",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "WorkflowRequestObject",
+            "fields": [
+              {
+                "id": 1,
+                "name": "name",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "type",
+                "type": "ResourceType"
+              },
+              {
+                "id": 3,
+                "name": "definition",
+                "type": "bytes"
+              }
+            ]
+          },
+          {
+            "name": "DeployWorkflowResponse",
+            "fields": [
+              {
+                "id": 1,
+                "name": "key",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "workflows",
+                "type": "WorkflowMetadata",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "WorkflowMetadata",
+            "fields": [
+              {
+                "id": 1,
+                "name": "bpmnProcessId",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "version",
+                "type": "int32"
+              },
+              {
+                "id": 3,
+                "name": "workflowKey",
+                "type": "int64"
+              },
+              {
+                "id": 4,
+                "name": "resourceName",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "FailJobRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "jobKey",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "retries",
+                "type": "int32"
+              },
+              {
+                "id": 3,
+                "name": "errorMessage",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "FailJobResponse"
+          },
+          {
+            "name": "PublishMessageRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "name",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "correlationKey",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "timeToLive",
+                "type": "int64"
+              },
+              {
+                "id": 4,
+                "name": "messageId",
+                "type": "string"
+              },
+              {
+                "id": 5,
+                "name": "variables",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "PublishMessageResponse"
+          },
+          {
+            "name": "ResolveIncidentRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "incidentKey",
+                "type": "int64"
+              }
+            ]
+          },
+          {
+            "name": "ResolveIncidentResponse"
+          },
+          {
+            "name": "TopologyRequest"
+          },
+          {
+            "name": "TopologyResponse",
+            "fields": [
+              {
+                "id": 1,
+                "name": "brokers",
+                "type": "BrokerInfo",
+                "is_repeated": true
+              },
+              {
+                "id": 2,
+                "name": "clusterSize",
+                "type": "int32"
+              },
+              {
+                "id": 3,
+                "name": "partitionsCount",
+                "type": "int32"
+              },
+              {
+                "id": 4,
+                "name": "replicationFactor",
+                "type": "int32"
+              }
+            ]
+          },
+          {
+            "name": "BrokerInfo",
+            "fields": [
+              {
+                "id": 1,
+                "name": "nodeId",
+                "type": "int32"
+              },
+              {
+                "id": 2,
+                "name": "host",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "port",
+                "type": "int32"
+              },
+              {
+                "id": 4,
+                "name": "partitions",
+                "type": "Partition",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "Partition",
+            "fields": [
+              {
+                "id": 1,
+                "name": "partitionId",
+                "type": "int32"
+              },
+              {
+                "id": 2,
+                "name": "role",
+                "type": "PartitionBrokerRole"
+              }
+            ]
+          },
+          {
+            "name": "UpdateJobRetriesRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "jobKey",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "retries",
+                "type": "int32"
+              }
+            ]
+          },
+          {
+            "name": "UpdateJobRetriesResponse"
+          },
+          {
+            "name": "SetVariablesRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "elementInstanceKey",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "variables",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "local",
+                "type": "bool"
+              }
+            ]
+          },
+          {
+            "name": "SetVariablesResponse"
+          }
+        ],
+        "services": [
+          {
+            "name": "Gateway",
+            "rpcs": [
+              {
+                "name": "ActivateJobs",
+                "in_type": "ActivateJobsRequest",
+                "out_type": "ActivateJobsResponse",
+                "out_streamed": true
+              },
+              {
+                "name": "CancelWorkflowInstance",
+                "in_type": "CancelWorkflowInstanceRequest",
+                "out_type": "CancelWorkflowInstanceResponse"
+              },
+              {
+                "name": "CompleteJob",
+                "in_type": "CompleteJobRequest",
+                "out_type": "CompleteJobResponse"
+              },
+              {
+                "name": "CreateWorkflowInstance",
+                "in_type": "CreateWorkflowInstanceRequest",
+                "out_type": "CreateWorkflowInstanceResponse"
+              },
+              {
+                "name": "DeployWorkflow",
+                "in_type": "DeployWorkflowRequest",
+                "out_type": "DeployWorkflowResponse"
+              },
+              {
+                "name": "FailJob",
+                "in_type": "FailJobRequest",
+                "out_type": "FailJobResponse"
+              },
+              {
+                "name": "PublishMessage",
+                "in_type": "PublishMessageRequest",
+                "out_type": "PublishMessageResponse"
+              },
+              {
+                "name": "ResolveIncident",
+                "in_type": "ResolveIncidentRequest",
+                "out_type": "ResolveIncidentResponse"
+              },
+              {
+                "name": "SetVariables",
+                "in_type": "SetVariablesRequest",
+                "out_type": "SetVariablesResponse"
+              },
+              {
+                "name": "Topology",
+                "in_type": "TopologyRequest",
+                "out_type": "TopologyResponse"
+              },
+              {
+                "name": "UpdateJobRetries",
+                "in_type": "UpdateJobRetriesRequest",
+                "out_type": "UpdateJobRetriesResponse"
+              }
+            ]
+          }
+        ],
+        "package": {
+          "name": "gateway_protocol"
+        },
+        "options": [
+          {
+            "name": "java_multiple_files",
+            "value": "false"
+          },
+          {
+            "name": "java_package",
+            "value": "io.zeebe.gateway.protocol"
+          },
+          {
+            "name": "go_package",
+            "value": "pb"
+          }
+        ]
+      }
+    }
+  ]
+}

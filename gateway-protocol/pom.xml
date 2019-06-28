@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Gateway Protocol</name>
@@ -55,6 +57,10 @@
         <groupId>org.xolstice.maven.plugins</groupId>
         <artifactId>protobuf-maven-plugin</artifactId>
       </plugin>
+      <plugin>
+        <groupId>com.salesforce.servicelibs</groupId>
+        <artifactId>proto-backwards-compatibility</artifactId>
+      </plugin>
     </plugins>
 
   </build>
@@ -92,7 +98,10 @@
                 </goals>
                 <configuration>
                   <tasks>
-                    <copy file="${project.build.directory}/generated-sources/protobuf/go/gateway.pb.go" tofile="${maven.multiModuleProjectDirectory}/clients/go/pb/gateway.pb.go" failonerror="true" />
+                    <copy
+                      file="${project.build.directory}/generated-sources/protobuf/go/gateway.pb.go"
+                      tofile="${maven.multiModuleProjectDirectory}/clients/go/pb/gateway.pb.go"
+                      failonerror="true"/>
                   </tasks>
                 </configuration>
               </execution>
