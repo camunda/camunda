@@ -52,7 +52,7 @@
     <version.mockito>2.28.2</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.16</version.msgpack>
-    <version.netty>4.1.36.Final</version.netty>
+    <version.netty>4.1.37.Final</version.netty>
     <version.objenesis>3.0.1</version.objenesis>
     <version.prometheus>0.6.0</version.prometheus>
     <version.protobuf>3.8.0</version.protobuf>
