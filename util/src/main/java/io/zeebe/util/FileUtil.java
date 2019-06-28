@@ -76,15 +76,11 @@ public class FileUtil {
         });
   }
 
-  public static long getAvailableSpace(File logLocation) {
+  public static long getAvailableSpace(File logLocation) throws IOException {
     long usableSpace = -1;
 
-    try {
-      final FileStore fileStore = Files.getFileStore(logLocation.toPath());
-      usableSpace = fileStore.getUsableSpace();
-    } catch (IOException e) {
-      LangUtil.rethrowUnchecked(e);
-    }
+    final FileStore fileStore = Files.getFileStore(logLocation.toPath());
+    usableSpace = fileStore.getUsableSpace();
 
     return usableSpace;
   }

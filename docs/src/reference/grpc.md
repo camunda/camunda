@@ -52,7 +52,6 @@ maximum and streams them back to the client as they are activated.
 #### Input: ActivateJobsRequest
 
 ```protobuf
-
 message ActivateJobsRequest {
   // the job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
   // type="payment-service" />)
@@ -73,8 +72,6 @@ message ActivateJobsRequest {
 #### Output: ActivateJobsResponse
 
 ```protobuf
-
-
 message ActivateJobsResponse {
   // list of activated jobs
   repeated ActivatedJob jobs = 1;
@@ -167,7 +164,7 @@ message CompleteJobRequest {
   // the unique job identifier, as obtained from ActivateJobsResponse
   int64 jobKey = 1;
   // a JSON document representing the variables in the current task scope
-  string payload = 2;
+  string variables = 2;
 }
 ```
 
@@ -237,7 +234,7 @@ message CreateWorkflowInstanceResponse {
   int32 version = 3;
   // the unique identifier of the created workflow instance; to be used wherever a request
   // needs a workflow instance key (e.g. CancelWorkflowInstanceRequest)
-  int64 workflowInstanceKey = 5;
+  int64 workflowInstanceKey = 4;
 }
 ```
 
@@ -397,9 +394,9 @@ message PublishMessageRequest {
   // the unique ID of the message; can be omitted. only useful to ensure only one message
   // with the given ID will ever be published (during its lifetime)
   string messageId = 4;
-  // the message payload as a JSON document; to be valid, the root of the document must be an
+  // the message variables as a JSON document; to be valid, the root of the document must be an
   // object, e.g. { "a": "foo" }. [ "foo" ] would not be valid.
-  string payload = 5;
+  string variables = 5;
 }
 ```
 
@@ -545,7 +542,7 @@ message Partition {
   // the unique ID of this partition
   int32 partitionId = 1;
   // the role of the broker for this partition
-  PartitionBrokerRole role = 3;
+  PartitionBrokerRole role = 2;
 }
 ```
 

@@ -54,7 +54,7 @@ public class StateSnapshotControllerTest {
   }
 
   @Test
-  public void shouldThrowExceptionOnTakeSnapshotIfClosed() throws Exception {
+  public void shouldThrowExceptionOnTakeSnapshotIfClosed() {
     // given
 
     // then

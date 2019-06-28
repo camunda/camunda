@@ -90,6 +90,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
 
   @Override
   public ActorFuture<LogStorageAppender> openAppender() {
+    final String logName = getLogName();
     final ServiceName<Void> logStorageAppenderRootService = logStorageAppenderRootService(logName);
     final ServiceName<Dispatcher> logWriteBufferServiceName = logWriteBufferServiceName(logName);
     final ServiceName<Subscription> appenderSubscriptionServiceName =
@@ -141,6 +142,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
     appender = null;
     writeBuffer = null;
 
+    final String logName = getLogName();
     return serviceContext.removeService(logStorageAppenderRootService(logName));
   }
 

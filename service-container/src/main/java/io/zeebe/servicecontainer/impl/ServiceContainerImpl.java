@@ -27,9 +27,7 @@ import io.zeebe.util.sched.channel.ConcurrentQueueChannel;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -52,10 +50,6 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer {
   protected final ServiceDependencyResolver dependencyResolver = new ServiceDependencyResolver();
   protected final ConcurrentQueueChannel<ServiceEvent> channel =
       new ConcurrentQueueChannel<>(new ManyToOneConcurrentLinkedQueue<>());
-
-  protected final Map<ServiceName<?>, ServiceGroup> groups = new HashMap<>();
-
-  protected final Map<ServiceName<?>, List<ServiceController>> serviceListeners = new HashMap<>();
 
   protected final ActorScheduler actorScheduler;
 
@@ -93,6 +87,7 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer {
   protected void onServiceEvent() {
     final ServiceEvent serviceEvent = channel.poll();
     if (serviceEvent != null) {
+      LOG.trace("{}", serviceEvent);
       dependencyResolver.onServiceEvent(serviceEvent);
     } else {
       actor.yield();
@@ -211,8 +206,7 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer {
     try {
       containerCloseFuture.get(awaitTime, timeUnit);
     } catch (Exception ex) {
-      Loggers.SERVICE_CONTAINER_LOGGER.debug(
-          "Service container closing failed. Print dependencies.");
+      LOG.debug("Service container closing failed. Print dependencies.");
 
       final StringBuilder builder = new StringBuilder();
       dependencyResolver
@@ -227,7 +221,7 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer {
                         });
               });
 
-      Loggers.SERVICE_CONTAINER_LOGGER.debug(builder.toString());
+      LOG.debug(builder.toString());
       throw ex;
     } finally {
       onClosed();
@@ -242,11 +236,18 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer {
             state = ContainerState.CLOSING;
 
             final List<ActorFuture<Void>> serviceFutures = new ArrayList<>();
+
             dependencyResolver
-                .getControllers()
+                .getRootServices()
                 .forEach(
-                    (c) -> {
-                      serviceFutures.add(c.remove());
+                    c -> {
+                      final ActorFuture<Void> removeFuture = c.remove();
+                      actor.runOnCompletion(
+                          removeFuture,
+                          (v, t) -> {
+                            LOG.debug("Removed service {}", c.getServiceName());
+                          });
+                      serviceFutures.add(removeFuture);
                     });
 
             actor.runOnCompletion(

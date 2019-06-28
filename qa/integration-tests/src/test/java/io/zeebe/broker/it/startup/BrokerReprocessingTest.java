@@ -144,6 +144,16 @@ public class BrokerReprocessingTest {
   private Runnable restartAction = () -> {};
 
   @Test
+  public void shouldDirectlyRestart() {
+    // given
+
+    // when
+    reprocessingTrigger.accept(this);
+
+    // then - no error
+  }
+
+  @Test
   public void shouldCreateWorkflowInstanceAfterRestart() {
     // given
     deploy(WORKFLOW, "workflow.bpmn");

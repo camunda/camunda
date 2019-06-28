@@ -194,6 +194,7 @@ message ResolveIncidentResponse {
 
 message TopologyRequest {
 }
+
 message TopologyResponse {
   // list of brokers part of this cluster
   repeated BrokerInfo brokers = 1;

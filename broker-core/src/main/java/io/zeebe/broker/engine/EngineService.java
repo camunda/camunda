@@ -90,6 +90,7 @@ public class EngineService implements Service<EngineService> {
         .logStream(logStream)
         .actorScheduler(serviceContext.getScheduler())
         .additionalDependencies(partitionServiceName)
+        .additionalDependencies(serviceContext.getServiceName())
         .zeebeDb(partition.getZeebeDb())
         .serviceContainer(serviceContainer)
         .commandResponseWriter(new CommandResponseWriterImpl(commandApiTransport.getOutput()))
