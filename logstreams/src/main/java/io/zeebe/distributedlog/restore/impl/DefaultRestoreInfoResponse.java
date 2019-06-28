@@ -18,6 +18,7 @@ package io.zeebe.distributedlog.restore.impl;
 import io.zeebe.distributedlog.restore.RestoreInfoResponse;
 import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreInfo;
 import io.zeebe.distributedlog.restore.snapshot.impl.DefaultSnapshotRestoreInfo;
+import io.zeebe.distributedlog.restore.snapshot.impl.NullSnapshotRestoreInfo;
 
 public class DefaultRestoreInfoResponse implements RestoreInfoResponse {
   private ReplicationTarget replicationTarget;
@@ -77,17 +78,5 @@ public class DefaultRestoreInfoResponse implements RestoreInfoResponse {
         + ", snapshotRestoreInfo="
         + snapshotRestoreInfo
         + '}';
-  }
-
-  private static class NullSnapshotRestoreInfo implements SnapshotRestoreInfo {
-    @Override
-    public long getSnapshotId() {
-      return -1;
-    }
-
-    @Override
-    public int getNumChunks() {
-      return -1;
-    }
   }
 }

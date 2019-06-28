@@ -17,6 +17,9 @@ package io.zeebe.logstreams.state;
 
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
+import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreInfo;
+import io.zeebe.distributedlog.restore.snapshot.impl.DefaultSnapshotRestoreInfo;
+import io.zeebe.distributedlog.restore.snapshot.impl.NullSnapshotRestoreInfo;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.impl.delete.DeletionService;
 import io.zeebe.logstreams.impl.delete.NoopDeletionService;
@@ -44,6 +47,7 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
   private final ReplicationController replicationController;
   private DeletionService deletionService = new NoopDeletionService();
   private final int maxSnapshotCount;
+  private volatile SnapshotRestoreInfo snapshotRestoreInfo = new NullSnapshotRestoreInfo();
 
   public StateSnapshotController(final ZeebeDbFactory rocksDbFactory, final StateStorage storage) {
     this(rocksDbFactory, storage, new NoneSnapshotReplication(), 1);
@@ -63,6 +67,8 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
     this.zeebeDbFactory = zeebeDbFactory;
     this.maxSnapshotCount = maxSnapshotCount;
     this.replicationController = new ReplicationController(replication, storage, this);
+
+    initializeRestoreInfo();
   }
 
   @Override
@@ -73,6 +79,8 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
 
     final File snapshotDir = storage.getSnapshotDirectoryFor(lowerBoundSnapshotPosition);
     db.createSnapshot(snapshotDir);
+    snapshotRestoreInfo =
+        new DefaultSnapshotRestoreInfo(lowerBoundSnapshotPosition, snapshotDir.listFiles().length);
   }
 
   @Override
@@ -142,6 +150,11 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
   }
 
   @Override
+  public SnapshotRestoreInfo getLatestSnapshotRestoreInfo() {
+    return snapshotRestoreInfo;
+  }
+
+  @Override
   public long recover() throws Exception {
     final File runtimeDirectory = storage.getRuntimeDirectory();
 
@@ -168,6 +181,9 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
 
         lowerBoundSnapshotPosition = Long.parseLong(snapshotDirectory.getName());
 
+        snapshotRestoreInfo =
+            new DefaultSnapshotRestoreInfo(
+                lowerBoundSnapshotPosition, snapshotDirectory.listFiles().length);
       } catch (Exception e) {
         FileUtil.deleteFolder(runtimeDirectory.getAbsolutePath());
 
@@ -205,6 +221,11 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
   @Override
   public void onNewValidSnapshot() {
     try {
+      final File latestSnapshot = getLastValidSnapshotDirectory();
+      snapshotRestoreInfo =
+          new DefaultSnapshotRestoreInfo(
+              Long.parseLong(latestSnapshot.getName()), latestSnapshot.listFiles().length);
+
       ensureMaxSnapshotCount();
     } catch (IOException e) {
       LOG.error(ERROR_MSG_ENSURING_MAX_SNAPSHOT_COUNT, e);
@@ -289,7 +310,7 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
   @Override
   public File getLastValidSnapshotDirectory() {
     final List<File> snapshots = storage.listByPositionDesc();
-    if (snapshots != null) {
+    if (snapshots != null && !snapshots.isEmpty()) {
       return snapshots.get(0);
     }
     return null;
@@ -312,5 +333,17 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
 
   public boolean isDbOpened() {
     return db != null;
+  }
+
+  private void initializeRestoreInfo() {
+    final File lastSnapshot = getLastValidSnapshotDirectory();
+    if (lastSnapshot != null) {
+      final int numFiles = lastSnapshot.listFiles().length;
+      final long lastSnapshotPosition = Long.parseLong(lastSnapshot.getName());
+
+      if (lastSnapshotPosition > -1L && numFiles > 0) {
+        snapshotRestoreInfo = new DefaultSnapshotRestoreInfo(lastSnapshotPosition, numFiles);
+      }
+    }
   }
 }

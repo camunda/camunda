@@ -19,12 +19,11 @@ import io.zeebe.distributedlog.restore.RestoreInfoRequest;
 import io.zeebe.distributedlog.restore.RestoreInfoResponse;
 import io.zeebe.distributedlog.restore.RestoreInfoResponse.ReplicationTarget;
 import io.zeebe.distributedlog.restore.RestoreServer.RestoreInfoRequestHandler;
-import io.zeebe.distributedlog.restore.snapshot.impl.DefaultSnapshotRestoreInfo;
+import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreInfo;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.spi.SnapshotController;
-import java.io.File;
 import org.slf4j.Logger;
 
 public class DefaultRestoreInfoRequestHandler implements RestoreInfoRequestHandler {
@@ -47,14 +46,11 @@ public class DefaultRestoreInfoRequestHandler implements RestoreInfoRequestHandl
     logger.debug("Received restore info request {}", request);
     if (lastValidSnapshotPosition > -1
         && lastValidSnapshotPosition >= request.getLatestLocalPosition()) {
-      final File lastValidSnapshotDirectory = snapshotController.getLastValidSnapshotDirectory();
-      final File[] chunks = lastValidSnapshotDirectory.listFiles();
+      final SnapshotRestoreInfo restoreInfo = snapshotController.getLatestSnapshotRestoreInfo();
 
-      if (chunks != null && chunks.length > 0) {
-        response =
-            new DefaultRestoreInfoResponse(
-                ReplicationTarget.SNAPSHOT,
-                new DefaultSnapshotRestoreInfo(lastValidSnapshotPosition, chunks.length));
+      if (restoreInfo.getSnapshotId() >= request.getLatestLocalPosition()
+          && restoreInfo.getNumChunks() > 0) {
+        response = new DefaultRestoreInfoResponse(ReplicationTarget.SNAPSHOT, restoreInfo);
       }
     } else if (seekToRequestedPositionExclusive(request.getLatestLocalPosition())) {
       response = new DefaultRestoreInfoResponse(ReplicationTarget.EVENTS);
