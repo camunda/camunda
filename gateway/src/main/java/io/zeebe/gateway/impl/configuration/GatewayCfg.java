@@ -24,6 +24,7 @@ public class GatewayCfg {
   private NetworkCfg network = new NetworkCfg();
   private ClusterCfg cluster = new ClusterCfg();
   private ThreadsCfg threads = new ThreadsCfg();
+  private MonitoringCfg monitoring = new MonitoringCfg();
 
   public void init() {
     init(new Environment());
@@ -37,6 +38,7 @@ public class GatewayCfg {
     network.init(environment, defaultHost);
     cluster.init(environment);
     threads.init(environment);
+    monitoring.init(environment, defaultHost);
   }
 
   public NetworkCfg getNetwork() {
@@ -66,6 +68,15 @@ public class GatewayCfg {
     return this;
   }
 
+  public MonitoringCfg getMonitoring() {
+    return monitoring;
+  }
+
+  public GatewayCfg setMonitoring(MonitoringCfg monitoring) {
+    this.monitoring = monitoring;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -77,12 +88,13 @@ public class GatewayCfg {
     final GatewayCfg that = (GatewayCfg) o;
     return Objects.equals(network, that.network)
         && Objects.equals(cluster, that.cluster)
-        && Objects.equals(threads, that.threads);
+        && Objects.equals(threads, that.threads)
+        && Objects.equals(monitoring, that.monitoring);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, cluster, threads);
+    return Objects.hash(network, cluster, threads, monitoring);
   }
 
   @Override
@@ -94,6 +106,8 @@ public class GatewayCfg {
         + cluster
         + ", threadsCfg="
         + threads
+        + ", monitoringCfg="
+        + monitoring
         + '}';
   }
 

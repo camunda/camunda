@@ -192,6 +192,9 @@
 # This setting can also be overridden using the environment variable ZEEBE_CONTACT_POINTS
 # specifying a comma-separated list of contact points.
 #
+# To guarantee the cluster can survive network partitions, all nodes must be specified
+# as initial contact points.
+#
 # Default is empty list:
 # initialContactPoints = []
 

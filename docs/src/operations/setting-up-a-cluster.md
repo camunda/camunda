@@ -41,6 +41,9 @@ of the default Zeebe configuration file, it should be self-explanatory.
 # This setting can also be overridden using the environment variable ZEEBE_CONTACT_POINTS
 # specifying a comma-separated list of contact points.
 #
+# To guarantee the cluster can survive network partitions, all nodes must be specified
+# as initial contact points.
+#
 # Default is empty list:
 # initialContactPoints = []
 ```
@@ -66,6 +69,13 @@ nodeId = 0
 partitionsCount = 5
 replicationFactor = 3
 clusterSize = 5
+initialContactPoints = [
+  ADDRESS_AND_PORT_OF_NODE_0,
+  ADDRESS_AND_PORT_OF_NODE_1,
+  ADDRESS_AND_PORT_OF_NODE_2,
+  ADDRESS_AND_PORT_OF_NODE_3,
+  ADDRESS_AND_PORT_OF_NODE_4
+]
 ```
 
 For the other brokers the configuration will slightly change.
@@ -75,7 +85,13 @@ nodeId = NODE_ID
 partitionsCount = 5
 replicationFactor = 3
 clusterSize = 5
-initialContactPoints = [ ADDRESS_AND_PORT_OF_NODE_0]
+initialContactPoints = [
+  ADDRESS_AND_PORT_OF_NODE_0,
+  ADDRESS_AND_PORT_OF_NODE_1,
+  ADDRESS_AND_PORT_OF_NODE_2,
+  ADDRESS_AND_PORT_OF_NODE_3,
+  ADDRESS_AND_PORT_OF_NODE_4
+]
 ```
 
 Each broker needs a unique node id. The ids should be in the range of
@@ -86,11 +102,10 @@ conversation. Make sure that you use the address and
 **management port** of another broker. You need to replace the
 `ADDRESS_AND_PORT_OF_NODE_0` placeholder.
 
-It is not necessary that each broker has the first
-node as an initial contact point, but it is easier
-for the configuration. You could also configure more
-brokers as initial contact points, to make sure that
-the bootstrapping works without any problems.
+To guarantee that a cluster can properly recover from network partitions,
+it is currently required that all nodes be specified as initial contact points. It is not necessary
+for a broker to list itself as initial contact point, but it is safe to do so, and probably simpler
+to maintain.
 
 ## Partitions bootstrapping
 
