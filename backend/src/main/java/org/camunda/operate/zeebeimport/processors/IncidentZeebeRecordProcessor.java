@@ -7,6 +7,7 @@ package org.camunda.operate.zeebeimport.processors;
 
 import io.zeebe.protocol.record.value.ErrorType;
 import java.io.IOException;
+import java.time.Instant;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.OperationType;
@@ -83,7 +84,7 @@ public class IncidentZeebeRecordProcessor {
         incident.setFlowNodeInstanceId(IdUtil.getId(recordValue.getElementInstanceKey(), record));
       }
       incident.setState(IncidentState.ACTIVE);
-      incident.setCreationTime(DateUtil.toOffsetDateTime(record.getTimestamp()));
+      incident.setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
       bulkRequest.add(getIncidentInsertQuery(incident));
     }
   }

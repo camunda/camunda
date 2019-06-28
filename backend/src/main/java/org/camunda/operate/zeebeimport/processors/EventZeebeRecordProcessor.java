@@ -219,7 +219,7 @@ public class EventZeebeRecordProcessor {
     eventEntity.setKey(record.getKey());
     eventEntity.setPartitionId(record.getPartitionId());
     eventEntity.setEventSourceType(EventSourceType.fromZeebeValueType(record.getValueType()));
-    eventEntity.setDateTime(DateUtil.toOffsetDateTime(record.getTimestamp()));
+    eventEntity.setDateTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
     eventEntity.setEventType(EventType.fromZeebeIntent(record.getIntent().name()));
   }
 

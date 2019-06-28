@@ -7,6 +7,7 @@ package org.camunda.operate.zeebeimport.processors;
 
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -101,11 +102,11 @@ public class ActivityInstanceZeebeRecordProcessor {
       } else {
         entity.setState(ActivityState.COMPLETED);
       }
-      entity.setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
+      entity.setEndDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
     } else {
       entity.setState(ActivityState.ACTIVE);
       if (AI_START_STATES.contains(intentStr)) {
-        entity.setStartDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
+        entity.setStartDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
         entity.setPosition(record.getPosition());
       }
     }

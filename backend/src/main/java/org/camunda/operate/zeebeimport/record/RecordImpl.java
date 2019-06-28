@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
-import java.time.Instant;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordValue;
 
@@ -25,7 +24,7 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
 
   private long key;
   private long position;
-  private Instant timestamp;
+  private long timestamp;
   private long sourceRecordPosition;
 
   private T value;
@@ -98,7 +97,7 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   }
 
   @Override
-  public Instant getTimestamp() {
+  public long getTimestamp() {
     return timestamp;
   }
 
@@ -120,7 +119,7 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
     this.position = position;
   }
 
-  public void setTimestamp(Instant timestamp) {
+  public void setTimestamp(long timestamp) {
     this.timestamp = timestamp;
   }
 

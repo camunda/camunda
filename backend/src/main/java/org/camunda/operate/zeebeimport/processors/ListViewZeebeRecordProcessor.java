@@ -10,6 +10,7 @@ import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COM
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -141,14 +142,14 @@ public class ListViewZeebeRecordProcessor {
     wiEntity.setWorkflowName(workflowCache.getWorkflowNameOrDefaultValue(wiEntity.getWorkflowId(), recordValue.getBpmnProcessId()));
 
     if (intentStr.equals(ELEMENT_COMPLETED.name()) || intentStr.equals(ELEMENT_TERMINATED.name())) {
-      wiEntity.setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
+      wiEntity.setEndDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
       if (intentStr.equals(ELEMENT_TERMINATED.name())) {
         wiEntity.setState(WorkflowInstanceState.CANCELED);
       } else {
         wiEntity.setState(WorkflowInstanceState.COMPLETED);
       }
     } else if (intentStr.equals(ELEMENT_ACTIVATING.name())) {
-      wiEntity.setStartDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
+      wiEntity.setStartDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
       wiEntity.setState(WorkflowInstanceState.ACTIVE);
     } else {
       wiEntity.setState(WorkflowInstanceState.ACTIVE);
