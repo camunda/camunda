@@ -142,6 +142,11 @@ public class DataGenerationExecutor {
 
       completer.shutdown();
       completer.awaitUserTaskCompletion(timeoutInHours, TimeUnit.HOURS);
+
+      // add some grace period after data generation for the engine to finish work (e.g. 10mio / 16 = 600000 ms = ~10 minutes)
+      final long sleepMillis = totalInstanceCount / 16;
+      logger.info("Sleeping for {}s as a grace period for the engine to finish pending work.", sleepMillis / 1000);
+      Thread.sleep(sleepMillis);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       logger.error("Data generation has been interrupted!", e);
