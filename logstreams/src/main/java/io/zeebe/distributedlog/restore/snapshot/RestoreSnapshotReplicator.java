@@ -64,7 +64,13 @@ public class RestoreSnapshotReplicator {
       MemberId server, long snapshotId, int numChunks) {
     this.numChunks = numChunks;
     final CompletableFuture<Tuple<Long, Long>> result = new CompletableFuture<>();
-    restoreInternal(server, snapshotId, 0, result);
+
+    if (restoreContext.getStateStorage().existSnapshot(snapshotId)) {
+      result.complete(restoreContext.getSnapshotPositionSupplier().get());
+    } else {
+      restoreInternal(server, snapshotId, 0, result);
+    }
+
     return result;
   }
 
@@ -105,7 +111,8 @@ public class RestoreSnapshotReplicator {
               }
 
               if (snapshotConsumer.completeSnapshot(snapshotId)) {
-                final Tuple positions = restoreContext.getSnapshotPositionSupplier().get();
+                final Tuple<Long, Long> positions =
+                    restoreContext.getSnapshotPositionSupplier().get();
                 future.complete(positions);
               } else {
                 failReplication(

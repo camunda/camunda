@@ -17,6 +17,8 @@ package io.zeebe.distributedlog.restore.snapshot;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.zeebe.distributedlog.restore.impl.ControllableRestoreClient;
@@ -24,26 +26,38 @@ import io.zeebe.distributedlog.restore.impl.ControllableSnapshotRestoreContext;
 import io.zeebe.distributedlog.restore.snapshot.impl.InvalidSnapshotRestoreResponse;
 import io.zeebe.distributedlog.restore.snapshot.impl.SuccessSnapshotRestoreResponse;
 import io.zeebe.logstreams.state.SnapshotChunk;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.util.collection.Tuple;
 import java.util.concurrent.CompletableFuture;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
+import org.mockito.quality.Strictness;
 
 public class RestoreSnapshotReplicatorTest {
-  private ControllableRestoreClient client = new ControllableRestoreClient();
-  private ControllableSnapshotRestoreContext restoreContext =
+  private final ControllableRestoreClient client = new ControllableRestoreClient();
+  private final ControllableSnapshotRestoreContext restoreContext =
       new ControllableSnapshotRestoreContext();
-  private RecordingSnapshotConsumer snapshotConsumer = new RecordingSnapshotConsumer();
-  private RestoreSnapshotReplicator snapshotReplicator =
+  private final RecordingSnapshotConsumer snapshotConsumer = new RecordingSnapshotConsumer();
+  private final RestoreSnapshotReplicator snapshotReplicator =
       new RestoreSnapshotReplicator(client, restoreContext, snapshotConsumer, Runnable::run);
-  private MemberId server = MemberId.anonymous();
+  private final MemberId server = MemberId.anonymous();
   private final ControllableSnapshotChunk responseChunk = new ControllableSnapshotChunk();
+
+  @Rule
+  public final MockitoRule mockitoRule = MockitoJUnit.rule().strictness(Strictness.STRICT_STUBS);
+
+  @Mock private StateStorage stateStorage = mock(StateStorage.class);
 
   @Before
   public void setup() {
     client.reset();
     restoreContext.reset();
     snapshotConsumer.reset();
+    restoreContext.setProcessorStateStorage(stateStorage);
   }
 
   @Test
@@ -53,7 +67,7 @@ public class RestoreSnapshotReplicatorTest {
     final long snapshotId = 10;
     final int numChunks = 5;
 
-    restoreContext.setPositionSupplier(() -> new Tuple(5L, 10L));
+    restoreContext.setPositionSupplier(() -> new Tuple<>(5L, 10L));
 
     for (int i = 0; i < numChunks; i++) {
       client.completeRequestSnapshotChunk(
@@ -79,7 +93,7 @@ public class RestoreSnapshotReplicatorTest {
     final long snapshotId = 10;
     final int numChunks = 5;
 
-    restoreContext.setPositionSupplier(() -> new Tuple(5L, 10L));
+    restoreContext.setPositionSupplier(() -> new Tuple<>(5L, 10L));
 
     client.completeRequestSnapshotChunk(0, new InvalidSnapshotRestoreResponse());
 
@@ -97,7 +111,7 @@ public class RestoreSnapshotReplicatorTest {
     final long snapshotId = 10;
     final int numChunks = 5;
 
-    restoreContext.setPositionSupplier(() -> new Tuple(5L, 10L));
+    restoreContext.setPositionSupplier(() -> new Tuple<>(5L, 10L));
 
     final CompletableFuture<Tuple<Long, Long>> replicate =
         snapshotReplicator.restore(server, snapshotId, numChunks);
@@ -113,9 +127,25 @@ public class RestoreSnapshotReplicatorTest {
     client.completeRequestSnapshotChunk(2, new RuntimeException());
 
     // then
-    waitUntil(() -> replicate.isDone());
+    waitUntil(replicate::isDone);
     assertThat(replicate).isCompletedExceptionally();
     assertThat(snapshotConsumer.getConsumedChunks().size()).isEqualTo(0);
+  }
+
+  @Test
+  public void shouldCompleteImmediatelyIfSnapshotAlreadyExists() {
+    // given
+    final long snapshotId = 10;
+    final Tuple<Long, Long> positions = new Tuple<>(5L, 10L);
+    restoreContext.setPositionSupplier(() -> positions);
+    when(stateStorage.existSnapshot(snapshotId)).thenReturn(true);
+
+    // when
+    final CompletableFuture<Tuple<Long, Long>> result =
+        snapshotReplicator.restore(server, snapshotId, 5);
+
+    // then
+    assertThat(result).isCompletedWithValue(positions);
   }
 
   private static final class ControllableSnapshotChunk implements SnapshotChunk {
