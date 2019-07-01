@@ -42,6 +42,7 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.exception.RecoverableException;
 import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
@@ -485,26 +486,28 @@ public class StreamProcessorTest {
   public void shouldCreateSnapshot() throws Exception {
     // given
     final CountDownLatch processingLatch = new CountDownLatch(1);
-    streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
-            processors.onEvent(
-                ValueType.WORKFLOW_INSTANCE,
-                WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                new TypedRecordProcessor<UnifiedRecordValue>() {
-                  @Override
-                  public void processRecord(
-                      TypedRecord<UnifiedRecordValue> record,
-                      TypedResponseWriter responseWriter,
-                      TypedStreamWriter streamWriter,
-                      Consumer<SideEffectProducer> sideEffect) {
-                    processingLatch.countDown();
-                  }
-                }));
+    final StreamProcessor streamProcessor =
+        streamProcessorRule.startTypedStreamProcessor(
+            (processors, state) ->
+                processors.onEvent(
+                    ValueType.WORKFLOW_INSTANCE,
+                    WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+                    new TypedRecordProcessor<UnifiedRecordValue>() {
+                      @Override
+                      public void processRecord(
+                          TypedRecord<UnifiedRecordValue> record,
+                          TypedResponseWriter responseWriter,
+                          TypedStreamWriter streamWriter,
+                          Consumer<SideEffectProducer> sideEffect) {
+                        processingLatch.countDown();
+                      }
+                    }));
 
     // when
     final long position =
         streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     processingLatch.await();
+    TestUtil.waitUntil(() -> streamProcessor.getLastProcessedPositionAsync().join() > -1);
     streamProcessorRule.getClock().addTime(SNAPSHOT_INTERVAL);
 
     // then
