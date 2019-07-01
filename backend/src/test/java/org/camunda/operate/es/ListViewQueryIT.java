@@ -725,13 +725,13 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testDefaultSorting() throws Exception {
-    final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> Long.valueOf(o1.getId()).compareTo(Long.valueOf(o2.getId()));
+    final Comparator<ListViewWorkflowInstanceDto> comparator = Comparator.comparing(o -> Long.valueOf(o.getId()));
     testSorting(null, comparator);
   }
   
   @Test
   public void testSortingByIdAsc() throws Exception {
-    final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> Long.valueOf(o1.getId()).compareTo(Long.valueOf(o2.getId()));
+    final Comparator<ListViewWorkflowInstanceDto> comparator = Comparator.comparing(o -> Long.valueOf(o.getId()));
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy(ListViewTemplate.ID);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
@@ -751,9 +751,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   
   @Test
   public void testSortingByWorkflowNameAsc() throws Exception {
-    final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> {
-      return o1.getWorkflowName().toLowerCase().compareTo(o2.getWorkflowName().toLowerCase());
-    };
+    final Comparator<ListViewWorkflowInstanceDto> comparator =
+        Comparator.comparing((ListViewWorkflowInstanceDto o) -> o.getWorkflowName().toLowerCase())
+          .thenComparingLong(o -> Long.valueOf(o.getId()));
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy(ListViewTemplate.WORKFLOW_NAME);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
@@ -764,7 +764,11 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   @Test
   public void testSortingByWorkflowNameDesc() throws Exception {
     final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> {
-      return o2.getWorkflowName().toLowerCase().compareTo(o1.getWorkflowName().toLowerCase());
+      int x = o2.getWorkflowName().toLowerCase().compareTo(o1.getWorkflowName().toLowerCase());
+      if (x == 0) {
+        x = Long.valueOf(o1.getId()).compareTo(Long.valueOf(o2.getId()));
+      }
+      return x;
     };
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy(ListViewTemplate.WORKFLOW_NAME);
