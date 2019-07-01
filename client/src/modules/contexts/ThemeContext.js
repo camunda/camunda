@@ -40,7 +40,7 @@ class ThemeProvider extends React.Component {
   state = {theme: THEME_NAME.DARK};
 
   componentDidMount() {
-    const localStorage = this.props.getStateLocally();
+    const localStorage = this.props.getStateLocally('theme');
 
     if (localStorage.theme) {
       this.setState({theme: localStorage.theme});
@@ -55,9 +55,12 @@ class ThemeProvider extends React.Component {
     const newTheme =
       this.state.theme === THEME_NAME.DARK ? THEME_NAME.LIGHT : THEME_NAME.DARK;
 
-    this.props.storeStateLocally({
-      theme: newTheme
-    });
+    this.props.storeStateLocally(
+      {
+        theme: newTheme
+      },
+      'theme'
+    );
 
     this.setState({
       theme: newTheme

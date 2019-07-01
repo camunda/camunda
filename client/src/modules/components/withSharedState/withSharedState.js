@@ -8,11 +8,13 @@ import React from 'react';
 
 export default function withSharedState(Component) {
   class WithSharedState extends React.Component {
-    storeStateLocally = state => {
-      const current = JSON.parse(localStorage.getItem('sharedState') || '{}');
+    storeStateLocally = (state, storageKey) => {
+      const current = JSON.parse(
+        localStorage.getItem(storageKey || 'sharedState') || '{}'
+      );
 
       localStorage.setItem(
-        'sharedState',
+        storageKey || 'sharedState',
         JSON.stringify({...current, ...state})
       );
     };
@@ -21,8 +23,10 @@ export default function withSharedState(Component) {
       localStorage.removeItem('sharedState');
     };
 
-    getStateLocally = () => {
-      return JSON.parse(localStorage.getItem('sharedState') || '{}');
+    getStateLocally = storageKey => {
+      return JSON.parse(
+        localStorage.getItem(storageKey || 'sharedState') || '{}'
+      );
     };
 
     render() {
