@@ -25,14 +25,22 @@ import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
 import io.zeebe.db.impl.DbString;
+import io.zeebe.engine.Loggers;
 import io.zeebe.engine.metrics.JobMetrics;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.util.EnsureUtil;
 import java.util.function.BiFunction;
 import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
 
 public class JobState {
+
+  private static final Logger LOG = Loggers.WORKFLOW_PROCESSOR_LOGGER;
+  private static final String DEADLINES_ITERATION_MISSING_JOB_ERROR =
+      "Expected to visit job '{}' listed in deadlines column family, but it does not exist; removing entry from the column family";
+  private static final String ACTIVATABLE_ITERATION_MISSING_JOB_ERROR =
+      "Expected to visit job '{}' listed in activatable column family, but it does not exist; removing entry from the column family";
 
   // key => job record value
   // we need two separate wrapper to not interfere with get and put
@@ -201,7 +209,13 @@ public class JobState {
           final boolean isDue = deadline < upperBound;
           if (isDue) {
             final long jobKey = compositeKey.getSecond().getValue();
-            return visitJob(jobKey, callback);
+            try {
+              return visitJob(jobKey, callback);
+            } catch (IllegalStateException e) {
+              LOG.error(DEADLINES_ITERATION_MISSING_JOB_ERROR, jobKey, e);
+              deadlinesColumnFamily.delete(compositeKey);
+              return true;
+            }
           }
           return false;
         });
@@ -236,7 +250,13 @@ public class JobState {
         jobTypeKey,
         ((compositeKey, zbNil) -> {
           final long jobKey = compositeKey.getSecond().getValue();
-          return visitJob(jobKey, callback);
+          try {
+            return visitJob(jobKey, callback);
+          } catch (IllegalStateException e) {
+            LOG.error(ACTIVATABLE_ITERATION_MISSING_JOB_ERROR, jobKey, e);
+            activatableColumnFamily.delete(compositeKey);
+            return true;
+          }
         }));
   }
 
