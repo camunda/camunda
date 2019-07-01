@@ -16,8 +16,6 @@
 package io.zeebe.distributedlog;
 
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderRootService;
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamRootServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamServiceName;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
@@ -69,15 +67,9 @@ public class DistributedLogPartitionRule {
   }
 
   public void close() {
-    if (serviceContainer.hasService(logStorageAppenderRootService(logName))) {
-      logStream.closeAppender().join(); // If opened
-    }
-    if (serviceContainer.hasService(distributedLogPartitionServiceName(logName))) {
-      serviceContainer.removeService(distributedLogPartitionServiceName(logName));
-    }
-    if (serviceContainer.hasService(logStreamRootServiceName(logName))) {
-      logStream.close();
-    }
+    logStream.closeAppender().join(); // If opened
+    serviceContainer.removeService(distributedLogPartitionServiceName(logName));
+    logStream.close();
   }
 
   private void getLogStream() {
@@ -107,7 +99,7 @@ public class DistributedLogPartitionRule {
   }
 
   public void becomeLeader() {
-    if (!serviceContainer.hasService(distributedLogPartitionServiceName(logName))) {
+    if (!serviceContainer.hasService(distributedLogPartitionServiceName(logName)).join()) {
       createDistributedLog();
     }
 
@@ -115,12 +107,8 @@ public class DistributedLogPartitionRule {
   }
 
   public void becomeFollower() {
-    if (serviceContainer.hasService(logStorageAppenderRootService(logName))) {
-      logStream.closeAppender().join(); // If opened
-    }
-    if (serviceContainer.hasService(distributedLogPartitionServiceName(logName))) {
-      serviceContainer.removeService(distributedLogPartitionServiceName(logName)).join();
-    }
+    logStream.closeAppender().join(); // If opened
+    serviceContainer.removeService(distributedLogPartitionServiceName(logName)).join();
   }
 
   public boolean eventAppended(String message, long writePosition) {

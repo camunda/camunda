@@ -15,10 +15,8 @@
  */
 package io.zeebe.servicecontainer.impl;
 
-import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertCompleted;
-import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertFailed;
-import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertNotCompleted;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -33,7 +31,7 @@ import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,7 +40,7 @@ import org.mockito.InOrder;
 
 @SuppressWarnings("unchecked")
 public class CompositeInstallOperationTest {
-  public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
+  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
   public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
 
   @Rule
@@ -67,10 +65,9 @@ public class CompositeInstallOperationTest {
 
     // when
     final ActorFuture<Void> future = container.createComposite(compositeName).install();
-    actorSchedulerRule.workUntilDone();
 
     // then
-    assertCompleted(future);
+    future.join();
   }
 
   @Test
@@ -87,12 +84,10 @@ public class CompositeInstallOperationTest {
 
     final ActorFuture<Void> compositeFuture = composite.install();
 
-    actorSchedulerRule.workUntilDone();
-
     // then
-    assertCompleted(service1Future);
-    assertCompleted(service2Future);
-    assertCompleted(compositeFuture);
+    service1Future.join();
+    service2Future.join();
+    compositeFuture.join();
   }
 
   @Test
@@ -112,20 +107,13 @@ public class CompositeInstallOperationTest {
 
     final ActorFuture<Void> compositeFuture = composite.install();
 
-    actorSchedulerRule.workUntilDone();
-
     // then
-    assertCompleted(service1Future);
-    assertNotCompleted(service2Future);
-    assertNotCompleted(compositeFuture);
+    service1Future.join();
 
     // when
     asyncService2.future.complete(null);
-    actorSchedulerRule.workUntilDone();
-
-    assertCompleted(service1Future);
-    assertCompleted(service2Future);
-    assertCompleted(compositeFuture);
+    service2Future.join();
+    compositeFuture.join();
   }
 
   @Test
@@ -145,26 +133,19 @@ public class CompositeInstallOperationTest {
 
     final ActorFuture<Void> compositeFuture = composite.install();
 
-    actorSchedulerRule.workUntilDone();
-
     // then
-    assertCompleted(service1Future);
-    assertNotCompleted(service2Future);
-    assertNotCompleted(compositeFuture);
+    service1Future.join();
 
-    assertThat(container.hasService(service1Name)).isTrue();
+    assertThat(container.hasService(service1Name).join()).isTrue();
 
     // when
     asyncService2.future.completeExceptionally(new RuntimeException());
-    actorSchedulerRule.workUntilDone();
-
-    assertCompleted(service1Future); // future is still completed
-    assertFailed(service2Future);
-    assertFailed(compositeFuture);
+    assertThatThrownBy(() -> service2Future.join());
+    assertThatThrownBy(() -> compositeFuture.join());
 
     // both services have been removed
-    assertThat(container.hasService(service1Name)).isFalse();
-    assertThat(container.hasService(service2Name)).isFalse();
+    assertThat(container.hasService(service1Name).join()).isFalse();
+    assertThat(container.hasService(service2Name).join()).isFalse();
 
     // stop has been called in service 1
     final InOrder inOrder = inOrder(mockService1);

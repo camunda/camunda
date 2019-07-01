@@ -95,7 +95,11 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer {
   }
 
   @Override
-  public boolean hasService(ServiceName<?> name) {
+  public ActorFuture<Boolean> hasService(ServiceName<?> name) {
+    return actor.call(() -> hasServiceInternal(name));
+  }
+
+  private boolean hasServiceInternal(ServiceName<?> name) {
     return dependencyResolver.getService(name) != null;
   }
 
@@ -119,7 +123,7 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer {
             final ServiceController serviceController =
                 new ServiceController(serviceBuilder, this, future);
 
-            if (!hasService(serviceController.getServiceName())) {
+            if (!hasServiceInternal(serviceController.getServiceName())) {
               actorScheduler.submitActor(serviceController);
             } else {
               final String errorMessage =
@@ -174,11 +178,7 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer {
                     }
                   });
             } else {
-              final String errorMessage =
-                  String.format(
-                      "Cannot remove service with name '%s': no such service registered.",
-                      serviceName);
-              future.completeExceptionally(new IllegalArgumentException(errorMessage));
+              future.complete(null);
             }
           } else {
             final String errorMessage =

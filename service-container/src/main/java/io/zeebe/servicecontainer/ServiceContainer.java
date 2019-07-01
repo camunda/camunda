@@ -23,7 +23,7 @@ import java.util.concurrent.TimeoutException;
 public interface ServiceContainer {
   void start();
 
-  boolean hasService(ServiceName<?> name);
+  ActorFuture<Boolean> hasService(ServiceName<?> name);
 
   <S> ServiceBuilder<S> createService(ServiceName<S> name, Service<S> service);
 

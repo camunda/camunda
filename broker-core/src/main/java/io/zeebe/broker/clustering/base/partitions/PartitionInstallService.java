@@ -202,11 +202,8 @@ public class PartitionInstallService extends Actor
   }
 
   private ActorFuture<Void> removeLeaderPartitionService() {
-    if (startContext.hasService(leaderInstallRootServiceName)) {
-      LOG.debug("Removing leader partition services for partition {}", partitionId);
-      return startContext.removeService(leaderInstallRootServiceName);
-    }
-    return CompletableActorFuture.completed(null);
+    LOG.debug("Removing leader partition services for partition {}", partitionId);
+    return startContext.removeService(leaderInstallRootServiceName);
   }
 
   private ActorFuture<Void> installLeaderPartition(long leaderTerm) {
@@ -274,10 +271,7 @@ public class PartitionInstallService extends Actor
   }
 
   private ActorFuture<Void> removeFollowerPartitionService() {
-    if (startContext.hasService(followerPartitionServiceName)) {
-      LOG.debug("Removing follower partition service for partition {}", partitionId);
-      return startContext.removeService(followerPartitionServiceName);
-    }
-    return CompletableActorFuture.completed(null);
+    LOG.debug("Removing follower partition service for partition {}", partitionId);
+    return startContext.removeService(followerPartitionServiceName);
   }
 }
