@@ -34,16 +34,16 @@ public abstract class ImportJobExecutor {
   private ThreadPoolExecutor importExecutor;
 
   public boolean isActive() {
-    return importExecutor.getActiveCount() > 0;
+    return importExecutor.getActiveCount() > 0 && importExecutor.getQueue().size() > 0;
   }
 
   public void executeImportJob(final Runnable elasticsearchImportJob) {
     logger.debug(
-        "{}: Currently active [{}] jobs and [{}] in queue of job type [{}]",
-        getClass().getSimpleName(),
-        importExecutor.getActiveCount(),
-        importExecutor.getQueue().size(),
-        elasticsearchImportJob.getClass().getSimpleName()
+      "{}: Currently active [{}] jobs and [{}] in queue of job type [{}]",
+      getClass().getSimpleName(),
+      importExecutor.getActiveCount(),
+      importExecutor.getQueue().size(),
+      elasticsearchImportJob.getClass().getSimpleName()
     );
     importExecutor.execute(elasticsearchImportJob);
   }
@@ -83,12 +83,15 @@ public abstract class ImportJobExecutor {
     try {
       boolean timeElapsedBeforeTermination = !importExecutor.awaitTermination(60L, TimeUnit.SECONDS);
       if (timeElapsedBeforeTermination) {
-        logger.warn("{}: Timeout during shutdown of import job executor! " +
-          "The current running jobs could not end within 60 seconds after shutdown operation.",
-          getClass().getSimpleName());
+        logger.warn(
+          "{}: Timeout during shutdown of import job executor! " +
+            "The current running jobs could not end within 60 seconds after shutdown operation.",
+          getClass().getSimpleName()
+        );
       }
     } catch (InterruptedException e) {
-      logger.error("{}: Interrupted while shutting down the import job executor!",
+      logger.error(
+        "{}: Interrupted while shutting down the import job executor!",
         getClass().getSimpleName(),
         e
       );
@@ -102,7 +105,7 @@ public abstract class ImportJobExecutor {
         try {
           logger.debug(
             "{}: Max queue capacity is reached and, thus, can't schedule any new jobs." +
-            "Caller needs to wait until there is new free spot. Job class [{}].",
+              "Caller needs to wait until there is new free spot. Job class [{}].",
             super.getClass().getSimpleName(),
             runnable.getClass().getSimpleName()
           );
@@ -112,7 +115,8 @@ public abstract class ImportJobExecutor {
             super.getClass().getSimpleName()
           );
         } catch (InterruptedException e) {
-          logger.error("{}: Interrupted while waiting to submit a new job to the job executor!",
+          logger.error(
+            "{}: Interrupted while waiting to submit a new job to the job executor!",
             getClass().getSimpleName(),
             e
           );

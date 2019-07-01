@@ -13,6 +13,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.util.Map;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 public class StatusRestServiceIT {
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -28,5 +34,37 @@ public class StatusRestServiceIT {
       .withoutAuthentication()
       .buildCheckImportStatusRequest()
       .execute(StatusWithProgressDto.class, 200);
+  }
+
+
+  @Test
+  public void importStatusIsTrueWhenImporting() {
+    // given
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+
+    // when
+    final StatusWithProgressDto status = embeddedOptimizeRule.getRequestExecutor()
+      .withoutAuthentication()
+      .buildCheckImportStatusRequest()
+      .execute(StatusWithProgressDto.class, 200);
+
+    // then
+    final Map<String, Boolean> isImportingMap = status.getIsImporting();
+    assertThat(isImportingMap, is(notNullValue()));
+    assertThat(isImportingMap.get("1"), is(true));
+  }
+
+  @Test
+  public void importStatusIsFalseWhenNotImporting() {
+    // when
+    final StatusWithProgressDto status = embeddedOptimizeRule.getRequestExecutor()
+      .withoutAuthentication()
+      .buildCheckImportStatusRequest()
+      .execute(StatusWithProgressDto.class, 200);
+
+    // then
+    final Map<String, Boolean> isImportingMap = status.getIsImporting();
+    assertThat(isImportingMap, is(notNullValue()));
+    assertThat(isImportingMap.get("1"), is(false));
   }
 }

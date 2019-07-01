@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.service.engine.importing;
 
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.engine.importing.service.ImportObserver;
 import org.camunda.optimize.service.engine.importing.service.mediator.DecisionDefinitionXmlEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.ProcessDefinitionXmlEngineImportMediator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.camunda.optimize.service.util.ImportJobExecutor;
 
 import javax.annotation.PreDestroy;
 import java.util.Collections;
@@ -18,8 +18,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+
+@Slf4j
 public class EngineImportScheduler extends Thread {
-  private static final Logger logger = LoggerFactory.getLogger(EngineImportScheduler.class);
 
   private List<EngineImportMediator> importMediators;
 
@@ -44,29 +45,29 @@ public class EngineImportScheduler extends Thread {
   }
 
   public void disable() {
-    logger.debug("Scheduler for engine {} is disabled", engineAlias);
+    log.debug("Scheduler for engine {} is disabled", engineAlias);
     isEnabled = false;
   }
 
   public void enable() {
-    logger.debug("Scheduler for engine {} was enabled and will soon start scheduling the import", engineAlias);
+    log.debug("Scheduler for engine {} was enabled and will soon start scheduling the import", engineAlias);
     isEnabled = true;
   }
 
   @PreDestroy
   public void shutdown() {
-    logger.debug("Scheduler for engine {} will shutdown.", engineAlias);
+    log.debug("Scheduler for engine {} will shutdown.", engineAlias);
     getImportMediators().forEach(mediator -> mediator.getImportJobExecutor().stopExecutingImportJobs());
   }
 
   @Override
   public void run() {
     while (isEnabled) {
-      logger.debug("Schedule next round!");
+      log.debug("Schedule next round!");
       try {
         scheduleNextRound();
       } catch (Exception e) {
-        logger.error("Could not schedule next import round!", e);
+        log.error("Could not schedule next import round!", e);
       }
     }
   }
@@ -86,15 +87,26 @@ public class EngineImportScheduler extends Thread {
     scheduleCurrentImportRound(currentImportRound);
   }
 
+
   public void scheduleNextRound() {
     List<EngineImportMediator> currentImportRound = obtainActiveMediators();
     if (nothingToBeImported(currentImportRound)) {
-      notifyThatImportIsIdle();
+      if (hasNoActiveImportJobs()) {
+        notifyThatImportIsIdle();
+      }
       doBackoff();
     } else {
       notifyThatImportIsInProgress();
       scheduleCurrentImportRound(currentImportRound);
     }
+  }
+
+  private boolean hasNoActiveImportJobs() {
+    return importMediators
+      .stream()
+      .map(EngineImportMediator::getImportJobExecutor)
+      .filter(ImportJobExecutor::isActive)
+      .collect(Collectors.toList()).isEmpty();
   }
 
   private void notifyThatImportIsInProgress() {
@@ -118,10 +130,10 @@ public class EngineImportScheduler extends Thread {
   private void doBackoff() {
     long timeToSleep = calculateTimeToSleep();
     try {
-      logger.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
+      log.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
       Thread.sleep(timeToSleep);
     } catch (InterruptedException e) {
-      logger.error("Scheduler was interrupted while sleeping.", e);
+      log.error("Scheduler was interrupted while sleeping.", e);
     }
   }
 
@@ -137,12 +149,12 @@ public class EngineImportScheduler extends Thread {
     String mediators = currentImportRound.stream()
       .map(c -> c.getClass().getSimpleName())
       .reduce((a, b) -> a + ", " + b).orElse("");
-    logger.debug("Scheduling import round for {}", mediators);
+    log.debug("Scheduling import round for {}", mediators);
     for (EngineImportMediator engineImportMediator : currentImportRound) {
       try {
         engineImportMediator.importNextPage();
       } catch (Exception e) {
-        logger.error("Was not able to execute import of [{}]", engineImportMediator.getClass().getSimpleName(), e);
+        log.error("Was not able to execute import of [{}]", engineImportMediator.getClass().getSimpleName(), e);
       }
     }
   }
