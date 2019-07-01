@@ -145,7 +145,9 @@ public class DefaultDistributedLogstreamService
     final LogStream logStream;
     serviceContainer = LogstreamConfig.getServiceContainer(localMemberId);
 
-    if (serviceContainer.hasService(LogStreamServiceNames.logStreamServiceName(logServiceName))) {
+    if (serviceContainer
+        .hasService(LogStreamServiceNames.logStreamServiceName(logServiceName))
+        .join()) {
       logStream = LogstreamConfig.getLogStream(localMemberId, partitionId);
     } else {
       logStream = createLogStream(logServiceName);
