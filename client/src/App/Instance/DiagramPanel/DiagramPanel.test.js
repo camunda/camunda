@@ -24,21 +24,17 @@ const mockProps = {
   onInstanceOperation: jest.fn()
 };
 
-function Foo(props) {
+const Foo = function({expandState, ...props}) {
   return <div data-test="foo" {...props} />;
-}
+};
 
 function BottomPane() {
   return <div data-test="bottom-pane" />;
 }
 describe('DiagramPanel', () => {
-  it('should render pane header and body', () => {
-    // given
-    const workflowName = getWorkflowName(mockInstance);
-    const instanceState = mockInstance.state;
-    const formattedStartDate = formatDate(mockInstance.startDate);
-    const formattedEndDate = formatDate(mockInstance.endDate);
-    const node = mount(
+  let node;
+  beforeEach(() => {
+    node = mount(
       <ThemeProvider>
         <SplitPane>
           <DiagramPanel instance={mockInstance} {...mockProps}>
@@ -48,6 +44,15 @@ describe('DiagramPanel', () => {
         </SplitPane>
       </ThemeProvider>
     );
+  });
+
+  it('should render pane header and body', () => {
+    // given
+    const workflowName = getWorkflowName(mockInstance);
+    const instanceState = mockInstance.state;
+    const formattedStartDate = formatDate(mockInstance.startDate);
+    const formattedEndDate = formatDate(mockInstance.endDate);
+
     // then
     expect(node.find(Pane)).toHaveLength(1);
 
@@ -83,5 +88,9 @@ describe('DiagramPanel', () => {
 
     // Child
     expect(PaneBodyNode.find(Foo)).toHaveLength(1);
+  });
+
+  it('should pass expandState to children', () => {
+    expect(node.find(Foo).props()).toEqual({expandState: 'DEFAULT'});
   });
 });

@@ -4,12 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {Children, cloneElement} from 'react';
 import PropTypes from 'prop-types';
 
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
 import Actions from 'modules/components/Actions';
+import {EXPAND_STATE} from 'modules/constants';
 
 import * as Styled from './styled';
 
@@ -25,7 +26,19 @@ export default class DiagramPanel extends React.PureComponent {
     }).isRequired,
     children: PropTypes.node,
     forceInstanceSpinner: PropTypes.bool,
-    onInstanceOperation: PropTypes.func
+    onInstanceOperation: PropTypes.func,
+    expandState: PropTypes.oneOf(Object.values(EXPAND_STATE))
+  };
+
+  getChildren = () => {
+    const {expandState} = this.props;
+
+    const children = Children.map(
+      this.props.children,
+      child => child && cloneElement(child, {expandState})
+    );
+
+    return children;
   };
 
   render() {
@@ -59,7 +72,7 @@ export default class DiagramPanel extends React.PureComponent {
           </Styled.Table>
         </Styled.SplitPaneHeader>
         <Styled.SplitPaneBody data-test="diagram-panel-body">
-          {this.props.children}
+          {this.getChildren()}
         </Styled.SplitPaneBody>
       </Styled.SplitPane>
     );

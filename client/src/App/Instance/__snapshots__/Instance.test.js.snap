@@ -12,6 +12,7 @@ Object {
       "errorType": "Extract value error",
     },
   },
+  "expandState": "DEFAULT",
   "flowNodes": Map {
     "flowNodeId_exclusiveGateway" => Object {
       "count": 1,
