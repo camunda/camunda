@@ -42,7 +42,7 @@ export const targetValueInput = name =>
   Selector('.Modal .rt-tr')
     .withText(name)
     .find('.Input');
-export const targetModalConfirmButton = Selector('.Modal .Modal__actions .Button--primary');
+export const primaryModalButton = Selector('.Modal .Modal__actions .Button--primary');
 export const warning = Selector('.Message--warning');
 export const processPartButton = Selector('.ReportControlPanel .Button').withText(
   'Process Instance Part'
@@ -60,3 +60,11 @@ export const tableCell = (row, column) =>
     .nth(column);
 export const tooltipSwitch = Selector('.RelativeAbsoluteSelection .Switch');
 export const instanceCountSwitch = Selector('.Configuration .Switch');
+export const filterButton = Selector('.Filter__dropdown .activateButton');
+export const filterOption = text => Selector('.Filter .DropdownOption').withText(text);
+export const variableFilterTypeahead = Selector('.Modal__content .Typeahead');
+export const variableFilterTypeaheadOption = text =>
+  Selector('.Modal__content .Typeahead .DropdownOption').withText(text);
+export const variableFilterOperatorButton = text =>
+  Selector('.Modal .VariableFilter__buttonRow .Button').withText(text);
+export const variableFilterValueInput = Selector('.Modal .VariableFilter__valueFields input');

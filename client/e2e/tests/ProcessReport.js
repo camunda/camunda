@@ -8,9 +8,9 @@ import setup from '../setup';
 import config from '../config';
 import * as u from '../utils';
 
-import * as e from './SingleReport.elements.js';
+import * as e from './ProcessReport.elements.js';
 
-fixture('Report')
+fixture('Process Report')
   .page(config.endpoint)
   .before(setup)
   .beforeEach(u.login);
@@ -220,7 +220,7 @@ test('heatmap target values', async t => {
 
   await t.click(e.targetValueButton);
   await t.typeText(e.targetValueInput('Approve Invoice'), '1');
-  await t.click(e.targetModalConfirmButton);
+  await t.click(e.primaryModalButton);
 
   await t.hover(e.flowNode('approveInvoice'));
 
@@ -288,7 +288,7 @@ test('process parts', async t => {
   await t.click(e.modalFlowNode('DoBasicLeadQual'));
   await t.click(e.modalFlowNode('ConductDiscoveryCall'));
 
-  await t.click(e.targetModalConfirmButton);
+  await t.click(e.primaryModalButton);
 
   const withPart = await e.reportNumber.textContent;
 

@@ -19,11 +19,7 @@ export async function createNewReport(t) {
 
 export async function selectDefinition(t, name, version) {
   await t
-    .click(
-      Selector('.label')
-        .withText('Process Definition')
-        .nextSibling()
-    )
+    .click('.Popover.DefinitionSelection')
     .typeText('.Typeahead.name input', name, {replace: true})
     .click(Selector('.Typeahead.name .DropdownOption').withText(name))
     .click('.version.Dropdown')
@@ -58,7 +54,7 @@ export async function cancel(t) {
 export async function selectAggregation(t, type) {
   await t.click('.Configuration .Popover');
   await t.click('.AggregationType .Select');
-  await t.click(Selector('.AggregationType option').withText(type));
+  await t.click(Selector('.AggregationType .DropdownOption').withText(type));
   await t.click('.Configuration .Popover');
 }
 
