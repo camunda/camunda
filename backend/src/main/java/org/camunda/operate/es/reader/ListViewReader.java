@@ -47,6 +47,8 @@ import org.elasticsearch.join.query.HasChildQueryBuilder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.FieldSortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -164,10 +166,10 @@ public class ListViewReader {
   }
 
   private void applySorting(SearchSourceBuilder searchSourceBuilder, SortingDto sorting) {
-    String defaultSortBy = ListViewTemplate.KEY;
+    FieldSortBuilder defaultSorting = SortBuilders.fieldSort(ListViewTemplate.KEY).order(SortOrder.ASC);
     if (sorting == null) {
       //apply default sorting
-      searchSourceBuilder.sort(defaultSortBy, SortOrder.ASC);
+      searchSourceBuilder.sort(defaultSorting);
     } else {
       String sortBy = sorting.getSortBy();
       if(sortBy.equals(ListViewTemplate.ID)) {
@@ -175,7 +177,7 @@ public class ListViewReader {
       }
       searchSourceBuilder
         .sort(sorting.getSortBy(), SortOrder.fromString(sorting.getSortOrder()))
-        .sort(ListViewTemplate.KEY, SortOrder.ASC); 
+        .sort(defaultSorting);
     }
   }
 
