@@ -67,6 +67,10 @@
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_MANAGEMENT_THREADS.
 # managementThreads = 1
 
+[gateway.monitoring]
+# Enables the metrics collection in the gateway
+# enabled = false
+
 [network]
 
 # This section contains the network configuration. Particularly, it allows to

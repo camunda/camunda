@@ -75,6 +75,9 @@
 # managementThreads = 1
 
 [monitoring]
+# Enables the metrics collection and exporting it over HTTP
+# enabled = false
+#
 # Sets the host the monitoring binds to
 # host = "0.0.0.0"
 #
