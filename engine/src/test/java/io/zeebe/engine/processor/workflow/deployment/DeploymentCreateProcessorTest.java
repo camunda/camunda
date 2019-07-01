@@ -51,7 +51,10 @@ public class DeploymentCreateProcessorTest {
         (typedRecordProcessors, zeebeState) -> {
           workflowState = zeebeState.getWorkflowState();
           DeploymentEventProcessors.addDeploymentCreateProcessor(
-              typedRecordProcessors, workflowState);
+              typedRecordProcessors,
+              workflowState,
+              (key, partition) -> {},
+              Protocol.DEPLOYMENT_PARTITION + 1);
           return typedRecordProcessors;
         });
   }

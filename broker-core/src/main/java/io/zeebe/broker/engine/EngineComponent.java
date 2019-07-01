@@ -18,6 +18,7 @@
 package io.zeebe.broker.engine;
 
 import static io.zeebe.broker.engine.EngineServiceNames.ENGINE_SERVICE_NAME;
+import static io.zeebe.broker.system.SystemServiceNames.LEADER_MANAGEMENT_REQUEST_HANDLER;
 
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
@@ -46,6 +47,9 @@ public class EngineComponent implements Component {
             streamProcessorService.getTopologyManagerInjector())
         .dependency(
             ClusterBaseLayerServiceNames.ATOMIX_SERVICE, streamProcessorService.getAtomixInjector())
+        .dependency(
+            LEADER_MANAGEMENT_REQUEST_HANDLER,
+            streamProcessorService.getLeaderManagementRequestInjector())
         .groupReference(
             ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME,
             streamProcessorService.getPartitionsGroupReference())
