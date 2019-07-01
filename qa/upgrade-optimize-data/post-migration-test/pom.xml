@@ -147,6 +147,29 @@
                   <overWriteSnapshots>true</overWriteSnapshots>
                 </configuration>
               </execution>
+              <execution>
+                <id>copy-generator-2-5</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.camunda.optimize</groupId>
+                      <artifactId>generator</artifactId>
+                      <version>2.5.1</version>
+                      <type>jar</type>
+                      <classifier>jar-with-dependencies</classifier>
+                      <overWrite>true</overWrite>
+                      <outputDirectory>${project.build.directory}/generators</outputDirectory>
+                      <destFileName>generator2.5.0.jar</destFileName>
+                    </artifactItem>
+                  </artifactItems>
+                  <overWriteReleases>false</overWriteReleases>
+                  <overWriteSnapshots>true</overWriteSnapshots>
+                </configuration>
+              </execution>
             </executions>
           </plugin>
           <!-- 2. Start CamBPM and ES through docker-compose -->
@@ -239,14 +262,14 @@
                 <configuration>
                   <target name="generate-engine-data" description="Generate process instances">
                     <property environment="env" />
-                    <condition property="maven-settings" value="--settings=../../settings.xml" else="">
+                    <condition property="maven-settings" value="--settings=settings.xml" else="">
                       <isset property="env.JENKINS_URL" />
                     </condition>
 
                     <echo message="Generating engine data..." />
-                    <exec dir="${project.build.directory}/../../../../qa/data-generation" executable="/bin/bash" failonerror="true">
+                    <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="set -o pipefail; mvn clean compile exec:java -Dexec.args='--numberOfProcessInstances 1000' -B ${maven-settings} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn | sed 's/^/[ENGINE DATA GENERATION]: /'" />
+                      <arg value="set -o pipefail; mvn clean compile -pl qa/data-generation exec:java -Dexec.args='--numberOfProcessInstances 1000' -B ${maven-settings} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn | sed 's/^/[ENGINE DATA GENERATION]: /'" />
                     </exec>
                   </target>
                 </configuration>
@@ -296,7 +319,7 @@
                   <target>
                     <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
                     <property environment="env" />
-                    <condition property="maven-settings" value="--settings=${project.basedir}/../../../settings.xml" else="">
+                    <condition property="maven-settings" value="--settings=settings.xml" else="">
                       <isset property="env.JENKINS_URL" />
                     </condition>
 
@@ -332,9 +355,9 @@
                             </waitfor>
 
                             <echo message="Running post migration tests..." />
-                            <exec executable="/bin/bash" failonerror="true">
+                            <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
                               <arg value="-c" />
-                              <arg value="set -o pipefail; mvn verify -DskipTests=false -B ${maven-settings} | sed 's/^/[POST MIGRATION TESTS]: /'" />
+                              <arg value="set -o pipefail; mvn verify -DskipTests=false -B ${maven-settings} -f qa/upgrade-optimize-data -pl post-migration-test | sed 's/^/[POST MIGRATION TESTS]: /'" />
                             </exec>
                             <ac:if>
                               <not>

@@ -534,6 +534,8 @@ void migrationTestSteps() {
 void dataUpgradeTestSteps() {
   container('maven') {
     sh ("""apt-get update && apt-get install -y jq""")
+    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,qa/data-generation -am -Pproduction,engine-7.10")
+    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -f qa/upgrade-optimize-data -pl generator -am")
     runMaven("verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-optimize-data -am -Pupgrade-optimize-data")
   }
 }
