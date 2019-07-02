@@ -1,6 +1,7 @@
 # Operate configuration file
 
 camunda.operate:
+  csrfPreventionEnabled: true
   # ELS instance to store Operate data
   elasticsearch:
     # Cluster name
