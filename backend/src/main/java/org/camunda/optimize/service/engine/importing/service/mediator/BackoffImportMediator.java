@@ -34,7 +34,9 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
   @Autowired
   protected ImportIndexHandlerProvider provider;
   @Autowired
-  private BackoffCalculator backoffCalculator;
+  private BackoffCalculator idleBackoffCalculator;
+  @Autowired
+  private BackoffCalculator errorBackoffCalculator;
 
   protected final EngineContext engineContext;
   protected T importIndexHandler;
@@ -50,10 +52,10 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
 
   @Override
   public void importNextPage() {
-    if (backoffCalculator.isReadyForNextRetry()) {
-      boolean pageIsPresent = importNextPageWithErrorCheck();
+    if (idleBackoffCalculator.isReadyForNextRetry()) {
+      boolean pageIsPresent = importNextPageRetryOnError();
       if (pageIsPresent) {
-        backoffCalculator.resetBackoff();
+        idleBackoffCalculator.resetBackoff();
       } else {
         calculateNewDateUntilIsBlocked();
       }
@@ -67,17 +69,17 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
    * @return time to sleep for import process of an engine in general
    */
   public long getBackoffTimeInMs() {
-    return backoffCalculator.getTimeUntilNextRetry();
+    return idleBackoffCalculator.getTimeUntilNextRetry();
   }
 
   @Override
   public void resetBackoff() {
-    backoffCalculator.resetBackoff();
+    idleBackoffCalculator.resetBackoff();
   }
 
   @Override
   public boolean canImport() {
-    boolean canImportNewPage = backoffCalculator.isReadyForNextRetry();
+    boolean canImportNewPage = idleBackoffCalculator.isReadyForNextRetry();
     logger.debug("can import next page [{}]", canImportNewPage);
     return canImportNewPage;
   }
@@ -91,13 +93,20 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
 
   protected abstract boolean importNextEnginePage();
 
-  private boolean importNextPageWithErrorCheck() {
-    try {
-      return importNextEnginePage();
-    } catch (Exception e) {
-      logger.error("Was not able to import next page.", e);
-      return false;
+  private boolean importNextPageRetryOnError() {
+    Boolean result = null;
+    while (result == null) {
+      try {
+        result = importNextEnginePage();
+      } catch (final Exception e) {
+        long timeToSleep = errorBackoffCalculator.calculateSleepTime();
+        logger.error("Was not able to import next page, retrying after sleeping for {}ms.", timeToSleep, e);
+        sleep(timeToSleep);
+      }
     }
+    errorBackoffCalculator.resetBackoff();
+
+    return result;
   }
 
   private void executeAfterMaxBackoffIsReached() {
@@ -105,17 +114,22 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
   }
 
   private void calculateNewDateUntilIsBlocked() {
-    if (backoffCalculator.isMaximumBackoffReached()) {
+    if (idleBackoffCalculator.isMaximumBackoffReached()) {
       executeAfterMaxBackoffIsReached();
     }
-    logDebugSleepInformation(backoffCalculator.calculateSleepTime());
+    logDebugSleepInformation(idleBackoffCalculator.calculateSleepTime());
   }
 
-  private void logDebugSleepInformation(long sleepTime) {
-    logger.debug(
-      "Was not able to produce a new job, sleeping for [{}] ms",
-      sleepTime
-    );
+  private void sleep(final long timeToSleep) {
+    try {
+      Thread.sleep(timeToSleep);
+    } catch (InterruptedException e) {
+      logger.debug("Was interrupted from sleep. Continuing.", e);
+    }
+  }
+
+  private void logDebugSleepInformation(final long sleepTime) {
+    logger.debug("Was not able to produce a new job, sleeping for [{}] ms", sleepTime);
   }
 
 }
