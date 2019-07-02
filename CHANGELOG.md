@@ -1,3 +1,14 @@
+<a name="0.19.0"></a>
+## 0.19.0 (2019-07-02)
+
+
+#### Bug Fixes
+
+* **broker:**  fixed missing distributed CREATEs during restart ([a24c04f4](https://github.com/zeebe-io/zeebe/commit/a24c04f4f114e731945241d38689cd4e749d65ed))
+* **logstreams:**  do not replicate existing snapshot ([097dae7f](https://github.com/zeebe-io/zeebe/commit/097dae7f28895f895a560d22ea1f372057ddc215))
+
+
+
 <a name="0.19.0-alpha3"></a>
 ## 0.19.0-alpha3 (2019-06-28)
 
