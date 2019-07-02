@@ -26,10 +26,11 @@ import Filters from './Filters';
 import Selections from './Selections';
 
 import {
-  getSelectableFlowNodes,
   getWorkflowByVersionFromFilter,
   getWorkflowNameFromFilter
 } from './service';
+
+import {getFlowNodes} from 'modules/utils/flowNodes';
 import * as Styled from './styled.js';
 
 export default class Instances extends Component {
@@ -82,10 +83,9 @@ export default class Instances extends Component {
 
     const workflowName = getWorkflowNameFromFilter({filter, groupedWorkflows});
 
-    const {
-      ids: selectableIds,
-      flowNodes: selectableFlowNodes
-    } = getSelectableFlowNodes(this.props.diagramModel.bpmnElements);
+    const {ids: selectableIds, flowNodes: selectableFlowNodes} = getFlowNodes(
+      this.props.diagramModel.bpmnElements
+    );
 
     return (
       <SelectionProvider

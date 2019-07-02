@@ -63,24 +63,6 @@ export function decodeFields(object) {
   return result;
 }
 
-export function getSelectableFlowNodes(bpmnElements) {
-  if (!bpmnElements) {
-    return {ids: [], flowNodes: []};
-  }
-
-  let flowNodes = [];
-  let ids = [];
-
-  Object.values(bpmnElements).forEach(bpmnElement => {
-    if (bpmnElement.$instanceOf('bpmn:FlowNode')) {
-      flowNodes.push(bpmnElement);
-      ids.push(bpmnElement.id);
-    }
-  });
-
-  return {ids, flowNodes};
-}
-
 export function getWorkflowName(workflow) {
   return workflow ? workflow.name || workflow.bpmnProcessId : 'Workflow';
 }

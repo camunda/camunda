@@ -13,6 +13,8 @@ import {themed} from 'modules/theme';
 
 import {STATE} from 'modules/constants';
 
+import {isFlowNode} from 'modules/utils/flowNodes';
+
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
 import StateOverlay from './StateOverlay';
@@ -121,6 +123,8 @@ class Diagram extends React.PureComponent {
     if (this.props.selectedFlowNodeId) {
       this.handleSelectedFlowNode(this.props.selectedFlowNodeId);
     }
+
+    this.handleNonSelectableFlowNodes();
   };
 
   initViewer = () => {
@@ -190,6 +194,22 @@ class Diagram extends React.PureComponent {
   handleSelectableFlowNodes = selectableFlowNodes => {
     selectableFlowNodes.forEach(id => {
       this.addMarker(id, 'op-selectable');
+    });
+  };
+
+  handleNonSelectableFlowNodes = () => {
+    const elementRegistry = this.Viewer.get('elementRegistry');
+
+    elementRegistry.forEach(element => {
+      const isNonSelectableFlowNode =
+        !this.props.selectableFlowNodes.includes(element.id) &&
+        element.type !== 'label' &&
+        isFlowNode(element);
+
+      if (isNonSelectableFlowNode) {
+        const gfx = elementRegistry.getGraphics(element);
+        gfx.style.cursor = 'not-allowed';
+      }
     });
   };
 

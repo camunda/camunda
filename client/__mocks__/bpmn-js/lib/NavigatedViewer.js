@@ -26,7 +26,8 @@ class Viewer {
         })),
         getBBox: jest.fn(() => ({x: 0, y: 0, height: 0, width: 0}))
       })),
-      get: jest.fn(id => ({businessObject: {name: id}}))
+      get: jest.fn(id => ({businessObject: {name: id}})),
+      forEach: jest.fn(() => {})
     };
     this.eventBus = {on: jest.fn()};
     this.overlays = {add: jest.fn(), remove: jest.fn()};
