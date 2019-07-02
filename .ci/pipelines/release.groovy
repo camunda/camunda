@@ -117,8 +117,8 @@ pipeline {
   parameters {
     string(name: 'RELEASE_VERSION', defaultValue: '1.0.0', description: 'Version to release. Applied to pom.xml and Git tag.')
     string(name: 'DEVELOPMENT_VERSION', defaultValue: '1.1.0-SNAPSHOT', description: 'Next development version.')
-    booleanParam('PUSH_CHANGES', defaultValue: false, 'Should the changes be pushed to remote locations (Nexus).')
-    booleanParam('GITHUB_UPLOAD_RELEASE', defaultValue: false, 'Should upload the release to github.')
+    booleanParam(name: 'PUSH_CHANGES', defaultValue: false, description: 'Should the changes be pushed to remote locations (Nexus).')
+    booleanParam(name: 'GITHUB_UPLOAD_RELEASE', defaultValue: false, description: 'Should upload the release to github.')
   }
 
   environment {
