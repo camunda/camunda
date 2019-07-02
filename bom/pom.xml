@@ -4,7 +4,7 @@
   <name>Zeebe BOM</name>
   <groupId>io.zeebe</groupId>
   <artifactId>zeebe-bom</artifactId>
-  <version>0.19.0-SNAPSHOT</version>
+  <version>0.19.0</version>
   <packaging>pom</packaging>
   <inceptionYear>2017</inceptionYear>
   <url>http://zeebe.io/</url>
@@ -235,7 +235,7 @@
     <url>https://github.com/zeebe-io/zeebe</url>
     <connection>scm:git:git@github.com:zeebe-io/zeebe.git</connection>
     <developerConnection>scm:git:git@github.com:zeebe-io/zeebe.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>0.19.0</tag>
   </scm>
 
 </project>
