@@ -15,6 +15,7 @@ import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.rest.dto.OperationDto;
+import org.camunda.operate.util.StringUtils;
 
 public class IncidentDto {
 
@@ -126,10 +127,10 @@ public class IncidentDto {
     IncidentDto incident = new IncidentDto();
     incident.setId(incidentEntity.getId());
     incident.setFlowNodeId(incidentEntity.getFlowNodeId());
-    incident.setFlowNodeInstanceId(incidentEntity.getFlowNodeInstanceId());
+    incident.setFlowNodeInstanceId(StringUtils.toStringOrNull(incidentEntity.getFlowNodeInstanceKey()));
     incident.setErrorMessage(incidentEntity.getErrorMessage());
     incident.setErrorType(IncidentEntity.getErrorTypeTitle(incidentEntity.getErrorType()));
-    incident.setJobId(incidentEntity.getJobId());
+    incident.setJobId(StringUtils.toStringOrNull(incidentEntity.getJobKey()));
     incident.setCreationTime(incidentEntity.getCreationTime());
 
     if (operations != null && operations.size() > 0) {

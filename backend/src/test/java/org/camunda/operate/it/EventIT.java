@@ -19,7 +19,6 @@ import org.camunda.operate.es.reader.EventReader;
 import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.rest.dto.EventQueryDto;
 import org.camunda.operate.util.IdTestUtil;
-import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.junit.Before;
@@ -89,10 +88,10 @@ public class EventIT extends OperateZeebeIntegrationTest {
     /*final Long jobKey =*/ failTaskWithNoRetriesLeft(taskA, workflowInstanceKey, errorMessage);
 
     //update retries
-    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
+    final Long workflowInstanceId = workflowInstanceKey;
     List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceId);
     assertThat(allIncidents).hasSize(1);
-    ZeebeTestUtil.resolveIncident(zeebeClient, allIncidents.get(0).getJobId(), allIncidents.get(0).getKey());
+    ZeebeTestUtil.resolveIncident(zeebeClient, allIncidents.get(0).getJobKey(), allIncidents.get(0).getKey());
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
 
     //complete task A
@@ -185,7 +184,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
     final EventEntity lastEvent = eventEntities.get(eventEntities.size() - 1);
     assertThat(lastEvent.getEventSourceType()).isEqualTo(EventSourceType.INCIDENT);
     assertThat(lastEvent.getEventType()).isEqualTo(EventType.CREATED);
-    assertThat(lastEvent.getMetadata().getJobId()).isNull();
+    assertThat(lastEvent.getMetadata().getJobKey()).isNull();
 
   }
 
@@ -195,12 +194,12 @@ public class EventIT extends OperateZeebeIntegrationTest {
   }
 
   public void assertEvent(List<EventEntity> eventEntities, EventSourceType eventSourceType, EventType eventType,
-    int count, String processId, Long workflowId, long workflowInstanceKey, String activityId) {
+    int count, String processId, Long workflowId, Long workflowInstanceKey, String activityId) {
     assertEvent(eventEntities, eventSourceType, eventType, count, processId, workflowId, workflowInstanceKey, activityId, null);
   }
 
   public void assertEvent(List<EventEntity> eventEntities, EventSourceType eventSourceType, EventType eventType,
-    int count, String processId, Long workflowId, long workflowInstanceKey, String activityId, String errorMessage) {
+    int count, String processId, Long workflowId, Long workflowInstanceKey, String activityId, String errorMessage) {
     String assertionName = String.format("%s.%s", eventSourceType, eventType);
     final Predicate<EventEntity> eventEntityFilterCriteria = eventEntity -> {
       boolean b = true;
@@ -215,7 +214,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
       .filteredOn(eventEntityFilterCriteria).as(assertionName + ".size").hasSize(count);
     eventEntities.stream().filter(eventEntityFilterCriteria)
       .forEach(eventEntity -> {
-        assertThat(eventEntity.getWorkflowInstanceId()).as(assertionName + ".workflowInstanceId").isEqualTo(IdTestUtil.getId(workflowInstanceKey));
+        assertThat(eventEntity.getWorkflowInstanceId()).as(assertionName + ".workflowInstanceId").isEqualTo(workflowInstanceKey);
         if (workflowId != null) {
           assertThat(eventEntity.getWorkflowId()).as(assertionName + ".workflowId").isEqualTo(workflowId);
         }
@@ -224,7 +223,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
         assertThat(eventEntity.getBpmnProcessId()).as(assertionName + ".bpmnProcessId").isEqualTo(processId);
         if (activityId != null) {
           assertThat(eventEntity.getActivityId()).as(assertionName + ".activityId").isEqualTo(activityId);
-          if (eventEntity.getKey() != IdUtil.getKey(eventEntity.getWorkflowInstanceId())) {
+          if (eventEntity.getKey() != eventEntity.getWorkflowInstanceId()) {
             assertThat(eventEntity.getActivityInstanceId()).as(assertionName + ".activityInstanceId").isNotNull();
           }
         }

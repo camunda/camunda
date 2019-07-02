@@ -13,14 +13,14 @@ public class EventEntity extends OperateZeebeEntity {
    * Workflow data.
    */
   private Long workflowId;
-  private String workflowInstanceId;
+  private Long workflowInstanceId;
   private String bpmnProcessId;
 
   /**
    * Activity data.
    */
   private String activityId;
-  private String activityInstanceId;
+  private Long activityInstanceId;
 
   /**
    * Event data.
@@ -45,11 +45,11 @@ public class EventEntity extends OperateZeebeEntity {
     this.workflowId = workflowId;
   }
 
-  public String getWorkflowInstanceId() {
+  public Long getWorkflowInstanceId() {
     return workflowInstanceId;
   }
 
-  public void setWorkflowInstanceId(String workflowInstanceId) {
+  public void setWorkflowInstanceId(Long workflowInstanceId) {
     this.workflowInstanceId = workflowInstanceId;
   }
 
@@ -61,11 +61,11 @@ public class EventEntity extends OperateZeebeEntity {
     this.activityId = activityId;
   }
 
-  public String getActivityInstanceId() {
+  public Long getActivityInstanceId() {
     return activityInstanceId;
   }
 
-  public void setActivityInstanceId(String activityInstanceId) {
+  public void setActivityInstanceId(Long activityInstanceId) {
     this.activityInstanceId = activityInstanceId;
   }
 

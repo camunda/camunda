@@ -37,9 +37,9 @@ public class VariableReader extends AbstractReader {
   @Autowired
   private OperationReader operationReader;
 
-  public List<VariableDto> getVariables(String workflowInstanceId, String scopeId) {
+  public List<VariableDto> getVariables(Long workflowInstanceId, String scopeId) {
     final TermQueryBuilder workflowInstanceIdQ = termQuery(VariableTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
-    final TermQueryBuilder scopeIdQ = termQuery(VariableTemplate.SCOPE_ID, scopeId);
+    final TermQueryBuilder scopeIdQ = termQuery(VariableTemplate.SCOPE_KEY, scopeId);
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceIdQ, scopeIdQ));
 

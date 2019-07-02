@@ -5,8 +5,6 @@
  */
 package org.camunda.operate.entities;
 
-import io.zeebe.protocol.record.intent.IncidentIntent;
-
 public enum IncidentState {
 
   ACTIVE,

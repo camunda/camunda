@@ -15,8 +15,8 @@ public class ActivityInstanceEntity extends OperateZeebeEntity {
   private ActivityState state;
   private ActivityType type;
   private Long incidentKey;
-  private String workflowInstanceId;
-  private String scopeId;
+  private Long workflowInstanceId;
+  private Long scopeKey;
   private Long position;
 
   public String getActivityId() {
@@ -67,19 +67,19 @@ public class ActivityInstanceEntity extends OperateZeebeEntity {
     this.incidentKey = incidentKey;
   }
 
-  public String getScopeId() {
-    return scopeId;
+  public Long getScopeKey() {
+    return scopeKey;
   }
 
-  public void setScopeId(String scopeId) {
-    this.scopeId = scopeId;
+  public void setScopeKey(Long scopeKey) {
+    this.scopeKey = scopeKey;
   }
 
-  public String getWorkflowInstanceId() {
+  public Long getWorkflowInstanceId() {
     return workflowInstanceId;
   }
 
-  public void setWorkflowInstanceId(String workflowInstanceId) {
+  public void setWorkflowInstanceId(Long workflowInstanceId) {
     this.workflowInstanceId = workflowInstanceId;
   }
 
@@ -116,7 +116,7 @@ public class ActivityInstanceEntity extends OperateZeebeEntity {
       return false;
     if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
       return false;
-    if (scopeId != null ? !scopeId.equals(that.scopeId) : that.scopeId != null)
+    if (scopeKey != null ? !scopeKey.equals(that.scopeKey) : that.scopeKey != null)
       return false;
     return position != null ? position.equals(that.position) : that.position == null;
   }
@@ -131,7 +131,7 @@ public class ActivityInstanceEntity extends OperateZeebeEntity {
     result = 31 * result + (type != null ? type.hashCode() : 0);
     result = 31 * result + (incidentKey != null ? incidentKey.hashCode() : 0);
     result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
-    result = 31 * result + (scopeId != null ? scopeId.hashCode() : 0);
+    result = 31 * result + (scopeKey != null ? scopeKey.hashCode() : 0);
     result = 31 * result + (position != null ? position.hashCode() : 0);
     return result;
   }

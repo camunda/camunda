@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationEntity;
@@ -26,11 +25,13 @@ import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
+import org.camunda.operate.util.TestUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -117,19 +118,18 @@ public class OperationExecutorIT extends OperateIntegrationTest {
 
   private List<OperateEntity> createWorkflowInstanceAndOperations() {
     List<OperateEntity> entities = new ArrayList<>();
-    WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
-    workflowInstance.setId(UUID.randomUUID().toString());
+    WorkflowInstanceForListViewEntity workflowInstance = TestUtil.createWorkflowInstanceEntityWithIds();
     workflowInstance.setBpmnProcessId("testProcess" + random.nextInt(10));
     workflowInstance.setStartDate(DateUtil.getRandomStartDate());
     workflowInstance.setState(WorkflowInstanceState.ACTIVE);
     entities.add(workflowInstance);
-    entities.add(createOperation(workflowInstance.getId(), OperationState.SCHEDULED));
-    entities.add(createOperation(workflowInstance.getId(), OperationState.LOCKED, true));
-    entities.add(createOperation(workflowInstance.getId(), OperationState.LOCKED, false));
+    entities.add(createOperation(workflowInstance.getWorkflowInstanceId(), OperationState.SCHEDULED));
+    entities.add(createOperation(workflowInstance.getWorkflowInstanceId(), OperationState.LOCKED, true));
+    entities.add(createOperation(workflowInstance.getWorkflowInstanceId(), OperationState.LOCKED, false));
     return entities;
   }
 
-  private OperationEntity createOperation(String workflowInstanceId, OperationState state, boolean lockExpired) {
+  private OperationEntity createOperation(Long workflowInstanceId, OperationState state, boolean lockExpired) {
     final OperationEntity operation = createOperation(workflowInstanceId, state);
     if (lockExpired) {
       operation.setLockExpirationTime(OffsetDateTime.now().minus(1, ChronoUnit.MILLIS));
@@ -138,7 +138,7 @@ public class OperationExecutorIT extends OperateIntegrationTest {
     return operation;
   }
 
-  private OperationEntity createOperation(String workflowInstanceId, OperationState state) {
+  private OperationEntity createOperation(Long workflowInstanceId, OperationState state) {
     OperationEntity operation = new OperationEntity();
     operation.setWorkflowInstanceId(workflowInstanceId);
     operation.generateId();

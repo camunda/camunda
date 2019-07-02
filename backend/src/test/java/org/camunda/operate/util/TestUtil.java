@@ -50,11 +50,7 @@ public abstract class TestUtil {
   }
 
   public static WorkflowInstanceForListViewEntity createWorkflowInstance(WorkflowInstanceState state, Long workflowId) {
-    WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
-    
-    Long id = random.nextLong();
-    workflowInstance.setId(""+id);
-    workflowInstance.setKey(id);
+    WorkflowInstanceForListViewEntity workflowInstance = createWorkflowInstanceEntityWithIds();
 
     workflowInstance.setStartDate(DateUtil.getRandomStartDate());
     if (state.equals(WorkflowInstanceState.COMPLETED) || state.equals(WorkflowInstanceState.CANCELED)) {
@@ -81,8 +77,7 @@ public abstract class TestUtil {
   }
 
   public static WorkflowInstanceForListViewEntity createWorkflowInstance(OffsetDateTime startDate, OffsetDateTime endDate) {
-    WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
-    workflowInstance.setId(UUID.randomUUID().toString());
+    WorkflowInstanceForListViewEntity workflowInstance = createWorkflowInstanceEntityWithIds();
     final int i = random.nextInt(10);
     workflowInstance.setBpmnProcessId("testProcess" + i);
     workflowInstance.setWorkflowName("Test process" + i);
@@ -96,7 +91,7 @@ public abstract class TestUtil {
     return workflowInstance;
   }
 
-  public static ActivityInstanceForListViewEntity createActivityInstanceWithIncident(String workflowInstanceId, ActivityState state, String errorMsg, Long incidentKey) {
+  public static ActivityInstanceForListViewEntity createActivityInstanceWithIncident(Long workflowInstanceId, ActivityState state, String errorMsg, Long incidentKey) {
     ActivityInstanceForListViewEntity activityInstanceForListViewEntity = createActivityInstance(workflowInstanceId, state);
     createIncident(activityInstanceForListViewEntity, errorMsg, incidentKey);
     return activityInstanceForListViewEntity;
@@ -115,14 +110,15 @@ public abstract class TestUtil {
     }
   }
 
-  public static ActivityInstanceForListViewEntity createActivityInstance(String workflowInstanceId, ActivityState state) {
+  public static ActivityInstanceForListViewEntity createActivityInstance(Long workflowInstanceId, ActivityState state) {
     return createActivityInstance(workflowInstanceId, state, "start", null);
   }
 
-  public static ActivityInstanceForListViewEntity createActivityInstance(String workflowInstanceId, ActivityState state, String activityId, ActivityType activityType) {
+  public static ActivityInstanceForListViewEntity createActivityInstance(Long workflowInstanceId, ActivityState state, String activityId, ActivityType activityType) {
     ActivityInstanceForListViewEntity activityInstanceEntity = new ActivityInstanceForListViewEntity();
     activityInstanceEntity.setWorkflowInstanceId(workflowInstanceId);
-    activityInstanceEntity.setId(UUID.randomUUID().toString());
+    Long activityInstanceId = random.nextLong();
+    activityInstanceEntity.setId(activityInstanceId.toString());
     activityInstanceEntity.setActivityId(activityId);
     activityInstanceEntity.setActivityType(activityType);
     activityInstanceEntity.setActivityState(state);
@@ -130,7 +126,7 @@ public abstract class TestUtil {
     return activityInstanceEntity;
   }
 
-  public static ActivityInstanceForListViewEntity createActivityInstance(String workflowInstanceId, ActivityState state, String activityId) {
+  public static ActivityInstanceForListViewEntity createActivityInstance(Long workflowInstanceId, ActivityState state, String activityId) {
     return createActivityInstance(workflowInstanceId, state, activityId, ActivityType.SERVICE_TASK);
   }
 
@@ -140,8 +136,7 @@ public abstract class TestUtil {
   }
 
   public static WorkflowInstanceForListViewEntity createWorkflowInstanceEntity(WorkflowInstanceState state, Long workflowId) {
-    WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
-    workflowInstance.setId(UUID.randomUUID().toString());
+    WorkflowInstanceForListViewEntity workflowInstance = createWorkflowInstanceEntityWithIds();
     final int i = random.nextInt(10);
     workflowInstance.setBpmnProcessId("testProcess" + i);
     workflowInstance.setWorkflowName("Test process" + i);
@@ -155,10 +150,18 @@ public abstract class TestUtil {
     workflowInstance.setWorkflowId(workflowId);
     return workflowInstance;
   }
+  
+  public static WorkflowInstanceForListViewEntity createWorkflowInstanceEntityWithIds() {
+    WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
+    Long workflowInstanceId = random.nextLong();
+    workflowInstance.setId(workflowInstanceId.toString());
+    workflowInstance.setWorkflowInstanceId(workflowInstanceId);
+    workflowInstance.setKey(workflowInstanceId);
+    return workflowInstance;
+  }
 
   public static WorkflowInstanceForListViewEntity createWorkflowInstanceEntity(OffsetDateTime startDate, OffsetDateTime endDate) {
-    WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
-    workflowInstance.setId(UUID.randomUUID().toString());
+    WorkflowInstanceForListViewEntity workflowInstance = createWorkflowInstanceEntityWithIds();
     final int i = random.nextInt(10);
     workflowInstance.setBpmnProcessId("testProcess" + i);
     workflowInstance.setWorkflowName("Test process" + i);
@@ -173,22 +176,22 @@ public abstract class TestUtil {
   }
 
   public static IncidentEntity createIncident(IncidentState state) {
-    return createIncident(state, "start", UUID.randomUUID().toString(), null);
+    return createIncident(state, "start", random.nextLong(), null);
   }
 
   public static IncidentEntity createIncident(IncidentState state, String errorMsg) {
-    return createIncident(state, "start", UUID.randomUUID().toString(), errorMsg);
+    return createIncident(state, "start", random.nextLong(), errorMsg);
   }
 
-  public static IncidentEntity createIncident(IncidentState state, String activityId, String activityInstanceId) {
+  public static IncidentEntity createIncident(IncidentState state, String activityId, Long activityInstanceId) {
     return createIncident(state, activityId, activityInstanceId, null);
   }
 
-  public static IncidentEntity createIncident(IncidentState state, String activityId, String activityInstanceId, String errorMsg) {
+  public static IncidentEntity createIncident(IncidentState state, String activityId, Long activityInstanceId, String errorMsg) {
     IncidentEntity incidentEntity = new IncidentEntity();
     incidentEntity.setId(UUID.randomUUID().toString());
     incidentEntity.setFlowNodeId(activityId);
-    incidentEntity.setFlowNodeInstanceId(activityInstanceId);
+    incidentEntity.setFlowNodeInstanceKey(activityInstanceId);
     incidentEntity.setErrorType(JOB_NO_RETRIES);
     if (errorMsg == null) {
       incidentEntity.setErrorMessage(ERROR_MSG);
@@ -264,11 +267,11 @@ public abstract class TestUtil {
       });
   }
 
-  public static VariableForListViewEntity createVariable(String workflowInstanceId, String scopeId, String name, String value) {
+  public static VariableForListViewEntity createVariable(Long workflowInstanceId, Long scopeKey, String name, String value) {
     VariableForListViewEntity variable = new VariableForListViewEntity();
-    variable.setId(scopeId + "_" + name);
+    variable.setId(scopeKey + "_" + name);
     variable.setWorkflowInstanceId(workflowInstanceId);
-    variable.setScopeId(scopeId);
+    variable.setScopeKey(scopeKey);
     variable.setVarName(name);
     variable.setVarValue(value);
     variable.getJoinRelation().setParent(workflowInstanceId);

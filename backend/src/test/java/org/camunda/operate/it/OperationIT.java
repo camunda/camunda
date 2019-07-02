@@ -36,7 +36,6 @@ import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationResponseDto;
 import org.camunda.operate.util.IdTestUtil;
-import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
@@ -194,7 +193,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   @Test
   public void testOperationPersisted() throws Exception {
     // given
-    final String workflowInstanceId = IdTestUtil.getId(startDemoWorkflowInstance());
+    final Long workflowInstanceId = startDemoWorkflowInstance();
 
     //when
     final MvcResult mvcResult = postOperationWithOKResponse(workflowInstanceId, new OperationRequestDto(OperationType.CANCEL_WORKFLOW_INSTANCE));
@@ -217,7 +216,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   public void testSeveralOperationsPersistedForSeveralIncidents() throws Exception {
     // given
     final long workflowInstanceKey = startDemoWorkflowInstanceWithIncidents();
-    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
+    final Long workflowInstanceId = workflowInstanceKey;
     elasticsearchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, workflowInstanceKey, 2);
     final List<IncidentEntity> incidents = incidentReader.getAllIncidents(workflowInstanceId);
 
@@ -244,7 +243,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   @Test
   public void testNoOperationsPersistedForNoIncidents() throws Exception {
     // given
-    final String workflowInstanceId = IdTestUtil.getId(startDemoWorkflowInstance());
+    final Long workflowInstanceId = startDemoWorkflowInstance();
 
     //when
     final MvcResult mvcResult = postOperationWithOKResponse(workflowInstanceId, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));
@@ -280,12 +279,12 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   @Test
   public void testResolveIncidentExecutedOnOneInstance() throws Exception {
     // given
-    final long workflowInstanceKey = startDemoWorkflowInstance();
+    final Long workflowInstanceKey = startDemoWorkflowInstance();
     failTaskWithNoRetriesLeft("taskA", workflowInstanceKey, "Some error");
 
     //when
     //we call RESOLVE_INCIDENT operation on instance
-    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
+    final Long workflowInstanceId = workflowInstanceKey;
     postOperationWithOKResponse(workflowInstanceId, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));
 
     //and execute the operation
@@ -318,7 +317,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //after we process messages from Zeebe, the state of the operation is changed to COMPLETED
     //elasticsearchTestRule.processAllEvents(8);
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsResolvedCheck, IdUtil.getKey(workflowInstanceId));
+    elasticsearchTestRule.processAllRecordsAndWait(incidentIsResolvedCheck, workflowInstanceId);
     workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsById(workflowInstanceId);
     assertThat(workflowInstance.isHasActiveOperation()).isEqualTo(false);
     assertThat(workflowInstance.getOperations()).hasSize(1);
@@ -339,13 +338,13 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //when
     //we call UPDATE_VARIABLE operation on instance
-    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
+    final Long workflowInstanceId = workflowInstanceKey;
     final String varName = "a";
     final String newVarValue = "\"newValue\"";
     postUpdateVariableOperation(workflowInstanceId, varName, newVarValue);
 
     //then variable with new value is returned
-    List<VariableDto> variables = variableReader.getVariables(workflowInstanceId, workflowInstanceId);
+    List<VariableDto> variables = variableReader.getVariables(workflowInstanceId, workflowInstanceId.toString());
     assertThat(variables).hasSize(1);
     assertVariable(variables, varName, newVarValue, true);
 
@@ -378,7 +377,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getEndDate()).isNotNull();
 
     //check variables
-    variables = variableReader.getVariables(workflowInstanceId, workflowInstanceId);
+    variables = variableReader.getVariables(workflowInstanceId, workflowInstanceId.toString());
     assertThat(variables).hasSize(1);
     assertVariable(variables, varName, newVarValue, false);
   }
@@ -389,7 +388,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final long workflowInstanceKey = startDemoWorkflowInstance();
 
     //TC1 we call UPDATE_VARIABLE operation on instance
-    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
+    final Long workflowInstanceId = workflowInstanceKey;
     final String newVar1Name = "newVar1";
     final String newVar1Value = "\"newValue1\"";
     postUpdateVariableOperation(workflowInstanceId, newVar1Name, newVar1Value);
@@ -398,7 +397,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     postUpdateVariableOperation(workflowInstanceId, newVar2Name, newVar2Value);
 
     //then new variables are returned
-    List<VariableDto> variables = variableReader.getVariables(workflowInstanceId, workflowInstanceId);
+    List<VariableDto> variables = variableReader.getVariables(workflowInstanceId, workflowInstanceId.toString());
     assertThat(variables).hasSize(3);
     assertVariable(variables, newVar1Name, newVar1Value, true);
     assertVariable(variables, newVar2Name, newVar2Value, true);
@@ -408,7 +407,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //then - before we process messages from Zeebe, the state of the operation must be SENT - variables has still hasActiveOperation = true
     //then new variables are returned
-    variables = variableReader.getVariables(workflowInstanceId, workflowInstanceId);
+    variables = variableReader.getVariables(workflowInstanceId, workflowInstanceId.toString());
     assertThat(variables).hasSize(3);
     assertVariable(variables, newVar1Name, newVar1Value, true);
     assertVariable(variables, newVar2Name, newVar2Value, true);
@@ -417,7 +416,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
     elasticsearchTestRule.processAllRecordsAndWait(operationsByWorkflowInstanceAreCompleted, workflowInstanceId);
     
-    variables = variableReader.getVariables(workflowInstanceId, workflowInstanceId);
+    variables = variableReader.getVariables(workflowInstanceId, workflowInstanceId.toString());
     assertThat(variables).hasSize(3);
     assertVariable(variables, newVar1Name, newVar1Value, false);
     assertVariable(variables, newVar2Name, newVar2Value, false);
@@ -427,7 +426,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   public void testAddVariableOnTask() throws Exception {
     // given
     final long workflowInstanceKey = startDemoWorkflowInstance();
-    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
+    final Long workflowInstanceId = workflowInstanceKey;
     final String taskAId = getActivityInstanceId(workflowInstanceId, "taskA");
 
     //TC1 we call UPDATE_VARIABLE operation on instance
@@ -465,15 +464,15 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertVariable(variables, newVar2Name, newVar2Value, false);
   }
 
-  protected void postUpdateVariableOperation(String workflowInstanceId, String newVarName, String newVarValue) throws Exception {
+  protected void postUpdateVariableOperation(Long workflowInstanceId, String newVarName, String newVarValue) throws Exception {
     final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
     op.setName(newVarName);
     op.setValue(newVarValue);
-    op.setScopeId(workflowInstanceId);
+    op.setScopeId(workflowInstanceId.toString());
     postOperationWithOKResponse(workflowInstanceId, op);
   }
 
-  protected void postUpdateVariableOperation(String workflowInstanceId, String scopeId, String newVarName, String newVarValue) throws Exception {
+  protected void postUpdateVariableOperation(Long workflowInstanceId, String scopeId, String newVarName, String newVarValue) throws Exception {
     final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
     op.setName(newVarName);
     op.setValue(newVarValue);
@@ -498,7 +497,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //when
     //we call UPDATE_VARIABLE operation on task level
-    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
+    final Long workflowInstanceId = workflowInstanceKey;
     final String taskAId = getActivityInstanceId(workflowInstanceId, "taskA");
     final String varName = "foo";
     final String varValue = "\"newFooValue\"";
@@ -539,7 +538,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(variables.get(0).getValue()).isEqualTo(varValue);
   }
 
-  protected String getActivityInstanceId(String workflowInstanceId, String activityId) {
+  protected String getActivityInstanceId(Long workflowInstanceId, String activityId) {
     final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceId);
     final Optional<ActivityInstanceEntity> first = allActivityInstances.stream().filter(ai -> ai.getActivityId().equals(activityId)).findFirst();
     assertThat(first.isPresent()).isTrue();
@@ -608,7 +607,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     failTaskWithNoRetriesLeft("taskA", workflowInstanceKey, "Some error");
 
     //when we call RESOLVE_INCIDENT operation two times on one instance
-    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
+    final Long workflowInstanceId = workflowInstanceKey;
     postOperationWithOKResponse(workflowInstanceId, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));  //#1
     postOperationWithOKResponse(workflowInstanceId, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));  //#2
 
@@ -637,16 +636,16 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   @Test
   public void testTwoDifferentOperationsOnOneInstance() throws Exception {
     // given
-    final long workflowInstanceKey = startDemoWorkflowInstance();
+    final Long workflowInstanceKey = startDemoWorkflowInstance();
     failTaskWithNoRetriesLeft("taskA", workflowInstanceKey, "Some error");
 
     //when we call CANCEL_WORKFLOW_INSTANCE and then RESOLVE_INCIDENT operation on one instance
     final ListViewQueryDto workflowInstanceQuery = createAllQuery();
-    workflowInstanceQuery.setIds(Collections.singletonList(IdTestUtil.getId(workflowInstanceKey)));
-    postOperationWithOKResponse(IdTestUtil.getId(workflowInstanceKey), new OperationRequestDto(OperationType.CANCEL_WORKFLOW_INSTANCE));  //#1
+    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
+    postOperationWithOKResponse(workflowInstanceKey, new OperationRequestDto(OperationType.CANCEL_WORKFLOW_INSTANCE));  //#1
     executeOneBatch();
 
-    postOperationWithOKResponse(IdTestUtil.getId(workflowInstanceKey), new OperationRequestDto(OperationType.RESOLVE_INCIDENT));  //#2
+    postOperationWithOKResponse(workflowInstanceKey, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));  //#2
     executeOneBatch();
 
     //then
@@ -672,11 +671,11 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final long workflowInstanceKey = startDemoWorkflowInstance();
     failTaskWithNoRetriesLeft("taskA", workflowInstanceKey, "some error");
     //we call RESOLVE_INCIDENT operation on instance
-    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
+    final Long workflowInstanceId = workflowInstanceKey;
     postOperationWithOKResponse(workflowInstanceId, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));
     //resolve the incident before the operation is executed
     final IncidentEntity incident = incidentReader.getAllIncidents(workflowInstanceId).get(0);
-    ZeebeTestUtil.resolveIncident(zeebeClient, incident.getJobId(), incident.getKey());
+    ZeebeTestUtil.resolveIncident(zeebeClient, incident.getJobKey(), incident.getKey());
 
     //when
     //and execute the operation
@@ -811,11 +810,11 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     return mvcResult;
   }
 
-  private MvcResult postOperationWithOKResponse(String workflowInstanceId, OperationRequestDto operationRequest) throws Exception {
+  private MvcResult postOperationWithOKResponse(Long workflowInstanceId, OperationRequestDto operationRequest) throws Exception {
     return postOperation(workflowInstanceId, operationRequest, HttpStatus.SC_OK);
   }
 
-  private MvcResult postOperation(String workflowInstanceId, OperationRequestDto operationRequest, int expectedStatus) throws Exception {
+  private MvcResult postOperation(Long workflowInstanceId, OperationRequestDto operationRequest, int expectedStatus) throws Exception {
     MockHttpServletRequestBuilder postOperationRequest =
       post(String.format(POST_OPERATION_URL, workflowInstanceId))
         .content(mockMvcTestRule.json(operationRequest))

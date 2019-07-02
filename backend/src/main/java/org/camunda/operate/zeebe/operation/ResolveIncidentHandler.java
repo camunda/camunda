@@ -14,7 +14,6 @@ import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.rest.exception.NotFoundException;
-import org.camunda.operate.util.IdUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,7 +52,7 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
 
     try {
       if (incident.getErrorType().equals(JOB_NO_RETRIES)) {
-        zeebeClient.newUpdateRetriesCommand(IdUtil.getKey(incident.getJobId())).retries(1).send().join();
+        zeebeClient.newUpdateRetriesCommand(incident.getJobKey()).retries(1).send().join();
       }
       zeebeClient.newResolveIncidentCommand(incident.getKey()).send().join();
       // mark operation as sent

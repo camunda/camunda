@@ -214,94 +214,94 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     List<OperateEntity> entities = new ArrayList<>();
 
     WorkflowInstanceForListViewEntity inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.ACTIVE, "taskA", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.ACTIVE, "taskA", null));    //duplicated on purpose, to be sure, that we count workflow instances, but not activity instances
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "start", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.ACTIVE, "taskA", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.ACTIVE, "taskA", null));    //duplicated on purpose, to be sure, that we count workflow instances, but not activity instances
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.ACTIVE, "taskA", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "start", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.ACTIVE, "taskA", null));
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.CANCELED, workflowId);
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskA", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskB", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.TERMINATED, "taskC", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "start", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskA", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskB", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.TERMINATED, "taskC", null));
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.CANCELED, workflowId);
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskA", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskB", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.TERMINATED, "taskC", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "start", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskA", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskB", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.TERMINATED, "taskC", null));
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskA", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskB", null));
-    ActivityInstanceForListViewEntity task = createActivityInstanceWithIncident(inst.getId(), ActivityState.ACTIVE, "error", null);
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "start", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskA", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskB", null));
+    ActivityInstanceForListViewEntity task = createActivityInstanceWithIncident(inst.getWorkflowInstanceId(), ActivityState.ACTIVE, "error", null);
     task.setActivityId("taskC");
     entities.add(task);
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskA", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskB", null));
-    task = createActivityInstanceWithIncident(inst.getId(), ActivityState.ACTIVE, "error", null);
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "start", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskA", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskB", null));
+    task = createActivityInstanceWithIncident(inst.getWorkflowInstanceId(), ActivityState.ACTIVE, "error", null);
     task.setActivityId("taskC");
     entities.add(task);
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.CANCELED, workflowId);
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskA", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskB", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskC", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.TERMINATED, "taskD", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "start", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskA", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskB", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskC", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.TERMINATED, "taskD", null));
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskA", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskB", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskC", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskD", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.ACTIVE, "taskE", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "start", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskA", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskB", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskC", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskD", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.ACTIVE, "taskE", null));
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskA", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskB", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskC", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskD", null));
-    task = createActivityInstanceWithIncident(inst.getId(), ActivityState.ACTIVE, "error", null);
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "start", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskA", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskB", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskC", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskD", null));
+    task = createActivityInstanceWithIncident(inst.getWorkflowInstanceId(), ActivityState.ACTIVE, "error", null);
     task.setActivityId("taskE");
     entities.add(task);
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowId);
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskA", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskB", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskC", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskD", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskE", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "end", ActivityType.END_EVENT));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "start", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskA", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskB", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskC", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskD", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskE", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "end", ActivityType.END_EVENT));
     entities.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowId);
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskA", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskB", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskC", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskD", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskE", null));
-    entities.add(createActivityInstance(inst.getId(), ActivityState.COMPLETED, "end", ActivityType.END_EVENT));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "start", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskA", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskB", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskC", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskD", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "taskE", null));
+    entities.add(createActivityInstance(inst.getWorkflowInstanceId(), ActivityState.COMPLETED, "end", ActivityType.END_EVENT));
     entities.add(inst);
 
     elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));

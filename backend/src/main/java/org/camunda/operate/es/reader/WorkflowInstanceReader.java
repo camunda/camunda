@@ -23,6 +23,7 @@ import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.rest.dto.WorkflowInstanceCoreStatisticsDto;
 import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.rest.exception.NotFoundException;
+import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -59,7 +60,7 @@ public class WorkflowInstanceReader extends AbstractReader {
    * @param workflowId
    * @return
    */
-  public List<String> queryWorkflowInstancesWithEmptyWorkflowVersion(String workflowId) {
+  public List<Long> queryWorkflowInstancesWithEmptyWorkflowVersion(String workflowId) {
       QueryBuilder queryBuilder = constantScoreQuery(
           joinWithAnd(
               termQuery(ListViewTemplate.WORKFLOW_ID, workflowId),
@@ -71,7 +72,7 @@ public class WorkflowInstanceReader extends AbstractReader {
                                       .query(queryBuilder)
                                       .fetchSource(ListViewTemplate.WORKFLOW_ID, null));
       try {
-        return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
+        return CollectionUtil.toSafeListOfLongs(ElasticsearchUtil.scrollIdsToList(searchRequest, esClient));
       } catch (IOException e) {
         final String message = String.format("Exception occurred, while obtaining workflow instance that has empty versions: %s", e.getMessage());
         logger.error(message, e);
@@ -84,8 +85,9 @@ public class WorkflowInstanceReader extends AbstractReader {
    * @param workflowInstanceId
    * @return
    */
-  public ListViewWorkflowInstanceDto getWorkflowInstanceWithOperationsById(String workflowInstanceId) {
-    final IdsQueryBuilder q = idsQuery().addIds(workflowInstanceId);
+  public ListViewWorkflowInstanceDto getWorkflowInstanceWithOperationsById(Long workflowInstanceId) {
+    String workflowInstanceIdStr = String.valueOf(workflowInstanceId);
+    final IdsQueryBuilder q = idsQuery().addIds(workflowInstanceIdStr);
 
     final SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias())
       .source(new SearchSourceBuilder()
@@ -99,13 +101,13 @@ public class WorkflowInstanceReader extends AbstractReader {
           .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, WorkflowInstanceForListViewEntity.class);
 
         return ListViewWorkflowInstanceDto.createFrom(workflowInstance,
-          activityInstanceWithIncidentExists(workflowInstanceId),
-          operationReader.getOperations(workflowInstance.getId()));
+          activityInstanceWithIncidentExists(workflowInstanceIdStr),
+          operationReader.getOperations(workflowInstance.getWorkflowInstanceId()));
 
       } else if (response.getHits().totalHits > 1) {
-        throw new NotFoundException(String.format("Could not find unique workflow instance with id '%s'.", workflowInstanceId));
+        throw new NotFoundException(String.format("Could not find unique workflow instance with id '%s'.", workflowInstanceIdStr));
       } else {
-        throw new NotFoundException(String.format("Could not find workflow instance with id '%s'.", workflowInstanceId));
+        throw new NotFoundException(String.format("Could not find workflow instance with id '%s'.", workflowInstanceIdStr));
       }
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining workflow instance: %s", e.getMessage());
@@ -119,8 +121,9 @@ public class WorkflowInstanceReader extends AbstractReader {
    * @param workflowInstanceId
    * @return
    */
-  public WorkflowInstanceForListViewEntity getWorkflowInstanceById(String workflowInstanceId) {
-    final IdsQueryBuilder q = idsQuery().addIds(workflowInstanceId);
+  public WorkflowInstanceForListViewEntity getWorkflowInstanceById(Long workflowInstanceId) {
+    String workflowInstanceIdStr = String.valueOf(workflowInstanceId);
+    final IdsQueryBuilder q = idsQuery().addIds(workflowInstanceIdStr);
 
     final SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias())
       .source(new SearchSourceBuilder()
@@ -131,7 +134,7 @@ public class WorkflowInstanceReader extends AbstractReader {
         final WorkflowInstanceForListViewEntity workflowInstance = ElasticsearchUtil
           .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, WorkflowInstanceForListViewEntity.class);
 
-        if (activityInstanceWithIncidentExists(workflowInstanceId)) {
+        if (activityInstanceWithIncidentExists(workflowInstanceIdStr)) {
           workflowInstance.setState(WorkflowInstanceState.INCIDENT);
         }
 

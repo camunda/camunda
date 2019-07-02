@@ -11,7 +11,7 @@ import org.camunda.operate.entities.EventType;
 
 public abstract class MockUtil {
 
-  public static EventEntity createEventEntity(Long workflowId, String workflowInstanceId, EventSourceType eventSourceType, EventType eventType) {
+  public static EventEntity createEventEntity(Long workflowId, Long workflowInstanceId, EventSourceType eventSourceType, EventType eventType) {
     EventEntity eventEntity = new EventEntity();
     eventEntity.setId(TestUtil.createRandomString(10));
     eventEntity.setWorkflowId(workflowId);

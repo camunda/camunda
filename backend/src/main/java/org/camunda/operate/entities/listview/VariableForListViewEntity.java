@@ -8,29 +8,36 @@ package org.camunda.operate.entities.listview;
 import org.camunda.operate.entities.OperateZeebeEntity;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 
+import io.zeebe.protocol.record.value.VariableRecordValue;
+
+
 public class VariableForListViewEntity extends OperateZeebeEntity {
 
-  private String workflowInstanceId;
-  private String scopeId;
+  private Long workflowInstanceId;
+  private Long scopeKey;
   private String varName;
   private String varValue;
 
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.VARIABLES_JOIN_RELATION);
 
-  public String getWorkflowInstanceId() {
+  public Long getWorkflowInstanceId() {
     return workflowInstanceId;
   }
+  
+  public static String getIdBy(VariableRecordValue recordValue) {
+    return String.format("%s-%s", recordValue.getScopeKey(), recordValue.getName());
+  }
 
-  public void setWorkflowInstanceId(String workflowInstanceId) {
+  public void setWorkflowInstanceId(Long workflowInstanceId) {
     this.workflowInstanceId = workflowInstanceId;
   }
 
-  public String getScopeId() {
-    return scopeId;
+  public Long getScopeKey() {
+    return scopeKey;
   }
 
-  public void setScopeId(String scopeId) {
-    this.scopeId = scopeId;
+  public void setScopeKey(Long scopeKey) {
+    this.scopeKey = scopeKey;
   }
 
   public String getVarName() {
@@ -70,7 +77,7 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
 
     if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
       return false;
-    if (scopeId != null ? !scopeId.equals(that.scopeId) : that.scopeId != null)
+    if (scopeKey != null ? !scopeKey.equals(that.scopeKey) : that.scopeKey != null)
       return false;
     if (varName != null ? !varName.equals(that.varName) : that.varName != null)
       return false;
@@ -83,7 +90,7 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
   public int hashCode() {
     int result = super.hashCode();
     result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
-    result = 31 * result + (scopeId != null ? scopeId.hashCode() : 0);
+    result = 31 * result + (scopeKey != null ? scopeKey.hashCode() : 0);
     result = 31 * result + (varName != null ? varName.hashCode() : 0);
     result = 31 * result + (varValue != null ? varValue.hashCode() : 0);
     result = 31 * result + (joinRelation != null ? joinRelation.hashCode() : 0);

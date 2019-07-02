@@ -11,8 +11,7 @@ import org.camunda.operate.entities.OperateZeebeEntity;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 
 public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
-
-  private String workflowInstanceId;
+  
   private Long workflowId;
   private String workflowName;
   private Integer workflowVersion;
@@ -25,12 +24,12 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
 
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION);
 
-  public String getWorkflowInstanceId() {
-    return workflowInstanceId;
+  public Long getWorkflowInstanceId() {
+    return Long.valueOf(getKey());
   }
 
-  public void setWorkflowInstanceId(String workflowInstanceId) {
-    this.workflowInstanceId = workflowInstanceId;
+  public void setWorkflowInstanceId(Long workflowInstanceId) {
+    this.setKey(workflowInstanceId);
   }
 
   public Long getWorkflowId() {
@@ -108,7 +107,8 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
 
     WorkflowInstanceForListViewEntity that = (WorkflowInstanceForListViewEntity) o;
 
-    if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
+    Long workflowInstanceId = getWorkflowInstanceId();
+    if (workflowInstanceId != null ? !workflowInstanceId.equals(that.getWorkflowInstanceId()) : that.getWorkflowInstanceId() != null)
       return false;
     if (workflowId != null ? !workflowId.equals(that.workflowId) : that.workflowId != null)
       return false;
@@ -130,7 +130,7 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
+    result = 31 * result + (getWorkflowInstanceId() != null ? getWorkflowInstanceId().hashCode() : 0);
     result = 31 * result + (workflowId != null ? workflowId.hashCode() : 0);
     result = 31 * result + (workflowName != null ? workflowName.hashCode() : 0);
     result = 31 * result + (workflowVersion != null ? workflowVersion.hashCode() : 0);

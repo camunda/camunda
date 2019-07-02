@@ -20,7 +20,6 @@ import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.zeebeimport.record.Intent;
 import org.camunda.operate.zeebeimport.record.RecordImpl;
 import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
@@ -90,11 +89,11 @@ public class ActivityInstanceZeebeRecordProcessor {
     if (entity == null) {
       entity = new ActivityInstanceEntity();
     }
-    entity.setId(IdUtil.getId(record.getKey(), record));
+    entity.setId(record.getKey());
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
-    entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
-    entity.setScopeId(IdUtil.getId(recordValue.getFlowScopeKey(), record));
+    entity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
+    entity.setScopeKey(recordValue.getFlowScopeKey());
 
     if (AI_FINISH_STATES.contains(intentStr)) {
       if (intentStr.equals(ELEMENT_TERMINATED.name())) {
@@ -119,11 +118,11 @@ public class ActivityInstanceZeebeRecordProcessor {
 
   private UpdateRequest persistActivityInstanceFromIncident(Record record, String intentStr, IncidentRecordValueImpl recordValue) throws PersistenceException {
     ActivityInstanceEntity entity = new ActivityInstanceEntity();
-    entity.setId(IdUtil.getId(recordValue.getElementInstanceKey(), record));
+    entity.setId(recordValue.getElementInstanceKey());
     entity.setKey(recordValue.getElementInstanceKey());
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
-    entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
+    entity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
       entity.setIncidentKey(record.getKey());
     } else if (intentStr.equals(IncidentIntent.CREATED.name())) {
@@ -141,7 +140,7 @@ public class ActivityInstanceZeebeRecordProcessor {
       updateFields.put(ActivityInstanceTemplate.PARTITION_ID, entity.getPartitionId());
       updateFields.put(ActivityInstanceTemplate.TYPE, entity.getType());
       updateFields.put(ActivityInstanceTemplate.STATE, entity.getState());
-      updateFields.put(ActivityInstanceTemplate.SCOPE_ID, entity.getScopeId());
+      updateFields.put(ActivityInstanceTemplate.SCOPE_KEY, entity.getScopeKey());
       if (entity.getStartDate() != null) {
         updateFields.put(ActivityInstanceTemplate.START_DATE, entity.getStartDate());
       }

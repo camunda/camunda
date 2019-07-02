@@ -37,7 +37,7 @@ public class SequenceFlowTemplate extends AbstractTemplateCreator implements Wor
         .field("type", "long")
       .endObject()
       .startObject(WORKFLOW_INSTANCE_ID)
-        .field("type", "keyword")
+        .field("type", "long")
       .endObject()
       .startObject(ACTIVITY_ID)
         .field("type", "keyword")

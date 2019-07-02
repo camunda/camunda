@@ -85,8 +85,8 @@ public class OperationReader extends AbstractReader {
     }
   }
 
-  public Map<String, List<OperationEntity>> getOperationsPerWorkflowInstanceId(List<String> workflowInstanceIds) {
-    Map<String, List<OperationEntity>> result = new HashMap<>();
+  public Map<Long, List<OperationEntity>> getOperationsPerWorkflowInstanceId(List<Long> workflowInstanceIds) {
+    Map<Long, List<OperationEntity>> result = new HashMap<>();
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(termsQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceIds));
 
@@ -113,7 +113,7 @@ public class OperationReader extends AbstractReader {
     }
   }
 
-  public Map<String, List<OperationEntity>> getOperationsPerIncidentId(String workflowInstanceId) {
+  public Map<String, List<OperationEntity>> getOperationsPerIncidentId(Long workflowInstanceId) {
     Map<String, List<OperationEntity>> result = new HashMap<>();
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId));
@@ -140,11 +140,11 @@ public class OperationReader extends AbstractReader {
 
   }
 
-  public Map<String, List<OperationEntity>> getOperationsPerVariableName(String workflowInstanceId, String scopeId) {
+  public Map<String, List<OperationEntity>> getOperationsPerVariableName(Long workflowInstanceId, String scopeId) {
     Map<String, List<OperationEntity>> result = new HashMap<>();
 
     final TermQueryBuilder workflowInstanceIdQ = termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
-    final TermQueryBuilder scopeIdQ = termQuery(OperationTemplate.SCOPE_ID, scopeId);
+    final TermQueryBuilder scopeIdQ = termQuery(OperationTemplate.SCOPE_KEY, scopeId);
     final TermQueryBuilder operationTypeQ = termQuery(OperationTemplate.TYPE, OperationType.UPDATE_VARIABLE.name());
     final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceIdQ, scopeIdQ, operationTypeQ));
 
@@ -169,7 +169,7 @@ public class OperationReader extends AbstractReader {
 
   }
 
-  public List<OperationEntity> getOperations(String workflowInstanceId) {
+  public List<OperationEntity> getOperations(Long workflowInstanceId) {
 
     final ConstantScoreQueryBuilder query;
     if (workflowInstanceId == null) {

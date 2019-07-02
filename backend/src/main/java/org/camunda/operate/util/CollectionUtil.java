@@ -10,8 +10,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.camunda.operate.exceptions.OperateRuntimeException;
@@ -30,9 +32,9 @@ public abstract class CollectionUtil {
   }
   
   @SuppressWarnings("unchecked")
-  public static <T> List<T> withoutNulls(List<T> list){
-    if(list!=null) {
-      return list.stream().filter( obj -> obj != null).collect(Collectors.toList());
+  public static <T> List<T> withoutNulls(Collection<T> aCollection){
+    if(aCollection!=null) {
+      return aCollection.stream().filter( obj -> obj != null).collect(Collectors.toList());
     }
     return Collections.EMPTY_LIST;
   }
@@ -53,20 +55,28 @@ public abstract class CollectionUtil {
     return result;
   }
   
-  public static List<String> toSafeListOfStrings(List<?> list){
-      return withoutNulls(list).stream().map(obj -> obj.toString()).collect(Collectors.toList());
+  public static List<String> toSafeListOfStrings(Collection<?> aCollection){
+      return withoutNulls(aCollection).stream().map(obj -> obj.toString()).collect(Collectors.toList());
+  }
+  
+  public static String[] toSafeArrayOfStrings(Collection<?> aCollection){
+    return withoutNulls(aCollection).stream().map(obj -> obj.toString()).collect(Collectors.toList()).toArray(new String[]{});
   }
    
   public static List<String> toSafeListOfStrings(Object... objects){
     return toSafeListOfStrings(Arrays.asList(objects));
   }
   
-  public static List<Long> toSafeListOfLongs(List<String> list){
-    return withoutNulls(list).stream().map(obj -> Long.valueOf(obj)).collect(Collectors.toList());
+  public static List<Long> toSafeListOfLongs(Collection<String> aCollection){
+    return withoutNulls(aCollection).stream().map(obj -> Long.valueOf(obj)).collect(Collectors.toList());
   }
   
   public static List<Long> toSafeListOfLongs(String... strings){
     return toSafeListOfLongs(Arrays.asList(strings));
+  }
+  
+  public static Set<Long> toSafeSetOfLongs(Collection<String> ids) {
+    return new HashSet<>(toSafeListOfLongs(ids));
   }
 
   public static <T> void addNotNull(Collection<T> collection, T object) {

@@ -18,6 +18,10 @@ public abstract class OperateEntity {
     this.id = id;
   }
 
+  public void setId(Long idAsLong) {
+    setId(idAsLong.toString());
+  }
+  
   @Override
   public boolean equals(Object o) {
     if (this == o)

@@ -94,7 +94,7 @@ public class WorkflowInstanceRestService {
   public OperationResponseDto operation(@PathVariable String id,
       @RequestBody OperationRequestDto operationRequest) throws PersistenceException {
     validateOperationRequest(operationRequest);
-    return batchOperationWriter.scheduleOperation(id, operationRequest);
+    return batchOperationWriter.scheduleOperation(Long.valueOf(id), operationRequest);
   }
 
   private void validateOperationRequest(OperationRequestDto operationRequest) {
@@ -118,13 +118,13 @@ public class WorkflowInstanceRestService {
   @ApiOperation("Get workflow instance by id")
   @GetMapping("/{id}")
   public ListViewWorkflowInstanceDto queryWorkflowInstanceById(@PathVariable String id) {
-    return workflowInstanceReader.getWorkflowInstanceWithOperationsById(id);
+    return workflowInstanceReader.getWorkflowInstanceWithOperationsById(Long.valueOf(id));
   }
 
   @ApiOperation("Get incidents by workflow instance id")
   @GetMapping("/{id}/incidents")
   public IncidentResponseDto queryIncidentsByWorkflowInstanceId(@PathVariable String id) {
-    return incidentReader.getIncidents(id);
+    return incidentReader.getIncidents(Long.valueOf(id));
   }
 
   @ApiOperation("Get sequence flows by workflow instance id")
@@ -137,7 +137,7 @@ public class WorkflowInstanceRestService {
   @ApiOperation("Get variables by workflow instance id and scope id")
   @GetMapping("/{workflowInstanceId}/variables")
   public List<VariableDto> getVariables(@PathVariable String workflowInstanceId, @RequestParam String scopeId) {
-    return variableReader.getVariables(workflowInstanceId, scopeId);
+    return variableReader.getVariables(Long.valueOf(workflowInstanceId), scopeId);
   }
 
   @ApiOperation("Get activity instance statistics")

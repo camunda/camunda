@@ -9,7 +9,6 @@ import io.zeebe.client.api.command.ClientException;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.exceptions.PersistenceException;
-import org.camunda.operate.util.IdUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +30,7 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
   public void handleWithException(OperationEntity operation) throws PersistenceException {
     try {
       String updateVariableJson = mergeVariableJson(operation.getVariableName(), operation.getVariableValue());
-      zeebeClient.newSetVariablesCommand(IdUtil.getKey(operation.getScopeId()))
+      zeebeClient.newSetVariablesCommand(operation.getScopeKey())
         .variables(updateVariableJson)
         .local(true)
         .send().join();

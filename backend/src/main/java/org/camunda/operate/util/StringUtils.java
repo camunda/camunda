@@ -8,7 +8,7 @@ package org.camunda.operate.util;
 public class StringUtils {
 
   public static String toStringOrNull(Object object) {
-    return object == null ? null : object.toString();
+    return toStringOrDefault(object, null);
   }
   
   public static String toStringOrDefault(Object object,String defaultString) {

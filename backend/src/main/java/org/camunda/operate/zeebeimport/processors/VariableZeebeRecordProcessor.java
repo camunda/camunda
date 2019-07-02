@@ -11,11 +11,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.VariableEntity;
+import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.es.schema.templates.VariableTemplate;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.zeebeimport.record.value.VariableRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -60,11 +60,11 @@ public class VariableZeebeRecordProcessor {
 
   private UpdateRequest persistVariable(Record record, VariableRecordValueImpl recordValue) throws PersistenceException {
     VariableEntity entity = new VariableEntity();
-    entity.setId(IdUtil.getVariableId(recordValue.getScopeKey(), recordValue.getName()));
+    entity.setId(VariableForListViewEntity.getIdBy(recordValue));
     entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
-    entity.setScopeId(IdUtil.getId(recordValue.getScopeKey(), record));
-    entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
+    entity.setScopeKey(recordValue.getScopeKey());
+    entity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
     entity.setName(recordValue.getName());
     entity.setValue(recordValue.getValue());
     return getVariableQuery(entity);
@@ -74,7 +74,7 @@ public class VariableZeebeRecordProcessor {
     try {
 
       //complete operation
-      batchOperationWriter.completeUpdateVariableOperation(entity.getWorkflowInstanceId(), entity.getScopeId(), entity.getName());
+      batchOperationWriter.completeUpdateVariableOperation(entity.getWorkflowInstanceId(), entity.getScopeKey(), entity.getName());
 
       logger.debug("Variable instance for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();

@@ -60,7 +60,7 @@ public class IncidentReader extends AbstractReader {
   @Autowired
   private OperateProperties operateProperties;
 
-  public List<IncidentEntity> getAllIncidents(String workflowInstanceId) {
+  public List<IncidentEntity> getAllIncidents(Long workflowInstanceId) {
     final TermQueryBuilder workflowInstanceIdQ = termQuery(IncidentTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(workflowInstanceIdQ);
@@ -82,7 +82,7 @@ public class IncidentReader extends AbstractReader {
    * @param workflowInstanceIds
    * @return
    */
-  public Map<String, List<String>> getIncidentIdsPerWorkflowInstance(List<String> workflowInstanceIds) {
+  public Map<Long, List<String>> getIncidentIdsPerWorkflowInstance(List<Long> workflowInstanceIds) {
     final QueryBuilder workflowInstanceIdsQ = constantScoreQuery(termsQuery(IncidentTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceIds));
     final int batchSize = operateProperties.getElasticsearch().getBatchSize();
 
@@ -92,11 +92,11 @@ public class IncidentReader extends AbstractReader {
             .fetchSource(IncidentTemplate.WORKFLOW_INSTANCE_ID, null)
             .size(batchSize));
 
-    Map<String, List<String>> result = new HashMap<>();
+    Map<Long, List<String>> result = new HashMap<>();
     try {
       ElasticsearchUtil.scrollWith(searchRequest, esClient, searchHits -> {
         for (SearchHit hit : searchHits.getHits()) {
-          CollectionUtil.addToMap(result, hit.getSourceAsMap().get(IncidentTemplate.WORKFLOW_INSTANCE_ID).toString(), hit.getId());
+          CollectionUtil.addToMap(result, Long.valueOf(hit.getSourceAsMap().get(IncidentTemplate.WORKFLOW_INSTANCE_ID).toString()), hit.getId());
         }
       }, null, null);
       return result;
@@ -130,7 +130,7 @@ public class IncidentReader extends AbstractReader {
 
   }
 
-  public IncidentResponseDto getIncidents(String workflowInstanceId) {
+  public IncidentResponseDto getIncidents(Long workflowInstanceId) {
     final TermQueryBuilder workflowInstanceQ = termQuery(IncidentTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
 
     final String errorTypesAggName = "errorTypesAgg";

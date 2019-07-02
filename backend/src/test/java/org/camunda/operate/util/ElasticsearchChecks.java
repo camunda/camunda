@@ -82,7 +82,7 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
+      Long workflowInstanceId = (Long)objects[0];
       String activityId = (String)objects[1];
       try {
         List<ActivityInstanceEntity> activityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceId);
@@ -110,7 +110,7 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(Long.class);
       assertThat(objects[2]).isInstanceOf(String.class);
-      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
+      Long workflowInstanceId = (Long)objects[0];
       String scopeId = IdTestUtil.getId((Long)objects[1]);
       String varName = (String)objects[2];
       try {
@@ -134,7 +134,7 @@ public class ElasticsearchChecks {
       assertThat(objects[1]).isInstanceOf(Long.class);
       assertThat(objects[2]).isInstanceOf(String.class);
       assertThat(objects[3]).isInstanceOf(String.class);
-      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
+      Long workflowInstanceId = (Long)objects[0];
       String scopeId = IdTestUtil.getId((Long)objects[1]);
       String varName = (String)objects[2];
       String varValue = (String)objects[3];
@@ -157,7 +157,7 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
+      Long workflowInstanceId = (Long)objects[0];
       String activityId = (String)objects[1];
       try {
         List<ActivityInstanceEntity> activityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceId);
@@ -184,7 +184,7 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
+      Long workflowInstanceId = (Long)objects[0];
       String activityId = (String)objects[1];
       try {
         List<ActivityInstanceEntity> activityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceId);
@@ -210,7 +210,7 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
+      Long workflowInstanceId = (Long)objects[0];
       try {
         final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceId);
         boolean found = allActivityInstances.stream().anyMatch(ai -> ai.getIncidentKey() != null);
@@ -235,7 +235,7 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(Integer.class);
-      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
+      Long workflowInstanceId = (Long)objects[0];
       int incidentsCount = (int)objects[1];
       try {
         final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceId);
@@ -255,7 +255,7 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
+      Long workflowInstanceId = (Long)objects[0];
       try {
         final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceId);
         return allActivityInstances.stream().noneMatch(ai -> ai.getIncidentKey() != null);
@@ -274,7 +274,7 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
+      Long workflowInstanceId = (Long)objects[0];
       try {
         final WorkflowInstanceForListViewEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
         return instance.getState().equals(WorkflowInstanceState.CANCELED);
@@ -293,7 +293,7 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
+      Long workflowInstanceId = (Long)objects[0];
       try {
         workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
         return true;
@@ -312,7 +312,7 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
+      Long workflowInstanceId = (Long)objects[0];
       try {
         final WorkflowInstanceForListViewEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
         return instance.getState().equals(WorkflowInstanceState.COMPLETED);
@@ -370,8 +370,8 @@ public class ElasticsearchChecks {
   public Predicate<Object[]> getOperationsByWorkflowInstanceAreCompleted() {
     return objects -> {
       assertThat(objects).hasSize(1);
-      assertThat(objects[0]).isInstanceOf(String.class);
-      String workflowInstanceId = (String)objects[0];
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      Long workflowInstanceId = (Long)objects[0];
       ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsById(workflowInstanceId);
       return workflowInstance.getOperations().stream().allMatch( operation -> {
           return operation.getState().equals(OperationState.COMPLETED);

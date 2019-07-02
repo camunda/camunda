@@ -12,7 +12,7 @@ import org.camunda.operate.es.schema.templates.ListViewTemplate;
 
 public class ActivityInstanceForListViewEntity extends OperateZeebeEntity {
 
-  private String workflowInstanceId;
+  private Long workflowInstanceId;
   private String activityId;
   private ActivityState activityState;
   private ActivityType activityType;
@@ -22,11 +22,11 @@ public class ActivityInstanceForListViewEntity extends OperateZeebeEntity {
 
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.ACTIVITIES_JOIN_RELATION);
 
-  public String getWorkflowInstanceId() {
+  public Long getWorkflowInstanceId() {
     return workflowInstanceId;
   }
 
-  public void setWorkflowInstanceId(String workflowInstanceId) {
+  public void setWorkflowInstanceId(Long workflowInstanceId) {
     this.workflowInstanceId = workflowInstanceId;
   }
 

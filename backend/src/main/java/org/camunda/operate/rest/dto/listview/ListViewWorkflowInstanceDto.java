@@ -146,13 +146,13 @@ public class ListViewWorkflowInstanceDto {
   }
 
   public static List<ListViewWorkflowInstanceDto> createFrom(List<WorkflowInstanceForListViewEntity> workflowInstanceEntities,
-    Set<String> instancesWithIncidents, Map<String, List<OperationEntity>> operationsPerWorfklowInstance) {
+    Set<Long> instancesWithIncidents, Map<Long, List<OperationEntity>> operationsPerWorfklowInstance) {
     List<ListViewWorkflowInstanceDto> result = new ArrayList<>();
     if (workflowInstanceEntities != null) {
       for (WorkflowInstanceForListViewEntity workflowInstanceEntity: workflowInstanceEntities) {
         if (workflowInstanceEntity != null) {
-          final ListViewWorkflowInstanceDto instanceDto = createFrom(workflowInstanceEntity, instancesWithIncidents.contains(workflowInstanceEntity.getId()),
-            operationsPerWorfklowInstance.get(workflowInstanceEntity.getId()));
+          final ListViewWorkflowInstanceDto instanceDto = createFrom(workflowInstanceEntity, instancesWithIncidents.contains(workflowInstanceEntity.getWorkflowInstanceId()),
+            operationsPerWorfklowInstance.get(workflowInstanceEntity.getWorkflowInstanceId()));
           result.add(instanceDto);
         }
       }

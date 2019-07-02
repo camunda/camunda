@@ -25,7 +25,7 @@ public class ActivityInstanceTemplate extends AbstractTemplateCreator implements
   public static final String INCIDENT_KEY = "incidentKey";
   public static final String STATE = "state";
   public static final String TYPE = "type";
-  public static final String SCOPE_ID = "scopeId";
+  public static final String SCOPE_KEY = "scopeKey";
 
   @Autowired
   private OperateProperties operateProperties;
@@ -48,7 +48,7 @@ public class ActivityInstanceTemplate extends AbstractTemplateCreator implements
         .field("type", "long")
       .endObject()
       .startObject(WORKFLOW_INSTANCE_ID)
-        .field("type", "keyword")
+        .field("type", "long")
       .endObject()
       .startObject(KEY)
         .field("type", "long")
@@ -73,8 +73,8 @@ public class ActivityInstanceTemplate extends AbstractTemplateCreator implements
         .field("type", "date")
         .field("format", operateProperties.getElasticsearch().getDateFormat())
       .endObject()
-      .startObject(SCOPE_ID)
-        .field("type", "keyword")
+      .startObject(SCOPE_KEY)
+        .field("type", "long")
       .endObject();
     return newBuilder;
   }

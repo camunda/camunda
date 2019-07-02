@@ -80,8 +80,8 @@ public class VariableDto {
     variable.setId(variableEntity.getId());
     variable.setName(variableEntity.getName());
     variable.setValue(variableEntity.getValue());
-    variable.setScopeId(variableEntity.getScopeId());
-    variable.setWorkflowInstanceId(variableEntity.getWorkflowInstanceId());
+    variable.setScopeId(variableEntity.getScopeKey().toString());
+    variable.setWorkflowInstanceId(variableEntity.getWorkflowInstanceId().toString());
 
     if (operations != null && operations.size() > 0) {
       List <OperationEntity> activeOperations = operations.stream().filter(o ->
@@ -109,9 +109,11 @@ public class VariableDto {
     }
     //find new variables
     final Set<String> operationVarNames = operations.keySet();
-    variableEntities.forEach(ve -> {
-      operationVarNames.remove(ve.getName());
-    });
+    if(variableEntities!=null) {
+      variableEntities.forEach(ve -> {
+        operationVarNames.remove(ve.getName());
+      });
+    }
     operationVarNames.forEach(varName -> {
       CollectionUtil.addNotNull(result, createFrom(operations.get(varName)));
     });
@@ -126,8 +128,8 @@ public class VariableDto {
         VariableDto variable = new VariableDto();
         variable.setName(operation.getVariableName());
         variable.setValue(operation.getVariableValue());
-        variable.setScopeId(operation.getScopeId());
-        variable.setWorkflowInstanceId(operation.getWorkflowInstanceId());
+        variable.setScopeId(operation.getScopeKey().toString());
+        variable.setWorkflowInstanceId(operation.getWorkflowInstanceId().toString());
         variable.setHasActiveOperation(true);
         return variable;
       }

@@ -37,7 +37,7 @@ public class ActivityInstanceReader extends AbstractReader {
 
   public ActivityInstanceTreeDto getActivityInstanceTree(ActivityInstanceTreeRequestDto requestDto) {
 
-    List<ActivityInstanceEntity> activityInstances = getAllActivityInstances(requestDto.getWorkflowInstanceId());
+    List<ActivityInstanceEntity> activityInstances = getAllActivityInstances(Long.valueOf(requestDto.getWorkflowInstanceId()));
 
     final Map<String, ActivityInstanceDto> nodes = ActivityInstanceDto.createMapFrom(activityInstances);
 
@@ -69,7 +69,7 @@ public class ActivityInstanceReader extends AbstractReader {
     }
   }
 
-  public List<ActivityInstanceEntity> getAllActivityInstances(String workflowInstanceId) {
+  public List<ActivityInstanceEntity> getAllActivityInstances(Long workflowInstanceId) {
     final TermQueryBuilder workflowInstanceIdQ = termQuery(ActivityInstanceTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
     final SearchRequest searchRequest = new SearchRequest(activityInstanceTemplate.getAlias())
       .source(new SearchSourceBuilder()

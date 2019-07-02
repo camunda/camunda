@@ -37,7 +37,7 @@ public class ListViewTemplate extends AbstractTemplateCreator {
 
   public static final String VAR_NAME = "varName";
   public static final String VAR_VALUE = "varValue";
-  public static final String SCOPE_ID = "scopeId";
+  public static final String SCOPE_KEY = "scopeKey";
 
   public static final String JOIN_RELATION = "joinRelation";
   public static final String WORKFLOW_INSTANCE_JOIN_RELATION = "workflowInstance";
@@ -59,7 +59,7 @@ public class ListViewTemplate extends AbstractTemplateCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(WORKFLOW_INSTANCE_ID)
-        .field("type", "keyword")
+        .field("type", "long")
       .endObject()
     //TODO: Refactor ES-Schema
       //workflow instance fields
@@ -109,8 +109,8 @@ public class ListViewTemplate extends AbstractTemplateCreator {
         .field("type", "keyword")
       .endObject()
       //variable fields
-      .startObject(SCOPE_ID)
-        .field("type", "keyword")
+      .startObject(SCOPE_KEY)
+        .field("type", "long")
       .endObject()
       .startObject(VAR_NAME)
         .field("type", "keyword")

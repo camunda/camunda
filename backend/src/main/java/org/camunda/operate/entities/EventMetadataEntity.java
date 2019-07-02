@@ -25,7 +25,7 @@ public class EventMetadataEntity {
   */
   private ErrorType incidentErrorType;
   private String incidentErrorMessage;
-  private String jobId;
+  private Long jobKey;
 
   public String getJobType() {
     return jobType;
@@ -83,12 +83,12 @@ public class EventMetadataEntity {
     this.incidentErrorMessage = incidentErrorMessage;
   }
 
-  public String getJobId() {
-    return jobId;
+  public Long getJobKey() {
+    return jobKey;
   }
 
-  public void setJobId(String jobId) {
-    this.jobId = jobId;
+  public void setJobKey(Long jobKey) {
+    this.jobKey = jobKey;
   }
 
   @Override
@@ -114,7 +114,7 @@ public class EventMetadataEntity {
       return false;
     if (incidentErrorMessage != null ? !incidentErrorMessage.equals(that.incidentErrorMessage) : that.incidentErrorMessage != null)
       return false;
-    return jobId != null ? jobId.equals(that.jobId) : that.jobId == null;
+    return jobKey != null ? jobKey.equals(that.jobKey) : that.jobKey == null;
   }
 
   @Override
@@ -126,7 +126,7 @@ public class EventMetadataEntity {
     result = 31 * result + (jobCustomHeaders != null ? jobCustomHeaders.hashCode() : 0);
     result = 31 * result + (incidentErrorType != null ? incidentErrorType.hashCode() : 0);
     result = 31 * result + (incidentErrorMessage != null ? incidentErrorMessage.hashCode() : 0);
-    result = 31 * result + (jobId != null ? jobId.hashCode() : 0);
+    result = 31 * result + (jobKey != null ? jobKey.hashCode() : 0);
     return result;
   }
 }

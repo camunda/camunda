@@ -16,7 +16,7 @@ public class VariableTemplate extends AbstractTemplateCreator implements Workflo
 
   public static final String ID = "id";
   public static final String KEY = "key";
-  public static final String SCOPE_ID = "scopeId";
+  public static final String SCOPE_KEY = "scopeKey";
   public static final String NAME = "name";
   public static final String VALUE = "value";
 
@@ -34,7 +34,7 @@ public class VariableTemplate extends AbstractTemplateCreator implements Workflo
         .field("type", "integer")
       .endObject()
       .startObject(WORKFLOW_INSTANCE_ID)
-        .field("type", "keyword")
+        .field("type", "long")
       .endObject()
       .startObject(KEY)
         .field("type", "long")
@@ -45,8 +45,8 @@ public class VariableTemplate extends AbstractTemplateCreator implements Workflo
       .startObject(VALUE)
         .field("type", "keyword")
       .endObject()
-      .startObject(SCOPE_ID)
-        .field("type", "keyword")
+      .startObject(SCOPE_KEY)
+        .field("type", "long")
       .endObject();
     return newBuilder;
   }

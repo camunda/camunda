@@ -99,7 +99,7 @@ public class EventMetadataDto {
     eventMetadata.setIncidentErrorType(eventMetadataEntity.getIncidentErrorType());
     eventMetadata.setJobCustomHeaders(eventMetadataEntity.getJobCustomHeaders());
     eventMetadata.setJobDeadline(eventMetadataEntity.getJobDeadline());
-    eventMetadata.setJobId(eventMetadataEntity.getJobId());
+    eventMetadata.setJobId(eventMetadataEntity.getJobKey().toString());
     eventMetadata.setJobRetries(eventMetadataEntity.getJobRetries());
     eventMetadata.setJobType(eventMetadataEntity.getJobType());
     eventMetadata.setJobWorker(eventMetadataEntity.getJobWorker());

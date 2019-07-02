@@ -29,7 +29,6 @@ import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.camunda.operate.zeebeimport.record.Intent;
 import org.camunda.operate.zeebeimport.record.RecordImpl;
@@ -96,9 +95,9 @@ public class ListViewZeebeRecordProcessor {
     for (Map.Entry<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
       WorkflowInstanceForListViewEntity wiEntity = null;
       Map<Long, ActivityInstanceForListViewEntity> actEntities = new HashMap<Long, ActivityInstanceForListViewEntity>();
-      String workflowInstanceId = null;
+      Long workflowInstanceId = null;
       for (RecordImpl record: wiRecordsEntry.getValue()) {
-        workflowInstanceId = IdUtil.getId(wiRecordsEntry.getKey(), record);
+        workflowInstanceId = wiRecordsEntry.getKey();
         final String intentStr = record.getIntent().name();
         WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
         if (isProcessEvent(recordValue)) {
@@ -106,7 +105,7 @@ public class ListViewZeebeRecordProcessor {
           if (intentStr.equals(ELEMENT_TERMINATED.name())) {
             //TODO must be idempotent
             //not possible to include UpdateByQueryRequestBuilder in bulk query -> executing at once
-            batchOperationWriter.completeOperation(IdUtil.getId(record.getKey(), record), null, OperationType.CANCEL_WORKFLOW_INSTANCE);
+            batchOperationWriter.completeOperation(record.getKey(), null, OperationType.CANCEL_WORKFLOW_INSTANCE);
             //if we update smth, we need it to have affect at once
             bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
           }
@@ -131,9 +130,10 @@ public class ListViewZeebeRecordProcessor {
     if (wiEntity == null) {
       wiEntity = new WorkflowInstanceForListViewEntity();
     }
-    wiEntity.setId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
-    wiEntity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
+    wiEntity.setId(String.valueOf(recordValue.getWorkflowInstanceKey()));
+    wiEntity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
     wiEntity.setKey(recordValue.getWorkflowInstanceKey());
+    
     wiEntity.setPartitionId(record.getPartitionId());
     wiEntity.setWorkflowId(recordValue.getWorkflowKey());
     wiEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
@@ -162,10 +162,10 @@ public class ListViewZeebeRecordProcessor {
       entities.put(record.getKey(), new ActivityInstanceForListViewEntity());
     }
     ActivityInstanceForListViewEntity entity = entities.get(record.getKey());
-    entity.setId(IdUtil.getId(record.getKey(), record));
+    entity.setId(record.getKey());
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
-    entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
+    entity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
 
     if (AI_FINISH_STATES.contains(intentStr)) {
       if (intentStr.equals(ELEMENT_TERMINATED.name())) {
@@ -180,18 +180,18 @@ public class ListViewZeebeRecordProcessor {
     entity.setActivityType(ActivityType.fromZeebeBpmnElementType(recordValue.getBpmnElementType()));
 
     //set parent
-    String workflowInstanceId = IdUtil.getId(recordValue.getWorkflowInstanceKey(), record);
+    Long workflowInstanceId = recordValue.getWorkflowInstanceKey();
     entity.getJoinRelation().setParent(workflowInstanceId);
 
   }
 
   private UpdateRequest persistActivityInstanceFromIncident(Record record, String intentStr, IncidentRecordValueImpl recordValue) throws PersistenceException {
     ActivityInstanceForListViewEntity entity = new ActivityInstanceForListViewEntity();
-    entity.setId(IdUtil.getId(recordValue.getElementInstanceKey(), record));
+    entity.setId(recordValue.getElementInstanceKey());
     entity.setKey(recordValue.getElementInstanceKey());
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
-    entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
+    entity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
       entity.setErrorMessage(recordValue.getErrorMessage());
       entity.setIncidentKey(record.getKey());
@@ -203,7 +203,7 @@ public class ListViewZeebeRecordProcessor {
     }
 
     //set parent
-    String workflowInstanceId = IdUtil.getId(recordValue.getWorkflowInstanceKey(), record);
+    Long workflowInstanceId = recordValue.getWorkflowInstanceKey();
     entity.getJoinRelation().setParent(workflowInstanceId);
 
     return getActivityInstanceFromIncidentQuery(entity, workflowInstanceId);
@@ -211,22 +211,22 @@ public class ListViewZeebeRecordProcessor {
 
   private UpdateRequest persistVariable(Record record, VariableRecordValueImpl recordValue) throws PersistenceException {
     VariableForListViewEntity entity = new VariableForListViewEntity();
-    entity.setId(IdUtil.getVariableId(recordValue.getScopeKey(), recordValue.getName()));
+    entity.setId(VariableForListViewEntity.getIdBy(recordValue));
     entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
-    entity.setScopeId(IdUtil.getId(recordValue.getScopeKey(), record));
-    entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
+    entity.setScopeKey(recordValue.getScopeKey());
+    entity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
     entity.setVarName(recordValue.getName());
     entity.setVarValue(recordValue.getValue());
 
     //set parent
-    String workflowInstanceId = IdUtil.getId(recordValue.getWorkflowInstanceKey(), record);
+    Long workflowInstanceId = recordValue.getWorkflowInstanceKey();
     entity.getJoinRelation().setParent(workflowInstanceId);
 
     return getVariableQuery(entity, workflowInstanceId);
   }
 
-  private UpdateRequest getActivityInstanceQuery(ActivityInstanceForListViewEntity entity, String workflowInstanceId) throws PersistenceException {
+  private UpdateRequest getActivityInstanceQuery(ActivityInstanceForListViewEntity entity, Long workflowInstanceId) throws PersistenceException {
     try {
       logger.debug("Activity instance for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();
@@ -238,7 +238,7 @@ public class ListViewZeebeRecordProcessor {
       return new UpdateRequest(listViewTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
         .doc(updateFields)
-        .routing(workflowInstanceId);
+        .routing(workflowInstanceId.toString());
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert activity instance for list view", e);
@@ -246,7 +246,7 @@ public class ListViewZeebeRecordProcessor {
     }
   }
 
-  private UpdateRequest getVariableQuery(VariableForListViewEntity entity, String workflowInstanceId) throws PersistenceException {
+  private UpdateRequest getVariableQuery(VariableForListViewEntity entity, Long workflowInstanceId) throws PersistenceException {
     try {
       logger.debug("Variable for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();
@@ -256,7 +256,7 @@ public class ListViewZeebeRecordProcessor {
       return new UpdateRequest(listViewTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
         .doc(updateFields)
-        .routing(workflowInstanceId);
+        .routing(workflowInstanceId.toString());
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert variable for list view", e);
@@ -264,7 +264,7 @@ public class ListViewZeebeRecordProcessor {
     }
   }
 
-  private UpdateRequest getActivityInstanceFromIncidentQuery(ActivityInstanceForListViewEntity entity, String workflowInstanceId) throws PersistenceException {
+  private UpdateRequest getActivityInstanceFromIncidentQuery(ActivityInstanceForListViewEntity entity, Long workflowInstanceId) throws PersistenceException {
     try {
       logger.debug("Activity instance for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();
@@ -275,7 +275,7 @@ public class ListViewZeebeRecordProcessor {
       return new UpdateRequest(listViewTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
         .doc(updateFields)
-        .routing(workflowInstanceId);
+        .routing(workflowInstanceId.toString());
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert activity instance for list view", e);

@@ -20,8 +20,8 @@ public class IncidentTemplate extends AbstractTemplateCreator implements Workflo
   public static final String KEY = "key";
   public static final String WORKFLOW_INSTANCE_ID = "workflowInstanceId";
   public static final String FLOW_NODE_ID = "flowNodeId";
-  public static final String FLOW_NODE_INSTANCE_ID = "flowNodeInstanceId";
-  public static final String JOB_ID = "jobId";
+  public static final String FLOW_NODE_INSTANCE_KEY = "flowNodeInstanceKey";
+  public static final String JOB_KEY = "jobKey";
   public static final String ERROR_TYPE = "errorType";
   public static final String ERROR_MSG = "errorMessage";
   public static final String STATE = "state";
@@ -63,14 +63,14 @@ public class IncidentTemplate extends AbstractTemplateCreator implements Workflo
       .startObject(FLOW_NODE_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(FLOW_NODE_INSTANCE_ID)
-        .field("type", "keyword")
+      .startObject(FLOW_NODE_INSTANCE_KEY)
+        .field("type", "long")
       .endObject()
-      .startObject(JOB_ID)
-        .field("type", "keyword")
+      .startObject(JOB_KEY)
+        .field("type", "long")
       .endObject()
       .startObject(WORKFLOW_INSTANCE_ID)
-        .field("type", "keyword")
+        .field("type", "long")
       .endObject();
     return newBuilder;
   }

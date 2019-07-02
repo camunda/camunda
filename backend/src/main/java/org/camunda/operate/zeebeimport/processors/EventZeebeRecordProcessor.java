@@ -29,7 +29,6 @@ import org.camunda.operate.es.schema.templates.EventTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.zeebeimport.record.RecordImpl;
 import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.JobRecordValueImpl;
@@ -129,7 +128,7 @@ public class EventZeebeRecordProcessor {
     loadEventGeneralData(record, eventEntity);
 
     eventEntity.setWorkflowId(recordValue.getWorkflowKey());
-    eventEntity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
+    eventEntity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
     eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
 
     if (recordValue.getElementId() != null) {
@@ -137,7 +136,7 @@ public class EventZeebeRecordProcessor {
     }
 
     if (record.getKey() != recordValue.getWorkflowInstanceKey()) {
-      eventEntity.setActivityInstanceId(IdUtil.getId(record));
+      eventEntity.setActivityInstanceId(record.getKey());
     }
 
     persistEvent(eventEntity, bulkRequest);
@@ -155,7 +154,7 @@ public class EventZeebeRecordProcessor {
 
     final long workflowInstanceKey = recordValue.getWorkflowInstanceKey();
     if (workflowInstanceKey > 0) {
-      eventEntity.setWorkflowInstanceId(IdUtil.getId(workflowInstanceKey, record));
+      eventEntity.setWorkflowInstanceId(workflowInstanceKey);
     }
 
     eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
@@ -164,7 +163,7 @@ public class EventZeebeRecordProcessor {
 
     final long activityInstanceKey = recordValue.getElementInstanceKey();
     if (activityInstanceKey > 0) {
-      eventEntity.setActivityInstanceId(IdUtil.getId(activityInstanceKey, record));
+      eventEntity.setActivityInstanceId(activityInstanceKey);
     }
 
     EventMetadataEntity eventMetadata = new EventMetadataEntity();
@@ -174,7 +173,7 @@ public class EventZeebeRecordProcessor {
     eventMetadata.setJobCustomHeaders(recordValue.getCustomHeaders());
 
     if (record.getKey() > 0) {
-      eventMetadata.setJobId(String.valueOf(record.getKey()));
+      eventMetadata.setJobKey(record.getKey());
     }
 
     long jobDeadline = recordValue.getDeadline();
@@ -194,19 +193,19 @@ public class EventZeebeRecordProcessor {
     loadEventGeneralData(record, eventEntity);
 
     if (recordValue.getWorkflowInstanceKey() > 0) {
-      eventEntity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
+      eventEntity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
     }
     eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
     eventEntity.setActivityId(recordValue.getElementId());
     if (recordValue.getElementInstanceKey() > 0) {
-      eventEntity.setActivityInstanceId(IdUtil.getId(recordValue.getElementInstanceKey(), record));
+      eventEntity.setActivityInstanceId(recordValue.getElementInstanceKey());
     }
 
     EventMetadataEntity eventMetadata = new EventMetadataEntity();
     eventMetadata.setIncidentErrorMessage(recordValue.getErrorMessage());
     eventMetadata.setIncidentErrorType(recordValue.getErrorType());
     if (recordValue.getJobKey() > 0) {
-      eventMetadata.setJobId(IdUtil.getId(recordValue.getJobKey(), record));
+      eventMetadata.setJobKey(recordValue.getJobKey());
     }
     eventEntity.setMetadata(eventMetadata);
 

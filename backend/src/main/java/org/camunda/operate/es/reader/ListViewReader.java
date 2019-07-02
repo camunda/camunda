@@ -29,6 +29,7 @@ import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.rest.dto.listview.VariablesQueryDto;
 import org.camunda.operate.rest.exception.InvalidRequestException;
+import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -118,11 +119,11 @@ public class ListViewReader {
     ListViewResponseDto result = new ListViewResponseDto();
 
     List<WorkflowInstanceForListViewEntity> workflowInstanceEntities = queryListView(workflowInstanceRequest, firstResult, maxResults, result);
-    List<String> ids = workflowInstanceEntities.stream().collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2));
+    List<Long> ids = workflowInstanceEntities.stream().collect(ArrayList::new, (list, hit) -> list.add(Long.valueOf(hit.getId())), (list1, list2) -> list1.addAll(list2));
 
-    final Set<String> instancesWithIncidentsIds = findInstancesWithIncidents(ids);
+    final Set<Long> instancesWithIncidentsIds = findInstancesWithIncidents(ids);
 
-    final Map<String, List<OperationEntity>> operationsPerWorfklowInstance = operationReader.getOperationsPerWorkflowInstanceId(ids);
+    final Map<Long, List<OperationEntity>> operationsPerWorfklowInstance = operationReader.getOperationsPerWorkflowInstanceId(ids);
 
     final List<ListViewWorkflowInstanceDto> workflowInstanceDtoList = ListViewWorkflowInstanceDto
       .createFrom(workflowInstanceEntities, instancesWithIncidentsIds, operationsPerWorfklowInstance);
@@ -296,7 +297,7 @@ public class ListViewReader {
     return termsQuery(ListViewTemplate.ID, ids);
   }
 
-  private Set<String> findInstancesWithIncidents(List<String> ids) {
+  private Set<Long> findInstancesWithIncidents(List<Long> ids) {
     final TermQueryBuilder isWorkflowInstanceQ = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);
     final TermsQueryBuilder workflowInstanceIdsQ = termsQuery(ListViewTemplate.ID, ids);
     final HasChildQueryBuilder hasIncidentQ = hasChildQuery(ACTIVITIES_JOIN_RELATION, existsQuery(ListViewTemplate.INCIDENT_KEY), None);
@@ -306,7 +307,7 @@ public class ListViewReader {
       .query(constantScoreQuery(joinWithAnd(isWorkflowInstanceQ, workflowInstanceIdsQ, hasIncidentQ))));
 
     try {
-      return ElasticsearchUtil.scrollIdsToSet(searchRequest, esClient);
+      return CollectionUtil.toSafeSetOfLongs(ElasticsearchUtil.scrollIdsToSet(searchRequest, esClient));
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining instances with incidents: %s", e.getMessage());
       logger.error(message, e);

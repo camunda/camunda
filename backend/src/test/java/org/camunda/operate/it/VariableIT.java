@@ -10,7 +10,6 @@ import java.util.function.Predicate;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.es.reader.ActivityInstanceReader;
 import org.camunda.operate.rest.dto.VariableDto;
-import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
@@ -65,7 +64,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     return String.format(WORKFLOW_INSTANCE_URL + "/%s/variables", workflowInstanceId);
   }
 
-  protected String getVariablesURL(String workflowInstanceId, String scopeId) {
+  protected String getVariablesURL(Long workflowInstanceId, String scopeId) {
     return String.format(WORKFLOW_INSTANCE_URL + "/%s/variables?scopeId=%s", workflowInstanceId, scopeId);
   }
 
@@ -96,7 +95,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, workflowInstanceKey, workflowInstanceKey, "otherVar");
 
     //then
-    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
+    final Long workflowInstanceId = workflowInstanceKey;
 
     List<VariableDto> variables = getVariables(workflowInstanceId);
     assertThat(variables).hasSize(2);
@@ -139,7 +138,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     assertVariable(variables, "otherVar","123");
 
     //TC4 - when variables are updated
-    ZeebeTestUtil.updateVariables(zeebeClient, workflowInstanceId, "{\"var1\": \"updatedValue\" , \"newVar\": 555 }");
+    ZeebeTestUtil.updateVariables(zeebeClient, workflowInstanceId.toString(), "{\"var1\": \"updatedValue\" , \"newVar\": 555 }");
     //elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
     elasticsearchTestRule.processAllRecordsAndWait(variableEqualsCheck, workflowInstanceKey,workflowInstanceKey,"var1","\"updatedValue\"");
     elasticsearchTestRule.processAllRecordsAndWait(variableEqualsCheck, workflowInstanceKey,workflowInstanceKey,"newVar","555");
@@ -180,16 +179,16 @@ public class VariableIT extends OperateZeebeIntegrationTest {
       .allMatch(v -> v.getValue().equals(value));
   }
 
-  protected List<VariableDto> getVariables(String workflowInstanceId) throws Exception {
+  protected List<VariableDto> getVariables(Long workflowInstanceId) throws Exception {
     MvcResult mvcResult = mockMvc
-      .perform(get(getVariablesURL(workflowInstanceId, workflowInstanceId)))
+      .perform(get(getVariablesURL(workflowInstanceId, workflowInstanceId.toString())))
       .andExpect(status().isOk())
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
     return mockMvcTestRule.listFromResponse(mvcResult, VariableDto.class);
   }
 
-  protected List<VariableDto> getVariables(String workflowInstanceId, String activityId) throws Exception {
+  protected List<VariableDto> getVariables(Long workflowInstanceId, String activityId) throws Exception {
     final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceId);
     final String task1Id = findActivityInstanceId(allActivityInstances, activityId);
     MvcResult mvcResult = mockMvc

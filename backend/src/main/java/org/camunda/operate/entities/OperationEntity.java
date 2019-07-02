@@ -10,9 +10,9 @@ import java.util.UUID;
 
 public class OperationEntity extends OperateEntity {
 
-  private String workflowInstanceId;
+  private Long workflowInstanceId;
   private String incidentId;
-  private String scopeId;
+  private Long scopeKey;
   private String variableName;
   private String variableValue;
   private OperationType type;
@@ -23,11 +23,11 @@ public class OperationEntity extends OperateEntity {
   private OperationState state;
   private String errorMessage;
 
-  public String getWorkflowInstanceId() {
+  public Long getWorkflowInstanceId() {
     return workflowInstanceId;
   }
 
-  public void setWorkflowInstanceId(String workflowInstanceId) {
+  public void setWorkflowInstanceId(Long workflowInstanceId) {
     this.workflowInstanceId = workflowInstanceId;
   }
 
@@ -39,12 +39,12 @@ public class OperationEntity extends OperateEntity {
     this.incidentId = incidentId;
   }
 
-  public String getScopeId() {
-    return scopeId;
+  public Long getScopeKey() {
+    return scopeKey;
   }
 
-  public void setScopeId(String scopeId) {
-    this.scopeId = scopeId;
+  public void setScopeKey(Long scopeKey) {
+    this.scopeKey = scopeKey;
   }
 
   public String getVariableName() {
@@ -138,7 +138,7 @@ public class OperationEntity extends OperateEntity {
       return false;
     if (incidentId != null ? !incidentId.equals(that.incidentId) : that.incidentId != null)
       return false;
-    if (scopeId != null ? !scopeId.equals(that.scopeId) : that.scopeId != null)
+    if (scopeKey != null ? !scopeKey.equals(that.scopeKey) : that.scopeKey != null)
       return false;
     if (variableName != null ? !variableName.equals(that.variableName) : that.variableName != null)
       return false;
@@ -164,7 +164,7 @@ public class OperationEntity extends OperateEntity {
     int result = super.hashCode();
     result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
     result = 31 * result + (incidentId != null ? incidentId.hashCode() : 0);
-    result = 31 * result + (scopeId != null ? scopeId.hashCode() : 0);
+    result = 31 * result + (scopeKey != null ? scopeKey.hashCode() : 0);
     result = 31 * result + (variableName != null ? variableName.hashCode() : 0);
     result = 31 * result + (variableValue != null ? variableValue.hashCode() : 0);
     result = 31 * result + (type != null ? type.hashCode() : 0);

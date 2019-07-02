@@ -106,12 +106,12 @@ public class WorkflowZeebeRecordProcessor {
   }
 
   private void updateFieldsInInstancesFor(final WorkflowEntity workflowEntity, BulkRequest bulkRequest) {
-    List<String> workflowInstanceIds = workflowInstanceReader.queryWorkflowInstancesWithEmptyWorkflowVersion(workflowEntity.getId());
-    for (String workflowInstanceId : workflowInstanceIds) {
+    List<Long> workflowInstanceIds = workflowInstanceReader.queryWorkflowInstancesWithEmptyWorkflowVersion(workflowEntity.getId());
+    for (Long workflowInstanceId : workflowInstanceIds) {
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(ListViewTemplate.WORKFLOW_NAME, workflowEntity.getName());
       updateFields.put(ListViewTemplate.WORKFLOW_VERSION, workflowEntity.getVersion());
-      UpdateRequest updateRequest = new UpdateRequest(listViewTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceId)
+      UpdateRequest updateRequest = new UpdateRequest(listViewTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceId.toString())
           .doc(updateFields);
       bulkRequest.add(updateRequest);
     }

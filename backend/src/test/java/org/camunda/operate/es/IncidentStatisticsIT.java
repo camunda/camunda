@@ -335,12 +335,12 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     boolean withOtherMsg) {
     List<OperateEntity> entities = new ArrayList<>();
     for (int i = 0; i < activeIncidentsCount; i++) {
-      final ActivityInstanceForListViewEntity activityInstance = createActivityInstance(workflowInstance.getId(), ActivityState.ACTIVE);
+      final ActivityInstanceForListViewEntity activityInstance = createActivityInstance(workflowInstance.getWorkflowInstanceId(), ActivityState.ACTIVE);
       createIncident(activityInstance, withOtherMsg ? ERRMSG_OTHER : null, null);
       entities.add(activityInstance);
     }
     for (int i = 0; i < resolvedIncidentsCount; i++) {
-      final ActivityInstanceForListViewEntity activityInstance = createActivityInstance(workflowInstance.getId(), ActivityState.ACTIVE);
+      final ActivityInstanceForListViewEntity activityInstance = createActivityInstance(workflowInstance.getWorkflowInstanceId(), ActivityState.ACTIVE);
       entities.add(activityInstance);
     }
     return entities;

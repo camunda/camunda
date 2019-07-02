@@ -10,7 +10,6 @@ import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.es.schema.templates.SequenceFlowTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.zeebeimport.record.Intent;
 import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -44,10 +43,10 @@ public class SequenceFlowZeebeRecordProcessor {
 
   private void persistSequenceFlow(Record record, WorkflowInstanceRecordValueImpl recordValue, BulkRequest bulkRequest) throws PersistenceException {
     SequenceFlowEntity entity = new SequenceFlowEntity();
-    entity.setId(IdUtil.getId(record.getKey(), record));
+    entity.setId(record.getKey());
     entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
-    entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
+    entity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
     entity.setActivityId(recordValue.getElementId());
     bulkRequest.add(getSequenceFlowInsertQuery(entity));
   }

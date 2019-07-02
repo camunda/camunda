@@ -111,7 +111,7 @@ public class ActivityInstanceDto {
       activity.setState(activityInstanceEntity.getState());
     }
     activity.setType(activityInstanceEntity.getType());
-    activity.setParentId(activityInstanceEntity.getScopeId());
+    activity.setParentId(activityInstanceEntity.getScopeKey().toString());
     return activity;
   }
 

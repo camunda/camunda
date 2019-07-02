@@ -9,7 +9,7 @@ public class ListViewJoinRelation {
 
   private String name;
 
-  private String parent;
+  private Long parent;
 
   public ListViewJoinRelation() {
   }
@@ -27,11 +27,11 @@ public class ListViewJoinRelation {
     this.name = name;
   }
 
-  public String getParent() {
+  public Long getParent() {
     return parent;
   }
 
-  public void setParent(String parent) {
+  public void setParent(Long parent) {
     this.parent = parent;
   }
 

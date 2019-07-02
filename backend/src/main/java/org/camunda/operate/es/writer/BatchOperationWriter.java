@@ -31,6 +31,7 @@ import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationResponseDto;
 import org.camunda.operate.rest.exception.InvalidRequestException;
+import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -134,7 +135,7 @@ public class BatchOperationWriter {
     }
   }
 
-  public void completeOperation(String workflowInstanceId, String incidentId, OperationType operationType) throws PersistenceException {
+  public void completeOperation(Long workflowInstanceId, String incidentId, OperationType operationType) throws PersistenceException {
     try {
       TermQueryBuilder incidentIdQ = null;
       if (incidentId != null) {
@@ -157,9 +158,9 @@ public class BatchOperationWriter {
     }
   }
 
-  public void completeUpdateVariableOperation(String workflowInstanceId, String scopeId, String variableName) throws PersistenceException {
+  public void completeUpdateVariableOperation(Long workflowInstanceId, Long scopeKey, String variableName) throws PersistenceException {
     try {
-      TermQueryBuilder scopeIdQ = termQuery(OperationTemplate.SCOPE_ID, scopeId);
+      TermQueryBuilder scopeIdQ = termQuery(OperationTemplate.SCOPE_KEY, scopeKey);
       TermQueryBuilder variableNameIdQ = termQuery(OperationTemplate.VARIABLE_NAME, variableName);
 
       QueryBuilder query =
@@ -192,7 +193,7 @@ public class BatchOperationWriter {
    * @return
    * @throws PersistenceException
    */
-  public OperationResponseDto scheduleOperation(String workflowInstanceId, OperationRequestDto operationRequest) throws PersistenceException {
+  public OperationResponseDto scheduleOperation(Long workflowInstanceId, OperationRequestDto operationRequest) throws PersistenceException {
     logger.debug("Creating operation: workflowInstanceId [{}], operation type [{}]", workflowInstanceId, operationRequest.getOperationType());
 
     BulkRequest bulkRequest = new BulkRequest();
@@ -209,7 +210,7 @@ public class BatchOperationWriter {
         }
       }
     } else if (operationType.equals(OperationType.UPDATE_VARIABLE)) {
-      bulkRequest.add(getIndexUpdateVariableOperationRequest(workflowInstanceId, operationRequest.getScopeId(), operationRequest.getName(), operationRequest.getValue()));
+      bulkRequest.add(getIndexUpdateVariableOperationRequest(workflowInstanceId, Long.valueOf(operationRequest.getScopeId()), operationRequest.getName(), operationRequest.getValue()));
     } else {
       bulkRequest.add(getIndexOperationRequest(workflowInstanceId, operationRequest.getIncidentId(), operationType));
     }
@@ -237,7 +238,7 @@ public class BatchOperationWriter {
       ElasticsearchUtil.scrollWith(searchRequest, esClient,
         searchHits -> {
           try {
-            final List<String> workflowInstanceIds = Arrays.stream(searchHits.getHits()).map(SearchHit::getId).collect(Collectors.toList());
+            final List<Long> workflowInstanceIds = CollectionUtil.toSafeListOfLongs(Arrays.stream(searchHits.getHits()).map(SearchHit::getId).collect(Collectors.toList()));
             operationsCount.addAndGet(persistOperations(workflowInstanceIds, batchOperationRequest));
           } catch (PersistenceException e) {
             throw new RuntimeException(e);
@@ -286,17 +287,17 @@ public class BatchOperationWriter {
       }
   }
 
-  private int persistOperations(List<String> workflowInstanceIds, OperationRequestDto operationRequest) throws PersistenceException {
+  private int persistOperations(List<Long> workflowInstanceIds, OperationRequestDto operationRequest) throws PersistenceException {
     BulkRequest bulkRequest = new BulkRequest();
     final OperationType operationType = operationRequest.getOperationType();
 
-    Map<String, List<String>> incidentIds = new HashMap<>();
+    Map<Long, List<String>> incidentIds = new HashMap<>();
     //prepare map of incident ids per workflow instance id
     if (operationType.equals(OperationType.RESOLVE_INCIDENT) && operationRequest.getIncidentId() == null) {
       incidentIds = incidentReader.getIncidentIdsPerWorkflowInstance(workflowInstanceIds);
     }
 
-    for (String wiId : workflowInstanceIds) {
+    for (Long wiId : workflowInstanceIds) {
       if (operationType.equals(OperationType.RESOLVE_INCIDENT) && operationRequest.getIncidentId() == null) {
         final List<String> allIncidentsIds = incidentIds.get(wiId);
         if (allIncidentsIds != null && allIncidentsIds.size() != 0) {
@@ -312,17 +313,17 @@ public class BatchOperationWriter {
     return bulkRequest.requests().size();
   }
 
-  private IndexRequest getIndexUpdateVariableOperationRequest(String workflowInstanceId, String scopeId, String name, String value) throws PersistenceException {
+  private IndexRequest getIndexUpdateVariableOperationRequest(Long workflowInstanceId, Long scopeKey, String name, String value) throws PersistenceException {
     OperationEntity operationEntity = createOperationEntity(workflowInstanceId, OperationType.UPDATE_VARIABLE);
 
-    operationEntity.setScopeId(scopeId);
+    operationEntity.setScopeKey(scopeKey);
     operationEntity.setVariableName(name);
     operationEntity.setVariableValue(value);
 
     return createIndexRequest(operationEntity, OperationType.UPDATE_VARIABLE, workflowInstanceId);
   }
 
-  private IndexRequest getIndexOperationRequest(String workflowInstanceId, String incidentId, OperationType operationType) throws PersistenceException {
+  private IndexRequest getIndexOperationRequest(Long workflowInstanceId, String incidentId, OperationType operationType) throws PersistenceException {
     OperationEntity operationEntity = createOperationEntity(workflowInstanceId, operationType);
 
     operationEntity.setIncidentId(incidentId);
@@ -330,7 +331,7 @@ public class BatchOperationWriter {
     return createIndexRequest(operationEntity, operationType, workflowInstanceId);
   }
 
-  private OperationEntity createOperationEntity(String workflowInstanceId, OperationType operationType) {
+  private OperationEntity createOperationEntity(Long workflowInstanceId, OperationType operationType) {
     OperationEntity operationEntity = new OperationEntity();
     operationEntity.generateId();
     operationEntity.setWorkflowInstanceId(workflowInstanceId);
@@ -340,7 +341,7 @@ public class BatchOperationWriter {
     return operationEntity;
   }
 
-  private IndexRequest createIndexRequest(OperationEntity operationEntity,OperationType operationType,String workflowInstanceId) throws PersistenceException {
+  private IndexRequest createIndexRequest(OperationEntity operationEntity,OperationType operationType,Long workflowInstanceId) throws PersistenceException {
     try {
       return new IndexRequest(operationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, operationEntity.getId())
           .source(objectMapper.writeValueAsString(operationEntity), XContentType.JSON);

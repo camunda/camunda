@@ -5,7 +5,6 @@
  */
 package org.camunda.operate.zeebeimport.processors;
 
-import io.zeebe.protocol.record.value.ErrorType;
 import java.io.IOException;
 import java.time.Instant;
 import org.camunda.operate.entities.IncidentEntity;
@@ -16,7 +15,6 @@ import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -56,13 +54,13 @@ public class IncidentZeebeRecordProcessor {
 
   private void persistIncident(Record record, IncidentRecordValueImpl recordValue, BulkRequest bulkRequest) throws PersistenceException {
     final String intentStr = record.getIntent().name();
-    final String incidentId = IdUtil.getId(record.getKey(), record);
+    final String incidentId = String.valueOf(record.getKey());
     if (intentStr.equals(RESOLVED.toString())) {
 
       //resolve corresponding operation
       //TODO must be idempotent
       //not possible to include UpdateByQueryRequestBuilder in bulk query -> executing at once
-      batchOperationWriter.completeOperation(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record), incidentId, OperationType.RESOLVE_INCIDENT);
+      batchOperationWriter.completeOperation(recordValue.getWorkflowInstanceKey(), incidentId, OperationType.RESOLVE_INCIDENT);
       //if we update smth, we need it to have affect at once
       bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
 
@@ -72,16 +70,16 @@ public class IncidentZeebeRecordProcessor {
       incident.setId(incidentId);
       incident.setKey(record.getKey());
       if (recordValue.getJobKey() > 0) {
-        incident.setJobId(IdUtil.getId(recordValue.getJobKey(), record));
+        incident.setJobKey(recordValue.getJobKey());
       }
       if (recordValue.getWorkflowInstanceKey() > 0) {
-        incident.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
+        incident.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
       }
       incident.setErrorMessage(recordValue.getErrorMessage());
       incident.setErrorType(recordValue.getErrorType());
       incident.setFlowNodeId(recordValue.getElementId());
       if (recordValue.getElementInstanceKey() > 0) {
-        incident.setFlowNodeInstanceId(IdUtil.getId(recordValue.getElementInstanceKey(), record));
+        incident.setFlowNodeInstanceKey(recordValue.getElementInstanceKey());
       }
       incident.setState(IncidentState.ACTIVE);
       incident.setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));

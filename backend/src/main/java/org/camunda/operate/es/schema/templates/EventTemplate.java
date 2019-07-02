@@ -41,7 +41,7 @@ public class EventTemplate extends AbstractTemplateCreator implements WorkflowIn
 
   public static final String INCIDENT_ERROR_TYPE = "incidentErrorType";
   public static final String INCIDENT_ERROR_MSG = "incidentErrorMessage";
-  public static final String JOB_ID = "jobId";
+  public static final String JOB_KEY = "jobKey";
 
   @Autowired
   private OperateProperties operateProperties;
@@ -67,7 +67,7 @@ public class EventTemplate extends AbstractTemplateCreator implements WorkflowIn
         .field("type", "long")
       .endObject()
       .startObject(WORKFLOW_INSTANCE_ID)
-        .field("type", "keyword")
+        .field("type", "long")
       .endObject()
       .startObject(BPMN_PROCESS_ID)
         .field("type", "keyword")
@@ -76,7 +76,7 @@ public class EventTemplate extends AbstractTemplateCreator implements WorkflowIn
         .field("type", "keyword")
       .endObject()
       .startObject(ACTIVITY_INSTANCE_ID)
-        .field("type", "keyword")
+        .field("type", "long")
       .endObject()
       .startObject(EVENT_SOURCE_TYPE)
         .field("type", "keyword")
@@ -125,8 +125,8 @@ public class EventTemplate extends AbstractTemplateCreator implements WorkflowIn
       .startObject(INCIDENT_ERROR_MSG)
         .field("type", "keyword")
       .endObject()
-      .startObject(JOB_ID)
-        .field("type", "keyword")
+      .startObject(JOB_KEY)
+        .field("type", "long")
       .endObject();
     return builder;
   }
