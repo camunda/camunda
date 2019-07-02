@@ -144,8 +144,6 @@ public final class ReProcessingStateMachine {
   ActorFuture<Void> startRecover(final long snapshotPosition) {
     recoveryFuture = new CompletableActorFuture<>();
 
-    final long startPosition = logStreamReader.getPosition();
-
     LOG.info("Start scanning the log for error events.");
     lastSourceEventPosition = scanLog(snapshotPosition);
     LOG.info("Finished scanning the log for error events.");
@@ -154,7 +152,7 @@ public final class ReProcessingStateMachine {
       LOG.info(
           "Processor starts reprocessing, until last source event position {}",
           lastSourceEventPosition);
-      logStreamReader.seek(startPosition);
+      logStreamReader.seekToNextEvent(snapshotPosition);
       reprocessNextEvent();
     } else {
       recoveryFuture.complete(null);
