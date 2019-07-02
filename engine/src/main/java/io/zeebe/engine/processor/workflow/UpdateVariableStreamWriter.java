@@ -20,7 +20,7 @@ package io.zeebe.engine.processor.workflow;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.instance.VariablesState.VariableListener;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
-import io.zeebe.protocol.intent.VariableIntent;
+import io.zeebe.protocol.record.intent.VariableIntent;
 import org.agrona.DirectBuffer;
 
 public class UpdateVariableStreamWriter implements VariableListener {

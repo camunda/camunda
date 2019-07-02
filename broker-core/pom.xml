@@ -8,7 +8,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.19.0-SNAPSHOT</version>
+    <version>0.20.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -101,11 +101,6 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-msgpack-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
       <artifactId>zeebe-exporter-api</artifactId>
     </dependency>
 
@@ -132,12 +127,6 @@
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-exporter-asserts</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
@@ -158,12 +147,6 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-msgpack-value</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.msgpack</groupId>
-      <artifactId>msgpack-core</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -205,6 +188,7 @@
       <groupId>io.netty</groupId>
       <artifactId>netty-transport</artifactId>
     </dependency>
+
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>atomix</artifactId>
@@ -231,14 +215,23 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api</artifactId>
-      <scope>test</scope>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>one.util</groupId>
-      <artifactId>streamex</artifactId>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient_common</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient_hotspot</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -251,6 +244,14 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-workflow-engine</artifactId>
+      <type>test-jar</type>
+      <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
 

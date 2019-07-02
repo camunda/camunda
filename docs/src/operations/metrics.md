@@ -3,7 +3,7 @@
 When operating a distributed system like Zeebe, it is important to put proper monitoring in place.
 To facilitate this, Zeebe exposes an extensive set of metrics.
 
-Zeebe writes metrics to a file. The reporting interval can be configured.
+Zeebe exposes metrics over an embedded HTTP server.
 
 ## Types of metrics
 
@@ -15,88 +15,61 @@ Zeebe writes metrics to a file. The reporting interval can be configured.
 Zeebe exposes metrics directly in Prometheus text format.
 The details of the format can be read in the [Prometheus documentation][prom-format].
 
+
 **Example:**
 
 ```
-zb_storage_fs_total_bytes{cluster="zeebe",node="localhost:26500",partition="0"} 4192 1522124395234
+# HELP zeebe_stream_processor_events_total Number of events processed by stream processor
+# TYPE zeebe_stream_processor_events_total counter
+zeebe_stream_processor_events_total{action="written",partition="1",} 20320.0
+zeebe_stream_processor_events_total{action="processed",partition="1",} 20320.0
+zeebe_stream_processor_events_total{action="skipped",partition="1",} 2153.0
 ```
-
-The record above descibes that the total size on bytes of partition `0` on node `localhost:26500` in cluster `zeebe` is `4192`. The last number is a unix epoch timestamp.
 
 ## Configuring Metrics
 
-Metrics can be configured in the [configuration file](operations/the-zeebecfgtoml-file.html#Metrics).
+The HTTP server to export the metrics can be configured in the [configuration file](operations/the-zeebecfgtoml-file.html#Metrics).
 
 ## Connecting Prometheus
 
-As explained, Zeebe writes metrics to a file. The default location of the file is `$ZB_HOME/metrics/zeebe.prom`. There are two ways to connect Zeebe to Prometheus:
+As explained, Zeebe exposes the metrics over a HTTP server. The default port is `9600`.
 
-### Node exporter
-
-In case you are already using the prometheus node exporter, you can relocate the metrics file to the scrape directory of the node exporter. The configuration would look as follows:
+Add the following entry to your `prometheus.yml`:
 
 ```
-[metrics]
-reportingInterval = 15
-metricsFile = "zeebe.prom"
-directory = "/var/lib/metrics"
-```
-
-### HTTP
-
-In case you want to scrape Zeebe nodes via HTTP, you can start a http server inside the metrics directory and expose
-the directory via HTTP. In case python is available, you can use
-
-```
-$cd $ZB_HOME/metrics
-$python -m SimpleHTTPServer 8000
-```
-
-Then, add the following entry to your `prometheus.yml`:
-
-```
-- job_name: zb
+- job_name: zeebe
   scrape_interval: 15s
-  metrics_path: /zeebe.prom
+  metrics_path: /metrics
   scheme: http
   static_configs:
   - targets:
-    - localhost:8000
+    - localhost: 9600
 ```
-
-## Grafana Dashboards
-
-The Zeebe community has prepared two ready to use Grafana dashboars:
-
-### Overview Dashboard
-
-The overview dashboard summarized high level metrics on a cluster level. This can be used to monitor a Zeebe production cluster. The dashboard can be found [here](https://grafana.com/dashboards/5237).
-
-### Low-level Diagnostics Dashboard
-
-The diagnostics dashboard provides more low level metrics on a node level. It can be used for gaining a better understanding about the workload currently performed by individual nodes. The dashboard can be found [here](https://grafana.com/dashboards/5210).
 
 ## Available Metrics
 
-All metrics exposed by Zeebe have the `zb_*`-prefix.
+All Zeebe related metrics have a `zeebe_`-prefix.
 
-To each metric, the following labels are added:
-
-* `cluster`: the name of the Zeebe cluster (relevant in case you operate multiple clusters).
-* `node`: the identifier of the node which has written the metrics
-
-Many metrics also add the following labels:
+Most metrics have the following common label:
 
 * `partition`: cluster-unique id of the partition
 
-The following components expose metrics:
+The following metrics are collected:
 
-* `zb_broker_info`: summarized information about available nodes
-* `zb_buffer_*`: diagnostics, buffer metrics
-* `zb_scheduler_*`: diagnostics, utilization metrics of Zeebe's internal task scheduler
-* `zb_storage_*`: storage metrics
-* `zb_streamprocessor_*`: stream processing metrics such as events processed by partition
-* `zb_transport_*`: network transport metrics such as number of open connections, bytes received, transmitted, etc ...
-* `zb_workflow_*`: worflow metrics such as number of workflow instances created, completed, ...
+* `zeebe_stream_processor_events_total`: The number of events processed by the stream processor.
+The `action` label separates processed, skipped and written events. 
+* `zeebe_exporter_events_total`: The number of events processed by the exporter processor.
+The `action` label separates exported and skipped events. 
+* `zeebe_element_instance_events_total`: The number of occurred workflow element instance events.
+The `action` label separates the number of activated, completed and terminated elements.
+The `type` label separates different BPMN element types.
+* `zeebe_running_workflow_instances_total`: The number of currently running workflow instances, i.e.
+not completed or terminated.
+* `zeebe_job_events_total`: The number of job events. The `action` label separates the number of
+created, activated, timed out, completed, failed and canceled jobs.
+* `zeebe_pending_jobs_total`: The number of currently pending jobs, i.e. not completed or terminated.
+* `zeebe_incident_events_total`: The number of incident events. The `action` label separates the number
+of created and resolved incident events.
+* `zeebe_pending_incidents_total`: The number of currently pending incident, i.e. not resolved.
 
 [prom-format]: https://prometheus.io/docs/instrumenting/exposition_formats/#text-format-details

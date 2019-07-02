@@ -43,8 +43,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class RequestMapper {
 
-  private static final MsgPackConverter MSG_PACK_CONVERTER = new MsgPackConverter();
-
   public static BrokerDeployWorkflowRequest toDeployWorkflowRequest(
       DeployWorkflowRequest grpcRequest) {
     final BrokerDeployWorkflowRequest brokerRequest = new BrokerDeployWorkflowRequest();
@@ -113,7 +111,7 @@ public class RequestMapper {
     final BrokerSetVariablesRequest brokerRequest = new BrokerSetVariablesRequest();
 
     brokerRequest.setElementInstanceKey(grpcRequest.getElementInstanceKey());
-    brokerRequest.setDocument(ensureJsonSet(grpcRequest.getVariables()));
+    brokerRequest.setVariables(ensureJsonSet(grpcRequest.getVariables()));
     brokerRequest.setLocal(grpcRequest.getLocal());
 
     return brokerRequest;
@@ -136,7 +134,7 @@ public class RequestMapper {
     if (value == null || value.trim().isEmpty()) {
       return DocumentValue.EMPTY_DOCUMENT;
     } else {
-      return new UnsafeBuffer(MSG_PACK_CONVERTER.convertToMsgPack(value));
+      return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value));
     }
   }
 }

@@ -18,9 +18,9 @@
 package io.zeebe.engine.processor;
 
 import io.zeebe.engine.processor.CommandProcessor.CommandControl;
-import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.Intent;
 
 public class CommandProcessorImpl<T extends UnifiedRecordValue>
     implements TypedRecordProcessor<T>, CommandControl<T> {
@@ -56,7 +56,7 @@ public class CommandProcessorImpl<T extends UnifiedRecordValue>
     entityKey = command.getKey();
     wrappedProcessor.onCommand(command, this, streamWriter);
 
-    final boolean respond = command.getMetadata().hasRequestMetadata();
+    final boolean respond = command.hasRequestMetadata();
 
     if (isAccepted) {
       streamWriter.appendFollowUpEvent(entityKey, newState, updatedValue);

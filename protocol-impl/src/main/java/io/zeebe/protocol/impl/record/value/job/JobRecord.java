@@ -15,119 +15,66 @@
  */
 package io.zeebe.protocol.impl.record.value.job;
 
-import io.zeebe.exporter.api.record.value.JobRecordValue;
-import io.zeebe.exporter.api.record.value.job.Headers;
+import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
+import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
-import io.zeebe.msgpack.property.ObjectProperty;
 import io.zeebe.msgpack.property.PackedProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.spec.MsgPackHelper;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.WorkflowInstanceRelated;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.util.buffer.BufferUtil;
-import java.time.Instant;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class JobRecord extends UnifiedRecordValue
-    implements WorkflowInstanceRelated, JobRecordValue {
+public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
+  private static final String EMPTY_STRING = "";
+  private static final String RETRIES = "retries";
+  private static final String TYPE = "type";
+  private static final String CUSTOM_HEADERS = "customHeaders";
+  private static final String VARIABLES = "variables";
+  private static final String ERROR_MESSAGE = "errorMessage";
+
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
-  public static final String RETRIES = "retries";
-  public static final String TYPE = "type";
-  public static final String CUSTOM_HEADERS = "customHeaders";
-  public static final String VARIABLES = "variables";
-  public static final String ERROR_MESSAGE = "errorMessage";
-
-  private final LongProperty deadlineProp =
-      new LongProperty("deadline", Protocol.INSTANT_NULL_VALUE);
-  private final StringProperty workerProp = new StringProperty("worker", "");
+  private final LongProperty deadlineProp = new LongProperty("deadline", -1);
+  private final StringProperty workerProp = new StringProperty("worker", EMPTY_STRING);
   private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
-  private final StringProperty typeProp = new StringProperty(TYPE, "");
-  private final ObjectProperty<JobHeaders> headersProp =
-      new ObjectProperty<>("headers", new JobHeaders());
+  private final StringProperty typeProp = new StringProperty(TYPE, EMPTY_STRING);
   private final PackedProperty customHeadersProp = new PackedProperty(CUSTOM_HEADERS, NO_HEADERS);
   private final DocumentProperty variableProp = new DocumentProperty(VARIABLES);
   private final StringProperty errorMessageProp = new StringProperty(ERROR_MESSAGE, "");
+
+  private final LongProperty workflowInstanceKeyProp =
+      new LongProperty(PROP_WORKFLOW_INSTANCE_KEY, -1L);
+  private final StringProperty bpmnProcessIdProp =
+      new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID, EMPTY_STRING);
+  private final IntegerProperty workflowDefinitionVersionProp =
+      new IntegerProperty("workflowDefinitionVersion", -1);
+  private final LongProperty workflowKeyProp = new LongProperty("workflowKey", -1L);
+  private final StringProperty elementIdProp = new StringProperty("elementId", EMPTY_STRING);
+  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
 
   public JobRecord() {
     this.declareProperty(deadlineProp)
         .declareProperty(workerProp)
         .declareProperty(retriesProp)
         .declareProperty(typeProp)
-        .declareProperty(headersProp)
         .declareProperty(customHeadersProp)
         .declareProperty(variableProp)
-        .declareProperty(errorMessageProp);
-  }
-
-  public long getDeadlineLong() {
-    return deadlineProp.getValue();
-  }
-
-  public JobRecord setDeadline(long val) {
-    deadlineProp.setValue(val);
-    return this;
-  }
-
-  public DirectBuffer getWorkerBuffer() {
-    return workerProp.getValue();
-  }
-
-  public JobRecord setWorker(String worker) {
-    this.workerProp.setValue(worker);
-    return this;
-  }
-
-  public JobRecord setWorker(DirectBuffer worker) {
-    return setWorker(worker, 0, worker.capacity());
-  }
-
-  public JobRecord setWorker(DirectBuffer worker, int offset, int length) {
-    workerProp.setValue(worker, offset, length);
-    return this;
-  }
-
-  public int getRetries() {
-    return retriesProp.getValue();
-  }
-
-  public JobRecord setRetries(int retries) {
-    retriesProp.setValue(retries);
-    return this;
-  }
-
-  public DirectBuffer getTypeBuffer() {
-    return typeProp.getValue();
-  }
-
-  public JobRecord setType(String type) {
-    this.typeProp.setValue(type);
-    return this;
-  }
-
-  public JobRecord setType(DirectBuffer buf) {
-    return setType(buf, 0, buf.capacity());
-  }
-
-  public JobRecord setType(DirectBuffer buf, int offset, int length) {
-    typeProp.setValue(buf, offset, length);
-    return this;
-  }
-
-  public DirectBuffer getVariablesBuffer() {
-    return variableProp.getValue();
-  }
-
-  public JobRecord setVariables(DirectBuffer variables) {
-    variableProp.setValue(variables);
-
-    return this;
+        .declareProperty(errorMessageProp)
+        .declareProperty(bpmnProcessIdProp)
+        .declareProperty(workflowDefinitionVersionProp)
+        .declareProperty(workflowKeyProp)
+        .declareProperty(workflowInstanceKeyProp)
+        .declareProperty(elementIdProp)
+        .declareProperty(elementInstanceKeyProp);
   }
 
   public JobRecord resetVariables() {
@@ -135,12 +82,148 @@ public class JobRecord extends UnifiedRecordValue
     return this;
   }
 
-  public JobHeaders getJobHeaders() {
-    return headersProp.getValue();
+  @JsonIgnore
+  public DirectBuffer getCustomHeadersBuffer() {
+    return customHeadersProp.getValue();
   }
 
-  public void setCustomHeaders(DirectBuffer buffer, int offset, int length) {
-    customHeadersProp.setValue(buffer, offset, length);
+  @Override
+  public long getDeadline() {
+    return deadlineProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getErrorMessageBuffer() {
+    return errorMessageProp.getValue();
+  }
+
+  @Override
+  public String getType() {
+    return BufferUtil.bufferAsString(typeProp.getValue());
+  }
+
+  @Override
+  public Map<String, String> getCustomHeaders() {
+    return MsgPackConverter.convertToStringMap(customHeadersProp.getValue());
+  }
+
+  @Override
+  public String getWorker() {
+    return BufferUtil.bufferAsString(workerProp.getValue());
+  }
+
+  @Override
+  public int getRetries() {
+    return retriesProp.getValue();
+  }
+
+  @Override
+  public String getErrorMessage() {
+    return BufferUtil.bufferAsString(errorMessageProp.getValue());
+  }
+
+  @JsonIgnore
+  public DirectBuffer getTypeBuffer() {
+    return typeProp.getValue();
+  }
+
+  @Override
+  public Map<String, Object> getVariables() {
+    return MsgPackConverter.convertToMap(variableProp.getValue());
+  }
+
+  @JsonIgnore
+  public DirectBuffer getVariablesBuffer() {
+    return variableProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getWorkerBuffer() {
+    return workerProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBpmnProcessIdBuffer() {
+    return bpmnProcessIdProp.getValue();
+  }
+
+  @Override
+  public String getElementId() {
+    return BufferUtil.bufferAsString(elementIdProp.getValue());
+  }
+
+  @Override
+  public long getElementInstanceKey() {
+    return elementInstanceKeyProp.getValue();
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  @Override
+  public int getWorkflowDefinitionVersion() {
+    return workflowDefinitionVersionProp.getValue();
+  }
+
+  @Override
+  public long getWorkflowInstanceKey() {
+    return workflowInstanceKeyProp.getValue();
+  }
+
+  @Override
+  public long getWorkflowKey() {
+    return workflowKeyProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getElementIdBuffer() {
+    return elementIdProp.getValue();
+  }
+
+  public JobRecord setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
+  public JobRecord setBpmnProcessId(DirectBuffer bpmnProcessId) {
+    this.bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
+  public JobRecord setElementId(String elementId) {
+    this.elementIdProp.setValue(elementId);
+    return this;
+  }
+
+  public JobRecord setElementId(DirectBuffer elementId) {
+    return setElementId(elementId, 0, elementId.capacity());
+  }
+
+  public JobRecord setElementId(DirectBuffer activityId, int offset, int length) {
+    this.elementIdProp.setValue(activityId, offset, length);
+    return this;
+  }
+
+  public JobRecord setElementInstanceKey(long elementInstanceKey) {
+    this.elementInstanceKeyProp.setValue(elementInstanceKey);
+    return this;
+  }
+
+  public JobRecord setWorkflowDefinitionVersion(int version) {
+    this.workflowDefinitionVersionProp.setValue(version);
+    return this;
+  }
+
+  public JobRecord setWorkflowInstanceKey(long key) {
+    this.workflowInstanceKeyProp.setValue(key);
+    return this;
+  }
+
+  public JobRecord setWorkflowKey(long workflowKey) {
+    this.workflowKeyProp.setValue(workflowKey);
+    return this;
   }
 
   public JobRecord setCustomHeaders(DirectBuffer buffer) {
@@ -148,12 +231,9 @@ public class JobRecord extends UnifiedRecordValue
     return this;
   }
 
-  public DirectBuffer getCustomHeadersBuffer() {
-    return customHeadersProp.getValue();
-  }
-
-  public DirectBuffer getErrorMessageBuffer() {
-    return errorMessageProp.getValue();
+  public JobRecord setDeadline(long val) {
+    deadlineProp.setValue(val);
+    return this;
   }
 
   public JobRecord setErrorMessage(String errorMessage) {
@@ -170,53 +250,41 @@ public class JobRecord extends UnifiedRecordValue
     return this;
   }
 
-  @Override
-  public long getWorkflowInstanceKey() {
-    return headersProp.getValue().getWorkflowInstanceKey();
+  public JobRecord setRetries(int retries) {
+    retriesProp.setValue(retries);
+    return this;
   }
 
-  @Override
-  public Headers getHeaders() {
-    return headersProp.getValue();
+  public JobRecord setType(String type) {
+    this.typeProp.setValue(type);
+    return this;
   }
 
-  @Override
-  public Map<String, Object> getCustomHeaders() {
-    throw new UnsupportedOperationException("not yet implemented");
+  public JobRecord setType(DirectBuffer buf) {
+    return setType(buf, 0, buf.capacity());
   }
 
-  @Override
-  public String getErrorMessage() {
-    return BufferUtil.bufferAsString(errorMessageProp.getValue());
+  public JobRecord setType(DirectBuffer buf, int offset, int length) {
+    typeProp.setValue(buf, offset, length);
+    return this;
   }
 
-  @Override
-  public String getType() {
-    return BufferUtil.bufferAsString(typeProp.getValue());
+  public JobRecord setVariables(DirectBuffer variables) {
+    variableProp.setValue(variables);
+    return this;
   }
 
-  @Override
-  public String getWorker() {
-    return BufferUtil.bufferAsString(workerProp.getValue());
+  public JobRecord setWorker(String worker) {
+    this.workerProp.setValue(worker);
+    return this;
   }
 
-  @Override
-  public Instant getDeadline() {
-    return Instant.ofEpochMilli(deadlineProp.getValue());
+  public JobRecord setWorker(DirectBuffer worker) {
+    return setWorker(worker, 0, worker.capacity());
   }
 
-  @Override
-  public Map<String, Object> getVariablesAsMap() {
-    throw new UnsupportedOperationException("not yet implemented");
-  }
-
-  @Override
-  public String getVariables() {
-    return MsgPackConverter.convertToJson(variableProp.getValue());
-  }
-
-  @Override
-  public String toJson() {
-    throw new UnsupportedOperationException("not yet implemented");
+  public JobRecord setWorker(DirectBuffer worker, int offset, int length) {
+    workerProp.setValue(worker, offset, length);
+    return this;
   }
 }

@@ -28,14 +28,15 @@ import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.util.RecordStream;
 import io.zeebe.engine.util.Records;
 import io.zeebe.engine.util.TestStreams;
-import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.RejectionType;
-import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
+import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
@@ -92,7 +93,6 @@ public class TypedStreamProcessorTest {
     // given
     streams.startStreamProcessor(
         STREAM_NAME,
-        STREAM_PROCESSOR_ID,
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
         (processingContext) ->
             TypedRecordProcessors.processors()
@@ -118,8 +118,6 @@ public class TypedStreamProcessorTest {
             .get();
 
     // then
-    assertThat(writtenEvent.getProducerId()).isEqualTo(STREAM_PROCESSOR_ID);
-
     assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(firstEventPosition);
   }
 
@@ -128,7 +126,6 @@ public class TypedStreamProcessorTest {
     // given
     streams.startStreamProcessor(
         STREAM_NAME,
-        STREAM_PROCESSOR_ID,
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
         (processingContext) ->
             TypedRecordProcessors.processors()
@@ -182,7 +179,6 @@ public class TypedStreamProcessorTest {
 
     // then
     assertThat(writtenEvent.getKey()).isEqualTo(1);
-    assertThat(writtenEvent.getProducerId()).isEqualTo(STREAM_PROCESSOR_ID);
     assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(secondEventPosition);
 
     // error response
@@ -191,7 +187,7 @@ public class TypedStreamProcessorTest {
     assertThat(requestId.get()).isEqualTo(255L);
     assertThat(requestStreamId.get()).isEqualTo(99);
 
-    final TypedRecord<DeploymentRecord> deploymentRejection =
+    final Record<DeploymentRecord> deploymentRejection =
         new RecordStream(streams.events(STREAM_NAME))
             .onlyDeploymentRecords()
             .onlyRejections()
@@ -199,8 +195,7 @@ public class TypedStreamProcessorTest {
             .getFirst();
 
     assertThat(deploymentRejection.getKey()).isEqualTo(failingKey);
-    assertThat(deploymentRejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.PROCESSING_ERROR);
+    assertThat(deploymentRejection.getRejectionType()).isEqualTo(RejectionType.PROCESSING_ERROR);
   }
 
   protected DeploymentRecord deployment(final String name, final ResourceType resourceType) {

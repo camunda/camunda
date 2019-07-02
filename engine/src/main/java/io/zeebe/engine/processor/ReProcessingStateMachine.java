@@ -25,12 +25,12 @@ import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.RejectionType;
-import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.util.retry.EndlessRetryStrategy;
 import io.zeebe.util.retry.RetryStrategy;
 import io.zeebe.util.sched.ActorControl;
@@ -84,25 +84,23 @@ public final class ReProcessingStateMachine {
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
 
   private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
-      "Expected to find event processor for event '{}' with processor '{}', but caught an exception. Skip this event.";
+      "Expected to find event processor for event '{}', but caught an exception. Skip this event.";
   private static final String ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT =
-      "Expected to find last source event position '%d', but last position was '%d'. Failed to reprocess on processor '%s'";
+      "Expected to find last source event position '%d', but last position was '%d'. Failed to reprocess on processor";
   private static final String ERROR_MESSAGE_REPROCESSING_NO_NEXT_EVENT =
-      "Expected to find last source event position '%d', but found no next event. Failed to reprocess on processor '%s'";
+      "Expected to find last source event position '%d', but found no next event. Failed to reprocess on processor";
 
   private static final String LOG_STMT_REPROCESSING_FINISHED =
-      "Processor {} finished reprocessing at event position {}";
+      "Processor finished reprocessing at event position {}";
   private static final String LOG_STMT_FAILED_ON_PROCESSING =
       "Event {} failed on processing last time, will call #onError to update workflow instance blacklist.";
 
   private static final Consumer<Long> NOOP_LONG_CONSUMER = (instanceKey) -> {};
   public static final Consumer NOOP_SIDE_EFFECT_CONSUMER = (sideEffect) -> {};
 
-  private final int producerId;
   private final ZeebeState zeebeState;
 
   private final ActorControl actor;
-  private final String streamProcessorName;
   private final ErrorRecord errorRecord = new ErrorRecord();
   protected final RecordMetadata metadata = new RecordMetadata();
   private final TypedEventImpl typedEvent = new TypedEventImpl();
@@ -124,10 +122,8 @@ public final class ReProcessingStateMachine {
 
   public ReProcessingStateMachine(ProcessingContext context) {
     this.actor = context.getActor();
-    this.streamProcessorName = context.getStreamProcessorName();
     this.eventFilter = context.getEventFilter();
     this.logStreamReader = context.getLogStreamReader();
-    this.producerId = context.getProducerId();
     this.eventCache = context.getEventCache();
     this.recordProcessorMap = context.getRecordProcessorMap();
     this.dbContext = context.getDbContext();
@@ -156,8 +152,7 @@ public final class ReProcessingStateMachine {
 
     if (lastSourceEventPosition > snapshotPosition) {
       LOG.info(
-          "Processor {} starts reprocessing, until last source event position {}",
-          streamProcessorName,
+          "Processor starts reprocessing, until last source event position {}",
           lastSourceEventPosition);
       logStreamReader.seek(startPosition);
       reprocessNextEvent();
@@ -191,12 +186,9 @@ public final class ReProcessingStateMachine {
           failedEventPositions.add(errorPosition);
         }
 
-        // ignore events from other producers
-        if (newEvent.getProducerId() == producerId) {
-          final long sourceEventPosition = newEvent.getSourceEventPosition();
-          if (sourceEventPosition > 0 && sourceEventPosition > lastSourceEventPosition) {
-            lastSourceEventPosition = sourceEventPosition;
-          }
+        final long sourceEventPosition = newEvent.getSourceEventPosition();
+        if (sourceEventPosition > 0 && sourceEventPosition > lastSourceEventPosition) {
+          lastSourceEventPosition = sourceEventPosition;
         }
       }
 
@@ -210,10 +202,7 @@ public final class ReProcessingStateMachine {
   private void readNextEvent() {
     if (!logStreamReader.hasNext()) {
       throw new IllegalStateException(
-          String.format(
-              ERROR_MESSAGE_REPROCESSING_NO_NEXT_EVENT,
-              lastSourceEventPosition,
-              streamProcessorName));
+          String.format(ERROR_MESSAGE_REPROCESSING_NO_NEXT_EVENT, lastSourceEventPosition));
     }
 
     currentEvent = logStreamReader.next();
@@ -222,8 +211,7 @@ public final class ReProcessingStateMachine {
           String.format(
               ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT,
               lastSourceEventPosition,
-              currentEvent.getPosition(),
-              streamProcessorName));
+              currentEvent.getPosition()));
     }
   }
 
@@ -252,7 +240,7 @@ public final class ReProcessingStateMachine {
           recordProcessorMap.get(
               metadata.getRecordType(), metadata.getValueType(), metadata.getIntent().value());
     } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, currentEvent, streamProcessorName, e);
+      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, currentEvent, e);
     }
 
     if (eventProcessor == null) {
@@ -338,7 +326,7 @@ public final class ReProcessingStateMachine {
 
   private void onRecordReprocessed(final LoggedEvent currentEvent) {
     if (currentEvent.getPosition() == lastSourceEventPosition) {
-      LOG.info(LOG_STMT_REPROCESSING_FINISHED, streamProcessorName, currentEvent.getPosition());
+      LOG.info(LOG_STMT_REPROCESSING_FINISHED, currentEvent.getPosition());
       onRecovered();
     } else {
       actor.submit(this::reprocessNextEvent);
@@ -387,7 +375,7 @@ public final class ReProcessingStateMachine {
     public void reset() {}
 
     @Override
-    public void configureSourceContext(int producerId, long sourceRecordPosition) {}
+    public void configureSourceContext(long sourceRecordPosition) {}
 
     @Override
     public long flush() {

@@ -15,11 +15,8 @@
  */
 package io.zeebe.test.util.record;
 
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.JobRecordValue;
-import io.zeebe.exporter.api.record.value.job.Headers;
-import java.time.Instant;
-import java.util.Map;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.value.JobRecordValue;
 import java.util.stream.Stream;
 
 public class JobRecordStream
@@ -38,35 +35,11 @@ public class JobRecordStream
     return valueFilter(v -> type.equals(v.getType()));
   }
 
-  public JobRecordStream withHeaders(final Headers headers) {
-    return valueFilter(v -> headers.equals(v.getHeaders()));
-  }
-
-  public JobRecordStream withCustomHeaders(final Map<String, Object> customHeaders) {
-    return valueFilter(v -> customHeaders.equals(v.getCustomHeaders()));
-  }
-
-  public JobRecordStream withCustomHeader(final String key, final Object value) {
-    return valueFilter(v -> value.equals(v.getCustomHeaders().get(key)));
-  }
-
-  public JobRecordStream withWorker(final String worker) {
-    return valueFilter(v -> worker.equals(v.getWorker()));
-  }
-
   public JobRecordStream withRetries(final int retries) {
     return valueFilter(v -> v.getRetries() == retries);
   }
 
-  public JobRecordStream withDeadline(final Instant deadline) {
-    return valueFilter(v -> deadline.equals(v.getDeadline()));
-  }
-
-  public JobRecordStream withDeadline(final long deadline) {
-    return valueFilter(v -> Instant.ofEpochMilli(deadline).equals(v.getDeadline()));
-  }
-
   public JobRecordStream withWorkflowInstanceKey(long workflowInstanceKey) {
-    return valueFilter(v -> v.getHeaders().getWorkflowInstanceKey() == workflowInstanceKey);
+    return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
   }
 }

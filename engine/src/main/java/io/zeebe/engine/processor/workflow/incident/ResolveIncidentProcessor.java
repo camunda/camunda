@@ -28,10 +28,10 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.IncidentState;
 import io.zeebe.engine.state.instance.IndexedRecord;
 import io.zeebe.engine.state.instance.JobState;
-import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.IncidentIntent;
 import java.util.function.Consumer;
 
 public final class ResolveIncidentProcessor implements TypedRecordProcessor<IncidentRecord> {

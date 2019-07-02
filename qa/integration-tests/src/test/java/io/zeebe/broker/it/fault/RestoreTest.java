@@ -87,6 +87,7 @@ public class RestoreTest {
 
     clusteringRule.restartBroker(2);
     waitUntil(() -> !LogstreamConfig.isRestoring("2", 1));
+    waitForValidSnapshotAtBroker(clusteringRule.getBroker(2));
 
     clusteringRule.stopBroker(1);
 
@@ -148,7 +149,7 @@ public class RestoreTest {
 
   private File getSnapshotsDirectory(Broker broker) {
     final String dataDir = broker.getConfig().getData().getDirectories().get(0);
-    return new File(dataDir, "partition-1/state/1_zb-stream-processor/snapshots");
+    return new File(dataDir, "partition-1/state/snapshots");
   }
 
   private void waitForValidSnapshotAtBroker(Broker broker) {

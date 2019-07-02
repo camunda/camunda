@@ -18,6 +18,7 @@ package io.zeebe.gateway;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.utils.net.Address;
+import io.prometheus.client.exporter.HTTPServer;
 import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.util.TomlConfigurationReader;
@@ -28,10 +29,12 @@ public class StandaloneGateway {
 
   private final AtomixCluster atomixCluster;
   private final Gateway gateway;
+  private final GatewayCfg gatewayCfg;
 
   public StandaloneGateway(GatewayCfg gatewayCfg) {
     atomixCluster = createAtomixCluster(gatewayCfg.getCluster());
     gateway = new Gateway(gatewayCfg, atomixCluster);
+    this.gatewayCfg = gatewayCfg;
   }
 
   private AtomixCluster createAtomixCluster(ClusterCfg clusterCfg) {
@@ -52,8 +55,19 @@ public class StandaloneGateway {
   }
 
   public void run() throws IOException, InterruptedException {
+    HTTPServer monitoringServer = null;
+    if (gatewayCfg.getMonitoring().isEnabled()) {
+      monitoringServer =
+          new HTTPServer(
+              gatewayCfg.getMonitoring().getHost(), gatewayCfg.getMonitoring().getPort());
+    }
+
     gateway.listenAndServe();
     atomixCluster.stop();
+
+    if (monitoringServer != null) {
+      monitoringServer.stop();
+    }
   }
 
   public static void main(String args[]) throws Exception {

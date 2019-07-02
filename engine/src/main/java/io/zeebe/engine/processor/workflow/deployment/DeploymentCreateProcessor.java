@@ -21,19 +21,27 @@ import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessor;
 import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
+import io.zeebe.engine.processor.workflow.DeploymentResponder;
 import io.zeebe.engine.state.deployment.WorkflowState;
-import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
 
 public class DeploymentCreateProcessor implements TypedRecordProcessor<DeploymentRecord> {
   public static final String DEPLOYMENT_ALREADY_EXISTS_MESSAGE =
       "Expected to create a new deployment with key '%d', but there is already an existing deployment with that key";
 
   private final WorkflowState workflowState;
+  private final int partitionId;
+  private final DeploymentResponder deploymentResponder;
 
-  public DeploymentCreateProcessor(final WorkflowState workflowState) {
+  public DeploymentCreateProcessor(
+      final WorkflowState workflowState,
+      final DeploymentResponder deploymentResponder,
+      final int partitionId) {
     this.workflowState = workflowState;
+    this.deploymentResponder = deploymentResponder;
+    this.partitionId = partitionId;
   }
 
   @Override
@@ -51,5 +59,7 @@ public class DeploymentCreateProcessor implements TypedRecordProcessor<Deploymen
           RejectionType.ALREADY_EXISTS,
           String.format(DEPLOYMENT_ALREADY_EXISTS_MESSAGE, event.getKey()));
     }
+
+    deploymentResponder.sendDeploymentResponse(event.getKey(), partitionId);
   }
 }

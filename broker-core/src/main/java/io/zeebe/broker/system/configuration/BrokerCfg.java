@@ -28,7 +28,6 @@ public class BrokerCfg {
   private NetworkCfg network = new NetworkCfg();
   private ClusterCfg cluster = new ClusterCfg();
   private ThreadsCfg threads = new ThreadsCfg();
-  private MetricsCfg metrics = new MetricsCfg();
   private DataCfg data = new DataCfg();
   private List<ExporterCfg> exporters = new ArrayList<>();
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
@@ -42,7 +41,6 @@ public class BrokerCfg {
     network.init(this, brokerBase, environment);
     cluster.init(this, brokerBase, environment);
     threads.init(this, brokerBase, environment);
-    metrics.init(this, brokerBase, environment);
     data.init(this, brokerBase, environment);
     exporters.forEach(e -> e.init(this, brokerBase, environment));
     gateway.init(this, brokerBase, environment);
@@ -80,14 +78,6 @@ public class BrokerCfg {
     this.threads = threads;
   }
 
-  public MetricsCfg getMetrics() {
-    return metrics;
-  }
-
-  public void setMetrics(final MetricsCfg metrics) {
-    this.metrics = metrics;
-  }
-
   public DataCfg getData() {
     return data;
   }
@@ -122,8 +112,6 @@ public class BrokerCfg {
         + cluster
         + ", threads="
         + threads
-        + ", metrics="
-        + metrics
         + ", data="
         + data
         + ", exporters="

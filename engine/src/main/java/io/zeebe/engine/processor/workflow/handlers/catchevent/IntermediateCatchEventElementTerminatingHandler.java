@@ -21,7 +21,7 @@ import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventElement;
 import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementTerminatingHandler;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public class IntermediateCatchEventElementTerminatingHandler<T extends ExecutableCatchEventElement>
     extends ElementTerminatingHandler<T> {

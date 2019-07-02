@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-/** @author Christopher Zell <christopher.zell@camunda.com> */
 public class CompleteEventsInBlockProcessor implements ReadResultProcessor {
   private final MutableDirectBuffer directBuffer = new UnsafeBuffer(0, 0);
   private long lastReadEventPosition = -1;

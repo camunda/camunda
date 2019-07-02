@@ -19,13 +19,13 @@ package io.zeebe.engine.processor.workflow.timer;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.workflow.WorkflowInstanceStreamProcessorRule;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.TimerIntent;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
@@ -59,56 +59,53 @@ public class TimerStreamProcessorTest {
   @Test
   public void shouldRejectTriggerCommand() {
     // when
-    final TypedRecord<TimerRecord> timerRecord = timerRecordForActivity("timer");
+    final Record<TimerRecord> timerRecord = timerRecordForActivity("timer");
 
     envRule.writeCommand(timerRecord.getKey(), TimerIntent.CANCEL, timerRecord.getValue());
     envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
 
     // then
-    final TypedRecord<TimerRecord> rejection = findTimerCommandRejection();
+    final Record<TimerRecord> rejection = findTimerCommandRejection();
 
-    Assertions.assertThat(rejection.getMetadata().getIntent()).isEqualTo(TimerIntent.TRIGGER);
-    Assertions.assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.NOT_FOUND);
+    Assertions.assertThat(rejection.getIntent()).isEqualTo(TimerIntent.TRIGGER);
+    Assertions.assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   @Test
   public void shouldRejectDuplicatedTriggerCommand() {
     // when
-    final TypedRecord<TimerRecord> timerRecord = timerRecordForActivity("timer");
+    final Record<TimerRecord> timerRecord = timerRecordForActivity("timer");
 
     envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
     envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
 
     // then
-    final TypedRecord<TimerRecord> rejection = findTimerCommandRejection();
+    final Record<TimerRecord> rejection = findTimerCommandRejection();
 
-    Assertions.assertThat(rejection.getMetadata().getIntent()).isEqualTo(TimerIntent.TRIGGER);
-    Assertions.assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.NOT_FOUND);
+    Assertions.assertThat(rejection.getIntent()).isEqualTo(TimerIntent.TRIGGER);
+    Assertions.assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   @Test
   public void shouldRejectCancelCommand() {
     // when
-    final TypedRecord<TimerRecord> timerRecord = timerRecordForActivity("timer");
+    final Record<TimerRecord> timerRecord = timerRecordForActivity("timer");
 
     envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
     envRule.writeCommand(timerRecord.getKey(), TimerIntent.CANCEL, timerRecord.getValue());
 
     // then
-    final TypedRecord<TimerRecord> rejection = findTimerCommandRejection();
+    final Record<TimerRecord> rejection = findTimerCommandRejection();
 
-    Assertions.assertThat(rejection.getMetadata().getIntent()).isEqualTo(TimerIntent.CANCEL);
-    Assertions.assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.NOT_FOUND);
+    Assertions.assertThat(rejection.getIntent()).isEqualTo(TimerIntent.CANCEL);
+    Assertions.assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
-  private TypedRecord<TimerRecord> timerRecordForActivity(final String activityId) {
+  private Record<TimerRecord> timerRecordForActivity(final String activityId) {
     return streamProcessorRule.awaitTimerInState(activityId, TimerIntent.CREATED);
   }
 
-  private TypedRecord<TimerRecord> findTimerCommandRejection() {
+  private Record<TimerRecord> findTimerCommandRejection() {
     waitUntil(() -> envRule.events().onlyTimerRecords().onlyRejections().findFirst().isPresent());
 
     return envRule.events().onlyTimerRecords().onlyRejections().findFirst().get();

@@ -17,22 +17,22 @@
  */
 package io.zeebe.engine.processor.workflow.message;
 
-import static io.zeebe.exporter.api.record.Assertions.assertThat;
+import static io.zeebe.protocol.record.Assertions.assertThat;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.test.util.record.RecordingExporter.messageStartEventSubscriptionRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.engine.util.PublishMessageClient;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.engine.util.client.PublishMessageClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
-import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import org.junit.Rule;
@@ -52,7 +52,7 @@ public class MessageStartEventTest {
   public void shouldCorrelateMessageToStartEvent() {
     // given
     final Record<DeploymentRecordValue> deploymentRecord =
-        engine.deploy(createWorkflowWithOneMessageStartEvent());
+        engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
     final long workflowKey = getFirstDeployedWorkflowKey(deploymentRecord);
 
     // wait until subscription is opened
@@ -80,7 +80,7 @@ public class MessageStartEventTest {
   public void shouldCreateInstanceOnMessage() {
     // given
     final Record<DeploymentRecordValue> deploymentRecord =
-        engine.deploy(createWorkflowWithOneMessageStartEvent());
+        engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
     final long workflowKey = getFirstDeployedWorkflowKey(deploymentRecord);
 
     // wait until subscription is opened
@@ -102,7 +102,7 @@ public class MessageStartEventTest {
         RecordingExporter.workflowInstanceRecords().limit(5).asList();
 
     assertThat(records)
-        .extracting(r -> r.getMetadata().getIntent())
+        .extracting(Record::getIntent)
         .containsExactly(
             WorkflowInstanceIntent.EVENT_OCCURRED, // message
             WorkflowInstanceIntent.ELEMENT_ACTIVATING, // workflow instance
@@ -118,7 +118,7 @@ public class MessageStartEventTest {
   @Test
   public void shouldMergeMessageVariables() {
     // given
-    engine.deploy(createWorkflowWithOneMessageStartEvent());
+    engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
 
     // wait until subscription is opened
     assertThat(
@@ -142,7 +142,10 @@ public class MessageStartEventTest {
   @Test
   public void shouldApplyOutputMappingsOfMessageStartEvent() {
     // given
-    engine.deploy(createWorkflowWithMessageStartEventOutputMapping());
+    engine
+        .deployment()
+        .withXmlResource(createWorkflowWithMessageStartEventOutputMapping())
+        .deploy();
 
     // wait until subscription is opened
     assertThat(
@@ -168,7 +171,7 @@ public class MessageStartEventTest {
   public void shouldCreateInstancesForMultipleMessagesOfSameName() {
     // given
     final Record<DeploymentRecordValue> record =
-        engine.deploy(createWorkflowWithOneMessageStartEvent());
+        engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
 
     final long workflowKey = getFirstDeployedWorkflowKey(record);
 
@@ -207,7 +210,7 @@ public class MessageStartEventTest {
   public void shouldCreateInstancesForDifferentMessages() {
     // given
     final Record<DeploymentRecordValue> record =
-        engine.deploy(createWorkflowWithTwoMessageStartEvent());
+        engine.deployment().withXmlResource(createWorkflowWithTwoMessageStartEvent()).deploy();
 
     final long workflowKey = getFirstDeployedWorkflowKey(record);
 
@@ -246,11 +249,11 @@ public class MessageStartEventTest {
   @Test
   public void shouldNotCreateInstanceOfOldVersion() {
     // given
-    engine.deploy(createWorkflowWithOneMessageStartEvent());
+    engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
 
     // new version
     final Record<DeploymentRecordValue> record =
-        engine.deploy(createWorkflowWithOneMessageStartEvent());
+        engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
     final long workflowKey2 = getFirstDeployedWorkflowKey(record);
 
     // wait until second subscription is opened
@@ -272,7 +275,7 @@ public class MessageStartEventTest {
     final List<Record<WorkflowInstanceRecordValue>> records =
         RecordingExporter.workflowInstanceRecords().limit(5).asList();
 
-    assertThat(records.stream().map(r -> r.getMetadata().getIntent()))
+    assertThat(records.stream().map(Record::getIntent))
         .containsExactly(
             WorkflowInstanceIntent.EVENT_OCCURRED, // message
             WorkflowInstanceIntent.ELEMENT_ACTIVATING, // workflow instance
@@ -308,7 +311,6 @@ public class MessageStartEventTest {
         .done();
   }
 
-  @SuppressWarnings("unchecked")
   private long getFirstDeployedWorkflowKey(final Record<DeploymentRecordValue> deploymentRecord) {
     return deploymentRecord.getValue().getDeployedWorkflows().get(0).getWorkflowKey();
   }

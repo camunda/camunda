@@ -40,9 +40,9 @@ public class JsonConditionParserFailureMessageTest {
           {"foo == [1, 2, 3]", "expected literal (JSON path, string, number, boolean, null)"},
           {"foo + 3", "expected comparison operator ('==', '!=', '<', '<=', '>', '>=')"},
           {"foo or bar", "expected comparison operator ('==', '!=', '<', '<=', '>', '>=')"},
-          {"foo < 3 &&", "expected comparison"},
-          {"foo < 3 ||", "expected comparison"},
-          {"(foo < 3", "`)' expected but end of source found"},
+          {"foo < 3 &&", "end of input expected"},
+          {"foo < 3 ||", "end of input expected"},
+          {"(foo < 3", "')' expected but end of source found"},
           {"$.foo < 3", "Unexpected json-path"},
         });
   }

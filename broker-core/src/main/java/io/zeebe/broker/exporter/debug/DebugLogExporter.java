@@ -25,7 +25,7 @@ import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
-import io.zeebe.exporter.api.record.Record;
+import io.zeebe.protocol.record.Record;
 import java.util.Collections;
 import org.slf4j.Logger;
 

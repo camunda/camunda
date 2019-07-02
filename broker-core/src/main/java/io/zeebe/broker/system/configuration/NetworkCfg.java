@@ -20,17 +20,24 @@ package io.zeebe.broker.system.configuration;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
 
+import io.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
+import io.zeebe.broker.system.configuration.SocketBindingCfg.InternalApiCfg;
+import io.zeebe.broker.system.configuration.SocketBindingCfg.MonitoringApiCfg;
 import io.zeebe.util.Environment;
 
 public class NetworkCfg implements ConfigurationEntry {
 
   public static final String DEFAULT_HOST = "0.0.0.0";
+  public static final int DEFAULT_COMMAND_API_PORT = 26501;
+  public static final int DEFAULT_INTERNAL_API_PORT = 26502;
+  public static final int DEFAULT_MONITORING_API_PORT = 9600;
 
   private String host = DEFAULT_HOST;
   private int portOffset = 0;
 
-  private SocketBindingCommandApiCfg commandApi = new SocketBindingCommandApiCfg();
-  private SocketBindingInternalCfg internalApi = new SocketBindingInternalCfg();
+  private CommandApiCfg commandApi = new CommandApiCfg();
+  private InternalApiCfg internalApi = new InternalApiCfg();
+  private MonitoringApiCfg monitoringApi = new MonitoringApiCfg();
 
   @Override
   public void init(
@@ -38,6 +45,7 @@ public class NetworkCfg implements ConfigurationEntry {
     applyEnvironment(environment);
     commandApi.applyDefaults(this);
     internalApi.applyDefaults(this);
+    monitoringApi.applyDefaults(this);
   }
 
   private void applyEnvironment(final Environment environment) {
@@ -61,19 +69,27 @@ public class NetworkCfg implements ConfigurationEntry {
     this.portOffset = portOffset;
   }
 
-  public SocketBindingCommandApiCfg getCommandApi() {
+  public SocketBindingCfg getCommandApi() {
     return commandApi;
   }
 
-  public void setCommandApi(final SocketBindingCommandApiCfg commandApi) {
+  public void setCommandApi(final CommandApiCfg commandApi) {
     this.commandApi = commandApi;
   }
 
-  public SocketBindingInternalCfg getInternalApi() {
+  public SocketBindingCfg getMonitoringApi() {
+    return monitoringApi;
+  }
+
+  public void setMonitoringApi(MonitoringApiCfg monitoringApi) {
+    this.monitoringApi = monitoringApi;
+  }
+
+  public SocketBindingCfg getInternalApi() {
     return internalApi;
   }
 
-  public void setInternalApi(SocketBindingInternalCfg internalApi) {
+  public void setInternalApi(InternalApiCfg internalApi) {
     this.internalApi = internalApi;
   }
 
@@ -89,6 +105,8 @@ public class NetworkCfg implements ConfigurationEntry {
         + commandApi
         + ", internalApi="
         + internalApi
+        + ", monitoringApi="
+        + monitoringApi
         + '}';
   }
 }

@@ -15,6 +15,8 @@
  */
 package io.zeebe.distributedlog.restore;
 
+import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreInfo;
+
 public interface RestoreInfoResponse {
 
   /** @return the replication target in order to restore the local log */
@@ -25,4 +27,10 @@ public interface RestoreInfoResponse {
     EVENTS,
     NONE,
   }
+
+  /**
+   * @return restore info for snapshot if {@link this::getReplicationTarget()} is equal to SNAPSHOT.
+   *     Otherwise returns null
+   */
+  SnapshotRestoreInfo getSnapshotRestoreInfo();
 }

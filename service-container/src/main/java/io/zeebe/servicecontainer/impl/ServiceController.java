@@ -35,7 +35,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -45,7 +44,6 @@ import org.slf4j.Logger;
 @SuppressWarnings("rawtypes")
 public class ServiceController extends Actor {
   public static final Logger LOG = Loggers.SERVICE_CONTAINER_LOGGER;
-  public static final boolean IS_TRACE_ENABLED = LOG.isTraceEnabled();
 
   private final AwaitDependenciesStartedState awaitDependenciesStartedState =
       new AwaitDependenciesStartedState();
@@ -112,10 +110,6 @@ public class ServiceController extends Actor {
   private void onServiceEvent() {
     final ServiceEvent event = channel.poll();
     if (event != null) {
-      if (IS_TRACE_ENABLED) {
-        LOG.trace("Got {} in state {}", event, state.getClass().getSimpleName());
-      }
-
       state.accept(event);
     } else {
       actor.yield();
@@ -239,7 +233,7 @@ public class ServiceController extends Actor {
     }
 
     public void onStartFailed(Throwable t) {
-      LOG.error("Service failed to start while in AwaitStartState", t);
+      LOG.error("Service {} failed to start while in AwaitStartState", name, t);
       startFuture.completeExceptionally(t);
       state = awaitStopState;
       fireEvent(ServiceEventType.SERVICE_STOPPED);
@@ -289,9 +283,8 @@ public class ServiceController extends Actor {
       if (t.getType() == ServiceEventType.SERVICE_STOPPED) {
         injectors.values().stream().flatMap(Collection::stream).forEach(i -> i.uninject());
 
-        fireEvent(ServiceEventType.SERVICE_REMOVED);
-
         state = removedState;
+        fireEvent(ServiceEventType.SERVICE_REMOVED);
       }
     }
   }
@@ -337,7 +330,6 @@ public class ServiceController extends Actor {
     boolean isValid = true;
     boolean isAsync = false;
     boolean isInterruptible = false;
-    boolean stopOnCompletion = false;
     Runnable action;
 
     public void invalidate() {
@@ -348,21 +340,6 @@ public class ServiceController extends Actor {
     @Override
     public ServiceName<?> getServiceName() {
       return name;
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <S> S getService(ServiceName<S> name) {
-      validCheck();
-      dependencyCheck(name);
-      return (S) resolvedDependencies.stream().filter((c) -> c.name.equals(name)).findFirst();
-    }
-
-    @Override
-    public <S> S getService(String name, Class<S> type) {
-      validCheck();
-
-      return getService(ServiceName.newServiceName(name, type));
     }
 
     @Override
@@ -392,21 +369,6 @@ public class ServiceController extends Actor {
     @Override
     public <S> ActorFuture<Void> removeService(ServiceName<S> name) {
       validCheck();
-
-      if (!dependentServices.contains(name)) {
-        final Optional<ServiceController> contoller =
-            resolvedDependencies.stream().filter((c) -> c.name.equals(name)).findFirst();
-
-        if (!contoller.isPresent()) {
-          final String errorMessage =
-              String.format(
-                  "Cannot remove service '%s' from context '%s'. Can only remove dependencies and services started through this context.",
-                  name, ServiceController.this.name);
-          return CompletableActorFuture.completedExceptionally(
-              new IllegalArgumentException(errorMessage));
-        }
-      }
-
       return container.removeService(name);
     }
 
@@ -430,16 +392,6 @@ public class ServiceController extends Actor {
     void validCheck() {
       if (!isValid) {
         throw new IllegalStateException("Service Context is invalid");
-      }
-    }
-
-    void dependencyCheck(ServiceName<?> name) {
-      if (!dependencies.contains(name)) {
-        final String errorMessage =
-            String.format(
-                "Cannot get service '%s' from context '%s'. Requested Service is not a dependency.",
-                name, ServiceController.this.name);
-        throw new IllegalArgumentException(errorMessage);
       }
     }
 
@@ -476,7 +428,7 @@ public class ServiceController extends Actor {
     }
 
     @Override
-    public <S> boolean hasService(ServiceName<S> name) {
+    public <S> ActorFuture<Boolean> hasService(ServiceName<S> name) {
       validCheck();
       return container.hasService(name);
     }
@@ -540,19 +492,15 @@ public class ServiceController extends Actor {
     return String.format("%s in %s", name, state.getClass().getSimpleName());
   }
 
-  private void fireEvent(ServiceEventType evtType) {
+  public void fireEvent(ServiceEventType evtType) {
     fireEvent(evtType, null);
   }
 
-  private void fireEvent(ServiceEventType evtType, Object payload) {
+  public void fireEvent(ServiceEventType evtType, Object payload) {
     final ServiceEvent event = new ServiceEvent(evtType, this, payload);
 
     channel.add(event);
     container.getChannel().add(event);
-  }
-
-  public ConcurrentQueueChannel<ServiceEvent> getChannel() {
-    return channel;
   }
 
   public Set<ServiceName<?>> getDependencies() {

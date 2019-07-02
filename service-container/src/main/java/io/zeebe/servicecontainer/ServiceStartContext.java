@@ -23,17 +23,13 @@ public interface ServiceStartContext extends ServiceContext {
 
   ServiceName<?> getServiceName();
 
-  <S> S getService(ServiceName<S> name);
-
-  <S> S getService(String name, Class<S> type);
-
   <S> ServiceBuilder<S> createService(ServiceName<S> name, Service<S> service);
 
   CompositeServiceBuilder createComposite(ServiceName<Void> name);
 
   <S> ActorFuture<Void> removeService(ServiceName<S> name);
 
-  <S> boolean hasService(ServiceName<S> name);
+  <S> ActorFuture<Boolean> hasService(ServiceName<S> name);
 
   ActorScheduler getScheduler();
 

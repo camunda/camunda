@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
+import java.time.Duration;
 import org.junit.Test;
 
 public class FailJobTest extends ClientTest {
@@ -52,5 +53,19 @@ public class FailJobTest extends ClientTest {
     assertThat(request.getJobKey()).isEqualTo(jobKey);
     assertThat(request.getRetries()).isEqualTo(newRetries);
     assertThat(request.getErrorMessage()).isEqualTo("failed message");
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldSetRequestTimeout() {
+    // given
+    final Duration requestTimeout = Duration.ofHours(124);
+
+    // when
+    client.newFailCommand(123).retries(3).requestTimeout(requestTimeout).send().join();
+
+    // then
+    rule.verifyRequestTimeout(requestTimeout);
   }
 }

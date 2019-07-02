@@ -28,18 +28,15 @@ import java.time.Duration;
 public class AsyncSnapshotingDirectorService implements Service<AsyncSnapshotingDirectorService> {
   private final Injector<StreamProcessor> streamProcessorInjector = new Injector<>();
 
-  private final int partitionId;
   private final LogStream logStream;
   private final StateSnapshotController snapshotController;
   private final Duration snapshotPeriod;
   private AsyncSnapshotDirector asyncSnapshotDirector;
 
   public AsyncSnapshotingDirectorService(
-      final int partitionId,
       final LogStream logStream,
       final StateSnapshotController snapshotController,
       Duration snapshotPeriod) {
-    this.partitionId = partitionId;
     this.logStream = logStream;
     this.snapshotController = snapshotController;
     this.snapshotPeriod = snapshotPeriod;
@@ -48,15 +45,9 @@ public class AsyncSnapshotingDirectorService implements Service<AsyncSnapshoting
   @Override
   public void start(final ServiceStartContext startContext) {
     final StreamProcessor streamProcessor = streamProcessorInjector.getValue();
-    final SnapshotMetrics snapshotMetrics =
-        new SnapshotMetrics(
-            startContext.getScheduler().getMetricsManager(),
-            streamProcessor.getName(),
-            String.valueOf(partitionId));
 
     asyncSnapshotDirector =
-        new AsyncSnapshotDirector(
-            streamProcessor, snapshotController, logStream, snapshotPeriod, snapshotMetrics);
+        new AsyncSnapshotDirector(streamProcessor, snapshotController, logStream, snapshotPeriod);
 
     startContext.getScheduler().submitActor(asyncSnapshotDirector);
   }

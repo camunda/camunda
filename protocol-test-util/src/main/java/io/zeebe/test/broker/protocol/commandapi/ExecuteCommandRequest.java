@@ -15,14 +15,14 @@
  */
 package io.zeebe.test.broker.protocol.commandapi;
 
-import static io.zeebe.protocol.ExecuteCommandRequestEncoder.keyNullValue;
-import static io.zeebe.protocol.ExecuteCommandRequestEncoder.partitionIdNullValue;
+import static io.zeebe.protocol.record.ExecuteCommandRequestEncoder.keyNullValue;
+import static io.zeebe.protocol.record.ExecuteCommandRequestEncoder.partitionIdNullValue;
 
-import io.zeebe.protocol.ErrorCode;
-import io.zeebe.protocol.ExecuteCommandRequestEncoder;
-import io.zeebe.protocol.MessageHeaderEncoder;
-import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.ErrorCode;
+import io.zeebe.protocol.record.ExecuteCommandRequestEncoder;
+import io.zeebe.protocol.record.MessageHeaderEncoder;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientResponse;

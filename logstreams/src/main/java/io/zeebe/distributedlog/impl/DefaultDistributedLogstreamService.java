@@ -34,18 +34,23 @@ import io.zeebe.distributedlog.restore.RestoreNodeProvider;
 import io.zeebe.distributedlog.restore.impl.RestoreController;
 import io.zeebe.distributedlog.restore.log.LogReplicationAppender;
 import io.zeebe.distributedlog.restore.log.LogReplicator;
+import io.zeebe.distributedlog.restore.snapshot.RestoreSnapshotReplicator;
+import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreContext;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.logstreams.state.SnapshotRequester;
+import io.zeebe.logstreams.state.FileSnapshotConsumer;
+import io.zeebe.logstreams.state.SnapshotConsumer;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.util.ZbLogger;
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +72,7 @@ public class DefaultDistributedLogstreamService
   private String localMemberId;
   private Logger logger;
 
-  public DefaultDistributedLogstreamService(DistributedLogstreamServiceConfig config) {
+  public DefaultDistributedLogstreamService() {
     super(DistributedLogstreamType.instance(), DistributedLogstreamClient.class);
     lastPosition = -1;
   }
@@ -140,7 +145,9 @@ public class DefaultDistributedLogstreamService
     final LogStream logStream;
     serviceContainer = LogstreamConfig.getServiceContainer(localMemberId);
 
-    if (serviceContainer.hasService(LogStreamServiceNames.logStreamServiceName(logServiceName))) {
+    if (serviceContainer
+        .hasService(LogStreamServiceNames.logStreamServiceName(logServiceName))
+        .join()) {
       logStream = LogstreamConfig.getLogStream(localMemberId, partitionId);
     } else {
       logStream = createLogStream(logServiceName);
@@ -155,17 +162,12 @@ public class DefaultDistributedLogstreamService
         LogstreamConfig.getConfig(localMemberId, partitionId).join();
 
     final File logDirectory = config.getLogDirectory();
-    final File snapshotDirectory = config.getSnapshotsDirectory();
-    final File blockIndexDirectory = config.getBlockIndexDirectory();
 
-    final StateStorage stateStorage = new StateStorage(blockIndexDirectory, snapshotDirectory);
     return LogStreams.createFsLogStream(partitionId)
         .logDirectory(logDirectory.getAbsolutePath())
         .logSegmentSize((int) config.getLogSegmentSize())
-        .indexBlockSize((int) config.getIndexBlockSize())
         .logName(logServiceName)
         .serviceContainer(serviceContainer)
-        .indexStateStorage(stateStorage)
         .build()
         .join();
   }
@@ -204,14 +206,42 @@ public class DefaultDistributedLogstreamService
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(blockBuffer);
-    final long appendResult = logStorage.append(buffer);
-    if (appendResult > 0) {
-      updateCommitPosition(commitPosition);
-    } else {
-      logger.error("Append failed {}", appendResult);
+    final long appendResult = appendBlock(buffer);
+    updateCommitPosition(commitPosition);
+    return appendResult;
+  }
+
+  private long appendBlock(ByteBuffer buffer) {
+    long appendResult = -1;
+    boolean notAppended = true;
+    try {
+
+      do {
+        try {
+          appendResult = logStorage.append(buffer);
+          notAppended = false;
+        } catch (IOException ioe) {
+          // we want to retry the append
+          // we avoid recursion, otherwise we can get stack overflow exceptions
+          LOG.error(
+              "Expected to append new buffer, but caught IOException. Will retry this operation.",
+              ioe);
+        }
+      } while (notAppended);
+    } catch (Exception e) {
+      // block the primitive
+      LOG.error(
+          "Expected to append new buffer, but caught an non recoverable exception. Will block the primitive.",
+          e);
+      while (true) {
+        try {
+          new CountDownLatch(1).await();
+        } catch (InterruptedException ex) {
+          LOG.error("Blocking the primitive was interrupted.", ex);
+        }
+      }
     }
-    // the return result is valid only for the leader. If the followers failed to append, they don't
-    // retry
+
     return appendResult;
   }
 
@@ -251,38 +281,22 @@ public class DefaultDistributedLogstreamService
 
     if (lastPosition < backupPosition) {
       LogstreamConfig.startRestore(localMemberId, partitionId);
-      final RestoreFactory restoreFactory = LogstreamConfig.getRestoreFactory(localMemberId);
 
       final ThreadContext restoreThreadContext =
           new SingleThreadContext(String.format("log-restore-%d", partitionId));
-      final RestoreClient restoreClient = restoreFactory.createClient(partitionId);
-      final RestoreNodeProvider nodeProvider = restoreFactory.createNodeProvider(partitionId);
-      final LogReplicator logReplicator =
-          new LogReplicator(this, restoreClient, restoreThreadContext);
-      final SnapshotRequester snapshotReplicator =
-          new SnapshotRequester(
-              restoreClient, restoreFactory.createSnapshotRestoreContext(), partitionId);
-      final RestoreController restoreController =
-          new RestoreController(
-              restoreClient,
-              nodeProvider,
-              logReplicator,
-              snapshotReplicator,
-              restoreThreadContext,
-              getLogger());
+      final RestoreController restoreController = createRestoreController(restoreThreadContext);
 
       while (lastPosition < backupPosition) {
         final long latestLocalPosition = lastPosition;
-        logger.trace(
+        logger.debug(
             "Restoring local log from position {} to {}", latestLocalPosition, backupPosition);
-
         try {
           lastPosition = restoreController.restore(lastPosition, backupPosition);
-          logger.trace(
+          logger.debug(
               "Restored local log from position {} to {}", latestLocalPosition, lastPosition);
         } catch (RuntimeException e) {
           lastPosition = logStream.getCommitPosition();
-          logger.debug("Restoring local log failed at position {}. Retrying.", lastPosition, e);
+          logger.debug("Restoring local log failed at position {}, retrying.", lastPosition, e);
         }
       }
 
@@ -293,6 +307,30 @@ public class DefaultDistributedLogstreamService
     logger.debug("Restored local log to position {}", lastPosition);
     currentLeader = backupInput.readString();
     currentLeaderTerm = backupInput.readLong();
+  }
+
+  private RestoreController createRestoreController(ThreadContext restoreThreadContext) {
+    final RestoreFactory restoreFactory = LogstreamConfig.getRestoreFactory(localMemberId);
+    final RestoreClient restoreClient = restoreFactory.createClient(partitionId);
+    final RestoreNodeProvider nodeProvider = restoreFactory.createNodeProvider(partitionId);
+    final LogReplicator logReplicator =
+        new LogReplicator(this, restoreClient, restoreThreadContext);
+
+    final SnapshotRestoreContext snapshotRestoreContext =
+        restoreFactory.createSnapshotRestoreContext(partitionId, logger);
+    final StateStorage storage = snapshotRestoreContext.getStateStorage();
+    final SnapshotConsumer snapshotConsumer = new FileSnapshotConsumer(storage, LOG);
+
+    final RestoreSnapshotReplicator snapshotReplicator =
+        new RestoreSnapshotReplicator(
+            restoreClient, snapshotRestoreContext, snapshotConsumer, restoreThreadContext, logger);
+    return new RestoreController(
+        restoreClient,
+        nodeProvider,
+        logReplicator,
+        snapshotReplicator,
+        restoreThreadContext,
+        logger);
   }
 
   private void updateCommitPosition(long commitPosition) {

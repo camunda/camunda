@@ -15,6 +15,7 @@
  */
 package io.zeebe.logstreams.spi;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /** Log structured storage abstraction */
@@ -61,8 +62,11 @@ public interface LogStorage {
    *
    * @param blockBuffer the buffer containing a block of log entries to be written into storage
    * @return the address at which the block has been written or error status code
+   * @throws IOException on I/O error during the append operation
+   * @throws IllegalArgumentException when block size is to large
+   * @throws IllegalStateException when logstorage was not opened and not initialized
    */
-  long append(ByteBuffer blockBuffer);
+  long append(ByteBuffer blockBuffer) throws IOException;
 
   /**
    * Deletes from the log storage, uses the given address as upper limit.
@@ -129,8 +133,12 @@ public interface LogStorage {
    */
   boolean isByteAddressable();
 
-  /** Open the storage. Called in the log conductor thread. */
-  void open();
+  /**
+   * Open the storage. Called in the log conductor thread.
+   *
+   * @throws IOException on I/O errors during allocating the first segments
+   */
+  void open() throws IOException;
 
   /** Close the storage. Called in the log conductor thread. */
   void close();

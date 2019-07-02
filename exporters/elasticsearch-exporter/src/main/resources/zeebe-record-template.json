@@ -17,14 +17,8 @@
         "position": {
           "type": "long"
         },
-        "raftTerm": {
-          "type": "integer"
-        },
         "sourceRecordPosition": {
           "type": "long"
-        },
-        "producerId": {
-          "type": "integer"
         },
         "key": {
           "type": "long"
@@ -32,27 +26,23 @@
         "timestamp": {
           "type": "date"
         },
-        "metadata": {
-          "properties": {
-            "intent": {
-              "type": "keyword"
-            },
-            "partitionId": {
-              "type": "integer"
-            },
-            "recordType": {
-              "type": "keyword"
-            },
-            "rejectionType": {
-              "type": "keyword"
-            },
-            "rejectionReason": {
-              "type": "text"
-            },
-            "valueType": {
-              "type": "keyword"
-            }
-          }
+        "intent": {
+          "type": "keyword"
+        },
+        "partitionId": {
+          "type": "integer"
+        },
+        "recordType": {
+          "type": "keyword"
+        },
+        "rejectionType": {
+          "type": "keyword"
+        },
+        "rejectionReason": {
+          "type": "text"
+        },
+        "valueType": {
+          "type": "keyword"
         }
       }
     }

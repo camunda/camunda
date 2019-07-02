@@ -17,11 +17,11 @@
  */
 package io.zeebe.broker.engine;
 
-import static io.zeebe.protocol.intent.MessageIntent.PUBLISH;
+import static io.zeebe.protocol.record.intent.MessageIntent.PUBLISH;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.ValueType;
+import io.zeebe.protocol.record.ValueType;
 import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
 import io.zeebe.test.broker.protocol.commandapi.ExecuteCommandRequestBuilder;
 import org.junit.ClassRule;

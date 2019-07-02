@@ -24,10 +24,10 @@ import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.ElementInstanceState;
 import io.zeebe.engine.state.instance.VariablesState;
 import io.zeebe.msgpack.spec.MsgpackReaderException;
-import io.zeebe.protocol.RejectionType;
-import io.zeebe.protocol.VariableDocumentUpdateSemantic;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
-import io.zeebe.protocol.intent.VariableDocumentIntent;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import org.agrona.DirectBuffer;
 
 public class UpdateVariableDocumentProcessor implements CommandProcessor<VariableDocumentRecord> {
@@ -70,7 +70,7 @@ public class UpdateVariableDocumentProcessor implements CommandProcessor<Variabl
       CommandControl<VariableDocumentRecord> controller) {
     try {
       getUpdateOperation(record.getUpdateSemantics())
-          .apply(record.getScopeKey(), workflowKey, record.getDocumentBuffer());
+          .apply(record.getScopeKey(), workflowKey, record.getVariablesBuffer());
       return true;
     } catch (MsgpackReaderException e) {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
@@ -99,6 +99,6 @@ public class UpdateVariableDocumentProcessor implements CommandProcessor<Variabl
 
   @FunctionalInterface
   private interface UpdateOperation {
-    void apply(long scopeKey, long workflowKey, DirectBuffer document);
+    void apply(long scopeKey, long workflowKey, DirectBuffer variables);
   }
 }

@@ -15,9 +15,9 @@
  */
 package io.zeebe.broker.it.util;
 
-import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.client.api.subscription.JobHandler;
+import io.zeebe.client.api.worker.JobClient;
+import io.zeebe.client.api.worker.JobHandler;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -39,7 +39,7 @@ public class RecordingJobHandler implements JobHandler {
   }
 
   @Override
-  public void handle(JobClient client, ActivatedJob job) {
+  public void handle(JobClient client, ActivatedJob job) throws Exception {
     final JobHandler handler = jobHandlers[nextJobHandler];
     nextJobHandler = Math.min(nextJobHandler + 1, jobHandlers.length - 1);
 

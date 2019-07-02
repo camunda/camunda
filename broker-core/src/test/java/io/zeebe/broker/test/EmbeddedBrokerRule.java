@@ -25,7 +25,7 @@ import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setCommandApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayClusterPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setInternalApiPort;
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setMetricsPort;
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setMonitoringPort;
 
 import io.atomix.core.Atomix;
 import io.zeebe.broker.Broker;
@@ -129,7 +129,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
     setGatewayClusterPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
     setCommandApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
     setInternalApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
-    setMetricsPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
+    setMonitoringPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
   }
 
   @Override

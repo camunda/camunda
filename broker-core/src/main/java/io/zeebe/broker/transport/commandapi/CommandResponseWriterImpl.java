@@ -17,18 +17,18 @@
  */
 package io.zeebe.broker.transport.commandapi;
 
-import static io.zeebe.protocol.ExecuteCommandResponseEncoder.keyNullValue;
-import static io.zeebe.protocol.ExecuteCommandResponseEncoder.partitionIdNullValue;
-import static io.zeebe.protocol.ExecuteCommandResponseEncoder.valueHeaderLength;
+import static io.zeebe.protocol.record.ExecuteCommandResponseEncoder.keyNullValue;
+import static io.zeebe.protocol.record.ExecuteCommandResponseEncoder.partitionIdNullValue;
+import static io.zeebe.protocol.record.ExecuteCommandResponseEncoder.valueHeaderLength;
 
 import io.zeebe.engine.processor.CommandResponseWriter;
-import io.zeebe.protocol.ExecuteCommandResponseEncoder;
-import io.zeebe.protocol.MessageHeaderEncoder;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.RejectionType;
-import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.ExecuteCommandResponseEncoder;
+import io.zeebe.protocol.record.MessageHeaderEncoder;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.buffer.BufferWriter;

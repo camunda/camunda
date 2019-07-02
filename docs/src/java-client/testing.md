@@ -20,7 +20,7 @@ Use the `ZeebeTestRule` in your test case to start an embedded broker. It contai
 
 ```java
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.response.WorkflowInstanceEvent;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

@@ -27,7 +27,7 @@ import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.model.bpmn.util.time.TimeDateTimer;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
 import java.util.Random;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -83,7 +83,7 @@ public class CatchEventBehaviorTest {
     Mockito.verify(streamWriter).appendNewCommand(eq(TimerIntent.CREATE), captor.capture());
     final TimerRecord record = (TimerRecord) captor.getValue();
 
-    assertThat(record.getHandlerNodeId()).isEqualTo(handlerNodeId);
+    assertThat(record.getTargetElementIdBuffer()).isEqualTo(handlerNodeId);
     assertThat(record.getElementInstanceKey()).isEqualTo(elementInstanceKey);
     assertThat(record.getWorkflowKey()).isEqualTo(workflowKey);
     assertThat(record.getRepetitions()).isEqualTo(repetitions);
@@ -114,7 +114,7 @@ public class CatchEventBehaviorTest {
             ArgumentMatchers.eq(timer.getKey()), eq(TimerIntent.CANCEL), captor.capture());
     final TimerRecord record = (TimerRecord) captor.getValue();
 
-    assertThat(record.getHandlerNodeId()).isEqualTo(timer.getHandlerNodeId());
+    assertThat(record.getTargetElementIdBuffer()).isEqualTo(timer.getHandlerNodeId());
     assertThat(record.getElementInstanceKey()).isEqualTo(timer.getElementInstanceKey());
     assertThat(record.getWorkflowKey()).isEqualTo(timer.getWorkflowKey());
     assertThat(record.getWorkflowInstanceKey()).isEqualTo(timer.getWorkflowInstanceKey());

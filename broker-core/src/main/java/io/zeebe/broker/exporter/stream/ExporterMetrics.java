@@ -17,53 +17,33 @@
  */
 package io.zeebe.broker.exporter.stream;
 
-import io.zeebe.engine.processor.SnapshotMetrics;
-import io.zeebe.util.metrics.Metric;
-import io.zeebe.util.metrics.MetricsManager;
+import io.prometheus.client.Counter;
 
 public class ExporterMetrics {
-  private final Metric eventsExportedCountMetric;
-  private final Metric eventsSkippedCountMetric;
-  private final SnapshotMetrics snapshotMetrics;
 
-  public ExporterMetrics(
-      final MetricsManager metricsManager, final String processorName, final String partitionId) {
-    eventsExportedCountMetric =
-        metricsManager
-            .newMetric("exporter_events_count")
-            .type("counter")
-            .label("processor", processorName)
-            .label("action", "exported")
-            .label("partition", partitionId)
-            .create();
+  private static final Counter EXPORTER_EVENTS =
+      Counter.build()
+          .namespace("zeebe")
+          .name("exporter_events_total")
+          .help("Number of events processed by exporter")
+          .labelNames("action", "partition")
+          .register();
 
-    eventsSkippedCountMetric =
-        metricsManager
-            .newMetric("exporter_events_count")
-            .type("counter")
-            .label("processor", processorName)
-            .label("action", "skipped")
-            .label("partition", partitionId)
-            .create();
+  private final String partitionIdLabel;
 
-    snapshotMetrics = new SnapshotMetrics(metricsManager, processorName, partitionId);
+  public ExporterMetrics(int partitionId) {
+    partitionIdLabel = String.valueOf(partitionId);
   }
 
-  public void close() {
-    eventsExportedCountMetric.close();
-    eventsSkippedCountMetric.close();
-    snapshotMetrics.close();
+  private void event(String action) {
+    EXPORTER_EVENTS.labels(action, partitionIdLabel).inc();
   }
 
-  public void incrementEventsExportedCount() {
-    eventsExportedCountMetric.incrementOrdered();
+  public void eventExported() {
+    event("exported");
   }
 
-  public void incrementEventsSkippedCount() {
-    eventsSkippedCountMetric.incrementOrdered();
-  }
-
-  public SnapshotMetrics getSnapshotMetrics() {
-    return snapshotMetrics;
+  public void eventSkipped() {
+    event("skipped");
   }
 }

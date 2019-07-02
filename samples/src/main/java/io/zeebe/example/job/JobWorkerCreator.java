@@ -17,10 +17,10 @@ package io.zeebe.example.job;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.client.api.subscription.JobHandler;
-import io.zeebe.client.api.subscription.JobWorker;
+import io.zeebe.client.api.worker.JobClient;
+import io.zeebe.client.api.worker.JobHandler;
+import io.zeebe.client.api.worker.JobWorker;
 import java.time.Duration;
 import java.util.Scanner;
 
@@ -57,15 +57,7 @@ public class JobWorkerCreator {
     @Override
     public void handle(final JobClient client, final ActivatedJob job) {
       // here: business logic that is executed with every job
-      System.out.println(
-          String.format(
-              "[type: %s, key: %s, lockExpirationTime: %s]\n[headers: %s]\n[variables: %s]\n===",
-              job.getType(),
-              job.getKey(),
-              job.getDeadline().toString(),
-              job.getHeaders(),
-              job.getVariables()));
-
+      System.out.println(job);
       client.newCompleteCommand(job.getKey()).send().join();
     }
   }

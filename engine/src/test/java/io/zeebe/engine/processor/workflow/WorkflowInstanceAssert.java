@@ -17,11 +17,10 @@
  */
 package io.zeebe.engine.processor.workflow;
 
-import io.zeebe.engine.processor.TypedEventImpl;
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Optional;
@@ -34,28 +33,28 @@ import org.assertj.core.util.Lists;
 public class WorkflowInstanceAssert
     extends AbstractListAssert<
         WorkflowInstanceAssert,
-        List<TypedRecord<WorkflowInstanceRecord>>,
-        TypedRecord<WorkflowInstanceRecord>,
-        ObjectAssert<TypedRecord<WorkflowInstanceRecord>>> {
+        List<Record<WorkflowInstanceRecord>>,
+        Record<WorkflowInstanceRecord>,
+        ObjectAssert<Record<WorkflowInstanceRecord>>> {
 
-  public WorkflowInstanceAssert(List<TypedRecord<WorkflowInstanceRecord>> actual) {
+  public WorkflowInstanceAssert(List<Record<WorkflowInstanceRecord>> actual) {
     super(actual, WorkflowInstanceAssert.class);
   }
 
   @Override
-  protected ObjectAssert<TypedRecord<WorkflowInstanceRecord>> toAssert(
-      TypedRecord<WorkflowInstanceRecord> value, String description) {
+  protected ObjectAssert<Record<WorkflowInstanceRecord>> toAssert(
+      Record<WorkflowInstanceRecord> value, String description) {
     return new ObjectAssert<>(value).describedAs(description);
   }
 
   @Override
   protected WorkflowInstanceAssert newAbstractIterableAssert(
-      Iterable<? extends TypedRecord<WorkflowInstanceRecord>> iterable) {
+      Iterable<? extends Record<WorkflowInstanceRecord>> iterable) {
     return new WorkflowInstanceAssert(Lists.newArrayList(iterable));
   }
 
   public static WorkflowInstanceAssert assertThat(
-      List<TypedRecord<WorkflowInstanceRecord>> workflowInstanceEvents) {
+      List<Record<WorkflowInstanceRecord>> workflowInstanceEvents) {
     return new WorkflowInstanceAssert(workflowInstanceEvents);
   }
 
@@ -66,11 +65,11 @@ public class WorkflowInstanceAssert
   public WorkflowInstanceAssert doesNotEvaluateFlowAfterTerminatingElement(String elementId) {
     final DirectBuffer elementIdBuffer = BufferUtil.wrapString(elementId);
 
-    final Optional<TypedRecord<WorkflowInstanceRecord>> terminatingRecordOptional =
+    final Optional<Record<WorkflowInstanceRecord>> terminatingRecordOptional =
         actual.stream()
             .filter(
                 r ->
-                    r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_TERMINATING
+                    r.getIntent() == WorkflowInstanceIntent.ELEMENT_TERMINATING
                         && elementIdBuffer.equals(r.getValue().getElementIdBuffer()))
             .findFirst();
 
@@ -79,25 +78,25 @@ public class WorkflowInstanceAssert
           "Assumption not met: there is not ELEMENT_TERMINATING record for element %s", elementId);
     }
 
-    final TypedEventImpl terminatingRecord = (TypedEventImpl) terminatingRecordOptional.get();
+    final Record terminatingRecord = terminatingRecordOptional.get();
     final long instanceKey = terminatingRecord.getKey();
 
-    final Long2ObjectHashMap<TypedRecord<WorkflowInstanceRecord>> recordsByPosition =
+    final Long2ObjectHashMap<Record<WorkflowInstanceRecord>> recordsByPosition =
         new Long2ObjectHashMap<>();
-    actual.forEach(r -> recordsByPosition.put(((TypedEventImpl) r).getPosition(), r));
+    actual.forEach(r -> recordsByPosition.put(r.getPosition(), r));
 
     // - once a terminating record is written, there shall be no record with a greater getPosition
     // that
     //   - was handled (has a follow-up event)
     //   - is in an event in the terminating flow scope
     //   - is a non-terminating event
-    final Optional<TypedRecord<WorkflowInstanceRecord>> firstViolatingRecord =
+    final Optional<Record<WorkflowInstanceRecord>> firstViolatingRecord =
         actual.stream()
-            .map(r -> (TypedEventImpl) r)
+            .map(r -> (Record) r)
             .filter(r -> r.getSourceRecordPosition() > terminatingRecord.getPosition())
             .map(r -> recordsByPosition.get(r.getSourceRecordPosition()))
             .filter(r -> r.getValue().getFlowScopeKey() == instanceKey)
-            .filter(r -> isFlowEvaluatingState(r.getMetadata().getIntent()))
+            .filter(r -> isFlowEvaluatingState(r.getIntent()))
             .findFirst();
 
     if (firstViolatingRecord.isPresent()) {

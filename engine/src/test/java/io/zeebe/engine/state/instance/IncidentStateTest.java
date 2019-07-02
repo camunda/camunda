@@ -22,8 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.ZeebeStateRule;
-import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.zeebe.protocol.record.value.ErrorType;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -200,10 +200,12 @@ public class IncidentStateTest {
     assertThat(expectedRecord.getJobKey()).isEqualTo(storedRecord.getJobKey());
     assertThat(expectedRecord.getElementInstanceKey())
         .isEqualTo(storedRecord.getElementInstanceKey());
-    assertThat(expectedRecord.getBpmnProcessId()).isEqualTo(storedRecord.getBpmnProcessId());
-    assertThat(expectedRecord.getElementId()).isEqualTo(storedRecord.getElementId());
+    assertThat(expectedRecord.getBpmnProcessIdBuffer())
+        .isEqualTo(storedRecord.getBpmnProcessIdBuffer());
+    assertThat(expectedRecord.getElementIdBuffer()).isEqualTo(storedRecord.getElementIdBuffer());
 
-    assertThat(expectedRecord.getErrorMessage()).isEqualTo(storedRecord.getErrorMessage());
+    assertThat(expectedRecord.getErrorMessageBuffer())
+        .isEqualTo(storedRecord.getErrorMessageBuffer());
     assertThat(expectedRecord.getErrorType()).isEqualTo(storedRecord.getErrorType());
   }
 }

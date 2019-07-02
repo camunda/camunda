@@ -18,9 +18,10 @@ package io.zeebe.client.workflow;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
+import java.time.Duration;
 import org.junit.Test;
 
 public class CancelWorkflowInstanceTest extends ClientTest {
@@ -33,6 +34,8 @@ public class CancelWorkflowInstanceTest extends ClientTest {
     // then
     final CancelWorkflowInstanceRequest request = gatewayService.getLastRequest();
     assertThat(request.getWorkflowInstanceKey()).isEqualTo(123);
+
+    rule.verifyDefaultRequestTimeout();
   }
 
   @Test
@@ -44,5 +47,17 @@ public class CancelWorkflowInstanceTest extends ClientTest {
     assertThatThrownBy(() -> client.newCancelInstanceCommand(123).send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
+  }
+
+  @Test
+  public void shouldSetRequestTimeout() {
+    // given
+    final Duration requestTimeout = Duration.ofHours(124);
+
+    // when
+    client.newCancelInstanceCommand(123).requestTimeout(requestTimeout).send().join();
+
+    // then
+    rule.verifyRequestTimeout(requestTimeout);
   }
 }

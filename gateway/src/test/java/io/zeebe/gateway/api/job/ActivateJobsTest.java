@@ -74,15 +74,12 @@ public class ActivateJobsTest extends GatewayTest {
       assertThat(job.getWorker()).isEqualTo(worker);
       assertThat(job.getRetries()).isEqualTo(stub.getRetries());
       assertThat(job.getDeadline()).isEqualTo(stub.getDeadline());
-      assertThat(job.getJobHeaders().getWorkflowInstanceKey())
-          .isEqualTo(stub.getWorkflowInstanceKey());
-      assertThat(job.getJobHeaders().getBpmnProcessId()).isEqualTo(stub.getBpmnProcessId());
-      assertThat(job.getJobHeaders().getWorkflowDefinitionVersion())
-          .isEqualTo(stub.getWorkflowDefinitionVersion());
-      assertThat(job.getJobHeaders().getWorkflowKey()).isEqualTo(stub.getWorkflowKey());
-      assertThat(job.getJobHeaders().getElementId()).isEqualTo(stub.getElementId());
-      assertThat(job.getJobHeaders().getElementInstanceKey())
-          .isEqualTo(stub.getElementInstanceKey());
+      assertThat(job.getWorkflowInstanceKey()).isEqualTo(stub.getWorkflowInstanceKey());
+      assertThat(job.getBpmnProcessId()).isEqualTo(stub.getBpmnProcessId());
+      assertThat(job.getWorkflowDefinitionVersion()).isEqualTo(stub.getWorkflowDefinitionVersion());
+      assertThat(job.getWorkflowKey()).isEqualTo(stub.getWorkflowKey());
+      assertThat(job.getElementId()).isEqualTo(stub.getElementId());
+      assertThat(job.getElementInstanceKey()).isEqualTo(stub.getElementInstanceKey());
       JsonUtil.assertEquality(job.getCustomHeaders(), stub.getCustomHeaders());
       JsonUtil.assertEquality(job.getVariables(), stub.getVariables());
     }
@@ -90,9 +87,9 @@ public class ActivateJobsTest extends GatewayTest {
     final BrokerActivateJobsRequest brokerRequest = gateway.getSingleBrokerRequest();
     final JobBatchRecord brokerRequestValue = brokerRequest.getRequestWriter();
     assertThat(brokerRequestValue.getMaxJobsToActivate()).isEqualTo(maxJobsToActivate);
-    assertThat(brokerRequestValue.getType()).isEqualTo(wrapString(jobType));
+    assertThat(brokerRequestValue.getTypeBuffer()).isEqualTo(wrapString(jobType));
     assertThat(brokerRequestValue.getTimeout()).isEqualTo(timeout.toMillis());
-    assertThat(brokerRequestValue.getWorker()).isEqualTo(wrapString(worker));
+    assertThat(brokerRequestValue.getWorkerBuffer()).isEqualTo(wrapString(worker));
     assertThat(brokerRequestValue.variables())
         .extracting(v -> BufferUtil.bufferAsString(v.getValue()))
         .containsExactlyInAnyOrderElementsOf(fetchVariables);

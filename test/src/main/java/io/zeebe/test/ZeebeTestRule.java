@@ -18,7 +18,7 @@ package io.zeebe.test;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.response.WorkflowInstanceEvent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Properties;

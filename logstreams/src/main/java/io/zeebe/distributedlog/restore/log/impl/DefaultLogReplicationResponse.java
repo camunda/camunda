@@ -57,6 +57,10 @@ public class DefaultLogReplicationResponse implements LogReplicationResponse {
     return serializedEvents;
   }
 
+  public void setSerializedEvents(byte[] serializedEvents) {
+    this.serializedEvents = serializedEvents;
+  }
+
   public void setSerializedEvents(DirectBuffer buffer, int offset, int length) {
     final DirectBuffer wrapper = new UnsafeBuffer(buffer, offset, length);
     this.serializedEvents = BufferUtil.bufferAsArray(wrapper);

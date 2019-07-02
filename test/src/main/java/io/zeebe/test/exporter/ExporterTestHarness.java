@@ -21,7 +21,7 @@ import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Configuration;
 import io.zeebe.exporter.api.context.Controller;
-import io.zeebe.exporter.api.record.Record;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.test.exporter.record.MockRecord;
 import io.zeebe.test.exporter.record.MockRecordMetadata;
 import io.zeebe.test.exporter.record.MockRecordStream;
@@ -29,7 +29,6 @@ import io.zeebe.util.ZbLogger;
 import java.io.File;
 import java.io.InputStream;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -287,7 +286,7 @@ public class ExporterTestHarness {
   private MockRecord generateNextRecord(MockRecord seed) {
     return ((MockRecord) seed.clone())
         .setMetadata(new MockRecordMetadata().setPartitionId(partitionId))
-        .setTimestamp(Instant.now())
+        .setTimestamp(System.currentTimeMillis())
         .setPosition(++position);
   }
 

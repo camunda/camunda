@@ -15,10 +15,10 @@
  */
 package io.zeebe.test.util.record;
 
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import java.util.stream.Stream;
 
 public class WorkflowInstanceRecordStream
@@ -61,7 +61,14 @@ public class WorkflowInstanceRecordStream
   public WorkflowInstanceRecordStream limitToWorkflowInstanceCompleted() {
     return limit(
         r ->
-            r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED
+            r.getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED
+                && r.getKey() == r.getValue().getWorkflowInstanceKey());
+  }
+
+  public WorkflowInstanceRecordStream limitToWorkflowInstanceTerminated() {
+    return limit(
+        r ->
+            r.getIntent() == WorkflowInstanceIntent.ELEMENT_TERMINATED
                 && r.getKey() == r.getValue().getWorkflowInstanceKey());
   }
 

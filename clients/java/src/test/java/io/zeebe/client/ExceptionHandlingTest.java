@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.grpc.StatusRuntimeException;
-import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import java.util.concurrent.ExecutionException;

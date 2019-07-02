@@ -34,36 +34,31 @@ message ActivatedJob {
   int64 key = 1;
   // the type of the job (should match what was requested)
   string type = 2;
-  // a set of headers tying the job to a workflow instance/task instance
-  JobHeaders jobHeaders = 3;
-  // a set of custom headers defined during modelling; returned as a serialized
-  // JSON document
-  string customHeaders = 4;
-  // the name of the worker which activated this job
-  string worker = 5;
-  // the amount of retries left to this job (should always be positive)
-  int32 retries = 6;
-  // when the job can be activated again, sent as a UNIX epoch timestamp
-  int64 deadline = 7;
-  // JSON document, computed at activation time, consisting of all visible variables to
-  // the task scope
-  string variables = 8;
-}
-
-message JobHeaders {
   // the job's workflow instance key
-  int64 workflowInstanceKey = 1;
+  int64 workflowInstanceKey = 3;
   // the bpmn process ID of the job workflow definition
-  string bpmnProcessId = 2;
+  string bpmnProcessId = 4;
   // the version of the job workflow definition
-  int32 workflowDefinitionVersion = 3;
+  int32 workflowDefinitionVersion = 5;
   // the key of the job workflow definition
-  int64 workflowKey = 4;
+  int64 workflowKey = 6;
   // the associated task element ID
-  string elementId = 5;
+  string elementId = 7;
   // the unique key identifying the associated task, unique within the scope of the
   // workflow instance
-  int64 elementInstanceKey = 6;
+  int64 elementInstanceKey = 8;
+  // a set of custom headers defined during modelling; returned as a serialized
+  // JSON document
+  string customHeaders = 9;
+  // the name of the worker which activated this job
+  string worker = 10;
+  // the amount of retries left to this job (should always be positive)
+  int32 retries = 11;
+  // when the job can be activated again, sent as a UNIX epoch timestamp
+  int64 deadline = 12;
+  // JSON document, computed at activation time, consisting of all visible variables to
+  // the task scope
+  string variables = 13;
 }
 
 message CancelWorkflowInstanceRequest {
@@ -111,7 +106,7 @@ message CreateWorkflowInstanceResponse {
   int32 version = 3;
   // the unique identifier of the created workflow instance; to be used wherever a request
   // needs a workflow instance key (e.g. CancelWorkflowInstanceRequest)
-  int64 workflowInstanceKey = 5;
+  int64 workflowInstanceKey = 4;
 }
 
 message DeployWorkflowRequest {
@@ -199,6 +194,7 @@ message ResolveIncidentResponse {
 
 message TopologyRequest {
 }
+
 message TopologyResponse {
   // list of brokers part of this cluster
   repeated BrokerInfo brokers = 1;
@@ -231,7 +227,7 @@ message Partition {
   // the unique ID of this partition
   int32 partitionId = 1;
   // the role of the broker for this partition
-  PartitionBrokerRole role = 3;
+  PartitionBrokerRole role = 2;
 }
 
 message UpdateJobRetriesRequest {
@@ -247,7 +243,7 @@ message UpdateJobRetriesResponse {
 message SetVariablesRequest {
   // the unique identifier of a particular element; can be the workflow instance key (as
   // obtained during instance creation), or a given element, such as a service task (see
-  // elementInstanceKey on the JobHeaders message)
+  // elementInstanceKey on the job message)
   int64 elementInstanceKey = 1;
   // a JSON serialized document describing variables as key value pairs; the root of the document
   // must be an object

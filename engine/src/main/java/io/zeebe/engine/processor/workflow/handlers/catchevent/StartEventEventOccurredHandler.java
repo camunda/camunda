@@ -26,9 +26,9 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.EventTrigger;
-import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 
 public class StartEventEventOccurredHandler<T extends ExecutableCatchEventElement>
     extends EventOccurredHandler<T> {

@@ -29,14 +29,14 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.util.StreamProcessorRule;
-import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.zeebe.protocol.intent.MessageIntent;
-import io.zeebe.protocol.intent.MessageSubscriptionIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.MessageIntent;
+import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.assertj.core.api.Assertions;
@@ -88,13 +88,10 @@ public class MessageStreamProcessorTest {
     rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
 
     // then
-    final TypedRecord<MessageSubscriptionRecord> rejection =
-        awaitAndGetFirstSubscriptionRejection();
+    final Record<MessageSubscriptionRecord> rejection = awaitAndGetFirstSubscriptionRejection();
 
-    Assertions.assertThat(rejection.getMetadata().getIntent())
-        .isEqualTo(MessageSubscriptionIntent.OPEN);
-    Assertions.assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.INVALID_STATE);
+    Assertions.assertThat(rejection.getIntent()).isEqualTo(MessageSubscriptionIntent.OPEN);
+    Assertions.assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
 
     verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
         .openWorkflowInstanceSubscription(
@@ -186,13 +183,10 @@ public class MessageStreamProcessorTest {
     rule.writeCommand(MessageSubscriptionIntent.CORRELATE, subscription);
 
     // then
-    final TypedRecord<MessageSubscriptionRecord> rejection =
-        awaitAndGetFirstSubscriptionRejection();
+    final Record<MessageSubscriptionRecord> rejection = awaitAndGetFirstSubscriptionRejection();
 
-    Assertions.assertThat(rejection.getMetadata().getIntent())
-        .isEqualTo(MessageSubscriptionIntent.CORRELATE);
-    Assertions.assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.NOT_FOUND);
+    Assertions.assertThat(rejection.getIntent()).isEqualTo(MessageSubscriptionIntent.CORRELATE);
+    Assertions.assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -213,13 +207,10 @@ public class MessageStreamProcessorTest {
     rule.writeCommand(MessageSubscriptionIntent.CLOSE, subscription);
 
     // then
-    final TypedRecord<MessageSubscriptionRecord> rejection =
-        awaitAndGetFirstSubscriptionRejection();
+    final Record<MessageSubscriptionRecord> rejection = awaitAndGetFirstSubscriptionRejection();
 
-    Assertions.assertThat(rejection.getMetadata().getIntent())
-        .isEqualTo(MessageSubscriptionIntent.CLOSE);
-    Assertions.assertThat(rejection.getMetadata().getRejectionType())
-        .isEqualTo(RejectionType.NOT_FOUND);
+    Assertions.assertThat(rejection.getIntent()).isEqualTo(MessageSubscriptionIntent.CLOSE);
+    Assertions.assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
 
     // cannot verify messageName buffer since it is a view around another buffer which is changed
     // by the time we perform the verification.
@@ -288,17 +279,17 @@ public class MessageStreamProcessorTest {
         .correlateWorkflowInstanceSubscription(
             eq(subscription.getWorkflowInstanceKey()),
             eq(subscription.getElementInstanceKey()),
-            eq(subscription.getMessageNameBuffer()),
+            any(),
             eq(firstMessageKey),
-            eq(message.getVariablesBuffer()));
+            any());
 
     verify(mockSubscriptionCommandSender, timeout(5_000))
         .correlateWorkflowInstanceSubscription(
             eq(subscription.getWorkflowInstanceKey()),
             eq(subscription.getElementInstanceKey()),
-            eq(subscription.getMessageNameBuffer()),
+            any(),
             eq(lastMessageKey),
-            eq(message.getVariablesBuffer()));
+            any());
   }
 
   @Test
@@ -466,7 +457,7 @@ public class MessageStreamProcessorTest {
     return message;
   }
 
-  private TypedRecord<MessageSubscriptionRecord> awaitAndGetFirstSubscriptionRejection() {
+  private Record<MessageSubscriptionRecord> awaitAndGetFirstSubscriptionRejection() {
     waitUntil(
         () ->
             rule.events()

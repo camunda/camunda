@@ -22,9 +22,9 @@ import io.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
-import io.zeebe.protocol.intent.VariableDocumentIntent;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.zeebe.test.util.JsonUtil;
 import io.zeebe.test.util.MsgPackUtil;
 import java.util.Collections;
@@ -61,7 +61,7 @@ public class SetVariablesTest extends GatewayTest {
     assertThat(brokerRequest.getPartitionId()).isEqualTo(partitionId);
 
     final VariableDocumentRecord brokerRequestValue = brokerRequest.getRequestWriter();
-    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getDocumentBuffer(), variables);
+    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getVariablesBuffer(), variables);
     assertThat(brokerRequestValue.getScopeKey()).isEqualTo(elementInstanceKey);
   }
 }

@@ -17,29 +17,30 @@
  */
 package io.zeebe.engine.processor.workflow.message;
 
-import static io.zeebe.engine.processor.workflow.WorkflowAssert.assertMessageSubscription;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.engine.processor.workflow.WorkflowAssert;
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.exporter.api.record.Assertions;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.MessageSubscriptionRecordValue;
-import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.exporter.api.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.Assertions;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -102,6 +103,10 @@ public class MessageCatchElementTest {
 
   @ClassRule public static final EngineRule ENGINE_RULE = new EngineRule(PARTITION_COUNT);
 
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
+
   @Parameter public String elementType;
 
   @Parameter(1)
@@ -162,7 +167,7 @@ public class MessageCatchElementTest {
   }
 
   private static void deploy(BpmnModelInstance modelInstance) {
-    ENGINE_RULE.deploy(modelInstance);
+    ENGINE_RULE.deployment().withXmlResource(modelInstance).deploy();
   }
 
   @Before
@@ -170,12 +175,10 @@ public class MessageCatchElementTest {
     correlationKey = UUID.randomUUID().toString();
     workflowInstanceKey =
         ENGINE_RULE
-            .createWorkflowInstance(
-                r ->
-                    r.setBpmnProcessId(bpmnProcessId)
-                        .setVariables(asMsgPack("orderId", correlationKey)))
-            .getValue()
-            .getInstanceKey();
+            .workflowInstance()
+            .ofBpmnProcessId(bpmnProcessId)
+            .withVariable("orderId", correlationKey)
+            .create();
   }
 
   @Test
@@ -186,12 +189,14 @@ public class MessageCatchElementTest {
     final Record<MessageSubscriptionRecordValue> messageSubscription =
         getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.OPENED);
 
-    assertThat(messageSubscription.getMetadata().getValueType())
-        .isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
-    assertThat(messageSubscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(messageSubscription.getValueType()).isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
+    assertThat(messageSubscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
-    assertMessageSubscription(
-        workflowInstanceKey, correlationKey, catchEventEntered, messageSubscription);
+    Assertions.assertThat(messageSubscription.getValue())
+        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasElementInstanceKey(catchEventEntered.getKey())
+        .hasMessageName("order canceled")
+        .hasCorrelationKey(correlationKey);
   }
 
   @Test
@@ -202,13 +207,16 @@ public class MessageCatchElementTest {
     final Record<WorkflowInstanceSubscriptionRecordValue> workflowInstanceSubscription =
         getFirstWorkflowInstanceSubscriptionRecord(WorkflowInstanceSubscriptionIntent.OPENED);
 
-    assertThat(workflowInstanceSubscription.getMetadata().getValueType())
+    assertThat(workflowInstanceSubscription.getValueType())
         .isEqualTo(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
-    assertThat(workflowInstanceSubscription.getMetadata().getRecordType())
-        .isEqualTo(RecordType.EVENT);
+    assertThat(workflowInstanceSubscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
-    WorkflowAssert.assertWorkflowSubscription(
-        workflowInstanceKey, catchEventEntered, workflowInstanceSubscription);
+    Assertions.assertThat(workflowInstanceSubscription.getValue())
+        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasElementInstanceKey(catchEventEntered.getKey())
+        .hasMessageName("order canceled");
+
+    assertThat(workflowInstanceSubscription.getValue().getVariables()).isEmpty();
   }
 
   @Test
@@ -229,12 +237,15 @@ public class MessageCatchElementTest {
     final Record<WorkflowInstanceSubscriptionRecordValue> subscription =
         getFirstWorkflowInstanceSubscriptionRecord(WorkflowInstanceSubscriptionIntent.CORRELATED);
 
-    assertThat(subscription.getMetadata().getValueType())
-        .isEqualTo(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
-    assertThat(subscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(subscription.getValueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
+    assertThat(subscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
-    WorkflowAssert.assertWorkflowSubscription(
-        workflowInstanceKey, "{\"foo\":\"bar\"}", catchEventEntered, subscription);
+    Assertions.assertThat(subscription.getValue())
+        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasElementInstanceKey(catchEventEntered.getKey())
+        .hasMessageName("order canceled");
+
+    assertThat(subscription.getValue().getVariables()).containsExactly(entry("foo", "bar"));
   }
 
   @Test
@@ -255,10 +266,14 @@ public class MessageCatchElementTest {
     final Record<MessageSubscriptionRecordValue> subscription =
         getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.CORRELATED);
 
-    assertThat(subscription.getMetadata().getValueType()).isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
-    assertThat(subscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(subscription.getValueType()).isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
+    assertThat(subscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
-    assertMessageSubscription(workflowInstanceKey, catchEventEntered, subscription);
+    Assertions.assertThat(subscription.getValue())
+        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasElementInstanceKey(catchEventEntered.getKey())
+        .hasMessageName("order canceled")
+        .hasCorrelationKey("");
   }
 
   @Test
@@ -272,13 +287,13 @@ public class MessageCatchElementTest {
         .await();
 
     // when
-    ENGINE_RULE.cancelWorkflowInstance(workflowInstanceKey);
+    ENGINE_RULE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
 
     // then
     final Record<MessageSubscriptionRecordValue> messageSubscription =
         getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.CLOSED);
 
-    assertThat(messageSubscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(messageSubscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
     Assertions.assertThat(messageSubscription.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)
@@ -294,13 +309,13 @@ public class MessageCatchElementTest {
         getFirstElementRecord(enteredState);
 
     // when
-    ENGINE_RULE.cancelWorkflowInstance(workflowInstanceKey);
+    ENGINE_RULE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
 
     // then
     final Record<WorkflowInstanceSubscriptionRecordValue> subscription =
         getFirstWorkflowInstanceSubscriptionRecord(WorkflowInstanceSubscriptionIntent.CLOSED);
 
-    assertThat(subscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(subscription.getRecordType()).isEqualTo(RecordType.EVENT);
 
     Assertions.assertThat(subscription.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)

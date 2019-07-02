@@ -30,9 +30,6 @@ public interface LoggedEvent extends BufferWriter {
    */
   long getSourceEventPosition();
 
-  /** @return the id of the producer which produced this event */
-  int getProducerId();
-
   /** @return the key of the event */
   long getKey();
 

@@ -17,31 +17,29 @@
  */
 package io.zeebe.broker.exporter.stream;
 
+import static io.zeebe.engine.processor.TypedEventRegistry.EVENT_REGISTRY;
+
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.context.ExporterContext;
-import io.zeebe.broker.exporter.record.RecordMetadataImpl;
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.engine.processor.AsyncSnapshotDirector;
+import io.zeebe.engine.processor.CopiedRecords;
 import io.zeebe.engine.processor.EventFilter;
 import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
-import io.zeebe.exporter.api.record.Record;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.ValueType;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.LangUtil;
-import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.metrics.MetricsManager;
-import io.zeebe.util.retry.AbortableRetryStrategy;
+import io.zeebe.util.retry.BackOffRetryStrategy;
 import io.zeebe.util.retry.EndlessRetryStrategy;
 import io.zeebe.util.retry.RetryStrategy;
 import io.zeebe.util.sched.Actor;
@@ -54,7 +52,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -67,56 +64,51 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
       "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
-  private static final long NO_LAST_WRITTEN_EVENT_POSITION = -1L;
-  private static final Consumer<Long> NO_DATA_REMOVER = pos -> {};
 
   private ActorScheduler actorScheduler;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
 
   private final List<ExporterContainer> containers;
   private final int partitionId;
-  private final RecordMetadata rawMetadata;
 
   private final LogStream logStream;
   private final LogStreamReader logStreamReader;
-  private final RecordExporter recordExporter = new RecordExporter();
+  private final RecordExporter recordExporter;
 
   private final ZeebeDb zeebeDb;
+
+  private final ExporterMetrics metrics;
+
   private final String name;
-  private final ExporterDirectorContext context;
   private final RetryStrategy exportingRetryStrategy;
   private final RetryStrategy recordWrapStrategy;
   private EventFilter eventFilter;
   private ExportersState state;
 
-  private ExporterMetrics metrics;
-  private AsyncSnapshotDirector asyncSnapshotDirector;
   private ActorCondition onCommitPositionUpdatedCondition;
-  private long lastExportedPosition;
   private boolean inExportingPhase;
 
   public ExporterDirector(ExporterDirectorContext context) {
     this.name = context.getName();
-    this.context = context;
-
     this.containers =
         context.getDescriptors().stream().map(ExporterContainer::new).collect(Collectors.toList());
 
     this.logStream = context.getLogStream();
     this.partitionId = logStream.getPartitionId();
-    this.rawMetadata = new RecordMetadata();
-
+    this.recordExporter = new RecordExporter(containers, partitionId);
     this.logStreamReader = context.getLogStreamReader();
-    this.exportingRetryStrategy = new AbortableRetryStrategy(actor);
+    this.exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
     this.recordWrapStrategy = new EndlessRetryStrategy(actor);
 
     this.zeebeDb = context.getZeebeDb();
+
+    this.metrics = new ExporterMetrics(partitionId);
   }
 
   @Override
   public void start(ServiceStartContext startContext) {
     actorScheduler = startContext.getScheduler();
-    startContext.async(actorScheduler.submitActor(this, false, SchedulingHints.ioBound()));
+    startContext.async(actorScheduler.submitActor(this, SchedulingHints.ioBound()));
   }
 
   @Override
@@ -136,9 +128,6 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
 
   @Override
   protected void onActorStarting() {
-    final MetricsManager metricsManager = actorScheduler.getMetricsManager();
-    metrics = new ExporterMetrics(metricsManager, getName(), Integer.toString(partitionId));
-
     this.logStreamReader.wrap(logStream);
   }
 
@@ -232,8 +221,8 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   }
 
   private void skipRecord() {
+    metrics.eventSkipped();
     actor.submit(this::readNextEvent);
-    metrics.incrementEventsSkippedCount();
   }
 
   private void readNextEvent() {
@@ -252,7 +241,6 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     final ActorFuture<Boolean> wrapRetryFuture =
         recordWrapStrategy.runWithRetry(
             () -> {
-              event.readMetadata(rawMetadata);
               recordExporter.wrap(event);
               return true;
             },
@@ -273,8 +261,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
                   LOG.error(ERROR_MESSAGE_EXPORTING_ABORTED, event, throwable);
                   onFailure();
                 } else {
-                  lastExportedPosition = event.getPosition();
-                  metrics.incrementEventsExportedCount();
+                  metrics.eventExported();
                   inExportingPhase = false;
                   actor.submit(this::readNextEvent);
                 }
@@ -315,7 +302,6 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
 
   @Override
   protected void onActorClosing() {
-    metrics.close();
     logStreamReader.close();
     if (onCommitPositionUpdatedCondition != null) {
       logStream.removeOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
@@ -369,31 +355,33 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     }
   }
 
-  private class RecordExporter {
-    private final ExporterObjectMapper objectMapper = new ExporterObjectMapper();
-    private final ExporterRecordMapper recordMapper = new ExporterRecordMapper(objectMapper);
+  private static class RecordExporter {
+
+    private final RecordMetadata rawMetadata = new RecordMetadata();
+    private final List<ExporterContainer> containers;
+    private final int partitionId;
+
     private Record record;
-    private boolean shouldExecuteSideEffects;
+    private boolean shouldExport;
     private int exporterIndex;
 
-    void wrap(LoggedEvent rawEvent) {
-      final RecordMetadataImpl metadata =
-          new RecordMetadataImpl(
-              objectMapper,
-              partitionId,
-              rawMetadata.getIntent(),
-              rawMetadata.getRecordType(),
-              rawMetadata.getRejectionType(),
-              BufferUtil.bufferAsString(rawMetadata.getRejectionReasonBuffer()),
-              rawMetadata.getValueType());
+    RecordExporter(List<ExporterContainer> containers, int partitionId) {
+      this.containers = containers;
+      this.partitionId = partitionId;
+    }
 
-      record = recordMapper.map(rawEvent, metadata);
-      exporterIndex = 0;
-      shouldExecuteSideEffects = record != null;
+    void wrap(LoggedEvent rawEvent) {
+      rawEvent.readMetadata(rawMetadata);
+
+      shouldExport = EVENT_REGISTRY.containsKey(rawMetadata.getValueType());
+      if (shouldExport) {
+        record = CopiedRecords.createCopiedRecord(partitionId, rawEvent);
+        exporterIndex = 0;
+      }
     }
 
     public boolean export() {
-      if (!shouldExecuteSideEffects) {
+      if (!shouldExport) {
         return true;
       }
 
@@ -411,7 +399,10 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
 
           exporterIndex++;
         } catch (final Exception ex) {
-          container.context.getLogger().error("Error exporting record {}", record, ex);
+          container
+              .context
+              .getLogger()
+              .error("Error on exporting record with key {}", record.getKey(), ex);
           return false;
         }
       }
@@ -420,7 +411,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     }
   }
 
-  private class ExporterEventFilter implements EventFilter {
+  private static class ExporterEventFilter implements EventFilter {
 
     private final RecordMetadata metadata = new RecordMetadata();
     private final Map<RecordType, Boolean> acceptRecordTypes;

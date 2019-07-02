@@ -30,12 +30,12 @@ import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.ElementInstanceState;
 import io.zeebe.engine.state.instance.VariablesState;
 import io.zeebe.msgpack.spec.MsgpackReaderException;
-import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 import org.agrona.DirectBuffer;
 
 public class CreateWorkflowInstanceProcessor
@@ -97,10 +97,10 @@ public class CreateWorkflowInstanceProcessor
         workflowInstance.getValue());
 
     record
-        .setInstanceKey(workflowInstanceKey)
+        .setWorkflowInstanceKey(workflowInstanceKey)
         .setBpmnProcessId(workflow.getBpmnProcessId())
         .setVersion(workflow.getVersion())
-        .setKey(workflow.getKey());
+        .setWorkflowKey(workflow.getKey());
     controller.accept(WorkflowInstanceCreationIntent.CREATED, record);
   }
 
@@ -164,8 +164,8 @@ public class CreateWorkflowInstanceProcessor
       } else {
         workflow = getWorkflow(bpmnProcessId, controller);
       }
-    } else if (record.getKey() >= 0) {
-      workflow = getWorkflow(record.getKey(), controller);
+    } else if (record.getWorkflowKey() >= 0) {
+      workflow = getWorkflow(record.getWorkflowKey(), controller);
     } else {
       controller.reject(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED);
       workflow = null;

@@ -26,7 +26,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlo
 import io.zeebe.engine.processor.workflow.handlers.IOMappingHelper;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.msgpack.mapping.MappingException;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;

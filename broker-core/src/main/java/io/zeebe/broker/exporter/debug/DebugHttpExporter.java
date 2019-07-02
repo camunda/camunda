@@ -20,7 +20,7 @@ package io.zeebe.broker.exporter.debug;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Context;
-import io.zeebe.exporter.api.record.Record;
+import io.zeebe.protocol.record.Record;
 import org.slf4j.Logger;
 
 public class DebugHttpExporter implements Exporter {

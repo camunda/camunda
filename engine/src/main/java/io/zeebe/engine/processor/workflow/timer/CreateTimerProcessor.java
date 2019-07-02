@@ -27,7 +27,7 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
 import java.util.function.Consumer;
 
 public class CreateTimerProcessor implements TypedRecordProcessor<TimerRecord> {
@@ -58,7 +58,7 @@ public class CreateTimerProcessor implements TypedRecordProcessor<TimerRecord> {
     timerInstance.setElementInstanceKey(timer.getElementInstanceKey());
     timerInstance.setDueDate(timer.getDueDate());
     timerInstance.setKey(timerKey);
-    timerInstance.setHandlerNodeId(timer.getHandlerNodeId());
+    timerInstance.setHandlerNodeId(timer.getTargetElementIdBuffer());
     timerInstance.setRepetitions(timer.getRepetitions());
     timerInstance.setWorkflowKey(timer.getWorkflowKey());
     timerInstance.setWorkflowInstanceKey(timer.getWorkflowInstanceKey());

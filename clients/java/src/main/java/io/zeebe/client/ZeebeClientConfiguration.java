@@ -38,4 +38,7 @@ public interface ZeebeClientConfiguration {
 
   /** @see ZeebeClientBuilder#defaultMessageTimeToLive(Duration) */
   Duration getDefaultMessageTimeToLive();
+
+  /** @see ZeebeClientBuilder#defaultRequestTimeout(Duration) */
+  Duration getDefaultRequestTimeout();
 }

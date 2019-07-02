@@ -51,7 +51,6 @@ public class AsyncSnapshotDirector extends Actor {
   private final LogStream logStream;
   private final String name;
   private final Duration snapshotRate;
-  private final SnapshotMetrics metrics;
   private final String processorName;
   private final StreamProcessor streamProcessor;
 
@@ -65,15 +64,13 @@ public class AsyncSnapshotDirector extends Actor {
       StreamProcessor streamProcessor,
       SnapshotController snapshotController,
       LogStream logStream,
-      Duration snapshotRate,
-      SnapshotMetrics metrics) {
+      Duration snapshotRate) {
     this.streamProcessor = streamProcessor;
     this.snapshotController = snapshotController;
     this.logStream = logStream;
     this.processorName = streamProcessor.getName();
     this.name = processorName + "-snapshot-director";
     this.snapshotRate = snapshotRate;
-    this.metrics = metrics;
   }
 
   @Override
@@ -155,7 +152,6 @@ public class AsyncSnapshotDirector extends Actor {
     final long snapshotCreationTime = end - start;
 
     LOG.info("Creation of snapshot for {} took {} ms.", processorName, snapshotCreationTime);
-    metrics.recordSnapshotCreationTime(snapshotCreationTime);
   }
 
   private void onCommitCheck() {
@@ -231,7 +227,6 @@ public class AsyncSnapshotDirector extends Actor {
   }
 
   private void close() {
-    metrics.close();
     actor.close();
   }
 }

@@ -15,19 +15,19 @@
  */
 package io.zeebe.protocol.impl.record.value.deployment;
 
-import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.api.record.value.deployment.DeployedWorkflow;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class DeploymentRecord extends UnifiedRecordValue implements DeploymentRecordValue {
 
   public static final String RESOURCES = "resources";
-  public static final String WORKFLOWS = "workflows";
+  public static final String WORKFLOWS = "deployedWorkflows";
 
   private final ArrayProperty<DeploymentResource> resourcesProp =
       new ArrayProperty<>(RESOURCES, new DeploymentResource());
@@ -48,30 +48,37 @@ public class DeploymentRecord extends UnifiedRecordValue implements DeploymentRe
   }
 
   @Override
-  public List<io.zeebe.exporter.api.record.value.deployment.DeploymentResource> getResources() {
-
-    final List<io.zeebe.exporter.api.record.value.deployment.DeploymentResource> resources =
+  public List<io.zeebe.protocol.record.value.deployment.DeploymentResource> getResources() {
+    final List<io.zeebe.protocol.record.value.deployment.DeploymentResource> resources =
         new ArrayList<>();
 
-    final Iterator<DeploymentResource> iterator = resourcesProp.iterator();
-    iterator.forEachRemaining(resources::add);
+    for (final DeploymentResource resource : resourcesProp) {
+      final byte[] bytes = new byte[resource.getLength()];
+      final UnsafeBuffer copyBuffer = new UnsafeBuffer(bytes);
+      resource.write(copyBuffer, 0);
+
+      final DeploymentResource copiedResource = new DeploymentResource();
+      copiedResource.wrap(copyBuffer);
+      resources.add(copiedResource);
+    }
 
     return resources;
   }
 
   @Override
   public List<DeployedWorkflow> getDeployedWorkflows() {
-
     final List<DeployedWorkflow> workflows = new ArrayList<>();
 
-    final Iterator<Workflow> iterator = workflowsProp.iterator();
-    iterator.forEachRemaining(workflows::add);
+    for (final Workflow workflow : workflowsProp) {
+      final byte[] bytes = new byte[workflow.getLength()];
+      final UnsafeBuffer copyBuffer = new UnsafeBuffer(bytes);
+      workflow.write(copyBuffer, 0);
+
+      final Workflow copiedWorkflow = new Workflow();
+      copiedWorkflow.wrap(copyBuffer);
+      workflows.add(copiedWorkflow);
+    }
 
     return workflows;
-  }
-
-  @Override
-  public String toJson() {
-    throw new UnsupportedOperationException("not yet implemented");
   }
 }

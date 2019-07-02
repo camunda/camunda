@@ -27,7 +27,6 @@ import io.zeebe.logstreams.impl.log.fs.FsLogStorageConfiguration;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.collection.Tuple;
-import io.zeebe.util.metrics.MetricsManager;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -66,7 +65,7 @@ public class FsLogStorageTest {
 
     fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, false);
 
-    fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), 0);
+    fsLogStorage = new FsLogStorage(fsStorageConfig);
   }
 
   @Test
@@ -80,14 +79,14 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldGetFirstBlockAddressIfEmpty() {
+  public void shouldGetFirstBlockAddressIfEmpty() throws IOException {
     fsLogStorage.open();
 
     assertThat(fsLogStorage.getFirstBlockAddress()).isEqualTo(-1);
   }
 
   @Test
-  public void shouldGetFirstBlockAddressIfExists() {
+  public void shouldGetFirstBlockAddressIfExists() throws IOException {
     fsLogStorage.open();
 
     final long address = fsLogStorage.append(ByteBuffer.wrap(MSG));
@@ -104,7 +103,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldNotGetFirstBlockAddressIfClosed() {
+  public void shouldNotGetFirstBlockAddressIfClosed() throws IOException {
     fsLogStorage.open();
     fsLogStorage.close();
 
@@ -115,7 +114,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldCreateLogOnOpenStorage() {
+  public void shouldCreateLogOnOpenStorage() throws IOException {
     final String initialSegmentFilePath =
         fsStorageConfig.fileName(fsStorageConfig.getInitialSegmentId());
 
@@ -128,7 +127,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldNotDeleteLogOnCloseStorage() {
+  public void shouldNotDeleteLogOnCloseStorage() throws IOException {
     fsLogStorage.open();
 
     fsLogStorage.close();
@@ -137,9 +136,9 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldDeleteLogOnCloseStorage() {
+  public void shouldDeleteLogOnCloseStorage() throws IOException {
     fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, true);
-    fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), 0);
+    fsLogStorage = new FsLogStorage(fsStorageConfig);
 
     fsLogStorage.open();
 
@@ -149,7 +148,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldAppendBlock() {
+  public void shouldAppendBlock() throws IOException {
     fsLogStorage.open();
 
     final long address = fsLogStorage.append(ByteBuffer.wrap(MSG));
@@ -161,7 +160,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldAppendBlockOnNextSegment() {
+  public void shouldAppendBlockOnNextSegment() throws IOException {
     fsLogStorage.open();
     fsLogStorage.append(ByteBuffer.wrap(MSG));
 
@@ -185,19 +184,23 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldNotAppendBlockIfSizeIsGreaterThanSegment() {
+  public void shouldThrowExceptionWhenBlockSizeIsGreaterThanSegment() throws IOException {
+    // given
     final byte[] largeBlock = new byte[SEGMENT_SIZE + 1];
     new Random().nextBytes(largeBlock);
-
     fsLogStorage.open();
 
-    final long result = fsLogStorage.append(ByteBuffer.wrap(largeBlock));
+    // expect
+    thrown.expect(IllegalArgumentException.class);
+    thrown.expectMessage(
+        "Expected to append block with smaller block size then 16384, but actual block size was 16385.");
 
-    assertThat(result).isEqualTo(LogStorage.OP_RESULT_BLOCK_SIZE_TOO_BIG);
+    // when
+    fsLogStorage.append(ByteBuffer.wrap(largeBlock));
   }
 
   @Test
-  public void shouldBeAbleToCreateMoreThan100Segments() {
+  public void shouldBeAbleToCreateMoreThan100Segments() throws IOException {
 
     final byte[] oneSegment = new byte[SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH];
 
@@ -226,7 +229,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldNotAppendBlockIfNotOpen() {
+  public void shouldNotAppendBlockIfNotOpen() throws IOException {
     thrown.expect(IllegalStateException.class);
     thrown.expectMessage("log storage is not open");
 
@@ -234,7 +237,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldNotAppendBlockIfClosed() {
+  public void shouldNotAppendBlockIfClosed() throws IOException {
     fsLogStorage.open();
     fsLogStorage.close();
 
@@ -245,7 +248,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldReadWithProcessor() {
+  public void shouldReadWithProcessor() throws IOException {
     // given
     final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
     fsLogStorage.open();
@@ -266,7 +269,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldReadWithProcessorAndReturnDifferentAddress() {
+  public void shouldReadWithProcessorAndReturnDifferentAddress() throws IOException {
     // given
     final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
     fsLogStorage.open();
@@ -279,7 +282,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldReadWithProcessorAndReturnErrorCode() {
+  public void shouldReadWithProcessorAndReturnErrorCode() throws IOException {
     // given
     final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
     fsLogStorage.open();
@@ -295,7 +298,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldReadAppendedBlock() {
+  public void shouldReadAppendedBlock() throws IOException {
     final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
 
     fsLogStorage.open();
@@ -309,7 +312,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldNotReadBlockIfAddressIsInvalid() {
+  public void shouldNotReadBlockIfAddressIsInvalid() throws IOException {
     final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
 
     fsLogStorage.open();
@@ -320,7 +323,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldNotReadBlockIfNotAvailable() {
+  public void shouldNotReadBlockIfNotAvailable() throws IOException {
     final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
 
     fsLogStorage.open();
@@ -334,7 +337,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldNotReadBlockIfBufferHasNoRemainingCapacity() {
+  public void shouldNotReadBlockIfBufferHasNoRemainingCapacity() throws IOException {
     final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
     readBuffer.position(readBuffer.capacity());
 
@@ -359,7 +362,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldNotReadBlockIfClosed() {
+  public void shouldNotReadBlockIfClosed() throws IOException {
     final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
 
     fsLogStorage.open();
@@ -375,7 +378,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldRestoreLogOnReOpenedStorage() {
+  public void shouldRestoreLogOnReOpenedStorage() throws IOException {
     final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
 
     fsLogStorage.open();
@@ -438,7 +441,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldOpenStorageAfterLogSegmentsAreDeleted() {
+  public void shouldOpenStorageAfterLogSegmentsAreDeleted() throws IOException {
     // given
     final int segments = 5;
     final int deletedSegments = 3;
@@ -452,7 +455,11 @@ public class FsLogStorageTest {
                 i -> {
                   final byte[] message = new byte[maxCapacity];
                   Arrays.fill(message, (byte) i);
-                  return new Tuple<>(fsLogStorage.append(ByteBuffer.wrap(message)), message);
+                  try {
+                    return new Tuple<>(fsLogStorage.append(ByteBuffer.wrap(message)), message);
+                  } catch (IOException e) {
+                    throw new RuntimeException(e);
+                  }
                 })
             .collect(Collectors.toList());
 
@@ -478,7 +485,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldNotDeleteIfClosed() {
+  public void shouldNotDeleteIfClosed() throws IOException {
     fsLogStorage.open();
 
     fsLogStorage.append(ByteBuffer.wrap(MSG));
@@ -492,7 +499,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldDoNothingIfAddressIsNegative() {
+  public void shouldDoNothingIfAddressIsNegative() throws IOException {
     // given
     fsLogStorage.open();
     final int remainingCapacity = SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH;
@@ -518,7 +525,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldDeleteUpToAddress() {
+  public void shouldDeleteUpToAddress() throws IOException {
     // given
     fsLogStorage.open();
     final int remainingCapacity = SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH;
@@ -543,7 +550,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldDoNothingOnDeleteSameAddress() {
+  public void shouldDoNothingOnDeleteSameAddress() throws IOException {
     // given
     fsLogStorage.open();
     final int remainingCapacity = SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH;
@@ -569,7 +576,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldDeleteMultipleTimes() {
+  public void shouldDeleteMultipleTimes() throws IOException {
     // given
     fsLogStorage.open();
     final int remainingCapacity = SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH;
@@ -595,7 +602,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldAppendAfterDeleteSegments() {
+  public void shouldAppendAfterDeleteSegments() throws IOException {
     // given
     fsLogStorage.open();
     final int remainingCapacity = SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH;
@@ -621,7 +628,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldNotDeleteHigherThenExistingSegmentIds() {
+  public void shouldNotDeleteHigherThenExistingSegmentIds() throws IOException {
     // given
     fsLogStorage.open();
 
@@ -647,7 +654,7 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldNotDeleteInitialSegment() {
+  public void shouldNotDeleteInitialSegment() throws IOException {
     // given
     fsLogStorage.open();
 
@@ -703,7 +710,7 @@ public class FsLogStorageTest {
     assertThat(readBuffer.array()).isEqualTo(message);
   }
 
-  private long appendLargeBlockWithMsgAfterwards(int msgLength) {
+  private long appendLargeBlockWithMsgAfterwards(int msgLength) throws IOException {
     final byte[] largeBlockBeforeMessage =
         new byte[SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH - (msgLength)];
     new Random().nextBytes(largeBlockBeforeMessage);

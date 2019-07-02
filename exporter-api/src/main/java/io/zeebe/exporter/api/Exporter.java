@@ -17,7 +17,7 @@ package io.zeebe.exporter.api;
 
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
-import io.zeebe.exporter.api.record.Record;
+import io.zeebe.protocol.record.Record;
 
 /**
  * Minimal interface to be implemented by concrete exporters.

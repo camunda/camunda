@@ -26,9 +26,9 @@ import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.ZeebeAssertHelper;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.command.ClientStatusException;
 import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.client.cmd.ClientStatusException;
+import io.zeebe.client.api.worker.JobClient;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Rule;
@@ -69,12 +69,7 @@ public class CompleteJobTest {
     clientRule.getClient().newCompleteCommand(jobKey).send().join();
 
     // then
-    ZeebeAssertHelper.assertJobCompleted(
-        "test",
-        (job) -> {
-          assertThat(job.getVariables()).isEqualTo("{}");
-          assertThat(job.getVariablesAsMap()).isEmpty();
-        });
+    ZeebeAssertHelper.assertJobCompleted("test", (job) -> assertThat(job.getVariables()).isEmpty());
   }
 
   @Test
@@ -83,12 +78,7 @@ public class CompleteJobTest {
     clientRule.getClient().newCompleteCommand(jobKey).variables("null").send().join();
 
     // then
-    ZeebeAssertHelper.assertJobCompleted(
-        "test",
-        (job) -> {
-          assertThat(job.getVariables()).isEqualTo("{}");
-          assertThat(job.getVariablesAsMap()).isEmpty();
-        });
+    ZeebeAssertHelper.assertJobCompleted("test", (job) -> assertThat(job.getVariables()).isEmpty());
   }
 
   @Test
@@ -98,11 +88,7 @@ public class CompleteJobTest {
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
-        "test",
-        (job) -> {
-          assertThat(job.getVariables()).isEqualTo("{\"foo\":\"bar\"}");
-          assertThat(job.getVariablesAsMap()).containsOnly(entry("foo", "bar"));
-        });
+        "test", (job) -> assertThat(job.getVariables()).containsOnly(entry("foo", "bar")));
   }
 
   @Test
@@ -130,11 +116,7 @@ public class CompleteJobTest {
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
-        "test",
-        (job) -> {
-          assertThat(job.getVariables()).isEqualTo("{\"foo\":\"bar\"}");
-          assertThat(job.getVariablesAsMap()).containsOnly(entry("foo", "bar"));
-        });
+        "test", (job) -> assertThat(job.getVariables()).containsOnly(entry("foo", "bar")));
   }
 
   @Test
@@ -147,11 +129,7 @@ public class CompleteJobTest {
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
-        "test",
-        (job) -> {
-          assertThat(job.getVariables()).isEqualTo("{\"foo\":\"bar\"}");
-          assertThat(job.getVariablesAsMap()).containsOnly(entry("foo", "bar"));
-        });
+        "test", (job) -> assertThat(job.getVariables()).containsOnly(entry("foo", "bar")));
   }
 
   @Test

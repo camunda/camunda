@@ -15,14 +15,11 @@
             "scopeKey": {
               "type": "long"
             },
-            "document": {
-              "type": "object",
-              "dynamic": false,
-              "store": true,
-              "index": true
-            },
             "updateSemantics": {
               "type": "keyword"
+            },
+            "variables": {
+              "enabled": false
             }
           }
         }

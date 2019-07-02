@@ -17,105 +17,30 @@
  */
 package io.zeebe.broker.logstreams.restore;
 
-import io.atomix.cluster.messaging.ClusterEventService;
-import io.zeebe.broker.Loggers;
-import io.zeebe.broker.engine.EngineService;
-import io.zeebe.broker.engine.impl.StateReplication;
-import io.zeebe.broker.exporter.stream.ExportersState;
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.distributedlog.StorageConfiguration;
-import io.zeebe.distributedlog.impl.LogstreamConfig;
+import io.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreContext;
-import io.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.zeebe.engine.state.StateStorageFactory;
-import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.logstreams.spi.SnapshotController;
-import io.zeebe.logstreams.state.SnapshotReplication;
-import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
+import io.zeebe.util.collection.Tuple;
 import java.util.function.Supplier;
 
 public class BrokerSnapshotRestoreContext implements SnapshotRestoreContext {
 
-  private final ClusterEventService eventService;
-  private final String localMemberId;
+  private final StatePositionSupplier positionSupplier;
+  private final StateStorage restoreStateStorage;
 
-  public BrokerSnapshotRestoreContext(ClusterEventService eventService, String localMemberId) {
-    this.eventService = eventService;
-    this.localMemberId = localMemberId;
+  public BrokerSnapshotRestoreContext(
+      StatePositionSupplier positionSupplier, StateStorage restoreStateStorage) {
+    this.positionSupplier = positionSupplier;
+    this.restoreStateStorage = restoreStateStorage;
   }
 
   @Override
-  public SnapshotReplication createSnapshotReplicationConsumer(int partitionId) {
-    return new StateReplication(eventService, partitionId, EngineService.PROCESSOR_NAME);
+  public StateStorage getStateStorage() {
+    return this.restoreStateStorage;
   }
 
   @Override
-  public StateStorage getStateStorage(int partitionId) {
-    final StorageConfiguration configuration =
-        LogstreamConfig.getConfig(localMemberId, partitionId).join();
-    return new StateStorageFactory(configuration.getStatesDirectory())
-        .create(partitionId, EngineService.PROCESSOR_NAME, "-restore-log");
-  }
-
-  @Override
-  public Supplier<Long> getExporterPositionSupplier(StateStorage exporterStorage) {
-    return () -> getLowestReplicatedExportedPosition(exporterStorage);
-  }
-
-  @Override
-  public Supplier<Long> getProcessorPositionSupplier(
-      int partitionId, StateStorage processorStorage) {
-    return () -> getLatestProcessedPosition(partitionId, processorStorage);
-  }
-
-  private long getLowestReplicatedExportedPosition(StateStorage exporterStorage) {
-    final SnapshotController exporterSnapshotController =
-        new StateSnapshotController(DefaultZeebeDbFactory.DEFAULT_DB_FACTORY, exporterStorage);
-
-    try {
-      if (exporterSnapshotController.getValidSnapshotsCount() > 0) {
-        exporterSnapshotController.recover();
-        final ZeebeDb zeebeDb = exporterSnapshotController.openDb();
-        final ExportersState exporterState = new ExportersState(zeebeDb, zeebeDb.createContext());
-
-        return exporterState.getLowestPosition();
-      }
-    } catch (Exception e) {
-
-      Loggers.CLUSTERING_LOGGER.trace("Exception on opening snapshot db", e);
-    } finally {
-      try {
-        exporterSnapshotController.close();
-      } catch (Exception e) {
-
-      }
-    }
-    return -1;
-  }
-
-  private long getLatestProcessedPosition(int partitionId, StateStorage stateStorage) {
-    final SnapshotController processorSnapshotController =
-        new StateSnapshotController(DefaultZeebeDbFactory.DEFAULT_DB_FACTORY, stateStorage);
-
-    try {
-      if (processorSnapshotController.getValidSnapshotsCount() > 0) {
-        processorSnapshotController.recover();
-        final ZeebeDb zeebeDb = processorSnapshotController.openDb();
-        final ZeebeState processorState =
-            new ZeebeState(partitionId, zeebeDb, zeebeDb.createContext());
-
-        return processorState.getLastSuccessfulProcessedRecordPosition();
-      }
-    } catch (Exception e) {
-
-    } finally {
-      try {
-        processorSnapshotController.close();
-      } catch (Exception e) {
-
-      }
-    }
-    return -1;
+  public Supplier<Tuple<Long, Long>> getSnapshotPositionSupplier() {
+    return () -> positionSupplier.getLatestPositions();
   }
 }

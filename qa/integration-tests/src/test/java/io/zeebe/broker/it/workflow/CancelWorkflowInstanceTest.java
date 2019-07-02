@@ -22,15 +22,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.client.cmd.ClientException;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.JobRecordValue;
+import io.zeebe.client.api.response.DeploymentEvent;
+import io.zeebe.client.api.response.WorkflowInstanceEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import org.junit.Before;
@@ -151,7 +151,7 @@ public class CancelWorkflowInstanceTest {
         RecordingExporter.jobRecords().withType("test").getFirst();
 
     // when - then
-    final long elementInstanceKey = record.getValue().getHeaders().getElementInstanceKey();
+    final long elementInstanceKey = record.getValue().getElementInstanceKey();
     assertThatThrownBy(
             () -> {
               clientRule.getClient().newCancelInstanceCommand(elementInstanceKey).send().join();

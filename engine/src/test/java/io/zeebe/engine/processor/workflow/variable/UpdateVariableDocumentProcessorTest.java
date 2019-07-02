@@ -27,12 +27,12 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.ElementInstanceState;
 import io.zeebe.engine.state.instance.VariablesState;
-import io.zeebe.protocol.RejectionType;
-import io.zeebe.protocol.VariableDocumentUpdateSemantic;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.VariableDocumentIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -84,7 +84,7 @@ public class UpdateVariableDocumentProcessorTest
         .getValue()
         .setScopeKey(instance.getKey())
         .setUpdateSemantics(VariableDocumentUpdateSemantic.PROPAGATE)
-        .setDocument(badDocument);
+        .setVariables(badDocument);
     badDocument.putByte(0, (byte) 0); // overwrite map header
 
     // when
@@ -98,54 +98,54 @@ public class UpdateVariableDocumentProcessorTest
   @Test
   public void shouldApplyPropagateUpdateOperation() {
     // given
-    final DirectBuffer document = asMsgPack("a", 1);
+    final DirectBuffer variables = asMsgPack("a", 1);
     final ElementInstance instance = newElementInstance();
     final TypedRecord<VariableDocumentRecord> command = newCommand(VariableDocumentRecord.class);
     command
         .getValue()
         .setScopeKey(instance.getKey())
         .setUpdateSemantics(VariableDocumentUpdateSemantic.PROPAGATE)
-        .setDocument(document);
+        .setVariables(variables);
 
     // when
     processor.onCommand(command, controller);
 
     // then
     verify(variablesState, times(1))
-        .setVariablesFromDocument(instance.getKey(), WORKFLOW_KEY, document);
+        .setVariablesFromDocument(instance.getKey(), WORKFLOW_KEY, variables);
   }
 
   @Test
   public void shouldApplyLocalUpdateOperation() {
     // given
-    final DirectBuffer document = asMsgPack("a", 1);
+    final DirectBuffer variables = asMsgPack("a", 1);
     final ElementInstance instance = newElementInstance();
     final TypedRecord<VariableDocumentRecord> command = newCommand(VariableDocumentRecord.class);
     command
         .getValue()
         .setScopeKey(instance.getKey())
         .setUpdateSemantics(VariableDocumentUpdateSemantic.LOCAL)
-        .setDocument(document);
+        .setVariables(variables);
 
     // when
     processor.onCommand(command, controller);
 
     // then
     verify(variablesState, times(1))
-        .setVariablesLocalFromDocument(instance.getKey(), WORKFLOW_KEY, document);
+        .setVariablesLocalFromDocument(instance.getKey(), WORKFLOW_KEY, variables);
   }
 
   @Test
   public void shouldPublishUpdatedRecord() {
     // given
-    final DirectBuffer document = asMsgPack("a", 1);
+    final DirectBuffer variables = asMsgPack("a", 1);
     final ElementInstance instance = newElementInstance();
     final TypedRecord<VariableDocumentRecord> command = newCommand(VariableDocumentRecord.class);
     command
         .getValue()
         .setScopeKey(instance.getKey())
         .setUpdateSemantics(VariableDocumentUpdateSemantic.PROPAGATE)
-        .setDocument(document);
+        .setVariables(variables);
 
     // when
     processor.onCommand(command, controller);

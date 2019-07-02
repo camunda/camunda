@@ -31,8 +31,6 @@ public class ClusterBaseLayerServiceNames {
 
   public static final ServiceName<TopologyManager> TOPOLOGY_MANAGER_SERVICE =
       ServiceName.newServiceName("cluster.base.topologyManager", TopologyManager.class);
-  public static final ServiceName<Void> REMOTE_ADDRESS_MANAGER_SERVICE =
-      ServiceName.newServiceName("cluster.base.remoteAddrManager", Void.class);
 
   public static final ServiceName<Atomix> ATOMIX_SERVICE =
       ServiceName.newServiceName("cluster.base.atomix", Atomix.class);
@@ -52,9 +50,6 @@ public class ClusterBaseLayerServiceNames {
   public static final ServiceName<StorageConfigurationManager> RAFT_CONFIGURATION_MANAGER =
       ServiceName.newServiceName(
           "cluster.base.raft.configurationManager", StorageConfigurationManager.class);
-
-  public static final ServiceName<Void> RAFT_SERVICE_GROUP =
-      ServiceName.newServiceName("cluster.base.raft.service", Void.class);
 
   public static ServiceName<Void> raftInstallServiceName(int partitionId) {
     return ServiceName.newServiceName(

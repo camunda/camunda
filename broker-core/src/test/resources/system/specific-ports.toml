@@ -4,5 +4,5 @@ port = 1
 [network.internalApi]
 port = 5
 
-[metrics]
+[network.monitoringApi]
 port = 6

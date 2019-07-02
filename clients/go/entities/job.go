@@ -32,8 +32,8 @@ func (job *Job) GetVariablesAs(variablesType interface{}) error {
 	return json.Unmarshal([]byte(job.Variables), variablesType)
 }
 
-func (job *Job) GetCustomHeadersAsMap() (map[string]interface{}, error) {
-	var customHeadersMap map[string]interface{}
+func (job *Job) GetCustomHeadersAsMap() (map[string]string, error) {
+	var customHeadersMap map[string]string
 	return customHeadersMap, job.GetCustomHeadersAs(&customHeadersMap)
 }
 

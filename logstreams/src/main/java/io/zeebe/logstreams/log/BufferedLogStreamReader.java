@@ -18,8 +18,6 @@ package io.zeebe.logstreams.log;
 import io.zeebe.logstreams.impl.CompleteEventsInBlockProcessor;
 import io.zeebe.logstreams.impl.LogEntryDescriptor;
 import io.zeebe.logstreams.impl.LoggedEventImpl;
-import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
-import io.zeebe.logstreams.impl.log.index.LogBlockIndexContext;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.ReadResultProcessor;
 import io.zeebe.util.allocation.AllocatedBuffer;
@@ -44,12 +42,11 @@ public class BufferedLogStreamReader implements LogStreamReader {
 
   // wrapped logstream
   private LogStorage logStorage;
-  private LogBlockIndex logBlockIndex;
-  private LogBlockIndexContext indexContext;
 
   // state
   private IteratorState state;
   private long nextLogStorageReadAddress;
+  private long lastReadAddress;
   private final LoggedEventImpl nextEvent = new LoggedEventImpl();
   // event returned to caller (important: has to be preserved even after compact/buffer resize)
   private final LoggedEventImpl returnedEvent = new LoggedEventImpl();
@@ -77,18 +74,15 @@ public class BufferedLogStreamReader implements LogStreamReader {
 
   @Override
   public void wrap(final LogStream log, final long position) {
-    wrap(log.getLogStorage(), log.getLogBlockIndex(), position);
+    wrap(log.getLogStorage(), position);
   }
 
-  public void wrap(final LogStorage logStorage, final LogBlockIndex logBlockIndex) {
-    wrap(logStorage, logBlockIndex, FIRST_POSITION);
+  public void wrap(final LogStorage logStorage) {
+    wrap(logStorage, FIRST_POSITION);
   }
 
-  public void wrap(
-      final LogStorage logStorage, final LogBlockIndex logBlockIndex, final long position) {
+  public void wrap(final LogStorage logStorage, final long position) {
     this.logStorage = logStorage;
-    this.logBlockIndex = logBlockIndex;
-    this.indexContext = logBlockIndex.createLogBlockIndexContext();
 
     if (isClosed()) {
       allocateBuffer(DEFAULT_INITIAL_BUFFER_CAPACITY);
@@ -123,8 +117,7 @@ public class BufferedLogStreamReader implements LogStreamReader {
     // invalidate events first as the buffer content may change
     invalidateBufferAndOffsets();
 
-    final long blockAddress = lookUpBlockAddressForPosition(position);
-
+    final long blockAddress = logStorage.getFirstBlockAddress();
     if (blockAddress < 0) {
       // no block found => empty log
       state = IteratorState.EMPTY_LOG_STREAM;
@@ -167,6 +160,11 @@ public class BufferedLogStreamReader implements LogStreamReader {
   }
 
   @Override
+  public long lastReadAddress() {
+    return lastReadAddress;
+  }
+
+  @Override
   public boolean isClosed() {
     return allocatedBuffer == null;
   }
@@ -181,7 +179,6 @@ public class BufferedLogStreamReader implements LogStreamReader {
       bufferOffset = 0;
 
       logStorage = null;
-      logBlockIndex = null;
 
       state = IteratorState.WRAP_NOT_CALLED;
     }
@@ -315,6 +312,7 @@ public class BufferedLogStreamReader implements LogStreamReader {
       state = IteratorState.NOT_ENOUGH_DATA;
       return false;
     } else {
+      this.lastReadAddress = blockAddress;
       this.nextLogStorageReadAddress = result;
       return true;
     }
@@ -335,16 +333,6 @@ public class BufferedLogStreamReader implements LogStreamReader {
 
   private boolean isNextUncommittedEventAvailable() {
     return state == IteratorState.EVENT_AVAILABLE || state == IteratorState.EVENT_NOT_COMMITTED;
-  }
-
-  private long lookUpBlockAddressForPosition(final long position) {
-    long address = logBlockIndex.lookupBlockAddress(indexContext, position);
-    if (address < 0) {
-      // position not found in index fallback to first block
-      address = logStorage.getFirstBlockAddress();
-    }
-
-    return address;
   }
 
   private boolean readNextAddress() {

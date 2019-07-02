@@ -35,9 +35,9 @@ import io.zeebe.engine.state.message.MessageSubscriptionState;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscriptionState;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.WorkflowInstanceRelated;
-import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.WorkflowInstanceRelatedIntent;
+import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceRelatedIntent;
+import io.zeebe.protocol.record.value.WorkflowInstanceRelated;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
@@ -73,12 +73,12 @@ public class ZeebeState {
     keyState = new KeyState(partitionId, zeebeDb, dbContext);
     workflowState = new WorkflowState(zeebeDb, dbContext, keyState);
     deploymentState = new DeploymentsState(zeebeDb, dbContext);
-    jobState = new JobState(zeebeDb, dbContext);
+    jobState = new JobState(zeebeDb, dbContext, partitionId);
     messageState = new MessageState(zeebeDb, dbContext);
     messageSubscriptionState = new MessageSubscriptionState(zeebeDb, dbContext);
     messageStartEventSubscriptionState = new MessageStartEventSubscriptionState(zeebeDb, dbContext);
     workflowInstanceSubscriptionState = new WorkflowInstanceSubscriptionState(zeebeDb, dbContext);
-    incidentState = new IncidentState(zeebeDb, dbContext);
+    incidentState = new IncidentState(zeebeDb, dbContext, partitionId);
     blackList = new BlackList(zeebeDb, dbContext);
 
     lastProcessedEventKey = new DbString();
@@ -137,7 +137,7 @@ public class ZeebeState {
   }
 
   public boolean tryToBlacklist(TypedRecord<?> typedRecord, Consumer<Long> onBlacklistingInstance) {
-    final Intent intent = typedRecord.getMetadata().getIntent();
+    final Intent intent = typedRecord.getIntent();
     if (shouldBeBlacklisted(intent)) {
       final UnpackedObject value = typedRecord.getValue();
       if (value instanceof WorkflowInstanceRelated) {

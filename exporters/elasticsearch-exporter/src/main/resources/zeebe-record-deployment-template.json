@@ -31,7 +31,7 @@
             "resources": {
               "properties": {
                 "resource": {
-                  "type": "text"
+                  "enabled": false
                 },
                 "resourceName": {
                   "type": "text"

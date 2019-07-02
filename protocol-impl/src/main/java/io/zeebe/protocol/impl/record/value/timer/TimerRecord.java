@@ -15,19 +15,23 @@
  */
 package io.zeebe.protocol.impl.record.value.timer;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
-import io.zeebe.protocol.WorkflowInstanceRelated;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.value.TimerRecordValue;
+import io.zeebe.protocol.record.value.WorkflowInstanceRelated;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class TimerRecord extends UnifiedRecordValue implements WorkflowInstanceRelated {
+public class TimerRecord extends UnifiedRecordValue
+    implements WorkflowInstanceRelated, TimerRecordValue {
 
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
   private final LongProperty dueDateProp = new LongProperty("dueDate");
-  private final StringProperty handlerNodeId = new StringProperty("handlerNodeId");
+  private final StringProperty targetElementId = new StringProperty("targetElementId");
   private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions");
   private final LongProperty workflowKeyProp = new LongProperty("workflowKey");
 
@@ -35,22 +39,43 @@ public class TimerRecord extends UnifiedRecordValue implements WorkflowInstanceR
     this.declareProperty(elementInstanceKeyProp)
         .declareProperty(workflowInstanceKeyProp)
         .declareProperty(dueDateProp)
-        .declareProperty(handlerNodeId)
+        .declareProperty(targetElementId)
         .declareProperty(repetitionsProp)
         .declareProperty(workflowKeyProp);
   }
 
+  @JsonIgnore
+  public DirectBuffer getTargetElementIdBuffer() {
+    return targetElementId.getValue();
+  }
+
+  public long getWorkflowInstanceKey() {
+    return workflowInstanceKeyProp.getValue();
+  }
+
+  @Override
+  public long getWorkflowKey() {
+    return workflowKeyProp.getValue();
+  }
+
+  @Override
   public long getElementInstanceKey() {
     return elementInstanceKeyProp.getValue();
   }
 
-  public TimerRecord setElementInstanceKey(long key) {
-    elementInstanceKeyProp.setValue(key);
-    return this;
-  }
-
+  @Override
   public long getDueDate() {
     return dueDateProp.getValue();
+  }
+
+  @Override
+  public String getTargetElementId() {
+    return BufferUtil.bufferAsString(targetElementId.getValue());
+  }
+
+  @Override
+  public int getRepetitions() {
+    return repetitionsProp.getValue();
   }
 
   public TimerRecord setDueDate(long dueDate) {
@@ -58,30 +83,18 @@ public class TimerRecord extends UnifiedRecordValue implements WorkflowInstanceR
     return this;
   }
 
-  public DirectBuffer getHandlerNodeId() {
-    return handlerNodeId.getValue();
-  }
-
-  public TimerRecord setHandlerNodeId(DirectBuffer handlerNodeId) {
-    this.handlerNodeId.setValue(handlerNodeId);
+  public TimerRecord setElementInstanceKey(long key) {
+    elementInstanceKeyProp.setValue(key);
     return this;
   }
 
-  public int getRepetitions() {
-    return repetitionsProp.getValue();
+  public TimerRecord setTargetElementId(DirectBuffer targetElementId) {
+    this.targetElementId.setValue(targetElementId);
+    return this;
   }
 
   public TimerRecord setRepetitions(int repetitions) {
     this.repetitionsProp.setValue(repetitions);
-    return this;
-  }
-
-  public long getWorkflowKey() {
-    return workflowKeyProp.getValue();
-  }
-
-  public TimerRecord setWorkflowKey(long workflowKey) {
-    this.workflowKeyProp.setValue(workflowKey);
     return this;
   }
 
@@ -90,7 +103,8 @@ public class TimerRecord extends UnifiedRecordValue implements WorkflowInstanceR
     return this;
   }
 
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProp.getValue();
+  public TimerRecord setWorkflowKey(long workflowKey) {
+    this.workflowKeyProp.setValue(workflowKey);
+    return this;
   }
 }

@@ -24,6 +24,8 @@ import io.zeebe.distributedlog.restore.RestoreInfoRequest;
 import io.zeebe.distributedlog.restore.RestoreInfoResponse;
 import io.zeebe.distributedlog.restore.log.LogReplicationRequest;
 import io.zeebe.distributedlog.restore.log.LogReplicationResponse;
+import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreRequest;
+import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreResponse;
 import io.zeebe.util.ZbLogger;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -35,7 +37,6 @@ public class BrokerRestoreClient implements RestoreClient {
   private final String logReplicationTopic;
   private final String restoreInfoTopic;
   private final String snapshotRequestTopic;
-  private final String snapshotInfoRequestTopic;
   private final Logger logger;
 
   public BrokerRestoreClient(ClusterCommunicationService communicationService, int partitionId) {
@@ -44,7 +45,6 @@ public class BrokerRestoreClient implements RestoreClient {
         BrokerRestoreFactory.getLogReplicationTopic(partitionId),
         BrokerRestoreFactory.getRestoreInfoTopic(partitionId),
         BrokerRestoreFactory.getSnapshotRequestTopic(partitionId),
-        BrokerRestoreFactory.getSnapshotInfoRequestTopic(partitionId),
         new ZbLogger(String.format("%s-%d", BrokerRestoreClient.class.getName(), partitionId)));
   }
 
@@ -53,13 +53,11 @@ public class BrokerRestoreClient implements RestoreClient {
       String logReplicationTopic,
       String restoreInfoTopic,
       String snapshotRequestTopic,
-      String snapshotInfoRequestTopic,
       Logger logger) {
     this.communicationService = communicationService;
     this.logReplicationTopic = logReplicationTopic;
     this.restoreInfoTopic = restoreInfoTopic;
     this.snapshotRequestTopic = snapshotRequestTopic;
-    this.snapshotInfoRequestTopic = snapshotInfoRequestTopic;
     this.logger = logger;
   }
 
@@ -95,16 +93,14 @@ public class BrokerRestoreClient implements RestoreClient {
   }
 
   @Override
-  public CompletableFuture<Integer> requestSnapshotInfo(MemberId server) {
-    logger.trace(
-        "Sending snapshot info request to {} on topic {}", server, snapshotInfoRequestTopic);
+  public CompletableFuture<SnapshotRestoreResponse> requestSnapshotChunk(
+      MemberId server, SnapshotRestoreRequest request) {
     return communicationService.send(
-        snapshotInfoRequestTopic, null, server, DEFAULT_REQUEST_TIMEOUT);
-  }
-
-  @Override
-  public void requestLatestSnapshot(MemberId server) {
-    logger.trace("Sending latest snapshot request to {} on topic {}", server, snapshotRequestTopic);
-    communicationService.unicast(snapshotRequestTopic, null, server);
+        snapshotRequestTopic,
+        request,
+        SbeSnapshotRestoreRequest::serialize,
+        SbeSnapshotRestoreResponse::new,
+        server,
+        DEFAULT_REQUEST_TIMEOUT);
   }
 }

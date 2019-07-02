@@ -24,8 +24,8 @@ import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.instance.WorkflowEngineState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.IncidentIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public class EventOutput {
   private final WorkflowEngineState materializedState;

@@ -15,16 +15,16 @@
  */
 package io.zeebe.protocol.impl.encoding;
 
-import static io.zeebe.protocol.ExecuteCommandRequestEncoder.keyNullValue;
-import static io.zeebe.protocol.ExecuteCommandRequestEncoder.partitionIdNullValue;
+import static io.zeebe.protocol.record.ExecuteCommandRequestEncoder.keyNullValue;
+import static io.zeebe.protocol.record.ExecuteCommandRequestEncoder.partitionIdNullValue;
 
-import io.zeebe.protocol.ExecuteCommandRequestDecoder;
-import io.zeebe.protocol.ExecuteCommandRequestEncoder;
-import io.zeebe.protocol.MessageHeaderDecoder;
-import io.zeebe.protocol.MessageHeaderEncoder;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.ExecuteCommandRequestDecoder;
+import io.zeebe.protocol.record.ExecuteCommandRequestEncoder;
+import io.zeebe.protocol.record.MessageHeaderDecoder;
+import io.zeebe.protocol.record.MessageHeaderEncoder;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;

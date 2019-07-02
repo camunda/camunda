@@ -26,6 +26,8 @@ import io.zeebe.broker.engine.impl.PartitionCommandSenderImpl;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
+import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
+import io.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.zeebe.broker.transport.commandapi.CommandResponseWriterImpl;
 import io.zeebe.engine.processor.AsyncSnapshotingDirectorService;
 import io.zeebe.engine.processor.ProcessingContext;
@@ -54,6 +56,8 @@ public class EngineService implements Service<EngineService> {
   private final Injector<ServerTransport> commandApiTransportInjector = new Injector<>();
   private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
   private final Injector<Atomix> atomixInjector = new Injector<>();
+  private final Injector<LeaderManagementRequestHandler> leaderManagementRequestHandlerInjector =
+      new Injector<>();
 
   private final ClusterCfg clusterCfg;
   private final ServiceContainer serviceContainer;
@@ -84,13 +88,13 @@ public class EngineService implements Service<EngineService> {
 
   public void startEngineForPartition(
       final ServiceName<Partition> partitionServiceName, final Partition partition) {
-    final int partitionId = partition.getPartitionId();
 
     final LogStream logStream = partition.getLogStream();
-    StreamProcessor.builder(partitionId, PROCESSOR_NAME)
+    StreamProcessor.builder()
         .logStream(logStream)
         .actorScheduler(serviceContext.getScheduler())
         .additionalDependencies(partitionServiceName)
+        .additionalDependencies(serviceContext.getServiceName())
         .zeebeDb(partition.getZeebeDb())
         .serviceContainer(serviceContainer)
         .commandResponseWriter(new CommandResponseWriterImpl(commandApiTransport.getOutput()))
@@ -110,15 +114,12 @@ public class EngineService implements Service<EngineService> {
 
     final AsyncSnapshotingDirectorService snapshotDirectorService =
         new AsyncSnapshotingDirectorService(
-            partition.getPartitionId(),
-            partition.getLogStream(),
-            partition.getSnapshotController(),
-            snapshotPeriod);
+            partition.getLogStream(), partition.getSnapshotController(), snapshotPeriod);
 
     final ServiceName<AsyncSnapshotingDirectorService> snapshotDirectorServiceName =
-        StreamProcessorServiceNames.asyncSnapshotingDirectorService(logName, PROCESSOR_NAME);
+        StreamProcessorServiceNames.asyncSnapshotingDirectorService(logName);
     final ServiceName<StreamProcessor> streamProcessorControllerServiceName =
-        StreamProcessorServiceNames.streamProcessorService(logName, EngineService.PROCESSOR_NAME);
+        StreamProcessorServiceNames.streamProcessorService(logName);
 
     serviceContext
         .createService(snapshotDirectorServiceName, snapshotDirectorService)
@@ -145,11 +146,15 @@ public class EngineService implements Service<EngineService> {
     final SubscriptionCommandSender subscriptionCommandSender =
         new SubscriptionCommandSender(stream.getPartitionId(), partitionCommandSender);
 
+    final PushDeploymentRequestHandler deploymentRequestHandler =
+        leaderManagementRequestHandlerInjector.getValue().getPushDeploymentRequestHandler();
+
     return EngineProcessors.createEngineProcessors(
         processingContext,
         clusterCfg.getPartitionsCount(),
         subscriptionCommandSender,
-        deploymentDistributor);
+        deploymentDistributor,
+        deploymentRequestHandler);
   }
 
   @Override
@@ -171,5 +176,9 @@ public class EngineService implements Service<EngineService> {
 
   public Injector<Atomix> getAtomixInjector() {
     return atomixInjector;
+  }
+
+  public Injector<LeaderManagementRequestHandler> getLeaderManagementRequestInjector() {
+    return leaderManagementRequestHandlerInjector;
   }
 }

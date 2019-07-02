@@ -15,13 +15,14 @@
  */
 package io.zeebe.protocol.impl.record.value.variable;
 
-import io.zeebe.exporter.api.record.value.VariableRecordValue;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.property.BinaryProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
-import io.zeebe.protocol.WorkflowInstanceRelated;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.value.VariableRecordValue;
+import io.zeebe.protocol.record.value.WorkflowInstanceRelated;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
@@ -42,51 +43,6 @@ public class VariableRecord extends UnifiedRecordValue
         .declareProperty(workflowKeyProp);
   }
 
-  public DirectBuffer getNameBuffer() {
-    return nameProp.getValue();
-  }
-
-  public VariableRecord setName(DirectBuffer name) {
-    this.nameProp.setValue(name);
-    return this;
-  }
-
-  public DirectBuffer getValueBuffer() {
-    return valueProp.getValue();
-  }
-
-  public VariableRecord setValue(DirectBuffer value) {
-    this.valueProp.setValue(value);
-    return this;
-  }
-
-  public long getScopeKey() {
-    return scopeKeyProp.getValue();
-  }
-
-  public VariableRecord setScopeKey(long scopeKey) {
-    this.scopeKeyProp.setValue(scopeKey);
-    return this;
-  }
-
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProp.getValue();
-  }
-
-  public VariableRecord setWorkflowInstanceKey(long workflowInstanceKey) {
-    this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
-    return this;
-  }
-
-  public long getWorkflowKey() {
-    return workflowKeyProp.getValue();
-  }
-
-  public VariableRecord setWorkflowKey(long workflowKey) {
-    this.workflowKeyProp.setValue(workflowKey);
-    return this;
-  }
-
   @Override
   public String getName() {
     return BufferUtil.bufferAsString(nameProp.getValue());
@@ -95,5 +51,52 @@ public class VariableRecord extends UnifiedRecordValue
   @Override
   public String getValue() {
     return MsgPackConverter.convertToJson(valueProp.getValue());
+  }
+
+  public long getScopeKey() {
+    return scopeKeyProp.getValue();
+  }
+
+  public long getWorkflowKey() {
+    return workflowKeyProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getNameBuffer() {
+    return nameProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getValueBuffer() {
+    return valueProp.getValue();
+  }
+
+  public long getWorkflowInstanceKey() {
+    return workflowInstanceKeyProp.getValue();
+  }
+
+  public VariableRecord setName(DirectBuffer name) {
+    this.nameProp.setValue(name);
+    return this;
+  }
+
+  public VariableRecord setScopeKey(long scopeKey) {
+    this.scopeKeyProp.setValue(scopeKey);
+    return this;
+  }
+
+  public VariableRecord setValue(DirectBuffer value) {
+    this.valueProp.setValue(value);
+    return this;
+  }
+
+  public VariableRecord setWorkflowInstanceKey(long workflowInstanceKey) {
+    this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
+    return this;
+  }
+
+  public VariableRecord setWorkflowKey(long workflowKey) {
+    this.workflowKeyProp.setValue(workflowKey);
+    return this;
   }
 }

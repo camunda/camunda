@@ -15,7 +15,6 @@
  */
 package io.zeebe.client.api.response;
 
-import java.time.Instant;
 import java.util.Map;
 
 public interface ActivatedJob {
@@ -26,15 +25,26 @@ public interface ActivatedJob {
   /** @return the type of the job */
   String getType();
 
-  /**
-   * @return broker-defined headers associated with this job. For example, if this job is created in
-   *     the context of workflow instance, the header provide context information on which activity
-   *     is executed, etc.
-   */
-  JobHeaders getHeaders();
+  /** @return key of the workflow instance */
+  long getWorkflowInstanceKey();
+
+  /** @return BPMN process id of the workflow */
+  String getBpmnProcessId();
+
+  /** @return version of the workflow */
+  int getWorkflowDefinitionVersion();
+
+  /** @return key of the workflow */
+  long getWorkflowKey();
+
+  /** @return id of the workflow element */
+  String getElementId();
+
+  /** @return key of the element instance */
+  long getElementInstanceKey();
 
   /** @return user-defined headers associated with this job */
-  Map<String, Object> getCustomHeaders();
+  Map<String, String> getCustomHeaders();
 
   /** @return the assigned worker to complete the job */
   String getWorker();
@@ -43,11 +53,11 @@ public interface ActivatedJob {
   int getRetries();
 
   /**
-   * @return the time until when the job is exclusively assigned to this worker. If the deadline is
-   *     exceeded, it can happen that the job is handed to another worker and the work is performed
-   *     twice.
+   * @return the unix timestamp until when the job is exclusively assigned to this worker (time unit
+   *     * is milliseconds since unix epoch). If the deadline is exceeded, it can happen that the
+   *     job is handed to another worker and the work is performed twice.
    */
-  Instant getDeadline();
+  long getDeadline();
 
   /** @return JSON-formatted variables */
   String getVariables();

@@ -18,8 +18,11 @@ package io.zeebe.logstreams.state;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreInfo;
+import io.zeebe.distributedlog.restore.snapshot.impl.NullSnapshotRestoreInfo;
 import io.zeebe.logstreams.util.RocksDBWrapper;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.File;
@@ -54,7 +57,7 @@ public class StateSnapshotControllerTest {
   }
 
   @Test
-  public void shouldThrowExceptionOnTakeSnapshotIfClosed() throws Exception {
+  public void shouldThrowExceptionOnTakeSnapshotIfClosed() {
     // given
 
     // then
@@ -252,6 +255,107 @@ public class StateSnapshotControllerTest {
 
     // when/then
     assertThat(snapshotController.getLastValidSnapshotPosition()).isEqualTo(5L);
+  }
+
+  @Test
+  public void shouldUpdateRestoreInfoWhenForcingSnapshot() {
+    // given
+    snapshotController.openDb();
+
+    // when
+    snapshotController.takeSnapshot(1L);
+    final File snapshotDir = storage.getSnapshotDirectoryFor(1L);
+
+    // then
+    final SnapshotRestoreInfo restoreInfo = snapshotController.getLatestSnapshotRestoreInfo();
+    assertThat(restoreInfo.getSnapshotId()).isEqualTo(1L);
+    assertThat(restoreInfo.getNumChunks())
+        .isEqualTo(snapshotDir.listFiles().length)
+        .isGreaterThan(0);
+  }
+
+  @Test
+  public void shouldUpdateRestoreInfoAfterMovingValidSnapshot() throws IOException {
+    // given
+    snapshotController.openDb();
+    snapshotController.takeTempSnapshot();
+
+    // when
+    snapshotController.moveValidSnapshot(1L);
+    final File snapshotDir = snapshotController.getLastValidSnapshotDirectory();
+
+    // then
+    final SnapshotRestoreInfo restoreInfo = snapshotController.getLatestSnapshotRestoreInfo();
+    assertThat(restoreInfo.getSnapshotId()).isEqualTo(1L);
+    assertThat(restoreInfo.getNumChunks())
+        .isEqualTo(snapshotDir.listFiles().length)
+        .isGreaterThan(0);
+  }
+
+  @Test
+  public void shouldReturnNullRestoreInfoIfNoSnapshot() {
+    // given
+    snapshotController.openDb();
+
+    // when/then
+    final SnapshotRestoreInfo restoreInfo = snapshotController.getLatestSnapshotRestoreInfo();
+    assertThat(restoreInfo).isEqualToComparingFieldByField(new NullSnapshotRestoreInfo());
+  }
+
+  @Test
+  public void shouldReturnLastRestoreInfoAfterRestart() throws Exception {
+    // given
+    final ZeebeDb zeebeDb = snapshotController.openDb();
+    writeToDatabase(zeebeDb);
+    snapshotController.takeSnapshot(1L);
+    final File snapshotDir = snapshotController.getLastValidSnapshotDirectory();
+
+    // when
+    snapshotController.close();
+    snapshotController =
+        new StateSnapshotController(
+            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), storage, 2);
+
+    // then
+    final SnapshotRestoreInfo restoreInfo = snapshotController.getLatestSnapshotRestoreInfo();
+    assertThat(restoreInfo.getSnapshotId()).isEqualTo(1L);
+    assertThat(restoreInfo.getNumChunks())
+        .isEqualTo(snapshotDir.listFiles().length)
+        .isGreaterThan(0);
+  }
+
+  @Test
+  public void shouldUpdateRestoreInfoIfRecoverFindsCorruptSnapshot() throws Exception {
+    // given
+    final ZeebeDb zeebeDb = snapshotController.openDb();
+    writeToDatabase(zeebeDb);
+    snapshotController.takeSnapshot(1L);
+    final File snapshotDir = snapshotController.getLastValidSnapshotDirectory();
+    writeToDatabase(zeebeDb);
+    snapshotController.takeSnapshot(2L);
+    corruptSnapshot(2L);
+
+    // when
+    snapshotController.close();
+    snapshotController.recover();
+    snapshotController.openDb();
+
+    // then
+    final SnapshotRestoreInfo restoreInfo = snapshotController.getLatestSnapshotRestoreInfo();
+    assertThat(restoreInfo.getSnapshotId()).isEqualTo(1L);
+    assertThat(restoreInfo.getNumChunks())
+        .isEqualTo(snapshotDir.listFiles().length)
+        .isGreaterThan(0);
+  }
+
+  private void writeToDatabase(final ZeebeDb db) {
+    final String key = "test";
+    final int value = 1;
+    final RocksDBWrapper wrapper = new RocksDBWrapper();
+
+    // when
+    wrapper.wrap(db);
+    wrapper.putInt(key, value);
   }
 
   private void corruptSnapshot(long position) throws IOException {

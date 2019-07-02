@@ -16,8 +16,6 @@
 package io.zeebe.distributedlog;
 
 import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Represents the storage configuration of a partition. It keeps the path of the local data
@@ -32,34 +30,14 @@ import java.nio.file.Paths;
  */
 public class StorageConfiguration {
 
-  private final File file;
-  private final File tmpFile;
-  private final Path path;
-  private final Path tmpPath;
-
   private final File logDirectory;
-  private final File snapshotsDirectory;
   private final File statesDirectory;
-  private final File blockIndexDirectory;
   private int partitionId;
   private long logSegmentSize;
-  private long indexBlockSize;
 
-  public StorageConfiguration(
-      final File metaFile,
-      final File partitionLogDir,
-      final File partitionSnapshotsDir,
-      final File statesDir,
-      final File blockIndexDir) {
+  public StorageConfiguration(final File partitionLogDir, final File statesDir) {
     this.logDirectory = partitionLogDir;
-    this.snapshotsDirectory = partitionSnapshotsDir;
     this.statesDirectory = statesDir;
-    this.blockIndexDirectory = blockIndexDir;
-
-    file = metaFile;
-    tmpFile = new File(file.getAbsolutePath() + ".tmp");
-    path = Paths.get(file.getAbsolutePath());
-    tmpPath = Paths.get(file.getAbsolutePath() + ".tmp");
   }
 
   public int getPartitionId() {
@@ -84,23 +62,7 @@ public class StorageConfiguration {
     return logSegmentSize;
   }
 
-  public void setIndexBlockSize(final long indexBlockSize) {
-    this.indexBlockSize = indexBlockSize;
-  }
-
-  public long getIndexBlockSize() {
-    return indexBlockSize;
-  }
-
-  public File getSnapshotsDirectory() {
-    return snapshotsDirectory;
-  }
-
   public File getStatesDirectory() {
     return statesDirectory;
-  }
-
-  public File getBlockIndexDirectory() {
-    return blockIndexDirectory;
   }
 }

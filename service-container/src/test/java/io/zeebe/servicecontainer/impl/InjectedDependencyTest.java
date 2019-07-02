@@ -27,7 +27,8 @@ import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,7 +36,7 @@ import org.mockito.InOrder;
 
 @SuppressWarnings("unchecked")
 public class InjectedDependencyTest {
-  @Rule public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
+  @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
 
   ServiceContainer serviceContainer;
 
@@ -71,16 +72,13 @@ public class InjectedDependencyTest {
     // given
     serviceContainer.createService(service2Name, mockService2).install();
 
-    actorSchedulerRule.workUntilDone();
-
     // when
     final Injector<Object> injector = new Injector<>();
     serviceContainer
         .createService(service1Name, mockService1)
         .dependency(service2Name, injector)
-        .install();
-
-    actorSchedulerRule.workUntilDone();
+        .install()
+        .join();
 
     // then
     assertThat(injector.getValue()).isEqualTo(mockService2Value);
@@ -90,13 +88,13 @@ public class InjectedDependencyTest {
   public void shouldInjectIfStartedConcurrently() {
     // when
     final Injector<Object> injector = new Injector<>();
-    serviceContainer
-        .createService(service1Name, mockService1)
-        .dependency(service2Name, injector)
-        .install();
-    serviceContainer.createService(service2Name, mockService2).install();
-
-    actorSchedulerRule.workUntilDone();
+    final ActorFuture<Object> install =
+        serviceContainer
+            .createService(service1Name, mockService1)
+            .dependency(service2Name, injector)
+            .install();
+    serviceContainer.createService(service2Name, mockService2).install().join();
+    install.join();
 
     // then
     assertThat(injector.getValue()).isEqualTo(mockService2Value);
@@ -106,13 +104,13 @@ public class InjectedDependencyTest {
   public void shouldInjectBeforeCallingStart() {
     // when
     final Injector<Object> injector = mock(Injector.class);
-    serviceContainer
-        .createService(service1Name, mockService1)
-        .dependency(service2Name, injector)
-        .install();
-    serviceContainer.createService(service2Name, mockService2).install();
-
-    actorSchedulerRule.workUntilDone();
+    final ActorFuture<Object> install =
+        serviceContainer
+            .createService(service1Name, mockService1)
+            .dependency(service2Name, injector)
+            .install();
+    serviceContainer.createService(service2Name, mockService2).install().join();
+    install.join();
 
     // then
     final InOrder inOrder = inOrder(mockService1, injector);
@@ -123,9 +121,7 @@ public class InjectedDependencyTest {
   @Test
   public void shouldInjectServiceTwice() {
     // given
-    serviceContainer.createService(service2Name, mockService2).install();
-
-    actorSchedulerRule.workUntilDone();
+    serviceContainer.createService(service2Name, mockService2).install().join();
 
     // when
     final Injector<Object> injector = new Injector<>();
@@ -134,9 +130,8 @@ public class InjectedDependencyTest {
         .createService(service1Name, mockService1)
         .dependency(service2Name, injector)
         .dependency(service2Name, anotherInjector)
-        .install();
-
-    actorSchedulerRule.workUntilDone();
+        .install()
+        .join();
 
     // then
     assertThat(injector.getValue()).isEqualTo(mockService2Value);
@@ -153,12 +148,8 @@ public class InjectedDependencyTest {
         .dependency(service2Name, injector)
         .install();
 
-    actorSchedulerRule.workUntilDone();
-
     // when
     serviceContainer.removeService(service1Name);
-
-    actorSchedulerRule.workUntilDone();
 
     // then
     assertThat(injector.getValue()).isNull();
@@ -172,14 +163,10 @@ public class InjectedDependencyTest {
         .createService(service1Name, mockService1)
         .dependency(service2Name, injector)
         .install();
-    serviceContainer.createService(service2Name, mockService2).install();
-
-    actorSchedulerRule.workUntilDone();
+    serviceContainer.createService(service2Name, mockService2).install().join();
 
     // when
-    serviceContainer.removeService(service1Name);
-
-    actorSchedulerRule.workUntilDone();
+    serviceContainer.removeService(service1Name).join();
 
     // then
     final InOrder inOrder = inOrder(mockService1, injector);
@@ -199,12 +186,8 @@ public class InjectedDependencyTest {
         .install();
     serviceContainer.createService(service2Name, mockService2).install();
 
-    actorSchedulerRule.workUntilDone();
-
     // when
     serviceContainer.removeService(service1Name);
-
-    actorSchedulerRule.workUntilDone();
 
     // then
     assertThat(injector.getValue()).isNull();
@@ -221,19 +204,17 @@ public class InjectedDependencyTest {
         .dependency(service2Name, injector)
         .dependency(service2Name, anotherInjector)
         .install();
-    serviceContainer.createService(service2Name, mockService2).install();
-
-    actorSchedulerRule.workUntilDone();
+    serviceContainer.createService(service2Name, mockService2).install().join();
 
     // when + then
-    assertThat(serviceContainer.hasService(service1Name)).isTrue();
-    assertThat(serviceContainer.hasService(service2Name)).isTrue();
+    assertThat(serviceContainer.hasService(service1Name).join()).isTrue();
+    assertThat(serviceContainer.hasService(service2Name).join()).isTrue();
   }
 
   @Test
   public void shouldNotHaveService() {
     // when + then
-    assertThat(serviceContainer.hasService(service1Name)).isFalse();
-    assertThat(serviceContainer.hasService(service2Name)).isFalse();
+    assertThat(serviceContainer.hasService(service1Name).join()).isFalse();
+    assertThat(serviceContainer.hasService(service2Name).join()).isFalse();
   }
 }

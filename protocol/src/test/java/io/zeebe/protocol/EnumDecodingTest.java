@@ -17,6 +17,11 @@ package io.zeebe.protocol;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.protocol.record.ErrorCode;
+import io.zeebe.protocol.record.ErrorResponseDecoder;
+import io.zeebe.protocol.record.ErrorResponseEncoder;
+import io.zeebe.protocol.record.MessageHeaderDecoder;
+import io.zeebe.protocol.record.MessageHeaderEncoder;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 

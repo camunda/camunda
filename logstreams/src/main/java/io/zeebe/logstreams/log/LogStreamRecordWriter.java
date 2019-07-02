@@ -28,8 +28,6 @@ public interface LogStreamRecordWriter extends LogStreamWriter {
 
   LogStreamRecordWriter sourceRecordPosition(long position);
 
-  LogStreamRecordWriter producerId(int producerId);
-
   LogStreamRecordWriter metadata(DirectBuffer buffer, int offset, int length);
 
   LogStreamRecordWriter metadata(DirectBuffer buffer);

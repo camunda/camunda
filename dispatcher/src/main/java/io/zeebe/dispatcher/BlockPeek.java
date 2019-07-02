@@ -18,7 +18,6 @@ package io.zeebe.dispatcher;
 import static io.zeebe.dispatcher.impl.PositionUtil.position;
 
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
-import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.sched.ActorCondition;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
@@ -43,7 +42,6 @@ public class BlockPeek implements Iterable<DirectBuffer> {
   protected DataFrameIterator iterator = new DataFrameIterator();
   private ActorCondition dataConsumed;
   private int fragmentCount;
-  private Metric fragmentsConsumedMetric;
 
   public void setBlock(
       final ByteBuffer byteBuffer,
@@ -54,8 +52,7 @@ public class BlockPeek implements Iterable<DirectBuffer> {
       final int blockLength,
       final int newPartitionId,
       final int newPartitionOffset,
-      int fragmentCount,
-      Metric fragmentsConsumedMetric) {
+      int fragmentCount) {
     this.byteBuffer = byteBuffer;
     this.subscriberPosition = position;
     this.dataConsumed = dataConsumed;
@@ -65,7 +62,6 @@ public class BlockPeek implements Iterable<DirectBuffer> {
     this.newPartitionId = newPartitionId;
     this.newPartitionOffset = newPartitionOffset;
     this.fragmentCount = fragmentCount;
-    this.fragmentsConsumedMetric = fragmentsConsumedMetric;
 
     byteBuffer.limit(bufferOffset + blockLength);
     byteBuffer.position(bufferOffset);
@@ -124,7 +120,6 @@ public class BlockPeek implements Iterable<DirectBuffer> {
   }
 
   protected void updatePosition() {
-    fragmentsConsumedMetric.getAndAddOrdered(fragmentCount);
     subscriberPosition.proposeMaxOrdered(position(newPartitionId, newPartitionOffset));
     dataConsumed.signal();
   }

@@ -20,6 +20,8 @@ The easiest way to try Zeebe is using Docker. Using Docker provides you with a c
 
 ### Docker configurations for docker-compose
 
+The absolutely easiest way to try Zeebe is using the official docker-compose repository. This allows you to start complex configurations with a single command, and understand the details of how they are configured when you are ready to delve to that level.
+
 Docker configurations for starting a single Zeebe broker using `docker-compose`, optionally with Operate and Simple Monitor, are available in the [zeebe-docker-compose](https://github.com/zeebe-io/zeebe-docker-compose/blob/master/README.md) repository. Further instructions for using these configurations are in [the README.md in that repository](https://github.com/zeebe-io/zeebe-docker-compose/blob/master/README.md).
 
 ### Using Docker without docker-compose
@@ -153,19 +155,8 @@ tar -xzf zeebe-distribution-X.Y.Z.tar.gz -C zeebe/
 Once the Zeebe broker has started, it should produce the following output:
 
 ```bash
-10:49:52.264 [] [main] INFO  io.zeebe.broker.system - Using configuration file zeebe-broker-X.Y.Z/conf/zeebe.cfg.toml
-10:49:52.342 [] [main] INFO  io.zeebe.broker.system - Scheduler configuration: Threads{cpu-bound: 2, io-bound: 2}.
-10:49:52.383 [] [main] INFO  io.zeebe.broker.system - Version: X.Y.Z
-10:49:52.430 [] [main] INFO  io.zeebe.broker.clustering - Starting standalone broker.
-10:49:52.435 [service-controller] [0.0.0.0:26500-zb-actors-1] INFO  io.zeebe.broker.transport - Bound managementApi.server to /0.0.0.0:26502
-10:49:52.460 [service-controller] [0.0.0.0:26500-zb-actors-1] INFO  io.zeebe.transport - Bound clientApi.server to /0.0.0.0:26501
-10:49:52.460 [service-controller] [0.0.0.0:26500-zb-actors-1] INFO  io.zeebe.transport - Bound replicationApi.server to /0.0.0.0:26503
+23:39:13.167 [] [main] INFO  io.zeebe.util.config - Reading configuration for class class io.zeebe.broker.system.configuration.BrokerCfg from file conf/zeebe.cfg.toml
+23:39:13.246 [] [main] INFO  io.zeebe.broker.system - Scheduler configuration: Threads{cpu-bound: 2, io-bound: 2}.
+23:39:13.270 [] [main] INFO  io.zeebe.broker.system - Version: X.Y.Z
+23:39:13.273 [] [main] INFO  io.zeebe.broker.system - Starting broker with configuration {
 ```
-
-### Exposed Ports
-
-- `26500`: Gateway API
-- `26501`: Client API
-- `26502`: Management API for broker to broker communication
-- `26503`: Replication API for broker to broker replication
-- `26504`: Subscription API for message correlation

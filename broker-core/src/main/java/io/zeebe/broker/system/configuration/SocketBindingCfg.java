@@ -19,12 +19,16 @@ package io.zeebe.broker.system.configuration;
 
 import io.zeebe.transport.SocketAddress;
 
-public abstract class SocketBindingCfg {
+public class SocketBindingCfg {
   public static final String DEFAULT_SEND_BUFFER_SIZE = "16M";
 
   protected String host;
   protected int port;
   protected String sendBufferSize;
+
+  private SocketBindingCfg(int defaultPort) {
+    this.port = defaultPort;
+  }
 
   public SocketAddress toSocketAddress() {
     return new SocketAddress(host, port);
@@ -78,5 +82,23 @@ public abstract class SocketBindingCfg {
         + sendBufferSize
         + '\''
         + '}';
+  }
+
+  public static class CommandApiCfg extends SocketBindingCfg {
+    public CommandApiCfg() {
+      super(NetworkCfg.DEFAULT_COMMAND_API_PORT);
+    }
+  }
+
+  public static class InternalApiCfg extends SocketBindingCfg {
+    public InternalApiCfg() {
+      super(NetworkCfg.DEFAULT_INTERNAL_API_PORT);
+    }
+  }
+
+  public static class MonitoringApiCfg extends SocketBindingCfg {
+    public MonitoringApiCfg() {
+      super(NetworkCfg.DEFAULT_MONITORING_API_PORT);
+    }
   }
 }

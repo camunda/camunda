@@ -20,16 +20,16 @@ package io.zeebe.engine.processor.workflow.variable;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.intent.VariableIntent;
-import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.VariableIntent;
+import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
-import org.agrona.DirectBuffer;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -45,6 +45,10 @@ public class WorkflowInstanceVariableTypeTest {
       Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
 
   @ClassRule public static final EngineRule ENGINE_RULE = new EngineRule();
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Parameter(0)
   public String variables;
@@ -67,18 +71,18 @@ public class WorkflowInstanceVariableTypeTest {
 
   @BeforeClass
   public static void deployWorkflow() {
-    ENGINE_RULE.deploy(WORKFLOW);
+    ENGINE_RULE.deployment().withXmlResource(WORKFLOW).deploy();
   }
 
   @Test
   public void shouldWriteVariableCreatedEvent() {
     // when
-    final DirectBuffer variables = MsgPackUtil.asMsgPack(this.variables);
     final long workflowInstanceKey =
         ENGINE_RULE
-            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID).setVariables(variables))
-            .getValue()
-            .getInstanceKey();
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(this.variables)
+            .create();
 
     // then
     final Record<VariableRecordValue> variableRecord =

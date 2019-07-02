@@ -32,22 +32,22 @@ import static org.junit.Assert.fail;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.client.api.subscription.JobWorker;
+import io.zeebe.client.api.response.DeploymentEvent;
+import io.zeebe.client.api.response.WorkflowInstanceEvent;
+import io.zeebe.client.api.worker.JobWorker;
 import io.zeebe.engine.processor.workflow.job.JobTimeoutTrigger;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.IncidentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.IncidentIntent;
-import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.protocol.intent.TimerIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.WorkflowInstances;
@@ -142,6 +142,16 @@ public class BrokerReprocessingTest {
   @Rule public Timeout timeout = new Timeout(120, TimeUnit.SECONDS);
 
   private Runnable restartAction = () -> {};
+
+  @Test
+  public void shouldDirectlyRestart() {
+    // given
+
+    // when
+    reprocessingTrigger.accept(this);
+
+    // then - no error
+  }
 
   @Test
   public void shouldCreateWorkflowInstanceAfterRestart() {
@@ -297,7 +307,7 @@ public class BrokerReprocessingTest {
         clientRule
             .getClient()
             .newDeployCommand()
-            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+            .addWorkflowModel(WORKFLOW, "workflow-2.bpmn")
             .send()
             .join();
 
@@ -754,8 +764,8 @@ public class BrokerReprocessingTest {
           clock.addTime(pollingInterval);
           // not using RecordingExporter.jobRecords cause it is blocking
           return RecordingExporter.getRecords().stream()
-              .filter(r -> r.getMetadata().getValueType() == ValueType.JOB)
-              .anyMatch(r -> r.getMetadata().getIntent() == JobIntent.TIMED_OUT);
+              .filter(r -> r.getValueType() == ValueType.JOB)
+              .anyMatch(r -> r.getIntent() == JobIntent.TIMED_OUT);
         });
   }
 }

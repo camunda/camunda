@@ -17,18 +17,20 @@
  */
 package io.zeebe.engine.processor.workflow.variable.mapping;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.JobRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
-import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.test.util.JsonUtil;
-import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.function.Consumer;
-import org.agrona.DirectBuffer;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -41,6 +43,10 @@ public class JobInputMappingTest {
   private static final String PROCESS_ID = "process";
 
   @ClassRule public static final EngineRule ENGINE_RULE = new EngineRule();
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Parameter(0)
   public String initialVariables;
@@ -70,31 +76,32 @@ public class JobInputMappingTest {
   @Test
   public void shouldApplyInputMappings() {
     // given
-    final long workflowKey =
-        ENGINE_RULE
-            .deploy(
-                Bpmn.createExecutableProcess(PROCESS_ID)
-                    .startEvent()
-                    .serviceTask(
-                        "service",
-                        builder -> {
-                          builder.zeebeTaskType("test");
-                          mappings.accept(builder);
-                        })
-                    .endEvent()
-                    .done())
-            .getValue()
-            .getDeployedWorkflows()
-            .get(0)
-            .getWorkflowKey();
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    "service",
+                    builder -> {
+                      builder.zeebeTaskType("test");
+                      mappings.accept(builder);
+                    })
+                .endEvent()
+                .done())
+        .deploy()
+        .getValue()
+        .getDeployedWorkflows()
+        .get(0)
+        .getWorkflowKey();
 
     // when
-    final DirectBuffer variables = MsgPackUtil.asMsgPack(initialVariables);
     final long workflowInstanceKey =
         ENGINE_RULE
-            .createWorkflowInstance(r -> r.setKey(workflowKey).setVariables(variables))
-            .getValue()
-            .getInstanceKey();
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(initialVariables)
+            .create();
     RecordingExporter.jobRecords(JobIntent.CREATED)
         .withWorkflowInstanceKey(workflowInstanceKey)
         .await();
@@ -106,7 +113,8 @@ public class JobInputMappingTest {
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
 
-    JsonUtil.assertEquality(jobCreated.getValue().getVariables(), expectedVariables);
+    assertThat(jobCreated.getValue().getVariables())
+        .isEqualTo(JsonUtil.fromJsonAsMap(expectedVariables));
   }
 
   private static Consumer<ServiceTaskBuilder> mapping(Consumer<ServiceTaskBuilder> mappingBuilder) {

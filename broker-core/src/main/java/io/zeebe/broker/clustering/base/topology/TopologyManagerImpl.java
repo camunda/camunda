@@ -25,7 +25,7 @@ import io.atomix.core.Atomix;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.RaftState;
 import io.zeebe.broker.system.configuration.ClusterCfg;
-import io.zeebe.protocol.impl.data.cluster.BrokerInfo;
+import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.LogUtil;
 import io.zeebe.util.sched.Actor;
@@ -57,13 +57,12 @@ public class TopologyManagerImpl extends Actor
             clusterCfg.getPartitionsCount(),
             clusterCfg.getReplicationFactor());
     distributionInfo =
-        new BrokerInfo(
-            localBroker.getNodeId(),
-            topology.getPartitionsCount(),
-            topology.getClusterSize(),
-            topology.getReplicationFactor());
-    distributionInfo.setApiAddress(
-        BrokerInfo.COMMAND_API_PROPERTY, localBroker.getCommandApiAddress().toString());
+        new BrokerInfo()
+            .setNodeId(localBroker.getNodeId())
+            .setPartitionsCount(topology.getPartitionsCount())
+            .setClusterSize(topology.getClusterSize())
+            .setReplicationFactor(topology.getReplicationFactor());
+    distributionInfo.setCommandApiAddress(localBroker.getCommandApiAddress().toString());
 
     // ensures that the first published event will contain the broker's info
     publishTopologyChanges();
@@ -101,9 +100,13 @@ public class TopologyManagerImpl extends Actor
   @Override
   public void event(ClusterMembershipEvent clusterMembershipEvent) {
     final Member eventSource = clusterMembershipEvent.subject();
-    LOG.debug(
-        "Member {} received event {}", topology.getLocal().getNodeId(), clusterMembershipEvent);
+
     final BrokerInfo brokerInfo = readBrokerInfo(eventSource);
+    LOG.debug(
+        "Member {} received event {} with {}",
+        topology.getLocal().getNodeId(),
+        clusterMembershipEvent,
+        brokerInfo);
 
     if (brokerInfo != null && brokerInfo.getNodeId() != topology.getLocal().getNodeId()) {
       actor.call(
@@ -137,13 +140,18 @@ public class TopologyManagerImpl extends Actor
 
   // Add a new member to the topology, including its interface's addresses
   private void onMemberAdded(BrokerInfo brokerInfo) {
-    final NodeInfo nodeInfo =
-        new NodeInfo(
-            brokerInfo.getNodeId(),
-            SocketAddress.from(brokerInfo.getApiAddress(BrokerInfo.COMMAND_API_PROPERTY)));
+    final String commandApiAddress = brokerInfo.getCommandApiAddress();
+    if (commandApiAddress != null) {
+      final NodeInfo nodeInfo =
+          new NodeInfo(brokerInfo.getNodeId(), SocketAddress.from(commandApiAddress));
 
-    if (topology.addMember(nodeInfo)) {
-      notifyMemberAdded(nodeInfo);
+      if (topology.addMember(nodeInfo)) {
+        notifyMemberAdded(nodeInfo);
+      }
+    } else {
+      LOG.warn(
+          "Ignoring broker info from node id {} as no command API address is present",
+          brokerInfo.getNodeId());
     }
   }
 
@@ -187,7 +195,7 @@ public class TopologyManagerImpl extends Actor
   private void publishTopologyChanges() {
     final BrokerInfo distributionInfo = createLocalNodeBrokerInfo();
     final Properties memberProperties = atomix.getMembershipService().getLocalMember().properties();
-    BrokerInfo.writeIntoProperties(memberProperties, distributionInfo);
+    distributionInfo.writeIntoProperties(memberProperties);
   }
 
   // Transforms the local topology into a the serializable format
@@ -196,11 +204,11 @@ public class TopologyManagerImpl extends Actor
     distributionInfo.clearPartitions();
 
     for (int partitionId : local.getLeaders()) {
-      distributionInfo.addLeaderForPartition(partitionId);
+      distributionInfo.setLeaderForPartition(partitionId);
     }
 
     for (int partitionId : local.getFollowers()) {
-      distributionInfo.addFollowerForPartition(partitionId);
+      distributionInfo.setFollowerForPartition(partitionId);
     }
 
     return distributionInfo;

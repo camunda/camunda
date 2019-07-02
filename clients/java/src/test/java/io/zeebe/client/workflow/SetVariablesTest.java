@@ -20,12 +20,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.zeebe.util.StringUtil;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.Test;
@@ -44,6 +45,8 @@ public class SetVariablesTest extends ClientTest {
     final SetVariablesRequest request = gatewayService.getLastRequest();
     assertThat(request.getElementInstanceKey()).isEqualTo(123);
     assertThat(fromJsonAsMap(request.getVariables())).containsOnly(entry("key", "val"));
+
+    rule.verifyDefaultRequestTimeout();
   }
 
   @Test
@@ -96,6 +99,18 @@ public class SetVariablesTest extends ClientTest {
     assertThatThrownBy(() -> client.newSetVariablesCommand(123).variables("[]").send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
+  }
+
+  @Test
+  public void shouldSetRequestTimeout() {
+    // given
+    final Duration requestTimeout = Duration.ofHours(124);
+
+    // when
+    client.newSetVariablesCommand(123).variables("{}").requestTimeout(requestTimeout).send().join();
+
+    // then
+    rule.verifyRequestTimeout(requestTimeout);
   }
 
   static class Document {

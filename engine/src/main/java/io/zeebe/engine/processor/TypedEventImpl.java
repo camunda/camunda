@@ -18,9 +18,13 @@
 package io.zeebe.engine.processor;
 
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import java.time.Instant;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.Intent;
 
 @SuppressWarnings({"rawtypes"})
 public class TypedEventImpl implements TypedRecord {
@@ -48,13 +52,18 @@ public class TypedEventImpl implements TypedRecord {
   }
 
   @Override
-  public RecordMetadata getMetadata() {
-    return metadata;
+  public UnifiedRecordValue getValue() {
+    return value;
   }
 
   @Override
-  public UnifiedRecordValue getValue() {
-    return value;
+  public int getRequestStreamId() {
+    return metadata.getRequestStreamId();
+  }
+
+  @Override
+  public long getRequestId() {
+    return metadata.getRequestId();
   }
 
   @Override
@@ -63,18 +72,43 @@ public class TypedEventImpl implements TypedRecord {
   }
 
   @Override
+  public Intent getIntent() {
+    return metadata.getIntent();
+  }
+
+  @Override
+  public int getPartitionId() {
+    return Protocol.decodePartitionId(getKey());
+  }
+
+  @Override
+  public RecordType getRecordType() {
+    return metadata.getRecordType();
+  }
+
+  @Override
+  public RejectionType getRejectionType() {
+    return metadata.getRejectionType();
+  }
+
+  @Override
+  public String getRejectionReason() {
+    return metadata.getRejectionReason();
+  }
+
+  @Override
+  public ValueType getValueType() {
+    return metadata.getValueType();
+  }
+
+  @Override
   public long getSourceRecordPosition() {
     return rawEvent.getSourceEventPosition();
   }
 
   @Override
-  public int getProducerId() {
-    return rawEvent.getProducerId();
-  }
-
-  @Override
-  public Instant getTimestamp() {
-    return Instant.ofEpochMilli(rawEvent.getTimestamp());
+  public long getTimestamp() {
+    return rawEvent.getTimestamp();
   }
 
   @Override

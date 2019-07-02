@@ -16,10 +16,10 @@
 package io.zeebe.gateway.impl.broker.request;
 
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.VariableDocumentUpdateSemantic;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
-import io.zeebe.protocol.intent.VariableDocumentIntent;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import org.agrona.DirectBuffer;
 
 public class BrokerSetVariablesRequest extends BrokerExecuteCommand<VariableDocumentRecord> {
@@ -36,8 +36,8 @@ public class BrokerSetVariablesRequest extends BrokerExecuteCommand<VariableDocu
     return this;
   }
 
-  public BrokerSetVariablesRequest setDocument(DirectBuffer document) {
-    requestDto.setDocument(document);
+  public BrokerSetVariablesRequest setVariables(DirectBuffer variables) {
+    requestDto.setVariables(variables);
     return this;
   }
 

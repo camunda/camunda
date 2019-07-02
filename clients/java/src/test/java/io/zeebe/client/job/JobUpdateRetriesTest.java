@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
+import java.time.Duration;
 import org.junit.Test;
 
 public class JobUpdateRetriesTest extends ClientTest {
@@ -36,5 +37,19 @@ public class JobUpdateRetriesTest extends ClientTest {
     final UpdateJobRetriesRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(jobKey);
     assertThat(request.getRetries()).isEqualTo(newRetries);
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldSetRequestTimeout() {
+    // given
+    final Duration requestTimeout = Duration.ofHours(124);
+
+    // when
+    client.newUpdateRetriesCommand(123).retries(3).requestTimeout(requestTimeout).send().join();
+
+    // then
+    rule.verifyRequestTimeout(requestTimeout);
   }
 }

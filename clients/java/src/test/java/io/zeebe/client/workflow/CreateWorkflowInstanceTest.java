@@ -15,19 +15,20 @@
  */
 package io.zeebe.client.workflow;
 
-import static io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1.LATEST_VERSION;
+import static io.zeebe.client.api.command.CreateWorkflowInstanceCommandStep1.LATEST_VERSION;
 import static io.zeebe.test.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
 import com.google.common.base.Charsets;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.api.command.ClientException;
+import io.zeebe.client.api.response.WorkflowInstanceEvent;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Collections;
 import org.junit.Test;
 
@@ -50,6 +51,8 @@ public class CreateWorkflowInstanceTest extends ClientTest {
 
     final CreateWorkflowInstanceRequest request = gatewayService.getLastRequest();
     assertThat(request.getWorkflowKey()).isEqualTo(123);
+
+    rule.verifyDefaultRequestTimeout();
   }
 
   @Test
@@ -143,6 +146,18 @@ public class CreateWorkflowInstanceTest extends ClientTest {
     assertThatThrownBy(() -> client.newCreateInstanceCommand().workflowKey(123).send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
+  }
+
+  @Test
+  public void shouldSetRequestTimeout() {
+    // given
+    final Duration requestTimeout = Duration.ofHours(124);
+
+    // when
+    client.newCreateInstanceCommand().workflowKey(123).requestTimeout(requestTimeout).send().join();
+
+    // then
+    rule.verifyRequestTimeout(requestTimeout);
   }
 
   public static class VariableDocument {

@@ -104,8 +104,6 @@ public class ServerTransportBuilder {
 
     final TransportContext context = buildTransportContext();
 
-    actorContext.setMetricsManager(scheduler.getMetricsManager());
-
     buildActors(context, actorContext);
 
     return new ServerTransport(actorContext, context);
@@ -126,7 +124,6 @@ public class ServerTransportBuilder {
     final TransportContext context = buildTransportContext();
 
     context.setReceiveBuffer(receiveBuffer);
-    actorContext.setMetricsManager(scheduler.getMetricsManager());
 
     buildActors(context, actorContext);
 
@@ -145,8 +142,7 @@ public class ServerTransportBuilder {
     context.setRemoteAddressList(remoteAddressList);
     context.setReceiveHandler(receiveHandler);
     context.setServerSocketBinding(serverSocketBinding);
-    context.setChannelFactory(
-        new DefaultChannelFactory(scheduler.getMetricsManager(), context.getName()));
+    context.setChannelFactory(new DefaultChannelFactory());
 
     return context;
   }
@@ -156,9 +152,9 @@ public class ServerTransportBuilder {
     final Sender sender = actorContext.getSender();
     final Receiver receiver = new Receiver(actorContext, context);
 
-    scheduler.submitActor(conductor, true);
-    scheduler.submitActor(sender, true);
-    scheduler.submitActor(receiver, true);
+    scheduler.submitActor(conductor);
+    scheduler.submitActor(sender);
+    scheduler.submitActor(receiver);
   }
 
   protected void validate() {

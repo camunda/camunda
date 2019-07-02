@@ -38,4 +38,7 @@ public class ClientProperties {
 
   /** @see ZeebeClientBuilder#defaultMessageTimeToLive(java.time.Duration) */
   public static final String DEFAULT_MESSAGE_TIME_TO_LIVE = "zeebe.client.message.timeToLive";
+
+  /** @see ZeebeClientBuilder#defaultRequestTimeout(Duration) */
+  public static final String DEFAULT_REQUEST_TIMEOUT = "zeebe.client.requestTimeout";
 }

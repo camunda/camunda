@@ -22,14 +22,14 @@ import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -280,12 +280,7 @@ public class SubscriptionCommandMessageHandler
 
     logStreamWriter.wrap(logStream);
 
-    recordMetadata
-        .reset()
-        .partitionId(partitionId)
-        .recordType(RecordType.COMMAND)
-        .valueType(valueType)
-        .intent(intent);
+    recordMetadata.reset().recordType(RecordType.COMMAND).valueType(valueType).intent(intent);
 
     final long position =
         logStreamWriter.key(-1).metadataWriter(recordMetadata).valueWriter(command).tryWrite();

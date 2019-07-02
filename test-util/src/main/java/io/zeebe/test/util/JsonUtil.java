@@ -27,7 +27,7 @@ import java.util.Map;
 
 public class JsonUtil {
 
-  static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =
+  private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =
       new TypeReference<Map<String, Object>>() {};
 
   static final ObjectMapper JSON_MAPPER = new ObjectMapper();
@@ -37,14 +37,10 @@ public class JsonUtil {
   }
 
   public static void assertEquality(String actualJson, String expectedJson) {
-    try {
-      assertThat(JSON_MAPPER.readTree(actualJson)).isEqualTo(JSON_MAPPER.readTree(expectedJson));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    assertThat(asJsonNode(actualJson)).isEqualTo(asJsonNode(expectedJson));
   }
 
-  public static JsonNode asJsonNode(String json) {
+  private static JsonNode asJsonNode(String json) {
     try {
       return JSON_MAPPER.readTree(json);
     } catch (IOException e) {

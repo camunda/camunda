@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.exporter.stream;
 
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
@@ -31,15 +32,15 @@ import io.zeebe.broker.exporter.util.PojoConfigurationExporter;
 import io.zeebe.broker.exporter.util.PojoConfigurationExporter.PojoExporterConfiguration;
 import io.zeebe.engine.Loggers;
 import io.zeebe.exporter.api.context.Context;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.IncidentIntent;
-import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
+import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -232,7 +233,8 @@ public class ExporterDirectorTest {
     final long eventPosition2 = writeEvent();
 
     // then
-    waitUntil(() -> failCount.get() <= -2);
+    doRepeatedly(() -> rule.getClock().addTime(Duration.ofSeconds(1)))
+        .until((r) -> failCount.get() <= -2);
     assertThat(exporters.get(0).getExportedRecords())
         .extracting(Record::getPosition)
         .containsExactly(eventPosition1, eventPosition2);
@@ -357,7 +359,7 @@ public class ExporterDirectorTest {
     // then
     final ExportersState exportersState = rule.getExportersState();
     assertThat(exportersState.getPosition(EXPORTER_ID_1)).isEqualTo(eventPosition);
-    assertThat(exportersState.getPosition(EXPORTER_ID_2)).isEqualTo(-1);
+    waitUntil(() -> exportersState.getPosition(EXPORTER_ID_2) == -1);
   }
 
   @Test

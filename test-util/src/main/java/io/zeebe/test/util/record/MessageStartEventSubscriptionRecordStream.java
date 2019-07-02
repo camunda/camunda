@@ -15,8 +15,8 @@
  */
 package io.zeebe.test.util.record;
 
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.MessageStartEventSubscriptionRecordValue;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import java.util.stream.Stream;
 
 public class MessageStartEventSubscriptionRecordStream

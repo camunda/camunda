@@ -24,7 +24,7 @@ import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 import io.zeebe.db.DbValue;
 import io.zeebe.engine.processor.workflow.WorkflowInstanceLifecycle;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 

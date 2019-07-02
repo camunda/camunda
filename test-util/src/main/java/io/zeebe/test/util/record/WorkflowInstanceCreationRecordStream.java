@@ -15,9 +15,9 @@
  */
 package io.zeebe.test.util.record;
 
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
-import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.test.util.collection.Maps;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -47,11 +47,11 @@ public class WorkflowInstanceCreationRecordStream
   }
 
   public WorkflowInstanceCreationRecordStream withKey(long key) {
-    return valueFilter(v -> v.getKey() == key);
+    return valueFilter(v -> v.getWorkflowKey() == key);
   }
 
   public WorkflowInstanceCreationRecordStream withInstanceKey(long instanceKey) {
-    return valueFilter(v -> v.getInstanceKey() == instanceKey);
+    return valueFilter(v -> v.getWorkflowInstanceKey() == instanceKey);
   }
 
   public WorkflowInstanceCreationRecordStream withVariables(Map<String, Object> variables) {
@@ -71,7 +71,7 @@ public class WorkflowInstanceCreationRecordStream
       long workflowInstanceKey) {
     return limit(
         r ->
-            r.getMetadata().getIntent() == WorkflowInstanceCreationIntent.CREATED
-                && r.getValue().getInstanceKey() == workflowInstanceKey);
+            r.getIntent() == WorkflowInstanceCreationIntent.CREATED
+                && r.getValue().getWorkflowInstanceKey() == workflowInstanceKey);
   }
 }

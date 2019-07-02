@@ -15,7 +15,7 @@
  */
 package io.zeebe.test.exporter.record;
 
-import io.zeebe.exporter.api.record.RecordValue;
+import io.zeebe.protocol.record.RecordValue;
 
 public class MockRecordValue extends ExporterMappedObject implements RecordValue {
 

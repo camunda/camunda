@@ -8,9 +8,14 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.19.0-SNAPSHOT</version>
+    <version>0.20.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
+
+  <properties>
+    <zbctl.force>false</zbctl.force>
+    <zbctl.rootDir>${maven.multiModuleProjectDirectory}</zbctl.rootDir>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -44,6 +49,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient_httpserver</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
@@ -58,7 +68,6 @@
       <artifactId>log4j-core</artifactId>
     </dependency>
   </dependencies>
-
   <build>
     <plugins>
       <plugin>
@@ -118,10 +127,10 @@
             </goals>
             <configuration>
               <target>
-                <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl" tofile="${project.build.directory}/zeebe-broker/bin/zbctl" failonerror="false" />
-                <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.exe" failonerror="false" />
-                <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.darwin" failonerror="false" />
-                <chmod dir="${project.build.directory}/zeebe-broker/bin" perm="ugo+rx" includes="zbctl*" failonerror="false" />
+                <copy file="${zbctl.rootDir}/clients/zbctl/dist/zbctl" tofile="${project.build.directory}/zeebe-broker/bin/zbctl" failonerror="${zbctl.force}" />
+                <copy file="${zbctl.rootDir}/clients/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.exe" failonerror="${zbctl.force}" />
+                <copy file="${zbctl.rootDir}/clients/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.darwin" failonerror="${zbctl.force}" />
+                <chmod dir="${project.build.directory}/zeebe-broker/bin" perm="ugo+rx" includes="zbctl*" failonerror="${zbctl.force}" />
               </target>
             </configuration>
           </execution>

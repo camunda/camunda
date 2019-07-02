@@ -15,13 +15,27 @@
  */
 package io.zeebe.protocol.impl.record;
 
-import io.zeebe.exporter.api.record.RecordValue;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.zeebe.protocol.record.RecordValue;
 
 public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
 
   @Override
+  @JsonIgnore
+  public int getLength() {
+    return super.getLength();
+  }
+
+  @Override
+  @JsonIgnore
+  public int getEncodedLength() {
+    return super.getEncodedLength();
+  }
+
+  @Override
   public String toJson() {
-    throw new UnsupportedOperationException("not yet implemented");
+    return MsgPackConverter.convertJsonSerializableObjectToJson(this);
   }
 }

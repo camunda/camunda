@@ -25,7 +25,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.JobHeaders;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
@@ -43,8 +42,6 @@ import java.util.Iterator;
 import org.agrona.DirectBuffer;
 
 public class ResponseMapper {
-
-  private static final MsgPackConverter MSG_PACK_CONVERTER = new MsgPackConverter();
 
   public static DeployWorkflowResponse toDeployWorkflowResponse(
       long key, DeploymentRecord brokerResponse) {
@@ -85,10 +82,10 @@ public class ResponseMapper {
   public static CreateWorkflowInstanceResponse toCreateWorkflowInstanceResponse(
       long key, WorkflowInstanceCreationRecord brokerResponse) {
     return CreateWorkflowInstanceResponse.newBuilder()
-        .setWorkflowKey(brokerResponse.getKey())
+        .setWorkflowKey(brokerResponse.getWorkflowKey())
         .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessIdBuffer()))
         .setVersion(brokerResponse.getVersion())
-        .setWorkflowInstanceKey(brokerResponse.getInstanceKey())
+        .setWorkflowInstanceKey(brokerResponse.getWorkflowInstanceKey())
         .build();
   }
 
@@ -116,11 +113,16 @@ public class ResponseMapper {
           ActivatedJob.newBuilder()
               .setKey(jobKey.getValue())
               .setType(bufferAsString(job.getTypeBuffer()))
-              .setJobHeaders(fromBrokerJobHeaders(job.getJobHeaders()))
+              .setBpmnProcessId(job.getBpmnProcessId())
+              .setElementId(job.getElementId())
+              .setWorkflowInstanceKey(job.getWorkflowInstanceKey())
+              .setWorkflowDefinitionVersion(job.getWorkflowDefinitionVersion())
+              .setWorkflowKey(job.getWorkflowKey())
+              .setElementInstanceKey(job.getElementInstanceKey())
               .setCustomHeaders(bufferAsJson(job.getCustomHeadersBuffer()))
               .setWorker(bufferAsString(job.getWorkerBuffer()))
               .setRetries(job.getRetries())
-              .setDeadline(job.getDeadlineLong())
+              .setDeadline(job.getDeadline())
               .setVariables(bufferAsJson(job.getVariablesBuffer()))
               .build();
 
@@ -135,20 +137,8 @@ public class ResponseMapper {
     return ResolveIncidentResponse.getDefaultInstance();
   }
 
-  private static JobHeaders fromBrokerJobHeaders(
-      io.zeebe.protocol.impl.record.value.job.JobHeaders headers) {
-    return JobHeaders.newBuilder()
-        .setWorkflowInstanceKey(headers.getWorkflowInstanceKey())
-        .setBpmnProcessId(bufferAsString(headers.getBpmnProcessIdBuffer()))
-        .setWorkflowDefinitionVersion(headers.getWorkflowDefinitionVersion())
-        .setWorkflowKey(headers.getWorkflowKey())
-        .setElementId(bufferAsString(headers.getElementIdBuffer()))
-        .setElementInstanceKey(headers.getElementInstanceKey())
-        .build();
-  }
-
   private static String bufferAsJson(DirectBuffer customHeaders) {
-    return MSG_PACK_CONVERTER.convertToJson(bufferAsArray(customHeaders));
+    return MsgPackConverter.convertToJson(bufferAsArray(customHeaders));
   }
 
   @FunctionalInterface

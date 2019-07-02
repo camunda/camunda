@@ -26,22 +26,20 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.engine.processor.CopiedRecords;
 import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.workflow.job.JobEventProcessors;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processor.workflow.timer.DueDateTimerChecker;
 import io.zeebe.engine.state.deployment.WorkflowState;
-import io.zeebe.engine.util.CopiedTypedEvent;
 import io.zeebe.engine.util.Records;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.engine.util.TypedRecordStream;
-import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Process;
-import io.zeebe.protocol.ValueType;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -49,17 +47,19 @@ import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionR
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.protocol.intent.TimerIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import java.io.ByteArrayOutputStream;
 import java.util.Optional;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -158,18 +158,18 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
     deploy(modelInstance, DEPLOYMENT_KEY, VERSION);
   }
 
-  public TypedRecord<WorkflowInstanceRecord> createAndReceiveWorkflowInstance(
+  public Record<WorkflowInstanceRecord> createAndReceiveWorkflowInstance(
       Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> transformer) {
-    final TypedRecord<WorkflowInstanceCreationRecord> createdRecord =
+    final Record<WorkflowInstanceCreationRecord> createdRecord =
         createWorkflowInstance(transformer);
 
     return awaitAndGetFirstWorkflowInstanceRecord(
         r ->
-            r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATING
-                && r.getKey() == createdRecord.getValue().getInstanceKey());
+            r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATING
+                && r.getKey() == createdRecord.getValue().getWorkflowInstanceKey());
   }
 
-  public TypedRecord<WorkflowInstanceCreationRecord> createWorkflowInstance(
+  public Record<WorkflowInstanceCreationRecord> createWorkflowInstance(
       Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> transformer) {
     final long position =
         environmentRule.writeCommand(
@@ -178,55 +178,60 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
 
     return awaitAndGetFirstRecord(
         ValueType.WORKFLOW_INSTANCE_CREATION,
-        (e, r) ->
+        (e) ->
             e.getSourceRecordPosition() == position
-                && r.getMetadata().getIntent() == WorkflowInstanceCreationIntent.CREATED,
+                && e.getIntent() == WorkflowInstanceCreationIntent.CREATED,
         new WorkflowInstanceCreationRecord());
   }
 
   public void completeFirstJob() {
-    final TypedRecord<JobRecord> createCommand = awaitAndGetFirstRecordInState(JobIntent.CREATE);
+    final Record<JobRecord> createCommand = awaitAndGetFirstRecordInState(JobIntent.CREATE);
 
     final long jobKey = environmentRule.writeEvent(JobIntent.CREATED, createCommand.getValue());
     environmentRule.writeEvent(jobKey, JobIntent.COMPLETED, createCommand.getValue());
   }
 
-  public TypedRecord<WorkflowInstanceRecord> awaitAndGetFirstWorkflowInstanceRecord(
-      Predicate<TypedRecord<WorkflowInstanceRecord>> matcher) {
+  public Record<WorkflowInstanceRecord> awaitAndGetFirstWorkflowInstanceRecord(
+      Predicate<Record<WorkflowInstanceRecord>> matcher) {
     return awaitAndGetFirstRecord(
         ValueType.WORKFLOW_INSTANCE, matcher, WorkflowInstanceRecord.class);
   }
 
-  public <T extends UnifiedRecordValue> TypedRecord<T> awaitAndGetFirstRecord(
-      ValueType valueType, Predicate<TypedRecord<T>> matcher, Class<T> valueClass) {
+  public <T extends UnifiedRecordValue> Record<T> awaitAndGetFirstRecord(
+      ValueType valueType, Predicate<Record<T>> matcher, Class<T> valueClass) {
     return TestUtil.doRepeatedly(
             () ->
                 environmentRule
                     .events()
                     .filter(r -> Records.isRecordOfType(r, valueType))
-                    .map(e -> CopiedTypedEvent.toTypedEvent(e, valueClass))
+                    .map(
+                        e ->
+                            (Record<T>)
+                                CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, e))
                     .filter(matcher)
                     .findFirst())
         .until(Optional::isPresent)
         .orElse(null);
   }
 
-  public <T extends UnifiedRecordValue> TypedRecord<T> awaitAndGetFirstRecord(
-      ValueType valueType, BiFunction<CopiedTypedEvent, TypedRecord<T>, Boolean> matcher, T value) {
-    return (TypedRecord)
-        TestUtil.doRepeatedly(
-                () ->
-                    environmentRule
-                        .events()
-                        .filter(r -> Records.isRecordOfType(r, valueType))
-                        .map(e -> new CopiedTypedEvent(e, value))
-                        .filter(e -> matcher.apply(e, e))
-                        .findFirst())
-            .until(Optional::isPresent)
-            .orElse(null);
+  public <T extends UnifiedRecordValue> Record<T> awaitAndGetFirstRecord(
+      ValueType valueType, Function<Record<T>, Boolean> matcher, T value) {
+    return TestUtil.doRepeatedly(
+            () ->
+                environmentRule
+                    .events()
+                    .filter(r -> Records.isRecordOfType(r, valueType))
+                    .map(
+                        e ->
+                            (Record<T>)
+                                CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, e))
+                    .filter(e -> matcher.apply(e))
+                    .findFirst())
+        .until(Optional::isPresent)
+        .orElse(null);
   }
 
-  private TypedRecord<JobRecord> awaitAndGetFirstRecordInState(final JobIntent state) {
+  private Record<JobRecord> awaitAndGetFirstRecordInState(final JobIntent state) {
     awaitFirstRecordInState(state);
     return environmentRule.events().onlyJobRecords().withIntent(state).findFirst().get();
   }
@@ -235,7 +240,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
     waitUntil(() -> environmentRule.events().withIntent(state).findFirst().isPresent());
   }
 
-  public TypedRecord<WorkflowInstanceSubscriptionRecord> awaitAndGetFirstSubscriptionRejection() {
+  public Record<WorkflowInstanceSubscriptionRecord> awaitAndGetFirstSubscriptionRejection() {
     waitUntil(
         () ->
             environmentRule
@@ -253,7 +258,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
         .get();
   }
 
-  public TypedRecord<WorkflowInstanceRecord> awaitElementInState(
+  public Record<WorkflowInstanceRecord> awaitElementInState(
       final String elementId, final WorkflowInstanceIntent intent) {
     final DirectBuffer elementIdAsBuffer = BufferUtil.wrapString(elementId);
 
@@ -269,29 +274,27 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
         .get();
   }
 
-  public TypedRecord<TimerRecord> awaitTimerInState(final String timerId, final TimerIntent state) {
-    final DirectBuffer handlerNodeId = wrapString(timerId);
+  public Record<TimerRecord> awaitTimerInState(final String timerId, final TimerIntent state) {
     final Supplier<TypedRecordStream<TimerRecord>> lookupStream =
         () ->
             environmentRule
                 .events()
                 .onlyTimerRecords()
-                .filter(r -> r.getValue().getHandlerNodeId().equals(handlerNodeId))
+                .filter(r -> r.getValue().getTargetElementId().equals(timerId))
                 .withIntent(state);
 
     waitUntil(() -> lookupStream.get().findFirst().isPresent());
     return lookupStream.get().findFirst().get();
   }
 
-  public TypedRecord<JobRecord> awaitJobInState(final String activityId, final JobIntent state) {
+  public Record<JobRecord> awaitJobInState(final String activityId, final JobIntent state) {
     final DirectBuffer activityIdBuffer = wrapString(activityId);
     final Supplier<TypedRecordStream<JobRecord>> lookupStream =
         () ->
             environmentRule
                 .events()
                 .onlyJobRecords()
-                .filter(
-                    r -> r.getValue().getJobHeaders().getElementIdBuffer().equals(activityIdBuffer))
+                .filter(r -> r.getValue().getElementIdBuffer().equals(activityIdBuffer))
                 .withIntent(state);
 
     waitUntil(() -> lookupStream.get().findFirst().isPresent());

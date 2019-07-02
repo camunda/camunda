@@ -53,7 +53,7 @@ public class UniqueKeyFormatTest {
         apiRule.partitionClient(2).createWorkflowInstance(r -> r.setBpmnProcessId("process"));
 
     // then partition id is encoded in the returned getKey
-    final long key = workflowInstanceWithResponse.getInstanceKey();
+    final long key = workflowInstanceWithResponse.getWorkflowInstanceKey();
     final int partitionId = Protocol.decodePartitionId(key);
     assertThat(partitionId).isEqualTo(2);
   }

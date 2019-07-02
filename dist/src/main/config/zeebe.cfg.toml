@@ -67,12 +67,17 @@
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_MANAGEMENT_THREADS.
 # managementThreads = 1
 
+[gateway.monitoring]
+# Enables the metrics collection in the gateway
+# enabled = false
+
 [network]
 
 # This section contains the network configuration. Particularly, it allows to
 # configure the hosts and ports the broker should bind to. The broker exposes two sockets:
 # 1. command: the socket which is used for gateway-to-broker communication
 # 2. internal: the socket which is used for broker-to-broker communication
+# 3. monitoring: the socket which is used to monitor the broker
 
 # Controls the default host the broker should bind to. Can be overwritten on a
 # per binding basis for client, management and replication
@@ -107,6 +112,13 @@
 # Sets the port used for internal broker-to-broker communication
 # port = 26502
 
+[network.monitoringApi]
+# Overrides the host used for exposing monitoring information
+# host = "localhost"
+
+# Sets the port used for exposing monitoring information
+# port = 9600
+
 
 [data]
 
@@ -118,9 +130,6 @@
 # ├── segments                      (the actual data as segment files)
 # │   ├── 00.data
 # │   └── 01.data
-# ├── index                      	(log block index state and snapshots)
-# │   ├── runtime
-# │   └── snapshots
 # └── state                     	(stream processor state and snapshots)
 #     └── stream-processor
 #		  ├── runtime
@@ -138,15 +147,12 @@
 # The size of data log segment files.
 # logSegmentSize = "512M"
 
-# The size of block index segments.
-# indexBlockSize = "4M"
-
 # How often we take snapshots of streams (time unit)
 # snapshotPeriod = "15m"
 
 # The maximum number of snapshots kept (must be a positive integer). When this 
 # limit is passed the oldest snapshot is deleted.
-# maxSnapshots = "1"
+# maxSnapshots = "3"
 #
 # How often follower partitions will check for new snapshots to replicate from
 # the leader partitions. Snapshot replication enables faster failover by
@@ -190,6 +196,9 @@
 # This setting can also be overridden using the environment variable ZEEBE_CONTACT_POINTS
 # specifying a comma-separated list of contact points.
 #
+# To guarantee the cluster can survive network partitions, all nodes must be specified
+# as initial contact points.
+#
 # Default is empty list:
 # initialContactPoints = []
 
@@ -215,25 +224,6 @@
 #
 # The default value is 2.
 #ioThreadCount = 2
-
-[metrics]
-
-# Path to the file to which metrics are written. Metrics are written in a
-# text-based format understood by prometheus.io
-# metricsFile = "metrics/zeebe.prom"
-
-# Controls the interval at which the metrics are written to the metrics file
-# reportingInterval = "5s"
-
-# Controls if the prometheus metrics should be exporter over HTTP
-# This setting can also be overridden using the environment variable ZEEBE_METRICS_HTTP_SERVER.
-# enableHttpServer = false
-
-# Host to export metrics on, defaults to network.host
-# host = "0.0.0.0"
-
-# Port to export metrics on
-# port = 9600
 
 # Configure exporters below; note that configuration parsing conventions do not apply to exporter
 # arguments, which will be parsed as normal TOML.
@@ -303,8 +293,11 @@
 #  deployment = true
 #  incident = true
 #  job = true
+#  jobBatch = false
 #  message = false
 #  messageSubscription = false
-#  raft = false
+#  variable = true
+#  variableDocument = false
 #  workflowInstance = true
+#  workflowInstanceCreation = false
 #  workflowInstanceSubscription = false

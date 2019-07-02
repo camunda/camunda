@@ -25,22 +25,21 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.exporter.api.record.Assertions;
-import io.zeebe.exporter.api.record.Record;
+import io.zeebe.client.api.response.PartitionInfo;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.intent.JobBatchIntent;
-import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.record.Assertions;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.JobBatchIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.util.StreamUtil;
 import io.zeebe.util.collection.Tuple;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -124,7 +123,7 @@ public class ActivateJobsTest {
             ActivatedJob::getVariablesAsMap)
         .containsOnly(tuple(JOB_TYPE, worker, CUSTOM_HEADERS, VARIABLES));
 
-    final List<Instant> deadlines =
+    final List<Long> deadlines =
         jobRecords(JobIntent.ACTIVATED)
             .limit(amount)
             .map(r -> r.getValue().getDeadline())
@@ -241,7 +240,7 @@ public class ActivateJobsTest {
     final List<Long> jobKeys =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withType(type)
-            .filter(r -> r.getValue().getHeaders().getWorkflowKey() == workflowKey)
+            .filter(r -> r.getValue().getWorkflowKey() == workflowKey)
             .limit(amount)
             .map(Record::getKey)
             .collect(Collectors.toList());

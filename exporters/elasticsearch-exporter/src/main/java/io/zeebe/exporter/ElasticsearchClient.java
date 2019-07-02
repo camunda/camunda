@@ -15,13 +15,14 @@
  */
 package io.zeebe.exporter;
 
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.protocol.ValueType;
+import io.prometheus.client.Histogram;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.ValueType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Map;
@@ -55,6 +56,8 @@ public class ElasticsearchClient {
   protected final RestHighLevelClient client;
   private BulkRequest bulkRequest;
 
+  private ElasticsearchMetrics metrics;
+
   private final DateTimeFormatter formatter;
 
   public ElasticsearchClient(final ElasticsearchExporterConfiguration configuration, Logger log) {
@@ -70,6 +73,10 @@ public class ElasticsearchClient {
   }
 
   public void index(final Record<?> record) {
+    if (metrics == null) {
+      metrics = new ElasticsearchMetrics(record.getPartitionId());
+    }
+
     final IndexRequest request =
         new IndexRequest(indexFor(record), typeFor(record), idFor(record))
             .source(record.toJson(), XContentType.JSON);
@@ -83,9 +90,11 @@ public class ElasticsearchClient {
   /** @return true if all bulk records where flushed successfully */
   public boolean flush() {
     boolean success = true;
-    if (bulkRequest.numberOfActions() > 0) {
+    final int bulkSize = bulkRequest.numberOfActions();
+    if (bulkSize > 0) {
       try {
-        final BulkResponse responses = client.bulk(bulkRequest, RequestOptions.DEFAULT);
+        metrics.recordBulkSize(bulkSize);
+        final BulkResponse responses = exportBulk();
         success = checkBulkResponses(responses);
       } catch (IOException e) {
         throw new ElasticsearchExporterException("Failed to flush bulk", e);
@@ -98,6 +107,12 @@ public class ElasticsearchClient {
     }
 
     return success;
+  }
+
+  private BulkResponse exportBulk() throws IOException {
+    try (Histogram.Timer timer = metrics.measureFlushDuration()) {
+      return client.bulk(bulkRequest, RequestOptions.DEFAULT);
+    }
   }
 
   private boolean checkBulkResponses(final BulkResponse responses) {
@@ -204,13 +219,14 @@ public class ElasticsearchClient {
   }
 
   protected String indexFor(final Record<?> record) {
-    return indexPrefixForValueType(record.getMetadata().getValueType())
+    final Instant timestamp = Instant.ofEpochMilli(record.getTimestamp());
+    return indexPrefixForValueType(record.getValueType())
         + INDEX_DELIMITER
-        + formatter.format(record.getTimestamp());
+        + formatter.format(timestamp);
   }
 
   protected String idFor(final Record<?> record) {
-    return record.getMetadata().getPartitionId() + "-" + record.getPosition();
+    return record.getPartitionId() + "-" + record.getPosition();
   }
 
   protected String typeFor(final Record<?> record) {

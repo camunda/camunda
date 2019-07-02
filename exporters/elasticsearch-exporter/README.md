@@ -78,7 +78,6 @@ For example:
 #  jobBatch = false
 #  message = false
 #  messageSubscription = false
-#  raft = false
 #  workflowInstance = false
 #  workflowInstanceSubscription = false
 ```
@@ -98,7 +97,6 @@ More specifically, each option configures the following:
 * `jobBatch` (`boolean`): if true, records related to job batches will be exported; if false, ignored.
 * `message` (`boolean`): if true, records related to messages will be exported; if false, ignored.
 * `messageSubscription` (`boolean`): if true, records related to message subscriptions will be exported; if false, ignored.
-* `raft` (`boolean`): if true, records related to raft will be exported; if false, ignored.
 * `workflowInstance` (`boolean`): if true, records related to workflow instances will be exported; if false, ignored.
 * `workflowInstanceSubscription` (`boolean`): if true, records related to workflow instance subscriptions will be exported; if false, ignored.
 
@@ -130,7 +128,6 @@ Here is a complete, default configuration example:
 #  jobBatch = false
 #  message = false
 #  messageSubscription = false
-#  raft = false
 #  workflowInstance = true
 #  workflowInstanceSubscription = false
 ```

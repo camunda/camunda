@@ -15,15 +15,15 @@
  */
 package io.zeebe.protocol.impl.record;
 
-import io.zeebe.protocol.MessageHeaderDecoder;
-import io.zeebe.protocol.MessageHeaderEncoder;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.RecordMetadataDecoder;
-import io.zeebe.protocol.RecordMetadataEncoder;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.RejectionType;
-import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.MessageHeaderDecoder;
+import io.zeebe.protocol.record.MessageHeaderEncoder;
+import io.zeebe.protocol.record.RecordMetadataDecoder;
+import io.zeebe.protocol.record.RecordMetadataEncoder;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
@@ -32,8 +32,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class RecordMetadata
-    implements BufferWriter, BufferReader, io.zeebe.exporter.api.record.RecordMetadata {
+public class RecordMetadata implements BufferWriter, BufferReader {
   public static final int BLOCK_LENGTH =
       MessageHeaderEncoder.ENCODED_LENGTH + RecordMetadataEncoder.BLOCK_LENGTH;
 
@@ -46,11 +45,9 @@ public class RecordMetadata
   private RecordType recordType = RecordType.NULL_VAL;
   private short intentValue = Intent.NULL_VAL;
   private Intent intent = null;
-  private int partitionId;
-  protected int requestStreamId;
+  private int requestStreamId;
   protected long requestId;
-  protected int protocolVersion =
-      Protocol.PROTOCOL_VERSION; // always the current version by default
+  private int protocolVersion = Protocol.PROTOCOL_VERSION; // always the current version by default
   protected ValueType valueType = ValueType.NULL_VAL;
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
@@ -69,7 +66,6 @@ public class RecordMetadata
 
     decoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
-    partitionId = decoder.partitionId();
     recordType = decoder.recordType();
     requestStreamId = decoder.requestStreamId();
     requestId = decoder.requestId();
@@ -110,7 +106,6 @@ public class RecordMetadata
     encoder.wrap(buffer, offset);
 
     encoder
-        .partitionId(partitionId)
         .recordType(recordType)
         .requestStreamId(requestStreamId)
         .requestId(requestId)
@@ -203,32 +198,11 @@ public class RecordMetadata
     return this;
   }
 
-  public DirectBuffer getRejectionReasonBuffer() {
-    return rejectionReason;
-  }
-
-  public RecordMetadata partitionId(int partitionId) {
-    this.partitionId = partitionId;
-    return this;
-  }
-
-  @Override
-  public int getPartitionId() {
-    return partitionId;
-  }
-
-  @Override
   public String getRejectionReason() {
     return BufferUtil.bufferAsString(rejectionReason);
   }
 
-  @Override
-  public String toJson() {
-    throw new UnsupportedOperationException("not yet implemented");
-  }
-
   public RecordMetadata reset() {
-    partitionId = RecordMetadataEncoder.partitionIdNullValue();
     recordType = RecordType.NULL_VAL;
     requestId = RecordMetadataEncoder.requestIdNullValue();
     requestStreamId = RecordMetadataEncoder.requestStreamIdNullValue();
@@ -241,17 +215,10 @@ public class RecordMetadata
     return this;
   }
 
-  public boolean hasRequestMetadata() {
-    return requestId != RecordMetadataEncoder.requestIdNullValue()
-        && requestStreamId != RecordMetadataEncoder.requestStreamIdNullValue();
-  }
-
   @Override
   public String toString() {
     return "RecordMetadata{"
-        + "partitionId="
-        + partitionId
-        + ", recordType="
+        + "recordType="
         + recordType
         + ", intentValue="
         + intentValue

@@ -29,13 +29,12 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.zeebe.engine.util.LogStreamRule;
 import io.zeebe.logstreams.impl.delete.NoopDeletionService;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
+import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
@@ -54,7 +53,6 @@ public class AsyncSnapshotingTest {
 
   private static final VerificationWithTimeout TIMEOUT = timeout(2000L);
   private static final int MAX_SNAPSHOTS = 2;
-  public static final String PROCESSOR_NAME = "processor-1";
 
   private final TemporaryFolder tempFolderRule = new TemporaryFolder();
   private final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
@@ -100,22 +98,14 @@ public class AsyncSnapshotingTest {
 
     when(mockStreamProcessor.getLastWrittenPositionAsync())
         .thenReturn(CompletableActorFuture.completed(99L), CompletableActorFuture.completed(100L));
-
-    final StreamProcessorMetrics streamProcessorMetrics =
-        new StreamProcessorMetrics(new MetricsManager(), PROCESSOR_NAME, "1");
-    when(mockStreamProcessor.getMetrics()).thenReturn(streamProcessorMetrics);
   }
 
   private void createAsyncSnapshotDirector(ActorScheduler actorScheduler) {
-    final SnapshotMetrics metrics =
-        new SnapshotMetrics(
-            logStreamRule.getActorScheduler().getMetricsManager(), PROCESSOR_NAME, "1");
-
     noopDeletionService = spy(new NoopDeletionService());
     snapshotController.setDeletionService(noopDeletionService);
     asyncSnapshotDirector =
         new AsyncSnapshotDirector(
-            mockStreamProcessor, snapshotController, logStream, Duration.ofMinutes(1), metrics);
+            mockStreamProcessor, snapshotController, logStream, Duration.ofMinutes(1));
     actorScheduler.submitActor(this.asyncSnapshotDirector).join();
   }
 

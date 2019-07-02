@@ -75,6 +75,14 @@ public class WorkflowState {
     return workflowPersistenceCache.getWorkflowsByBpmnProcessId(processId);
   }
 
+  public void putLatestVersionDigest(DirectBuffer processId, DirectBuffer digest) {
+    workflowPersistenceCache.putLatestVersionDigest(processId, digest);
+  }
+
+  public DirectBuffer getLatestVersionDigest(DirectBuffer processId) {
+    return workflowPersistenceCache.getLatestVersionDigest(processId);
+  }
+
   public TimerInstanceState getTimerState() {
     return timerInstanceState;
   }

@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.system;
 
-import io.zeebe.broker.Broker;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
@@ -26,7 +25,6 @@ import io.zeebe.broker.system.configuration.ThreadsCfg;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.TomlConfigurationReader;
-import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -37,7 +35,6 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -66,7 +63,6 @@ public class SystemContext implements AutoCloseable {
   protected Map<String, String> diagnosticContext;
   protected ActorScheduler scheduler;
 
-  private MetricsManager metricsManager;
   private Duration closeTimeout;
 
   public SystemContext(String configFileLocation, final String basePath, final ActorClock clock) {
@@ -106,12 +102,9 @@ public class SystemContext implements AutoCloseable {
     this.diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
 
     // TODO: submit diagnosticContext to actor scheduler once supported
-    this.metricsManager = initMetricsManager(brokerId);
     this.scheduler = initScheduler(clock, brokerId);
     this.serviceContainer = new ServiceContainerImpl(this.scheduler);
     this.scheduler.start();
-
-    initBrokerInfoMetric();
 
     setCloseTimeout(CLOSE_TIMEOUT);
   }
@@ -137,23 +130,6 @@ public class SystemContext implements AutoCloseable {
     }
   }
 
-  private MetricsManager initMetricsManager(final String brokerId) {
-    final Map<String, String> globalLabels = new HashMap<>();
-    globalLabels.put("cluster", "zeebe");
-    globalLabels.put("node", brokerId);
-    return new MetricsManager("zb_", globalLabels);
-  }
-
-  private void initBrokerInfoMetric() {
-    // one-shot metric to submit metadata
-    metricsManager
-        .newMetric("broker_info")
-        .type("counter")
-        .label("version", Broker.VERSION)
-        .create()
-        .incrementOrdered();
-  }
-
   private ActorScheduler initScheduler(final ActorClock clock, final String brokerId) {
     final ThreadsCfg cfg = brokerCfg.getThreads();
 
@@ -165,7 +141,6 @@ public class SystemContext implements AutoCloseable {
 
     return ActorScheduler.newActorScheduler()
         .setActorClock(clock)
-        .setMetricsManager(metricsManager)
         .setCpuBoundActorThreadCount(cpuThreads)
         .setIoBoundActorThreadCount(ioThreads)
         .setSchedulerName(brokerId)

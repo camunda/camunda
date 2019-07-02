@@ -22,28 +22,33 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.VariableDocumentUpdateSemantic;
-import io.zeebe.protocol.intent.VariableDocumentIntent;
-import io.zeebe.protocol.intent.VariableIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.zeebe.protocol.record.intent.VariableIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordStream;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class UpdateVariableDocumentTest {
 
   @ClassRule public static final EngineRule ENGINE_RULE = new EngineRule();
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Test
   public void shouldProduceCorrectSequenceOfEvents() {
@@ -55,16 +60,17 @@ public class UpdateVariableDocumentTest {
     final Map<String, Object> document = Maps.of(entry("x", 2), entry("foo", "bar"));
 
     // when
-    ENGINE_RULE.deploy(process);
+    ENGINE_RULE.deployment().withXmlResource(process).deploy();
     final long workflowInstanceKey =
         ENGINE_RULE
-            .createWorkflowInstance(
-                r -> r.setBpmnProcessId(processId).setVariables(MsgPackUtil.asMsgPack("{'x': 1}")))
-            .getValue()
-            .getInstanceKey();
+            .workflowInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables("{'x': 1}")
+            .create();
     final Record<WorkflowInstanceRecordValue> activatedEvent = waitForActivityActivatedEvent();
     ENGINE_RULE
-        .variables(activatedEvent.getKey())
+        .variables()
+        .ofScope(activatedEvent.getKey())
         .withDocument(document)
         .withUpdateSemantic(VariableDocumentUpdateSemantic.PROPAGATE)
         .update();
@@ -91,7 +97,7 @@ public class UpdateVariableDocumentTest {
                 .withIntent(VariableDocumentIntent.UPDATED)
                 .withScopeKey(activatedEvent.getKey())
                 .withUpdateSemantics(VariableDocumentUpdateSemantic.PROPAGATE)
-                .withDocument(document)
+                .withVariables(document)
                 .getFirst())
         .isNotNull();
   }
@@ -103,7 +109,7 @@ public class UpdateVariableDocumentTest {
         .extracting(
             r ->
                 tuple(
-                    r.getMetadata().getIntent(),
+                    r.getIntent(),
                     r.getValue().getScopeKey(),
                     r.getValue().getName(),
                     r.getValue().getValue()))

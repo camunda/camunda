@@ -21,14 +21,14 @@ import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.commands.PartitionInfo;
-import io.zeebe.client.api.commands.Topology;
-import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.response.DeploymentEvent;
+import io.zeebe.client.api.response.PartitionInfo;
+import io.zeebe.client.api.response.Topology;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
-import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.function.Consumer;
@@ -112,7 +112,7 @@ public class GrpcClientRule extends ExternalResource {
     final long workflowInstanceKey = createWorkflowInstance(workflowKey, variables);
 
     return RecordingExporter.jobRecords(JobIntent.CREATED)
-        .filter(j -> j.getValue().getHeaders().getWorkflowInstanceKey() == workflowInstanceKey)
+        .filter(j -> j.getValue().getWorkflowInstanceKey() == workflowInstanceKey)
         .withType(type)
         .getFirst()
         .getKey();

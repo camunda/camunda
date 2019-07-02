@@ -21,19 +21,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.exporter.api.record.Record;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
-import org.agrona.DirectBuffer;
 import org.assertj.core.groups.Tuple;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -46,6 +46,10 @@ public class ActivityInputMappingTest {
   private static final String PROCESS_ID = "process";
 
   @ClassRule public static final EngineRule ENGINE_RULE = new EngineRule();
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Parameter(0)
   public String initialVariables;
@@ -80,32 +84,33 @@ public class ActivityInputMappingTest {
   @Test
   public void shouldApplyInputMappings() {
     // given
-    final long workflowKey =
-        ENGINE_RULE
-            .deploy(
-                Bpmn.createExecutableProcess(PROCESS_ID)
-                    .startEvent()
-                    .subProcess(
-                        "sub",
-                        b -> {
-                          b.embeddedSubProcess().startEvent().endEvent();
+    ENGINE_RULE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "sub",
+                    b -> {
+                      b.embeddedSubProcess().startEvent().endEvent();
 
-                          mappings.accept(b);
-                        })
-                    .endEvent()
-                    .done())
-            .getValue()
-            .getDeployedWorkflows()
-            .get(0)
-            .getWorkflowKey();
+                      mappings.accept(b);
+                    })
+                .endEvent()
+                .done())
+        .deploy()
+        .getValue()
+        .getDeployedWorkflows()
+        .get(0)
+        .getWorkflowKey();
 
     // when
-    final DirectBuffer variables = MsgPackUtil.asMsgPack(initialVariables);
     final long workflowInstanceKey =
         ENGINE_RULE
-            .createWorkflowInstance(r -> r.setKey(workflowKey).setVariables(variables))
-            .getValue()
-            .getInstanceKey();
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(initialVariables)
+            .create();
 
     // then
     final long flowScopeKey =

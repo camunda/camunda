@@ -35,14 +35,14 @@ import io.zeebe.engine.state.instance.ElementInstanceState;
 import io.zeebe.engine.state.instance.VariablesState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.Workflow;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.util.buffer.BufferUtil;
@@ -113,7 +113,7 @@ public class CreateWorkflowInstanceProcessorTest
     // given
     final TypedRecord<WorkflowInstanceCreationRecord> command =
         newCommand(WorkflowInstanceCreationRecord.class);
-    command.getValue().setKey(keyGenerator.nextKey());
+    command.getValue().setWorkflowKey(keyGenerator.nextKey());
 
     // when
     processor.onCommand(command, controller, streamWriter);
@@ -209,7 +209,7 @@ public class CreateWorkflowInstanceProcessorTest
     // then
     final WorkflowInstanceCreationRecord acceptedRecord =
         getAcceptedRecord(WorkflowInstanceCreationIntent.CREATED);
-    final long instanceKey = acceptedRecord.getInstanceKey();
+    final long instanceKey = acceptedRecord.getWorkflowInstanceKey();
     final ElementInstance instance = elementInstanceState.getInstance(instanceKey);
     final WorkflowInstanceRecord expectedElementActivatingRecord =
         newExpectedElementActivatingRecord(workflow, instanceKey);
@@ -236,7 +236,7 @@ public class CreateWorkflowInstanceProcessorTest
     // then
     final WorkflowInstanceCreationRecord acceptedRecord =
         getAcceptedRecord(WorkflowInstanceCreationIntent.CREATED);
-    final long scopeKey = acceptedRecord.getInstanceKey();
+    final long scopeKey = acceptedRecord.getWorkflowInstanceKey();
     MsgPackUtil.assertEquality(
         variablesState.getVariableLocal(scopeKey, BufferUtil.wrapString("foo")), "\"bar\"");
     MsgPackUtil.assertEquality(
@@ -257,7 +257,7 @@ public class CreateWorkflowInstanceProcessorTest
     // then
     final WorkflowInstanceCreationRecord acceptedRecord =
         getAcceptedRecord(WorkflowInstanceCreationIntent.CREATED);
-    assertThat(acceptedRecord.getKey()).isEqualTo(workflow.getKey());
+    assertThat(acceptedRecord.getWorkflowKey()).isEqualTo(workflow.getKey());
   }
 
   @Test
@@ -283,7 +283,7 @@ public class CreateWorkflowInstanceProcessorTest
     final DeployedWorkflow workflow = deployNewWorkflow();
     final TypedRecord<WorkflowInstanceCreationRecord> command =
         newCommand(WorkflowInstanceCreationRecord.class);
-    command.getValue().setKey(workflow.getKey());
+    command.getValue().setWorkflowKey(workflow.getKey());
 
     // when
     processor.onCommand(command, controller, streamWriter);

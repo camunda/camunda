@@ -19,13 +19,13 @@ package io.zeebe.broker.clustering.base.partitions;
 
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.engine.EngineService;
 import io.zeebe.broker.engine.EngineServiceNames;
 import io.zeebe.broker.engine.impl.StateReplication;
 import io.zeebe.broker.exporter.ExporterServiceNames;
 import io.zeebe.broker.logstreams.delete.FollowerLogStreamDeletionService;
 import io.zeebe.broker.logstreams.delete.LeaderLogStreamDeletionService;
 import io.zeebe.broker.logstreams.restore.BrokerRestoreServer;
+import io.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.distributedlog.StorageConfiguration;
@@ -47,6 +47,8 @@ import org.slf4j.Logger;
 /** Service representing a partition. */
 public class Partition implements Service<Partition> {
   private static final String PARTITION_NAME_FORMAT = "raft-atomix-partition-%d";
+  public static final String GROUP_NAME = "raft-atomix";
+
   public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   public static String getPartitionName(final int partitionId) {
@@ -90,9 +92,13 @@ public class Partition implements Service<Partition> {
 
     final DeletionService deletionService;
     if (state == RaftState.FOLLOWER) {
-      deletionService =
-          new FollowerLogStreamDeletionService(
-              logStream, snapshotController, brokerCfg.getCluster().getNodeId());
+      final StatePositionSupplier positionSupplier =
+          new StatePositionSupplier(
+              snapshotController,
+              partitionId,
+              String.valueOf(brokerCfg.getCluster().getNodeId()),
+              LOG);
+      deletionService = new FollowerLogStreamDeletionService(logStream, positionSupplier);
 
       snapshotController.setDeletionService(deletionService);
       snapshotController.consumeReplicatedSnapshots();
@@ -143,15 +149,14 @@ public class Partition implements Service<Partition> {
   }
 
   private StateSnapshotController createSnapshotController() {
-    final String streamProcessorName = EngineService.PROCESSOR_NAME;
 
     final StateStorageFactory storageFactory =
         new StateStorageFactory(configuration.getStatesDirectory());
-    final StateStorage stateStorage = storageFactory.create(partitionId, streamProcessorName);
+    final StateStorage stateStorage = storageFactory.create();
 
     stateReplication =
         shouldReplicateSnapshots()
-            ? new StateReplication(clusterEventService, partitionId, streamProcessorName)
+            ? new StateReplication(clusterEventService, partitionId)
             : new NoneSnapshotReplication();
 
     return new StateSnapshotController(

@@ -69,6 +69,8 @@ spec:
       RELEASE_BRANCH = "release-${params.RELEASE_VERSION}"
       DEVELOPMENT_VERSION = "${params.DEVELOPMENT_VERSION}"
       PUSH_CHANGES = "${params.PUSH_CHANGES}"
+      PUSH_DOCKER = "${params.PUSH_DOCKER}"
+      PUSH_DOCS = "${params.PUSH_DOCS}"
       SKIP_DEPLOY = "${!params.PUSH_CHANGES}"
     }
 
@@ -125,7 +127,7 @@ spec:
         }
 
         stage('Docker Image') {
-            when { expression { return params.PUSH_CHANGES } }
+            when { expression { return params.PUSH_DOCKER } }
             steps {
                 build job: 'zeebe-docker', parameters: [
                     string(name: 'BRANCH', value: env.RELEASE_BRANCH),
@@ -136,7 +138,7 @@ spec:
         }
 
         stage('Publish Docs') {
-            when { expression { return params.PUSH_CHANGES } }
+            when { expression { return params.PUSH_DOCS } }
             steps {
                 build job: 'zeebe-docs', parameters: [
                     string(name: 'BRANCH', value: env.RELEASE_BRANCH),

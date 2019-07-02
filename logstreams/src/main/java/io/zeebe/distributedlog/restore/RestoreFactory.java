@@ -16,6 +16,7 @@
 package io.zeebe.distributedlog.restore;
 
 import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreContext;
+import org.slf4j.Logger;
 
 public interface RestoreFactory {
 
@@ -29,5 +30,5 @@ public interface RestoreFactory {
   RestoreClient createClient(int partitionId);
 
   /** @return a {@link SnapshotRestoreContext} */
-  SnapshotRestoreContext createSnapshotRestoreContext();
+  SnapshotRestoreContext createSnapshotRestoreContext(int partitionId, Logger logger);
 }

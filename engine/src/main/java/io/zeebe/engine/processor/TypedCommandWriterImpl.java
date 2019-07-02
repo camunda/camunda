@@ -25,11 +25,11 @@ import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.RejectionType;
-import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.Intent;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -43,7 +43,6 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
 
   protected LogStreamBatchWriter batchWriter;
 
-  protected int producerId;
   protected long sourceRecordPosition = -1;
 
   public TypedCommandWriterImpl(final LogStream stream) {
@@ -54,8 +53,7 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
     EVENT_REGISTRY.forEach((e, c) -> typeRegistry.put(c, e));
   }
 
-  public void configureSourceContext(final int producerId, final long sourceRecordPosition) {
-    this.producerId = producerId;
+  public void configureSourceContext(final long sourceRecordPosition) {
     this.sourceRecordPosition = sourceRecordPosition;
   }
 
@@ -68,11 +66,7 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
       throw new RuntimeException("Missing value type mapping for record: " + value.getClass());
     }
 
-    metadata
-        .partitionId(stream.getPartitionId())
-        .recordType(type)
-        .valueType(valueType)
-        .intent(intent);
+    metadata.recordType(type).valueType(valueType).intent(intent);
   }
 
   protected void appendRecord(
@@ -93,7 +87,6 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
       final UnpackedObject value,
       final Consumer<RecordMetadata> additionalMetadata) {
     final LogEntryBuilder event = batchWriter.event();
-    batchWriter.producerId(producerId);
 
     if (sourceRecordPosition >= 0) {
       batchWriter.sourceRecordPosition(sourceRecordPosition);

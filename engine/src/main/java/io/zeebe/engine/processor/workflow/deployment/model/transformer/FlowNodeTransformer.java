@@ -28,7 +28,7 @@ import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.mapping.MappingBuilder;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.Collection;
 
 public class FlowNodeTransformer implements ModelElementTransformer<FlowNode> {

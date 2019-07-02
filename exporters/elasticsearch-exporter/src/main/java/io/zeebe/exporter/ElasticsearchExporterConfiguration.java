@@ -15,10 +15,9 @@
  */
 package io.zeebe.exporter;
 
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.RecordMetadata;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.ValueType;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.ValueType;
 
 public class ElasticsearchExporterConfiguration {
 
@@ -63,7 +62,6 @@ public class ElasticsearchExporterConfiguration {
     public boolean jobBatch = false;
     public boolean message = false;
     public boolean messageSubscription = false;
-    public boolean raft = false;
     public boolean variable = true;
     public boolean variableDocument = false;
     public boolean workflowInstance = true;
@@ -94,8 +92,6 @@ public class ElasticsearchExporterConfiguration {
           + message
           + ", messageSubscription="
           + messageSubscription
-          + ", raft="
-          + raft
           + ", variable="
           + variable
           + ", variableDocument="
@@ -137,9 +133,8 @@ public class ElasticsearchExporterConfiguration {
   }
 
   public boolean shouldIndexRecord(Record<?> record) {
-    final RecordMetadata metadata = record.getMetadata();
-    return shouldIndexRecordType(metadata.getRecordType())
-        && shouldIndexValueType(metadata.getValueType());
+    return shouldIndexRecordType(record.getRecordType())
+        && shouldIndexValueType(record.getValueType());
   }
 
   public boolean shouldIndexValueType(ValueType valueType) {

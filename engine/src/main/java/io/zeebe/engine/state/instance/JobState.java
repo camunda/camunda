@@ -25,6 +25,7 @@ import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
 import io.zeebe.db.impl.DbString;
+import io.zeebe.engine.metrics.JobMetrics;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.util.EnsureUtil;
@@ -56,7 +57,9 @@ public class JobState {
   private final DbCompositeKey<DbLong, DbLong> deadlineJobKey;
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> deadlinesColumnFamily;
 
-  public JobState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+  private final JobMetrics metrics;
+
+  public JobState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext, int partitionId) {
 
     jobRecordToRead = new UnpackedObjectValue();
     jobRecordToRead.wrapObject(new JobRecord());
@@ -81,11 +84,14 @@ public class JobState {
     deadlinesColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.JOB_DEADLINES, dbContext, deadlineJobKey, DbNil.INSTANCE);
+
+    metrics = new JobMetrics(partitionId);
   }
 
   public void create(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
     createJob(key, record, type);
+    metrics.jobCreated();
   }
 
   private void createJob(long key, JobRecord record, DirectBuffer type) {
@@ -102,7 +108,7 @@ public class JobState {
    */
   public void activate(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
-    final long deadline = record.getDeadlineLong();
+    final long deadline = record.getDeadline();
 
     validateParameters(type, deadline);
 
@@ -114,20 +120,34 @@ public class JobState {
 
     deadlineKey.wrapLong(deadline);
     deadlinesColumnFamily.put(deadlineJobKey, DbNil.INSTANCE);
+
+    metrics.jobActivated();
   }
 
   public void timeout(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
-    final long deadline = record.getDeadlineLong();
+    final long deadline = record.getDeadline();
     validateParameters(type, deadline);
 
     createJob(key, record, type);
     removeJobDeadline(deadline);
+
+    metrics.jobTimedOut();
   }
 
-  public void delete(long key, JobRecord record) {
+  public void complete(long key, JobRecord record) {
+    delete(key, record);
+    metrics.jobCompleted();
+  }
+
+  public void cancel(long key, JobRecord record) {
+    delete(key, record);
+    metrics.jobCanceled();
+  }
+
+  private void delete(long key, JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
-    final long deadline = record.getDeadlineLong();
+    final long deadline = record.getDeadline();
 
     jobKey.wrapLong(key);
     jobsColumnFamily.delete(jobKey);
@@ -141,7 +161,7 @@ public class JobState {
 
   public void fail(long key, JobRecord updatedValue) {
     final DirectBuffer type = updatedValue.getTypeBuffer();
-    final long deadline = updatedValue.getDeadlineLong();
+    final long deadline = updatedValue.getDeadline();
 
     validateParameters(type, deadline);
 
@@ -155,6 +175,8 @@ public class JobState {
     }
 
     removeJobDeadline(deadline);
+
+    metrics.jobFailed();
   }
 
   private void validateParameters(DirectBuffer type, long deadline) {

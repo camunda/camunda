@@ -20,9 +20,9 @@ package io.zeebe.engine.processor.workflow.job;
 import io.zeebe.engine.processor.CommandProcessor;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.state.instance.JobState;
-import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.JobIntent;
 
 public class CancelProcessor implements CommandProcessor<JobRecord> {
 
@@ -40,7 +40,7 @@ public class CancelProcessor implements CommandProcessor<JobRecord> {
     final JobRecord job = command.getValue();
 
     if (state.exists(jobKey)) {
-      state.delete(jobKey, job);
+      state.cancel(jobKey, job);
       commandControl.accept(JobIntent.CANCELED, job);
     } else {
       commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));

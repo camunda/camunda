@@ -161,7 +161,7 @@ Add the following deploy command to the main class:
 ```java
 package io.zeebe;
 
-import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.response.DeploymentEvent;
 
 public class Application
 {
@@ -199,7 +199,7 @@ Add the following create command to the main class:
 ```java
 package io.zeebe;
 
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.response.WorkflowInstanceEvent;
 
 public class Application
 {
@@ -264,7 +264,7 @@ Add the following lines to create a job worker for the first jobs type:
 ```java
 package io.zeebe;
 
-import io.zeebe.client.api.subscription.JobWorker;
+import io.zeebe.client.api.worker.JobWorker;
 
 public class App
 {

@@ -44,7 +44,7 @@ import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.model.bpmn.instance.ServiceTask;
 import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.model.bpmn.instance.SubProcess;
-import io.zeebe.protocol.BpmnElementType;
+import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;

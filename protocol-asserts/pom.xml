@@ -1,0 +1,109 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <name>Zeebe Protocol AssertJ Assertions</name>
+  <artifactId>zeebe-protocol-asserts</artifactId>
+  <packaging>jar</packaging>
+
+  <parent>
+    <groupId>io.zeebe</groupId>
+    <artifactId>zeebe-parent</artifactId>
+    <version>0.20.0-SNAPSHOT</version>
+    <relativePath>../parent</relativePath>
+  </parent>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.assertj</groupId>
+        <artifactId>assertj-assertions-generator-maven-plugin</artifactId>
+        <version>2.2.0</version>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>generate-assertions</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <packages>
+            <param>io.zeebe.protocol.record</param>
+          </packages>
+          <generatedSourcesScope>compile</generatedSourcesScope>
+          <targetDir>${project.build.directory}/generated-sources/assertj-assertions</targetDir>
+          <generateAssertions>true</generateAssertions>
+          <generateBddAssertions>false</generateBddAssertions>
+          <generateSoftAssertions>false</generateSoftAssertions>
+          <generateJUnitSoftAssertions>false</generateJUnitSoftAssertions>
+        </configuration>
+      </plugin>
+
+      <!-- FIXME: currently the AssertJ generator does not support generics https://github.com/joel-costigliola/assertj-assertions-generator/issues/92
+            Therefore the generate code for the hasValue assertion of the Record<T> is invalid. To fix this we just replace the unknown generic T with RecordValue. -->
+      <plugin>
+        <groupId>com.google.code.maven-replacer-plugin</groupId>
+        <artifactId>replacer</artifactId>
+        <executions>
+          <execution>
+            <phase>process-sources</phase>
+            <goals>
+              <goal>replace</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <file>
+            ${project.build.directory}/generated-sources/assertj-assertions/io/zeebe/protocol/record/AbstractRecordAssert.java
+          </file>
+          <replacements>
+            <replacement>
+              <token>T value</token>
+              <value>RecordValue value</value>
+            </replacement>
+            <replacement>
+              <token>T actualValue</token>
+              <value>RecordValue actualValue</value>
+            </replacement>
+          </replacements>
+        </configuration>
+      </plugin>
+
+      <!-- this is only needed to make working in Eclipse more pleasant:
+          The assertj plugin already adds the generated files as a source directory, but eclipse
+          is not able to update the project based on that plugin, so we explicitly declare it a second time -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>${project.build.directory}/generated-sources/assertj-assertions</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
+

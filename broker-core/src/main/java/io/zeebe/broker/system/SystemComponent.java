@@ -17,34 +17,57 @@
  */
 package io.zeebe.broker.system;
 
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_JOIN_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.FOLLOWER_PARTITION_GROUP_NAME;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
+import static io.zeebe.broker.system.SystemServiceNames.BROKER_HEALTH_CHECK_SERVICE;
+import static io.zeebe.broker.system.SystemServiceNames.BROKER_HTTP_SERVER;
 import static io.zeebe.broker.system.SystemServiceNames.LEADER_MANAGEMENT_REQUEST_HANDLER;
-import static io.zeebe.broker.system.SystemServiceNames.METRICS_FILE_WRITER;
-import static io.zeebe.broker.system.SystemServiceNames.METRICS_HTTP_SERVER;
 
-import io.zeebe.broker.system.configuration.MetricsCfg;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.hotspot.DefaultExports;
+import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
-import io.zeebe.broker.system.metrics.MetricsFileWriterService;
-import io.zeebe.broker.system.metrics.MetricsHttpServerService;
+import io.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.zeebe.broker.system.monitoring.BrokerHttpServerService;
 import io.zeebe.servicecontainer.ServiceContainer;
 
 public class SystemComponent implements Component {
+
+  private static final CollectorRegistry METRICS_REGISTRY = CollectorRegistry.defaultRegistry;
+
+  static {
+    // enable hotspot prometheus metric collection
+    DefaultExports.initialize();
+  }
 
   @Override
   public void init(final SystemContext context) {
     final ServiceContainer serviceContainer = context.getServiceContainer();
 
-    final MetricsCfg metricsCfg = context.getBrokerConfiguration().getMetrics();
+    final BrokerHealthCheckService healthCheckService = new BrokerHealthCheckService();
     serviceContainer
-        .createService(METRICS_FILE_WRITER, new MetricsFileWriterService(metricsCfg))
+        .createService(BROKER_HEALTH_CHECK_SERVICE, healthCheckService)
+        .dependency(ATOMIX_SERVICE, healthCheckService.getAtomixInjector())
+        .dependency(ATOMIX_JOIN_SERVICE)
+        .groupReference(LEADER_PARTITION_GROUP_NAME, healthCheckService.getLeaderInstallReference())
+        .groupReference(
+            FOLLOWER_PARTITION_GROUP_NAME, healthCheckService.getFollowerInstallReference())
         .install();
 
-    if (metricsCfg.isEnableHttpServer()) {
-      serviceContainer
-          .createService(METRICS_HTTP_SERVER, new MetricsHttpServerService(metricsCfg))
-          .install();
-    }
+    final SocketBindingCfg monitoringApi =
+        context.getBrokerConfiguration().getNetwork().getMonitoringApi();
+
+    serviceContainer
+        .createService(
+            BROKER_HTTP_SERVER,
+            new BrokerHttpServerService(
+                monitoringApi.getHost(),
+                monitoringApi.getPort(),
+                METRICS_REGISTRY,
+                healthCheckService))
+        .install();
 
     final LeaderManagementRequestHandler requestHandlerService =
         new LeaderManagementRequestHandler();

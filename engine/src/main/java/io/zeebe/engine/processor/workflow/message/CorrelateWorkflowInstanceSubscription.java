@@ -30,10 +30,10 @@ import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscriptionState;
-import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
@@ -136,7 +136,7 @@ public final class CorrelateWorkflowInstanceSubscription
             .triggerEvent(
                 subscriptionRecord.getElementInstanceKey(),
                 eventKey,
-                subscription.getHandlerNodeId(),
+                subscription.getTargetElementId(),
                 record.getValue().getVariablesBuffer());
 
     if (isOccurred) {

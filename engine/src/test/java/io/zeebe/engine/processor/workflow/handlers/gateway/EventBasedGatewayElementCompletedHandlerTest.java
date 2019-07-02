@@ -21,7 +21,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableEve
 import io.zeebe.engine.processor.workflow.handlers.element.ElementHandlerTestCase;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.StoredRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.junit.runner.RunWith;

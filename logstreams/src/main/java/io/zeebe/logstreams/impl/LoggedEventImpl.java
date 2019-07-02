@@ -15,17 +15,12 @@
  */
 package io.zeebe.logstreams.impl;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageLength;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.versionOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
 
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.VarDataEncodingEncoder;
+import io.zeebe.protocol.record.VarDataEncodingEncoder;
 import io.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -151,11 +146,6 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
   }
 
   @Override
-  public int getProducerId() {
-    return LogEntryDescriptor.getProducerId(buffer, messageOffset);
-  }
-
-  @Override
   public String toString() {
     return "LoggedEvent [type="
         + getType()
@@ -171,8 +161,6 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
         + getTimestamp()
         + ", sourceEventPosition="
         + getSourceEventPosition()
-        + ", producerId="
-        + getProducerId()
         + "]";
   }
 

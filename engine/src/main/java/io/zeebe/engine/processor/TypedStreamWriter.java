@@ -18,9 +18,9 @@
 package io.zeebe.engine.processor;
 
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.Intent;
 import java.util.function.Consumer;
 
 /** Things that only a stream processor should write to the log stream (+ commands) */
@@ -41,5 +41,5 @@ public interface TypedStreamWriter extends TypedCommandWriter {
   void appendFollowUpEvent(
       long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
 
-  void configureSourceContext(int producerId, long sourceRecordPosition);
+  void configureSourceContext(long sourceRecordPosition);
 }

@@ -20,9 +20,9 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.GrpcClientRule;
-import io.zeebe.client.api.commands.BrokerInfo;
-import io.zeebe.client.api.commands.PartitionInfo;
-import io.zeebe.client.api.subscription.JobWorker;
+import io.zeebe.client.api.response.BrokerInfo;
+import io.zeebe.client.api.response.PartitionInfo;
+import io.zeebe.client.api.worker.JobWorker;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;

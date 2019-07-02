@@ -15,7 +15,7 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
-import io.zeebe.protocol.ErrorCode;
+import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import java.util.function.Consumer;
 

@@ -24,11 +24,11 @@ import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.api.context.Controller;
-import io.zeebe.exporter.api.record.Record;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.msgpack.value.DocumentValue;
-import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
 import io.zeebe.test.broker.protocol.commandapi.PartitionTestClient;
 import java.util.List;
@@ -115,9 +115,7 @@ public class ExporterManagerTest {
   private boolean isDeploymentExported(long deploymentKey1) {
     return TestExporter.records.stream()
         .anyMatch(
-            r ->
-                r.getKey() == deploymentKey1
-                    && r.getMetadata().getIntent() == DeploymentIntent.DISTRIBUTED);
+            r -> r.getKey() == deploymentKey1 && r.getIntent() == DeploymentIntent.DISTRIBUTED);
   }
 
   public static class TestExporter extends DebugLogExporter {

@@ -60,7 +60,7 @@ object JsonConditionParser extends JavaTokenParsers {
 
   private lazy val disjunction: Parser[JsonCondition] = chainl1(conjunction, "||" ^^^ Disjunction)
 
-  private lazy val conjunction: Parser[JsonCondition] = chainl1(comparison | failure("expected comparison"), "&&" ^^^ Conjunction)
+  private lazy val conjunction: Parser[JsonCondition] = chainl1(comparison, "&&" ^^^ Conjunction)
 
   private lazy val comparison: Parser[JsonCondition] = (
     literal ~ ("==" | "!=") ~! literal ^^ {

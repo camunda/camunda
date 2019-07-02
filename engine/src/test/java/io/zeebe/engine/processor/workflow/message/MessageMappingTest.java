@@ -20,9 +20,6 @@ package io.zeebe.engine.processor.workflow.message;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.exporter.api.record.Assertions;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
@@ -30,13 +27,18 @@ import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
 import io.zeebe.model.bpmn.instance.StartEvent;
-import io.zeebe.protocol.intent.VariableIntent;
+import io.zeebe.protocol.record.Assertions;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.VariableIntent;
+import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -117,6 +119,10 @@ public class MessageMappingTest {
 
   @ClassRule public static final EngineRule ENGINE_RULE = new EngineRule();
 
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
+
   private String correlationKey;
 
   @Before
@@ -127,16 +133,14 @@ public class MessageMappingTest {
   @Test
   public void shouldMergeMessageVariablesByDefault() {
     // given
-    final long workflowKey = deployWorkflowWithMapping(e -> {});
+    deployWorkflowWithMapping(e -> {});
 
     final long workflowInstanceKey =
         ENGINE_RULE
-            .createWorkflowInstance(
-                r ->
-                    r.setKey(workflowKey)
-                        .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)))
-            .getValue()
-            .getInstanceKey();
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(CORRELATION_VARIABLE, correlationKey)
+            .create();
 
     // when
     ENGINE_RULE
@@ -161,16 +165,14 @@ public class MessageMappingTest {
   @Test
   public void shouldMergeMessageVariables() {
     // given
-    final long workflowKey = deployWorkflowWithMapping(e -> {});
+    deployWorkflowWithMapping(e -> {});
 
     final long workflowInstanceKey =
         ENGINE_RULE
-            .createWorkflowInstance(
-                r ->
-                    r.setKey(workflowKey)
-                        .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)))
-            .getValue()
-            .getInstanceKey();
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(CORRELATION_VARIABLE, correlationKey)
+            .create();
 
     // when
     ENGINE_RULE
@@ -195,15 +197,13 @@ public class MessageMappingTest {
   @Test
   public void shouldMapMessageVariablesIntoInstanceVariables() {
     // given
-    final long workflowKey = deployWorkflowWithMapping(e -> e.zeebeOutput("foo", MESSAGE_NAME));
+    deployWorkflowWithMapping(e -> e.zeebeOutput("foo", MESSAGE_NAME));
     final long workflowInstanceKey =
         ENGINE_RULE
-            .createWorkflowInstance(
-                r ->
-                    r.setKey(workflowKey)
-                        .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)))
-            .getValue()
-            .getInstanceKey();
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(CORRELATION_VARIABLE, correlationKey)
+            .create();
 
     // when
 
@@ -239,7 +239,9 @@ public class MessageMappingTest {
       c.accept(((ReceiveTask) element).builder());
     }
     return ENGINE_RULE
-        .deploy(modifiedWorkflow)
+        .deployment()
+        .withXmlResource(modifiedWorkflow)
+        .deploy()
         .getValue()
         .getDeployedWorkflows()
         .get(0)

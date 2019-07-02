@@ -23,7 +23,8 @@ import io.zeebe.distributedlog.restore.RestoreInfoResponse;
 import io.zeebe.distributedlog.restore.RestoreNodeProvider;
 import io.zeebe.distributedlog.restore.RestoreStrategy;
 import io.zeebe.distributedlog.restore.log.LogReplicator;
-import io.zeebe.logstreams.state.SnapshotRequester;
+import io.zeebe.distributedlog.restore.snapshot.RestoreSnapshotReplicator;
+import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreStrategy;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -35,26 +36,29 @@ public class RestoreController {
   private final RestoreClient restoreClient;
   private final RestoreNodeProvider nodeProvider;
   private final LogReplicator logReplicator;
-  private final SnapshotRequester snapshotReplicator;
+  private final RestoreSnapshotReplicator snapshotReplicator;
 
   public RestoreController(
       RestoreClient restoreClient,
       RestoreNodeProvider nodeProvider,
       LogReplicator logReplicator,
-      SnapshotRequester snapshotReplicator,
+      RestoreSnapshotReplicator snapshotReplicator,
       ThreadContext restoreThreadContext,
-      Logger log) {
+      Logger logger) {
     this.restoreClient = restoreClient;
     this.nodeProvider = nodeProvider;
     this.logReplicator = logReplicator;
     this.snapshotReplicator = snapshotReplicator;
     this.restoreThreadContext = restoreThreadContext;
-    logger = log;
+    this.logger = logger;
   }
 
   public long restore(long latestLocalPosition, long backupPosition) {
+    final RestoreInfoRequest request =
+        new DefaultRestoreInfoRequest(latestLocalPosition, backupPosition);
+
     return findRestoreServer()
-        .thenCompose(server -> findRestoreStrategy(server, latestLocalPosition, backupPosition))
+        .thenCompose(server -> requestRestoreStrategy(server, request))
         .thenCompose(RestoreStrategy::executeRestoreStrategy)
         .join();
   }
@@ -74,42 +78,45 @@ public class RestoreController {
     }
   }
 
-  private CompletableFuture<RestoreStrategy> findRestoreStrategy(
-      MemberId server, long latestLocalPosition, long backupPosition) {
-    final RestoreInfoRequest request =
-        new DefaultRestoreInfoRequest(latestLocalPosition, backupPosition);
+  private CompletableFuture<RestoreStrategy> requestRestoreStrategy(
+      MemberId server, RestoreInfoRequest request) {
     return restoreClient
         .requestRestoreInfo(server, request)
-        .thenCompose(
-            response ->
-                onRestoreInfoReceived(server, latestLocalPosition, backupPosition, response));
+        .thenCompose(response -> onRestoreInfoReceived(server, request, response));
   }
 
   private CompletableFuture<RestoreStrategy> onRestoreInfoReceived(
-      MemberId server,
-      long latestLocalPosition,
-      long backupPosition,
-      RestoreInfoResponse response) {
+      MemberId server, RestoreInfoRequest request, RestoreInfoResponse response) {
     final CompletableFuture<RestoreStrategy> result = new CompletableFuture<>();
 
     switch (response.getReplicationTarget()) {
       case SNAPSHOT:
         final SnapshotRestoreStrategy snapshotRestoreStrategy =
             new SnapshotRestoreStrategy(
-                restoreClient,
                 logReplicator,
                 snapshotReplicator,
-                latestLocalPosition,
-                backupPosition,
+                response.getSnapshotRestoreInfo(),
+                request.getLatestLocalPosition(),
+                request.getBackupPosition(),
                 server,
                 logger);
         result.complete(snapshotRestoreStrategy);
         break;
       case EVENTS:
-        result.complete(() -> logReplicator.replicate(server, latestLocalPosition, backupPosition));
+        logger.debug(
+            "Restoring events {} - {} from server {}",
+            request.getLatestLocalPosition(),
+            request.getBackupPosition(),
+            server);
+        result.complete(
+            () ->
+                logReplicator.replicate(
+                    server, request.getLatestLocalPosition(), request.getBackupPosition()));
         break;
       case NONE:
-        result.completeExceptionally(new UnsupportedOperationException("Not yet implemented"));
+        logger.debug(
+            "Restore server {} reports nothing to replicate for request {}", server, request);
+        result.complete(() -> CompletableFuture.completedFuture(request.getLatestLocalPosition()));
         break;
     }
 

@@ -7,5 +7,5 @@ host = "commandHost"
 [network.internalApi]
 host = "internalHost"
 
-[metrics]
-host = "metricsHost"
+[network.monitoringApi]
+host = "monitoringHost"

@@ -36,36 +36,34 @@ public class MsgPackConverterTest {
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
-  protected MsgPackConverter converter = new MsgPackConverter();
-
   protected static final String JSON = "{\"key1\":1,\"key2\":2}";
   protected static final byte[] MSG_PACK = createMsgPack();
 
   @Test
-  public void shouldConvertFromJsonStringToMsgPack() throws Exception {
+  public void shouldConvertFromJsonStringToMsgPack() {
     // when
-    final byte[] msgPack = converter.convertToMsgPack(JSON);
+    final byte[] msgPack = MsgPackConverter.convertToMsgPack(JSON);
 
     // then
     assertThat(msgPack).isEqualTo(MSG_PACK);
   }
 
   @Test
-  public void shouldConvertFromJsonStreamToMsgPack() throws Exception {
+  public void shouldConvertFromJsonStreamToMsgPack() {
     // given
     final byte[] json = getBytes(JSON);
     final InputStream inputStream = new ByteArrayInputStream(json);
     // when
-    final byte[] msgPack = converter.convertToMsgPack(inputStream);
+    final byte[] msgPack = MsgPackConverter.convertToMsgPack(inputStream);
 
     // then
     assertThat(msgPack).isEqualTo(MSG_PACK);
   }
 
   @Test
-  public void shouldConvertFromMsgPackToJsonString() throws Exception {
+  public void shouldConvertFromMsgPackToJsonString() {
     // when
-    final String json = converter.convertToJson(MSG_PACK);
+    final String json = MsgPackConverter.convertToJson(MSG_PACK);
 
     // then
     assertThat(json).isEqualTo(JSON);
@@ -74,7 +72,7 @@ public class MsgPackConverterTest {
   @Test
   public void shouldConvertFromMsgPackToJsonStream() throws Exception {
     // when
-    final InputStream jsonStream = converter.convertToJsonInputStream(MSG_PACK);
+    final InputStream jsonStream = MsgPackConverter.convertToJsonInputStream(MSG_PACK);
 
     // then
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -87,40 +85,42 @@ public class MsgPackConverterTest {
   }
 
   @Test
-  public void shouldConvertStringFromMsgPackToJsonString() throws Exception {
+  public void shouldConvertStringFromMsgPackToJsonString() {
     // when
     final String json =
-        converter.convertToJson(MsgPackUtil.encodeMsgPack(b -> b.packString("x")).byteArray());
+        MsgPackConverter.convertToJson(
+            MsgPackUtil.encodeMsgPack(b -> b.packString("x")).byteArray());
 
     // then
     assertThat(json).isEqualTo("\"x\"");
   }
 
   @Test
-  public void shouldConvertIntegerFromMsgPackToJsonString() throws Exception {
+  public void shouldConvertIntegerFromMsgPackToJsonString() {
     // when
     final String json =
-        converter.convertToJson(MsgPackUtil.encodeMsgPack(b -> b.packInt(123)).byteArray());
+        MsgPackConverter.convertToJson(MsgPackUtil.encodeMsgPack(b -> b.packInt(123)).byteArray());
 
     // then
     assertThat(json).isEqualTo("123");
   }
 
   @Test
-  public void shouldConvertBooleanFromMsgPackToJsonString() throws Exception {
+  public void shouldConvertBooleanFromMsgPackToJsonString() {
     // when
     final String json =
-        converter.convertToJson(MsgPackUtil.encodeMsgPack(b -> b.packBoolean(true)).byteArray());
+        MsgPackConverter.convertToJson(
+            MsgPackUtil.encodeMsgPack(b -> b.packBoolean(true)).byteArray());
 
     // then
     assertThat(json).isEqualTo("true");
   }
 
   @Test
-  public void shouldConvertArrayFromMsgPackToJsonString() throws Exception {
+  public void shouldConvertArrayFromMsgPackToJsonString() {
     // when
     final String json =
-        converter.convertToJson(
+        MsgPackConverter.convertToJson(
             MsgPackUtil.encodeMsgPack(b -> b.packArrayHeader(2).packInt(1).packInt(2)).byteArray());
 
     // then
@@ -128,33 +128,34 @@ public class MsgPackConverterTest {
   }
 
   @Test
-  public void shouldConvertNullFromMsgPackToJsonString() throws Exception {
+  public void shouldConvertNullFromMsgPackToJsonString() {
     // when
     final String json =
-        converter.convertToJson(MsgPackUtil.encodeMsgPack(b -> b.packNil()).byteArray());
+        MsgPackConverter.convertToJson(
+            MsgPackUtil.encodeMsgPack(MessagePacker::packNil).byteArray());
 
     // then
     assertThat(json).isEqualTo("null");
   }
 
   @Test
-  public void shouldThrowExceptionIfNotAJsonObject() throws Exception {
+  public void shouldThrowExceptionIfNotAJsonObject() {
     // then
     exception.expect(RuntimeException.class);
     exception.expectMessage("Failed to convert JSON to MessagePack");
 
     // when
-    converter.convertToMsgPack("}");
+    MsgPackConverter.convertToMsgPack("}");
   }
 
   @Test
-  public void shouldThrowExceptionIfDocumentHasMoreThanOneObject() throws Exception {
+  public void shouldThrowExceptionIfDocumentHasMoreThanOneObject() {
     // then
     exception.expect(RuntimeException.class);
     exception.expectMessage("Failed to convert JSON to MessagePack");
 
     // when
-    converter.convertToMsgPack("{}{}");
+    MsgPackConverter.convertToMsgPack("{}{}");
   }
 
   protected static byte[] createMsgPack() {

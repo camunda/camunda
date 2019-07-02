@@ -26,11 +26,11 @@ import static org.assertj.core.api.Assertions.entry;
 import io.grpc.Status.Code;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.cmd.ClientStatusException;
+import io.zeebe.client.api.command.ClientStatusException;
+import io.zeebe.client.api.response.DeploymentEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.record.WorkflowInstances;
 import java.util.Collections;
@@ -91,9 +91,8 @@ public class SetVariablesTest {
 
     // then
     assertVariableDocumentUpdated(
-        (variableDocument) -> {
-          assertThat(variableDocument.getDocument()).containsOnly(entry("foo", "bar"));
-        });
+        (variableDocument) ->
+            assertThat(variableDocument.getVariables()).containsOnly(entry("foo", "bar")));
   }
 
   @Test
@@ -111,9 +110,7 @@ public class SetVariablesTest {
 
     // then
     assertVariableDocumentUpdated(
-        (variableDocument) -> {
-          assertThat(variableDocument.getDocument()).isEmpty();
-        });
+        (variableDocument) -> assertThat(variableDocument.getVariables()).isEmpty());
   }
 
   @Test
@@ -126,7 +123,7 @@ public class SetVariablesTest {
     thrown.expect(hasStatusCode(Code.INVALID_ARGUMENT));
     thrown.expect(
         descriptionContains(
-            "Property 'document' is invalid: Expected document to be a root level object, but was 'ARRAY'"));
+            "Property 'variables' is invalid: Expected document to be a root level object, but was 'ARRAY'"));
 
     // when
     CLIENT_RULE
@@ -181,9 +178,8 @@ public class SetVariablesTest {
 
     // then
     assertVariableDocumentUpdated(
-        (variableDocument) -> {
-          assertThat(variableDocument.getDocument()).containsOnly(entry("foo", "bar"));
-        });
+        (variableDocument) ->
+            assertThat(variableDocument.getVariables()).containsOnly(entry("foo", "bar")));
   }
 
   @Test
@@ -203,9 +199,8 @@ public class SetVariablesTest {
 
     // then
     assertVariableDocumentUpdated(
-        (variableDocument) -> {
-          assertThat(variableDocument.getDocument()).containsOnly(entry("foo", "bar"));
-        });
+        (variableDocument) ->
+            assertThat(variableDocument.getVariables()).containsOnly(entry("foo", "bar")));
   }
 
   @Test

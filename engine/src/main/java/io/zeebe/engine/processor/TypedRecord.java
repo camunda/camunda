@@ -17,17 +17,24 @@
  */
 package io.zeebe.engine.processor;
 
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordMetadataEncoder;
 
 public interface TypedRecord<T extends UnifiedRecordValue> extends Record<T> {
 
   long getKey();
 
-  RecordMetadata getMetadata();
-
   T getValue();
+
+  int getRequestStreamId();
+
+  long getRequestId();
+
+  default boolean hasRequestMetadata() {
+    return getRequestId() != RecordMetadataEncoder.requestIdNullValue()
+        && getRequestStreamId() != RecordMetadataEncoder.requestStreamIdNullValue();
+  }
 
   default int getMaxValueLength() {
     throw new UnsupportedOperationException();

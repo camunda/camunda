@@ -21,8 +21,8 @@ import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Controller;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.test.util.TestUtil;
 import java.io.File;
 import java.time.Duration;
@@ -52,7 +52,6 @@ public class DataDeleteTest {
     data.setMaxSnapshots(MAX_SNAPSHOTS);
     data.setSnapshotPeriod(SNAPSHOT_PERIOD_SECONDS + "s");
     data.setLogSegmentSize("8k");
-    data.setIndexBlockSize("2K");
 
     final ExporterCfg exporterCfg = new ExporterCfg();
     exporterCfg.setClassName(TestExporter.class.getName());
@@ -67,7 +66,7 @@ public class DataDeleteTest {
   public void shouldDeleteDataWithExporters() {
     // given
     final String rootPath = brokerRule.getBrokerCfg().getData().getDirectories().get(0);
-    final String snapshotDirPath = rootPath + "/partition-1/state/1_zb-stream-processor/snapshots";
+    final String snapshotDirPath = rootPath + "/partition-1/state/snapshots";
     final String segmentsDirPath = rootPath + "/partition-1/segments";
 
     final File segmentsDir = new File(segmentsDirPath);
@@ -89,7 +88,7 @@ public class DataDeleteTest {
     TestUtil.waitUntil(
         () ->
             TestExporter.records.stream()
-                    .filter(r -> r.getMetadata().getIntent() == MessageIntent.PUBLISHED)
+                    .filter(r -> r.getIntent() == MessageIntent.PUBLISHED)
                     .limit(finalMessagesSent)
                     .count()
                 == finalMessagesSent);

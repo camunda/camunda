@@ -15,27 +15,23 @@
             "type": {
               "type": "keyword"
             },
-            "headers": {
-              "properties": {
-                "elementId": {
-                  "type": "keyword"
-                },
-                "elementInstanceKey": {
-                  "type": "long"
-                },
-                "bpmnProcessId": {
-                  "type": "keyword"
-                },
-                "workflowDefinitionVersion": {
-                  "type": "integer"
-                },
-                "workflowInstanceKey": {
-                  "type": "long"
-                },
-                "workflowKey": {
-                  "type": "long"
-                }
-              }
+            "elementId": {
+              "type": "text"
+            },
+            "elementInstanceKey": {
+              "type": "long"
+            },
+            "bpmnProcessId": {
+              "type": "keyword"
+            },
+            "workflowDefinitionVersion": {
+              "type": "integer"
+            },
+            "workflowInstanceKey": {
+              "type": "long"
+            },
+            "workflowKey": {
+              "type": "long"
             },
             "customHeaders": {
               "dynamic": true,
@@ -48,10 +44,10 @@
               "type": "long"
             },
             "deadline": {
-              "type": "date"
+              "type": "long"
             },
             "variables": {
-              "type": "text"
+              "enabled": false
             },
             "errorMessage": {
               "type": "text"

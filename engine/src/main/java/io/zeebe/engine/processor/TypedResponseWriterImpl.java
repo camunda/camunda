@@ -18,10 +18,10 @@
 package io.zeebe.engine.processor;
 
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.RejectionType;
-import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.Intent;
 import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -49,11 +49,13 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
 
     stage(
         RecordType.COMMAND_REJECTION,
-        command.getMetadata().getIntent(),
+        command.getIntent(),
         command.getKey(),
         type,
         stringWrapper,
-        command.getMetadata(),
+        command.getValueType(),
+        command.getRequestId(),
+        command.getRequestStreamId(),
         command.getValue());
   }
 
@@ -63,11 +65,13 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
 
     stage(
         RecordType.EVENT,
-        event.getMetadata().getIntent(),
+        event.getIntent(),
         event.getKey(),
         RejectionType.NULL_VAL,
         stringWrapper,
-        event.getMetadata(),
+        event.getValueType(),
+        event.getRequestId(),
+        event.getRequestStreamId(),
         event.getValue());
   }
 
@@ -82,7 +86,9 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
         eventKey,
         RejectionType.NULL_VAL,
         stringWrapper,
-        command.getMetadata(),
+        command.getValueType(),
+        command.getRequestId(),
+        command.getRequestStreamId(),
         eventValue);
   }
 
@@ -92,20 +98,22 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
       long key,
       RejectionType rejectionType,
       DirectBuffer rejectionReason,
-      RecordMetadata metadata,
+      ValueType valueType,
+      long requestId,
+      int requestStreamId,
       UnpackedObject value) {
     writer
         .partitionId(partitionId)
         .key(key)
         .intent(intent)
         .recordType(type)
-        .valueType(metadata.getValueType())
+        .valueType(valueType)
         .rejectionType(rejectionType)
         .rejectionReason(rejectionReason)
         .valueWriter(value);
 
-    this.requestId = metadata.getRequestId();
-    this.requestStreamId = metadata.getRequestStreamId();
+    this.requestId = requestId;
+    this.requestStreamId = requestStreamId;
     isResponseStaged = true;
   }
 

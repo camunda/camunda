@@ -23,8 +23,8 @@ import io.zeebe.engine.processor.workflow.handlers.element.ElementActivatedHandl
 import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import org.agrona.DirectBuffer;
 
 public class ServiceTaskElementActivatedHandler<T extends ExecutableServiceTask>
@@ -65,7 +65,6 @@ public class ServiceTaskElementActivatedHandler<T extends ExecutableServiceTask>
         .setRetries(serviceTask.getRetries())
         .setVariables(DocumentValue.EMPTY_DOCUMENT)
         .setCustomHeaders(headers)
-        .getJobHeaders()
         .setBpmnProcessId(value.getBpmnProcessIdBuffer())
         .setWorkflowDefinitionVersion(value.getVersion())
         .setWorkflowKey(value.getWorkflowKey())

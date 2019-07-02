@@ -15,9 +15,9 @@
  */
 package io.zeebe.test.util.record;
 
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.VariableDocumentRecordValue;
-import io.zeebe.protocol.VariableDocumentUpdateSemantic;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
+import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.zeebe.test.util.collection.Maps;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -46,15 +46,16 @@ public class VariableDocumentRecordStream
     return valueFilter(v -> v.getUpdateSemantics() == updateSemantics);
   }
 
-  public VariableDocumentRecordStream withDocument(Map<String, Object> document) {
-    return valueFilter(v -> v.getDocument().equals(document));
+  public VariableDocumentRecordStream withVariables(Map<String, Object> variables) {
+    return valueFilter(v -> v.getVariables().equals(variables));
   }
 
-  public VariableDocumentRecordStream withDocument(Map.Entry<String, Object>... entries) {
-    return withDocument(Maps.of(entries));
+  public VariableDocumentRecordStream withVariables(Map.Entry<String, Object>... entries) {
+    return withVariables(Maps.of(entries));
   }
 
-  public VariableDocumentRecordStream withDocument(Predicate<Map<String, Object>> documentMatcher) {
-    return valueFilter(v -> documentMatcher.test(v.getDocument()));
+  public VariableDocumentRecordStream withVariables(
+      Predicate<Map<String, Object>> variablesMatcher) {
+    return valueFilter(v -> variablesMatcher.test(v.getVariables()));
   }
 }

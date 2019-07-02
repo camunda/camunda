@@ -15,21 +15,21 @@
  */
 package io.zeebe.broker.it.util;
 
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.JobRecordValue;
-import io.zeebe.exporter.api.record.value.VariableDocumentRecordValue;
-import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.intent.IncidentIntent;
-import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.protocol.intent.VariableDocumentIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.protocol.record.value.JobRecordValue;
+import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
+import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.WorkflowInstanceRecordStream;
 import java.util.function.Consumer;
@@ -243,8 +243,8 @@ public class ZeebeAssertHelper {
 
     assertThat(
             RecordingExporter.incidentRecords()
-                .skipUntil(e -> e.getMetadata().getIntent() == IncidentIntent.RESOLVED)
-                .filter(e -> e.getMetadata().getIntent() == IncidentIntent.CREATED)
+                .skipUntil(e -> e.getIntent() == IncidentIntent.RESOLVED)
+                .filter(e -> e.getIntent() == IncidentIntent.CREATED)
                 .exists())
         .isTrue();
   }

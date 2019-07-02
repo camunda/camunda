@@ -35,12 +35,12 @@ import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.msgpack.value.DocumentValue;
-import io.zeebe.protocol.BpmnElementType;
-import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.TimerIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.TimerIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -123,7 +123,10 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     return workflowState
         .getEventScopeInstanceState()
         .triggerEvent(
-            eventScopeKey, eventKey, timer.getHandlerNodeId(), DocumentValue.EMPTY_DOCUMENT);
+            eventScopeKey,
+            eventKey,
+            timer.getTargetElementIdBuffer(),
+            DocumentValue.EMPTY_DOCUMENT);
   }
 
   private long prepareEventOccurredEvent(
@@ -137,7 +140,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
       eventOccurredRecord
           .setBpmnElementType(BpmnElementType.START_EVENT)
           .setWorkflowKey(timer.getWorkflowKey())
-          .setElementId(timer.getHandlerNodeId());
+          .setElementId(timer.getTargetElementIdBuffer());
     } else {
       eventOccurredKey = elementInstanceKey;
       eventOccurredRecord.wrap(
@@ -160,7 +163,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
           workflowState.getWorkflowByKey(timer.getWorkflowKey()).getWorkflow().getStartEvents();
 
       for (ExecutableCatchEventElement startEvent : startEvents) {
-        if (startEvent.getId().equals(timer.getHandlerNodeId())) {
+        if (startEvent.getId().equals(timer.getTargetElementIdBuffer())) {
           return startEvent;
         }
       }
@@ -170,7 +173,9 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
 
       if (elementInstance != null) {
         return getCatchEventById(
-            workflowState, elementInstance.getValue().getWorkflowKey(), timer.getHandlerNodeId());
+            workflowState,
+            elementInstance.getValue().getWorkflowKey(),
+            timer.getTargetElementIdBuffer());
       }
     }
     return null;

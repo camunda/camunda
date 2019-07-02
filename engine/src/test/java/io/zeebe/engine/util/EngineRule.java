@@ -17,11 +17,11 @@
  */
 package io.zeebe.engine.util;
 
-import static io.zeebe.engine.processor.TypedEventRegistry.EVENT_REGISTRY;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.engine.processor.CopiedRecords;
 import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.workflow.EngineProcessors;
@@ -31,32 +31,32 @@ import io.zeebe.engine.processor.workflow.message.command.PartitionCommandSender
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandMessageHandler;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.api.record.value.WorkflowInstanceCreationRecordValue;
-import io.zeebe.exporter.api.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.exporter.api.record.value.deployment.ResourceType;
-import io.zeebe.logstreams.impl.Loggers;
+import io.zeebe.engine.util.client.DeploymentClient;
+import io.zeebe.engine.util.client.IncidentClient;
+import io.zeebe.engine.util.client.JobActivationClient;
+import io.zeebe.engine.util.client.JobClient;
+import io.zeebe.engine.util.client.PublishMessageClient;
+import io.zeebe.engine.util.client.VariableClient;
+import io.zeebe.engine.util.client.WorkflowInstanceClient;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.impl.record.CopiedRecord;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.value.JobRecordValue;
+import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
-import io.zeebe.util.ReflectUtil;
+import io.zeebe.util.FileUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
@@ -64,7 +64,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.DirectBuffer;
@@ -78,8 +77,9 @@ public class EngineRule extends ExternalResource {
   private static final int PARTITION_ID = Protocol.DEPLOYMENT_PARTITION;
   private static final RecordingExporter RECORDING_EXPORTER = new RecordingExporter();
 
-  protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
+  private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
   private final StreamProcessorRule environmentRule;
 
   private final int partitionCount;
@@ -104,7 +104,10 @@ public class EngineRule extends ExternalResource {
 
   @Override
   protected void before() {
+    startProcessors();
+  }
 
+  private void startProcessors() {
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
     final UnsafeBuffer deploymentBuffer = new UnsafeBuffer(new byte[deploymentRecord.getLength()]);
     deploymentRecord.write(deploymentBuffer, 0);
@@ -114,17 +117,18 @@ public class EngineRule extends ExternalResource {
     when(deploymentDistribution.getDeployment()).thenReturn(deploymentBuffer);
 
     forEachPartition(
-        partitonId -> {
-          final int currentPartitionId = partitonId;
+        partitionId -> {
+          final int currentPartitionId = partitionId;
           environmentRule.startTypedStreamProcessor(
-              partitonId,
+              partitionId,
               (processingContext) ->
                   EngineProcessors.createEngineProcessors(
                           processingContext,
                           partitionCount,
                           new SubscriptionCommandSender(
                               currentPartitionId, new PartitionCommandSenderImpl()),
-                          new DeploymentDistributionImpl())
+                          new DeploymentDistributionImpl(),
+                          (key, partition) -> {})
                       .withListener(new ProcessingExporterTransistor()));
         });
   }
@@ -140,70 +144,27 @@ public class EngineRule extends ExternalResource {
     environmentRule.getClock().addTime(duration);
   }
 
-  public Record<DeploymentRecordValue> deploy(final BpmnModelInstance modelInstance) {
-    final DeploymentRecord deploymentRecord = new DeploymentRecord();
-    deploymentRecord
-        .resources()
-        .add()
-        .setResourceName(wrapString("process.bpmn"))
-        .setResource(wrapString(Bpmn.convertToString(modelInstance)))
-        .setResourceType(ResourceType.BPMN_XML);
-
-    final long position = environmentRule.writeCommand(DeploymentIntent.CREATE, deploymentRecord);
-
-    final Record<DeploymentRecordValue> deploymentOnPartitionOne =
-        RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
-            .withSourceRecordPosition(position)
-            .withPartitionId(PARTITION_ID)
-            .getFirst();
-
+  public void reprocess() {
     forEachPartition(
-        partitionId ->
-            RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
-                .withPartitionId(partitionId)
-                .withRecordKey(deploymentOnPartitionOne.getKey())
-                .getFirst());
+        partitionId -> {
+          try {
+            environmentRule.closeStreamProcessor(partitionId);
+            FileUtil.deleteFolder(
+                environmentRule
+                    .getStateSnapshotController(partitionId)
+                    .getLastValidSnapshotDirectory()
+                    .toPath());
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
 
-    return RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
-        .withPartitionId(PARTITION_ID)
-        .withRecordKey(deploymentOnPartitionOne.getKey())
-        .getFirst();
-  }
+    final int lastSize = RecordingExporter.getRecords().size();
+    // we need to reset the record exporter
+    RecordingExporter.reset();
 
-  public Record<WorkflowInstanceCreationRecordValue> createWorkflowInstance(
-      Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> transformer) {
-    final long position =
-        environmentRule.writeCommand(
-            WorkflowInstanceCreationIntent.CREATE,
-            transformer.apply(new WorkflowInstanceCreationRecord()));
-
-    return RecordingExporter.workflowInstanceCreationRecords()
-        .withIntent(WorkflowInstanceCreationIntent.CREATED)
-        .withSourceRecordPosition(position)
-        .getFirst();
-  }
-
-  public Record<WorkflowInstanceRecordValue> cancelWorkflowInstance(long workflowInstanceKey) {
-    final Record<WorkflowInstanceRecordValue> instanceRecord =
-        RecordingExporter.workflowInstanceRecords()
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .getFirst();
-
-    environmentRule.writeCommandOnPartition(
-        instanceRecord.getMetadata().getPartitionId(),
-        workflowInstanceKey,
-        WorkflowInstanceIntent.CANCEL,
-        new WorkflowInstanceRecord().setWorkflowInstanceKey(workflowInstanceKey));
-
-    return RecordingExporter.workflowInstanceRecords()
-        .withRecordKey(workflowInstanceKey)
-        .withIntent(WorkflowInstanceIntent.ELEMENT_TERMINATED)
-        .withWorkflowInstanceKey(workflowInstanceKey)
-        .getFirst();
-  }
-
-  public PublishMessageClient message() {
-    return new PublishMessageClient(environmentRule, partitionCount);
+    startProcessors();
+    TestUtil.waitUntil(() -> RecordingExporter.getRecords().size() >= lastSize);
   }
 
   public List<Integer> getPartitionIds() {
@@ -212,8 +173,24 @@ public class EngineRule extends ExternalResource {
         .collect(Collectors.toList());
   }
 
-  public VariableClient variables(long scopeKey) {
-    return new VariableClient(environmentRule, scopeKey);
+  public ControlledActorClock getClock() {
+    return environmentRule.getClock();
+  }
+
+  public DeploymentClient deployment() {
+    return new DeploymentClient(environmentRule, this::forEachPartition);
+  }
+
+  public WorkflowInstanceClient workflowInstance() {
+    return new WorkflowInstanceClient(environmentRule);
+  }
+
+  public PublishMessageClient message() {
+    return new PublishMessageClient(environmentRule, partitionCount);
+  }
+
+  public VariableClient variables() {
+    return new VariableClient(environmentRule);
   }
 
   public JobActivationClient jobs() {
@@ -222,6 +199,29 @@ public class EngineRule extends ExternalResource {
 
   public JobClient job() {
     return new JobClient(environmentRule);
+  }
+
+  public IncidentClient incident() {
+    return new IncidentClient(environmentRule);
+  }
+
+  public Record<JobRecordValue> createJob(final String type, final String processId) {
+    deployment()
+        .withXmlResource(
+            processId,
+            Bpmn.createExecutableProcess(processId)
+                .startEvent("start")
+                .serviceTask("task", b -> b.zeebeTaskType(type).done())
+                .endEvent("end")
+                .done())
+        .deploy();
+
+    final long instanceKey = workflowInstance().ofBpmnProcessId(processId).create();
+
+    return jobRecords(JobIntent.CREATED)
+        .withType(type)
+        .filter(r -> r.getValue().getWorkflowInstanceKey() == instanceKey)
+        .getFirst();
   }
 
   private class DeploymentDistributionImpl implements DeploymentDistributor {
@@ -280,9 +280,11 @@ public class EngineRule extends ExternalResource {
   private static class ProcessingExporterTransistor implements StreamProcessorLifecycleAware {
 
     private BufferedLogStreamReader logStreamReader;
+    private int partitionId;
 
     @Override
     public void onOpen(ReadonlyProcessingContext context) {
+      partitionId = context.getLogStream().getPartitionId();
       final ActorControl actor = context.getActor();
 
       final ActorCondition onCommitCondition =
@@ -297,42 +299,10 @@ public class EngineRule extends ExternalResource {
       while (logStreamReader.hasNext()) {
         final LoggedEvent rawEvent = logStreamReader.next();
 
-        final CopiedTypedEvent typedRecord = createCopiedEvent(rawEvent);
+        final CopiedRecord typedRecord = CopiedRecords.createCopiedRecord(partitionId, rawEvent);
 
-        Loggers.LOGSTREAMS_LOGGER.warn("Export: {}", typedRecord);
         RECORDING_EXPORTER.export(typedRecord);
       }
-    }
-
-    private CopiedTypedEvent createCopiedEvent(LoggedEvent rawEvent) {
-      // we have to access the underlying buffer and copy the metadata and value bytes
-      // otherwise next event will overwrite the event before, since UnpackedObject
-      // and RecordMetadata has properties (buffers, StringProperty etc.) which only wraps the given
-      // buffer instead of copying it
-
-      final DirectBuffer contentBuffer = rawEvent.getValueBuffer();
-
-      final byte[] metadataBytes = new byte[rawEvent.getMetadataLength()];
-      contentBuffer.getBytes(rawEvent.getMetadataOffset(), metadataBytes);
-      final DirectBuffer metadataBuffer = new UnsafeBuffer(metadataBytes);
-
-      final RecordMetadata metadata = new RecordMetadata();
-      metadata.wrap(metadataBuffer, 0, metadataBuffer.capacity());
-
-      final byte[] valueBytes = new byte[rawEvent.getValueLength()];
-      contentBuffer.getBytes(rawEvent.getValueOffset(), valueBytes);
-      final DirectBuffer valueBuffer = new UnsafeBuffer(valueBytes);
-
-      final UnifiedRecordValue recordValue =
-          ReflectUtil.newInstance(EVENT_REGISTRY.get(metadata.getValueType()));
-      recordValue.wrap(valueBuffer);
-
-      return new CopiedTypedEvent(
-          recordValue,
-          metadata,
-          rawEvent.getKey(),
-          rawEvent.getPosition(),
-          rawEvent.getSourceEventPosition());
     }
   }
 }

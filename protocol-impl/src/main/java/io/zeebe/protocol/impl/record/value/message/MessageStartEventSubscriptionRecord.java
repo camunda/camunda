@@ -15,10 +15,11 @@
  */
 package io.zeebe.protocol.impl.record.value.message;
 
-import io.zeebe.exporter.api.record.value.MessageStartEventSubscriptionRecordValue;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
@@ -35,31 +36,18 @@ public class MessageStartEventSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(startEventIdProp);
   }
 
-  public MessageStartEventSubscriptionRecord setWorkflowKey(long key) {
-    workflowKeyProp.setValue(key);
-    return this;
-  }
-
-  public long getWorkflowKey() {
-    return workflowKeyProp.getValue();
-  }
-
-  public MessageStartEventSubscriptionRecord setMessageName(DirectBuffer messageName) {
-    messageNameProp.setValue(messageName);
-    return this;
-  }
-
+  @JsonIgnore
   public DirectBuffer getMessageNameBuffer() {
     return messageNameProp.getValue();
   }
 
-  public MessageStartEventSubscriptionRecord setStartEventId(DirectBuffer startEventId) {
-    this.startEventIdProp.setValue(startEventId);
-    return this;
-  }
-
+  @JsonIgnore
   public DirectBuffer getStartEventIdBuffer() {
     return startEventIdProp.getValue();
+  }
+
+  public long getWorkflowKey() {
+    return workflowKeyProp.getValue();
   }
 
   @Override
@@ -70,5 +58,20 @@ public class MessageStartEventSubscriptionRecord extends UnifiedRecordValue
   @Override
   public String getMessageName() {
     return BufferUtil.bufferAsString(messageNameProp.getValue());
+  }
+
+  public MessageStartEventSubscriptionRecord setMessageName(DirectBuffer messageName) {
+    messageNameProp.setValue(messageName);
+    return this;
+  }
+
+  public MessageStartEventSubscriptionRecord setStartEventId(DirectBuffer startEventId) {
+    this.startEventIdProp.setValue(startEventId);
+    return this;
+  }
+
+  public MessageStartEventSubscriptionRecord setWorkflowKey(long key) {
+    workflowKeyProp.setValue(key);
+    return this;
   }
 }

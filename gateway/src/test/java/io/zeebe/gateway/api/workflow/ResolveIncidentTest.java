@@ -21,8 +21,8 @@ import io.zeebe.gateway.api.util.GatewayTest;
 import io.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
-import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.IncidentIntent;
 import org.junit.Test;
 
 public class ResolveIncidentTest extends GatewayTest {

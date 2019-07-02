@@ -8,7 +8,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.19.0-SNAPSHOT</version>
+    <version>0.20.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -32,11 +32,6 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-protocol-impl</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-exporter-api</artifactId>
     </dependency>
 
     <dependency>
@@ -107,6 +102,11 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>atomix-utils</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>me.dinowernli</groupId>
+      <artifactId>java-grpc-prometheus</artifactId>
     </dependency>
 
     <dependency>

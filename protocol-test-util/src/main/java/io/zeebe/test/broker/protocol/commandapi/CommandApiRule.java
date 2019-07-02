@@ -22,24 +22,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.Member;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.api.record.value.JobRecordValue;
-import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.SubscriptionUtil;
-import io.zeebe.protocol.impl.data.cluster.BrokerInfo;
+import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.IncidentIntent;
-import io.zeebe.protocol.intent.JobBatchIntent;
-import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.protocol.intent.MessageIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
+import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.zeebe.protocol.record.intent.JobBatchIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.intent.MessageIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.zeebe.protocol.record.value.JobRecordValue;
+import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -111,10 +111,13 @@ public class CommandApiRule extends ExternalResource {
     waitForTopology();
     getBrokerInfoStream()
         .forEach(
-            brokerInfo ->
+            brokerInfo -> {
+              final String commandApiAddress = brokerInfo.getCommandApiAddress();
+              if (commandApiAddress != null) {
                 transport.registerEndpoint(
-                    brokerInfo.getNodeId(),
-                    SocketAddress.from(brokerInfo.getApiAddress(BrokerInfo.COMMAND_API_PROPERTY))));
+                    brokerInfo.getNodeId(), SocketAddress.from(commandApiAddress));
+              }
+            });
 
     final List<Integer> partitionIds = doRepeatedly(this::getPartitionIds).until(p -> !p.isEmpty());
     defaultPartitionId = partitionIds.get(0);

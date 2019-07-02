@@ -70,7 +70,6 @@
     <field name="elementInstanceKey" id="2" type="uint64"/>
     <data name="messageName" id="3" type="varDataEncoding"/>
   </sbe:message>
-  s
 
   <sbe:message name="CloseWorkflowInstanceSubscription" id="5">
     <field name="subscriptionPartitionId" id="0" type="uint16"/>
@@ -86,5 +85,4 @@
     <data name="messageName" id="3" type="varDataEncoding"/>
     <data name="correlationKey" id="4" type="varDataEncoding"/>
   </sbe:message>
-
 </sbe:messageSchema>

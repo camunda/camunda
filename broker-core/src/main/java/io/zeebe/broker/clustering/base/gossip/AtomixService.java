@@ -27,6 +27,7 @@ import io.atomix.protocols.raft.partition.RaftPartitionGroup;
 import io.atomix.protocols.raft.partition.RaftPartitionGroup.Builder;
 import io.atomix.utils.net.Address;
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.logstreams.restore.BrokerRestoreFactory;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
@@ -103,7 +104,7 @@ public class AtomixService implements Service<Atomix> {
             .withFlushOnCommit()
             .build();
 
-    final String raftPartitionGroupName = "raft-atomix";
+    final String raftPartitionGroupName = Partition.GROUP_NAME;
 
     final File raftDirectory = new File(rootDirectory, raftPartitionGroupName);
     if (!raftDirectory.exists()) {
@@ -136,7 +137,6 @@ public class AtomixService implements Service<Atomix> {
     final BrokerRestoreFactory restoreFactory =
         new BrokerRestoreFactory(
             atomix.getCommunicationService(),
-            atomix.getEventService(),
             atomix.getPartitionService(),
             raftPartitionGroupName,
             localMemberId);

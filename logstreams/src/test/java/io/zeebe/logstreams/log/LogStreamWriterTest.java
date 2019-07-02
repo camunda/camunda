@@ -236,24 +236,6 @@ public class LogStreamWriterTest {
   }
 
   @Test
-  public void shouldWriteEventWithProducerId() {
-    // when
-    final long position = writer.value(EVENT_VALUE).producerId(123).tryWrite();
-
-    // then
-    assertThat(getWrittenEvent(position).getProducerId()).isEqualTo(123);
-  }
-
-  @Test
-  public void shouldWriteEventWithoutProducerId() {
-    // when
-    final long position = writer.value(EVENT_VALUE).tryWrite();
-
-    // then
-    assertThat(getWrittenEvent(position).getProducerId()).isEqualTo(-1);
-  }
-
-  @Test
   public void shouldWriteEventWithNullKey() {
     // when
     final long position = writer.keyNull().value(EVENT_VALUE).tryWrite();

@@ -26,12 +26,10 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.DispatcherBuilder;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.Subscription;
-import io.zeebe.logstreams.impl.LogBlockIndexWriter;
 import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
-import io.zeebe.logstreams.impl.log.index.LogBlockIndexContext;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
@@ -45,7 +43,6 @@ import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
 
@@ -56,31 +53,17 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   private static final String APPENDER_SUBSCRIPTION_NAME = "appender";
 
   private final Injector<LogStorage> logStorageInjector = new Injector<>();
-  private final Injector<LogBlockIndex> logBlockIndexInjector = new Injector<>();
-  private final Injector<LogBlockIndexWriter> logBockIndexWriterInjector = new Injector<>();
-
   private final ServiceContainer serviceContainer;
-
   private final ActorConditions onCommitPositionUpdatedConditions;
-
   private final String logName;
   private final int partitionId;
-
   private final ByteValue writeBufferSize;
   private final int maxAppendBlockSize;
-
   private final Position commitPosition;
 
-  private final AtomicBoolean restoring;
-
-  private LogBlockIndexContext blockIndexContext;
-
+  private BufferedLogStreamReader reader;
   private ServiceStartContext serviceContext;
-
   private LogStorage logStorage;
-  private LogBlockIndex logBlockIndex;
-  private LogBlockIndexWriter logBlockIndexWriter;
-
   private ActorFuture<Dispatcher> writeBufferFuture;
   private ActorFuture<LogStorageAppender> appenderFuture;
   private Dispatcher writeBuffer;
@@ -92,7 +75,6 @@ public class LogStreamService implements LogStream, Service<LogStream> {
     this.serviceContainer = builder.getServiceContainer();
     this.onCommitPositionUpdatedConditions = builder.getOnCommitPositionUpdatedConditions();
     this.commitPosition = builder.getCommitPosition();
-    this.restoring = new AtomicBoolean(false);
     this.writeBufferSize = ByteValue.ofBytes(builder.getWriteBufferSize());
     this.maxAppendBlockSize = builder.getMaxAppendBlockSize();
   }
@@ -103,13 +85,12 @@ public class LogStreamService implements LogStream, Service<LogStream> {
 
     serviceContext = startContext;
     logStorage = logStorageInjector.getValue();
-    logBlockIndex = logBlockIndexInjector.getValue();
-    blockIndexContext = logBlockIndex.createLogBlockIndexContext();
-    logBlockIndexWriter = logBockIndexWriterInjector.getValue();
+    this.reader = new BufferedLogStreamReader(this);
   }
 
   @Override
   public ActorFuture<LogStorageAppender> openAppender() {
+    final String logName = getLogName();
     final ServiceName<Void> logStorageAppenderRootService = logStorageAppenderRootService(logName);
     final ServiceName<Dispatcher> logWriteBufferServiceName = logWriteBufferServiceName(logName);
     final ServiceName<Subscription> appenderSubscriptionServiceName =
@@ -130,9 +111,6 @@ public class LogStreamService implements LogStream, Service<LogStream> {
             .dependency(
                 logStorageInjector.getInjectedServiceName(),
                 writeBufferService.getLogStorageInjector())
-            .dependency(
-                logBlockIndexInjector.getInjectedServiceName(),
-                writeBufferService.getLogBlockIndexInjector())
             .install();
 
     final LogWriteBufferSubscriptionService subscriptionService =
@@ -164,6 +142,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
     appender = null;
     writeBuffer = null;
 
+    final String logName = getLogName();
     return serviceContext.removeService(logStorageAppenderRootService(logName));
   }
 
@@ -203,16 +182,6 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   }
 
   @Override
-  public LogBlockIndex getLogBlockIndex() {
-    return logBlockIndex;
-  }
-
-  @Override
-  public LogBlockIndexWriter getLogBlockIndexWriter() {
-    return logBlockIndexWriter;
-  }
-
-  @Override
   public Dispatcher getWriteBuffer() {
     if (writeBuffer == null && writeBufferFuture != null) {
       writeBuffer = writeBufferFuture.join();
@@ -235,21 +204,19 @@ public class LogStreamService implements LogStream, Service<LogStream> {
 
   @Override
   public void delete(long position) {
-    final long blockAddress = logBlockIndex.lookupBlockAddress(blockIndexContext, position);
-
-    if (blockAddress != LogBlockIndex.VALUE_NOT_FOUND) {
-      LOG.info(
-          "Delete data from log stream until position '{}' (address: '{}').",
-          position,
-          blockAddress);
-
-      logBlockIndex.deleteUpToPosition(blockIndexContext, position);
-      logStorage.delete(blockAddress);
-    } else {
+    final boolean positionNotExist = !reader.seek(position);
+    if (positionNotExist) {
       LOG.debug(
           "Tried to delete from log stream, but found no corresponding address in the log block index for the given position {}.",
           position);
+      return;
     }
+
+    final long blockAddress = reader.lastReadAddress();
+    LOG.info(
+        "Delete data from log stream until position '{}' (address: '{}').", position, blockAddress);
+
+    logStorage.delete(blockAddress);
   }
 
   @Override
@@ -267,14 +234,6 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   @Override
   public void removeOnCommitPositionUpdatedCondition(final ActorCondition condition) {
     onCommitPositionUpdatedConditions.removeConsumer(condition);
-  }
-
-  public Injector<LogBlockIndex> getLogBlockIndexInjector() {
-    return logBlockIndexInjector;
-  }
-
-  public Injector<LogBlockIndexWriter> getLogBockIndexWriterInjector() {
-    return logBockIndexWriterInjector;
   }
 
   public Injector<LogStorage> getLogStorageInjector() {

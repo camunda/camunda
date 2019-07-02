@@ -24,6 +24,7 @@ import io.zeebe.clustering.management.BooleanType;
 import io.zeebe.clustering.management.LogReplicationRequestDecoder;
 import io.zeebe.clustering.management.LogReplicationRequestEncoder;
 import io.zeebe.distributedlog.restore.log.LogReplicationRequest;
+import io.zeebe.distributedlog.restore.log.impl.DefaultLogReplicationRequest;
 import io.zeebe.engine.util.SbeBufferWriterReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -32,91 +33,88 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class SbeLogReplicationRequest
     extends SbeBufferWriterReader<LogReplicationRequestEncoder, LogReplicationRequestDecoder>
     implements LogReplicationRequest {
-  private final LogReplicationRequestEncoder encoder = new LogReplicationRequestEncoder();
-  private final LogReplicationRequestDecoder decoder = new LogReplicationRequestDecoder();
+  private final LogReplicationRequestEncoder encoder;
+  private final LogReplicationRequestDecoder decoder;
+  private final DefaultLogReplicationRequest delegate;
 
-  private long fromPosition;
-  private long toPosition;
-  private boolean includeFromPosition;
-
-  public SbeLogReplicationRequest() {}
-
-  public SbeLogReplicationRequest(LogReplicationRequest other) {
+  public SbeLogReplicationRequest() {
+    this.delegate = new DefaultLogReplicationRequest();
+    this.encoder = new LogReplicationRequestEncoder();
+    this.decoder = new LogReplicationRequestDecoder();
     reset();
-    wrap(other);
   }
 
-  public SbeLogReplicationRequest(long fromPosition, long toPosition, boolean includeFromPosition) {
-    this.fromPosition = fromPosition;
-    this.toPosition = toPosition;
-    this.includeFromPosition = includeFromPosition;
+  public SbeLogReplicationRequest(LogReplicationRequest other) {
+    this();
+    this.setFromPosition(other.getFromPosition());
+    this.setToPosition(other.getToPosition());
+    this.setIncludeFromPosition(other.includeFromPosition());
   }
 
   public SbeLogReplicationRequest(byte[] serialized) {
-    reset();
+    this();
     wrap(new UnsafeBuffer(serialized));
   }
 
   @Override
   public void wrap(DirectBuffer buffer, int offset, int length) {
     super.wrap(buffer, offset, length);
-    fromPosition = decoder.fromPosition();
-    toPosition = decoder.toPosition();
-    includeFromPosition = decoder.includeFromPosition() == BooleanType.TRUE;
-  }
-
-  public void wrap(LogReplicationRequest other) {
-    setFromPosition(other.getFromPosition());
-    setToPosition(other.getToPosition());
-    setIncludeFromPosition(other.includeFromPosition());
+    delegate.setFromPosition(decoder.fromPosition());
+    delegate.setToPosition(decoder.toPosition());
+    delegate.setIncludeFromPosition(decoder.includeFromPosition() == BooleanType.TRUE);
   }
 
   @Override
   public void write(MutableDirectBuffer buffer, int offset) {
     super.write(buffer, offset);
     encoder
-        .fromPosition(fromPosition)
-        .toPosition(toPosition)
-        .includeFromPosition(includeFromPosition ? BooleanType.TRUE : BooleanType.FALSE);
+        .fromPosition(delegate.getFromPosition())
+        .toPosition(delegate.getToPosition())
+        .includeFromPosition(delegate.includeFromPosition() ? BooleanType.TRUE : BooleanType.FALSE);
   }
 
   @Override
   public void reset() {
     super.reset();
-    fromPosition = fromPositionNullValue();
-    toPosition = toPositionNullValue();
-    includeFromPosition = false;
-  }
-
-  @Override
-  public long getFromPosition() {
-    return fromPosition;
-  }
-
-  public void setFromPosition(long fromPosition) {
-    this.fromPosition = fromPosition;
-  }
-
-  @Override
-  public long getToPosition() {
-    return toPosition;
-  }
-
-  public void setToPosition(long toPosition) {
-    this.toPosition = toPosition;
+    delegate.setFromPosition(fromPositionNullValue());
+    delegate.setToPosition(toPositionNullValue());
+    delegate.setIncludeFromPosition(false);
   }
 
   @Override
   public boolean includeFromPosition() {
-    return includeFromPosition;
+    return delegate.includeFromPosition();
   }
 
-  public void setIncludeFromPosition(boolean include) {
-    this.includeFromPosition = include;
+  public void setIncludeFromPosition(boolean includeFromPosition) {
+    delegate.setIncludeFromPosition(includeFromPosition);
+  }
+
+  @Override
+  public long getFromPosition() {
+    return delegate.getFromPosition();
+  }
+
+  public void setFromPosition(long fromPosition) {
+    delegate.setFromPosition(fromPosition);
+  }
+
+  @Override
+  public long getToPosition() {
+    return delegate.getToPosition();
+  }
+
+  public void setToPosition(long toPosition) {
+    delegate.setToPosition(toPosition);
   }
 
   public static byte[] serialize(LogReplicationRequest request) {
     return new SbeLogReplicationRequest(request).toBytes();
+  }
+
+  @Override
+  public String toString() {
+    return "SbeLogReplicationRequest{" + "delegate=" + delegate + "} " + super.toString();
   }
 
   @Override

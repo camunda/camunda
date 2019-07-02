@@ -36,18 +36,18 @@ import io.zeebe.engine.util.Records;
 import io.zeebe.engine.util.TestStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.ErrorIntent;
-import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.protocol.intent.TimerIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.ErrorIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
@@ -70,7 +70,6 @@ import org.mockito.MockitoAnnotations;
 
 public class SkipFailingEventsTest {
   public static final String STREAM_NAME = "foo";
-  public static final int STREAM_PROCESSOR_ID = 144144;
 
   public TemporaryFolder tempFolder = new TemporaryFolder();
   public AutoCloseableRule closeables = new AutoCloseableRule();
@@ -113,7 +112,6 @@ public class SkipFailingEventsTest {
 
     streams.startStreamProcessor(
         STREAM_NAME,
-        STREAM_PROCESSOR_ID,
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
@@ -143,7 +141,8 @@ public class SkipFailingEventsTest {
         new RecordStream(streams.events(STREAM_NAME)).onlyErrorRecords().getFirst().getValue();
 
     assertThat(errorRecord.getErrorEventPosition()).isEqualTo(failingEventPosition);
-    assertThat(BufferUtil.bufferAsString(errorRecord.getExceptionMessage())).isEqualTo("expected");
+    assertThat(BufferUtil.bufferAsString(errorRecord.getExceptionMessageBuffer()))
+        .isEqualTo("expected");
     assertThat(errorRecord.getWorkflowInstanceKey()).isEqualTo(1);
   }
 
@@ -152,7 +151,6 @@ public class SkipFailingEventsTest {
     // given
     streams.startStreamProcessor(
         STREAM_NAME,
-        STREAM_PROCESSOR_ID,
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
@@ -188,7 +186,7 @@ public class SkipFailingEventsTest {
         new RecordStream(streams.events(STREAM_NAME)).onlyErrorRecords().getFirst().getValue();
 
     assertThat(errorRecord.getErrorEventPosition()).isEqualTo(failingEventPosition);
-    assertThat(BufferUtil.bufferAsString(errorRecord.getExceptionMessage()))
+    assertThat(BufferUtil.bufferAsString(errorRecord.getExceptionMessageBuffer()))
         .isEqualTo("Without exception message.");
     assertThat(errorRecord.getWorkflowInstanceKey()).isEqualTo(1);
   }
@@ -201,7 +199,6 @@ public class SkipFailingEventsTest {
 
     streams.startStreamProcessor(
         STREAM_NAME,
-        STREAM_PROCESSOR_ID,
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
@@ -268,14 +265,12 @@ public class SkipFailingEventsTest {
             .event(Records.job(1))
             .recordType(RecordType.EVENT)
             .intent(JobIntent.ACTIVATED)
-            .producerId(STREAM_PROCESSOR_ID)
             .key(keyGenerator.nextKey())
             .write();
     streams
         .newRecord(STREAM_NAME)
         .event(Records.error(1, failedPos))
         .recordType(RecordType.EVENT)
-        .producerId(STREAM_PROCESSOR_ID)
         .sourceRecordPosition(failedPos)
         .intent(ErrorIntent.CREATED)
         .key(keyGenerator.nextKey())
@@ -284,7 +279,6 @@ public class SkipFailingEventsTest {
     final CountDownLatch latch = new CountDownLatch(1);
     streams.startStreamProcessor(
         STREAM_NAME,
-        STREAM_PROCESSOR_ID,
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
@@ -343,7 +337,6 @@ public class SkipFailingEventsTest {
 
     streams.startStreamProcessor(
         STREAM_NAME,
-        STREAM_PROCESSOR_ID,
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
@@ -418,7 +411,6 @@ public class SkipFailingEventsTest {
 
     streams.startStreamProcessor(
         STREAM_NAME,
-        STREAM_PROCESSOR_ID,
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();

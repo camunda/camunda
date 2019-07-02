@@ -16,7 +16,8 @@
 package io.zeebe.logstreams.spi;
 
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.logstreams.state.SnapshotReplicationListener;
+import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreInfo;
+import java.io.File;
 import java.io.IOException;
 import java.util.function.Consumer;
 
@@ -86,19 +87,13 @@ public interface SnapshotController extends AutoCloseable {
    */
   long getLastValidSnapshotPosition();
 
-  /**
-   * Add a listener which will be notified when a snapshot replication is completed
-   *
-   * @param listener
-   */
-  void addListener(SnapshotReplicationListener listener);
+  File getLastValidSnapshotDirectory();
+
+  File getSnapshotDirectoryFor(long snapshotId);
 
   /**
-   * Remove the listener
-   *
-   * @param listener
+   * Returns a {@link io.zeebe.distributedlog.restore.RestoreInfoResponse RestoreInfoResponse} for
+   * the latest valid snapshot
    */
-  void removeListener(SnapshotReplicationListener listener);
-
-  void enableRetrySnapshot(long snapshotPosition);
+  SnapshotRestoreInfo getLatestSnapshotRestoreInfo();
 }

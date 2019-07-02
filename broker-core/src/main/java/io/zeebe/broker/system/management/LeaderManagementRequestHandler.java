@@ -57,7 +57,8 @@ public class LeaderManagementRequestHandler extends Actor
 
   @Override
   protected void onActorStarting() {
-    pushDeploymentRequestHandler = new PushDeploymentRequestHandler(leaderForPartitions, actor);
+    pushDeploymentRequestHandler =
+        new PushDeploymentRequestHandler(leaderForPartitions, actor, atomix);
     atomix.getCommunicationService().subscribe("deployment", pushDeploymentRequestHandler);
   }
 
@@ -85,5 +86,9 @@ public class LeaderManagementRequestHandler extends Actor
 
   public Injector<Atomix> getAtomixInjector() {
     return atomixInjector;
+  }
+
+  public PushDeploymentRequestHandler getPushDeploymentRequestHandler() {
+    return pushDeploymentRequestHandler;
   }
 }

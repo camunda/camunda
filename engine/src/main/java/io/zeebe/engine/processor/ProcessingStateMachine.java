@@ -19,18 +19,19 @@ package io.zeebe.engine.processor;
 
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDbTransaction;
+import io.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.RejectionType;
-import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
-import io.zeebe.protocol.intent.ErrorIntent;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.ErrorIntent;
 import io.zeebe.util.exception.RecoverableException;
 import io.zeebe.util.retry.AbortableRetryStrategy;
 import io.zeebe.util.retry.RecoverableRetryStrategy;
@@ -92,13 +93,13 @@ public final class ProcessingStateMachine {
   private static final String ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED =
       "Expected to execute side effects for event '{}' successfully, but exception was thrown.";
   private static final String ERROR_MESSAGE_UPDATE_STATE_FAILED =
-      "Expected to successfully update state for event '{}' with processor '{}', but caught an exception. Retry.";
+      "Expected to successfully update state for event '{}', but caught an exception. Retry.";
   private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
-      "Expected to find event processor for event '{}' with processor '{}', but caught an exception. Skip this event.";
+      "Expected to find event processor for event '{}', but caught an exception. Skip this event.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT =
-      "Expected to successfully process event '{}' with processor '{}', but caught an exception. Skip this event.";
+      "Expected to successfully process event '{}' with processor, but caught an exception. Skip this event.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING =
-      "Expected to process event '{}' successfully on stream processor '{}', but caught recoverable exception. Retry processing.";
+      "Expected to process event '{}' successfully on stream processor, but caught recoverable exception. Retry processing.";
   private static final String PROCESSING_ERROR_MESSAGE =
       "Expected to process event '%s' without errors, but exception occurred with message '%s' .";
 
@@ -110,9 +111,6 @@ public final class ProcessingStateMachine {
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
 
   private final ActorControl actor;
-  private final int producerId;
-  private final String streamProcessorName;
-  private final StreamProcessorMetrics metrics;
   private final EventFilter eventFilter;
   private final LogStream logStream;
   private final LogStreamReader logStreamReader;
@@ -137,14 +135,11 @@ public final class ProcessingStateMachine {
   protected final TypedResponseWriterImpl responseWriter;
   private SideEffectProducer sideEffectProducer;
 
-  public ProcessingStateMachine(
-      ProcessingContext context,
-      StreamProcessorMetrics metrics,
-      BooleanSupplier shouldProcessNext) {
+  private final StreamProcessorMetrics metrics;
+
+  public ProcessingStateMachine(ProcessingContext context, BooleanSupplier shouldProcessNext) {
 
     this.actor = context.getActor();
-    this.producerId = context.getProducerId();
-    this.streamProcessorName = context.getStreamProcessorName();
     this.eventFilter = context.getEventFilter();
     this.recordProcessorMap = context.getRecordProcessorMap();
     this.eventCache = context.getEventCache();
@@ -155,7 +150,6 @@ public final class ProcessingStateMachine {
     this.dbContext = context.getDbContext();
     this.abortCondition = context.getAbortCondition();
 
-    this.metrics = metrics;
     this.writeRetryStrategy = new AbortableRetryStrategy(actor);
     this.sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);
     this.updateStateRetryStrategy = new RecoverableRetryStrategy(actor);
@@ -163,6 +157,8 @@ public final class ProcessingStateMachine {
 
     this.responseWriter =
         new TypedResponseWriterImpl(context.getCommandResponseWriter(), logStream.getPartitionId());
+
+    this.metrics = new StreamProcessorMetrics(logStream.getPartitionId());
   }
 
   // current iteration
@@ -179,7 +175,7 @@ public final class ProcessingStateMachine {
 
   private void skipRecord() {
     actor.submit(this::readNextEvent);
-    metrics.incrementEventsSkippedCount();
+    metrics.eventSkipped();
   }
 
   void readNextEvent() {
@@ -221,18 +217,15 @@ public final class ProcessingStateMachine {
 
       processInTransaction(typedEvent);
 
-      metrics.incrementEventsProcessedCount();
+      metrics.eventProcessed();
+
       writeEvent();
     } catch (final RecoverableException recoverableException) {
       // recoverable
-      LOG.error(
-          ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING,
-          event,
-          streamProcessorName,
-          recoverableException);
+      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING, event, recoverableException);
       actor.runDelayed(PROCESSING_RETRY_DELAY, () -> processEvent(currentEvent));
     } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, event, streamProcessorName, e);
+      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, event, e);
       onError(e, this::writeEvent);
     }
   }
@@ -245,7 +238,7 @@ public final class ProcessingStateMachine {
           recordProcessorMap.get(
               metadata.getRecordType(), metadata.getValueType(), metadata.getIntent().value());
     } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, event, streamProcessorName, e);
+      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, event, e);
     }
 
     return typedRecordProcessor;
@@ -277,7 +270,7 @@ public final class ProcessingStateMachine {
   private void resetOutput(long sourceRecordPosition) {
     responseWriter.reset();
     logStreamWriter.reset();
-    logStreamWriter.configureSourceContext(producerId, sourceRecordPosition);
+    logStreamWriter.configureSourceContext(sourceRecordPosition);
   }
 
   public void setSideEffectProducer(final SideEffectProducer sideEffectProducer) {
@@ -332,7 +325,7 @@ public final class ProcessingStateMachine {
         String.format(PROCESSING_ERROR_MESSAGE, typedEvent, exception.getMessage());
     LOG.error(errorMessage, exception);
 
-    if (typedEvent.getMetadata().getRecordType() == RecordType.COMMAND) {
+    if (typedEvent.getRecordType() == RecordType.COMMAND) {
       logStreamWriter.appendRejection(typedEvent, RejectionType.PROCESSING_ERROR, errorMessage);
       responseWriter.writeRejectionOnCommand(
           typedEvent, RejectionType.PROCESSING_ERROR, errorMessage);
@@ -355,8 +348,8 @@ public final class ProcessingStateMachine {
             LOG.error(ERROR_MESSAGE_WRITE_EVENT_ABORTED, currentEvent, t);
             onError(t, this::writeEvent);
           } else {
-            metrics.incrementEventsWrittenCount();
             updateState();
+            metrics.eventWritten();
           }
         });
   }
@@ -384,8 +377,7 @@ public final class ProcessingStateMachine {
         retryFuture,
         (bool, throwable) -> {
           if (throwable != null) {
-            LOG.error(
-                ERROR_MESSAGE_UPDATE_STATE_FAILED, currentEvent, streamProcessorName, throwable);
+            LOG.error(ERROR_MESSAGE_UPDATE_STATE_FAILED, currentEvent, throwable);
             onError(throwable, this::updateState);
           } else {
             executeSideEffects();

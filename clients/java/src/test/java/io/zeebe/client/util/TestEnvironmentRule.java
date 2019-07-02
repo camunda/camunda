@@ -15,12 +15,18 @@
  */
 package io.zeebe.client.util;
 
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+
 import io.grpc.ManagedChannel;
 import io.grpc.testing.GrpcServerRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
@@ -33,6 +39,7 @@ public class TestEnvironmentRule extends ExternalResource {
 
   private RecordingGatewayService gatewayService;
   private ZeebeClientImpl client;
+  private GatewayStub gatewayStub;
 
   public TestEnvironmentRule() {
     this(b -> {});
@@ -56,7 +63,8 @@ public class TestEnvironmentRule extends ExternalResource {
     final ManagedChannel channel = serverRule.getChannel();
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     clientConfigurator.accept(builder);
-    client = new ZeebeClientImpl(builder, channel);
+    gatewayStub = spy(ZeebeClientImpl.buildGatewayStub(channel));
+    client = new ZeebeClientImpl(builder, channel, gatewayStub);
   }
 
   @Override
@@ -73,5 +81,17 @@ public class TestEnvironmentRule extends ExternalResource {
 
   public RecordingGatewayService getGatewayService() {
     return gatewayService;
+  }
+
+  public GatewayStub getGatewayStub() {
+    return gatewayStub;
+  }
+
+  public void verifyDefaultRequestTimeout() {
+    verifyRequestTimeout(client.getConfiguration().getDefaultRequestTimeout());
+  }
+
+  public void verifyRequestTimeout(Duration requestTimeout) {
+    verify(gatewayStub).withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
   }
 }

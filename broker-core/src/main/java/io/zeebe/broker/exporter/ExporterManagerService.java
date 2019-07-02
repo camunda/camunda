@@ -109,7 +109,6 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
           .dependency(LogStreamServiceNames.logStreamServiceName(logName))
           .dependency(LogStreamServiceNames.logWriteBufferServiceName(logName))
           .dependency(LogStreamServiceNames.logStorageServiceName(logName))
-          .dependency(LogStreamServiceNames.logBlockIndexServiceName(logName))
           .dependency(partitionName)
           .install();
     }

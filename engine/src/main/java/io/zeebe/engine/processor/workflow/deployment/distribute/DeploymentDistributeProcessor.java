@@ -25,11 +25,11 @@ import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.deployment.DeploymentsState;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.function.Consumer;
@@ -43,8 +43,6 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
 
   private ActorControl actor;
   private final DeploymentDistributor deploymentDistributor;
-  private int streamProcessorId;
-  private int partitionId;
 
   public DeploymentDistributeProcessor(
       final DeploymentsState deploymentsState,
@@ -57,8 +55,6 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
 
   @Override
   public void onOpen(final ReadonlyProcessingContext processingContext) {
-    partitionId = processingContext.getLogStream().getPartitionId();
-    streamProcessorId = processingContext.getProducerId();
     actor = processingContext.getActor();
     actor.submit(this::reprocessPendingDeployments);
   }
@@ -109,7 +105,6 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
     deploymentRecord.wrap(buffer);
     final RecordMetadata recordMetadata = new RecordMetadata();
     recordMetadata
-        .partitionId(partitionId)
         .intent(DeploymentIntent.DISTRIBUTED)
         .valueType(ValueType.DEPLOYMENT)
         .recordType(RecordType.EVENT);
@@ -119,7 +114,6 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
           final long position =
               logStreamWriter
                   .key(deploymentKey)
-                  .producerId(streamProcessorId)
                   .sourceRecordPosition(sourcePosition)
                   .valueWriter(deploymentRecord)
                   .metadataWriter(recordMetadata)

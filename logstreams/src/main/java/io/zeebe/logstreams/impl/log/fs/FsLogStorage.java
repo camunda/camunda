@@ -27,8 +27,6 @@ import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.ReadResultProcessor;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.metrics.Metric;
-import io.zeebe.util.metrics.MetricsManager;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -45,8 +43,10 @@ public class FsLogStorage implements LogStorage {
   private static final int STATE_OPENED = 1;
   private static final int STATE_CLOSED = 2;
 
+  private static final String ERROR_MSG_APPEND_BLOCK_SIZE =
+      "Expected to append block with smaller block size then %d, but actual block size was %d.";
+
   protected final FsLogStorageConfiguration config;
-  private final MetricsManager metricsManager;
   private final ReadResultProcessor defaultReadResultProcessor = (buffer, readResult) -> readResult;
 
   /** Readable log segments */
@@ -58,18 +58,8 @@ public class FsLogStorage implements LogStorage {
 
   protected volatile int state = STATE_CREATED;
 
-  private Metric totalBytesMetric;
-  private Metric segmentCountMetric;
-
-  private final int partitionId;
-
-  public FsLogStorage(
-      final FsLogStorageConfiguration cfg,
-      final MetricsManager metricsManager,
-      final int partitionId) {
+  public FsLogStorage(final FsLogStorageConfiguration cfg) {
     this.config = cfg;
-    this.metricsManager = metricsManager;
-    this.partitionId = partitionId;
   }
 
   @Override
@@ -78,54 +68,47 @@ public class FsLogStorage implements LogStorage {
   }
 
   @Override
-  public long append(final ByteBuffer buffer) {
+  public long append(final ByteBuffer buffer) throws IOException {
     ensureOpenedStorage();
+    if (currentSegment == null) {
+      throw new IllegalStateException("Current segment is not initialized.");
+    }
 
     final int size = currentSegment.getSize();
     final int capacity = currentSegment.getCapacity();
     final int remainingCapacity = capacity - size;
     final int requiredCapacity = buffer.remaining();
 
-    if (requiredCapacity > config.getSegmentSize()) {
-      return OP_RESULT_BLOCK_SIZE_TOO_BIG;
+    final int segmentSize = config.getSegmentSize();
+    if (requiredCapacity > segmentSize) {
+      throw new IllegalArgumentException(
+          String.format(ERROR_MSG_APPEND_BLOCK_SIZE, segmentSize, requiredCapacity));
     }
 
     if (remainingCapacity < requiredCapacity) {
       onSegmentFilled();
     }
 
-    long opresult = -1;
-
-    if (currentSegment != null) {
-      final int appendResult = currentSegment.append(buffer);
-
-      if (appendResult >= 0) {
-        opresult = position(currentSegment.getSegmentId(), appendResult);
-        markSegmentAsDirty(currentSegment);
-        totalBytesMetric.getAndAddOrdered(requiredCapacity);
-      } else {
-        opresult = appendResult;
-      }
-    }
+    final int appendResult = currentSegment.append(buffer);
+    final long opresult = position(currentSegment.getSegmentId(), appendResult);
+    markSegmentAsDirty(currentSegment);
 
     return opresult;
   }
 
-  private void onSegmentFilled() {
+  private void onSegmentFilled() throws IOException {
     final FsLogSegment filledSegment = currentSegment;
 
     final int nextSegmentId = 1 + filledSegment.getSegmentId();
     final String nextSegmentName = config.fileName(nextSegmentId);
     final FsLogSegment newSegment = new FsLogSegment(nextSegmentName);
 
-    if (newSegment.allocate(nextSegmentId, config.getSegmentSize())) {
-      logSegments.addSegment(newSegment);
-      currentSegment = newSegment;
-      // Do this last so readers do not attempt to advance to next segment yet
-      // before it is visible
-      filledSegment.setFilled();
-      segmentCountMetric.setOrdered(logSegments.getSegmentCount());
-    }
+    newSegment.allocate(nextSegmentId, config.getSegmentSize());
+    logSegments.addSegment(newSegment);
+    currentSegment = newSegment;
+    // Do this last so readers do not attempt to advance to next segment yet
+    // before it is visible
+    filledSegment.setFilled();
   }
 
   @Override
@@ -197,19 +180,8 @@ public class FsLogStorage implements LogStorage {
   }
 
   @Override
-  public void open() {
+  public void open() throws IOException {
     ensureNotOpenedStorage();
-
-    totalBytesMetric =
-        metricsManager
-            .newMetric("storage_fs_total_bytes")
-            .label("partition", String.valueOf(partitionId))
-            .create();
-    segmentCountMetric =
-        metricsManager
-            .newMetric("storage_fs_segment_count")
-            .label("partition", String.valueOf(partitionId))
-            .create();
 
     final String path = config.getPath();
     final File logDir = new File(path);
@@ -222,7 +194,7 @@ public class FsLogStorage implements LogStorage {
     state = STATE_OPENED;
   }
 
-  private void initLogSegments(final File logDir) {
+  private void initLogSegments(final File logDir) throws IOException {
     final int initialSegmentId;
     final List<FsLogSegment> readableLogSegments = new ArrayList<>();
 
@@ -246,8 +218,6 @@ public class FsLogStorage implements LogStorage {
     for (int i = 0; i < readableLogSegments.size() - 1; i++) {
       final FsLogSegment segment = readableLogSegments.get(i);
       segment.setFilled();
-
-      totalBytesMetric.getAndAddOrdered(segment.getSize());
     }
 
     final int existingSegments = readableLogSegments.size();
@@ -261,23 +231,17 @@ public class FsLogStorage implements LogStorage {
       final int segmentSize = config.getSegmentSize();
 
       final FsLogSegment initialSegment = new FsLogSegment(initialSegmentName);
-
-      if (!initialSegment.allocate(initialSegmentId, segmentSize)) {
-        throw new RuntimeException("Cannot allocate initial segment");
-      }
+      initialSegment.allocate(initialSegmentId, segmentSize);
 
       currentSegment = initialSegment;
       readableLogSegments.add(initialSegment);
     }
-
-    totalBytesMetric.getAndAddOrdered(currentSegment.getSize());
 
     final FsLogSegment[] segmentsArray =
         readableLogSegments.toArray(new FsLogSegment[readableLogSegments.size()]);
 
     final FsLogSegments logSegments = new FsLogSegments();
     logSegments.init(initialSegmentId, segmentsArray);
-    segmentCountMetric.setOrdered(logSegments.getSegmentCount());
 
     this.logSegments = logSegments;
   }
@@ -299,9 +263,6 @@ public class FsLogStorage implements LogStorage {
 
   @Override
   public void close() {
-    segmentCountMetric.close();
-    totalBytesMetric.close();
-
     ensureOpenedStorage();
 
     logSegments.closeAll();

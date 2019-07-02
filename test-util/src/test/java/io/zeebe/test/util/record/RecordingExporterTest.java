@@ -18,14 +18,12 @@ package io.zeebe.test.util.record;
 import static io.zeebe.test.util.record.RecordingExporter.records;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.RecordMetadata;
-import io.zeebe.exporter.api.record.RecordValue;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.RejectionType;
-import io.zeebe.protocol.ValueType;
-import io.zeebe.protocol.intent.Intent;
-import java.time.Instant;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RecordValue;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.Intent;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Before;
@@ -75,58 +73,43 @@ public class RecordingExporterTest {
     }
 
     @Override
-    public int getProducerId() {
-      return 0;
-    }
-
-    @Override
     public long getKey() {
       return 0;
     }
 
     @Override
-    public Instant getTimestamp() {
+    public long getTimestamp() {
+      return -1;
+    }
+
+    @Override
+    public Intent getIntent() {
       return null;
     }
 
     @Override
-    public RecordMetadata getMetadata() {
-      return new RecordMetadata() {
-        @Override
-        public Intent getIntent() {
-          return null;
-        }
+    public int getPartitionId() {
+      return 0;
+    }
 
-        @Override
-        public int getPartitionId() {
-          return 0;
-        }
+    @Override
+    public RecordType getRecordType() {
+      return null;
+    }
 
-        @Override
-        public RecordType getRecordType() {
-          return null;
-        }
+    @Override
+    public RejectionType getRejectionType() {
+      return null;
+    }
 
-        @Override
-        public RejectionType getRejectionType() {
-          return null;
-        }
+    @Override
+    public String getRejectionReason() {
+      return null;
+    }
 
-        @Override
-        public String getRejectionReason() {
-          return null;
-        }
-
-        @Override
-        public ValueType getValueType() {
-          return VALUE_TYPE;
-        }
-
-        @Override
-        public String toJson() {
-          return null;
-        }
-      };
+    @Override
+    public ValueType getValueType() {
+      return VALUE_TYPE;
     }
 
     @Override

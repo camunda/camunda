@@ -35,10 +35,10 @@ import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
-import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.record.intent.TimerIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.HashMap;
 import java.util.List;
@@ -119,7 +119,7 @@ public class CatchEventBehavior {
         .setDueDate(timer.getDueDate(ActorClock.currentTimeMillis()))
         .setElementInstanceKey(elementInstanceKey)
         .setWorkflowInstanceKey(workflowInstanceKey)
-        .setHandlerNodeId(handlerNodeId)
+        .setTargetElementId(handlerNodeId)
         .setWorkflowKey(workflowKey);
     writer.appendNewCommand(TimerIntent.CREATE, timerRecord);
   }
@@ -139,7 +139,7 @@ public class CatchEventBehavior {
         .setWorkflowInstanceKey(timer.getWorkflowInstanceKey())
         .setDueDate(timer.getDueDate())
         .setRepetitions(timer.getRepetitions())
-        .setHandlerNodeId(timer.getHandlerNodeId())
+        .setTargetElementId(timer.getHandlerNodeId())
         .setWorkflowKey(timer.getWorkflowKey());
 
     writer.appendFollowUpCommand(timer.getKey(), TimerIntent.CANCEL, timerRecord);
@@ -163,7 +163,7 @@ public class CatchEventBehavior {
     subscription.setCommandSentTime(ActorClock.currentTimeMillis());
     subscription.setWorkflowInstanceKey(workflowInstanceKey);
     subscription.setCorrelationKey(correlationKey);
-    subscription.setHandlerNodeId(handler.getId());
+    subscription.setTargetElementId(handler.getId());
     subscription.setCloseOnCorrelate(closeOnCorrelate);
     state.getWorkflowInstanceSubscriptionState().put(subscription);
 

@@ -23,11 +23,10 @@ import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessor;
 import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
-import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import io.zeebe.protocol.impl.record.value.job.JobHeaders;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.zeebe.protocol.record.value.ErrorType;
 import org.agrona.DirectBuffer;
 
 public final class JobFailedProcessor implements TypedRecordProcessor<JobRecord> {
@@ -43,8 +42,6 @@ public final class JobFailedProcessor implements TypedRecordProcessor<JobRecord>
     final JobRecord value = event.getValue();
 
     if (value.getRetries() <= 0) {
-      final JobHeaders jobHeaders = value.getJobHeaders();
-
       final DirectBuffer jobErrorMessage = value.getErrorMessageBuffer();
       DirectBuffer incidentErrorMessage = DEFAULT_ERROR_MESSAGE;
       if (jobErrorMessage.capacity() > 0) {
@@ -55,13 +52,13 @@ public final class JobFailedProcessor implements TypedRecordProcessor<JobRecord>
       incidentEvent
           .setErrorType(ErrorType.JOB_NO_RETRIES)
           .setErrorMessage(incidentErrorMessage)
-          .setBpmnProcessId(jobHeaders.getBpmnProcessIdBuffer())
-          .setWorkflowKey(jobHeaders.getWorkflowKey())
-          .setWorkflowInstanceKey(jobHeaders.getWorkflowInstanceKey())
-          .setElementId(jobHeaders.getElementIdBuffer())
-          .setElementInstanceKey(jobHeaders.getElementInstanceKey())
+          .setBpmnProcessId(value.getBpmnProcessIdBuffer())
+          .setWorkflowKey(value.getWorkflowKey())
+          .setWorkflowInstanceKey(value.getWorkflowInstanceKey())
+          .setElementId(value.getElementIdBuffer())
+          .setElementInstanceKey(value.getElementInstanceKey())
           .setJobKey(event.getKey())
-          .setVariableScopeKey(jobHeaders.getElementInstanceKey());
+          .setVariableScopeKey(value.getElementInstanceKey());
 
       streamWriter.appendNewCommand(IncidentIntent.CREATE, incidentEvent);
     }

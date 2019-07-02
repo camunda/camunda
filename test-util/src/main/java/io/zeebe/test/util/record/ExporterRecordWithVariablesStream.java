@@ -15,8 +15,8 @@
  */
 package io.zeebe.test.util.record;
 
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.RecordValueWithVariables;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordValueWithVariables;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -28,19 +28,15 @@ public abstract class ExporterRecordWithVariablesStream<
     super(wrappedStream);
   }
 
-  public S withVariables(final String variables) {
+  public S withVariables(final Map<String, Object> variables) {
     return valueFilter(v -> variables.equals(v.getVariables()));
   }
 
-  public S withVariables(final Map<String, Object> variables) {
-    return valueFilter(v -> variables.equals(v.getVariablesAsMap()));
-  }
-
   public S withVariablesContaining(final String key) {
-    return valueFilter(v -> v.getVariablesAsMap().containsKey(key));
+    return valueFilter(v -> v.getVariables().containsKey(key));
   }
 
   public S withVariablesContaining(final String key, final Object value) {
-    return valueFilter(v -> value.equals(v.getVariablesAsMap().get(key)));
+    return valueFilter(v -> value.equals(v.getVariables().get(key)));
   }
 }

@@ -26,9 +26,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.zeebe.exporter.api.context.Context;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.ValueType;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.ValueType;
 import io.zeebe.test.exporter.ExporterTestHarness;
 import io.zeebe.util.ZbLogger;
 import java.time.Duration;
@@ -74,7 +74,6 @@ public class ElasticsearchExporterTest {
     config.index.jobBatch = true;
     config.index.message = true;
     config.index.messageSubscription = true;
-    config.index.raft = true;
     config.index.variable = true;
     config.index.variableDocument = true;
     config.index.workflowInstance = true;
@@ -111,7 +110,6 @@ public class ElasticsearchExporterTest {
     config.index.jobBatch = true;
     config.index.message = true;
     config.index.messageSubscription = true;
-    config.index.raft = true;
     config.index.variable = true;
     config.index.variableDocument = true;
     config.index.workflowInstance = true;
@@ -151,7 +149,6 @@ public class ElasticsearchExporterTest {
     config.index.jobBatch = false;
     config.index.message = false;
     config.index.messageSubscription = false;
-    config.index.raft = false;
     config.index.variable = false;
     config.index.variableDocument = false;
     config.index.workflowInstance = false;

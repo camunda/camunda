@@ -22,17 +22,18 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.exporter.api.record.Assertions;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.VariableRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.intent.VariableIntent;
-import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.protocol.record.Assertions;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.VariableIntent;
+import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class WorkflowInstanceVariableTest {
@@ -47,12 +48,24 @@ public class WorkflowInstanceVariableTest {
           .done();
 
   @ClassRule public static final EngineRule ENGINE_RULE = new EngineRule();
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
+
   private static long workflowKey;
 
   @BeforeClass
   public static void init() {
     workflowKey =
-        ENGINE_RULE.deploy(WORKFLOW).getValue().getDeployedWorkflows().get(0).getWorkflowKey();
+        ENGINE_RULE
+            .deployment()
+            .withXmlResource(WORKFLOW)
+            .deploy()
+            .getValue()
+            .getDeployedWorkflows()
+            .get(0)
+            .getWorkflowKey();
   }
 
   @Test
@@ -62,10 +75,10 @@ public class WorkflowInstanceVariableTest {
     // when
     final long workflowInstanceKey =
         ENGINE_RULE
-            .createWorkflowInstance(
-                r -> r.setBpmnProcessId(PROCESS_ID).setVariables(MsgPackUtil.asMsgPack("{'x':1}")))
-            .getValue()
-            .getInstanceKey();
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{'x':1}")
+            .create();
 
     // then
     final Record<VariableRecordValue> variableRecord =
@@ -83,10 +96,7 @@ public class WorkflowInstanceVariableTest {
   public void shouldCreateVariableByJobCompletion() {
     // given
     final long workflowInstanceKey =
-        ENGINE_RULE
-            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID))
-            .getValue()
-            .getInstanceKey();
+        ENGINE_RULE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     ENGINE_RULE
@@ -113,19 +123,24 @@ public class WorkflowInstanceVariableTest {
     // given
     final long workflowKey =
         ENGINE_RULE
-            .deploy(
+            .deployment()
+            .withXmlResource(
                 Bpmn.createExecutableProcess("shouldCreateVariableByOutputMapping")
                     .startEvent()
                     .serviceTask("task", t -> t.zeebeTaskType("test").zeebeOutput("x", "y"))
                     .endEvent()
                     .done())
+            .deploy()
             .getValue()
             .getDeployedWorkflows()
             .get(0)
             .getWorkflowKey();
 
     final long workflowInstanceKey =
-        ENGINE_RULE.createWorkflowInstance(r -> r.setKey(workflowKey)).getValue().getInstanceKey();
+        ENGINE_RULE
+            .workflowInstance()
+            .ofBpmnProcessId("shouldCreateVariableByOutputMapping")
+            .create();
 
     // when
     ENGINE_RULE
@@ -152,13 +167,14 @@ public class WorkflowInstanceVariableTest {
   public void shouldCreateVariableByUpdateVariables() {
     // given
     final long workflowInstanceKey =
-        ENGINE_RULE
-            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID))
-            .getValue()
-            .getInstanceKey();
+        ENGINE_RULE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    ENGINE_RULE.variables(workflowInstanceKey).withDocument(Maps.of(entry("x", 1))).update();
+    ENGINE_RULE
+        .variables()
+        .ofScope(workflowInstanceKey)
+        .withDocument(Maps.of(entry("x", 1)))
+        .update();
 
     // then
     final Record<VariableRecordValue> variableRecord =
@@ -179,12 +195,10 @@ public class WorkflowInstanceVariableTest {
     // when
     final long workflowInstanceKey =
         ENGINE_RULE
-            .createWorkflowInstance(
-                r ->
-                    r.setBpmnProcessId(PROCESS_ID)
-                        .setVariables(MsgPackUtil.asMsgPack("{'x':1, 'y':2}")))
-            .getValue()
-            .getInstanceKey();
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{'x':1, 'y':2}")
+            .create();
 
     // then
     assertThat(
@@ -202,10 +216,10 @@ public class WorkflowInstanceVariableTest {
     // given
     final long workflowInstanceKey =
         ENGINE_RULE
-            .createWorkflowInstance(
-                r -> r.setBpmnProcessId(PROCESS_ID).setVariables(MsgPackUtil.asMsgPack("{'x':1}")))
-            .getValue()
-            .getInstanceKey();
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{'x':1}")
+            .create();
 
     // when
     ENGINE_RULE
@@ -232,12 +246,14 @@ public class WorkflowInstanceVariableTest {
     // given
     final long workflowKey =
         ENGINE_RULE
-            .deploy(
+            .deployment()
+            .withXmlResource(
                 Bpmn.createExecutableProcess("shouldUpdateVariableByOutputMapping")
                     .startEvent()
                     .serviceTask("task", t -> t.zeebeTaskType("test").zeebeOutput("x", "y"))
                     .endEvent()
                     .done())
+            .deploy()
             .getValue()
             .getDeployedWorkflows()
             .get(0)
@@ -245,10 +261,10 @@ public class WorkflowInstanceVariableTest {
 
     final long workflowInstanceKey =
         ENGINE_RULE
-            .createWorkflowInstance(
-                r -> r.setKey(workflowKey).setVariables(MsgPackUtil.asMsgPack("{'y':1}")))
-            .getValue()
-            .getInstanceKey();
+            .workflowInstance()
+            .ofBpmnProcessId("shouldUpdateVariableByOutputMapping")
+            .withVariables("{'y':1}")
+            .create();
 
     // when
     ENGINE_RULE
@@ -275,13 +291,17 @@ public class WorkflowInstanceVariableTest {
     // given
     final long workflowInstanceKey =
         ENGINE_RULE
-            .createWorkflowInstance(
-                r -> r.setBpmnProcessId(PROCESS_ID).setVariables(MsgPackUtil.asMsgPack("{'x':1}")))
-            .getValue()
-            .getInstanceKey();
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{'x':1}")
+            .create();
 
     // when
-    ENGINE_RULE.variables(workflowInstanceKey).withDocument(Maps.of(entry("x", 2))).update();
+    ENGINE_RULE
+        .variables()
+        .ofScope(workflowInstanceKey)
+        .withDocument(Maps.of(entry("x", 2)))
+        .update();
 
     // then
     final Record<VariableRecordValue> variableRecord =
@@ -300,12 +320,10 @@ public class WorkflowInstanceVariableTest {
     // given
     final long workflowInstanceKey =
         ENGINE_RULE
-            .createWorkflowInstance(
-                r ->
-                    r.setBpmnProcessId(PROCESS_ID)
-                        .setVariables(MsgPackUtil.asMsgPack("{'x':1, 'y':2, 'z':3}")))
-            .getValue()
-            .getInstanceKey();
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{'x':1, 'y':2, 'z':3}")
+            .create();
 
     // when
     ENGINE_RULE
@@ -331,10 +349,10 @@ public class WorkflowInstanceVariableTest {
     // given
     final long workflowInstanceKey =
         ENGINE_RULE
-            .createWorkflowInstance(
-                r -> r.setBpmnProcessId(PROCESS_ID).setVariables(MsgPackUtil.asMsgPack("{'x':1}")))
-            .getValue()
-            .getInstanceKey();
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{'x':1}")
+            .create();
 
     final Record<VariableRecordValue> variableCreated =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
@@ -343,7 +361,8 @@ public class WorkflowInstanceVariableTest {
 
     // when
     ENGINE_RULE
-        .variables(workflowInstanceKey)
+        .variables()
+        .ofScope(workflowInstanceKey)
         .withDocument(Maps.of(entry("x", 2), entry("y", 3)))
         .update();
 
@@ -355,7 +374,7 @@ public class WorkflowInstanceVariableTest {
         .extracting(
             record ->
                 tuple(
-                    record.getMetadata().getIntent(),
+                    record.getIntent(),
                     record.getValue().getWorkflowKey(),
                     record.getValue().getName(),
                     record.getValue().getValue()))
@@ -370,10 +389,10 @@ public class WorkflowInstanceVariableTest {
     // given
     final long workflowInstanceKey =
         ENGINE_RULE
-            .createWorkflowInstance(
-                r -> r.setBpmnProcessId(PROCESS_ID).setVariables(MsgPackUtil.asMsgPack("{'x':1}")))
-            .getValue()
-            .getInstanceKey();
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{'x':1}")
+            .create();
 
     final Record<VariableRecordValue> variableCreated =
         RecordingExporter.variableRecords(VariableIntent.CREATED)
@@ -381,7 +400,11 @@ public class WorkflowInstanceVariableTest {
             .getFirst();
 
     // when
-    ENGINE_RULE.variables(workflowInstanceKey).withDocument(Maps.of(entry("x", 2))).update();
+    ENGINE_RULE
+        .variables()
+        .ofScope(workflowInstanceKey)
+        .withDocument(Maps.of(entry("x", 2)))
+        .update();
 
     // then
     final Record<VariableRecordValue> variableUpdated =

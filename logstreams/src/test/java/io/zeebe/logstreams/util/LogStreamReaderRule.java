@@ -90,10 +90,6 @@ public class LogStreamReaderRule extends ExternalResource {
     return readEvents(-1, -1);
   }
 
-  public List<LoggedEvent> readEvents(long from) {
-    return readEvents(from, -1);
-  }
-
   public List<LoggedEvent> readEvents(long from, long to) {
     final List<LoggedEvent> events = new ArrayList<>();
 

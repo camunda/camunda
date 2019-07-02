@@ -17,8 +17,8 @@
  */
 package io.zeebe.engine.processor;
 
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,9 +32,9 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import io.zeebe.engine.util.StreamProcessorRule;
-import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -156,53 +156,6 @@ public class StreamProcessorReprocessingTest {
     final long position = streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
     final long secondPosition =
         streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED, 1);
-    waitUntil(
-        () ->
-            streamProcessorRule
-                .events()
-                .onlyWorkflowInstanceRecords()
-                .withIntent(ELEMENT_ACTIVATED)
-                .exists());
-
-    // when
-    final TypedRecordProcessor typedRecordProcessor = mock(TypedRecordProcessor.class);
-    final StreamProcessor streamProcessor =
-        streamProcessorRule.startTypedStreamProcessor(
-            (processors, state) ->
-                processors
-                    .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
-                    .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
-
-    verify(typedRecordProcessor, TIMEOUT.times(1))
-        .processRecord(eq(secondPosition), any(), any(), any(), any());
-    streamProcessor.closeAsync().join();
-
-    // then
-    final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(2)).onOpen(any());
-    // no reprocessing
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(2)).onRecovered(any());
-    // normal processing
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(1))
-        .processRecord(eq(position), any(), any(), any(), any());
-    inOrder
-        .verify(typedRecordProcessor, TIMEOUT.times(1))
-        .processRecord(eq(secondPosition), any(), any(), any(), any());
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(2)).onClose();
-
-    inOrder.verifyNoMoreInteractions();
-  }
-
-  @Test
-  public void shouldNotReprocessIfNotSameProducer() {
-    // given
-    final long position =
-        streamProcessorRule.writeWorkflowInstanceEventWithDifferentProducerId(
-            ELEMENT_ACTIVATING, 1, 255);
-    final long secondPosition =
-        streamProcessorRule.writeWorkflowInstanceEventWithDifferentProducerIdAndSource(
-            WorkflowInstanceIntent.ELEMENT_ACTIVATED, 1, 255, position);
     waitUntil(
         () ->
             streamProcessorRule

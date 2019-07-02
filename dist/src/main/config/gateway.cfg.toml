@@ -36,7 +36,7 @@
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_HOST.
 # host = "0.0.0.0"
 #
-# Sets the port the embedded gateway binds to
+# Sets the port the gateway binds to
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_PORT.
 # port = 26500
 
@@ -73,3 +73,13 @@
 # Sets the number of threads the gateway will use to communicate with the broker cluster
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_MANAGEMENT_THREADS.
 # managementThreads = 1
+
+[monitoring]
+# Enables the metrics collection and exporting it over HTTP
+# enabled = false
+#
+# Sets the host the monitoring binds to
+# host = "0.0.0.0"
+#
+# Sets the port the monitoring binds to
+# port = 9600

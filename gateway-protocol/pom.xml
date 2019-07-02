@@ -8,7 +8,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.19.0-SNAPSHOT</version>
+    <version>0.20.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -54,6 +54,10 @@
       <plugin>
         <groupId>org.xolstice.maven.plugins</groupId>
         <artifactId>protobuf-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>com.salesforce.servicelibs</groupId>
+        <artifactId>proto-backwards-compatibility</artifactId>
       </plugin>
     </plugins>
 

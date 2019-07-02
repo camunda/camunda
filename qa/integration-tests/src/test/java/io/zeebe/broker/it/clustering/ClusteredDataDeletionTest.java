@@ -79,7 +79,6 @@ public class ClusteredDataDeletionTest {
     data.setMaxSnapshots(MAX_SNAPSHOTS);
     data.setSnapshotPeriod(SNAPSHOT_PERIOD_SECONDS + "s");
     data.setLogSegmentSize("8k");
-    data.setIndexBlockSize("2K");
 
     brokerCfg.setExporters(Collections.EMPTY_LIST);
   }
@@ -160,7 +159,7 @@ public class ClusteredDataDeletionTest {
 
   private File getSnapshotsDirectory(Broker broker) {
     final String dataDir = broker.getConfig().getData().getDirectories().get(0);
-    return new File(dataDir, "partition-1/state/1_zb-stream-processor/snapshots");
+    return new File(dataDir, "partition-1/state/snapshots");
   }
 
   private File getSegmentsDirectory(Broker broker) {

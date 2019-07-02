@@ -28,8 +28,8 @@ import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.Workflow;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
-import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
+import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import java.util.List;
 
 public class DeploymentCreatedProcessor implements TypedRecordProcessor<DeploymentRecord> {

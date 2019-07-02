@@ -29,8 +29,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class ActivateJobsStub
     implements RequestStub<BrokerActivateJobsRequest, BrokerResponse<JobBatchRecord>> {
 
-  private static final MsgPackConverter MSG_PACK_CONVERTER = new MsgPackConverter();
-
   public static final long JOB_BATCH_KEY = 123;
   public static final int RETRIES = 12;
   public static final long DEADLINE = 123123123L;
@@ -46,9 +44,9 @@ public class ActivateJobsStub
   public static final String VARIABLES = "{\"foo\": 13, \"bar\": \"world\"}";
 
   public static final DirectBuffer CUSTOM_HEADERS_MSGPACK =
-      new UnsafeBuffer(MSG_PACK_CONVERTER.convertToMsgPack(CUSTOM_HEADERS));
+      new UnsafeBuffer(MsgPackConverter.convertToMsgPack(CUSTOM_HEADERS));
   public static final DirectBuffer VARIABLES_MSGPACK =
-      new UnsafeBuffer(MSG_PACK_CONVERTER.convertToMsgPack(VARIABLES));
+      new UnsafeBuffer(MsgPackConverter.convertToMsgPack(VARIABLES));
 
   public long getJobBatchKey() {
     return JOB_BATCH_KEY;
@@ -102,15 +100,15 @@ public class ActivateJobsStub
 
     final JobBatchRecord response = new JobBatchRecord();
     response.setMaxJobsToActivate(requestDto.getMaxJobsToActivate());
-    response.setWorker(requestDto.getWorker());
-    response.setType(requestDto.getType());
+    response.setWorker(requestDto.getWorkerBuffer());
+    response.setType(requestDto.getTypeBuffer());
     response.setTimeout(requestDto.getTimeout());
     addJobs(
         response,
         partitionId,
         requestDto.getMaxJobsToActivate(),
-        requestDto.getType(),
-        requestDto.getWorker());
+        requestDto.getTypeBuffer(),
+        requestDto.getWorkerBuffer());
 
     return new BrokerResponse<>(
         response, partitionId, Protocol.encodePartitionId(partitionId, JOB_BATCH_KEY));
@@ -135,7 +133,6 @@ public class ActivateJobsStub
                   .setDeadline(DEADLINE)
                   .setCustomHeaders(CUSTOM_HEADERS_MSGPACK)
                   .setVariables(VARIABLES_MSGPACK)
-                  .getJobHeaders()
                   .setWorkflowInstanceKey(WORKFLOW_INSTANCE_KEY)
                   .setBpmnProcessId(BPMN_PROCESS_ID)
                   .setWorkflowDefinitionVersion(WORKFLOW_DEFINITION_VERSION)

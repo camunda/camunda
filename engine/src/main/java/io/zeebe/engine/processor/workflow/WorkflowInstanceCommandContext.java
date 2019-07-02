@@ -21,9 +21,9 @@ import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.protocol.RejectionType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public class WorkflowInstanceCommandContext {
 
@@ -38,7 +38,7 @@ public class WorkflowInstanceCommandContext {
   }
 
   public WorkflowInstanceIntent getCommand() {
-    return (WorkflowInstanceIntent) record.getMetadata().getIntent();
+    return (WorkflowInstanceIntent) record.getIntent();
   }
 
   public TypedRecord<WorkflowInstanceRecord> getRecord() {

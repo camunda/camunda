@@ -15,12 +15,13 @@
  */
 package io.zeebe.protocol.impl.record.value.message;
 
-import io.zeebe.exporter.api.record.value.MessageRecordValue;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.value.MessageRecordValue;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -42,68 +43,18 @@ public class MessageRecord extends UnifiedRecordValue implements MessageRecordVa
         .declareProperty(messageIdProp);
   }
 
-  public DirectBuffer getNameBuffer() {
-    return nameProp.getValue();
-  }
-
-  public MessageRecord setName(String name) {
-    nameProp.setValue(name);
-    return this;
-  }
-
-  public MessageRecord setName(DirectBuffer name) {
-    nameProp.setValue(name);
-    return this;
-  }
-
-  public DirectBuffer getCorrelationKeyBuffer() {
-    return correlationKeyProp.getValue();
-  }
-
-  public MessageRecord setCorrelationKey(String correlationKey) {
-    correlationKeyProp.setValue(correlationKey);
-    return this;
-  }
-
-  public MessageRecord setCorrelationKey(DirectBuffer correlationKey) {
-    correlationKeyProp.setValue(correlationKey);
-    return this;
-  }
-
-  public DirectBuffer getVariablesBuffer() {
-    return variablesProp.getValue();
-  }
-
-  public MessageRecord setVariables(DirectBuffer variables) {
-    variablesProp.setValue(variables);
-    return this;
-  }
-
   public boolean hasMessageId() {
     return messageIdProp.getValue().capacity() > 0;
   }
 
+  @JsonIgnore
+  public DirectBuffer getCorrelationKeyBuffer() {
+    return correlationKeyProp.getValue();
+  }
+
+  @JsonIgnore
   public DirectBuffer getMessageIdBuffer() {
     return messageIdProp.getValue();
-  }
-
-  public MessageRecord setMessageId(String messageId) {
-    messageIdProp.setValue(messageId);
-    return this;
-  }
-
-  public MessageRecord setMessageId(DirectBuffer messageId) {
-    messageIdProp.setValue(messageId);
-    return this;
-  }
-
-  public long getTimeToLive() {
-    return timeToLiveProp.getValue();
-  }
-
-  public MessageRecord setTimeToLive(long timeToLive) {
-    timeToLiveProp.setValue(timeToLive);
-    return this;
   }
 
   @Override
@@ -121,13 +72,62 @@ public class MessageRecord extends UnifiedRecordValue implements MessageRecordVa
     return BufferUtil.bufferAsString(messageIdProp.getValue());
   }
 
-  @Override
-  public String getVariables() {
-    return MsgPackConverter.convertToJson(variablesProp.getValue());
+  public long getTimeToLive() {
+    return timeToLiveProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getNameBuffer() {
+    return nameProp.getValue();
   }
 
   @Override
-  public Map<String, Object> getVariablesAsMap() {
-    throw new UnsupportedOperationException("not yet implemented");
+  public Map<String, Object> getVariables() {
+    return MsgPackConverter.convertToMap(variablesProp.getValue());
+  }
+
+  @JsonIgnore
+  public DirectBuffer getVariablesBuffer() {
+    return variablesProp.getValue();
+  }
+
+  public MessageRecord setCorrelationKey(String correlationKey) {
+    correlationKeyProp.setValue(correlationKey);
+    return this;
+  }
+
+  public MessageRecord setCorrelationKey(DirectBuffer correlationKey) {
+    correlationKeyProp.setValue(correlationKey);
+    return this;
+  }
+
+  public MessageRecord setMessageId(String messageId) {
+    messageIdProp.setValue(messageId);
+    return this;
+  }
+
+  public MessageRecord setMessageId(DirectBuffer messageId) {
+    messageIdProp.setValue(messageId);
+    return this;
+  }
+
+  public MessageRecord setName(String name) {
+    nameProp.setValue(name);
+    return this;
+  }
+
+  public MessageRecord setName(DirectBuffer name) {
+    nameProp.setValue(name);
+    return this;
+  }
+
+  public MessageRecord setTimeToLive(long timeToLive) {
+    timeToLiveProp.setValue(timeToLive);
+    return this;
+  }
+
+  public MessageRecord setVariables(DirectBuffer variables) {
+    variablesProp.setValue(variables);
+    return this;
   }
 }

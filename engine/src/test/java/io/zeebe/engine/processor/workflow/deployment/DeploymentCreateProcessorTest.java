@@ -20,16 +20,16 @@ package io.zeebe.engine.processor.workflow.deployment;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.util.StreamProcessorRule;
-import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.RecordType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
+import io.zeebe.protocol.record.value.deployment.ResourceType;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
@@ -51,7 +51,10 @@ public class DeploymentCreateProcessorTest {
         (typedRecordProcessors, zeebeState) -> {
           workflowState = zeebeState.getWorkflowState();
           DeploymentEventProcessors.addDeploymentCreateProcessor(
-              typedRecordProcessors, workflowState);
+              typedRecordProcessors,
+              workflowState,
+              (key, partition) -> {},
+              Protocol.DEPLOYMENT_PARTITION + 1);
           return typedRecordProcessors;
         });
   }
@@ -69,11 +72,11 @@ public class DeploymentCreateProcessorTest {
     // then
     waitUntil(() -> rule.events().onlyDeploymentRecords().count() >= 4);
 
-    final List<TypedRecord<DeploymentRecord>> collect =
+    final List<Record<DeploymentRecord>> collect =
         rule.events().onlyDeploymentRecords().collect(Collectors.toList());
     //
     Assertions.assertThat(collect)
-        .extracting(r -> r.getMetadata().getIntent())
+        .extracting(Record::getIntent)
         .containsExactly(
             DeploymentIntent.CREATE,
             DeploymentIntent.CREATED,
@@ -81,7 +84,7 @@ public class DeploymentCreateProcessorTest {
             DeploymentIntent.CREATE);
     //
     Assertions.assertThat(collect)
-        .extracting(r -> r.getMetadata().getRecordType())
+        .extracting(Record::getRecordType)
         .containsExactly(
             RecordType.COMMAND, RecordType.EVENT, RecordType.COMMAND, RecordType.COMMAND_REJECTION);
   }
@@ -99,11 +102,11 @@ public class DeploymentCreateProcessorTest {
     // then
     waitUntil(() -> rule.events().onlyDeploymentRecords().count() >= 4);
 
-    final List<TypedRecord<DeploymentRecord>> collect =
+    final List<Record<DeploymentRecord>> collect =
         rule.events().onlyDeploymentRecords().collect(Collectors.toList());
 
     Assertions.assertThat(collect)
-        .extracting(r -> r.getMetadata().getIntent())
+        .extracting(Record::getIntent)
         .containsExactly(
             DeploymentIntent.CREATE,
             DeploymentIntent.CREATED,
@@ -111,7 +114,7 @@ public class DeploymentCreateProcessorTest {
             DeploymentIntent.CREATED);
 
     Assertions.assertThat(collect)
-        .extracting(r -> r.getMetadata().getRecordType())
+        .extracting(Record::getRecordType)
         .containsExactly(
             RecordType.COMMAND, RecordType.EVENT, RecordType.COMMAND, RecordType.EVENT);
   }
@@ -130,11 +133,7 @@ public class DeploymentCreateProcessorTest {
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("processId")
             .startEvent()
-            .serviceTask(
-                "test",
-                task -> {
-                  task.zeebeTaskType("type");
-                })
+            .serviceTask("test", task -> task.zeebeTaskType("type"))
             .endEvent()
             .done();
 

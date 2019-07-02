@@ -15,11 +15,11 @@
  */
 package io.zeebe.protocol.impl.encoding;
 
-import io.zeebe.protocol.ErrorCode;
-import io.zeebe.protocol.ErrorResponseDecoder;
-import io.zeebe.protocol.ErrorResponseEncoder;
-import io.zeebe.protocol.MessageHeaderDecoder;
-import io.zeebe.protocol.MessageHeaderEncoder;
+import io.zeebe.protocol.record.ErrorCode;
+import io.zeebe.protocol.record.ErrorResponseDecoder;
+import io.zeebe.protocol.record.ErrorResponseEncoder;
+import io.zeebe.protocol.record.MessageHeaderDecoder;
+import io.zeebe.protocol.record.MessageHeaderEncoder;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
@@ -64,6 +64,17 @@ public class ErrorResponse implements BufferWriter, BufferReader {
   public ErrorResponse setErrorData(DirectBuffer errorData) {
     this.errorData.wrap(errorData, 0, errorData.capacity());
     return this;
+  }
+
+  public boolean tryWrap(DirectBuffer buffer) {
+    return tryWrap(buffer, 0, buffer.capacity());
+  }
+
+  public boolean tryWrap(DirectBuffer buffer, int offset, int length) {
+    headerDecoder.wrap(buffer, offset);
+
+    return headerDecoder.schemaId() == bodyDecoder.sbeSchemaId()
+        && headerDecoder.templateId() == bodyDecoder.sbeTemplateId();
   }
 
   @Override
@@ -121,5 +132,12 @@ public class ErrorResponse implements BufferWriter, BufferReader {
         .wrap(buffer, offset)
         .errorCode(errorCode)
         .putErrorData(errorData, 0, errorData.capacity());
+  }
+
+  public byte[] toBytes() {
+    final byte[] bytes = new byte[getLength()];
+    final MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+    write(buffer, 0);
+    return bytes;
   }
 }

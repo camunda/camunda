@@ -21,13 +21,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.MessageStartEventSubscriptionRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
-import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -47,7 +47,7 @@ public class MessageStartEventSubscriptionTest {
   public void shouldOpenMessageSubscriptionOnDeployment() {
 
     // when
-    engine.deploy(createWorkflowWithOneMessageStartEvent());
+    engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
 
     final Record<MessageStartEventSubscriptionRecordValue> subscription =
         RecordingExporter.messageStartEventSubscriptionRecords(
@@ -63,7 +63,7 @@ public class MessageStartEventSubscriptionTest {
   public void shouldOpenSubscriptionsForAllMessageStartEvents() {
 
     // when
-    engine.deploy(createWorkflowWithTwoMessageStartEvent());
+    engine.deployment().withXmlResource(createWorkflowWithTwoMessageStartEvent()).deploy();
 
     final List<Record<MessageStartEventSubscriptionRecordValue>> subscriptions =
         RecordingExporter.messageStartEventSubscriptionRecords(
@@ -85,17 +85,17 @@ public class MessageStartEventSubscriptionTest {
   @Test
   public void shouldCloseSubscriptionForOldVersions() {
     // given
-    engine.deploy(createWorkflowWithOneMessageStartEvent());
+    engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
 
     // when
-    engine.deploy(createWorkflowWithOneMessageStartEvent());
+    engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
     // then
 
     final List<Record<MessageStartEventSubscriptionRecordValue>> subscriptions =
         RecordingExporter.messageStartEventSubscriptionRecords().limit(6).asList();
 
     final List<Intent> intents =
-        subscriptions.stream().map(s -> s.getMetadata().getIntent()).collect(Collectors.toList());
+        subscriptions.stream().map(Record::getIntent).collect(Collectors.toList());
 
     assertThat(intents)
         .containsExactly(
@@ -111,14 +111,11 @@ public class MessageStartEventSubscriptionTest {
   }
 
   private static BpmnModelInstance createWorkflowWithOneMessageStartEvent() {
-    final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess("processId")
-            .startEvent(EVENT_ID1)
-            .message(m -> m.name(MESSAGE_NAME1).id("startmsgId"))
-            .endEvent()
-            .done();
-
-    return modelInstance;
+    return Bpmn.createExecutableProcess("processId")
+        .startEvent(EVENT_ID1)
+        .message(m -> m.name(MESSAGE_NAME1).id("startmsgId"))
+        .endEvent()
+        .done();
   }
 
   private static BpmnModelInstance createWorkflowWithTwoMessageStartEvent() {
@@ -126,7 +123,6 @@ public class MessageStartEventSubscriptionTest {
     process.startEvent(EVENT_ID1).message(m -> m.name(MESSAGE_NAME1).id("startmsgId1")).endEvent();
     process.startEvent(EVENT_ID2).message(m -> m.name(MESSAGE_NAME2).id("startmsgId2")).endEvent();
 
-    final BpmnModelInstance modelInstance = process.done();
-    return modelInstance;
+    return process.done();
   }
 }

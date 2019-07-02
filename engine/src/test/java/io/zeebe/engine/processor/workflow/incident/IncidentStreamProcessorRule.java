@@ -26,7 +26,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.workflow.BpmnStepProcessor;
 import io.zeebe.engine.processor.workflow.CatchEventBehavior;
 import io.zeebe.engine.processor.workflow.WorkflowEventProcessors;
@@ -36,16 +35,17 @@ import io.zeebe.engine.processor.workflow.timer.DueDateTimerChecker;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.util.StreamProcessorRule;
-import io.zeebe.exporter.api.record.value.deployment.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayOutputStream;
 import org.agrona.DirectBuffer;
@@ -134,16 +134,16 @@ public class IncidentStreamProcessorRule extends ExternalResource {
     workflowState.putDeployment(1, record);
   }
 
-  public TypedRecord<WorkflowInstanceRecord> createWorkflowInstance(final String processId) {
+  public Record<WorkflowInstanceRecord> createWorkflowInstance(final String processId) {
     return createWorkflowInstance(processId, wrapString(""));
   }
 
-  public TypedRecord<WorkflowInstanceRecord> createWorkflowInstance(
+  public Record<WorkflowInstanceRecord> createWorkflowInstance(
       final String processId, final DirectBuffer variables) {
     environmentRule.writeCommand(
         WorkflowInstanceCreationIntent.CREATE,
         workflowInstanceCreationRecord(BufferUtil.wrapString(processId), variables));
-    final TypedRecord<WorkflowInstanceRecord> createdEvent =
+    final Record<WorkflowInstanceRecord> createdEvent =
         awaitAndGetFirstRecordInState(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     return createdEvent;
   }
@@ -152,7 +152,7 @@ public class IncidentStreamProcessorRule extends ExternalResource {
       final DirectBuffer processId, final DirectBuffer variables) {
     final WorkflowInstanceCreationRecord record = new WorkflowInstanceCreationRecord();
 
-    record.setKey(1);
+    record.setWorkflowKey(1);
     record.setBpmnProcessId(processId);
     record.setVariables(variables);
 
@@ -163,7 +163,7 @@ public class IncidentStreamProcessorRule extends ExternalResource {
     waitUntil(() -> environmentRule.events().withIntent(state).findFirst().isPresent());
   }
 
-  private TypedRecord<WorkflowInstanceRecord> awaitAndGetFirstRecordInState(
+  private Record<WorkflowInstanceRecord> awaitAndGetFirstRecordInState(
       final WorkflowInstanceIntent state) {
     awaitFirstRecordInState(state);
     return environmentRule

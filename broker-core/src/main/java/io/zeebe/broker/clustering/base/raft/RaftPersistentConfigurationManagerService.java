@@ -31,7 +31,7 @@ import java.nio.file.Files;
 public class RaftPersistentConfigurationManagerService
     implements Service<StorageConfigurationManager> {
   private StorageConfigurationManager service;
-  private BrokerCfg configuration;
+  private final BrokerCfg configuration;
 
   public RaftPersistentConfigurationManagerService(BrokerCfg configuration) {
     this.configuration = configuration;
@@ -56,9 +56,7 @@ public class RaftPersistentConfigurationManagerService
 
     service =
         new StorageConfigurationManager(
-            configuration.getData().getDirectories(),
-            configuration.getData().getLogSegmentSize(),
-            configuration.getData().getIndexBlockSize());
+            configuration.getData().getDirectories(), configuration.getData().getLogSegmentSize());
 
     /* A temp solution so that DistributedLogstream primitive can create logs in this directory */
     LogstreamConfig.putConfig(String.valueOf(configuration.getCluster().getNodeId()), service);

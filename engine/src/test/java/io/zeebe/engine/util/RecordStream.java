@@ -17,7 +17,9 @@
  */
 package io.zeebe.engine.util;
 
+import io.zeebe.engine.processor.CopiedRecords;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -29,8 +31,8 @@ import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionR
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.stream.StreamWrapper;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.stream.Stream;
@@ -51,77 +53,72 @@ public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
     return new RecordStream(filter(r -> Records.hasIntent(r, intent)));
   }
 
-  public LoggedEvent withPosition(final long position) {
-    return filter(e -> e.getPosition() == position)
-        .findFirst()
-        .orElseThrow(() -> new AssertionError("No event found with getPosition " + position));
-  }
-
   public TypedRecordStream<JobRecord> onlyJobRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isJobRecord).map(e -> CopiedTypedEvent.toTypedEvent(e, JobRecord.class)));
+        filter(Records::isJobRecord)
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<IncidentRecord> onlyIncidentRecords() {
     return new TypedRecordStream<>(
         filter(Records::isIncidentRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, IncidentRecord.class)));
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<DeploymentRecord> onlyDeploymentRecords() {
     return new TypedRecordStream<>(
         filter(Records::isDeploymentRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, DeploymentRecord.class)));
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<WorkflowInstanceRecord> onlyWorkflowInstanceRecords() {
     return new TypedRecordStream<>(
         filter(Records::isWorkflowInstanceRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceRecord.class)));
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<MessageRecord> onlyMessageRecords() {
     return new TypedRecordStream<>(
         filter(Records::isMessageRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, MessageRecord.class)));
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<MessageSubscriptionRecord> onlyMessageSubscriptionRecords() {
     return new TypedRecordStream<>(
         filter(Records::isMessageSubscriptionRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, MessageSubscriptionRecord.class)));
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<MessageStartEventSubscriptionRecord>
       onlyMessageStartEventSubscriptionRecords() {
     return new TypedRecordStream<>(
         filter(Records::isMessageStartEventSubscriptionRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, MessageStartEventSubscriptionRecord.class)));
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<WorkflowInstanceSubscriptionRecord>
       onlyWorkflowInstanceSubscriptionRecords() {
     return new TypedRecordStream<>(
         filter(Records::isWorkflowInstanceSubscriptionRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceSubscriptionRecord.class)));
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<TimerRecord> onlyTimerRecords() {
     return new TypedRecordStream<>(
         filter(Records::isTimerRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, TimerRecord.class)));
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<WorkflowInstanceCreationRecord> onlyWorkflowInstanceCreationRecords() {
     return new TypedRecordStream<>(
         filter(Records::isWorkflowInstanceCreationRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceCreationRecord.class)));
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   public TypedRecordStream<ErrorRecord> onlyErrorRecords() {
     return new TypedRecordStream<>(
         filter(Records::isErrorRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, ErrorRecord.class)));
+            .map((l) -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l)));
   }
 
   /**
@@ -134,6 +131,6 @@ public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
     return onlyWorkflowInstanceRecords()
         .onlyEvents()
         .filter(r -> elementIdBuffer.equals(r.getValue().getElementIdBuffer()))
-        .map(r -> (WorkflowInstanceIntent) r.getMetadata().getIntent());
+        .map(r -> (WorkflowInstanceIntent) r.getIntent());
   }
 }

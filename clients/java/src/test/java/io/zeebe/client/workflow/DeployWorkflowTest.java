@@ -20,10 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.base.Charsets;
-import io.zeebe.client.api.commands.Workflow;
-import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.cmd.ClientException;
-import io.zeebe.client.impl.events.WorkflowImpl;
+import io.zeebe.client.api.command.ClientException;
+import io.zeebe.client.api.response.DeploymentEvent;
+import io.zeebe.client.api.response.Workflow;
+import io.zeebe.client.impl.response.WorkflowImpl;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
@@ -34,6 +34,7 @@ import io.zeebe.util.StreamUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.List;
 import org.junit.Test;
 
@@ -71,6 +72,8 @@ public class DeployWorkflowTest extends ClientTest {
     assertThat(workflow.getType()).isEqualTo(ResourceType.FILE);
     assertThat(workflow.getName()).isEqualTo(filename);
     assertThat(workflow.getDefinition().toByteArray()).isEqualTo(getBytes(BPMN_1_FILENAME));
+
+    rule.verifyDefaultRequestTimeout();
   }
 
   @Test
@@ -244,6 +247,23 @@ public class DeployWorkflowTest extends ClientTest {
             () -> client.newDeployCommand().addResourceStringUtf8("", "test.bpmn").send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
+  }
+
+  @Test
+  public void shouldSetRequestTimeout() {
+    // given
+    final Duration requestTimeout = Duration.ofHours(124);
+
+    // when
+    client
+        .newDeployCommand()
+        .addResourceStringUtf8("", "test.bpmn")
+        .requestTimeout(requestTimeout)
+        .send()
+        .join();
+
+    // then
+    rule.verifyRequestTimeout(requestTimeout);
   }
 
   private byte[] getBytes(String filename) {

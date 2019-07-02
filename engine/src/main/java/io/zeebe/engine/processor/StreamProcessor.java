@@ -25,14 +25,13 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.protocol.ValueType;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.ValueType;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.ReflectUtil;
-import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
@@ -65,12 +64,13 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   // processing
   private final ProcessingContext processingContext;
-  private StreamProcessorMetrics metrics;
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private final LogStreamReader logStreamReader;
   private ProcessingStateMachine processingStateMachine;
 
   private Phase phase = Phase.REPROCESSING;
+  private CompletableActorFuture<Void> openFuture;
+  private CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
 
   protected StreamProcessor(final StreamProcessorBuilder context) {
     this.actorScheduler = context.getActorScheduler();
@@ -93,13 +93,13 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
     this.partitionId = logStream.getPartitionId();
   }
 
-  public static StreamProcessorBuilder builder(int processorId, String name) {
-    return new StreamProcessorBuilder(processorId, name);
+  public static StreamProcessorBuilder builder() {
+    return new StreamProcessorBuilder();
   }
 
   @Override
   public String getName() {
-    return processingContext.getStreamProcessorName();
+    return "stream-processor";
   }
 
   @Override
@@ -109,7 +109,7 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   @Override
   public void start(ServiceStartContext startContext) {
-    startContext.async(openAsync());
+    startContext.async(openAsync(), true);
   }
 
   @Override
@@ -119,17 +119,10 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   public ActorFuture<Void> openAsync() {
     if (isOpened.compareAndSet(false, true)) {
-      return actorScheduler.submitActor(this, true);
-    } else {
-      return CompletableActorFuture.completed(null);
+      openFuture = new CompletableActorFuture<>();
+      actorScheduler.submitActor(this);
     }
-  }
-
-  @Override
-  protected void onActorStarting() {
-    final MetricsManager metricsManager = actorScheduler.getMetricsManager();
-    processingContext.metricsManager(metricsManager);
-    metrics = new StreamProcessorMetrics(metricsManager, getName(), Integer.toString(partitionId));
+    return openFuture;
   }
 
   @Override
@@ -142,13 +135,13 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
       lifecycleAwareListeners.forEach(l -> l.onOpen(processingContext));
     } catch (final Throwable e) {
-      onFailure();
+      onFailure(e);
       LangUtil.rethrowUnchecked(e);
     }
 
     try {
-      processingStateMachine =
-          new ProcessingStateMachine(processingContext, metrics, this::isOpened);
+      processingStateMachine = new ProcessingStateMachine(processingContext, this::isOpened);
+      openFuture.complete(null);
 
       final ReProcessingStateMachine reProcessingStateMachine =
           new ReProcessingStateMachine(processingContext);
@@ -161,13 +154,13 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
           (v, throwable) -> {
             if (throwable != null) {
               LOG.error("Unexpected error on recovery happens.", throwable);
-              onFailure();
+              onFailure(throwable);
             } else {
               onRecovered();
             }
           });
     } catch (final RuntimeException e) {
-      onFailure();
+      onFailure(e);
       throw e;
     }
   }
@@ -224,10 +217,10 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   public ActorFuture<Void> closeAsync() {
     if (isOpened.compareAndSet(true, false)) {
-      return actor.close();
-    } else {
-      return CompletableActorFuture.completed(null);
+      closeFuture = new CompletableActorFuture<>();
+      actor.close();
     }
+    return closeFuture;
   }
 
   @Override
@@ -239,7 +232,6 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   @Override
   protected void onActorClosing() {
-    metrics.close();
     processingContext.getLogStreamReader().close();
 
     if (onCommitPositionUpdatedCondition != null) {
@@ -250,11 +242,14 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   @Override
   protected void onActorClosed() {
+    closeFuture.complete(null);
     LOG.debug("Closed stream processor controller {}.", getName());
   }
 
-  private void onFailure() {
+  private void onFailure(Throwable throwable) {
     phase = Phase.FAILED;
+    openFuture.completeExceptionally(throwable);
+    closeFuture = new CompletableActorFuture<>();
     isOpened.set(false);
     actor.close();
   }
@@ -277,10 +272,6 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   public ActorFuture<Long> getLastWrittenPositionAsync() {
     return actor.call(processingStateMachine::getLastWrittenEventPosition);
-  }
-
-  public StreamProcessorMetrics getMetrics() {
-    return metrics;
   }
 
   private enum Phase {

@@ -15,33 +15,29 @@
  */
 package io.zeebe.broker.it.job;
 
-import static io.zeebe.exporter.api.record.Assertions.assertThat;
+import static io.zeebe.protocol.record.Assertions.assertThat;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.test.util.record.RecordingExporter.jobBatchRecords;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.client.api.subscription.JobWorker;
-import io.zeebe.exporter.api.record.Record;
-import io.zeebe.exporter.api.record.value.JobRecordValue;
-import io.zeebe.protocol.intent.JobBatchIntent;
-import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.client.api.worker.JobWorker;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.JobBatchIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.test.util.TestUtil;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import org.junit.Before;
 import org.junit.Rule;
@@ -117,10 +113,10 @@ public class JobWorkerTest {
     waitUntil(() -> jobRecords(JobIntent.COMPLETED).exists());
 
     final Record<JobRecordValue> createRecord = jobRecords(JobIntent.CREATE).getFirst();
-    assertThat(createRecord.getValue()).hasDeadline(null).hasWorker("");
+    assertThat(createRecord.getValue()).hasDeadline(-1).hasWorker("");
 
     final Record<JobRecordValue> createdRecord = jobRecords(JobIntent.CREATED).getFirst();
-    assertThat(createdRecord.getValue()).hasDeadline(null);
+    assertThat(createdRecord.getValue()).hasDeadline(-1);
 
     final Record<JobRecordValue> activatedRecord = jobRecords(JobIntent.ACTIVATED).getFirst();
     assertThat(activatedRecord.getValue().getDeadline()).isNotNull();
@@ -154,12 +150,12 @@ public class JobWorkerTest {
     final ActivatedJob subscribedJob = jobHandler.getHandledJobs().get(0);
     assertThat(subscribedJob.getKey()).isEqualTo(jobKey);
     assertThat(subscribedJob.getType()).isEqualTo("foo");
-    assertThat(subscribedJob.getDeadline()).isAfter(Instant.now());
+    assertThat(subscribedJob.getDeadline()).isGreaterThan(Instant.now().toEpochMilli());
 
     waitUntil(() -> jobRecords(JobIntent.COMPLETED).exists());
 
     final Record<JobRecordValue> completedRecord = jobRecords(JobIntent.COMPLETED).getFirst();
-    assertThat(completedRecord.getValue().getVariables()).isEqualTo("{\"a\":3}");
+    assertThat(completedRecord.getValue().getVariables()).containsExactly(entry("a", 3));
     assertThat(completedRecord.getValue()).hasCustomHeaders(Collections.singletonMap("b", "2"));
   }
 

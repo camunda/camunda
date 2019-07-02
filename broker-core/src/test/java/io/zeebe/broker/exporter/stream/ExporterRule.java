@@ -22,20 +22,19 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
-import io.zeebe.broker.util.RecordStream;
-import io.zeebe.broker.util.TestStreams;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZbColumnFamilies;
+import io.zeebe.engine.util.TestStreams;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.RecordType;
-import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
@@ -95,8 +94,7 @@ public class ExporterRule implements TestRule {
   public void startExporterDirector(List<ExporterDescriptor> exporterDescriptors) {
     final LogStream stream = streams.getLogStream(STREAM_NAME);
 
-    final StateStorage stateStorage =
-        streams.getStateStorageFactory().create(EXPORTER_PROCESSOR_ID, PROCESSOR_NAME);
+    final StateStorage stateStorage = streams.getStateStorageFactory(stream).create();
     final StateSnapshotController snapshotController =
         spy(new StateSnapshotController(zeebeDbFactory, stateStorage));
     capturedZeebeDb = spy(snapshotController.openDb());
@@ -121,17 +119,12 @@ public class ExporterRule implements TestRule {
         .dependency(LogStreamServiceNames.logStreamServiceName(STREAM_NAME))
         .dependency(LogStreamServiceNames.logWriteBufferServiceName(STREAM_NAME))
         .dependency(LogStreamServiceNames.logStorageServiceName(STREAM_NAME))
-        .dependency(LogStreamServiceNames.logBlockIndexServiceName(STREAM_NAME))
         .install()
         .join();
   }
 
   public ControlledActorClock getClock() {
     return clock;
-  }
-
-  public RecordStream events() {
-    return new RecordStream(streams.events(STREAM_NAME));
   }
 
   public ExportersState getExportersState() {

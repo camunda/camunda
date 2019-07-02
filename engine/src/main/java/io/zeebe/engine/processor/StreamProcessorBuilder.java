@@ -47,9 +47,8 @@ public class StreamProcessorBuilder {
 
   private ZeebeDb zeebeDb;
 
-  public StreamProcessorBuilder(int id, String name) {
-    Objects.requireNonNull(name);
-    processingContext = new ProcessingContext().producerId(id).streamProcessorName(name);
+  public StreamProcessorBuilder() {
+    processingContext = new ProcessingContext();
   }
 
   public StreamProcessorBuilder streamProcessorFactory(
@@ -75,12 +74,6 @@ public class StreamProcessorBuilder {
 
   public StreamProcessorBuilder logStream(LogStream stream) {
     processingContext.logStream(stream);
-    return this;
-  }
-
-  /** @param eventFilter may be null to accept all events */
-  public StreamProcessorBuilder eventFilter(EventFilter eventFilter) {
-    processingContext.eventFilter(eventFilter);
     return this;
   }
 
@@ -132,18 +125,15 @@ public class StreamProcessorBuilder {
 
     final StreamProcessor streamProcessor = new StreamProcessor(this);
 
-    final String streamProcessorName = processingContext.getStreamProcessorName();
     final String logName = logStream.getLogName();
 
-    final ServiceName<StreamProcessor> serviceName =
-        streamProcessorService(logName, streamProcessorName);
+    final ServiceName<StreamProcessor> serviceName = streamProcessorService(logName);
     final ServiceBuilder<StreamProcessor> serviceBuilder =
         serviceContainer
             .createService(serviceName, streamProcessor)
             .dependency(LogStreamServiceNames.logStreamServiceName(logName))
             .dependency(LogStreamServiceNames.logWriteBufferServiceName(logName))
-            .dependency(LogStreamServiceNames.logStorageServiceName(logName))
-            .dependency(LogStreamServiceNames.logBlockIndexServiceName(logName));
+            .dependency(LogStreamServiceNames.logStorageServiceName(logName));
 
     if (additionalDependencies != null) {
       additionalDependencies.forEach((d) -> serviceBuilder.dependency(d));
