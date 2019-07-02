@@ -100,9 +100,13 @@ public class TopologyManagerImpl extends Actor
   @Override
   public void event(ClusterMembershipEvent clusterMembershipEvent) {
     final Member eventSource = clusterMembershipEvent.subject();
-    LOG.debug(
-        "Member {} received event {}", topology.getLocal().getNodeId(), clusterMembershipEvent);
+
     final BrokerInfo brokerInfo = readBrokerInfo(eventSource);
+    LOG.debug(
+        "Member {} received event {} with {}",
+        topology.getLocal().getNodeId(),
+        clusterMembershipEvent,
+        brokerInfo);
 
     if (brokerInfo != null && brokerInfo.getNodeId() != topology.getLocal().getNodeId()) {
       actor.call(
