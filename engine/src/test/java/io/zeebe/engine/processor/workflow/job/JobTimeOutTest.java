@@ -63,12 +63,12 @@ public class JobTimeOutTest {
     ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
 
     // when expired
-    RecordingExporter.jobRecords(TIME_OUT).getFirst();
+    RecordingExporter.jobRecords(TIME_OUT).withType(jobType).getFirst();
     ENGINE.jobs().withType(jobType).activate();
 
     // then activated again
     final List<Record<JobRecordValue>> jobEvents =
-        RecordingExporter.jobRecords().limit(6).collect(Collectors.toList());
+        RecordingExporter.jobRecords().withType(jobType).limit(6).collect(Collectors.toList());
 
     assertThat(jobEvents).extracting(Record::getKey).contains(jobKey);
     assertThat(jobEvents)
@@ -80,6 +80,29 @@ public class JobTimeOutTest {
             JobIntent.TIME_OUT,
             JobIntent.TIMED_OUT,
             JobIntent.ACTIVATED);
+  }
+
+  @Test
+  public void shouldTimeOutAfterReprocessing() {
+    // given
+    final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
+    final long timeout = 10L;
+
+    ENGINE.jobs().withType(jobType).withTimeout(timeout).activate();
+    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    jobRecords(TIME_OUT).withRecordKey(jobKey).getFirst();
+
+    final long jobKey2 = ENGINE.createJob(jobType, PROCESS_ID).getKey();
+    ENGINE.jobs().withType(jobType).activate();
+    ENGINE.job().withKey(jobKey).complete();
+
+    // when
+    ENGINE.reprocess();
+    ENGINE.jobs().withType(jobType).activate();
+
+    // then
+    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    jobRecords(TIME_OUT).withRecordKey(jobKey2).getFirst();
   }
 
   @Test

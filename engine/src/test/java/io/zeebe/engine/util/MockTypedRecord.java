@@ -31,13 +31,13 @@ public class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecor
   private long key;
   private RecordMetadata metadata;
   private T value;
-
-  public MockTypedRecord() {}
+  private final long timestamp;
 
   public MockTypedRecord(long key, RecordMetadata metadata, T value) {
     this.key = key;
     this.metadata = metadata;
     this.value = value;
+    this.timestamp = System.currentTimeMillis();
   }
 
   @Override
@@ -84,7 +84,7 @@ public class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecor
 
   @Override
   public long getTimestamp() {
-    throw new UnsupportedOperationException("not yet implemented");
+    return timestamp;
   }
 
   @Override
