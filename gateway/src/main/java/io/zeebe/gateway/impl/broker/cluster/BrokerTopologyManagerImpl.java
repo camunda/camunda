@@ -60,12 +60,12 @@ public class BrokerTopologyManagerImpl extends Actor
     final Member subject = event.subject();
     final Type eventType = event.type();
     final BrokerInfo brokerInfo = BrokerInfo.fromProperties(subject.properties());
-    LOG.debug("Got membership event {}", brokerInfo);
 
     if (brokerInfo != null) {
       actor.call(
           () -> {
-            Loggers.GATEWAY_LOGGER.debug("Received membership event: {}", event);
+            Loggers.GATEWAY_LOGGER.debug(
+                "Received membership event: {} with {} ", event, brokerInfo);
             final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
 
             switch (eventType) {
