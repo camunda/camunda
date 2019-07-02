@@ -263,6 +263,11 @@ public class TestStreams {
 
     final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
 
+    try {
+      currentSnapshotController.recover();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
     zeebeDb = currentSnapshotController.openDb();
     final StreamProcessor processorService =
         StreamProcessor.builder()

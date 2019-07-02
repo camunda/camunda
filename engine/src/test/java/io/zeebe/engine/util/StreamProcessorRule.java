@@ -130,16 +130,24 @@ public class StreamProcessorRule implements TestRule {
         }));
   }
 
+  public void closeStreamProcessor(int partitionId) throws Exception {
+    streams.closeProcessor(getLogName(partitionId));
+  }
+
   public void closeStreamProcessor() throws Exception {
-    streams.closeProcessor(getLogName(startPartitionId));
+    closeStreamProcessor(startPartitionId);
   }
 
   public long getCommitPosition() {
     return streams.getLogStream(getLogName(startPartitionId)).getCommitPosition();
   }
 
+  public StateSnapshotController getStateSnapshotController(int partitionId) {
+    return streams.getStateSnapshotController(getLogName(partitionId));
+  }
+
   public StateSnapshotController getStateSnapshotController() {
-    return streams.getStateSnapshotController(getLogName(startPartitionId));
+    return getStateSnapshotController(startPartitionId);
   }
 
   public CommandResponseWriter getCommandResponseWriter() {
