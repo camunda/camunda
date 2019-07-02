@@ -19,7 +19,6 @@ package io.zeebe.engine.processor.workflow.job;
 
 import static io.zeebe.protocol.record.Assertions.assertThat;
 import static io.zeebe.test.util.TestUtil.waitUntil;
-import static io.zeebe.test.util.record.RecordingExporter.jobBatchRecords;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static io.zeebe.test.util.record.RecordingExporter.workflowInstanceRecords;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -343,7 +342,6 @@ public class ActivateJobsTest {
 
     final String worker = "testWorker";
     final Duration timeout = Duration.ofMinutes(4);
-    final long deadline = clock.getCurrentTime().plus(timeout).toEpochMilli();
 
     ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
     createWorkflowInstances(1, "{'foo':'bar'}");
@@ -351,43 +349,42 @@ public class ActivateJobsTest {
         jobRecords(JobIntent.CREATED).withType(taskType).getFirst();
 
     // when
-    final long jobKey =
+    final Record<JobBatchRecordValue> jobActivatedRecord =
         ENGINE
             .jobs()
             .withType(taskType)
             .byWorker(worker)
             .withTimeout(timeout.toMillis())
             .withMaxJobsToActivate(1)
-            .activate()
-            .getKey();
+            .activate();
 
-    final JobRecordValue job =
-        jobBatchRecords(JobBatchIntent.ACTIVATED)
-            .withRecordKey(jobKey)
-            .getFirst()
-            .getValue()
-            .getJobs()
-            .get(0);
+    final JobRecordValue jobActivated = jobActivatedRecord.getValue().getJobs().get(0);
+    final Record<JobBatchRecordValue> jobActivate =
+        RecordingExporter.jobBatchRecords()
+            .withType(taskType)
+            .withIntent(JobBatchIntent.ACTIVATE)
+            .getFirst();
 
     // then
-    Assertions.assertThat(job)
+    Assertions.assertThat(jobActivated)
         .hasType(taskType)
         .hasWorker(worker)
         .hasRetries(3)
-        .hasDeadline(deadline);
+        .hasDeadline(jobActivate.getTimestamp() + timeout.toMillis());
 
-    assertThat(job.getVariables()).containsExactly(entry("foo", "bar"));
+    assertThat(jobActivated.getVariables()).containsExactly(entry("foo", "bar"));
 
     final JobRecordValue jobRecordValue = jobRecord.getValue();
-    assertThat(job.getWorkflowInstanceKey()).isEqualTo(jobRecordValue.getWorkflowInstanceKey());
-    Assertions.assertThat(job)
+    assertThat(jobActivated.getWorkflowInstanceKey())
+        .isEqualTo(jobRecordValue.getWorkflowInstanceKey());
+    Assertions.assertThat(jobActivated)
         .hasBpmnProcessId(jobRecordValue.getBpmnProcessId())
         .hasWorkflowDefinitionVersion(jobRecordValue.getWorkflowDefinitionVersion())
         .hasWorkflowKey(jobRecordValue.getWorkflowKey())
         .hasElementId(jobRecordValue.getElementId())
         .hasElementInstanceKey(jobRecordValue.getElementInstanceKey());
 
-    assertThat(job.getCustomHeaders()).isEqualTo(jobRecordValue.getCustomHeaders());
+    assertThat(jobActivated.getCustomHeaders()).isEqualTo(jobRecordValue.getCustomHeaders());
   }
 
   @Test

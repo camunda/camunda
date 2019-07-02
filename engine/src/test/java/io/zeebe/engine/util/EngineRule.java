@@ -49,8 +49,10 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.value.JobRecordValue;
+import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.zeebe.util.FileUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
@@ -102,7 +104,10 @@ public class EngineRule extends ExternalResource {
 
   @Override
   protected void before() {
+    startProcessors();
+  }
 
+  private void startProcessors() {
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
     final UnsafeBuffer deploymentBuffer = new UnsafeBuffer(new byte[deploymentRecord.getLength()]);
     deploymentRecord.write(deploymentBuffer, 0);
@@ -137,6 +142,29 @@ public class EngineRule extends ExternalResource {
 
   public void increaseTime(Duration duration) {
     environmentRule.getClock().addTime(duration);
+  }
+
+  public void reprocess() {
+    forEachPartition(
+        partitionId -> {
+          try {
+            environmentRule.closeStreamProcessor(partitionId);
+            FileUtil.deleteFolder(
+                environmentRule
+                    .getStateSnapshotController(partitionId)
+                    .getLastValidSnapshotDirectory()
+                    .toPath());
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
+
+    final int lastSize = RecordingExporter.getRecords().size();
+    // we need to reset the record exporter
+    RecordingExporter.reset();
+
+    startProcessors();
+    TestUtil.waitUntil(() -> RecordingExporter.getRecords().size() >= lastSize);
   }
 
   public List<Integer> getPartitionIds() {

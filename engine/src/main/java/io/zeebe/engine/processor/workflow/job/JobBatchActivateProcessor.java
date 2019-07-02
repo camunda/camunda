@@ -17,8 +17,6 @@
  */
 package io.zeebe.engine.processor.workflow.job;
 
-import static io.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
-
 import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessor;
@@ -120,7 +118,7 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
         value.getTypeBuffer(),
         (key, jobRecord) -> {
           int remainingAmount = amount.get();
-          final long deadline = currentTimeMillis() + value.getTimeout();
+          final long deadline = record.getTimestamp() + value.getTimeout();
           jobRecord.setDeadline(deadline).setWorker(value.getWorkerBuffer());
 
           // fetch and set variables, required here to already have the full size of the job record
