@@ -164,10 +164,10 @@ spec:
         resources:
           limits:
             cpu: 2
-            memory: 1536Mi
+            memory: 2Gi
           requests:
             cpu: 500m
-            memory: 1Gi
+            memory: 2Gi
         volumeMounts:
           - name: configuration
             mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
