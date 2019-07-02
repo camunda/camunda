@@ -8,7 +8,7 @@ import React from 'react';
 
 import {DurationHeatmapModal} from './DurationHeatmap';
 
-import {ButtonGroup, Button, Icon} from 'components';
+import {Button, Icon} from 'components';
 
 import './TargetValueComparison.scss';
 
@@ -73,15 +73,11 @@ export default class TargetValueComparison extends React.Component {
 
   render() {
     return (
-      <ButtonGroup className="TargetValueComparison">
-        <Button
-          className="TargetValueComparison__toggleButton"
-          active={this.getConfig().active}
-          onClick={this.toggleMode}
-        >
+      <div className="TargetValueComparison">
+        <Button className="toggleButton" active={this.getConfig().active} onClick={this.toggleMode}>
           Target Value
         </Button>
-        <Button className="TargetValueComparison__editButton" onClick={this.openModal}>
+        <Button className="editButton" onClick={this.openModal}>
           <Icon type="settings" />
         </Button>
         <DurationHeatmapModal
@@ -90,7 +86,7 @@ export default class TargetValueComparison extends React.Component {
           onConfirm={this.confirmModal}
           report={this.props.report}
         />
-      </ButtonGroup>
+      </div>
     );
   }
 }

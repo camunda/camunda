@@ -136,7 +136,7 @@ class Alerts extends React.Component {
         <h1>
           <HeaderIcon /> Alerts
         </h1>
-        <Button color="green" className="createButton" onClick={this.showCreateModal}>
+        <Button color="blue" className="createButton" onClick={this.showCreateModal}>
           Create New Alert
         </Button>
         {error}

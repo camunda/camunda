@@ -7,7 +7,6 @@
 import React from 'react';
 
 import {ButtonGroup, Button, Input, ErrorMessage, Select} from 'components';
-import classnames from 'classnames';
 import './ChartTargetInput.scss';
 import {numberParser} from 'services';
 
@@ -33,16 +32,10 @@ export default function ChartTargetInput({onChange, report}) {
   return (
     <div className="ChartTargetInput">
       <ButtonGroup className="buttonGroup" disabled={!targetValue.active}>
-        <Button
-          onClick={() => setValues('isBelow', false)}
-          className={classnames({'is-active': !targetValue[type].isBelow})}
-        >
+        <Button onClick={() => setValues('isBelow', false)} active={!targetValue[type].isBelow}>
           Above
         </Button>
-        <Button
-          onClick={() => setValues('isBelow', true)}
-          className={classnames({'is-active': targetValue[type].isBelow})}
-        >
+        <Button onClick={() => setValues('isBelow', true)} active={targetValue[type].isBelow}>
           Below
         </Button>
       </ButtonGroup>

@@ -5,7 +5,6 @@
  */
 
 import React from 'react';
-import classnames from 'classnames';
 import {Modal, ButtonGroup, Button, BPMNDiagram, ClickBehavior} from 'components';
 
 import './NodeFilter.scss';
@@ -108,15 +107,13 @@ export default class NodeFilter extends React.Component {
           <div className="VariableFilter__buttonRow">
             <ButtonGroup>
               <Button
-                className={classnames({'is-active': this.state.operator === 'in'})}
+                active={this.state.operator === 'in'}
                 onClick={() => this.setState({operator: 'in'})}
               >
                 was executed
               </Button>
               <Button
-                className={classnames({
-                  'is-active': this.state.operator === 'not in'
-                })}
+                active={this.state.operator === 'not in'}
                 onClick={() => this.setState({operator: 'not in'})}
               >
                 was not executed

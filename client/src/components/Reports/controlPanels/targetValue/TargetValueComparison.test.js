@@ -83,15 +83,15 @@ const invalidProps = {
 it('should display a double button', () => {
   const node = shallow(<TargetValueComparison {...invalidProps} />);
 
-  expect(node.find('.TargetValueComparison__toggleButton')).toExist();
-  expect(node.find('.TargetValueComparison__editButton')).toExist();
+  expect(node.find('.toggleButton')).toExist();
+  expect(node.find('.editButton')).toExist();
 });
 
 it('should toggle the mode with the left button', () => {
   const spy = jest.fn();
   const node = shallow(<TargetValueComparison {...validProps} onChange={spy} />);
 
-  node.find('.TargetValueComparison__toggleButton').simulate('click');
+  node.find('.toggleButton').simulate('click');
 
   expect(spy).toHaveBeenCalled();
   expect(spy.mock.calls[0][0].configuration.heatmapTargetValue.active).toEqual({$set: true});
@@ -100,7 +100,7 @@ it('should toggle the mode with the left button', () => {
 it('should open the modal with the left button if there are no target values set', async () => {
   const node = shallow(<TargetValueComparison {...validPropsWithoutTargetValues} />);
 
-  await node.find('.TargetValueComparison__toggleButton').simulate('click');
+  await node.find('.toggleButton').simulate('click');
 
   expect(node.state('modalOpen')).toBe(true);
 });
@@ -108,7 +108,7 @@ it('should open the modal with the left button if there are no target values set
 it('should open the target value edit modal on with the right button', async () => {
   const node = shallow(<TargetValueComparison {...validProps} />);
 
-  await node.find('.TargetValueComparison__editButton').simulate('click');
+  await node.find('.editButton').simulate('click');
 
   expect(node.state('modalOpen')).toBe(true);
 });

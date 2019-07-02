@@ -1,10 +1,21 @@
+@import 'shared-styles/shared-styles.scss';
+
 .ButtonGroup {
   display: flex;
 }
 
 .ButtonGroup.disabled {
-  opacity: 0.4;
   pointer-events: none;
+
+  .Button {
+    color: #ababab;
+
+    &.is-active {
+      color: #fff;
+      background: #cccccc;
+      border: 1px solid #cccccc;
+    }
+  }
 }
 
 .ButtonGroup .Button,
@@ -12,6 +23,19 @@
   flex: 1 0 auto;
   border-radius: 0;
   border-right-width: 0;
+  position: relative;
+
+  &.is-active {
+    color: white;
+    background-color: $blue;
+    border: 1px solid darken($blue, 5%);
+    border-right-width: 0;
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+
+  &:focus {
+    z-index: 1;
+  }
 }
 .ButtonGroup .Button:hover,
 .ButtonGroup a.Button:hover {

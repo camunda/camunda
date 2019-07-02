@@ -5,8 +5,14 @@
   z-index: 5;
 
   .Button {
+    position: relative;
+
     &.reset {
       margin-bottom: 20px;
+    }
+
+    &:focus {
+      z-index: 1;
     }
 
     &.zoomIn {

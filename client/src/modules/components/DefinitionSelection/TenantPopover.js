@@ -31,13 +31,10 @@ export default function TenantPopover({tenants, selected, onChange}) {
   return (
     <Popover className="TenantPopover" disabled={tenants.length < 2} title={label}>
       <ButtonGroup>
-        <Button
-          color={allSelected ? 'green' : undefined}
-          onClick={() => onChange(tenants.map(({id}) => id))}
-        >
+        <Button active={allSelected} onClick={() => onChange(tenants.map(({id}) => id))}>
           Enable All
         </Button>
-        <Button color={noneSelected ? 'green' : undefined} onClick={() => onChange([])}>
+        <Button active={noneSelected} onClick={() => onChange([])}>
           Disable All
         </Button>
       </ButtonGroup>

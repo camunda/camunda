@@ -145,18 +145,6 @@
   }
 
   .createAllButton {
-    .activateButton {
-      color: white;
-      background-color: $cam-green;
-      border: 1px solid $cam-green;
-
-      &.is-active,
-      &:hover {
-        background-color: darken($cam-green, 10%);
-        border: 1px solid darken($cam-green, 10%);
-      }
-    }
-
     .menu {
       width: 164px;
     }
@@ -164,8 +152,13 @@
 
   .createReport {
     & > .Button {
+      position: relative;
       border-top-right-radius: 0;
       border-bottom-right-radius: 0;
+
+      &:focus {
+        z-index: 1;
+      }
     }
 
     .Dropdown {
@@ -263,7 +256,7 @@
               height: 20px;
               font-weight: normal;
               background: #e5f6ff;
-              color: darken($cam-blue, 10%);
+              color: $blue;
               padding: 3px 10px;
               margin-left: 5px;
             }

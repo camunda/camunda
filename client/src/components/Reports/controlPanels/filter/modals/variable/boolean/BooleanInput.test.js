@@ -8,14 +8,8 @@ import React from 'react';
 
 import BooleanInput from './BooleanInput';
 
-import {mount} from 'enzyme';
-
-jest.mock('components', () => {
-  return {
-    Button: props => <button {...props}>{props.children}</button>,
-    ButtonGroup: props => <div {...props}>{props.children}</div>
-  };
-});
+import {shallow} from 'enzyme';
+import {Button} from 'components';
 
 const props = {
   filter: BooleanInput.defaultFilter,
@@ -27,20 +21,20 @@ it('should assume variable value true per default', () => {
 });
 
 it('should show true and false operator fields', () => {
-  const node = mount(<BooleanInput {...props} />);
+  const node = shallow(<BooleanInput {...props} />);
 
-  expect(node.find('button').at(0)).toIncludeText('true');
-  expect(node.find('button').at(1)).toIncludeText('false');
+  expect(node.find(Button).at(0)).toIncludeText('true');
+  expect(node.find(Button).at(1)).toIncludeText('false');
 });
 
 it('should set the value when clicking on the operator fields', () => {
   const spy = jest.fn();
-  const node = mount(<BooleanInput {...props} changeFilter={spy} />);
+  const node = shallow(<BooleanInput {...props} changeFilter={spy} />);
 
   node
-    .find('button')
+    .find(Button)
     .at(1)
-    .simulate('click');
+    .simulate('click', {preventDefault: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith({value: false});
 });

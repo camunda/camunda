@@ -44,7 +44,7 @@
 }
 
 input:checked + .Switch__Slider--round {
-  background-color: #1a6ef4;
+  background-color: $blue;
 }
 
 input.focus-visible + .Switch__Slider--round {

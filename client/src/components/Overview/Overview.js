@@ -36,7 +36,7 @@ function Overview({store: {loading, deleting, conflicts, deleteLoading, searchQu
             </button>
           </div>
           <div className="createAllButton">
-            <Dropdown label="Create New">
+            <Dropdown label="Create New" color="blue">
               <Dropdown.Option onClick={() => props.setCollectionToUpdate({})}>
                 New Collection
               </Dropdown.Option>

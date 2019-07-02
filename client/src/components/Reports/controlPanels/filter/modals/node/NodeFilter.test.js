@@ -7,42 +7,28 @@
 import React from 'react';
 
 import NodeFilter from './NodeFilter';
-
-import {mount} from 'enzyme';
-
-jest.mock('components', () => {
-  const Modal = props => <div id="modal">{props.children}</div>;
-  Modal.Header = props => <div id="modal_header">{props.children}</div>;
-  Modal.Content = props => <div id="modal_content">{props.children}</div>;
-  Modal.Actions = props => <div id="modal_actions">{props.children}</div>;
-
-  return {
-    Modal,
-    ButtonGroup: props => <div {...props} />,
-    Button: props => <button {...props}>{props.children}</button>,
-    BPMNDiagram: props => (
-      <div id="diagram">
-        Diagram {props.children} {props.xml}
-      </div>
-    ),
-    ClickBehavior: props => <span>ClickBehavior</span>
-  };
-});
+import {Button} from 'components';
+import {shallow} from 'enzyme';
 
 it('should contain a modal', () => {
-  const node = mount(<NodeFilter />);
+  const node = shallow(<NodeFilter />);
 
-  expect(node.find('#modal')).toExist();
+  expect(node.find('Modal')).toExist();
 });
 
 it('should display a diagram', () => {
-  const node = mount(<NodeFilter xml="fooXml" />);
+  const node = shallow(<NodeFilter xml="fooXml" />);
 
-  expect(node.find('#diagram')).toIncludeText('fooXml');
+  expect(
+    node
+      .find('.NodeFilter__diagram-container')
+      .childAt(0)
+      .props().xml
+  ).toBe('fooXml');
 });
 
 it('should add an unselected node to the selectedNodes on toggle', () => {
-  const node = mount(<NodeFilter />);
+  const node = shallow(<NodeFilter />);
 
   const flowNode = {
     name: 'foo',
@@ -55,7 +41,7 @@ it('should add an unselected node to the selectedNodes on toggle', () => {
 });
 
 it('should remove a selected node from the selectedNodes on toggle', () => {
-  const node = mount(<NodeFilter />);
+  const node = shallow(<NodeFilter />);
 
   const flowNode = {
     name: 'foo',
@@ -70,7 +56,7 @@ it('should remove a selected node from the selectedNodes on toggle', () => {
 
 it('should create a new filter', () => {
   const spy = jest.fn();
-  const node = mount(<NodeFilter addFilter={spy} />);
+  const node = shallow(<NodeFilter addFilter={spy} />);
 
   const flowNode1 = {
     name: 'foo',
@@ -86,7 +72,7 @@ it('should create a new filter', () => {
     selectedNodes: [flowNode1, flowNode2]
   });
 
-  node.find('button[type="primary"]').simulate('click');
+  node.find({type: 'primary'}).simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
     type: 'executedFlowNodes',
@@ -98,18 +84,16 @@ it('should create a new filter', () => {
 });
 
 it('should disable create filter button if no node was selected', () => {
-  const node = mount(<NodeFilter />);
+  const node = shallow(<NodeFilter />);
   node.setState({
     selectedNodes: []
   });
 
-  const buttons = node.find('#modal_actions button');
-  expect(buttons.at(0).prop('disabled')).toBeFalsy(); // abort
-  expect(buttons.at(1).prop('disabled')).toBeTruthy(); // create filter
+  expect(node.find({type: 'primary'}).prop('disabled')).toBeTruthy(); // create filter
 });
 
 it('should create preview of selected node', () => {
-  const node = mount(<NodeFilter />);
+  const node = shallow(<NodeFilter />);
 
   const flowNode = {
     name: 'foo',
@@ -118,11 +102,11 @@ it('should create preview of selected node', () => {
 
   node.instance().toggleNode(flowNode);
 
-  expect(node.find('#modal_content')).toIncludeText(flowNode.name);
+  expect(node.find('.NodeFilter__preview-item-value')).toIncludeText(flowNode.name);
 });
 
 it('should show the id of the flow node if the name is null', () => {
-  const node = mount(<NodeFilter />);
+  const node = shallow(<NodeFilter />);
 
   const flowNode = {
     name: null,
@@ -131,11 +115,11 @@ it('should show the id of the flow node if the name is null', () => {
 
   node.instance().toggleNode(flowNode);
 
-  expect(node.find('#modal_content')).toIncludeText(flowNode.id);
+  expect(node.find('.NodeFilter__preview-item-value')).toIncludeText(flowNode.id);
 });
 
 it('should create preview of selected nodes linked by or', () => {
-  const node = mount(<NodeFilter />);
+  const node = shallow(<NodeFilter />);
 
   const flowNode1 = {
     name: 'foo',
@@ -150,30 +134,30 @@ it('should create preview of selected nodes linked by or', () => {
   node.instance().toggleNode(flowNode1);
   node.instance().toggleNode(flowNode2);
 
-  const content = node.find('#modal_content');
+  const content = node.find('.NodeFilter__preview');
   expect(content).toIncludeText(flowNode1.name);
   expect(content).toIncludeText('or');
   expect(content).toIncludeText(flowNode2.name);
 });
 
 it('should contain buttons to switch between executed and not executed mode', () => {
-  const node = mount(<NodeFilter />);
+  const node = shallow(<NodeFilter />);
 
-  expect(node.find('button').at(0)).toIncludeText('was executed');
-  expect(node.find('button').at(1)).toIncludeText('was not executed');
+  expect(node.find(Button).at(0)).toIncludeText('was executed');
+  expect(node.find(Button).at(1)).toIncludeText('was not executed');
 });
 
 it('should set the operator when clicking the operator buttons', () => {
-  const node = mount(<NodeFilter />);
+  const node = shallow(<NodeFilter />);
 
   node
-    .find('button')
+    .find(Button)
     .at(0)
     .simulate('click');
   expect(node.state().operator).toBe('in');
 
   node
-    .find('button')
+    .find(Button)
     .at(1)
     .simulate('click');
   expect(node.state().operator).toBe('not in');

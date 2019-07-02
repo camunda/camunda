@@ -57,7 +57,12 @@ it('should add is-active classname to the clicked button in the buttonGroup', ()
     .first()
     .simulate('click');
 
-  expect(node.find(Button).first()).toHaveClassName('is-active');
+  expect(
+    node
+      .find(Button)
+      .first()
+      .props().active
+  ).toBe(true);
 });
 
 it('should display the current target values target', () => {

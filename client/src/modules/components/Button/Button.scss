@@ -32,8 +32,8 @@ a.Button {
     display: inline;
     align-items: normal;
     background-color: transparent;
-    color: $cam-blue;
-    border-color: $cam-blue;
+    color: $blue;
+    border-color: $blue;
     border-style: none;
     font: inherit;
     padding: 0;
@@ -42,8 +42,8 @@ a.Button {
 
     &:hover {
       background-color: transparent;
-      color: $cam-blue;
-      border-color: $cam-blue;
+      color: $blue;
+      border-color: $blue;
       border-style: none;
       text-decoration: underline;
     }
@@ -100,29 +100,31 @@ a.Button--primary {
 .Button--blue,
 a.Button--blue {
   color: white;
-  background-color: $cam-blue;
-  border: 1px solid $cam-blue;
-}
+  font-weight: bold;
+  background-color: $blue;
+  border: 1px solid $blue;
 
-.Button--blue:focus,
-a.Button--blue:focus {
-  border: 1px solid darken($cam-blue, 12);
-}
+  &:focus,
+  &.is-active {
+    color: white;
+    background-color: darken($blue, 10%);
+    border: 1px solid darken($blue, 12%);
+  }
 
-.Button--blue:hover,
-a.Button--blue:hover {
-  color: white;
-  background-color: darken($cam-blue, 10%);
-  border: 1px solid darken($cam-blue, 10%);
-}
+  &:hover {
+    color: white;
+    background-color: darken($blue, 5%);
+    border: 1px solid darken($blue, 7%);
+  }
 
-.Button--blue[disabled]:hover,
-.Button--blue[disabled='disabled']:hover,
-a.Button--blue[disabled]:hover,
-a.Button--blue[disabled='disabled']:hover {
-  color: white;
-  background-color: $cam-blue;
-  border: 1px solid $cam-blue;
+  &[disabled],
+  &[disabled='disabled'],
+  &[disabled]:hover,
+  &[disabled='disabled']:hover {
+    color: white;
+    background-color: lighten($blue, 20%);
+    border: 1px solid lighten($blue, 20%);
+  }
 }
 
 .Button--red,

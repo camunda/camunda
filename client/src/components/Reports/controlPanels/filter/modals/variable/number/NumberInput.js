@@ -7,7 +7,6 @@
 import React from 'react';
 
 import {ButtonGroup, Button, Input} from 'components';
-import classnames from 'classnames';
 
 import './NumberInput.scss';
 
@@ -71,28 +70,16 @@ export default class NumberInput extends React.Component {
       <React.Fragment>
         <div className="VariableFilter__buttonRow">
           <ButtonGroup>
-            <Button
-              onClick={this.setOperator('in')}
-              className={classnames({'is-active': operator === 'in'})}
-            >
+            <Button onClick={this.setOperator('in')} active={operator === 'in'}>
               is
             </Button>
-            <Button
-              onClick={this.setOperator('not in')}
-              className={classnames({'is-active': operator === 'not in'})}
-            >
+            <Button onClick={this.setOperator('not in')} active={operator === 'not in'}>
               is not
             </Button>
-            <Button
-              onClick={this.setOperator('<')}
-              className={classnames({'is-active': operator === '<'})}
-            >
+            <Button onClick={this.setOperator('<')} active={operator === '<'}>
               is less than
             </Button>
-            <Button
-              onClick={this.setOperator('>')}
-              className={classnames({'is-active': operator === '>'})}
-            >
+            <Button onClick={this.setOperator('>')} active={operator === '>'}>
               is greater than
             </Button>
           </ButtonGroup>

@@ -1,7 +1,16 @@
 .TargetValueComparison {
   display: inline;
 
-  .Button {
+  .toggleButton {
+    border-right: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .editButton {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+
     .Icon {
       margin-right: 0;
     }

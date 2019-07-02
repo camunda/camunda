@@ -28,15 +28,15 @@ it('should invoke enable All when enable all button is clicked', () => {
   expect(spy).toHaveBeenCalled();
 });
 
-it('should make the enable all button green when all enabled', () => {
+it('should make the enable all button active when all enabled', () => {
   const node = shallow(<AllColumnsButtons allEnabled={true} allDisabled={false} />);
 
   expect(
     node
       .find(Button)
       .at(0)
-      .props().color
-  ).toBe('green');
+      .props().active
+  ).toBe(true);
 });
 
 it('should call disableAll when clicking disable all', () => {

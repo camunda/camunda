@@ -8,7 +8,6 @@ import React from 'react';
 import debounce from 'debounce';
 
 import {ButtonGroup, Button, TypeaheadMultipleSelection, LoadingIndicator} from 'components';
-import classnames from 'classnames';
 
 import './StringInput.scss';
 
@@ -128,16 +127,10 @@ export default class StringInput extends React.Component {
       <React.Fragment>
         <div className="VariableFilter__buttonRow">
           <ButtonGroup>
-            <Button
-              onClick={this.setOperator('in')}
-              className={classnames({'is-active': operator === 'in'})}
-            >
+            <Button onClick={this.setOperator('in')} active={operator === 'in'}>
               is
             </Button>
-            <Button
-              onClick={this.setOperator('not in')}
-              className={classnames({'is-active': operator === 'not in'})}
-            >
+            <Button onClick={this.setOperator('not in')} active={operator === 'not in'}>
               is not
             </Button>
           </ButtonGroup>

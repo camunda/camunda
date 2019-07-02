@@ -180,6 +180,7 @@ export default class Dropdown extends React.Component {
         onKeyDown={this.handleKeyPress}
       >
         <Button
+          color={this.props.color}
           className="activateButton"
           aria-haspopup="true"
           aria-expanded={open ? 'true' : 'false'}
