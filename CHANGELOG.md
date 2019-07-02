@@ -1,24 +1,45 @@
 <a name="0.19.0"></a>
 ## 0.19.0 (2019-07-02)
 
+#### Breaking Changes
+
+* **broker:**  
+  *  migrate RecordValue interfaces to protocol ([e19529f1](https://github.com/zeebe-io/zeebe/commit/e19529f1efba8b7206502bf8e3e55d372e6f62ee))
+  *  change package of asserts and generated types ([9abc82236](https://github.com/zeebe-io/zeebe/commit/9abc82236bc0cd9b2d406ada2e2a59b6e2d63485))
+  *  change type of Record#getTimestamp() to Long ([04414316](https://github.com/zeebe-io/zeebe/commit/04414316f92c82a5a452c7a52d50f7b9893b29d4))
+  *  rename keys in workflow instance creation mapping ([d32286b1](https://github.com/zeebe-io/zeebe/commit/d32286b15bc0ca8e557532bf02644a78eea67cfe))
+  *  disable variable indexing in elasticsearch exporter mappings ([44a38909](https://github.com/zeebe-io/zeebe/commit/44a38909bb729cdef144472c9d8fa4a04868bd0d))
+  *  disable indexing of deployment resource in elasticsearch ([8465e6a0](https://github.com/zeebe-io/zeebe/commit/8465e6a0fcc1ed5286b6da8e66f7935fcc92125d))
+  *  remove metrics file writer ([2aae727d](https://github.com/zeebe-io/zeebe/commit/2aae727d229a2fd4718496a3ec328585712eb164))
+  *  rename document to variables in VariableDocumentRecord ([41975975](https://github.com/zeebe-io/zeebe/commit/41975975c207385b57622da5d71c2c5df98acce6))
+  *  flatten RecordMetadata into Record ([6593979f](https://github.com/zeebe-io/zeebe/commit/6593979f19174861fe49c58204bc556cef1503fd))
+  *  squash job headers into record value ([46c8061d](https://github.com/zeebe-io/zeebe/commit/46c8061d82120cecdbd6add93268e9b6b6a5a65c))
+  *  change custom headers to Map<String,String> ([2d05e3bd](https://github.com/zeebe-io/zeebe/commit/2d05e3bdf56b15efa3f3b6ac5a1056cf0deb9126))
+  *  IncidentRecord return ErrorType instead of String ([79e2c080](https://github.com/zeebe-io/zeebe/commit/79e2c080e4b7d4d1368db896f63dd0b473baf598))
+  *  remove producer id from record ([ff6b1dd5](https://github.com/zeebe-io/zeebe/commit/ff6b1dd5b6516110c105e7dd949d154a519f3179))
+  *  rework WorkflowInstanceCreationRecordValue ([7ee99e7e](https://github.com/zeebe-io/zeebe/commit/7ee99e7e91939ee58d94dcdf6bd36e1bbbb1a06a))
+* **clients/go:**  flatten job headers ([1a1555de](https://github.com/zeebe-io/zeebe/commit/1a1555de62ce38cf0ddcacd7577ed8160d8a1ac1))
+* **clients/java:**  reorganize packages ([cdccc34c](https://github.com/zeebe-io/zeebe/commit/cdccc34c2fd8daa41b398b5bc46a20aea337f096))
+
+#### Features
+
+* **broker:**  
+  *  filter duplicated deployments ([c34e5995](https://github.com/zeebe-io/zeebe/commit/c34e59958afc858b1f164b086a6245820215bec5))
+  *  expose elasticsearch exporter metrics ([62448c75](https://github.com/zeebe-io/zeebe/commit/62448c757edd197c3a6e88722b2f3979016e63cc))
+  *  add exporter back off retry strategy ([9a92c04b](https://github.com/zeebe-io/zeebe/commit/9a92c04bb0d631076c2b7f3dbc08804952e1dbf7))
+* **clients/java:**  
+  *  allow job handlers to throw exceptions ([77192a92](https://github.com/zeebe-io/zeebe/commit/77192a92b614bd165c0ce9af70473f08e5d1625e))
+  *   allow to set request timeout ([2d7ac6b9](https://github.com/zeebe-io/zeebe/commit/2d7ac6b9476e2731fb012b37f8ac61f2134bb073))
+* **gateway:**  add grpc metrics ([aa7f47a6](https://github.com/zeebe-io/zeebe/commit/aa7f47a6f3921503d5647414fcbd8633da880d7f))
 
 #### Bug Fixes
 
-* **broker:**  fixed missing distributed CREATEs during restart ([a24c04f4](https://github.com/zeebe-io/zeebe/commit/a24c04f4f114e731945241d38689cd4e749d65ed))
-* **logstreams:**  do not replicate existing snapshot ([097dae7f](https://github.com/zeebe-io/zeebe/commit/097dae7f28895f895a560d22ea1f372057ddc215))
-
-
-
-<a name="0.19.0"></a>
-## 0.19.0 (2019-07-02)
-
-
-#### Bug Fixes
-
-* **broker:**  fixed missing distributed CREATEs during restart ([a24c04f4](https://github.com/zeebe-io/zeebe/commit/a24c04f4f114e731945241d38689cd4e749d65ed))
-* **logstreams:**  do not replicate existing snapshot ([097dae7f](https://github.com/zeebe-io/zeebe/commit/097dae7f28895f895a560d22ea1f372057ddc215))
-
-
+* **broker:**
+  *  fixed missing distributed CREATEs during restart ([a24c04f4](https://github.com/zeebe-io/zeebe/commit/a24c04f4f114e731945241d38689cd4e749d65ed))
+  *  reject deployments with duplicate process ids ([46c929e4](https://github.com/zeebe-io/zeebe/commit/46c929e40406c40ba8d81d022da8f4bd43174bd3))
+  *  copy deployment resources ([b79697a1](https://github.com/zeebe-io/zeebe/commit/b79697a1046d9e4f59503255d2cafa262f41715c))
+  *   fix transformation to get deployed workflows ([743fe20a](https://github.com/zeebe-io/zeebe/commit/743fe20a492e5cf3e682b2d93b978bb69de1eed6))
+* **docker:**  remove deprecated JVM option ([950795f8](https://github.com/zeebe-io/zeebe/commit/950795f869367d1eb13036b1492a84486284d233))
 
 <a name="0.19.0-alpha3"></a>
 ## 0.19.0-alpha3 (2019-06-28)
