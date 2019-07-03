@@ -12,7 +12,7 @@
 
   <properties>
     <jetty.version>9.4.15.v20190215</jetty.version>
-    <jersey.version>2.28</jersey.version>
+    <jersey.version>2.29</jersey.version>
     <skipTests>false</skipTests>
     <it.test.excludedGroups />
     <env.LIMITS_CPU />
