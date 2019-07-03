@@ -29,7 +29,6 @@ import org.camunda.operate.rest.dto.listview.WorkflowInstanceStateDto;
 import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.StringUtils;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.junit.After;
@@ -168,19 +167,63 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     String processId = "demoProcess";
     final Long workflowId = deployWorkflow("demoProcess_v_1.bpmn");
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    
     //create an incident
     ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when
-    //1st load incident and then workflow instance events
+    //1st load incident 
     processAllEvents(1, ImportValueType.INCIDENT);
+    //and then workflow instance events
     processAllEvents(8, ImportValueType.WORKFLOW_INSTANCE);
 
     //then
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceKey);
+    assertWorkflowInstanceListViewEntityWithIncident(workflowInstanceEntity,"Demo process",workflowId,workflowInstanceKey);
+    //and
+    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceKey);
+    assertThat(allIncidents).hasSize(1);
+    assertIncidentEntity(allIncidents.get(0),activityId, workflowId,IncidentState.ACTIVE);
+
+    //and
+    final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
+    assertListViewWorkflowInstanceDto(wi, workflowId, workflowInstanceKey);
+
+    //and
+    final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
+    assertActivityInstanceTreeDto(tree, 2, activityId);
+  }
+
+  private void assertActivityInstanceTreeDto(final ActivityInstanceTreeDto tree,final int childrenCount, final String activityId) {
+    assertThat(tree.getChildren()).hasSize(childrenCount);
+    assertStartActivityCompleted(tree.getChildren().get(0));
+    assertActivityIsInIncidentState(tree.getChildren().get(1), activityId);
+  }
+
+  private void assertListViewWorkflowInstanceDto(final ListViewWorkflowInstanceDto wi, final Long workflowId, final Long workflowInstanceKey) {
+    assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.INCIDENT);
+    assertThat(wi.getWorkflowId()).isEqualTo(workflowId.toString());
+    assertThat(wi.getWorkflowName()).isEqualTo("Demo process");
+    assertThat(wi.getWorkflowVersion()).isEqualTo(1);
+    assertThat(wi.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(wi.getEndDate()).isNull();
+    assertThat(wi.getStartDate()).isAfterOrEqualTo(testStartTime);
+    assertThat(wi.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+  }
+
+  private void assertIncidentEntity(final IncidentEntity incidentEntity,String activityId, final Long workflowId,final IncidentState state) {
+    assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
+    assertThat(incidentEntity.getFlowNodeInstanceKey()).isNotNull();
+    assertThat(incidentEntity.getErrorMessage()).isNotEmpty();
+    assertThat(incidentEntity.getErrorType()).isNotNull();
+    assertThat(incidentEntity.getState()).isEqualTo(state);
+    assertThat(incidentEntity.getWorkflowId()).isEqualTo(workflowId);
+  }
+
+  private void assertWorkflowInstanceListViewEntityWithIncident(WorkflowInstanceForListViewEntity workflowInstanceEntity,final String workflowName,final Long workflowId, final Long workflowInstanceKey) {
     assertThat(workflowInstanceEntity.getWorkflowId()).isEqualTo(workflowId);
-    assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo("Demo process");
+    assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo(workflowName);
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
     assertThat(workflowInstanceEntity.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getKey()).isEqualTo(workflowInstanceKey);
@@ -188,32 +231,6 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(workflowInstanceEntity.getEndDate()).isNull();
     assertThat(workflowInstanceEntity.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(workflowInstanceEntity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
-
-    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceKey);
-    assertThat(allIncidents).hasSize(1);
-    IncidentEntity incidentEntity = allIncidents.get(0);
-    assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
-    assertThat(incidentEntity.getFlowNodeInstanceKey()).isNotNull();
-    assertThat(incidentEntity.getErrorMessage()).isNotEmpty();
-    assertThat(incidentEntity.getErrorType()).isNotNull();
-    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
-
-    //assert list view data
-    final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
-    assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.INCIDENT);
-    assertThat(wi.getWorkflowId()).isEqualTo(StringUtils.toStringOrNull(workflowId));
-    assertThat(wi.getWorkflowName()).isEqualTo("Demo process");
-    assertThat(wi.getWorkflowVersion()).isEqualTo(1);
-    assertThat(wi.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
-    assertThat(wi.getEndDate()).isNull();
-    assertThat(wi.getStartDate()).isAfterOrEqualTo(testStartTime);
-    assertThat(wi.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
-
-    //assert activity instance tree
-    final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
-    assertThat(tree.getChildren()).hasSize(2);
-    assertStartActivityCompleted(tree.getChildren().get(0));
-    assertActivityIsInIncidentState(tree.getChildren().get(1), "taskA");
   }
 
   protected ListViewWorkflowInstanceDto getSingleWorkflowInstanceForListView() {

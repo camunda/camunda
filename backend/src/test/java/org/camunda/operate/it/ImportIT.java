@@ -357,8 +357,8 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     final String errorMessage = "Error occurred when working on the job";
 
     String processId = "demoProcess";
-    /*final String workflowId =*/ deployWorkflow("demoProcess_v_1.bpmn");
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final Long workflowId = deployWorkflow("demoProcess_v_1.bpmn");
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //when
     //create an incident
@@ -368,6 +368,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceKey);
     assertThat(allIncidents).hasSize(1);
     IncidentEntity incidentEntity = allIncidents.get(0);
+    assertThat(incidentEntity.getWorkflowId()).isEqualTo(workflowId);
     assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(incidentEntity.getFlowNodeInstanceKey()).isNotNull();
     assertThat(incidentEntity.getErrorMessage()).isEqualTo(errorMessage);
@@ -405,16 +406,17 @@ public class ImportIT extends OperateZeebeIntegrationTest {
           .endEvent()
       .done();
     final String resourceName = processId + ".bpmn";
-    deployWorkflow(workflow, resourceName);
+    final Long workflowId = deployWorkflow(workflow, resourceName);
 
     //when
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
 
     //then incident created, activity in INCIDENT state
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceKey);
     assertThat(allIncidents).hasSize(1);
     IncidentEntity incidentEntity = allIncidents.get(0);
+    assertThat(incidentEntity.getWorkflowId()).isEqualTo(workflowId);
     assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(incidentEntity.getFlowNodeInstanceKey()).isNotNull();
     assertThat(incidentEntity.getErrorMessage()).isNotEmpty();
@@ -468,16 +470,17 @@ public class ImportIT extends OperateZeebeIntegrationTest {
           .endEvent()
       .done();
     final String resourceName = processId + ".bpmn";
-    deployWorkflow(workflow, resourceName);
+    final Long workflowId = deployWorkflow(workflow, resourceName);
 
     //when
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
 
     //then incident created, activity in INCIDENT state
     List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceKey);
     assertThat(allIncidents).hasSize(1);
     IncidentEntity incidentEntity = allIncidents.get(0);
+    assertThat(incidentEntity.getWorkflowId()).isEqualTo(workflowId);
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
 
     //when I cancel workflow instance

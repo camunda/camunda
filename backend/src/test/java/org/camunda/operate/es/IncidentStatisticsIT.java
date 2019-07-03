@@ -18,6 +18,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.camunda.operate.entities.ActivityState;
+import org.camunda.operate.entities.IncidentEntity;
+import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
@@ -338,6 +340,10 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
       final ActivityInstanceForListViewEntity activityInstance = createActivityInstance(workflowInstance.getWorkflowInstanceId(), ActivityState.ACTIVE);
       createIncident(activityInstance, withOtherMsg ? ERRMSG_OTHER : null, null);
       entities.add(activityInstance);
+      IncidentEntity incidentEntity = TestUtil.createIncident(IncidentState.ACTIVE,activityInstance.getActivityId(), Long.valueOf(activityInstance.getId()),activityInstance.getErrorMessage());
+      incidentEntity.setWorkflowId(workflowInstance.getWorkflowId());
+      incidentEntity.setWorkflowInstanceId(workflowInstance.getWorkflowInstanceId());
+      entities.add(incidentEntity);
     }
     for (int i = 0; i < resolvedIncidentsCount; i++) {
       final ActivityInstanceForListViewEntity activityInstance = createActivityInstance(workflowInstance.getWorkflowInstanceId(), ActivityState.ACTIVE);
