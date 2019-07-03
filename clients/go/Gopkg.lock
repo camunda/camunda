@@ -135,7 +135,7 @@
   revision = "daca94659cb50e9f37c1b834680f2e46358f10b0"
 
 [[projects]]
-  digest = "1:e8800ddadd6bce3bc0c5ffd7bc55dbdddc6e750956c10cc10271cade542fccbe"
+  digest = "1:cf01ae0753310464677058b125fa31e74fd943781782ada503180ad784fc83d3"
   name = "google.golang.org/grpc"
   packages = [
     ".",
@@ -167,13 +167,14 @@
     "resolver",
     "resolver/dns",
     "resolver/passthrough",
+    "serviceconfig",
     "stats",
     "status",
     "tap",
   ]
   pruneopts = "UT"
-  revision = "501c41df7f472c740d0674ff27122f3f48c80ce7"
-  version = "v1.21.1"
+  revision = "1d89a3c832915b2314551c1d2a506874d62e53f7"
+  version = "v1.22.0"
 
 [solve-meta]
   analyzer-name = "dep"
