@@ -77,6 +77,9 @@ test('cancel changes', async t => {
 
 test('sharing', async t => {
   await t.click(e.report);
+
+  await t.expect(e.shareButton.hasAttribute('disabled')).notOk();
+
   await t.click(e.shareButton);
   await t.click(e.shareSwitch);
 

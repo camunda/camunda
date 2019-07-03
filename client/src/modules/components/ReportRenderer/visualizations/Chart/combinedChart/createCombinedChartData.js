@@ -40,14 +40,14 @@ export function extractCombinedData({report, theme, targetValue}) {
   const isDark = theme === 'dark';
   const labelsMap = {};
 
-  const keys = [
-    ...new Set(
+  const keys = Array.from(
+    new Set(
       resultArr.flat(2).map(({key, label}) => {
         labelsMap[key] = label;
         return key;
       })
     )
-  ];
+  );
 
   const unitedResults = uniteResults(resultArr, keys);
   const labels = keys.map(key => labelsMap[key] || key);

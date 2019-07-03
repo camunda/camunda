@@ -111,13 +111,15 @@ test('create collections and add items to it', async t => {
   await t.click(e.option('New Collection'));
   await t.click(e.createCollectionButton);
 
+  await t.expect(e.collectionItem.visible).ok();
+
   await t.click(e.collectionsDropdownFor('Dashboard'));
-  await t.click(e.option('New Collection'));
+  await t.click(e.collectionOption('New Collection'));
 
   await t.expect(e.dashboardItem.textContent).contains('In 1 Collection');
 
   await t.click(e.collectionsDropdownFor('Report'));
-  await t.click(e.option('New Collection'));
+  await t.click(e.collectionOption('New Collection'));
 
   await t.expect(e.reportItem.textContent).contains('In 1 Collection');
 

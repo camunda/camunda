@@ -9,6 +9,8 @@ import {Selector} from 'testcafe';
 export const createNewMenu = Selector('.createAllButton');
 export const newReportOption = Selector('.createAllButton .Submenu');
 export const option = text => Selector('.DropdownOption').withText(text);
+export const collectionOption = text =>
+  Selector('.CollectionsDropdown.is-open .DropdownOption').withText(text);
 export const submenuOption = text => Selector('.Submenu .DropdownOption').withText(text);
 export const homepageLink = Selector('.HeaderNav__item').withText('Dashboards & Reports');
 export const reportItem = Selector('.ReportItem');

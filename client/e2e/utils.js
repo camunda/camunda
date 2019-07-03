@@ -8,6 +8,7 @@ import {Selector} from 'testcafe';
 
 export async function login(t) {
   await t
+    .maximizeWindow()
     .typeText('input[name="username"]', 'demo')
     .typeText('input[name="password"]', 'demo')
     .click('.primary');

@@ -11,7 +11,7 @@ export const reportName = Selector('.ReportView .name');
 export const reportRenderer = Selector('.ReportRenderer');
 export const report = Selector('.ReportItem');
 export const editButton = Selector('a[title="Edit Report"]');
-export const shareButton = Selector('.share-button');
+export const shareButton = Selector('.share-button > .Button');
 export const shareSwitch = Selector('.ShareEntity .Switch');
 export const shareUrl = Selector('.ShareEntity .ShareEntity__share-link input');
 export const deleteButton = Selector('.delete-button');

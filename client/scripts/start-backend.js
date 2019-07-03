@@ -1,3 +1,9 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
 const {spawn} = require('child_process');
 const path = require('path');
 const request = require('request');
@@ -105,16 +111,8 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
         dockerProcess.stdout.on('data', data => addLog(data, 'docker'));
         dockerProcess.stderr.on('data', data => addLog(data, 'docker', true));
 
-        process.on('SIGINT', () => {
-          const dockerStopProcess = spawn('docker-compose', ['rm', '-sfv'], {
-            cwd: path.resolve(__dirname, '..'),
-            shell: true
-          });
-
-          dockerStopProcess.on('close', () => {
-            process.exit();
-          });
-        });
+        process.on('SIGINT', stopDocker);
+        process.on('SIGTERM', stopDocker);
 
         // wait for the engine rest endpoint to be up before resolving the promise
         function serverCheck() {
@@ -153,7 +151,9 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
             const id = Object.keys(resp.deployedProcessDefinitions)[0];
 
             function startInstance(idx) {
-              if (!instances[idx]) return;
+              if (!instances[idx]) {
+                return;
+              }
               processDefinitionService
                 .start({
                   id,
@@ -248,3 +248,14 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
   });
 });
+
+function stopDocker() {
+  const dockerStopProcess = spawn('docker-compose', ['rm', '-sfv'], {
+    cwd: path.resolve(__dirname, '..'),
+    shell: true
+  });
+
+  dockerStopProcess.on('close', () => {
+    process.exit();
+  });
+}

@@ -10,19 +10,21 @@ const chalk = require('chalk');
 
 const {spawn} = require('child_process');
 const net = require('net');
+const kill = require('tree-kill');
 
 process.env.BROWSERSTACK_USERNAME = 'optimize@camunda.com';
 process.env.BROWSERSTACK_ACCESS_KEY = 'QDQfPYkTYy8SQBYYt1zB';
+process.env.BROWSERSTACK_USE_AUTOMATE = '1';
 
 const browsers = [
-  'browserstack:Chrome',
+  'browserstack:IE@11.0:Windows 8.1',
+  'browserstack:Edge',
   'browserstack:Firefox',
-  'browserstack:IE',
-  'browserstack:Edge'
+  'browserstack:Chrome'
 ];
 
-spawn('yarn', ['run', 'start-backend']);
-spawn('yarn', ['start']);
+const backendProcess = spawn('yarn', ['run', 'start-backend']);
+const frontendProcess = spawn('yarn', ['start']);
 
 let dataInterval;
 const connectionInterval = setInterval(async () => {
@@ -88,13 +90,11 @@ async function startTest() {
         .createRunner()
         .src('e2e/tests/*.js')
         .browsers(browsers[i])
-        .run({
-          selectorTimeout: 50000,
-          assertionTimeout: 7000,
-          pageLoadTimeout: 8000
-        });
+        .run({skipJsErrors: true, assertionTimeout: 10000, pageLoadTimeout: 10000});
     }
   } finally {
     testCafe.close();
+    kill(backendProcess.pid);
+    kill(frontendProcess.pid);
   }
 }
