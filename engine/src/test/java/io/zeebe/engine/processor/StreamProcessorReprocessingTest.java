@@ -383,4 +383,64 @@ public class StreamProcessorReprocessingTest {
 
     assertThat(processedPositions).containsExactly(position);
   }
+
+  @Test
+  public void shouldNotReprocessEventAtSnapshotPosition() throws Exception {
+    // given
+    final CountDownLatch processingLatch = new CountDownLatch(2);
+    streamProcessorRule.startTypedStreamProcessor(
+        (processors, state) ->
+            processors.onEvent(
+                ValueType.WORKFLOW_INSTANCE,
+                ELEMENT_ACTIVATING,
+                new TypedRecordProcessor<UnifiedRecordValue>() {
+                  @Override
+                  public void processRecord(
+                      long position,
+                      TypedRecord<UnifiedRecordValue> record,
+                      TypedResponseWriter responseWriter,
+                      TypedStreamWriter streamWriter,
+                      Consumer<SideEffectProducer> sideEffect) {
+                    processingLatch.countDown();
+                  }
+                }));
+
+    streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+    final long snapshotPosition =
+        streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+    processingLatch.await();
+    streamProcessorRule.closeStreamProcessor(); // enforce snapshot
+    final long lastSourceEvent =
+        streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+    final long lastEvent =
+        streamProcessorRule.writeWorkflowInstanceEventWithSource(
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING, 1, lastSourceEvent);
+
+    // when
+    final List<Long> processedPositions = new ArrayList<>();
+    final CountDownLatch newProcessLatch = new CountDownLatch(2);
+    streamProcessorRule.startTypedStreamProcessor(
+        (processors, state) ->
+            processors.onEvent(
+                ValueType.WORKFLOW_INSTANCE,
+                ELEMENT_ACTIVATING,
+                new TypedRecordProcessor<UnifiedRecordValue>() {
+                  @Override
+                  public void processRecord(
+                      long position,
+                      TypedRecord<UnifiedRecordValue> record,
+                      TypedResponseWriter responseWriter,
+                      TypedStreamWriter streamWriter,
+                      Consumer<SideEffectProducer> sideEffect) {
+                    processedPositions.add(position);
+                    newProcessLatch.countDown();
+                  }
+                }));
+
+    // then
+    newProcessLatch.await();
+
+    assertThat(processedPositions).doesNotContain(snapshotPosition);
+    assertThat(processedPositions).containsExactly(lastSourceEvent, lastEvent);
+  }
 }
