@@ -114,6 +114,8 @@ multibranchPipelineJob('camunda-operate') {
   }
 
   triggers {
-    periodic(1440) // Minutes - Re-index once a day, if not triggered before
+    periodicFolderTrigger {
+      interval('1d')
+    }
   }
 }
