@@ -170,6 +170,29 @@
                   <overWriteSnapshots>true</overWriteSnapshots>
                 </configuration>
               </execution>
+              <execution>
+                <id>copy-generator-2-6</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.camunda.optimize</groupId>
+                      <artifactId>generator</artifactId>
+                      <version>${project.version}</version>
+                      <type>jar</type>
+                      <classifier>jar-with-dependencies</classifier>
+                      <overWrite>true</overWrite>
+                      <outputDirectory>${project.build.directory}/generators</outputDirectory>
+                      <destFileName>generator${project.version}.jar</destFileName>
+                    </artifactItem>
+                  </artifactItems>
+                  <overWriteReleases>false</overWriteReleases>
+                  <overWriteSnapshots>true</overWriteSnapshots>
+                </configuration>
+              </execution>
             </executions>
           </plugin>
           <!-- 2. Start CamBPM and ES through docker-compose -->
@@ -354,24 +377,23 @@
                               <socket server="localhost" port="8090" />
                             </waitfor>
 
+                            <echo message="Waiting for Optimize to populate ES..." />
+                            <exec executable="/bin/bash">
+                              <arg value="-c" />
+                              <arg value="until test $(curl -s -XPOST -H 'Content-Type: application/json' -d '{&quot;query&quot; : {&quot;bool&quot;: {&quot;must_not&quot;: {&quot;exists&quot;: {&quot;field&quot;: &quot;bpmn20Xml&quot;}}}}}' 'http://localhost:9200/optimize-process-definition/_count' | jq '.count // 0') -eq 0; do sleep 2; done" />
+                            </exec>
+
                             <echo message="Running post migration tests..." />
                             <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
                               <arg value="-c" />
                               <arg value="set -o pipefail; mvn verify -DskipTests=false -B ${maven-settings} -f qa/upgrade-optimize-data -pl post-migration-test | sed 's/^/[POST MIGRATION TESTS]: /'" />
                             </exec>
-                            <ac:if>
-                              <not>
-                                <matches string="${upgrade.versions}" pattern="@{currentVersion}$" />
-                              </not>
-                              <ac:then>
-                                <!-- Generate additional data-->
-                                <echo message="Generating optimize data" />
-                                <exec executable="/bin/bash" failonerror="true">
-                                  <arg value="-c" />
-                                  <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator@{currentVersion}.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'" />
-                                </exec>
-                              </ac:then>
-                            </ac:if>
+                              <!-- Generate additional data-->
+                            <echo message="Generating optimize data" />
+                            <exec executable="/bin/bash" failonerror="true">
+                              <arg value="-c" />
+                              <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator@{currentVersion}.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'" />
+                            </exec>
                             <echo message="Killing Optimize @{currentVersion}..." />
                             <exec executable="/bin/bash">
                               <arg value="-c" />
@@ -392,7 +414,7 @@
                           <echo message="Waiting for Optimize to populate ES..." />
                           <exec executable="/bin/bash">
                             <arg value="-c" />
-                            <arg value="until test $(curl -s 'http://localhost:9200/optimize-metadata/_count' | jq '.count // 0') -eq 1; do sleep 2; done" />
+                            <arg value="until test $(curl -s -XPOST -H 'Content-Type: application/json' -d '{&quot;query&quot; : {&quot;bool&quot;: {&quot;must_not&quot;: {&quot;exists&quot;: {&quot;field&quot;: &quot;bpmn20Xml&quot;}}}}}' 'http://localhost:9200/optimize-process-definition/_count' | jq '.count // 0') -eq 0; do sleep 2; done" />
                           </exec>
 
                           <echo message="Generating optimize data" />
