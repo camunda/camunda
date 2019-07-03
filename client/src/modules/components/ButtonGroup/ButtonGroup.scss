@@ -2,65 +2,58 @@
 
 .ButtonGroup {
   display: flex;
-}
 
-.ButtonGroup.disabled {
-  pointer-events: none;
+  &.disabled {
+    pointer-events: none;
 
-  .Button {
-    color: #ababab;
+    .Button,
+    a.Button {
+      color: #ababab;
 
-    &.is-active {
-      color: #fff;
-      background: #cccccc;
-      border: 1px solid #cccccc;
+      &.is-active {
+        color: #fff;
+        background: #cccccc;
+        border: 1px solid #cccccc;
+      }
     }
   }
-}
 
-.ButtonGroup .Button,
-.ButtonGroup a.Button {
-  flex: 1 0 auto;
-  border-radius: 0;
-  border-right-width: 0;
-  position: relative;
-
-  &.is-active {
-    color: white;
-    background-color: $blue;
-    border: 1px solid darken($blue, 5%);
+  .Button,
+  a.Button {
+    flex: 1 0 auto;
+    border-radius: 0;
     border-right-width: 0;
-    transition: background-color 0.2s, border-color 0.2s;
+    position: relative;
+
+    &.isActive {
+      color: white;
+      background-color: $blue;
+      border: 1px solid darken($blue, 5%);
+      border-right-width: 0;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+
+    &:focus {
+      z-index: 1;
+    }
+
+    &:hover {
+      border-right-width: 0;
+    }
+
+    &:first-child {
+      border-top-left-radius: 3px;
+      border-bottom-left-radius: 3px;
+    }
+
+    &:last-child {
+      border-top-right-radius: 3px;
+      border-bottom-right-radius: 3px;
+      border-right-width: 1px;
+
+      &:hover {
+        border-right-width: 1px;
+      }
+    }
   }
-
-  &:focus {
-    z-index: 1;
-  }
-}
-.ButtonGroup .Button:hover,
-.ButtonGroup a.Button:hover {
-  border-right-width: 0;
-}
-
-.ButtonGroup .Button:first-child,
-.ButtonGroup a.Button:first-child {
-  border-top-left-radius: 3px;
-  border-bottom-left-radius: 3px;
-}
-
-.ButtonGroup .Button:last-child,
-.ButtonGroup a.Button:last-child {
-  border-top-right-radius: 3px;
-  border-bottom-right-radius: 3px;
-  border-right-width: 1px;
-}
-
-.ButtonGroup .Button:last-child:hover,
-.ButtonGroup a.Button:last-child:hover {
-  border-right-width: 1px;
-}
-
-.ButtonGroup .Button:focus,
-.ButtonGroup a.Button:focus {
-  /* TODO: box-shadow focus style */
 }

@@ -8,7 +8,7 @@
 
     &:hover,
     &:active,
-    &.is-active {
+    &.isActive {
       color: #ddd;
       background-color: #333;
       border: 1px solid #333;
@@ -28,7 +28,7 @@ a.Button {
   text-decoration: none;
   display: inline-block;
 
-  &.Button--link {
+  &.link {
     display: inline;
     align-items: normal;
     background-color: transparent;
@@ -48,133 +48,112 @@ a.Button {
       text-decoration: underline;
     }
   }
-}
-
-.Button:hover,
-a.Button:hover {
-  color: #111;
-  background-color: #e6e6e6;
-  border: 1px solid #adadad;
-  cursor: pointer;
-  transition: background-color 0.3s, border-color 0.3s;
-}
-
-.Button[disabled]:hover,
-.Button[disabled='disabled']:hover,
-a.Button[disabled]:hover,
-a.Button[disabled='disabled']:hover {
-  color: #333;
-  background-color: #f8f8f8;
-  border: 1px solid #ccc;
-}
-
-.Button:active,
-a.Button:active,
-.Button.is-active,
-a.Button.is-active {
-  color: #111;
-  background-color: darken(#e6e6e6, 12);
-  border: 1px solid darken(#adadad, 12);
-  transition: none;
-}
-
-.Button[disabled],
-.Button[disabled='disabled'],
-a.Button[disabled],
-a.Button[disabled='disabled'] {
-  cursor: not-allowed;
-  opacity: 0.65;
-}
-
-.Button--small,
-a.Button--small {
-  font-size: 0.75em; /* 12px/16px */
-  padding: 4px 8px;
-}
-
-.Button--primary,
-a.Button--primary {
-  font-weight: bold;
-}
-
-.Button--blue,
-a.Button--blue {
-  color: white;
-  font-weight: bold;
-  background-color: $blue;
-  border: 1px solid $blue;
-
-  &:focus,
-  &.is-active {
-    color: white;
-    background-color: darken($blue, 10%);
-    border: 1px solid darken($blue, 12%);
-  }
 
   &:hover {
-    color: white;
-    background-color: darken($blue, 5%);
-    border: 1px solid darken($blue, 7%);
+    color: #111;
+    background-color: #e6e6e6;
+    border: 1px solid #adadad;
+    cursor: pointer;
+    transition: background-color 0.3s, border-color 0.3s;
+  }
+
+  &[disabled]:hover,
+  &[disabled='disabled']:hover {
+    color: #333;
+    background-color: #f8f8f8;
+    border: 1px solid #ccc;
+  }
+
+  &:active,
+  &.isActive {
+    color: #111;
+    background-color: darken(#e6e6e6, 12);
+    border: 1px solid darken(#adadad, 12);
+    transition: none;
   }
 
   &[disabled],
-  &[disabled='disabled'],
-  &[disabled]:hover,
-  &[disabled='disabled']:hover {
-    color: white;
-    background-color: lighten($blue, 20%);
-    border: 1px solid lighten($blue, 20%);
+  &[disabled='disabled'] {
+    cursor: not-allowed;
+    opacity: 0.65;
   }
-}
 
-.Button--red,
-a.Button--red {
-  color: white;
-  background-color: $cam-red;
-  border: 1px solid $cam-red;
-}
+  &.small {
+    font-size: 0.75em; /* 12px/16px */
+    padding: 4px 8px;
+  }
 
-.Button--red:hover,
-a.Button--red:hover {
-  color: white;
-  background-color: darken($cam-red, 10%);
-  border: 1px solid darken($cam-red, 10%);
-}
+  &.primary {
+    font-weight: bold;
+  }
 
-.Button--red[disabled]:hover,
-.Button--red[disabled='disabled']:hover,
-a.Button--red[disabled]:hover,
-a.Button--red[disabled='disabled']:hover {
-  color: white;
-  background-color: $cam-red;
-  border: 1px solid $cam-red;
-}
+  &.blue {
+    color: white;
+    background-color: $blue;
+    border: 1px solid $blue;
 
-.Button--green,
-a.Button--green {
-  color: white;
-  background-color: $cam-green;
-  border: 1px solid $cam-green;
-}
+    &:focus,
+    &.isActive {
+      color: white;
+      background-color: darken($blue, 10%);
+      border: 1px solid darken($blue, 12%);
+    }
 
-.Button--green:hover,
-a.Button--green:hover {
-  color: white;
-  background-color: darken($cam-green, 10%);
-  border: 1px solid darken($cam-green, 10%);
-}
+    &:hover {
+      color: white;
+      background-color: darken($blue, 5%);
+      border: 1px solid darken($blue, 7%);
+    }
 
-.Button--green[disabled]:hover,
-.Button--green[disabled='disabled']:hover,
-a.Button--green[disabled]:hover,
-a.Button--green[disabled='disabled']:hover {
-  color: white;
-  background-color: $cam-green;
-  border: 1px solid $cam-green;
-}
+    &[disabled],
+    &[disabled='disabled'],
+    &[disabled]:hover,
+    &[disabled='disabled']:hover {
+      color: white;
+      background-color: lighten($blue, 20%);
+      border: 1px solid lighten($blue, 20%);
+    }
+  }
 
-// Modify .Icon when used inside .Button to keep  distance to button label:
-.Button {
+  &.red {
+    color: white;
+    background-color: $cam-red;
+    border: 1px solid $cam-red;
+
+    &:hover {
+      color: white;
+      background-color: darken($cam-red, 10%);
+      border: 1px solid darken($cam-red, 10%);
+    }
+
+    &[disabled]:hover,
+    &[disabled='disabled']:hover {
+      color: white;
+      background-color: $cam-red;
+      border: 1px solid $cam-red;
+    }
+  }
+
+  &.green {
+    color: white;
+    background-color: $cam-green;
+    border: 1px solid $cam-green;
+
+    &:hover {
+      color: white;
+      background-color: darken($cam-green, 10%);
+      border: 1px solid darken($cam-green, 10%);
+    }
+
+    &[disabled]:hover,
+    &[disabled='disabled']:hover {
+      color: white;
+      background-color: $cam-green;
+      border: 1px solid $cam-green;
+    }
+  }
+
+  // Modify .Icon when used inside .Button to keep  distance to button label:
   .Icon {
     margin-right: 0.65em;
   }

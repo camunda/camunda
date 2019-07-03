@@ -428,3 +428,10 @@ it('should invoke findLetterOption when typing a character', () => {
   expect(findLetterOption.mock.calls[0][1]).toBe('f');
   expect(findLetterOption.mock.calls[0][2]).toBe(3);
 });
+
+it('should add color property to dropdown button', () => {
+  const node = mount(<Dropdown color="red" />);
+
+  expect(node.find('Button').props().color).toBe('red');
+  expect(node.find('Button').props().type).toBe('primary');
+});

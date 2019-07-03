@@ -49,7 +49,7 @@ it('should render without crashing', () => {
   shallow(<ChartTargetInput {...validProps} />);
 });
 
-it('should add is-active classname to the clicked button in the buttonGroup', () => {
+it('should add isActive classname to the clicked button in the buttonGroup', () => {
   const node = shallow(<ChartTargetInput {...validProps} />);
 
   node
