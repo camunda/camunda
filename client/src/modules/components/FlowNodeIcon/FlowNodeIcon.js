@@ -6,46 +6,47 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-
+import {TYPE} from 'modules/constants';
 import {themed} from 'modules/theme';
 
 import * as Styled from './styled';
 
-function getFlowNodeTypeIcon(type) {
-  switch (type) {
-    // workflow
-    case 'WORKFLOW':
-      return Styled.Workflow;
-    // tasks
-    case 'SERVICE_TASK':
-      return Styled.TaskService;
-    // events
-    case 'END_EVENT':
-      return Styled.EndEvent;
-    case 'START_EVENT':
-    case 'INTERMEDIATE_CATCH_EVENT':
-    case 'BOUNDARY_EVENT':
-      return Styled.StartEvent;
-    // gateways
-    case 'EXCLUSIVE_GATEWAY':
-      return Styled.ExclusiveGateway;
-    case 'PARALLEL_GATEWAY':
-      return Styled.ParallelGateway;
-    // fallback the rest to Task
-    default:
-      return Styled.TaskDefault;
-  }
+const getEventFlowNode = (eventType, elementType) => {
+  const map = {
+    [TYPE.EVENT_TIMER]: Styled[TYPE.EVENT_TIMER + `_${elementType}`],
+    [TYPE.EVENT_MESSAGE]: Styled[TYPE.EVENT_MESSAGE + `_${elementType}`]
+  };
+  return map[eventType];
+};
+
+const flowNodes = {
+  [TYPE.WORKFLOW]: Styled[TYPE.WORKFLOW],
+  [TYPE.EVENT_START]: Styled[TYPE.EVENT_START],
+  [TYPE.EVENT_END]: Styled[TYPE.EVENT_END],
+  //Tasks
+  [TYPE.TASK_SERVICE]: Styled[TYPE.TASK_SERVICE],
+  [TYPE.TASK_RECEIVE]: Styled[TYPE.TASK_RECEIVE],
+  [TYPE.TASK_SEND]: Styled[TYPE.TASK_SEND],
+  [TYPE.TASK_SUBPROCESS]: Styled[TYPE.TASK_SUBPROCESS],
+  //Gateways
+  [TYPE.GATEWAY_EVENT_BASED]: Styled[TYPE.GATEWAY_EVENT_BASED],
+  [TYPE.GATEWAY_PARALLEL]: Styled[TYPE.GATEWAY_PARALLEL],
+  [TYPE.GATEWAY_EXCLUSIVE]: Styled[TYPE.GATEWAY_EXCLUSIVE]
+};
+
+function getFlowNodeTypeIcon({elementType, eventType}) {
+  return !eventType
+    ? flowNodes[elementType] || Styled[TYPE.TASK_DEFAULT]
+    : getEventFlowNode(eventType, elementType) || Styled[TYPE.EVENT_START];
 }
 
-function FlowNodeIcon({type, isSelected, ...props}) {
-  // target flow node icon
-  const TargetFlowNodeTypeIcon = getFlowNodeTypeIcon(type);
-
+function FlowNodeIcon({types, isSelected, ...props}) {
+  const TargetFlowNodeTypeIcon = getFlowNodeTypeIcon(types);
   return <TargetFlowNodeTypeIcon {...props} />;
 }
 
 FlowNodeIcon.propTypes = {
-  type: PropTypes.string.isRequired,
+  types: PropTypes.object.isRequired,
   theme: PropTypes.string.isRequired,
   isSelected: PropTypes.bool
 };
