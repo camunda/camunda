@@ -11,39 +11,12 @@ import {ReactComponent as FoldableRightIcon} from 'modules/components/Icon/right
 
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 
-import {createFlowNodeInstance} from 'modules/testUtils';
-
 import * as Styled from './styled';
 import FlowNodeInstancesTree from './FlowNodeInstancesTree';
 import Foldable from './Foldable';
 import * as FoldableStyles from './Foldable/styled';
 
-const startEventInstance = createFlowNodeInstance({
-  id: 'StartEventId',
-  type: 'START_EVENT'
-});
-
-const flowNodeInstances = [
-  startEventInstance,
-  createFlowNodeInstance({
-    id: 'SubProcessId',
-    type: 'SUB_PROCESS',
-    children: [
-      createFlowNodeInstance({
-        id: 'ServiceTaskId',
-        type: 'TASK'
-      })
-    ]
-  }),
-  createFlowNodeInstance({id: 'EndEventId', type: 'END_EVENT'})
-];
-
-const parentNode = {
-  state: 'ACTIVE',
-  children: flowNodeInstances,
-  id: 'ParentNodeId',
-  type: 'WORKFLOW'
-};
+import {testData} from './FlowNodeInstancesTree.setup';
 
 // Mock TimeStampLabel node;
 
@@ -61,11 +34,11 @@ const mountNode = customProps => {
   const mountedNode = mount(
     <ThemeProvider>
       <FlowNodeInstancesTree
-        node={parentNode}
+        node={testData.parentNode}
         selectedTreeRowIds={[]}
         onTreeRowSelection={mockOnSelection}
         getFlowNodeDetails={jest.fn()}
-        getNodeWithName={node => node.id}
+        getNodeWithMetaData={node => node.id}
         treeDepth={1}
         {...customProps}
       />
@@ -134,7 +107,9 @@ describe('FlowNodeInstancesTree', () => {
   describe('FlowNode Instance Selection', () => {
     it('should show root element as default selection', () => {
       //Given
-      node = mountNode({selectedTreeRowIds: ['ParentNodeId']});
+      node = mountNode({
+        selectedTreeRowIds: testData.multipleSelectedTreeRowIds
+      });
       //Then
       const rootNode = node.find(`[data-test="ParentNodeId"]`);
 
@@ -144,7 +119,7 @@ describe('FlowNodeInstancesTree', () => {
     it('should call the OnSelect method from props with node obj of clicked row', () => {
       //Given
       node = mountNode({
-        selectedTreeRowIds: ['ParentNodeId', 'StartEventId', 'ServiceTaskId']
+        selectedTreeRowIds: testData.multipleSelectedTreeRowIds
       });
       const StartEventNodeButton = node
         .find(`[data-test="StartEventId"]`)
@@ -154,7 +129,7 @@ describe('FlowNodeInstancesTree', () => {
       // When
       StartEventNodeButton.simulate('click');
       //Then
-      expect(mockOnSelection).toHaveBeenCalledWith(startEventInstance);
+      expect(mockOnSelection).toHaveBeenCalledWith(testData.startEventInstance);
     });
   });
 
@@ -177,7 +152,7 @@ describe('FlowNodeInstancesTree', () => {
       expect(
         node
           .find(Foldable.Summary)
-          .find(`[data-test="${parentNode.id}"]`)
+          .find(`[data-test="${testData.parentNode.id}"]`)
           .find(FoldableRightIcon)
       ).not.toExist();
     });
@@ -192,7 +167,7 @@ describe('FlowNodeInstancesTree', () => {
       // On Tree level: 1
       expect(
         node
-          .find(`[data-test="${parentNode.id}"]`)
+          .find(`[data-test="${testData.parentNode.id}"]`)
           .find(Styled.NodeStateIcon)
           .find('[indentationMultiplier=1]')
       ).toExist();

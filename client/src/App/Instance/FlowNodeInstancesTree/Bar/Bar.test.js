@@ -9,12 +9,12 @@ import {mount} from 'enzyme';
 
 import {ReactComponent as FlowNodeStartEventIcon} from 'modules/components/Icon/flow-node-event-start.svg';
 
-import {createFlowNodeInstance} from 'modules/testUtils';
-
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 
 import {NoWrapBar} from './Bar';
 import TimeStampLabel from '../TimeStampLabel';
+
+import {testData} from './Bar.setup';
 
 jest.mock(
   '../TimeStampLabel',
@@ -24,16 +24,10 @@ jest.mock(
     }
 );
 
-const mockNode = createFlowNodeInstance({
-  type: 'START_EVENT',
-  id: 'someflowNodeIde',
-  name: 'Some Name'
-});
-
 const renderComponent = () => {
   const mountedComponent = mount(
     <ThemeProvider>
-      <NoWrapBar node={mockNode} isSelected={false} />
+      <NoWrapBar node={testData.mockNode} isSelected={false} />
     </ThemeProvider>
   );
 
@@ -52,7 +46,7 @@ describe('Bar', () => {
   });
 
   it('should render NodeName', () => {
-    expect(node.text()).toContain(mockNode.name);
+    expect(node.text()).toContain(testData.mockNode.name);
   });
 
   it('should render Time Stamp Component', () => {

@@ -8,7 +8,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
-import {createIncidentTableProps, createInstance} from 'modules/testUtils';
+
 import {SORT_ORDER} from 'modules/constants';
 import {act} from 'react-dom/test-utils';
 
@@ -20,7 +20,7 @@ import IncidentsTable from './IncidentsTable';
 import IncidentsBanner from './IncidentsBanner';
 import IncidentsFilter from './IncidentsFilter';
 
-const incidentsMock = createIncidentTableProps();
+import {testData} from './IncidentsWrapper.setup';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -41,43 +41,31 @@ jest.mock('react-transition-group', () => {
   };
 });
 
-const mockProps = {
-  instance: createInstance(),
-  incidents: incidentsMock.incidents,
-  incidentsCount: incidentsMock.count,
-  forceSpinner: false,
-  selectedIncidents: ['1', '2', '3'],
-  onIncidentOperation: jest.fn(),
-  onIncidentSelection: jest.fn(),
-  errorTypes: incidentsMock.errorTypes,
-  flowNodes: incidentsMock.flowNodes
-};
-
 const mountNode = () => {
   return mount(
     <ThemeProvider>
-      <IncidentsWrapper {...mockProps} />
+      <IncidentsWrapper {...testData.props.default} />
     </ThemeProvider>
   );
 };
 
 describe('IncidentsWrapper', () => {
   it('should hide the IncidentsOverlay by default', () => {
-    const node = mountNode(mockProps);
+    const node = mountNode(testData.props.default);
     expect(node.find(IncidentsOverlay)).not.toExist();
   });
 
   it('should render the IncidentsBanner', () => {
-    const node = mountNode(mockProps);
+    const node = mountNode(testData.props.default);
     const bar = node.find(IncidentsBanner);
 
     expect(bar).toExist();
-    expect(bar.props().id).toEqual(mockProps.instance.id);
-    expect(bar.props().count).toEqual(mockProps.incidentsCount);
+    expect(bar.props().id).toEqual(testData.props.default.instance.id);
+    expect(bar.props().count).toEqual(testData.props.default.incidentsCount);
   });
 
   it('should toggle the IncidentsOverlay when clicking on the IncidentsBanner', () => {
-    const node = mountNode(mockProps);
+    const node = mountNode(testData.props.default);
     expect(node.find(IncidentsOverlay).length).toEqual(0);
 
     // open overlay
@@ -94,7 +82,7 @@ describe('IncidentsWrapper', () => {
   });
 
   it('should render the IncidentsTable', () => {
-    const node = mountNode(mockProps);
+    const node = mountNode(testData.props.default);
 
     // open overlay
     node.find(IncidentsBanner).simulate('click');
@@ -105,7 +93,7 @@ describe('IncidentsWrapper', () => {
   });
 
   it('should render the IncidentsFilter', () => {
-    const node = mountNode(mockProps);
+    const node = mountNode(testData.props.default);
 
     // open overlay
     node.find(IncidentsBanner).simulate('click');
@@ -118,7 +106,7 @@ describe('IncidentsWrapper', () => {
 
   describe('Sorting', () => {
     it('it should apply default sorting to IncidentsTable', () => {
-      const node = mountNode(mockProps);
+      const node = mountNode(testData.props.default);
 
       // open overlay
       node.find(IncidentsBanner).simulate('click');
@@ -132,7 +120,7 @@ describe('IncidentsWrapper', () => {
       );
     });
     it('should change the sorting', () => {
-      const node = mountNode(mockProps);
+      const node = mountNode(testData.props.default);
 
       // open overlay
       node.find(IncidentsBanner).simulate('click');
@@ -170,7 +158,7 @@ describe('IncidentsWrapper', () => {
     let node;
     beforeEach(() => {
       // when
-      node = mountNode(mockProps);
+      node = mountNode(testData.props.default);
       node.find(IncidentsBanner).simulate('click');
       node.update();
     });
@@ -214,6 +202,7 @@ describe('IncidentsWrapper', () => {
       //given
       expect(node.find(IncidentsTable).find('tr').length).toBe(3);
       //when
+
       node
         .find('ul[data-test="incidents-by-flowNode"]')
         .find(Pill)
@@ -264,7 +253,7 @@ describe('IncidentsWrapper', () => {
       expect(node.find(IncidentsTable).find('tr').length).toBe(2);
     });
 
-    it('should remove filter when only related incident gets resolved', () => {
+    it.only('should remove filter when only related incident gets resolved', () => {
       // given
       node
         .find('ul[data-test="incidents-by-flowNode"]')
@@ -282,26 +271,14 @@ describe('IncidentsWrapper', () => {
 
       // when
       // Incident is resolved
-      const newErrorTypeMap = new Map(incidentsMock.errorTypes);
-      newErrorTypeMap.delete('Condition error');
-
-      const newFlowNodeMap = new Map(incidentsMock.flowNodes);
-      newFlowNodeMap.delete('flowNodeId_exclusiveGateway');
 
       node.setProps({
-        children: (
-          <IncidentsWrapper
-            {...mockProps}
-            incidents={[incidentsMock.incidents[0]]}
-            errorTypes={newErrorTypeMap}
-            flowNodes={newFlowNodeMap}
-          />
-        )
+        children: <IncidentsWrapper {...testData.props.incidentResolved} />
       });
       node.update();
 
-      // then (1)
-      // remove related filter Pill;
+      // // then (1)
+      // // remove related filter Pill;
       expect(
         node
           .find('ul[data-test="incidents-by-flowNode"]')
@@ -309,8 +286,8 @@ describe('IncidentsWrapper', () => {
           .find('[data-test="flowNodeId_exclusiveGateway"]')
       ).not.toExist();
 
-      // then (2)
-      // remaining filters still visually active
+      // // then (2)
+      // // remaining filters still visually active
       expect(
         node
           .find('ul[data-test="incidents-by-flowNode"]')
@@ -319,8 +296,8 @@ describe('IncidentsWrapper', () => {
           .props().isActive
       ).toBe(true);
 
-      // then (3)
-      // remaining filters still applied
+      // // then (3)
+      // // remaining filters still applied
       expect(node.find(IncidentsTable).find('tr').length).toBe(2);
     });
 

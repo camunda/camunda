@@ -10,25 +10,14 @@ import IncidentsFilter from './IncidentsFilter';
 import Pill from 'modules/components/Pill';
 import Dropdown from 'modules/components/Dropdown';
 import {mount} from 'enzyme';
-import {createIncidentTableProps} from 'modules/testUtils';
+// import {createIncidentTableProps} from 'modules/testUtils';
 
-const incidentsMock = createIncidentTableProps();
-const onClearAllMock = jest.fn();
-
-const mockProps = {
-  errorTypes: incidentsMock.errorTypes,
-  flowNodes: incidentsMock.flowNodes,
-  selectedFlowNodes: [],
-  selectedErrorTypes: [],
-  onFlowNodeSelect: jest.fn(),
-  onErrorTypeSelect: jest.fn(),
-  onClearAll: onClearAllMock
-};
+import {testData} from './IncidentsFilter.setup';
 
 const mountNode = props =>
   mount(
     <ThemeProvider>
-      <IncidentsFilter {...mockProps} {...props} />
+      <IncidentsFilter {...testData.props.default} {...props} />
     </ThemeProvider>
   );
 
@@ -62,10 +51,10 @@ describe('IncidentsFilter', () => {
       .find(Pill);
     expect(FirstPill.props().type).toEqual('FILTER');
     expect(FirstPill.text()).toContain(
-      mockProps.errorTypes.get('Condition error').errorType
+      testData.props.default.errorTypes.get('Condition error').errorType
     );
     expect(FirstPill.props().count).toEqual(
-      mockProps.errorTypes.get('Condition error').count
+      testData.props.default.errorTypes.get('Condition error').count
     );
   });
 
@@ -77,39 +66,18 @@ describe('IncidentsFilter', () => {
       .find(Pill);
     expect(FirstPill.props().type).toEqual('FILTER');
     expect(FirstPill.text()).toContain(
-      mockProps.flowNodes.get('flowNodeId_exclusiveGateway').flowNodeName
+      testData.props.default.flowNodes.get('flowNodeId_exclusiveGateway')
+        .flowNodeName
     );
     expect(FirstPill.props().count).toEqual(
-      mockProps.flowNodes.get('flowNodeId_exclusiveGateway').count
+      testData.props.default.flowNodes.get('flowNodeId_exclusiveGateway').count
     );
   });
 
   it('should show a more button', () => {
-    const newErrorTypeMap = new Map(incidentsMock.errorTypes);
-    newErrorTypeMap
-      .set('error type 1', {
-        errorType: 'error type 1',
-        count: 1
-      })
-      .set('error type 2', {
-        errorType: 'error type 2',
-        count: 1
-      })
-      .set('error type 3', {
-        errorType: 'error type 3',
-        count: 1
-      })
-      .set('error type 4', {
-        errorType: 'error type 4',
-        count: 1
-      });
-
-    const mockPropsClone = Object.assign({}, mockProps);
-    mockPropsClone.errorTypes = newErrorTypeMap;
-
     const node = mount(
       <ThemeProvider>
-        <IncidentsFilter {...mockPropsClone} />
+        <IncidentsFilter {...testData.props.manyErrors} />
       </ThemeProvider>
     );
 
@@ -136,6 +104,7 @@ describe('IncidentsFilter', () => {
 
   it('should mark selected pills as active', () => {
     //give
+    node = mountNode();
 
     // FlowNode Filter
     const PillsByFlowNode = node.find('ul[data-test="incidents-by-flowNode"]');
@@ -154,10 +123,7 @@ describe('IncidentsFilter', () => {
     });
 
     // when
-    node = mountNode({
-      selectedFlowNodes: ['flowNodeId_exclusiveGateway'],
-      selectedErrorTypes: ['Condition error']
-    });
+    node = mountNode(testData.props.selectedErrorPill);
 
     // then
     expect(
@@ -190,10 +156,7 @@ describe('IncidentsFilter', () => {
     ).not.toHaveBeenCalled();
 
     // given
-    node = mountNode({
-      selectedFlowNodes: ['flowNodeId_exclusiveGateway'],
-      selectedErrorTypes: ['Condition error']
-    });
+    node = mountNode(testData.props.selectedErrorPill);
 
     // when
     node.find('button[data-test="clear-button"]').simulate('click');

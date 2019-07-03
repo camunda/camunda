@@ -23,6 +23,7 @@ export default class IncidentsFilter extends React.Component {
       selectedErrorTypes,
       selectedFlowNodes
     } = this.props;
+
     const groupedFlowNodes = splitArray([...flowNodes.values()]);
     const groupedErrorTypes = splitArray([...errorTypes.values()]);
 

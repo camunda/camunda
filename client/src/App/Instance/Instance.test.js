@@ -8,21 +8,11 @@ import React from 'react';
 import {MemoryRouter} from 'react-router-dom';
 import {mount, shallow} from 'enzyme';
 
-import {
-  mockResolvedAsyncFn,
-  flushPromises,
-  createInstance,
-  createActivities,
-  createDiagramNodes,
-  createRawTree,
-  createRawTreeNode,
-  createEvent,
-  createEvents,
-  createMinimalProcess,
-  createIncidents
-} from 'modules/testUtils';
+import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 
-import {STATE, PAGE_TITLE} from 'modules/constants';
+import {testData} from './Instance.setup';
+
+import {PAGE_TITLE} from 'modules/constants';
 import * as instancesApi from 'modules/api/instances/instances';
 import * as diagramApi from 'modules/api/diagram/diagram';
 import * as eventsApi from 'modules/api/events/events';
@@ -39,24 +29,8 @@ import Diagram from 'modules/components/Diagram';
 import Instance from './Instance';
 
 // mock data
-
-const xmlMock = '<foo />';
-
-const diagramNodes = createDiagramNodes();
-
-const INSTANCE = createInstance({
-  id: '4294980768',
-  state: STATE.ACTIVE
-});
-
-const INSTANCE_WITH_INCIDENTS = createInstance({
-  id: '4294980768',
-  state: STATE.INCIDENT
-});
-
-const INCIDENTS = createIncidents();
-
-const mockTree = createRawTree(2);
+const diagramNodes = testData.fetch.onPageLoad.diagramNodes;
+const {workflowInstance} = testData.fetch.onPageLoad;
 
 // mock modules
 
@@ -85,15 +59,7 @@ const mountRenderComponent = (customProps = {}) =>
   mount(
     <ThemeProvider>
       <MemoryRouter>
-        <Instance
-          match={{
-            params: {id: INSTANCE.id},
-            isExact: true,
-            path: '',
-            url: ''
-          }}
-          {...customProps}
-        />
+        <Instance match={testData.props.match} {...customProps} />
       </MemoryRouter>
     </ThemeProvider>
   );
@@ -102,7 +68,7 @@ const shallowRenderComponent = (customProps = {}) =>
   shallow(
     <Instance
       match={{
-        params: {id: INSTANCE.id},
+        params: {id: workflowInstance.id},
         isExact: true,
         path: '',
         url: ''
@@ -113,18 +79,30 @@ const shallowRenderComponent = (customProps = {}) =>
 
 describe('Instance', () => {
   beforeEach(() => {
-    instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(INSTANCE);
+    const {
+      workflowInstance,
+      noIncidents,
+      workflowXML,
+      instanceHistoryTree,
+      events
+    } = testData.fetch.onPageLoad;
+
+    // mock Api calls
+    instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(workflowInstance);
     instancesApi.fetchWorkflowInstanceIncidents = mockResolvedAsyncFn(
-      INCIDENTS
+      noIncidents
     );
     instancesApi.fetchVariables = mockResolvedAsyncFn([]);
-    diagramApi.fetchWorkflowXML = mockResolvedAsyncFn(xmlMock);
+    diagramApi.fetchWorkflowXML = mockResolvedAsyncFn(workflowXML);
     activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
-      mockTree
+      instanceHistoryTree
     );
-    eventsApi.fetchEvents = mockResolvedAsyncFn(
-      createEvents(mockTree.children)
-    );
+    eventsApi.fetchEvents = mockResolvedAsyncFn(events);
+
+    diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
+      bpmnElements: diagramNodes,
+      definitions: {id: 'Definition1'}
+    });
   });
 
   it('should render properly', async () => {
@@ -138,7 +116,10 @@ describe('Instance', () => {
 
     // update document title
     expect(document.title).toBe(
-      PAGE_TITLE.INSTANCE(INSTANCE.id, getWorkflowName(INSTANCE))
+      PAGE_TITLE.INSTANCE(
+        workflowInstance.id,
+        getWorkflowName(workflowInstance)
+      )
     );
 
     // Header
@@ -146,7 +127,7 @@ describe('Instance', () => {
       expect.stringContaining('Instance')
     );
     expect(node.find('Header').text()).toEqual(
-      expect.stringContaining(INSTANCE.id)
+      expect.stringContaining(workflowInstance.id)
     );
 
     // Diagram
@@ -177,7 +158,11 @@ describe('Instance', () => {
   it('should pass the right incidents data to IncidentsWrapper', async () => {
     // given
     instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
-      INSTANCE_WITH_INCIDENTS
+      testData.fetch.onPageLoad.workflowInstanceWithIncident
+    );
+
+    instancesApi.fetchWorkflowInstanceIncidents = mockResolvedAsyncFn(
+      testData.fetch.onPageLoad.incidents
     );
 
     // when
@@ -199,69 +184,39 @@ describe('Instance', () => {
     // fetching the instance
     expect(instancesApi.fetchWorkflowInstance).toBeCalled();
     expect(instancesApi.fetchWorkflowInstance.mock.calls[0][0]).toEqual(
-      INSTANCE.id
+      workflowInstance.id
     );
 
     // fetch the Activity Instances Tree
     expect(activityInstanceApi.fetchActivityInstancesTree).toBeCalled();
     expect(
       activityInstanceApi.fetchActivityInstancesTree.mock.calls[0][0]
-    ).toBe(INSTANCE.id);
+    ).toBe(workflowInstance.id);
 
     // fetching the xml
     expect(diagramApi.fetchWorkflowXML).toBeCalled();
     expect(diagramApi.fetchWorkflowXML.mock.calls[0][0]).toBe(
-      INSTANCE.workflowId
+      workflowInstance.workflowId
     );
 
     // fetch events
     expect(eventsApi.fetchEvents).toBeCalled();
-    expect(eventsApi.fetchEvents.mock.calls[0][0]).toBe(INSTANCE.id);
+    expect(eventsApi.fetchEvents.mock.calls[0][0]).toBe(workflowInstance.id);
 
     expect(instancesApi.fetchWorkflowInstanceIncidents).not.toBeCalled();
 
     // fetch variables
     expect(instancesApi.fetchVariables).toBeCalledWith(
-      INSTANCE.id,
-      INSTANCE.id
+      workflowInstance.id,
+      workflowInstance.id
     );
   });
 
   describe('check for updates poll', () => {
-    const activities = createActivities(diagramNodes);
-    const mockEvents = createEvents(activities);
-
-    const COMPLETED_INSTANCE = createInstance({
-      id: '4294980768',
-      state: STATE.COMPLETED,
-      activities: [
-        ...activities,
-        {
-          id: '88',
-          state: 'COMPLETED',
-          activityId: 'EndEvent_042s0oc',
-          startDate: '2019-01-15T12:48:49.747+0000',
-          endDate: '2019-01-15T12:48:49.747+0000'
-        }
-      ]
-    });
-    const CANCELED_INSTANCE = createInstance({
-      id: '4294980768',
-      state: STATE.CANCELED,
-      activities: [
-        ...activities,
-        {
-          id: '88',
-          state: 'CANCELED',
-          activityId: 'EndEvent_042s0oc',
-          startDate: '2019-01-15T12:48:49.747+0000',
-          endDate: '2019-01-15T12:48:49.747+0000'
-        }
-      ]
-    });
-
     beforeEach(() => {
-      eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
+      eventsApi.fetchEvents = mockResolvedAsyncFn(
+        testData.fetch.onPageLoad.events
+      );
       jest.useFakeTimers();
     });
 
@@ -291,7 +246,7 @@ describe('Instance', () => {
     it('should not set, for completed instances, a 5s timeout after initial render', async () => {
       // given
       instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
-        COMPLETED_INSTANCE
+        testData.fetch.onPageLoad.workflowInstanceCompleted
       );
       const node = mountRenderComponent();
       const detectChangesPollSpy = jest.spyOn(
@@ -312,7 +267,7 @@ describe('Instance', () => {
     it('should not set, for canceled instances, a 5s timeout after initial render', async () => {
       // given
       instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
-        CANCELED_INSTANCE
+        testData.fetch.onPageLoad.workflowInstanceCanceled
       );
       const node = mountRenderComponent();
       const detectChangesPollSpy = jest.spyOn(
@@ -356,7 +311,7 @@ describe('Instance', () => {
     it('should start a polling for changes if instance.state is INCIDENT', async () => {
       // given
       instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
-        INSTANCE_WITH_INCIDENTS
+        testData.fetch.onPageLoad.workflowInstanceWithIncident
       );
       const node = mountRenderComponent();
       const detectChangesPollSpy = jest.spyOn(
@@ -383,9 +338,11 @@ describe('Instance', () => {
       // given
       instancesApi.fetchWorkflowInstance = jest
         .fn()
-        .mockResolvedValue(COMPLETED_INSTANCE) // default
-        .mockResolvedValueOnce(INSTANCE) // 1st call
-        .mockResolvedValueOnce(COMPLETED_INSTANCE); // 2nd call
+        .mockResolvedValue(testData.fetch.onPageLoad.workflowInstanceCompleted) // default
+        .mockResolvedValueOnce(workflowInstance) // 1st call
+        .mockResolvedValueOnce(
+          testData.fetch.onPageLoad.workflowInstanceCompleted
+        ); // 2nd call
 
       const node = mountRenderComponent();
       const detectChangesPollSpy = jest.spyOn(
@@ -407,30 +364,31 @@ describe('Instance', () => {
   });
 
   describe('Diagram', () => {
-    let node;
     let mockTree;
     let mockEvents;
-    let treeRowId;
     let activityId;
     let flowNodeName;
     let treeNode;
+    let mockDefinition;
+    let metaDataMock;
+    let node;
 
     beforeEach(async () => {
-      activityId = 'taskD';
-      flowNodeName = diagramUtils.parsedDiagram.bpmnElements[activityId].name;
-      treeRowId = 'activityInstanceOfTaskD';
+      ({mockEvents, treeNode, mockTree} = testData.diagramDataStructure);
 
-      mockEvents = [createEvent({activityId, activityInstanceId: treeRowId})];
-      treeNode = createRawTreeNode({
-        id: treeRowId,
+      ({
         activityId,
-        name: flowNodeName
-      });
-      mockTree = {
-        children: [treeNode]
-      };
+        flowNodeName,
 
-      // given api response
+        mockDefinition,
+        metaDataMock
+      } = testData.diagramData);
+
+      diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
+        bpmnElements: diagramNodes,
+        definitions: mockDefinition
+      });
+
       eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
       activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
         mockTree
@@ -453,8 +411,6 @@ describe('Instance', () => {
     });
 
     it('should receive definitions', async () => {
-      const mockDefinition = {id: 'Definition1'};
-
       diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
         bpmnElements: diagramNodes,
         definitions: mockDefinition
@@ -482,7 +438,7 @@ describe('Instance', () => {
       expect(DiagramNode.prop('selectedFlowNodeName')).toEqual(flowNodeName);
     });
 
-    describe('Metadata', () => {
+    describe.only('Metadata', () => {
       it('should pass metadata to Diagram for a selected flow node with single related instance', async () => {
         // given
         const node = mountRenderComponent();
@@ -495,54 +451,17 @@ describe('Instance', () => {
 
         // then
         expect(node.find('Diagram').prop('metadata')).toEqual({
-          data: {
-            endDate: '12 Dec 2018 00:00:00',
-            activityInstanceId: 'activityInstanceOfTaskD',
-            jobId: '66',
-            startDate: '12 Dec 2018 00:00:00',
-            jobCustomHeaders: {},
-            jobRetries: 3,
-            jobType: 'shipArticles',
-            workflowId: '1',
-            workflowInstanceId: '53'
-          }
+          data: metaDataMock
         });
       });
 
       it("should pass the right metadata if it's a peter case with multiple rows selected", async () => {
-        // Demo Data
-        activityId = 'taskD';
-        const matchingTreeRowIds = [
-          'firstActivityInstanceOfTaskD',
-          'secondActivityInstanceOfTaskD'
-        ];
-        const expectedMetadata = {
-          isMultiRowPeterCase: true,
-          instancesCount: 2
-        };
-
-        mockEvents = [
-          createEvent({activityId, activityInstanceId: matchingTreeRowIds[0]}),
-          createEvent({activityId, activityInstanceId: matchingTreeRowIds[1]})
-        ];
-
-        mockTree = {
-          children: [
-            createRawTreeNode({
-              id: matchingTreeRowIds[0],
-              activityId
-            }),
-            createRawTreeNode({
-              id: matchingTreeRowIds[1],
-              activityId
-            })
-          ]
-        };
-
         // given api response
-        eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
+        eventsApi.fetchEvents = mockResolvedAsyncFn(
+          testData.diagramDataStructure.mockEventsPeterCase
+        );
         activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
-          mockTree
+          testData.diagramDataStructure.mockTreePeterCase
         );
 
         // given
@@ -555,47 +474,17 @@ describe('Instance', () => {
         node.update();
 
         // then
-        expect(node.find('Diagram').prop('metadata')).toEqual(expectedMetadata);
+        expect(node.find('Diagram').prop('metadata')).toEqual(
+          testData.diagramData.expectedMetadata
+        );
       });
 
       it("should pass the right metadata if it's a peter case with a single row selected", async () => {
         // Demo Data
-        activityId = 'taskD';
-        const matchingTreeRowIds = [
-          'firstActivityInstanceOfTaskD',
-          'secondActivityInstanceOfTaskD'
-        ];
-        mockEvents = [
-          createEvent({activityId, activityInstanceId: matchingTreeRowIds[0]}),
-          createEvent({activityId, activityInstanceId: matchingTreeRowIds[1]})
-        ];
-        const expectedMetadata = {
-          isSingleRowPeterCase: true,
-          data: {
-            endDate: '12 Dec 2018 00:00:00',
-            activityInstanceId: 'firstActivityInstanceOfTaskD',
-            jobId: '66',
-            startDate: '12 Dec 2018 00:00:00',
-            jobCustomHeaders: {},
-            jobRetries: 3,
-            jobType: 'shipArticles',
-            workflowId: '1',
-            workflowInstanceId: '53'
-          }
-        };
 
-        mockTree = {
-          children: [
-            createRawTreeNode({
-              id: matchingTreeRowIds[0],
-              activityId
-            }),
-            createRawTreeNode({
-              id: matchingTreeRowIds[1],
-              activityId
-            })
-          ]
-        };
+        mockEvents = testData.diagramDataStructure.mockEventsPeterCase;
+        const expectedMetadata = testData.diagramData.metaDataSingelRow;
+        mockTree = testData.diagramDataStructure.mockTreePeterCase;
 
         // given api response
         eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
@@ -610,8 +499,8 @@ describe('Instance', () => {
 
         // when
         node.find(FlowNodeInstancesTree).prop('onTreeRowSelection')({
-          id: matchingTreeRowIds[0],
-          activityId
+          id: testData.diagramData.matchingTreeRowIds[0],
+          activityId: testData.diagramData.activityId
         });
         node.update();
 
@@ -626,11 +515,11 @@ describe('Instance', () => {
   describe('Instances Tree', () => {
     it('should receive tree node data', async () => {
       // given
-      const rawTree = createMinimalProcess().rawTree;
-      const diagramNodes = createMinimalProcess().diagramNodes;
+
+      const {instanceHistoryTree, diagramNodes} = testData.fetch.onPageLoad;
 
       activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
-        rawTree
+        instanceHistoryTree
       );
 
       diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
@@ -643,34 +532,19 @@ describe('Instance', () => {
       node.update();
 
       expect(node.find(FlowNodeInstancesTree).prop('node')).toEqual({
-        children: rawTree.children,
-        id: INSTANCE.id,
+        children: instanceHistoryTree.children,
+        id: workflowInstance.id,
         type: 'WORKFLOW',
-        state: INSTANCE.state,
-        endDate: INSTANCE.endDate
+        state: workflowInstance.state,
+        endDate: workflowInstance.endDate
       });
     });
 
     it('should receive id(s) of selected activity instances', async () => {
       // given
-      const activityId = 'taskD';
-      const treeRowIds = [
-        'firstActivityInstanceOfTaskD',
-        'secondActivityInstanceOfTaskD'
-      ];
-
-      const rawTreeData = {
-        children: [
-          createRawTreeNode({
-            id: treeRowIds[0],
-            activityId
-          }),
-          createRawTreeNode({
-            id: treeRowIds[1],
-            activityId
-          })
-        ]
-      };
+      const activityId = testData.diagramData.activityId;
+      const treeRowIds = testData.diagramData.matchingTreeRowIds;
+      const rawTreeData = testData.diagramDataStructure.mockTreePeterCase;
 
       activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
         rawTreeData
@@ -785,14 +659,13 @@ describe('Instance', () => {
       });
     });
 
-    describe('getNodeWithName', () => {
+    describe('getNodeWithMetaData', () => {
       it('should give the name of the instance', async () => {
         // given
-        const rawTree = createMinimalProcess().rawTree;
-        const diagramNodes = createMinimalProcess().diagramNodes;
+        const {instanceHistoryTree, diagramNodes} = testData.fetch.onPageLoad;
 
         activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
-          rawTree
+          instanceHistoryTree
         );
 
         diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
@@ -804,19 +677,19 @@ describe('Instance', () => {
         await flushPromises();
         const nodeWithName = node
           .instance()
-          .getNodeWithName(node.state('activityInstancesTree'));
+          .getNodeWithMetaData(node.state('activityInstancesTree'));
 
         // then
-        expect(nodeWithName.name).toBe(getWorkflowName(INSTANCE));
+        expect(nodeWithName.name).toBe(getWorkflowName(workflowInstance));
       });
 
       it('should give the name of an activity', async () => {
         // given
-        const rawTree = createMinimalProcess().rawTree;
-        const diagramNodes = createMinimalProcess().diagramNodes;
+
+        const {instanceHistoryTree, diagramNodes} = testData.fetch.onPageLoad;
 
         activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
-          rawTree
+          instanceHistoryTree
         );
 
         diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
@@ -828,7 +701,7 @@ describe('Instance', () => {
         await flushPromises();
         const nodeWithName = node
           .instance()
-          .getNodeWithName(rawTree.children[0]);
+          .getNodeWithMetaData(instanceHistoryTree.children[0]);
         const expectedName = Object.values(diagramNodes)[0].name;
 
         // then
@@ -841,7 +714,7 @@ describe('Instance', () => {
     it('should show a spinner on the Instance on incident operation', async () => {
       // given
       instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
-        INSTANCE_WITH_INCIDENTS
+        testData.fetch.onPageLoad.workflowInstanceWithIncident
       );
 
       // when
@@ -862,7 +735,7 @@ describe('Instance', () => {
     it('should force spinners for incidents on Instance operation', async () => {
       // given
       instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
-        INSTANCE_WITH_INCIDENTS
+        testData.fetch.onPageLoad.workflowInstanceWithIncident
       );
 
       // when
@@ -883,33 +756,26 @@ describe('Instance', () => {
   });
 
   describe('Incidents selection', async () => {
-    it('should select incidents when making a selection in tree', async () => {
-      // given
-      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
-        INSTANCE_WITH_INCIDENTS
-      );
-      const activityId = 'taskD';
-      const treeRowIds = [
-        'firstActivityInstanceOfTaskD',
-        'secondActivityInstanceOfTaskD'
-      ];
+    let activityId, treeRowIds;
 
-      const rawTreeData = {
-        children: [
-          createRawTreeNode({
-            id: treeRowIds[0],
-            activityId
-          }),
-          createRawTreeNode({
-            id: treeRowIds[1],
-            activityId
-          })
-        ]
-      };
+    beforeEach(() => {
+      const {mockTreePeterCase} = testData.diagramDataStructure;
+
+      treeRowIds = testData.diagramData.matchingTreeRowIds;
+      activityId = testData.diagramData.activityId;
+
+      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
+        testData.fetch.onPageLoad.workflowInstanceWithIncident
+      );
 
       activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
-        rawTreeData
+        mockTreePeterCase
       );
+    });
+
+    it('should select incidents when making a selection in tree', async () => {
+      // given
+
       const node = mountRenderComponent();
       await flushPromises();
       node.update();
@@ -928,32 +794,6 @@ describe('Instance', () => {
     });
 
     it('should select incidents when selecting a flow node in the diagra', async () => {
-      // given
-      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
-        INSTANCE_WITH_INCIDENTS
-      );
-      const activityId = 'taskD';
-      const treeRowIds = [
-        'firstActivityInstanceOfTaskD',
-        'secondActivityInstanceOfTaskD'
-      ];
-
-      const rawTreeData = {
-        children: [
-          createRawTreeNode({
-            id: treeRowIds[0],
-            activityId
-          }),
-          createRawTreeNode({
-            id: treeRowIds[1],
-            activityId
-          })
-        ]
-      };
-
-      activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
-        rawTreeData
-      );
       const node = mountRenderComponent();
       await flushPromises();
       node.update();
@@ -973,29 +813,13 @@ describe('Instance', () => {
   });
 
   describe('Variables', () => {
-    it('it should fetch variables when single row is selected', async () => {
+    it('should fetch variables when single row is selected', async () => {
       // given
-      const activityId = 'taskD';
-      const matchingTreeRowIds = [
-        'firstActivityInstanceOfTaskD',
-        'secondActivityInstanceOfTaskD'
-      ];
-      const mockEvents = [
-        createEvent({activityId, activityInstanceId: matchingTreeRowIds[0]}),
-        createEvent({activityId, activityInstanceId: matchingTreeRowIds[1]})
-      ];
-      const mockTree = {
-        children: [
-          createRawTreeNode({
-            id: matchingTreeRowIds[0],
-            activityId
-          }),
-          createRawTreeNode({
-            id: matchingTreeRowIds[1],
-            activityId
-          })
-        ]
-      };
+      const activityId = testData.diagramData.activityId;
+      const treeRowIds = testData.diagramData.matchingTreeRowIds;
+      const mockEvents = testData.diagramDataStructure.mockEventsPeterCase;
+      const mockTree = testData.diagramDataStructure.mockTreePeterCase;
+
       eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
       activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
         mockTree
@@ -1007,15 +831,15 @@ describe('Instance', () => {
 
       // when
       node.find(FlowNodeInstancesTree).prop('onTreeRowSelection')({
-        id: matchingTreeRowIds[0],
+        id: treeRowIds[0],
         activityId
       });
       node.update();
 
       // then
       expect(instancesApi.fetchVariables).toBeCalledWith(
-        INSTANCE.id,
-        matchingTreeRowIds[0]
+        workflowInstance.id,
+        treeRowIds[0]
       );
     });
   });
