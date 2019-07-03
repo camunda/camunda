@@ -11,7 +11,7 @@ import SplitPane from 'modules/components/SplitPane';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import Diagram from 'modules/components/Diagram';
 import IncidentsWrapper from './IncidentsWrapper';
-import {PAGE_TITLE, UNNAMED_ACTIVITY, STATE} from 'modules/constants';
+import {PAGE_TITLE, UNNAMED_ACTIVITY, STATE, TYPE} from 'modules/constants';
 import {compactObject, immutableArraySet} from 'modules/utils';
 import {getWorkflowName} from 'modules/utils/instance';
 import {parseDiagramXML} from 'modules/utils/bpmn';
@@ -30,11 +30,12 @@ import InstanceHistory from './InstanceHistory';
 import Variables from './InstanceHistory/Variables';
 import {
   getFlowNodeStateOverlays,
-  getActivityIdToNameMap,
   isRunningInstance,
   fetchActivityInstancesTreeData,
   fetchIncidents,
-  fetchVariables
+  fetchVariables,
+  createNodeMetaDataMap,
+  getSelectableFlowNodes
 } from './service';
 import * as Styled from './styled';
 
@@ -58,7 +59,7 @@ export default class Instance extends Component {
         treeRowIds: [],
         flowNodeId: null
       },
-      activityIdToNameMap: null,
+      nodeMetaDataMap: null,
       diagramDefinitions: null,
       loaded: false,
       activityInstancesTree: {},
@@ -109,14 +110,18 @@ export default class Instance extends Component {
 
     const {bpmnElements, definitions} = await parseDiagramXML(diagramXml);
 
-    const activityIdToNameMap = getActivityIdToNameMap(bpmnElements);
+    // Get all selectable BPMN elements
+    const nodeMetaDataMap = createNodeMetaDataMap(
+      getSelectableFlowNodes(bpmnElements)
+    );
 
     this.setState(
       {
         loaded: true,
         instance,
         ...(incidents && {incidents}),
-        activityIdToNameMap,
+
+        nodeMetaDataMap,
         diagramDefinitions: definitions,
         events,
         activityInstancesTree,
@@ -301,18 +306,28 @@ export default class Instance extends Component {
     };
   };
 
-  getNodeWithName = node => {
-    const {instance} = this.state;
+  getNodeWithMetaData = node => {
+    let metaData;
 
-    const name =
-      node.id === instance.id
-        ? getWorkflowName(instance)
-        : this.state.activityIdToNameMap.get(node.activityId) ||
-          UNNAMED_ACTIVITY;
+    // Add FlowNode Type
+    if (node.type === TYPE.WORKFLOW) {
+      metaData = {type: {elementType: TYPE.WORKFLOW}};
+    } else {
+      metaData = this.state.nodeMetaDataMap.get(node.activityId) || {
+        name: undefined,
+        type: {elementType: undefined, eventType: undefined}
+      };
+    }
+    // Add Node Name
+    const nodeName =
+      node.id === this.state.instance.id
+        ? getWorkflowName(this.state.instance)
+        : (metaData && metaData.name) || UNNAMED_ACTIVITY;
 
     return {
       ...node,
-      name
+      typeDetails: metaData.type,
+      name: nodeName
     };
   };
 
@@ -327,9 +342,13 @@ export default class Instance extends Component {
 
   addFlowNodeName = object => {
     const modifiedObject = {...object};
+
+    const nodeMetaData = this.state.nodeMetaDataMap.get(
+      modifiedObject.flowNodeId
+    );
+
     modifiedObject.flowNodeName =
-      this.state.activityIdToNameMap.get(modifiedObject.flowNodeId) ||
-      UNNAMED_ACTIVITY;
+      (nodeMetaData && nodeMetaData.name) || UNNAMED_ACTIVITY;
     return modifiedObject;
   };
 
@@ -407,7 +426,7 @@ export default class Instance extends Component {
       incidents,
       selection,
       activityIdToActivityInstanceMap,
-      activityIdToNameMap,
+      nodeMetaDataMap,
       variables,
       editMode
     } = this.state;
@@ -427,9 +446,11 @@ export default class Instance extends Component {
 
     const selectedFlowNodeId = selection.flowNodeId;
 
+    const nodeMetaData = nodeMetaDataMap.get(selectedFlowNodeId);
+
     const selectedFlowNodeName = !selectedFlowNodeId
       ? null
-      : activityIdToNameMap.get(selectedFlowNodeId) || selectedFlowNodeId;
+      : (nodeMetaData && nodeMetaData.name) || selectedFlowNodeId;
 
     return (
       <Fragment>
@@ -479,7 +500,7 @@ export default class Instance extends Component {
                   <Styled.NodeContainer>
                     <FlowNodeInstancesTree
                       node={this.state.activityInstancesTree}
-                      getNodeWithName={this.getNodeWithName}
+                      getNodeWithMetaData={this.getNodeWithMetaData}
                       treeDepth={1}
                       selectedTreeRowIds={this.state.selection.treeRowIds}
                       onTreeRowSelection={this.handleTreeRowSelection}

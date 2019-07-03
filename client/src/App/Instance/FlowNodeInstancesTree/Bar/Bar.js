@@ -15,7 +15,7 @@ const BarComponent = ({node, isSelected}) => {
   return (
     <Styled.Bar showSelectionStyle={isSelected}>
       <Styled.NodeIcon
-        type={node.type}
+        types={node.typeDetails}
         isSelected={isSelected}
         data-test={`flowNodeIcon-${node.type}`}
       />
@@ -35,6 +35,7 @@ BarComponent.propTypes = {
     id: PropTypes.string.isRequired,
     name: PropTypes.string.isRequired,
     type: PropTypes.string.isRequired,
+    typeDetails: PropTypes.object.isRequired,
     endDate: PropTypes.string
   }),
   isSelected: PropTypes.bool

@@ -25,13 +25,15 @@ export default class FlowNodeInstancesTree extends React.Component {
     selectedTreeRowIds: PropTypes.array.isRequired,
     treeDepth: PropTypes.number.isRequired,
     onTreeRowSelection: PropTypes.func.isRequired,
-    getNodeWithName: PropTypes.func.isRequired
+    getNodeWithMetaData: PropTypes.func.isRequired
   };
 
   renderNode = () => {
     const {node, treeDepth, selectedTreeRowIds} = this.props;
+
     const hasChildren = node.children.length > 0;
     const isSelected = selectedTreeRowIds.includes(node.id);
+
     return (
       <Styled.Li treeDepth={treeDepth} data-test={node.id}>
         <Styled.NodeDetails
@@ -54,7 +56,7 @@ export default class FlowNodeInstancesTree extends React.Component {
             isLastChild={node.isLastChild}
           >
             <Bar
-              node={this.props.getNodeWithName(node)}
+              node={this.props.getNodeWithMetaData(node)}
               isSelected={isSelected}
             />
           </Foldable.Summary>
@@ -82,7 +84,7 @@ export default class FlowNodeInstancesTree extends React.Component {
             treeDepth={this.props.treeDepth + 1}
             selectedTreeRowIds={this.props.selectedTreeRowIds}
             onTreeRowSelection={this.props.onTreeRowSelection}
-            getNodeWithName={this.props.getNodeWithName}
+            getNodeWithMetaData={this.props.getNodeWithMetaData}
           />
         );
       })}

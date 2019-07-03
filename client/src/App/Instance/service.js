@@ -4,9 +4,72 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {STATE} from 'modules/constants';
+import {STATE, TYPE, FLOWNODE_TYPE_HANDLE} from 'modules/constants';
 import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
 import * as api from 'modules/api/instances';
+
+function getEventType(bpmnElement) {
+  // doesn't return a event type when element of type 'multiple event'
+  return (
+    bpmnElement.eventDefinitions &&
+    bpmnElement.eventDefinitions.length === 1 &&
+    FLOWNODE_TYPE_HANDLE[bpmnElement.eventDefinitions[0].$type]
+  );
+}
+
+function getElementType(bpmnElement) {
+  if (bpmnElement.$type === 'bpmn:BoundaryEvent') {
+    return bpmnElement.cancelActivity === false
+      ? TYPE.EVENT_BOUNDARY_NON_INTERURPTING
+      : TYPE.EVENT_BOUNDARY_INTERRUPTING;
+  } else {
+    return FLOWNODE_TYPE_HANDLE[bpmnElement.$type];
+  }
+}
+
+/**
+ * @returns {Map} activityId -> name, flowNodeType, eventType
+ * @param {*} elementRegistry (bpmn elementRegistry)
+ */
+
+export function createNodeMetaDataMap(bpmnElements) {
+  return Object.entries(bpmnElements).reduce(
+    (map, [activityId, bpmnElement]) => {
+      map.set(activityId, {
+        name: bpmnElement.name,
+        type: {
+          elementType: getElementType(bpmnElement),
+          eventType: getEventType(bpmnElement)
+        }
+      });
+
+      return map;
+    },
+    new Map()
+  );
+}
+
+/**
+ * Filter for selectable bpmnElements only
+ * @param {Object} bpmnElements
+ * @return {Object} All selectable flowNodes, excluded: sequenseFlows, diagramElment etc.
+ */
+
+export function getSelectableFlowNodes(bpmnElements) {
+  if (!bpmnElements) {
+    return {};
+  }
+
+  let bpmnElementSubset = {};
+
+  Object.entries(bpmnElements).forEach(([key, bpmnElement]) => {
+    if (bpmnElement.$instanceOf('bpmn:FlowNode')) {
+      bpmnElementSubset = {...bpmnElementSubset, [key]: bpmnElement};
+    }
+  });
+
+  return bpmnElementSubset;
+}
 
 /**
  * @returns activityId -> name map
