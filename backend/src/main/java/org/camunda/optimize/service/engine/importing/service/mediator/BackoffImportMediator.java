@@ -99,9 +99,15 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
       try {
         result = importNextEnginePage();
       } catch (final Exception e) {
-        long timeToSleep = errorBackoffCalculator.calculateSleepTime();
-        logger.error("Was not able to import next page, retrying after sleeping for {}ms.", timeToSleep, e);
-        sleep(timeToSleep);
+        if (errorBackoffCalculator.isMaximumBackoffReached()) {
+          // if max back-off is reached abort retrying and return true to indicate there is new data
+          logger.error("Was not able to import next page and reached max backoff, aborting this run.", e);
+          result = true;
+        } else {
+          long timeToSleep = errorBackoffCalculator.calculateSleepTime();
+          logger.error("Was not able to import next page, retrying after sleeping for {}ms.", timeToSleep, e);
+          sleep(timeToSleep);
+        }
       }
     }
     errorBackoffCalculator.resetBackoff();
