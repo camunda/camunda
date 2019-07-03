@@ -19,12 +19,9 @@ import io.atomix.primitive.PrimitiveManagementService;
 import io.atomix.primitive.PrimitiveType;
 import io.atomix.primitive.service.PrimitiveService;
 import io.atomix.primitive.service.ServiceConfig;
-import io.atomix.utils.serializer.Namespace;
-import io.atomix.utils.serializer.Namespaces;
 import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamBuilder;
 import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DistributedLogstreamConfig;
-import io.zeebe.distributedlog.impl.DistributedLogstreamServiceConfig;
 
 public class DistributedLogstreamType
     implements PrimitiveType<
@@ -38,17 +35,6 @@ public class DistributedLogstreamType
   @Override
   public String name() {
     return "Distributed-logstream";
-  }
-
-  @Override
-  public Namespace namespace() {
-    return Namespace.builder()
-        .register(Namespaces.BASIC)
-        .register(
-            new Class[] {
-              ServiceConfig.class, DistributedLogstreamServiceConfig.class, CommitLogEvent.class
-            })
-        .build();
   }
 
   @Override
