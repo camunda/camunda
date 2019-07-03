@@ -8,6 +8,7 @@ package org.camunda.operate.rest.dto;
 import java.util.ArrayList;
 import java.util.List;
 import org.camunda.operate.entities.SequenceFlowEntity;
+import org.camunda.operate.util.StringUtils;
 
 public class SequenceFlowDto {
 
@@ -47,7 +48,7 @@ public class SequenceFlowDto {
     }
     SequenceFlowDto sequenceFlowDto = new SequenceFlowDto();
     sequenceFlowDto.setId(sequenceFlowEntity.getId());
-    sequenceFlowDto.setWorkflowInstanceId(sequenceFlowEntity.getWorkflowInstanceId().toString());
+    sequenceFlowDto.setWorkflowInstanceId(StringUtils.toStringOrNull(sequenceFlowEntity.getWorkflowInstanceId()));
     sequenceFlowDto.setActivityId(sequenceFlowEntity.getActivityId());
     return sequenceFlowDto;
   }

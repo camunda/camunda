@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
+import org.camunda.operate.util.StringUtils;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 
 public class ActivityInstanceDto {
@@ -111,7 +112,7 @@ public class ActivityInstanceDto {
       activity.setState(activityInstanceEntity.getState());
     }
     activity.setType(activityInstanceEntity.getType());
-    activity.setParentId(activityInstanceEntity.getScopeKey().toString());
+    activity.setParentId(StringUtils.toStringOrNull(activityInstanceEntity.getScopeKey()));
     return activity;
   }
 

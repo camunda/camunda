@@ -14,6 +14,7 @@ import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.util.CollectionUtil;
+import org.camunda.operate.util.StringUtils;
 
 public class VariableDto {
 
@@ -80,8 +81,8 @@ public class VariableDto {
     variable.setId(variableEntity.getId());
     variable.setName(variableEntity.getName());
     variable.setValue(variableEntity.getValue());
-    variable.setScopeId(variableEntity.getScopeKey().toString());
-    variable.setWorkflowInstanceId(variableEntity.getWorkflowInstanceId().toString());
+    variable.setScopeId(StringUtils.toStringOrNull(variableEntity.getScopeKey()));
+    variable.setWorkflowInstanceId(StringUtils.toStringOrNull(variableEntity.getWorkflowInstanceId()));
 
     if (operations != null && operations.size() > 0) {
       List <OperationEntity> activeOperations = operations.stream().filter(o ->
@@ -128,8 +129,8 @@ public class VariableDto {
         VariableDto variable = new VariableDto();
         variable.setName(operation.getVariableName());
         variable.setValue(operation.getVariableValue());
-        variable.setScopeId(operation.getScopeKey().toString());
-        variable.setWorkflowInstanceId(operation.getWorkflowInstanceId().toString());
+        variable.setScopeId(StringUtils.toStringOrNull(operation.getScopeKey()));
+        variable.setWorkflowInstanceId(StringUtils.toStringOrNull(operation.getWorkflowInstanceId()));
         variable.setHasActiveOperation(true);
         return variable;
       }

@@ -129,8 +129,8 @@ public class EventDto {
     eventDto.setDateTime(eventEntity.getDateTime());
     eventDto.setEventSourceType(eventEntity.getEventSourceType());
     eventDto.setEventType(eventEntity.getEventType());
-    eventDto.setWorkflowId(eventEntity.getWorkflowId().toString());
-    eventDto.setWorkflowInstanceId(eventEntity.getWorkflowInstanceId().toString());
+    eventDto.setWorkflowId(StringUtils.toStringOrNull(eventEntity.getWorkflowId()));
+    eventDto.setWorkflowInstanceId(StringUtils.toStringOrNull(eventEntity.getWorkflowInstanceId()));
 
     EventMetadataEntity eventMetadataEntity = eventEntity.getMetadata();
     if (eventMetadataEntity != null) {
