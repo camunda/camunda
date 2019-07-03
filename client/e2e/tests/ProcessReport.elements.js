@@ -37,12 +37,12 @@ export const goalSwitch = Selector('.Configuration .Popover fieldset')
   .find('.Switch');
 export const flowNode = id => reportRenderer.find(`[data-element-id="${id}"]`);
 export const tooltip = reportRenderer.find('.Tooltip');
-export const targetValueButton = Selector('.TargetValueComparison__toggleButton');
+export const targetValueButton = Selector('.toggleButton');
 export const targetValueInput = name =>
   Selector('.Modal .rt-tr')
     .withText(name)
     .find('.Input');
-export const primaryModalButton = Selector('.Modal .Modal__actions .Button--primary');
+export const primaryModalButton = Selector('.Modal .Modal__actions .primary');
 export const warning = Selector('.Message--warning');
 export const processPartButton = Selector('.ReportControlPanel .Button').withText(
   'Process Instance Part'

@@ -10,7 +10,7 @@ export async function login(t) {
   await t
     .typeText('input[name="username"]', 'demo')
     .typeText('input[name="password"]', 'demo')
-    .click('.Button--primary');
+    .click('.primary');
 }
 
 export async function createNewReport(t) {

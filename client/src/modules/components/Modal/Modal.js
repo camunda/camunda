@@ -54,7 +54,7 @@ export default class Modal extends React.Component {
       // - any focusable element
       const defaultElement =
         container.querySelector('input[type="text"]') ||
-        container.querySelector('.Button--primary') ||
+        container.querySelector('.primary') ||
         container.querySelector('input, button, textarea, select');
       if (defaultElement) {
         defaultElement.focus();

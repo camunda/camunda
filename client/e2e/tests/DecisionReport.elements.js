@@ -13,7 +13,7 @@ export const decisionTableCell = (row, column) =>
     .nth(row)
     .find('td')
     .nth(column);
-export const primaryModalButton = Selector('.Modal .Modal__actions .Button--primary');
+export const primaryModalButton = Selector('.Modal .Modal__actions .primary');
 export const filterButton = Selector('.Filter__dropdown .activateButton');
 export const filterOption = text => Selector('.Filter .DropdownOption').withText(text);
 export const variableFilterTypeahead = Selector('.Modal__content .Typeahead');
