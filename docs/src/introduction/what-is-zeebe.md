@@ -7,7 +7,7 @@ Below, we'll provide a brief overview of Zeebe. For more detail, we recommend th
 ## What problem does Zeebe solve, and how?
 A company’s end-to-end workflows almost always span more than one microservice. In an e-commerce company, for example, a “customer order” workflow might involve a payments microservice, an inventory microservice, a shipping microservice, and more:
 
-![order-process](introduction/order-process.png)
+![order-process](order-process.png)
 
 These cross-microservice workflows are mission critical, yet the workflows themselves are rarely modeled and monitored. Often, the flow of events through different microservices is expressed only implicitly in code.
 
@@ -26,7 +26,7 @@ Zeebe was designed to operate at very large scale, and to achieve this, it provi
 * **A message-driven architecture** where all workflow-relevant events are written to an append-only log, providing an audit trail and a history of the state of a workflow.
 * **A publish-subscribe interaction model**, which enables microservices that connect to Zeebe to maintain a high degree of control and autonomy, including control over processing rates. These properties make Zeebe resilient, scalable, and reactive.
 * **Visual workflows modeled in ISO-standard BPMN 2.0** so that technical and non-technical stakeholders can collaborate on workflow design in a widely-used modeling language.
-* **A language-agnostic client model**, making it possible to build a Zeebe client in just about any programming language that an organization uses to build microservices.  
+* **A language-agnostic client model**, making it possible to build a Zeebe client in just about any programming language that an organization uses to build microservices.
 * **Operational ease-of-use** as a self-contained and self-sufficient system. Zeebe does **not** require a cluster coordinator such as ZooKeeper. Because all nodes in a Zeebe cluster are equal, it's relatively easy to scale, and it plays nicely with modern resource managers and container orchestrators such as [Docker](https://www.docker.com/), [Kubernetes](https://kubernetes.io/), and [DC/OS](https://dcos.io/). Zeebe's CLI (Command Line Interface) allows you to script and automate management and operations tasks.
 
 You can learn more about these technical concepts [in the "Basics" section of the documentation](https://docs.zeebe.io/basics/README.html).
