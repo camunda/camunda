@@ -5,10 +5,12 @@
  */
 package org.camunda.optimize.service.export;
 
+import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -46,6 +48,8 @@ public class ProcessExportServiceIT {
 
   private static final String START = "aStart";
   private static final String END = "anEnd";
+  private static final String FAKE = "FAKE";
+
 
   @Parameterized.Parameters(name = "{2}")
   public static Collection<Object[]> data() {
@@ -107,20 +111,19 @@ public class ProcessExportServiceIT {
         ),
         "/csv/process/single/flownode_duration_group_by_flownodes.csv",
         "Flow Node Duration Grouped By Flow Node"
+      },
+      {
+        createRunningFlowNodeDurationGroupByFlowNodeTableReport(),
+        "/csv/process/single/flownode_duration_group_by_flownodes_no_values.csv",
+        "Flow Node Duration Grouped By Flow Node - Running and null duration"
       }
     });
   }
 
-  private ProcessReportDataDto currentReport;
-  private String expectedCSV;
-
-  private static final String FAKE = "FAKE";
-  private static final String CSV_EXPORT = "export/csv";
-
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
+  private EngineIntegrationRule engineRule = new EngineIntegrationRule();
+  private ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  private EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  private EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
 
   @Rule
   public RuleChain chain = RuleChain
@@ -129,7 +132,12 @@ public class ProcessExportServiceIT {
     .around(embeddedOptimizeRule)
     .around(engineDatabaseRule);
 
-  public ProcessExportServiceIT(ProcessReportDataDto currentReport, String expectedCSV, String testName) {
+  private final ProcessReportDataDto currentReport;
+  private final String expectedCSV;
+
+  public ProcessExportServiceIT(final ProcessReportDataDto currentReport,
+                                final String expectedCSV,
+                                final String testName) {
     this.currentReport = currentReport;
     this.expectedCSV = expectedCSV;
   }
@@ -211,7 +219,8 @@ public class ProcessExportServiceIT {
       .getId();
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleProcess() throws Exception {
+  @SneakyThrows
+  private ProcessInstanceEngineDto deployAndStartSimpleProcess() {
     HashMap<String, Object> variables = new HashMap<>();
     variables.put("1", "test");
     ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartSimpleProcessWithVariables(variables);
@@ -232,4 +241,15 @@ public class ProcessExportServiceIT {
       .done();
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
+
+  private static ProcessReportDataDto createRunningFlowNodeDurationGroupByFlowNodeTableReport() {
+    final ProcessReportDataDto reportDataDto =
+      ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeTableReport(
+        FAKE,
+        FAKE
+      );
+    reportDataDto.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.RUNNING);
+    return reportDataDto;
+  }
+
 }

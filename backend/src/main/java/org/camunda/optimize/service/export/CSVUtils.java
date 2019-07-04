@@ -143,7 +143,7 @@ public class CSVUtils {
       if ((offset == null && limitNotExceeded) || (offsetPassed && limitNotExceeded)) {
         String[] line = new String[2];
         line[0] = value.getKey();
-        line[1] = value.getValue().toString();
+        line[1] = Optional.ofNullable(value.getValue()).map(Object::toString).orElse("");
         result.add(line);
       }
       currentPosition = currentPosition + 1;
@@ -152,7 +152,7 @@ public class CSVUtils {
   }
 
 
-  public static String mapAggregationType(AggregationType aggregationType){
+  public static String mapAggregationType(AggregationType aggregationType) {
     switch (aggregationType) {
       case MEDIAN:
         return "median";
