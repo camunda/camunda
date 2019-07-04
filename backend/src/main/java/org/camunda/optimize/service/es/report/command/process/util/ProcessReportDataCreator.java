@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.command.process.util;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
@@ -83,6 +84,12 @@ public class ProcessReportDataCreator {
     return reportData;
   }
 
+  public static ProcessReportDataDto createUserTaskFrequencyGroupByAssigneeByUserTaskReport() {
+    final ProcessReportDataDto reportData = createUserTaskFrequencyGroupByAssigneeReport();
+    reportData.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
+    return reportData;
+  }
+
   public static ProcessReportDataDto createUserTaskIdleDurationGroupByAssigneeReport(AggregationType aggroType) {
     return createUserTaskDurationGroupByAssigneeReport(aggroType, UserTaskDurationTime.IDLE);
   }
@@ -115,6 +122,12 @@ public class ProcessReportDataCreator {
     final ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
+    return reportData;
+  }
+
+  public static ProcessReportDataDto createUserTaskFrequencyGroupByCandidateGroupByUserTaskReport() {
+    final ProcessReportDataDto reportData = createUserTaskFrequencyGroupByCandidateGroupReport();
+    reportData.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
     return reportData;
   }
 

@@ -6,7 +6,6 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.collect.ImmutableList;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
@@ -57,7 +56,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
       .map(ProcessPartDto::createCommandKey)
       .orElse("null");
     String configurationCommandKey = Optional.ofNullable(getConfiguration())
-      .map(c -> c.createCommandKey(getView()))
+      .map(c -> c.createCommandKey(getView(), getGroupBy()))
       .orElse("null");
     return viewCommandKey + "_" + groupByCommandKey + "_" + processPartCommandKey + "_" + configurationCommandKey;
   }

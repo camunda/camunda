@@ -3,15 +3,19 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.process.user_task.frequency.groupby;
+package org.camunda.optimize.service.es.report.command.process.user_task.frequency.groupby.candidate_group;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportHyperMapResult;
+import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
+import org.camunda.optimize.service.es.report.command.process.util.GroupByFlowNodeCommandUtil;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessHyperMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -20,6 +24,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -32,6 +37,7 @@ import java.util.List;
 import static org.camunda.optimize.service.es.report.command.util.FlowNodeExecutionStateAggregationUtil.addExecutionStateFilter;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ACTIVITY_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_CANDIDATE_GROUPS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_END_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
@@ -39,17 +45,19 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
-public class UserTaskFrequencyByCandidateGroupCommand extends ProcessReportCommand<SingleProcessMapReportResult> {
+public class UserTaskFrequencyByCandidateGroupByUserTaskCommand extends ProcessReportCommand<SingleProcessHyperMapReportResult> {
 
+  private static final String USER_TASK_ID_TERMS_AGGREGATION = "tasks";
   private static final String USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION = "candidateGroups";
   private static final String USER_TASKS_AGGREGATION = "userTasks";
   private static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
 
   @Override
-  protected SingleProcessMapReportResult evaluate() {
+  protected SingleProcessHyperMapReportResult evaluate() {
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
-      "Evaluating user task frequency grouped by candidate group report for process definition key [{}] and version [{}]",
+      "Evaluating user task frequency grouped by candidate group distributed by user task report " +
+        "for process definition key [{}] and version [{}]",
       processReportData.getProcessDefinitionKey(),
       processReportData.getProcessDefinitionVersion()
     );
@@ -66,11 +74,11 @@ public class UserTaskFrequencyByCandidateGroupCommand extends ProcessReportComma
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final ProcessCountReportMapResultDto resultDto = mapToReportResult(response);
-      return new SingleProcessMapReportResult(resultDto, reportDefinition);
+      final ProcessReportHyperMapResult resultDto = mapToReportResult(response);
+      return new SingleProcessHyperMapReportResult(resultDto, reportDefinition);
     } catch (IOException e) {
       final String reason = String.format(
-        "Could not evaluate user task frequency grouped by candidate group report " +
+        "Could not evaluate user task frequency grouped by candidate group distributed by user task report " +
           "for process definition key [%s] and version [%s]",
         processReportData.getProcessDefinitionKey(),
         processReportData.getProcessDefinitionVersion()
@@ -81,10 +89,21 @@ public class UserTaskFrequencyByCandidateGroupCommand extends ProcessReportComma
   }
 
   @Override
-  protected void sortResultData(final SingleProcessMapReportResult evaluationResult) {
+  protected void sortResultData(final SingleProcessHyperMapReportResult evaluationResult) {
     ((ProcessReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
-      sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
+      sorting -> evaluationResult.getResultAsDto()
+        .getData()
+        .forEach(groupByEntry -> MapResultSortingUtility.sortResultData(sorting, groupByEntry))
     );
+  }
+
+  @Override
+  protected SingleProcessHyperMapReportResult enrichResultData(final CommandContext<SingleProcessReportDefinitionDto> commandContext,
+                                                               final SingleProcessHyperMapReportResult evaluationResult) {
+    GroupByFlowNodeCommandUtil.enrichResultData(
+      commandContext, evaluationResult
+    );
+    return evaluationResult;
   }
 
   private AggregationBuilder createAggregation(FlowNodeExecutionState flowNodeExecutionState) {
@@ -102,27 +121,40 @@ public class UserTaskFrequencyByCandidateGroupCommand extends ProcessReportComma
             AggregationBuilders
               .terms(USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION)
               .size(configurationService.getEsAggregationBucketLimit())
+              .order(BucketOrder.key(true))
               .field(USER_TASKS + "." + USER_TASK_CANDIDATE_GROUPS)
+              .subAggregation(
+                AggregationBuilders
+                  .terms(USER_TASK_ID_TERMS_AGGREGATION)
+                  .size(configurationService.getEsAggregationBucketLimit())
+                  .order(BucketOrder.key(true))
+                  .field(USER_TASKS + "." + USER_TASK_ACTIVITY_ID)
+              )
           )
       );
   }
 
-  private ProcessCountReportMapResultDto mapToReportResult(final SearchResponse response) {
-    final ProcessCountReportMapResultDto resultDto = new ProcessCountReportMapResultDto();
+  private ProcessReportHyperMapResult mapToReportResult(final SearchResponse response) {
+    final ProcessReportHyperMapResult resultDto = new ProcessReportHyperMapResult();
 
     final Aggregations aggregations = response.getAggregations();
     final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
-    final Terms byTaskIdAggregation = filteredUserTasks.getAggregations().get(
+    final Terms byAssigneeAggregation = filteredUserTasks.getAggregations().get(
       USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION);
 
-    final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
-    for (Terms.Bucket b : byTaskIdAggregation.getBuckets()) {
-      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), b.getDocCount()));
-    }
+    final List<HyperMapResultEntryDto<Long>> resultData = new ArrayList<>();
+    for (Terms.Bucket assigneeBucket : byAssigneeAggregation.getBuckets()) {
 
+      final List<MapResultEntryDto<Long>> byGroupByEntry = new ArrayList<>();
+      final Terms byTaskIdAggregation = assigneeBucket.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION);
+      for (Terms.Bucket taskBucket : byTaskIdAggregation.getBuckets()) {
+        byGroupByEntry.add(new MapResultEntryDto<>(taskBucket.getKeyAsString(), taskBucket.getDocCount()));
+      }
+      resultData.add(new HyperMapResultEntryDto<>(assigneeBucket.getKeyAsString(), byGroupByEntry));
+    }
     resultDto.setData(resultData);
-    resultDto.setIsComplete(byTaskIdAggregation.getSumOfOtherDocCounts() == 0L);
+    resultDto.setIsComplete(byAssigneeAggregation.getSumOfOtherDocCounts() == 0L);
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
 
     return resultDto;

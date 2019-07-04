@@ -10,6 +10,8 @@ import lombok.Data;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
@@ -42,9 +44,10 @@ public class SingleReportConfigurationDto {
   private ColumnOrderDto columnOrder = new ColumnOrderDto();
   private SingleReportTargetValueDto targetValue = new SingleReportTargetValueDto();
   private HeatmapTargetValueDto heatmapTargetValue = new HeatmapTargetValueDto();
+  private DistributedBy distributedBy = DistributedBy.NONE;
 
   @JsonIgnore
-  public String createCommandKey(ProcessViewDto viewDto) {
+  public String createCommandKey(ProcessViewDto viewDto, ProcessGroupByDto groupByDto) {
     String configurationCommandKey = "";
     final List<String> configsToConsiderForCommand = new ArrayList<>();
     if (isDurationCommand(viewDto)) {
@@ -52,6 +55,9 @@ public class SingleReportConfigurationDto {
     }
     if (isUserTaskDurationCommand(viewDto)) {
       configsToConsiderForCommand.add(this.userTaskDurationTime.getId());
+    }
+    if (isUserTaskCommand(viewDto) && isGroupByAssigneeOrCandidateGroup(groupByDto)) {
+      configsToConsiderForCommand.add(this.distributedBy.getId());
     }
     return String.join("-", configsToConsiderForCommand);
   }
@@ -68,5 +74,12 @@ public class SingleReportConfigurationDto {
   private boolean isUserTaskCommand(ProcessViewDto viewDto) {
     return nonNull(viewDto) && nonNull(viewDto.getEntity()) &&
       viewDto.getEntity().equals(ProcessViewEntity.USER_TASK);
+  }
+
+  private boolean isGroupByAssigneeOrCandidateGroup(ProcessGroupByDto groupByDto) {
+    return nonNull(groupByDto) && (
+      ProcessGroupByType.ASSIGNEE.equals(groupByDto.getType()) ||
+        ProcessGroupByType.CANDIDATE_GROUP.equals(groupByDto.getType())
+    );
   }
 }

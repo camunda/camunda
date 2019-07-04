@@ -10,11 +10,14 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportHyperMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResult;
+import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -75,6 +78,40 @@ public class GroupByFlowNodeCommandUtil {
           evaluationResult.getResultAsDto().getData().add(emptyResult);
         });
 
+      });
+  }
+
+  public static <V extends Comparable> void enrichResultData(
+    final CommandContext<SingleProcessReportDefinitionDto> commandContext,
+    final ReportEvaluationResult<ProcessReportHyperMapResult, SingleProcessReportDefinitionDto> evaluationResult) {
+
+    final ProcessReportDataDto reportData = commandContext.getReportDefinition().getData();
+    getProcessDefinitionIfAvailable(commandContext, reportData)
+      .ifPresent(processDefinition -> {
+        final Map<String, String> flowNodeNames = processDefinition.getUserTaskNames();
+
+        Set<String> flowNodeKeysWithResult = new HashSet<>();
+        List<HyperMapResultEntryDto<Long>> resultData = evaluationResult.getResultAsDto().getData();
+        resultData
+          .forEach(groupedByKeyEntry -> groupedByKeyEntry.getValue().forEach(
+            distributedByEntry -> {
+              distributedByEntry.setLabel(flowNodeNames.get(distributedByEntry.getKey()));
+              flowNodeKeysWithResult.add(distributedByEntry.getKey());
+            })
+          );
+
+        resultData.forEach(groupByEntry -> {
+          List<String> allUserTasksForAssignee = groupByEntry.getValue()
+            .stream()
+            .map(MapResultEntryDto::getKey)
+            .collect(Collectors.toList());
+          flowNodeKeysWithResult.stream()
+            .filter(taskId -> !allUserTasksForAssignee.contains(taskId))
+            .forEach(taskId -> groupByEntry.getValue()
+              .add(new MapResultEntryDto<>(taskId, 0L, flowNodeNames.get(taskId))));
+          groupByEntry.getValue()
+            .sort(Comparator.comparing(MapResultEntryDto::getLabel));
+        });
       });
   }
 

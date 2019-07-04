@@ -11,6 +11,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.DURATION_MAP_RES
 import static org.camunda.optimize.dto.optimize.ReportConstants.DURATION_NUMBER_RESULT_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.FREQUENCY_MAP_RESULT_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.FREQUENCY_NUMBER_RESULT_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.HYPER_MAP_RESULT_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.RAW_RESULT_TYPE;
 
 public enum ResultType {
@@ -18,6 +19,8 @@ public enum ResultType {
   FREQUENCY_MAP,
   @JsonProperty(DURATION_MAP_RESULT_TYPE)
   DURATION_MAP,
+  @JsonProperty(HYPER_MAP_RESULT_TYPE)
+  HYPER_MAP,
   @JsonProperty(FREQUENCY_NUMBER_RESULT_TYPE)
   FREQUENCY_NUMBER,
   @JsonProperty(DURATION_NUMBER_RESULT_TYPE)

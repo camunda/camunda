@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.user_task.frequency;
+package org.camunda.optimize.service.es.report.process.user_task.frequency.groupby.assignee;
 
 import com.google.common.collect.Lists;
 import junitparams.JUnitParamsRunner;
@@ -14,59 +14,69 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportHyperMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
-import java.util.Comparator;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskFrequencyMapGroupByUserTaskReport;
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskFrequencyMapGroupByAssigneeByUserTaskReport;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
-import static org.hamcrest.core.IsNull.nullValue;
 
 @RunWith(JUnitParamsRunner.class)
-public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProcessDefinitionIT {
+public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   private static final String START_EVENT = "startEvent";
   private static final String END_EVENT = "endEvent";
   private static final String PROCESS_DEFINITION_KEY = "123";
   private static final String USER_TASK_1 = "userTask1";
+  private static final String USER_TASK_1_NAME = "userTask1Name";
+  private static final String USER_TASK_2_NAME = "userTask2Name";
   private static final String USER_TASK_2 = "userTask2";
+  private static final String SECOND_USER = "secondUser";
+  private static final String SECOND_USERS_PASSWORD = "fooPassword";
+  private static final String USER_TASK_A = "userTaskA";
+  private static final String USER_TASK_B = "userTaskB";
+
+  @Before
+  public void init() {
+    // create second user
+    engineRule.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
+    engineRule.grantAllAuthorizations(SECOND_USER);
+  }
 
   @Test
   public void reportEvaluationForOneProcess() {
     // given
-    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
-    finishAllUserTasks(processInstanceDto);
+    finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -74,8 +84,8 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
     // when
-    final ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse =
-      evaluateCountMapReport(reportData);
+    final ProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
+      evaluateHyperMapReport(reportData);
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -85,62 +95,69 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
 
-    final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(2));
-    assertThat(getExecutedFlowNodeCount(result), is(2L));
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(1L)
-    );
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_2).get().getValue(),
-      is(1L)
-    );
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    final ProcessReportHyperMapResult actualResult = evaluationResponse.getResult();
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .groupByContains(DEFAULT_USERNAME)
+        .distributedByContains(USER_TASK_1, 1L)
+        .distributedByContains(USER_TASK_2, 0L)
+        .distributedByContains(USER_TASK_A, 1L)
+        .distributedByContains(USER_TASK_B, 0L)
+      .groupByContains(SECOND_USER)
+        .distributedByContains(USER_TASK_1, 0L)
+        .distributedByContains(USER_TASK_2, 1L)
+        .distributedByContains(USER_TASK_A, 0L)
+        .distributedByContains(USER_TASK_B, 1L)
+      .doAssert(actualResult);
+    // @formatter:on
   }
 
   @Test
   public void reportEvaluationForSeveralProcesses() {
     // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
-    finishAllUserTasks(processInstanceDto1);
+    finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto1);
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
-    finishAllUserTasks(processInstanceDto2);
+    finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto2);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(2));
-    assertThat(getExecutedFlowNodeCount(result), is(2L));
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(2L)
-    );
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_2).get().getValue(),
-      is(2L)
-    );
-    assertThat(result.getProcessInstanceCount(), is(2L));
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .groupByContains(DEFAULT_USERNAME)
+        .distributedByContains(USER_TASK_1, 2L)
+        .distributedByContains(USER_TASK_2, 0L)
+        .distributedByContains(USER_TASK_A, 2L)
+        .distributedByContains(USER_TASK_B, 0L)
+      .groupByContains(SECOND_USER)
+        .distributedByContains(USER_TASK_1, 0L)
+        .distributedByContains(USER_TASK_2, 2L)
+        .distributedByContains(USER_TASK_A, 0L)
+        .distributedByContains(USER_TASK_B, 2L)
+      .doAssert(actualResult);
+    // @formatter:on
   }
 
   @Test
   public void evaluateReportForMultipleEvents_resultLimitedByConfig() {
     // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
-    finishAllUserTasks(processInstanceDto1);
+    finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto1);
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
-    finishAllUserTasks(processInstanceDto2);
+    finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto2);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -149,14 +166,49 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessCountReportMapResultDto resultDto = evaluateCountMapReport(reportData).getResult();
+    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getProcessInstanceCount(), is(2L));
-    assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData().size(), is(2));
-    assertThat(getExecutedFlowNodeCount(resultDto), is(1L));
-    assertThat(resultDto.getIsComplete(), is(false));
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .isComplete(false)
+      .groupByContains(DEFAULT_USERNAME)
+        .distributedByContains(USER_TASK_1, 2L)
+      .doAssert(actualResult);
+    // @formatter:on
+  }
+
+  @Test
+  public void oneAssigneeHasWorkedOnTasksThatTheOtherDidNot() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+
+    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
+    // finish first task with default user
+    engineRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
+    // finish second task with second user
+    engineRule.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto1.getId());
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
+
+    // then
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .groupByContains(DEFAULT_USERNAME)
+        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 0L, USER_TASK_2_NAME)
+      .groupByContains(SECOND_USER)
+        .distributedByContains(USER_TASK_1, 0L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+      .doAssert(actualResult);
+    // @formatter:on
   }
 
   @Test
@@ -165,10 +217,12 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
-    finishAllUserTasks(processInstanceDto1);
-
+    // finish first task with default user
+    engineRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
+    engineRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
-    finishAllUserTasks(processInstanceDto2);
+    engineRule.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto2.getId());
+    engineRule.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto2.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -176,18 +230,20 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
-    assertThat(resultData.size(), is(2));
-    assertThat(getExecutedFlowNodeCount(result), is(2L));
-    final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
-    assertThat(
-      resultKeys,
-      // expect ascending order
-      contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
-    );
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .groupByContains(DEFAULT_USERNAME)
+        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+      .groupByContains(SECOND_USER)
+        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+      .doAssert(actualResult);
+    // @formatter:on
   }
 
   @Test
@@ -196,10 +252,12 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
-    finishAllUserTasks(processInstanceDto1);
-
+    // finish first task with default user
+    engineRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
+    engineRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
-    finishAllUserTasks(processInstanceDto2);
+    engineRule.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto2.getId());
+    engineRule.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto2.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -207,22 +265,21 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.DESC));
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
-    assertThat(resultData.size(), is(2));
-    assertThat(getExecutedFlowNodeCount(result), is(2L));
-    final List<String> resultLabels = resultData.stream()
-      .map(MapResultEntryDto::getLabel)
-      .collect(Collectors.toList());
-    assertThat(
-      resultLabels,
-      // expect ascending order
-      contains(resultLabels.stream().sorted(Comparator.reverseOrder()).toArray())
-    );
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .groupByContains(DEFAULT_USERNAME)
+        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+      .groupByContains(SECOND_USER)
+        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+      .doAssert(actualResult);
+    // @formatter:on
   }
-
 
   @Test
   public void testCustomOrderOnResultValueIsApplied() {
@@ -230,10 +287,12 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
-    finishAllUserTasks(processInstanceDto1);
-
+    // finish first task with default user
+    engineRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
+    engineRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
-    engineRule.finishAllRunningUserTasks(processInstanceDto2.getId());
+    engineRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto2.getId());
+
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -241,74 +300,17 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(2));
-    assertThat(getExecutedFlowNodeCount(result), is(2L));
-    assertCorrectValueOrdering(result);
-  }
-
-  @Test
-  public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
-    //given
-    final ProcessDefinitionEngineDto firstDefinition = deployOneUserTasksDefinition();
-    final ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
-    assertThat(latestDefinition.getVersion(), is(2));
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(firstDefinition.getId());
-    finishAllUserTasks(processInstanceDto1);
-
-    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(latestDefinition.getId());
-    finishAllUserTasks(processInstanceDto2);
-
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    //when
-    final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
-
-    //then
-    assertThat(result.getData().size(), is(2));
-    assertThat(getExecutedFlowNodeCount(result), is(2L));
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(2L)
-    );
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_2).get().getValue(),
-      is(1L)
-    );
-  }
-
-  @Test
-  public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
-    //given
-    final ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
-    final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
-    assertThat(latestDefinition.getVersion(), is(2));
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(firstDefinition.getId());
-    finishAllUserTasks(processInstanceDto1);
-
-    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(latestDefinition.getId());
-    finishAllUserTasks(processInstanceDto2);
-
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    //when
-    final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
-
-    //then
-    assertThat(result.getData().size(), is(1));
-    assertThat(getExecutedFlowNodeCount(result), is(1L));
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(2L)
-    );
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .groupByContains(DEFAULT_USERNAME)
+        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 2L, USER_TASK_1_NAME)
+      .doAssert(actualResult);
+    // @formatter:on
   }
 
   @Test
@@ -317,9 +319,9 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
     final ProcessDefinitionEngineDto processDefinition2 = deployOneUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition1.getId());
-    finishAllUserTasks(processInstanceDto1);
+    engineRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition2.getId());
-    finishAllUserTasks(processInstanceDto2);
+    engineRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto2.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -328,15 +330,16 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessReportDataDto reportData = createReport(
       processDefinition1.getKey(), ReportConstants.ALL_VERSIONS
     );
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
 
-    //then
-    assertThat(result.getData().size(), is(1));
-    assertThat(getExecutedFlowNodeCount(result), is(1L));
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(2L)
-    );
+    // then
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .groupByContains(DEFAULT_USERNAME)
+        .distributedByContains(USER_TASK_1, 2L)
+      .doAssert(actualResult);
+    // @formatter:on
   }
 
   @Test
@@ -344,37 +347,36 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     // given
     final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition1.getId());
-    finishAllUserTasks(processInstanceDto1);
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition1.getId());
-    finishAllUserTasks(processInstanceDto2);
+    engineRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     final ProcessDefinitionEngineDto processDefinition2 = deployOneUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto3 = engineRule.startProcessInstance(processDefinition2.getId());
-    finishAllUserTasks(processInstanceDto3);
+    engineRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto3.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData1 = createReport(processDefinition1);
-    final ProcessCountReportMapResultDto result1 = evaluateCountMapReport(reportData1).getResult();
     final ProcessReportDataDto reportData2 = createReport(processDefinition2);
-    final ProcessCountReportMapResultDto result2 = evaluateCountMapReport(reportData2).getResult();
+    final ProcessReportHyperMapResult actualResult1 = evaluateHyperMapReport(reportData1).getResult();
+    final ProcessReportHyperMapResult actualResult2 = evaluateHyperMapReport(reportData2).getResult();
 
     // then
-    assertThat(result1.getData().size(), is(1));
-    assertThat(getExecutedFlowNodeCount(result1), is(1L));
-    assertThat(
-      result1.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(2L)
-    );
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .groupByContains(DEFAULT_USERNAME)
+        .distributedByContains(USER_TASK_1, 2L)
+      .doAssert(actualResult1);
 
-    assertThat(result2.getData().size(), is(1));
-    assertThat(getExecutedFlowNodeCount(result2), is(1L));
-    assertThat(
-      result2.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(1L)
-    );
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .groupByContains(DEFAULT_USERNAME)
+        .distributedByContains(USER_TASK_1, 1L)
+      .doAssert(actualResult2);
+    // @formatter:on
   }
 
   @Test
@@ -393,10 +395,10 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(actualResult.getProcessInstanceCount(), is((long) selectedTenants.size()));
   }
 
   @Test
@@ -405,24 +407,28 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessReportDataDto reportData = createReport(
       "nonExistingProcessDefinitionId", "1"
     );
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(0));
+    assertThat(actualResult.getData().size(), is(0));
   }
 
   @Data
   @AllArgsConstructor
   static class ExecutionStateTestValues {
     FlowNodeExecutionState executionState;
-    Map<String, Long> expectedFrequencyValues;
+    HyperMapResultEntryDto<Long> expectedFrequencyValues;
   }
 
-  private static Map<String, Long> getExpectedResultsMap(Long userTask1Results, Long userTask2Results) {
-    Map<String, Long> result = new HashMap<>();
-    result.put(USER_TASK_1, userTask1Results);
-    result.put(USER_TASK_2, userTask2Results);
-    return result;
+  private static HyperMapResultEntryDto<Long> getExpectedResultsMap(Long userTask1Result, Long userTask2Result) {
+    List<MapResultEntryDto<Long>> groupByResults = new ArrayList<>();
+    MapResultEntryDto<Long> firstUserTask = new MapResultEntryDto<>(USER_TASK_1, userTask1Result, USER_TASK_1_NAME);
+    groupByResults.add(firstUserTask);
+    if (Objects.nonNull(userTask2Result)) {
+      MapResultEntryDto<Long> secondUserTask = new MapResultEntryDto<>(USER_TASK_2, userTask2Result, USER_TASK_2_NAME);
+      groupByResults.add(secondUserTask);
+    }
+    return new HyperMapResultEntryDto<>(DEFAULT_USERNAME, groupByResults);
   }
 
   protected static Object[] getExecutionStateExpectedValues() {
@@ -440,13 +446,11 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
   @Parameters(method = "getExecutionStateExpectedValues")
   public void evaluateReportWithExecutionState(ExecutionStateTestValues testValues) {
     // given
-    OffsetDateTime now = OffsetDateTime.now();
-    LocalDateUtil.setCurrentTime(now);
-
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     // finish first running task, second now runs but unclaimed
-    engineRule.finishAllRunningUserTasks(processInstanceDto.getId());
+    engineRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId());
+    engineRule.claimAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId());
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
     // claim first running task
@@ -458,19 +462,11 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setFlowNodeExecutionState(testValues.executionState);
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(2));
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(testValues.getExpectedFrequencyValues().get(USER_TASK_1))
-    );
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_2).get().getValue(),
-      is(testValues.getExpectedFrequencyValues().get(USER_TASK_2))
-    );
-    assertThat(result.getProcessInstanceCount(), is(2L));
+    assertThat(actualResult.getData().size(), is(1));
+    assertThat(actualResult.getData().get(0), is(testValues.expectedFrequencyValues));
   }
 
   @Test
@@ -496,15 +492,14 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(1));
-    assertThat(getExecutedFlowNodeCount(result), is(1L));
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(2L)
-    );
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .groupByContains(DEFAULT_USERNAME)
+        .distributedByContains(USER_TASK_1, 2L)
+      .doAssert(actualResult);
   }
 
   @Test
@@ -522,15 +517,14 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(1));
-    assertThat(getExecutedFlowNodeCount(result), is(1L));
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(11L)
-    );
+    HyperMapAsserter.asserter()
+      .processInstanceCount(11L)
+      .groupByContains(DEFAULT_USERNAME)
+        .distributedByContains(USER_TASK_1, 11L)
+      .doAssert(actualResult);
   }
 
   @Test
@@ -549,56 +543,24 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     // when
     ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.setFilter(createStartDateFilter(null, processStartTime.minusSeconds(1L)));
-    ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
-    assertThat(getExecutedFlowNodeCount(result), is(0L));
+    HyperMapAsserter.asserter()
+      .processInstanceCount(0L)
+      .doAssert(actualResult);
 
     // when
     reportData = createReport(processDefinition);
     reportData.setFilter(createStartDateFilter(processStartTime, null));
-    result = evaluateCountMapReport(reportData).getResult();
+    actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
-    assertThat(getExecutedFlowNodeCount(result), is(1L));
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(1L)
-    );
-  }
-
-  @Test
-  public void canAlsoBeEvaluatedIfAggregationTypeAndUserTaskDurationTimeIsDifferentFromDefault() {
-    // given
-    ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
-    finishAllUserTasks(processInstanceDto);
-
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setAggregationType(AggregationType.MAX);
-    reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-    final ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse =
-      evaluateCountMapReport(reportData);
-
-    // then
-    final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-
-    final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getProcessInstanceCount(), is(1L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(getExecutedFlowNodeCount(result), is(1L));
-    assertThat(
-      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
-      is(1L)
-    );
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .groupByContains(DEFAULT_USERNAME)
+        .distributedByContains(USER_TASK_1, 1L)
+      .doAssert(actualResult);
   }
 
   @Test
@@ -641,7 +603,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
   }
 
   protected ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
-    return createUserTaskFrequencyMapGroupByUserTaskReport(processDefinitionKey, version);
+    return createUserTaskFrequencyMapGroupByAssigneeByUserTaskReport(processDefinitionKey, version);
   }
 
   private ProcessReportDataDto createReport(final ProcessDefinitionEngineDto processDefinition) {
@@ -652,11 +614,11 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     return ProcessFilterBuilder.filter().fixedStartDate().start(startDate).end(endDate).add().buildList();
   }
 
-  private void finishAllUserTasks(final ProcessInstanceEngineDto processInstanceDto1) {
-    // finish first task
-    engineRule.finishAllRunningUserTasks(processInstanceDto1.getId());
-    // finish second task
-    engineRule.finishAllRunningUserTasks(processInstanceDto1.getId());
+  private void finishUserTask1AWithDefaultAndTaskB2WithSecondUser(final ProcessInstanceEngineDto processInstanceDto1) {
+    // finish user task 1 and A with default user
+    engineRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
+    // finish user task 2 and B with second user
+    engineRule.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto1.getId());
   }
 
   private String deployAndStartMultiTenantUserTaskProcess(final List<String> deployedTenants) {
@@ -690,36 +652,27 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
       .startEvent(START_EVENT)
       .userTask(USER_TASK_1)
+        .name(USER_TASK_1_NAME)
       .userTask(USER_TASK_2)
+        .name(USER_TASK_2_NAME)
       .endEvent(END_EVENT)
       .done();
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private long getExecutedFlowNodeCount(ProcessCountReportMapResultDto resultList) {
-    return resultList.getData()
-      .stream()
-      .map(MapResultEntryDto::getValue)
-      .filter(Objects::nonNull)
-      .count();
-  }
-
-  private void assertCorrectValueOrdering(ProcessCountReportMapResultDto result) {
-    List<MapResultEntryDto<Long>> resultData = result.getData();
-    final List<Long> bucketValues = resultData.stream()
-      .map(MapResultEntryDto::getValue)
-      .collect(Collectors.toList());
-    final List<Long> bucketValuesWithoutNullValue = bucketValues.stream()
-      .filter(Objects::nonNull)
-      .collect(Collectors.toList());
-    assertThat(
-      bucketValuesWithoutNullValue,
-      contains(bucketValuesWithoutNullValue.stream().sorted(Comparator.naturalOrder()).toArray())
-    );
-    long notExecutedFlowNodes = resultData.size() - getExecutedFlowNodeCount(result);
-    for (int i = resultData.size() - 1; i > getExecutedFlowNodeCount(result) - 1; i--) {
-      assertThat(bucketValues.get(i), nullValue());
-    }
+  private ProcessDefinitionEngineDto deployFourUserTasksDefinition() {
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
+      .startEvent()
+      .parallelGateway()
+        .userTask(USER_TASK_1)
+        .userTask(USER_TASK_2)
+        .endEvent()
+      .moveToLastGateway()
+        .userTask(USER_TASK_A)
+        .userTask(USER_TASK_B)
+        .endEvent()
+      .done();
+    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
 }

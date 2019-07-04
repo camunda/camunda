@@ -7,6 +7,7 @@ package org.camunda.optimize.test.util;
 
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -403,6 +404,42 @@ public class ProcessReportDataBuilderHelper {
       view,
       groupByDto
     );
+  }
+
+  public static ProcessReportDataDto createUserTaskFrequencyMapGroupByAssigneeByUserTaskReport(
+    final String processDefinitionKey,
+    final String processDefinitionVersion
+  ) {
+    final ProcessViewDto view = createUserTaskFrequencyView();
+    final ProcessGroupByDto groupByDto = createGroupByAssignee();
+
+    ProcessReportDataDto report = createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
+      view,
+      groupByDto
+    );
+    report.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
+    return report;
+  }
+
+  public static ProcessReportDataDto createUserTaskFrequencyMapGroupByCandidateGroupByUserTaskReport(
+    final String processDefinitionKey,
+    final String processDefinitionVersion
+  ) {
+    final ProcessViewDto view = createUserTaskFrequencyView();
+    final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
+
+    ProcessReportDataDto report = createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
+      view,
+      groupByDto
+    );
+    report.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
+    return report;
   }
 
   public static ProcessReportDataDto createUserTaskFrequencyMapGroupByCandidateGroupReport(

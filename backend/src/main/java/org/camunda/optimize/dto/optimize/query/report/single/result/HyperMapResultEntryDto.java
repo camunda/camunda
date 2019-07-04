@@ -10,25 +10,31 @@ import lombok.Getter;
 import lombok.Setter;
 
 import javax.validation.constraints.NotNull;
+import java.util.List;
+import java.util.Optional;
 
 @EqualsAndHashCode
-public class MapResultEntryDto<T extends Comparable> {
+public class HyperMapResultEntryDto<T extends Comparable> {
 
   // @formatter:off
   @NotNull @Getter @Setter private String key;
-  @Getter @Setter private T value;
+  @Getter @Setter private List<MapResultEntryDto<T>> value;
   @Setter private String label;
   // @formatter:on
 
-  protected MapResultEntryDto() {
+  protected HyperMapResultEntryDto() {
   }
 
-  public MapResultEntryDto(@NotNull final String key, final T value) {
+  public Optional<MapResultEntryDto<T>> getDataEntryForKey(final String key) {
+    return value.stream().filter(entry -> key.equals(entry.getKey())).findFirst();
+  }
+
+  public HyperMapResultEntryDto(@NotNull final String key, final List<MapResultEntryDto<T>> value) {
     this.key = key;
     this.value = value;
   }
 
-  public MapResultEntryDto(@NotNull final String key, final T value, String label) {
+  public HyperMapResultEntryDto(@NotNull final String key, final List<MapResultEntryDto<T>> value, String label) {
     this.key = key;
     this.value = value;
     this.label = label;

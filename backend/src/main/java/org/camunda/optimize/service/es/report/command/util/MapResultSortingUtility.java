@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.command.util;
 
+import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
@@ -44,6 +45,15 @@ public class MapResultSortingUtility {
       resultData.getResultAsDto().getData()
     );
     resultData.getResultAsDto().setData(mapResultEntryDtos);
+  }
+
+  public static void sortResultData(final SortingDto sorting,
+                                    final HyperMapResultEntryDto<Long> resultData) {
+    final List<MapResultEntryDto<Long>> mapResultEntryDtos = sortResultData(
+      sorting,
+      resultData.getValue()
+    );
+    resultData.setValue(mapResultEntryDtos);
   }
 
   private static <V extends Comparable> List<MapResultEntryDto<V>> sortResultData(

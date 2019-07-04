@@ -17,12 +17,14 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.DURATION_MAP_RES
 import static org.camunda.optimize.dto.optimize.ReportConstants.DURATION_NUMBER_RESULT_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.FREQUENCY_MAP_RESULT_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.FREQUENCY_NUMBER_RESULT_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.HYPER_MAP_RESULT_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.RAW_RESULT_TYPE;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
   @JsonSubTypes.Type(value = ProcessCountReportMapResultDto.class, name = FREQUENCY_MAP_RESULT_TYPE),
   @JsonSubTypes.Type(value = ProcessDurationReportMapResultDto.class, name = DURATION_MAP_RESULT_TYPE),
+  @JsonSubTypes.Type(value = ProcessReportHyperMapResult.class, name = HYPER_MAP_RESULT_TYPE),
   @JsonSubTypes.Type(value = ProcessReportNumberResultDto.class, name = FREQUENCY_NUMBER_RESULT_TYPE),
   @JsonSubTypes.Type(value = ProcessDurationReportNumberResultDto.class, name = DURATION_NUMBER_RESULT_TYPE),
   @JsonSubTypes.Type(value = RawDataProcessReportResultDto.class, name = RAW_RESULT_TYPE),

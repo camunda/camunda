@@ -64,6 +64,7 @@ import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.crea
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNone;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskFrequencyMapGroupByAssigneeByUserTaskReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskIdleDurationMapGroupByUserTaskReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskTotalDurationMapGroupByUserTaskReport;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
@@ -826,6 +827,30 @@ public class CombinedReportHandlingIT {
 
     // then
     assertThat(response.getStatus(), is(404));
+  }
+
+  @Test
+  public void combinedReportWithHyperMapReportCanBeEvaluated() {
+    // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    String combinedReportId = createNewCombinedReport();
+    ProcessReportDataDto reportData =
+      createUserTaskFrequencyMapGroupByAssigneeByUserTaskReport(
+      engineDto.getProcessDefinitionKey(),
+      engineDto.getProcessDefinitionVersion()
+    );
+    String singleReportId = createNewSingleMapReport(reportData);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    CombinedReportEvaluationResultDto<ProcessCountReportMapResultDto> result =
+      evaluateUnsavedCombined(createCombinedReport(singleReportId));
+
+    // then
+    Map<String, ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>> resultMap =
+      result.getResult().getData();
+    assertThat(resultMap.size(), is(0));
   }
 
   private String createNewSingleMapReport(ProcessInstanceEngineDto engineDto) {

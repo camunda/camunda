@@ -60,6 +60,9 @@ public class ReportConstants {
   public static final String MAX_AGGREGATION_TYPE = "max";
   public static final String MEDIAN_AGGREGATION_TYPE = "median";
 
+  public static final String DISTRIBUTED_BY_NONE = "none";
+  public static final String DISTRIBUTED_BY_USER_TASK = "userTask";
+
   public static final String RUNNING_FLOWNODE_EXECUTION_STATE = "running";
   public static final String COMPLETED_FLOWNODE_EXECUTION_STATE = "completed";
   public static final String ALL_FLOWNODE_EXECUTION_STATE = "all";
@@ -80,6 +83,7 @@ public class ReportConstants {
   public static final String RAW_RESULT_TYPE = "raw";
   public static final String FREQUENCY_MAP_RESULT_TYPE = "frequencyMap";
   public static final String DURATION_MAP_RESULT_TYPE = "durationMap";
+  public static final String HYPER_MAP_RESULT_TYPE = "hyperMap";
   public static final String FREQUENCY_NUMBER_RESULT_TYPE = "frequencyNumber";
   public static final String DURATION_NUMBER_RESULT_TYPE = "durationNumber";
 }
