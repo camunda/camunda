@@ -34,6 +34,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -47,6 +48,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   public static final String LOGIN_RESOURCE = "/api/login";
   public static final String LOGOUT_RESOURCE = "/api/logout";
   public static final String ACTUATOR_ENDPOINTS = "/actuator/**";
+  
+  // Used to store the CSRF Token in a cookie.
+  private final CookieCsrfTokenRepository cookieCSRFTokenRepository = new CookieCsrfTokenRepository();
   
   @Autowired
   private OperateProperties operateProperties;
@@ -90,6 +94,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   @Override
   public void configure(HttpSecurity http) throws Exception {
     if(operateProperties.isCsrfPreventionEnabled()){
+      cookieCSRFTokenRepository.setCookieName("X-CSRF-TOKEN");
       http.csrf()
       .ignoringAntMatchers(LOGIN_RESOURCE)
       .and()
@@ -137,12 +142,21 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     response.setContentType(APPLICATION_JSON.getMimeType());
   }
   
+  /**
+   * Stores the CSRF Token in HTTP Response Header (for REST Clients) and as Cookie (for JavaScript Browser applications)
+   * The CSRF Token is expected to be set in HTTP Request Header from the client. 
+   * So an attacker can't trick the user to submit unindented data to the server (by a link).
+   * @param request
+   * @param response
+   * @return
+   */
   private HttpServletResponse addCSRFTokenWhenAvailable(HttpServletRequest request, HttpServletResponse response) {
-    CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());     
+    CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName()); 
     if (token != null) {
       response.setHeader("X-CSRF-HEADER", token.getHeaderName());
       response.setHeader("X-CSRF-PARAM", token.getParameterName());
       response.setHeader("X-CSRF-TOKEN", token.getToken());
+      cookieCSRFTokenRepository.saveToken(token, request, response);
     }
     return response;
   }
@@ -153,7 +167,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   
   protected OncePerRequestFilter getCSRFHeaderFilter() {
     return new OncePerRequestFilter() {
-      
       @Override
       protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
           filterChain.doFilter(request, addCSRFTokenWhenAvailable(request, response));
