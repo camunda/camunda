@@ -141,7 +141,7 @@ public class WorkflowInstanceAssert
     return this;
   }
 
-  public WorkflowInstanceAssert hasVariables(String key, Object expectedValue) {
+  public WorkflowInstanceAssert hasVariable(String key, Object expectedValue) {
     final Optional<Record<WorkflowInstanceRecordValue>> record =
         RecordingExporter.workflowInstanceRecords()
             .withWorkflowInstanceKey(workflowInstanceKey)
@@ -150,7 +150,7 @@ public class WorkflowInstanceAssert
             .findFirst();
 
     if (record.isPresent()) {
-      hasVariables(record.get(), key, expectedValue);
+      hasVariable(record.get(), key, expectedValue);
     } else {
       failWithMessage("Expected workflow instance to contain variables but instance is not ended");
     }
@@ -158,27 +158,29 @@ public class WorkflowInstanceAssert
     return this;
   }
 
-  private WorkflowInstanceAssert hasVariables(
+  private WorkflowInstanceAssert hasVariable(
       final Record<WorkflowInstanceRecordValue> record, String key, Object expectedValue) {
     final Map<String, String> variables =
         WorkflowInstances.getCurrentVariables(workflowInstanceKey, record.getPosition());
 
-    if (variables.containsKey(key)) {
-      final Object value;
-      try {
-        value = OBJECT_MAPPER.readValue(variables.get(key), Object.class);
-      } catch (IOException e) {
-        failWithMessage("Expected variable values to be JSON, but got <%s>", e.getMessage());
-        return this;
-      }
-
-      if (!expectedValue.equals(value)) {
-        failWithMessage(
-            "Expected variables value of <%s> to be <%s> but was <%s>", key, expectedValue, value);
-      }
-    } else {
+    if (!variables.containsKey(key)) {
       failWithMessage(
           "Expected variables <%s> to contain <%s> but could not find entry", variables, key);
+      return this;
+    }
+
+    final Object value;
+    try {
+      value = OBJECT_MAPPER.readValue(variables.get(key), Object.class);
+    } catch (IOException e) {
+      failWithMessage("Expected variable values to be JSON, but got <%s>", e.getMessage());
+      return this;
+    }
+
+    if ((expectedValue == null && value != null)
+        || (expectedValue != null && !expectedValue.equals(value))) {
+      failWithMessage(
+          "Expected variables value of <%s> to be <%s> but was <%s>", key, expectedValue, value);
     }
 
     return this;
