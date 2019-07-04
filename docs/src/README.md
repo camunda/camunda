@@ -2,31 +2,30 @@
 
 # Zeebe: Cloud-Native Workflow Engine for Microservices Orchestration.
 
-## Graphically model your workflows
+## Graphically model your workflows.
 
-_Using industry-standard BPMN._
+Using industry-standard BPMN.
 
 ![BPMN](workflows-data-based-conditions.png)
 
-## Write light-weight services to handle tasks
+## Write light-weight services to handle tasks.
 
-_In any programming language that supports gRPC: Java, Go, JavaScript, C#, Ruby, Python, Rust...._
+In any programming language that supports gRPC: Java, Go, JavaScript, C#, Ruby, Python, Rust....
 
 ![](lightweight-workers.png)
 
-## Inspect the running state of your system
+## Inspect the running state of your system.
 
-_Using Camunda Operate, or anything that integrates with Zeebe's streaming exporter._
+Using Camunda Operate, or anything that integrates with Zeebe's streaming exporter.
 
 ![](Operate-Batch-Cancel-Or-Retry.png)
 
-## Deploy to Kubernetes
+## Deploy to Kubernetes.
 
-_Run your workload on any cloud provider._
+Run your workloads on any cloud provider.
 
 ![](cloud-providers.png)
 
-## Scale horizontally
+## Scalable. Fault-tolerant. Distributed.
 
-_Scale your workers dynamically, and configure a broker cluster to match your throughput and fault tolerance needs._
-
+Choose three.
