@@ -221,7 +221,7 @@
           <reuseForks>true</reuseForks>
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
           <systemPropertyVariables>
-            <testForkNumber>$${surefire.forkNumber}</testForkNumber>
+            <testForkNumber>${surefire.forkNumber}</testForkNumber>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -234,7 +234,7 @@
           <reuseForks>true</reuseForks>
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
           <systemPropertyVariables>
-            <testForkNumber>$${surefire.forkNumber}</testForkNumber>
+            <testForkNumber>${surefire.forkNumber}</testForkNumber>
           </systemPropertyVariables>
         </configuration>
         <executions>

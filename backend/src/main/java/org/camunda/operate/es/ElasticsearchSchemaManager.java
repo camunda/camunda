@@ -12,13 +12,12 @@ import org.camunda.operate.es.schema.indices.IndexCreator;
 import org.camunda.operate.es.schema.templates.TemplateCreator;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.ResourceAlreadyExistsException;
 import org.elasticsearch.action.admin.indices.alias.Alias;
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
-import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
+import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.admin.indices.template.put.PutIndexTemplateRequest;
+import org.elasticsearch.client.indices.PutIndexTemplateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.Strings;
@@ -83,7 +82,7 @@ public class ElasticsearchSchemaManager {
       }
       final PutIndexTemplateRequest request = new PutIndexTemplateRequest(templateCreator.getTemplateName())
         .patterns(Arrays.asList(templateCreator.getIndexPattern()))
-        .mapping(ElasticsearchUtil.ES_INDEX_TYPE, templateCreator.getSource())
+        .mapping(templateCreator.getSource())
         .alias(new Alias(templateCreator.getAlias()))
         .settings(templateSettings)
         .order(operateProperties.getElasticsearch().getTemplateOrder());
@@ -113,9 +112,10 @@ public class ElasticsearchSchemaManager {
       } catch (IOException e) {
         logger.error(String.format("Could not create settings for index [%s]", mapping.getIndexName()), e);
       }
-      final CreateIndexRequest createIndexRequest = new CreateIndexRequest(mapping.getIndexName(), indexSettings)
-        .alias(new Alias(mapping.getAlias()))
-        .mapping(ElasticsearchUtil.ES_INDEX_TYPE, mapping.getSource());;
+      final CreateIndexRequest createIndexRequest = new CreateIndexRequest(mapping.getIndexName())
+          .settings(indexSettings)
+          .alias(new Alias(mapping.getAlias()))
+          .mapping(mapping.getSource());
       esClient.indices().create(createIndexRequest, RequestOptions.DEFAULT);
       esClient.indices().refresh(new RefreshRequest(mapping.getIndexName()), RequestOptions.DEFAULT);
       logger.debug("Index [{}] was successfully created", mapping.getIndexName());
@@ -134,7 +134,7 @@ public class ElasticsearchSchemaManager {
    */
   protected boolean schemaAlreadyExists() {
     try {
-     return esClient.indices().exists(new GetIndexRequest().indices(indexCreators.get(0).getAlias()), RequestOptions.DEFAULT);
+     return esClient.indices().exists(new GetIndexRequest(indexCreators.get(0).getAlias()), RequestOptions.DEFAULT);
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while checking schema existence: %s", e.getMessage());
       logger.error(message, e);
@@ -145,10 +145,8 @@ public class ElasticsearchSchemaManager {
   //TODO copy-pasted from Optimize, we need to check if this settings suit our needs
   private Settings buildSettings() throws IOException {
     return Settings.builder()
-      .put("index.mapper.dynamic", false)
       .loadFromSource(Strings.toString(jsonBuilder()
       .startObject()
-        .field("index.mapper.dynamic", false)
         .field("refresh_interval", "2s")
         .field("number_of_replicas", "0")
         .field("number_of_shards", "1")

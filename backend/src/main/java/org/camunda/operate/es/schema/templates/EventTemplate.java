@@ -86,7 +86,7 @@ public class EventTemplate extends AbstractTemplateCreator implements WorkflowIn
       .endObject()
       .startObject(DATE_TIME)
         .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getDateFormat())
+        .field("format", operateProperties.getElasticsearch().getElsDateFormat())
       .endObject()
       .startObject(PAYLOAD)
         .field("type", "keyword")   // TODO may be we should use Text data type here?
@@ -114,7 +114,7 @@ public class EventTemplate extends AbstractTemplateCreator implements WorkflowIn
       .endObject()
       .startObject(JOB_DEADLINE)
         .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getDateFormat())
+        .field("format", operateProperties.getElasticsearch().getElsDateFormat())
       .endObject()
       .startObject(JOB_CUSTOM_HEADERS)
         .field("enabled", false)

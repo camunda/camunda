@@ -7,7 +7,9 @@ package org.camunda.operate.property;
 
 public class ElasticsearchProperties {
 
-  public static final String DATE_FORMAT_DEFAULT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
+  public static final String DATE_FORMAT_DEFAULT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
+
+  public static final String ELS_DATE_FORMAT_DEFAULT = "date_time";
 
   private String clusterName= "elasticsearch";
 
@@ -16,6 +18,8 @@ public class ElasticsearchProperties {
   private int port = 9200;
 
   private String dateFormat = DATE_FORMAT_DEFAULT;
+
+  private String elsDateFormat = ELS_DATE_FORMAT_DEFAULT;
 
   private int batchSize = 2000;
 
@@ -49,6 +53,14 @@ public class ElasticsearchProperties {
 
   public void setDateFormat(String dateFormat) {
     this.dateFormat = dateFormat;
+  }
+
+  public String getElsDateFormat() {
+    return elsDateFormat;
+  }
+
+  public void setElsDateFormat(String elsDateFormat) {
+    this.elsDateFormat = elsDateFormat;
   }
 
   public int getBatchSize() {

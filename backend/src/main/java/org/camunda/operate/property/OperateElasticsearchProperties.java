@@ -19,6 +19,7 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
    * This format will be used to create timed indices. It must correspond to rolloverInterval parameter.
    */
   private String rolloverDateFormat = "yyyyMMdd";
+  private String elsRolloverDateFormat = "basic_date";
   /**
    * Interval description for "date histogram" aggregation, which is used to group finished instances.
    * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-datehistogram-aggregation.html">Elasticsearch docs</a>
@@ -57,6 +58,14 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
 
   public void setRolloverDateFormat(String rolloverDateFormat) {
     this.rolloverDateFormat = rolloverDateFormat;
+  }
+
+  public String getElsRolloverDateFormat() {
+    return elsRolloverDateFormat;
+  }
+
+  public void setElsRolloverDateFormat(String elsRolloverDateFormat) {
+    this.elsRolloverDateFormat = elsRolloverDateFormat;
   }
 
   public String getRolloverInterval() {

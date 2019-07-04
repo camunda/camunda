@@ -82,11 +82,11 @@ public class ListViewTemplate extends AbstractTemplateCreator {
       .endObject()
       .startObject(START_DATE)
         .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getDateFormat())
+        .field("format", operateProperties.getElasticsearch().getElsDateFormat())
       .endObject()
       .startObject(END_DATE)
         .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getDateFormat())
+        .field("format", operateProperties.getElasticsearch().getElsDateFormat())
       .endObject()
       //incident fields
       .startObject(INCIDENT_KEY)

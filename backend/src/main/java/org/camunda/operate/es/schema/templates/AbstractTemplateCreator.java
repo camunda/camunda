@@ -33,9 +33,6 @@ public abstract class AbstractTemplateCreator implements TemplateCreator {
         .startObject("properties");
           addProperties(source)
         .endObject()
-        .startObject("_all")
-          .field("enabled",false)
-        .endObject()
         .startArray("dynamic_templates")
           .startObject()
             .startObject("string_template")

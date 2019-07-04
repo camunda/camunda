@@ -51,7 +51,7 @@ public class IncidentTemplate extends AbstractTemplateCreator implements Workflo
       .endObject()
       .startObject(CREATION_TIME)
         .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getDateFormat())
+        .field("format", operateProperties.getElasticsearch().getElsDateFormat())
       .endObject()
       .startObject(ERROR_MSG)
         .field("type", "keyword")

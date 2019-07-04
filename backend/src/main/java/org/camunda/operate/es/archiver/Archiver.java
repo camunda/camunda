@@ -148,7 +148,7 @@ public class Archiver extends Thread implements Shutdownable{
       dateHistogram(datesAgg)
         .field(ListViewTemplate.END_DATE)
         .dateHistogramInterval(new DateHistogramInterval(operateProperties.getElasticsearch().getRolloverInterval()))
-        .format(operateProperties.getElasticsearch().getRolloverDateFormat())
+        .format(operateProperties.getElasticsearch().getElsRolloverDateFormat())
         .keyed(true)      //get result as a map (not an array)
         //we want to get only one bucket at a time
         .subAggregation(
