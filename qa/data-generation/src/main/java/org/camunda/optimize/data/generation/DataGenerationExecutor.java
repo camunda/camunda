@@ -143,8 +143,9 @@ public class DataGenerationExecutor {
       completer.shutdown();
       completer.awaitUserTaskCompletion(timeoutInHours, TimeUnit.HOURS);
 
-      // add some grace period after data generation for the engine to finish work (e.g. 10mio / 16 = 600000 ms = ~10 minutes)
-      final long sleepMillis = totalInstanceCount / 16;
+      // add some grace period after data generation for the engine to finish work (e.g. 10mio / 16 =~ 600000 ms = 10 minutes)
+      // minimum 30 seconds
+      final long sleepMillis = Math.max(30_000, totalInstanceCount / 16);
       logger.info("Sleeping for {}s as a grace period for the engine to finish pending work.", sleepMillis / 1000);
       Thread.sleep(sleepMillis);
     } catch (InterruptedException e) {

@@ -163,7 +163,7 @@ import:
   #States how often the import index should be stored to Elasticsearch.
   importIndexStorageIntervalInSec: 10
   # the time interval the import backs off from the current tip of the time, to reread potentially missed concurrent writes
-  currentTimeBackoffMilliseconds: 2000
+  currentTimeBackoffMilliseconds: 10000
 
 # everything that is related with configuring Elasticsearch or creating
 # a connection to it.

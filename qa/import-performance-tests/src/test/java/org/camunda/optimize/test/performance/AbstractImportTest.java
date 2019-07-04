@@ -81,6 +81,17 @@ public abstract class AbstractImportTest {
         engineDatabaseRule.countHistoricActivityInstances(),
         elasticSearchRule.getActivityCount()
       );
+
+      logger.info(
+        "The Camunda Platform contains {} decision definitions. Optimize: {}",
+        engineDatabaseRule.countDecisionDefinitions(),
+        elasticSearchRule.getDocumentCountOf(DECISION_DEFINITION_TYPE)
+      );
+      logger.info(
+        "The Camunda Platform contains {} historic decision instances. Optimize: {}",
+        engineDatabaseRule.countHistoricDecisionInstances(),
+        elasticSearchRule.getDocumentCountOf(DECISION_INSTANCE_TYPE)
+      );
     } catch (SQLException e) {
       logger.error("Failed producing stats", e);
     }

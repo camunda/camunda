@@ -21,6 +21,7 @@ import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHa
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.engine.importing.index.handler.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
+import org.camunda.optimize.service.engine.importing.service.ImportObserver;
 import org.camunda.optimize.service.engine.importing.service.RunningActivityInstanceImportService;
 import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndexesEngineImportMediator;
@@ -51,6 +52,8 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 
@@ -187,6 +190,39 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     }
 
     CompletableFuture.allOf(synchronizationCompletables.toArray(new CompletableFuture[0])).join();
+  }
+
+  public void ensureImportSchedulerIsIdle(long timeoutSeconds) {
+    final CountDownLatch importIdleLatch = new CountDownLatch(getImportSchedulerFactory().getImportSchedulers().size());
+    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+      if (scheduler.isImporting()) {
+        logger.info("Scheduler is still importing, waiting for it to finish.");
+        final ImportObserver importObserver = new ImportObserver() {
+          @Override
+          public void importInProgress(final String engineAlias) {
+            // noop
+          }
+
+          @Override
+          public void importIsIdle(final String engineAlias) {
+            logger.info("Scheduler became idle, counting down latch.");
+            importIdleLatch.countDown();
+            scheduler.unsubscribe(this);
+          }
+        };
+        scheduler.subscribe(importObserver);
+
+      } else {
+        logger.info("Scheduler is not importing, counting down latch.");
+        importIdleLatch.countDown();
+      }
+    }
+
+    try {
+      importIdleLatch.await(timeoutSeconds, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      throw new OptimizeIntegrationTestException("Failed waiting for import to finish.");
+    }
   }
 
   public EngineImportSchedulerFactory getImportSchedulerFactory() {
