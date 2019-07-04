@@ -40,15 +40,13 @@ public class ProcessPartQueryUtil {
   public static Long processProcessPartAggregationOperations(Aggregations aggs, AggregationType aggregationType) {
     Terms agg = aggs.get(TERMS_AGGREGATIONS);
     DescriptiveStatistics stats = new DescriptiveStatistics();
-    long sum = 0L;
     for (Terms.Bucket entry : agg.getBuckets()) {
       Nested nested = entry.getAggregations().get(NESTED_AGGREGATION);
       ScriptedMetric scriptedMetric = nested.getAggregations().get(SCRIPT_AGGREGATION);
 
-      Integer scriptedResult = (Integer) scriptedMetric.aggregation();
-      if (scriptedResult != null) {
-        sum += scriptedResult;
-        stats.addValue(scriptedResult);
+      if (scriptedMetric.aggregation() instanceof Number) {
+        final Number scriptedResult = (Number) scriptedMetric.aggregation();
+        stats.addValue(scriptedResult.longValue());
       }
     }
     return getResultForGivenAggregationType(stats, aggregationType);

@@ -107,6 +107,51 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
   }
 
   @Test
+  public void reportEvaluationForOneProcessBigActivityDuration() throws Exception {
+
+    // given
+    OffsetDateTime startDate = OffsetDateTime.now();
+    // big activity durations in ms (>32 bit) caused the bug described in OPT-2393
+    final long activityDurationInSeconds = Integer.valueOf(Integer.MAX_VALUE).longValue();
+    OffsetDateTime endDate = startDate.plusSeconds(activityDurationInSeconds);
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    engineDatabaseRule.changeActivityInstanceStartDateForProcessDefinition(
+      processInstanceDto.getDefinitionId(),
+      startDate
+    );
+    engineDatabaseRule.changeActivityInstanceEndDateForProcessDefinition(processInstanceDto.getDefinitionId(), endDate);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setStartFlowNodeId(START_EVENT)
+      .setEndFlowNodeId(END_EVENT)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE_WITH_PART)
+      .build();
+
+    ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluationResponse =
+      evaluateDurationNumberReport(reportData);
+
+    // then
+    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
+    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getView(), is(notNullValue()));
+    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
+    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
+    assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
+    assertThat(resultReportDataDto.getParameters().getProcessPart(), is(notNullValue()));
+
+    assertThat(evaluationResponse.getResult().getProcessInstanceCount(), is(1L));
+    long calculatedResult = evaluationResponse.getResult().getData();
+    assertThat(calculatedResult, is(activityDurationInSeconds * 1000L));
+  }
+
+  @Test
   public void reportEvaluationById() throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
