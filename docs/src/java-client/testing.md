@@ -62,6 +62,6 @@ final WorkflowInstanceEvent workflowInstance = ...
 ZeebeTestRule.assertThat(workflowInstance)
     .isEnded()
     .hasPassed("start", "task", "end")
-    .hasVariables("result", 21.0);
+    .hasVariable("result", 21.0);
 ```
 

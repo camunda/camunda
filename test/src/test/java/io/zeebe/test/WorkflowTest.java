@@ -19,7 +19,8 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.test.util.record.RecordingExporter;
-import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -62,18 +63,24 @@ public class WorkflowTest {
     final WorkflowInstanceEvent workflowInstance =
         client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("a", "foo");
+    variables.put("b", 123);
+    variables.put("c", true);
+    variables.put("d", null);
+
     client
         .newWorker()
         .jobType("task")
-        .handler(
-            (c, j) ->
-                c.newCompleteCommand(j.getKey())
-                    .variables(Collections.singletonMap("result", 123))
-                    .send()
-                    .join())
+        .handler((c, j) -> c.newCompleteCommand(j.getKey()).variables(variables).send().join())
         .name("test")
         .open();
 
-    ZeebeTestRule.assertThat(workflowInstance).isEnded().hasVariables("result", 123);
+    ZeebeTestRule.assertThat(workflowInstance)
+        .isEnded()
+        .hasVariable("a", "foo")
+        .hasVariable("b", 123)
+        .hasVariable("c", true)
+        .hasVariable("d", null);
   }
 }
