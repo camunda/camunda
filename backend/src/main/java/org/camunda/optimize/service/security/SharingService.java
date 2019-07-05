@@ -148,7 +148,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
         dashboardService.getDashboardDefinition(dashboardId);
 
       List<String> authorizedReportIds = reportService
-        .findAndFilterReportsWithoutXml(userId)
+        .findAndFilterReports(userId)
         .stream()
         .map(ReportDefinitionDto::getId)
         .collect(Collectors.toList());

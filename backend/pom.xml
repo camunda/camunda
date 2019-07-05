@@ -48,6 +48,11 @@
       <version>${camunda.engine.version}-ee</version>
     </dependency>
     <dependency>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-dmn-model</artifactId>
+      <version>${camunda.engine.version}-ee</version>
+    </dependency>
+    <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-license-check</artifactId>
       <version>1.1.0</version>
@@ -224,12 +229,6 @@
     </dependency>
 
     <!--Test dependencies-->
-    <dependency>
-      <groupId>org.camunda.bpm.model</groupId>
-      <artifactId>camunda-dmn-model</artifactId>
-      <version>${camunda.engine.version}-ee</version>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>pl.pragmatists</groupId>
       <artifactId>JUnitParams</artifactId>

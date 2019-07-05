@@ -7,6 +7,8 @@ package org.camunda.optimize.rest;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
+import lombok.SneakyThrows;
+import org.apache.commons.io.IOUtils;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportType;
@@ -28,6 +30,7 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,6 +44,12 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 
 @RunWith(JUnitParamsRunner.class)
 public class ReportRestServiceIT {
+  private static final String PROCESS_DEFINITION_XML_WITH_NAME = "bpmn/simple_withName.bpmn";
+  private static final String PROCESS_DEFINITION_XML_WO_NAME = "bpmn/simple_woName.bpmn";
+  private static final String DECISION_DEFINITION_XML = "dmn/invoiceBusinessDecision_withName.xml";
+  private static final String DECISION_DEFINITION_XML_WO_NAME = "dmn/invoiceBusinessDecision_woName.xml";
+  private static final String PROCESS_DEFINITION_KEY = "simple";
+  private static final String DECISION_DEFINITION_KEY = "invoiceClassification";
 
   private static Object[] processAndDecisionReportType() {
     return new Object[]{ReportType.PROCESS, ReportType.DECISION};
@@ -139,38 +148,18 @@ public class ReportRestServiceIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  private Response updateReportRequest(final String id, final ReportType reportType) {
-    if (ReportType.PROCESS.equals(reportType)) {
-      return embeddedOptimizeRule
-        .getRequestExecutor()
-        .buildUpdateSingleProcessReportRequest(id, constructProcessReportWithFakePD())
-        .execute();
-    } else {
-      return embeddedOptimizeRule
-        .getRequestExecutor()
-        .buildUpdateSingleDecisionReportRequest(id, constructDecisionReportWithFakeDD())
-        .execute();
-    }
-  }
+  @Test
+  @Parameters(method = "processAndDecisionReportType")
+  public void updateReportWithXml(final ReportType reportType) {
+    //given
+    String id = addEmptyReportToOptimize(reportType);
 
-  private SingleProcessReportDefinitionDto constructProcessReportWithFakePD() {
-    SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
-    ProcessReportDataDto data = new ProcessReportDataDto();
-    data.setProcessDefinitionVersion("FAKE");
-    data.setProcessDefinitionKey("FAKE");
-    data.getConfiguration().setXml("FAKE");
-    reportDefinitionDto.setData(data);
-    return reportDefinitionDto;
-  }
+    // when
+    final Response response;
+    response = updateReportWithValidXml(id, reportType);
 
-  private SingleDecisionReportDefinitionDto constructDecisionReportWithFakeDD() {
-    SingleDecisionReportDefinitionDto reportDefinitionDto = new SingleDecisionReportDefinitionDto();
-    DecisionReportDataDto data = new DecisionReportDataDto();
-    data.setDecisionDefinitionVersion("FAKE");
-    data.setDecisionDefinitionKey("FAKE");
-    data.getConfiguration().setXml("FAKE");
-    reportDefinitionDto.setData(data);
-    return reportDefinitionDto;
+    // then the status code is okay
+    assertThat(response.getStatus(), is(204));
   }
 
   @Test
@@ -187,12 +176,12 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void getStoredReports() {
+  public void getStoredReportsWithNameFromXml() {
     //given
     String idProcessReport = addEmptyProcessReportToOptimize();
-    updateReportRequest(idProcessReport, ReportType.PROCESS);
+    updateReportWithValidXml(idProcessReport, ReportType.PROCESS);
     String idDecisionReport = addEmptyDecisionReportToOptimize();
-    updateReportRequest(idDecisionReport, ReportType.DECISION);
+    updateReportWithValidXml(idDecisionReport, ReportType.DECISION);
 
     // when
     List<ReportDefinitionDto> reports = getAllReports();
@@ -202,6 +191,56 @@ public class ReportRestServiceIT {
     assertThat(
       reports.stream().map(ReportDefinitionDto::getId).collect(Collectors.toList()),
       containsInAnyOrder(idDecisionReport, idProcessReport)
+    );
+    assertThat(
+      reports.stream()
+        .map(ReportDefinitionDto::getData)
+        .map(data -> (SingleReportDataDto) data)
+        .map(SingleReportDataDto::getDefinitionName)
+        .collect(Collectors.toList()),
+
+      containsInAnyOrder("Simple Process", "Invoice Classification")
+    );
+    reports.forEach(
+      reportDefinitionDto ->
+        assertThat(((SingleReportDataDto) reportDefinitionDto.getData()).getConfiguration().getXml(), is(nullValue()))
+    );
+  }
+
+  @Test
+  public void getStoredReportsWithNoNameFromXml() throws IOException {
+    //given
+    final String idProcessReport = addEmptyProcessReportToOptimize();
+    final SingleProcessReportDefinitionDto processReportDefinitionDto = getProcessReportDefinitionDtoWithXml(
+      PROCESS_DEFINITION_XML_WO_NAME
+    );
+    embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateSingleProcessReportRequest(idProcessReport, processReportDefinitionDto)
+      .execute();
+
+    final String idDecisionReport = addEmptyDecisionReportToOptimize();
+    final SingleDecisionReportDefinitionDto decisionReportDefinitionDto = getDecisionReportDefinitionDtoWithXml(
+      DECISION_DEFINITION_XML_WO_NAME
+    );
+    embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateSingleDecisionReportRequest(idDecisionReport, decisionReportDefinitionDto)
+      .execute();
+
+    // when
+    List<ReportDefinitionDto> reports = getAllReports();
+
+    // then
+    assertThat(reports.size(), is(2));
+    assertThat(
+      reports.stream()
+        .map(ReportDefinitionDto::getData)
+        .map(data -> (SingleReportDataDto) data)
+        .map(SingleReportDataDto::getDefinitionName)
+        .collect(Collectors.toList()),
+
+      containsInAnyOrder(PROCESS_DEFINITION_KEY, DECISION_DEFINITION_KEY)
     );
     reports.forEach(
       reportDefinitionDto ->
@@ -548,5 +587,89 @@ public class ReportRestServiceIT {
       .getRequestExecutor()
       .buildGetAllReportsRequest()
       .executeAndReturnList(ReportDefinitionDto.class, 200);
+  }
+
+  @SneakyThrows
+  private Response updateReportWithValidXml(final String id, final ReportType reportType) {
+    final Response response;
+    if (ReportType.PROCESS.equals(reportType)) {
+      SingleProcessReportDefinitionDto reportDefinitionDto = getProcessReportDefinitionDtoWithXml(
+        PROCESS_DEFINITION_XML_WITH_NAME
+      );
+      response = embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildUpdateSingleProcessReportRequest(id, reportDefinitionDto)
+        .execute();
+    } else {
+      SingleDecisionReportDefinitionDto reportDefinitionDto = getDecisionReportDefinitionDtoWithXml(
+        DECISION_DEFINITION_XML
+      );
+      response = embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildUpdateSingleDecisionReportRequest(id, reportDefinitionDto)
+        .execute();
+    }
+    return response;
+  }
+
+  private SingleProcessReportDefinitionDto getProcessReportDefinitionDtoWithXml(final String xml) throws IOException {
+    SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
+    ProcessReportDataDto data = new ProcessReportDataDto();
+    data.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
+    data.setProcessDefinitionVersion("1");
+    data.getConfiguration().setXml(IOUtils.toString(
+      getClass().getClassLoader().getResourceAsStream(xml),
+      "UTF-8"
+    ));
+    reportDefinitionDto.setData(data);
+    return reportDefinitionDto;
+  }
+
+  private SingleDecisionReportDefinitionDto getDecisionReportDefinitionDtoWithXml(final String xml) throws IOException {
+    SingleDecisionReportDefinitionDto reportDefinitionDto = new SingleDecisionReportDefinitionDto();
+    DecisionReportDataDto data = new DecisionReportDataDto();
+    data.setDecisionDefinitionKey(DECISION_DEFINITION_KEY);
+    data.setDecisionDefinitionVersion("1");
+    data.getConfiguration().setXml(IOUtils.toString(
+      getClass().getClassLoader().getResourceAsStream(xml),
+      "UTF-8"
+    ));
+    reportDefinitionDto.setData(data);
+    return reportDefinitionDto;
+  }
+
+
+  private Response updateReportRequest(final String id, final ReportType reportType) {
+    if (ReportType.PROCESS.equals(reportType)) {
+      return embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildUpdateSingleProcessReportRequest(id, constructProcessReportWithFakePD())
+        .execute();
+    } else {
+      return embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildUpdateSingleDecisionReportRequest(id, constructDecisionReportWithFakeDD())
+        .execute();
+    }
+  }
+
+  private SingleProcessReportDefinitionDto constructProcessReportWithFakePD() {
+    SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
+    ProcessReportDataDto data = new ProcessReportDataDto();
+    data.setProcessDefinitionVersion("FAKE");
+    data.setProcessDefinitionKey("FAKE");
+    data.getConfiguration().setXml("FAKE");
+    reportDefinitionDto.setData(data);
+    return reportDefinitionDto;
+  }
+
+  private SingleDecisionReportDefinitionDto constructDecisionReportWithFakeDD() {
+    SingleDecisionReportDefinitionDto reportDefinitionDto = new SingleDecisionReportDefinitionDto();
+    DecisionReportDataDto data = new DecisionReportDataDto();
+    data.setDecisionDefinitionVersion("FAKE");
+    data.setDecisionDefinitionKey("FAKE");
+    data.getConfiguration().setXml("FAKE");
+    reportDefinitionDto.setData(data);
+    return reportDefinitionDto;
   }
 }

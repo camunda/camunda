@@ -192,7 +192,7 @@ public class AlertService implements ReportReferencingService {
   public List<AlertDefinitionDto> getStoredAlerts(String userId) {
     List<AlertDefinitionDto> alerts = alertReader.getStoredAlerts();
     List<String> authorizedReportIds = reportService
-      .findAndFilterReportsWithoutXml(userId)
+      .findAndFilterReports(userId)
       .stream()
       .map(ReportDefinitionDto::getId)
       .collect(Collectors.toList());

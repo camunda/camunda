@@ -43,6 +43,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.extractProcessDefinitionName;
+import static org.camunda.optimize.service.engine.importing.DmnModelUtility.extractDecisionDefinitionName;
 import static org.camunda.optimize.service.es.report.command.util.ReportUtil.copyDefinitionMetaDataToUpdate;
 
 @RequiredArgsConstructor
@@ -119,7 +121,7 @@ public class ReportService {
     final CombinedReportDataDto data = reportUpdate.getData();
     if (data.getReportIds() != null && !data.getReportIds().isEmpty()) {
       final List<SingleProcessReportDefinitionDto> reportsOfCombinedReport = reportReader
-        .getAllSingleProcessReportsForIds(data.getReportIds(), false);
+        .getAllSingleProcessReportsForIdsOmitXml(data.getReportIds());
 
       final SingleProcessReportDefinitionDto firstReport = reportsOfCombinedReport.get(0);
       final boolean allReportsCanBeCombined = reportsOfCombinedReport.stream()
@@ -148,10 +150,11 @@ public class ReportService {
                                                               String userId,
                                                               boolean force) throws OptimizeException {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
-    SingleProcessReportDefinitionDto currentReportVersion =
-      getSingleProcessReportWithAuthorizationCheck(reportId, userId);
-    SingleProcessReportDefinitionUpdateDto reportUpdate =
-      convertToSingleProcessReportUpdate(updatedReport);
+
+    final SingleProcessReportDefinitionDto currentReportVersion = getSingleProcessReportWithAuthorizationCheck(
+      reportId, userId
+    );
+    final SingleProcessReportDefinitionUpdateDto reportUpdate = convertToSingleProcessReportUpdate(updatedReport);
 
     if (!force) {
       checkForUpdateConflictsOnSingleProcessDefinition(currentReportVersion, updatedReport);
@@ -233,6 +236,13 @@ public class ReportService {
     SingleProcessReportDefinitionUpdateDto reportUpdate = new SingleProcessReportDefinitionUpdateDto();
     copyDefinitionMetaDataToUpdate(updatedReport, reportUpdate);
     reportUpdate.setData(updatedReport.getData());
+    final String xml = reportUpdate.getData().getConfiguration().getXml();
+    if (xml != null) {
+      final String definitionKey = reportUpdate.getData().getProcessDefinitionKey();
+      reportUpdate.getData().setProcessDefinitionName(
+        extractProcessDefinitionName(definitionKey, xml).orElse(definitionKey)
+      );
+    }
     return reportUpdate;
   }
 
@@ -240,6 +250,13 @@ public class ReportService {
     SingleDecisionReportDefinitionUpdateDto reportUpdate = new SingleDecisionReportDefinitionUpdateDto();
     copyDefinitionMetaDataToUpdate(updatedReport, reportUpdate);
     reportUpdate.setData(updatedReport.getData());
+    final String xml = reportUpdate.getData().getConfiguration().getXml();
+    if (xml != null) {
+      final String definitionKey = reportUpdate.getData().getDecisionDefinitionKey();
+      reportUpdate.getData().setDecisionDefinitionName(
+        extractDecisionDefinitionName(definitionKey, xml).orElse(definitionKey)
+      );
+    }
     return reportUpdate;
   }
 
@@ -250,15 +267,15 @@ public class ReportService {
     return reportUpdate;
   }
 
-  public List<ReportDefinitionDto> findAndFilterReportsWithoutXml(String userId,
-                                                                  MultivaluedMap<String, String> queryParameters) {
-    List<ReportDefinitionDto> reports = findAndFilterReportsWithoutXml(userId);
+  public List<ReportDefinitionDto> findAndFilterReports(String userId,
+                                                        MultivaluedMap<String, String> queryParameters) {
+    List<ReportDefinitionDto> reports = findAndFilterReports(userId);
     reports = QueryParamAdjustmentUtil.adjustReportResultsToQueryParameters(reports, queryParameters);
     return reports;
   }
 
-  public List<ReportDefinitionDto> findAndFilterReportsWithoutXml(String userId) {
-    List<ReportDefinitionDto> reports = reportReader.getAllReports(false);
+  public List<ReportDefinitionDto> findAndFilterReports(String userId) {
+    List<ReportDefinitionDto> reports = reportReader.getAllReportsOmitXml();
     reports = filterAuthorizedReports(userId, reports);
     return reports;
   }

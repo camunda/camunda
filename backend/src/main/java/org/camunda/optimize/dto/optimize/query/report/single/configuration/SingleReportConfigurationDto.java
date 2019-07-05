@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.configuration;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
+import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
@@ -21,8 +22,8 @@ import java.util.List;
 
 import static java.util.Objects.nonNull;
 
-
 @Data
+@FieldNameConstants(asEnum = true)
 public class SingleReportConfigurationDto {
   private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
   private AggregationType aggregationType = AggregationType.AVERAGE;
@@ -48,7 +49,6 @@ public class SingleReportConfigurationDto {
 
   @JsonIgnore
   public String createCommandKey(ProcessViewDto viewDto, ProcessGroupByDto groupByDto) {
-    String configurationCommandKey = "";
     final List<String> configsToConsiderForCommand = new ArrayList<>();
     if (isDurationCommand(viewDto)) {
       configsToConsiderForCommand.add(this.aggregationType.getId());

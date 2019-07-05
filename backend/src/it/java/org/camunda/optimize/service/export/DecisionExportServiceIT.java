@@ -8,7 +8,6 @@ package org.camunda.optimize.service.export;
 import org.apache.commons.io.IOUtils;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
@@ -44,7 +43,7 @@ public class DecisionExportServiceIT {
 
   private static final String START = "aStart";
   private static final String END = "anEnd";
-  public static final String DEFAULT_DMN_DEFINITION_PATH = "dmn/invoiceBusinessDecision.xml";
+  public static final String DEFAULT_DMN_DEFINITION_PATH = "dmn/invoiceBusinessDecision_withName.xml";
 
   @Parameterized.Parameters(name = "{2}")
   public static Collection<Object[]> data() {

@@ -24,6 +24,7 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
 
   protected String decisionDefinitionKey;
   protected String decisionDefinitionVersion;
+  protected String decisionDefinitionName;
   protected List<String> tenantIds = new ArrayList<>(Collections.singletonList(null));
   protected List<DecisionFilterDto> filter = new ArrayList<>();
   protected DecisionViewDto view;
@@ -41,6 +42,12 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
   @Override
   public String getDefinitionVersion() {
     return decisionDefinitionVersion;
+  }
+
+  @JsonIgnore
+  @Override
+  public String getDefinitionName() {
+    return decisionDefinitionName;
   }
 
   @JsonIgnore

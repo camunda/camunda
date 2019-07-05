@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -55,6 +57,12 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Component
 @Slf4j
 public class ReportReader {
+
+  private static final String REPORT_DATA_XML_PROPERTY = String.join(
+    ".",
+    DATA, SingleReportDataDto.Fields.configuration.name(), SingleReportConfigurationDto.Fields.xml.name()
+  );
+  private static final String[] REPORT_LIST_EXCLUDES = {REPORT_DATA_XML_PROPERTY};
 
   private final RestHighLevelClient esClient;
   private final ConfigurationService configurationService;
@@ -181,14 +189,13 @@ public class ReportReader {
     }
   }
 
-  public List<ReportDefinitionDto> getAllReports(final boolean withXml) {
+  public List<ReportDefinitionDto> getAllReportsOmitXml() {
     log.debug("Fetching all available reports");
 
-    final String[] fieldsToExclude = withXml ? null : new String[]{"*.xml"};
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(QueryBuilders.matchAllQuery())
       .size(LIST_FETCH_LIMIT)
-      .fetchSource(null, fieldsToExclude);
+      .fetchSource(null, REPORT_LIST_EXCLUDES);
     SearchRequest searchRequest =
       new SearchRequest(
         getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
@@ -215,12 +222,11 @@ public class ReportReader {
     );
   }
 
-  public List<SingleProcessReportDefinitionDto> getAllSingleProcessReportsForIds(final List<String> reportIds,
-                                                                                 final boolean withXml) {
+  public List<SingleProcessReportDefinitionDto> getAllSingleProcessReportsForIdsOmitXml(final List<String> reportIds) {
     log.debug("Fetching all available single process reports for ids [{}]", reportIds);
 
     final String[] reportIdsAsArray = reportIds.toArray(new String[0]);
-    final SearchResponse searchResponse = performGetReportRequestForIds(reportIdsAsArray, withXml);
+    final SearchResponse searchResponse = performGetReportRequestForIdsOmitXml(reportIdsAsArray);
     final List<SingleProcessReportDefinitionDto> singleReportDefinitionDtos =
       mapResponseToReportList(searchResponse).stream()
         // make sure that the order of the reports corresponds to the one from the single report ids list
@@ -264,13 +270,11 @@ public class ReportReader {
     return singleReportDefinitionDtos;
   }
 
-  private SearchResponse performGetReportRequestForIds(final String[] reportIdsAsArray, final boolean withXml) {
-    final String[] fieldsToExclude = withXml ? null : new String[]{"*.xml"};
-
+  private SearchResponse performGetReportRequestForIdsOmitXml(final String[] reportIdsAsArray) {
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(QueryBuilders.idsQuery().addIds(reportIdsAsArray));
     searchSourceBuilder.size(reportIdsAsArray.length);
-    searchSourceBuilder.fetchSource(null, fieldsToExclude);
+    searchSourceBuilder.fetchSource(null, REPORT_LIST_EXCLUDES);
 
     final SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE))
       .types(SINGLE_PROCESS_REPORT_TYPE)

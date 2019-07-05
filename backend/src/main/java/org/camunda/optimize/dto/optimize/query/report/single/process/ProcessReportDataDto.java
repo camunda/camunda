@@ -27,6 +27,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
 
   protected String processDefinitionKey;
   protected String processDefinitionVersion;
+  protected String processDefinitionName;
   protected List<String> tenantIds = Collections.singletonList(null);
   protected List<ProcessFilterDto> filter = new ArrayList<>();
   protected ProcessViewDto view;
@@ -44,6 +45,12 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   @Override
   public String getDefinitionVersion() {
     return processDefinitionVersion;
+  }
+
+  @JsonIgnore
+  @Override
+  public String getDefinitionName() {
+    return processDefinitionName;
   }
 
   @JsonIgnore
