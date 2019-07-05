@@ -28,7 +28,6 @@ import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndex
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
-import org.camunda.optimize.service.security.AbstractCachingAuthorizationService;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -301,17 +300,12 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   protected void finished(Description description) {
     try {
       this.getAlertService().getScheduler().clear();
-      invalidateAuthorizationCache();
       TestEmbeddedCamundaOptimize.getInstance().resetConfiguration();
       LocalDateUtil.reset();
       reloadConfiguration();
     } catch (Exception e) {
       logger.error("Failed to clean up after test", e);
     }
-  }
-
-  private void invalidateAuthorizationCache() {
-    getCachingAuthorizationServices().forEach(AbstractCachingAuthorizationService::reset);
   }
 
   public void reloadConfiguration() {
@@ -422,10 +416,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public AlertService getAlertService() {
     return getApplicationContext().getBean(AlertService.class);
-  }
-
-  public Collection<AbstractCachingAuthorizationService> getCachingAuthorizationServices() {
-    return getApplicationContext().getBeansOfType(AbstractCachingAuthorizationService.class).values();
   }
 
   public TenantService getTenantService() {

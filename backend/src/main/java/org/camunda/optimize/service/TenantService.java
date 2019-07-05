@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.service.es.reader.TenantReader;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,6 +29,7 @@ public class TenantService implements ConfigurationReloadable {
   private final TenantReader tenantReader;
   private final TenantAuthorizationService tenantAuthorizationService;
   private final ConfigurationService configurationService;
+  private final LoadingCache<String, List<TenantDto>> tenantsCache;
 
   private List<TenantDto> configuredDefaultTenants;
 
@@ -37,6 +41,17 @@ public class TenantService implements ConfigurationReloadable {
     this.configurationService = configurationService;
 
     initDefaultTenants();
+
+    // this cache serves the purpose to reduce the frequency an actual read is triggered
+    // as the tenant data is not changing very frequently the caching is a tradeoff to
+    // reduce the latency of processing requests where multiple authorization checks are done in a short amount of time
+    // (mostly listing endpoints for reports and process/decision definitions.
+    // the cache time is still kept short to 1s assuming regular request won't exceed that time
+    // and to still have a recent state
+    tenantsCache = Caffeine.newBuilder()
+      .maximumSize(1)
+      .expireAfterAccess(1, TimeUnit.SECONDS)
+      .build(key -> fetchTenants());
   }
 
   public boolean isAuthorizedToSeeTenant(final String userId, final String tenantId) {
@@ -62,6 +77,10 @@ public class TenantService implements ConfigurationReloadable {
   }
 
   public List<TenantDto> getTenants() {
+    return tenantsCache.get("getTenants");
+  }
+
+  private List<TenantDto> fetchTenants() {
     final List<TenantDto> tenants = new ArrayList<>(configuredDefaultTenants);
     tenants.addAll(tenantReader.getTenants());
     return tenants;
@@ -82,5 +101,6 @@ public class TenantService implements ConfigurationReloadable {
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
     initDefaultTenants();
+    tenantsCache.invalidateAll();
   }
 }

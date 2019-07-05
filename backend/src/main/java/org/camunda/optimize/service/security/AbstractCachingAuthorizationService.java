@@ -7,7 +7,6 @@ package org.camunda.optimize.service.security;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.google.common.annotations.VisibleForTesting;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.GroupDto;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
@@ -66,11 +65,6 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
     initState();
-  }
-
-  // used to clear cache in test context
-  @VisibleForTesting
-  public void reset() {
     authorizationLoadingCache.invalidateAll();
   }
 
