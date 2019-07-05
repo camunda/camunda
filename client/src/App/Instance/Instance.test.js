@@ -438,7 +438,7 @@ describe('Instance', () => {
       expect(DiagramNode.prop('selectedFlowNodeName')).toEqual(flowNodeName);
     });
 
-    describe.only('Metadata', () => {
+    describe('Metadata', () => {
       it('should pass metadata to Diagram for a selected flow node with single related instance', async () => {
         // given
         const node = mountRenderComponent();

@@ -9,5 +9,3 @@ exports[`CodeModal should prettify content when initially rendered 3`] = `"<code
 exports[`CodeModal should prettify content when initially rendered 4`] = `"<code contenteditable=\\"true\\"><p classname=\\"code-line\\">\\"firstname\\":\\"Bro\\",\\"lastname\\":\\"Ken\\",\\"age\\":31}</p></code>"`;
 
 exports[`CodeModal should prettify content when initially rendered 5`] = `"<code contenteditable=\\"true\\"><p classname=\\"code-line\\"></p></code>"`;
-
-exports[`CodeModal should render an empty line when no content is passed 1`] = `"<code contenteditable=\\"true\\"><p classname=\\"code-line\\" data-test=\\"codeline-0\\" key=\\"0\\"></p></code>"`;

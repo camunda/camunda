@@ -14,9 +14,6 @@ import {ThemeProvider} from 'modules/theme';
 
 import CodeModal from './CodeEditor';
 
-const addNewLine = content =>
-  `<p className="code-line" data-test="codeline-${0}" key=${0}>${content}</p>`;
-
 function mountNode(props = {}) {
   return mount(
     <ThemeProvider>
@@ -50,40 +47,5 @@ describe('CodeModal', () => {
       // then
       expect(node.find('code').html()).toMatchSnapshot();
     });
-  });
-
-  it.skip('should render an empty line when no content is passed', () => {
-    //given
-    let node;
-    act(() => {
-      node = mountNode(testData.editorMountsWithJSON);
-    });
-
-    // when
-    node.find('code').simulate('change', {target: {value: ''}});
-
-    // then
-    expect(node.find('code').html()).toMatchSnapshot();
-  });
-
-  it.skip('should pass sanitized content to parent when content changes', () => {
-    //given
-    let node;
-    act(() => {
-      node = mountNode(testData.editorMountsWithString);
-    });
-
-    const newString =
-      testData.editorMountsWithString.initialValue + 'someAdditionalText';
-
-    //when
-    node
-      .find('code')
-      .simulate('change', {target: {value: addNewLine(newString)}});
-
-    //then
-    expect(testData.editorMountsWithString.handleChange).toHaveBeenCalledWith(
-      newString
-    );
   });
 });

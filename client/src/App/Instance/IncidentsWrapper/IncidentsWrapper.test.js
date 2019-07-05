@@ -253,7 +253,7 @@ describe('IncidentsWrapper', () => {
       expect(node.find(IncidentsTable).find('tr').length).toBe(2);
     });
 
-    it.only('should remove filter when only related incident gets resolved', () => {
+    it('should remove filter when only related incident gets resolved', () => {
       // given
       node
         .find('ul[data-test="incidents-by-flowNode"]')
