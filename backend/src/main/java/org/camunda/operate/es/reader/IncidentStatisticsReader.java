@@ -22,6 +22,7 @@ import java.util.TreeSet;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
+import org.camunda.operate.es.schema.indices.WorkflowIndex;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
@@ -63,16 +64,14 @@ public class IncidentStatisticsReader extends AbstractReader {
   private final AggregationBuilder countWorkflowIds = terms("workflowIds")
                                                         .field(ListViewTemplate.WORKFLOW_ID)
                                                         .size(ElasticsearchUtil.TERMS_AGG_SIZE);
-  
+
   public Set<IncidentsByWorkflowGroupStatisticsDto> getWorkflowAndIncidentsStatistics(){
-    final Map<String, IncidentByWorkflowStatisticsDto> statisticByWorkflowIdMap = updateActiveInstances(getIncidentsByWorkflow());
-    final Map<String, List<WorkflowEntity>> workflowGroups = workflowReader.getWorkflowsGrouped();
-    
-    return collectStatisticsForWorkflowGroups(statisticByWorkflowIdMap, workflowGroups,true);
+    final Map<Long, IncidentByWorkflowStatisticsDto> incidentsByWorkflowMap = updateActiveInstances(getIncidentsByWorkflow());
+    return collectStatisticsForWorkflowGroups(incidentsByWorkflowMap);
   }
-  
-  private Map<String, IncidentByWorkflowStatisticsDto> getIncidentsByWorkflow() {
-    Map<String, IncidentByWorkflowStatisticsDto> results = new HashMap<>();
+
+  private Map<Long, IncidentByWorkflowStatisticsDto> getIncidentsByWorkflow() {
+    Map<Long, IncidentByWorkflowStatisticsDto> results = new HashMap<>();
 
     QueryBuilder incidentsQuery =
         joinWithAnd(
@@ -89,9 +88,9 @@ public class IncidentStatisticsReader extends AbstractReader {
 
       List<? extends Bucket> buckets = ((Terms) searchResponse.getAggregations().get("workflowIds")).getBuckets();
       for (Bucket bucket : buckets) {
-        String workflowId = bucket.getKeyAsString();
+        Long workflowId = (Long) bucket.getKey();
         long incidents = bucket.getDocCount();
-        results.put(workflowId, new IncidentByWorkflowStatisticsDto(workflowId,incidents, 0));
+        results.put(workflowId, new IncidentByWorkflowStatisticsDto(workflowId.toString(),incidents, 0));
       }
       return results;
     } catch (IOException e) {
@@ -100,30 +99,30 @@ public class IncidentStatisticsReader extends AbstractReader {
       throw new OperateRuntimeException(message, e);
     }
   }
-  
-  private Map<String, IncidentByWorkflowStatisticsDto> updateActiveInstances(Map<String,IncidentByWorkflowStatisticsDto> statistics) {
+
+  private Map<Long, IncidentByWorkflowStatisticsDto> updateActiveInstances(Map<Long,IncidentByWorkflowStatisticsDto> statistics) {
     QueryBuilder runningInstanceQuery = joinWithAnd(
         termQuery(ListViewTemplate.STATE, WorkflowInstanceState.ACTIVE.toString()),
         termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION));
-    Map<String, IncidentByWorkflowStatisticsDto> results = new HashMap<>(statistics);
+    Map<Long, IncidentByWorkflowStatisticsDto> results = new HashMap<>(statistics);
     try {
       SearchRequest searchRequest = new SearchRequest(workflowInstanceTemplate.getAlias())
           .source(new SearchSourceBuilder()
               .query(runningInstanceQuery)
               .aggregation(countWorkflowIds)
               .size(0));
-      
+
       SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      
+
       List<? extends Bucket> buckets = ((Terms) searchResponse.getAggregations().get("workflowIds")).getBuckets();
       for (Bucket bucket : buckets) {
-        String workflowId = bucket.getKeyAsString();
+        Long workflowId = (Long)bucket.getKey();
         long runningCount = bucket.getDocCount();
         IncidentByWorkflowStatisticsDto statistic = results.get(workflowId);
         if (statistic != null) {
           statistic.setActiveInstancesCount(runningCount - statistic.getInstancesWithActiveIncidentsCount());
         } else {
-          statistic = new IncidentByWorkflowStatisticsDto(workflowId, 0, runningCount);
+          statistic = new IncidentByWorkflowStatisticsDto(workflowId.toString(), 0, runningCount);
         }
         results.put(workflowId, statistic);
       }
@@ -135,61 +134,48 @@ public class IncidentStatisticsReader extends AbstractReader {
     }
   }
 
-  private Set<IncidentsByWorkflowGroupStatisticsDto> collectStatisticsForWorkflowGroups(Map<String, IncidentByWorkflowStatisticsDto> statByWorkflowIdMap,
-    Map<String, List<WorkflowEntity>> workflowGroups,boolean includeEmptyWorkflows) {
-    
+  private Set<IncidentsByWorkflowGroupStatisticsDto> collectStatisticsForWorkflowGroups(Map<Long, IncidentByWorkflowStatisticsDto> incidentsByWorkflowMap) {
+
     Set<IncidentsByWorkflowGroupStatisticsDto> result = new TreeSet<>(IncidentsByWorkflowGroupStatisticsDto.COMPARATOR);
-    
+
+    final Map<String, List<WorkflowEntity>> workflowGroups = workflowReader.getWorkflowsGrouped();
+
     //iterate over workflow groups (bpmnProcessId)
     for (Map.Entry<String, List<WorkflowEntity>> entry: workflowGroups.entrySet()) {
       IncidentsByWorkflowGroupStatisticsDto stat = new IncidentsByWorkflowGroupStatisticsDto();
       stat.setBpmnProcessId(entry.getKey());
-    
+
       //accumulate stat for workflow group
       long activeInstancesCount = 0;
       long instancesWithActiveIncidentsCount = 0;
-      
+
       //max version to find out latest workflow name
       long maxVersion = 0;
-      
+
       //iterate over workflow versions
       for (WorkflowEntity workflowEntity: entry.getValue()) {
-        final IncidentByWorkflowStatisticsDto statForWorkflow = statByWorkflowIdMap.get(workflowEntity.getId());
+        IncidentByWorkflowStatisticsDto statForWorkflow = incidentsByWorkflowMap.get(workflowEntity.getWorkflowId());
         if (statForWorkflow != null) {
-      
-          //accumulate data, even if there are no active incidents
           activeInstancesCount += statForWorkflow.getActiveInstancesCount();
           instancesWithActiveIncidentsCount += statForWorkflow.getInstancesWithActiveIncidentsCount();
-          
-          //but add to the list only those with active incidents
-          if (includeEmptyWorkflows || statForWorkflow.getInstancesWithActiveIncidentsCount() > 0) {
-            statForWorkflow.setName(workflowEntity.getName());
-            statForWorkflow.setBpmnProcessId(workflowEntity.getBpmnProcessId());
-            statForWorkflow.setVersion(workflowEntity.getVersion());
-            stat.getWorkflows().add(statForWorkflow);
-          }
         }else {
-          //but add to the list only those with active incidents
-          if (includeEmptyWorkflows) {
-            IncidentByWorkflowStatisticsDto emptyStatForWorkflow = new IncidentByWorkflowStatisticsDto();
-            emptyStatForWorkflow.setName(workflowEntity.getName());
-            emptyStatForWorkflow.setBpmnProcessId(workflowEntity.getBpmnProcessId());
-            emptyStatForWorkflow.setVersion(workflowEntity.getVersion());
-            stat.getWorkflows().add(emptyStatForWorkflow);
-          }
+          statForWorkflow = new IncidentByWorkflowStatisticsDto(workflowEntity.getWorkflowId().toString(),0,0);
         }
+        statForWorkflow.setName(workflowEntity.getName());
+        statForWorkflow.setBpmnProcessId(workflowEntity.getBpmnProcessId());
+        statForWorkflow.setVersion(workflowEntity.getVersion());
+        stat.getWorkflows().add(statForWorkflow);
+
         //set the latest name
         if (workflowEntity.getVersion() > maxVersion) {
           stat.setWorkflowName(workflowEntity.getName());
           maxVersion = workflowEntity.getVersion();
         }
       }
-      //if there are active incidents for a workflow group, include in the result
-      if (includeEmptyWorkflows || instancesWithActiveIncidentsCount > 0) {
-        stat.setActiveInstancesCount(activeInstancesCount);
-        stat.setInstancesWithActiveIncidentsCount(instancesWithActiveIncidentsCount);
-        result.add(stat);
-      }
+
+      stat.setActiveInstancesCount(activeInstancesCount);
+      stat.setInstancesWithActiveIncidentsCount(instancesWithActiveIncidentsCount);
+      result.add(stat);
     }
     return result;
   }
@@ -197,7 +183,8 @@ public class IncidentStatisticsReader extends AbstractReader {
   public Set<IncidentsByErrorMsgStatisticsDto> getIncidentStatisticsByError(){
     Set<IncidentsByErrorMsgStatisticsDto> result = new TreeSet<>(IncidentsByErrorMsgStatisticsDto.COMPARATOR);
     
-    Map<String, WorkflowEntity> workflows = workflowReader.getWorkflowsWithFields("id","name","bpmnProcessId","version");
+    Map<String, WorkflowEntity> workflows = workflowReader.getWorkflowsWithFields(
+        WorkflowIndex.ID, WorkflowIndex.NAME, WorkflowIndex.BPMN_PROCESS_ID, WorkflowIndex.VERSION);
     
     TermsAggregationBuilder aggregation = terms("group_by_errorMessages")
         .field(IncidentTemplate.ERROR_MSG)
@@ -206,8 +193,7 @@ public class IncidentStatisticsReader extends AbstractReader {
             .field(IncidentTemplate.WORKFLOW_ID)
             .size(ElasticsearchUtil.TERMS_AGG_SIZE)
             .subAggregation(cardinality("uniq_workflowInstances")
-                .field(IncidentTemplate.WORKFLOW_INSTANCE_ID))
-            .size(ElasticsearchUtil.TERMS_AGG_SIZE));
+                .field(IncidentTemplate.WORKFLOW_INSTANCE_ID)));
 
     final SearchRequest searchRequest = new SearchRequest(incidentTemplate.getAlias())
         .source(new SearchSourceBuilder()
