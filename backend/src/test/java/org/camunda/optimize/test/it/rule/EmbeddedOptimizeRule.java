@@ -92,6 +92,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public void importAllEngineData() {
     boolean importInProgress = true;
+    resetImportBackoff();
     while (importInProgress) {
       boolean currentImportInProgress = false;
       for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
@@ -146,6 +147,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     resetImportBackoff();
     scheduler.scheduleNextRound();
     makeSureAllScheduledJobsAreFinished();
+    resetImportBackoff();
     scheduler.scheduleNextRoundScrollBasedOnly();
     makeSureAllScheduledJobsAreFinished();
   }

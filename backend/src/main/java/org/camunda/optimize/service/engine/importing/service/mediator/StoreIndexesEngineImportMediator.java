@@ -69,14 +69,12 @@ public class StoreIndexesEngineImportMediator implements EngineImportMediator {
 
   @Override
   public void importNextPage() {
-    if (canImport()) {
-      dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
-      try {
-        List<ImportIndexDto> importIndexes = getIndexesToStore();
-        importService.executeImport(importIndexes);
-      } catch (Exception e) {
-        log.error("Could execute import for storing index information!", e);
-      }
+    dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
+    try {
+      List<ImportIndexDto> importIndexes = getIndexesToStore();
+      importService.executeImport(importIndexes);
+    } catch (Exception e) {
+      log.error("Could execute import for storing index information!", e);
     }
   }
 

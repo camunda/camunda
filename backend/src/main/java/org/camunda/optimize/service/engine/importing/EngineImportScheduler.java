@@ -7,9 +7,8 @@ package org.camunda.optimize.service.engine.importing;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.engine.importing.service.ImportObserver;
-import org.camunda.optimize.service.engine.importing.service.mediator.DecisionDefinitionXmlEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
-import org.camunda.optimize.service.engine.importing.service.mediator.ProcessDefinitionXmlEngineImportMediator;
+import org.camunda.optimize.service.engine.importing.service.mediator.ScrollBasedImportMediator;
 import org.camunda.optimize.service.util.ImportJobExecutor;
 
 import javax.annotation.PreDestroy;
@@ -80,9 +79,9 @@ public class EngineImportScheduler extends Thread {
   }
 
   public void scheduleNextRoundScrollBasedOnly() {
-    List<EngineImportMediator> currentImportRound = obtainActiveMediators();
-    currentImportRound = currentImportRound.stream()
-      .filter(e -> e instanceof ProcessDefinitionXmlEngineImportMediator || e instanceof DecisionDefinitionXmlEngineImportMediator)
+    final List<EngineImportMediator> currentImportRound = obtainActiveMediators()
+      .stream()
+      .filter(e -> e instanceof ScrollBasedImportMediator)
       .collect(Collectors.toList());
     scheduleCurrentImportRound(currentImportRound);
   }
@@ -105,8 +104,7 @@ public class EngineImportScheduler extends Thread {
     return importMediators
       .stream()
       .map(EngineImportMediator::getImportJobExecutor)
-      .filter(ImportJobExecutor::isActive)
-      .collect(Collectors.toList()).isEmpty();
+      .noneMatch(ImportJobExecutor::isActive);
   }
 
   private void notifyThatImportIsInProgress() {

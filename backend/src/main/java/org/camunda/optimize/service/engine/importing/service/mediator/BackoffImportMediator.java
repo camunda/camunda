@@ -52,13 +52,11 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
 
   @Override
   public void importNextPage() {
-    if (idleBackoffCalculator.isReadyForNextRetry()) {
-      boolean pageIsPresent = importNextPageRetryOnError();
-      if (pageIsPresent) {
-        idleBackoffCalculator.resetBackoff();
-      } else {
-        calculateNewDateUntilIsBlocked();
-      }
+    boolean pageIsPresent = importNextPageRetryOnError();
+    if (pageIsPresent) {
+      idleBackoffCalculator.resetBackoff();
+    } else {
+      calculateNewDateUntilIsBlocked();
     }
   }
 
