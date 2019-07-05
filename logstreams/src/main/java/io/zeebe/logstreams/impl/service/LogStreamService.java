@@ -15,12 +15,7 @@
  */
 package io.zeebe.logstreams.impl.service;
 
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderRootService;
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderServiceName;
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamRootServiceName;
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logWriteBufferServiceName;
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logWriteBufferSubscriptionServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.*;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.DispatcherBuilder;
@@ -32,13 +27,7 @@ import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.servicecontainer.CompositeServiceBuilder;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.ActorConditions;
@@ -213,7 +202,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
     }
 
     final long blockAddress = reader.lastReadAddress();
-    LOG.info(
+    LOG.debug(
         "Delete data from log stream until position '{}' (address: '{}').", position, blockAddress);
 
     logStorage.delete(blockAddress);

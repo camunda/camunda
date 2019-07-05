@@ -86,7 +86,7 @@ public class DefaultDistributedLogstreamService
       logName = getRaftPartitionName(executor);
       configureFromLogName(logName);
 
-      logger.info(
+      logger.debug(
           "Configuring {} on node {} with logName {}",
           getServiceName(),
           getLocalMemberId().id(),
@@ -94,7 +94,7 @@ public class DefaultDistributedLogstreamService
       logStream = getOrCreateLogStream(logName);
       logStorage = logStream.getLogStorage();
       initLastPosition();
-      logger.info(
+      logger.debug(
           "Configured with LogStream {} and last appended event at position {}",
           logName,
           lastPosition);

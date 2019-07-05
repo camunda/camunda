@@ -26,13 +26,13 @@ public class TomlConfigurationReader {
   public static <T> T read(String filePath, Class<T> type) {
     final File file = new File(filePath);
 
-    LOG.info("Reading configuration for class {} from file {} ", type, file.getAbsolutePath());
+    LOG.debug("Reading configuration for {} from file {} ", type, file.getAbsolutePath());
 
     return new Toml().read(file).to(type);
   }
 
   public static <T> T read(InputStream configStream, Class<T> type) {
-    LOG.info("Reading configuration for class {} from input stream", type);
+    LOG.debug("Reading configuration for {} from input stream", type);
 
     return new Toml().read(configStream).to(type);
   }

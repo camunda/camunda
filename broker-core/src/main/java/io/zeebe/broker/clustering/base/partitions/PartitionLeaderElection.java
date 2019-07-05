@@ -62,7 +62,7 @@ public class PartitionLeaderElection extends Actor
     startContext.getScheduler().submitActor(this);
     startContext.async(startFuture, true);
 
-    LOG.info("Creating leader election for partition {} in node {}", partitionId, memberId);
+    LOG.debug("Creating leader election for partition {} in node {}", partitionId, memberId);
   }
 
   @Override
