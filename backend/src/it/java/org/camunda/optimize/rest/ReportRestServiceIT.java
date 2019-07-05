@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
@@ -157,6 +158,7 @@ public class ReportRestServiceIT {
     ProcessReportDataDto data = new ProcessReportDataDto();
     data.setProcessDefinitionVersion("FAKE");
     data.setProcessDefinitionKey("FAKE");
+    data.getConfiguration().setXml("FAKE");
     reportDefinitionDto.setData(data);
     return reportDefinitionDto;
   }
@@ -166,6 +168,7 @@ public class ReportRestServiceIT {
     DecisionReportDataDto data = new DecisionReportDataDto();
     data.setDecisionDefinitionVersion("FAKE");
     data.setDecisionDefinitionKey("FAKE");
+    data.getConfiguration().setXml("FAKE");
     reportDefinitionDto.setData(data);
     return reportDefinitionDto;
   }
@@ -187,7 +190,9 @@ public class ReportRestServiceIT {
   public void getStoredReports() {
     //given
     String idProcessReport = addEmptyProcessReportToOptimize();
+    updateReportRequest(idProcessReport, ReportType.PROCESS);
     String idDecisionReport = addEmptyDecisionReportToOptimize();
+    updateReportRequest(idDecisionReport, ReportType.DECISION);
 
     // when
     List<ReportDefinitionDto> reports = getAllReports();
@@ -197,6 +202,10 @@ public class ReportRestServiceIT {
     assertThat(
       reports.stream().map(ReportDefinitionDto::getId).collect(Collectors.toList()),
       containsInAnyOrder(idDecisionReport, idProcessReport)
+    );
+    reports.forEach(
+      reportDefinitionDto ->
+        assertThat(((SingleReportDataDto) reportDefinitionDto.getData()).getConfiguration().getXml(), is(nullValue()))
     );
   }
 

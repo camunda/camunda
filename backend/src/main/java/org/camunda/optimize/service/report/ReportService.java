@@ -119,7 +119,7 @@ public class ReportService {
     final CombinedReportDataDto data = reportUpdate.getData();
     if (data.getReportIds() != null && !data.getReportIds().isEmpty()) {
       final List<SingleProcessReportDefinitionDto> reportsOfCombinedReport = reportReader
-        .getAllSingleProcessReportsForIds(data.getReportIds());
+        .getAllSingleProcessReportsForIds(data.getReportIds(), false);
 
       final SingleProcessReportDefinitionDto firstReport = reportsOfCombinedReport.get(0);
       final boolean allReportsCanBeCombined = reportsOfCombinedReport.stream()
@@ -250,15 +250,15 @@ public class ReportService {
     return reportUpdate;
   }
 
-  public List<ReportDefinitionDto> findAndFilterReports(String userId,
-                                                        MultivaluedMap<String, String> queryParameters) {
-    List<ReportDefinitionDto> reports = findAndFilterReports(userId);
+  public List<ReportDefinitionDto> findAndFilterReportsWithoutXml(String userId,
+                                                                  MultivaluedMap<String, String> queryParameters) {
+    List<ReportDefinitionDto> reports = findAndFilterReportsWithoutXml(userId);
     reports = QueryParamAdjustmentUtil.adjustReportResultsToQueryParameters(reports, queryParameters);
     return reports;
   }
 
-  public List<ReportDefinitionDto> findAndFilterReports(String userId) {
-    List<ReportDefinitionDto> reports = reportReader.getAllReports();
+  public List<ReportDefinitionDto> findAndFilterReportsWithoutXml(String userId) {
+    List<ReportDefinitionDto> reports = reportReader.getAllReports(false);
     reports = filterAuthorizedReports(userId, reports);
     return reports;
   }

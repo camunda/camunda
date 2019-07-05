@@ -122,9 +122,10 @@ public class ReportReader {
   public SingleProcessReportDefinitionDto getSingleProcessReport(String reportId) {
     log.debug("Fetching single process report with id [{}]", reportId);
     GetRequest getRequest = new GetRequest(
-        getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
-        SINGLE_PROCESS_REPORT_TYPE,
-        reportId);
+      getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
+      SINGLE_PROCESS_REPORT_TYPE,
+      reportId
+    );
 
     GetResponse getResponse;
     try {
@@ -152,9 +153,10 @@ public class ReportReader {
   public SingleDecisionReportDefinitionDto getSingleDecisionReport(String reportId) {
     log.debug("Fetching single decision report with id [{}]", reportId);
     GetRequest getRequest = new GetRequest(
-        getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE),
-        SINGLE_DECISION_REPORT_TYPE,
-        reportId);
+      getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE),
+      SINGLE_DECISION_REPORT_TYPE,
+      reportId
+    );
 
     GetResponse getResponse;
     try {
@@ -179,11 +181,14 @@ public class ReportReader {
     }
   }
 
-  public List<ReportDefinitionDto> getAllReports() {
+  public List<ReportDefinitionDto> getAllReports(final boolean withXml) {
     log.debug("Fetching all available reports");
+
+    final String[] fieldsToExclude = withXml ? null : new String[]{"*.xml"};
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(QueryBuilders.matchAllQuery())
-      .size(LIST_FETCH_LIMIT);
+      .size(LIST_FETCH_LIMIT)
+      .fetchSource(null, fieldsToExclude);
     SearchRequest searchRequest =
       new SearchRequest(
         getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
@@ -210,17 +215,17 @@ public class ReportReader {
     );
   }
 
-  public List<SingleProcessReportDefinitionDto> getAllSingleProcessReportsForIds(List<String> reportIds) {
+  public List<SingleProcessReportDefinitionDto> getAllSingleProcessReportsForIds(final List<String> reportIds,
+                                                                                 final boolean withXml) {
     log.debug("Fetching all available single process reports for ids [{}]", reportIds);
 
-    String[] reportIdsAsArray = reportIds.toArray(new String[0]);
-
-    SearchResponse searchResponse = performGetReportRequestForIds(reportIdsAsArray);
-    List<SingleProcessReportDefinitionDto> singleReportDefinitionDtos =
+    final String[] reportIdsAsArray = reportIds.toArray(new String[0]);
+    final SearchResponse searchResponse = performGetReportRequestForIds(reportIdsAsArray, withXml);
+    final List<SingleProcessReportDefinitionDto> singleReportDefinitionDtos =
       mapResponseToReportList(searchResponse).stream()
         // make sure that the order of the reports corresponds to the one from the single report ids list
-      .sorted(Comparator.comparingInt(a -> reportIds.indexOf(a.getId())))
-      .collect(Collectors.toList());
+        .sorted(Comparator.comparingInt(a -> reportIds.indexOf(a.getId())))
+        .collect(Collectors.toList());
 
     if (reportIds.size() != singleReportDefinitionDtos.size()) {
       List<String> fetchedReportIds = singleReportDefinitionDtos.stream()
@@ -257,26 +262,27 @@ public class ReportReader {
       }
     }
     return singleReportDefinitionDtos;
-}
+  }
 
-  private SearchResponse performGetReportRequestForIds(String[] reportIdsAsArray) {
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+  private SearchResponse performGetReportRequestForIds(final String[] reportIdsAsArray, final boolean withXml) {
+    final String[] fieldsToExclude = withXml ? null : new String[]{"*.xml"};
+
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(QueryBuilders.idsQuery().addIds(reportIdsAsArray));
     searchSourceBuilder.size(reportIdsAsArray.length);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE))
-        .types(SINGLE_PROCESS_REPORT_TYPE)
-        .source(searchSourceBuilder);
+    searchSourceBuilder.fetchSource(null, fieldsToExclude);
 
-    SearchResponse searchResponse;
+    final SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE))
+      .types(SINGLE_PROCESS_REPORT_TYPE)
+      .source(searchSourceBuilder);
+
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format("Was not able to fetch reports for ids [%s]", Arrays.asList(reportIdsAsArray));
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-    return searchResponse;
   }
 
   public List<CombinedReportDefinitionDto> findFirstCombinedReportsForSimpleReport(String simpleReportId) {

@@ -156,7 +156,7 @@ public class ReportRestService {
     MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
 
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return reportService.findAndFilterReports(userId, queryParameters);
+    return reportService.findAndFilterReportsWithoutXml(userId, queryParameters);
   }
 
   /**

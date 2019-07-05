@@ -120,7 +120,7 @@ public abstract class ReportEvaluationHandler {
 
   private List<ReportEvaluationResult> evaluateListOfReportIds(final String userId, List<String> singleReportIds) {
     List<SingleProcessReportDefinitionDto> singleReportDefinitions =
-      reportReader.getAllSingleProcessReportsForIds(singleReportIds)
+      reportReader.getAllSingleProcessReportsForIds(singleReportIds, false)
         .stream()
         .filter(r -> isAuthorizedToSeeReport(userId, r))
         .collect(Collectors.toList());
