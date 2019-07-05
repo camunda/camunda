@@ -37,6 +37,7 @@ import io.zeebe.util.retry.AbortableRetryStrategy;
 import io.zeebe.util.retry.RecoverableRetryStrategy;
 import io.zeebe.util.retry.RetryStrategy;
 import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.Map;
@@ -208,6 +209,9 @@ public final class ProcessingStateMachine {
       skipRecord();
       return;
     }
+
+    metrics.processingLatency(
+        metadata.getRecordType(), event.getTimestamp(), ActorClock.currentTimeMillis());
 
     try {
       final UnifiedRecordValue value = eventCache.get(metadata.getValueType());

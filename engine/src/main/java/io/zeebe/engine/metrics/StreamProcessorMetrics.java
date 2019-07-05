@@ -18,6 +18,8 @@
 package io.zeebe.engine.metrics;
 
 import io.prometheus.client.Counter;
+import io.prometheus.client.Histogram;
+import io.zeebe.protocol.record.RecordType;
 
 public class StreamProcessorMetrics {
 
@@ -29,6 +31,14 @@ public class StreamProcessorMetrics {
           .labelNames("action", "partition")
           .register();
 
+  private static final Histogram PROCESSING_LATENCY =
+      Histogram.build()
+          .namespace("zeebe")
+          .name("stream_processor_latency")
+          .help("Latency of processing in seconds")
+          .labelNames("recordType", "partition")
+          .register();
+
   private final String partitionIdLabel;
 
   public StreamProcessorMetrics(int partitionId) {
@@ -37,6 +47,12 @@ public class StreamProcessorMetrics {
 
   private void event(String action) {
     STREAM_PROCESSOR_EVENTS.labels(action, partitionIdLabel).inc();
+  }
+
+  public void processingLatency(RecordType recordType, long written, long processed) {
+    PROCESSING_LATENCY
+        .labels(recordType.name(), partitionIdLabel)
+        .observe((processed - written) / 1000f);
   }
 
   public void eventProcessed() {
