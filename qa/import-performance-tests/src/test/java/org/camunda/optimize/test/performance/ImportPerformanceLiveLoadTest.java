@@ -43,9 +43,13 @@ public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
     final Future<Long> dataGenerationTask1 = startDataGeneration(totalInstanceCountPerGenerationBatch);
     waitForDataGenerationTaskToComplete(dataGenerationTask1);
 
-    // AND wait for data import to finish
+    // wait for data import to finish
     embeddedOptimizeRule.ensureImportSchedulerIsIdle(maxImportDurationInMin * 60);
-    embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex();
+
+    // AND wait for the double max backoff period to pass to ensure any backed off mediator runs at least once more
+    Thread.sleep(2 * configurationService.getMaximumBackoff() * 1000L);
+    embeddedOptimizeRule.ensureImportSchedulerIsIdle(maxImportDurationInMin * 60);
+
     progressReporterExecutorService.shutdown();
 
     elasticSearchRule.refreshAllOptimizeIndices();
