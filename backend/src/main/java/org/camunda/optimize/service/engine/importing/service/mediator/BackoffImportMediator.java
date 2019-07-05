@@ -35,8 +35,8 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
   protected ImportIndexHandlerProvider provider;
   @Autowired
   private BackoffCalculator idleBackoffCalculator;
-  @Autowired
-  private BackoffCalculator errorBackoffCalculator;
+
+  private final BackoffCalculator errorBackoffCalculator = new BackoffCalculator(10, 1000);
 
   protected final EngineContext engineContext;
   protected T importIndexHandler;

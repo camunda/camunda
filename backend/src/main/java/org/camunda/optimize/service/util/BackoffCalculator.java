@@ -29,10 +29,10 @@ public class BackoffCalculator {
     this(configurationService.getMaximumBackoff(), configurationService.getInitialBackoff());
   }
 
-  public BackoffCalculator(long maximumBackoff, long initialBackoff) {
-    this.maximumBackoff = maximumBackoff * 1000;
-    this.currentTimeToWait = initialBackoff;
-    this.initialBackoff = initialBackoff;
+  public BackoffCalculator(long maximumBackoffSeconds, long initialBackoffMillis) {
+    this.maximumBackoff = maximumBackoffSeconds * 1000;
+    this.currentTimeToWait = initialBackoffMillis;
+    this.initialBackoff = initialBackoffMillis;
   }
 
   public boolean isMaximumBackoffReached() {
