@@ -6,6 +6,7 @@
 package org.camunda.operate.rest;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.camunda.operate.property.OperateProperties;
@@ -102,7 +103,11 @@ public class AuthenticationTest {
 
     assertThat(logoutResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     assertThat(logoutResponse.getHeaders()).containsKey("Set-Cookie");
-    assertThat(logoutResponse.getHeaders().get("Set-Cookie").get(0)).contains(COOKIE_JSESSIONID + "=;");
+    List<String> cookies = logoutResponse.getHeaders().get("Set-Cookie");
+    if(operateProperties.isCsrfPreventionEnabled()) {
+      assertThat(cookies).anyMatch((cookie) -> cookie.contains("X-CSRF-TOKEN"));
+    }
+    assertThat(cookies).anyMatch( (cookie) -> cookie.contains(COOKIE_JSESSIONID + "=;"));
   }
 
   @Test
