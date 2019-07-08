@@ -113,22 +113,22 @@ public class OperationReader extends AbstractReader {
     }
   }
 
-  public Map<String, List<OperationEntity>> getOperationsPerIncidentId(Long workflowInstanceId) {
-    Map<String, List<OperationEntity>> result = new HashMap<>();
+  public Map<Long, List<OperationEntity>> getOperationsPerIncidentKey(Long workflowInstanceId) {
+    Map<Long, List<OperationEntity>> result = new HashMap<>();
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId));
 
     final SearchRequest searchRequest = new SearchRequest(operationTemplate.getAlias())
       .source(new SearchSourceBuilder()
         .query(query)
-        .sort(OperationTemplate.INCIDENT_ID, SortOrder.ASC)
+        .sort(OperationTemplate.INCIDENT_KEY, SortOrder.ASC)
         .sort(OperationTemplate.START_DATE, SortOrder.DESC)
         .sort(OperationTemplate.ID, SortOrder.ASC));
     try {
       ElasticsearchUtil.scroll(searchRequest, OperationEntity.class, objectMapper, esClient, hits -> {
         final List<OperationEntity> operationEntities = ElasticsearchUtil.mapSearchHits(hits.getHits(), objectMapper, OperationEntity.class);
         for (OperationEntity operationEntity: operationEntities) {
-          CollectionUtil.addToMap(result, operationEntity.getIncidentId(), operationEntity);
+          CollectionUtil.addToMap(result, operationEntity.getIncidentKey(), operationEntity);
         }
       }, null);
       return result;

@@ -54,21 +54,21 @@ public class IncidentZeebeRecordProcessor {
 
   private void persistIncident(Record record, IncidentRecordValueImpl recordValue, BulkRequest bulkRequest) throws PersistenceException {
     final String intentStr = record.getIntent().name();
-    final String incidentId = String.valueOf(record.getKey());
+    final Long incidentKey = record.getKey();
     if (intentStr.equals(RESOLVED.toString())) {
 
       //resolve corresponding operation
       //TODO must be idempotent
       //not possible to include UpdateByQueryRequestBuilder in bulk query -> executing at once
-      batchOperationWriter.completeOperation(recordValue.getWorkflowInstanceKey(), incidentId, OperationType.RESOLVE_INCIDENT);
+      batchOperationWriter.completeOperation(recordValue.getWorkflowInstanceKey(), incidentKey, OperationType.RESOLVE_INCIDENT);
       //if we update smth, we need it to have affect at once
       bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
 
-      bulkRequest.add(getIncidentDeleteQuery(incidentId));
+      bulkRequest.add(getIncidentDeleteQuery(incidentKey));
     } else if (intentStr.equals(CREATED.toString())) {
       IncidentEntity incident = new IncidentEntity();
-      incident.setId(incidentId);
-      incident.setKey(record.getKey());
+      incident.setId(incidentKey);
+      incident.setKey(incidentKey);
       if (recordValue.getJobKey() > 0) {
         incident.setJobKey(recordValue.getJobKey());
       }
@@ -93,7 +93,7 @@ public class IncidentZeebeRecordProcessor {
   private IndexRequest getIncidentInsertQuery(IncidentEntity incident) throws PersistenceException {
     try {
       logger.debug("Index incident: id {}", incident.getId());
-      return new IndexRequest(incidentTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, incident.getId())
+      return new IndexRequest(incidentTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, String.valueOf(incident.getKey()))
         .source(objectMapper.writeValueAsString(incident), XContentType.JSON);
     } catch (IOException e) {
       logger.error("Error preparing the query to index incident", e);
@@ -101,9 +101,9 @@ public class IncidentZeebeRecordProcessor {
     }
   }
 
-  private DeleteRequest getIncidentDeleteQuery(String incidentId) throws PersistenceException {
-    logger.debug("Delete incident: id {}", incidentId);
-    return new DeleteRequest(incidentTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, incidentId);
+  private DeleteRequest getIncidentDeleteQuery(Long incidentKey) throws PersistenceException {
+    logger.debug("Delete incident: key {}", incidentKey);
+    return new DeleteRequest(incidentTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, incidentKey.toString());
   }
 
 }

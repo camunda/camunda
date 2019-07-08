@@ -12,7 +12,7 @@ import org.camunda.operate.es.reader.ActivityInstanceReader;
 import org.camunda.operate.rest.dto.VariableDto;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.StringUtils;
+import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.junit.Before;
 import org.junit.Rule;

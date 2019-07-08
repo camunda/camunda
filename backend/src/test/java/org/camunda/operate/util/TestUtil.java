@@ -189,7 +189,8 @@ public abstract class TestUtil {
 
   public static IncidentEntity createIncident(IncidentState state, String activityId, Long activityInstanceId, String errorMsg) {
     IncidentEntity incidentEntity = new IncidentEntity();
-    incidentEntity.setId(UUID.randomUUID().toString());
+    incidentEntity.setKey(random.nextLong());
+    incidentEntity.setId(String.valueOf(incidentEntity.getKey()));
     incidentEntity.setFlowNodeId(activityId);
     incidentEntity.setFlowNodeInstanceKey(activityInstanceId);
     incidentEntity.setErrorType(JOB_NO_RETRIES);

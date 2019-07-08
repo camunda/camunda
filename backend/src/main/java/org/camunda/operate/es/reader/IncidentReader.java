@@ -82,7 +82,7 @@ public class IncidentReader extends AbstractReader {
    * @param workflowInstanceIds
    * @return
    */
-  public Map<Long, List<String>> getIncidentIdsPerWorkflowInstance(List<Long> workflowInstanceIds) {
+  public Map<Long, List<Long>> getIncidentKeysPerWorkflowInstance(List<Long> workflowInstanceIds) {
     final QueryBuilder workflowInstanceIdsQ = constantScoreQuery(termsQuery(IncidentTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceIds));
     final int batchSize = operateProperties.getElasticsearch().getBatchSize();
 
@@ -92,11 +92,11 @@ public class IncidentReader extends AbstractReader {
             .fetchSource(IncidentTemplate.WORKFLOW_INSTANCE_ID, null)
             .size(batchSize));
 
-    Map<Long, List<String>> result = new HashMap<>();
+    Map<Long, List<Long>> result = new HashMap<>();
     try {
       ElasticsearchUtil.scrollWith(searchRequest, esClient, searchHits -> {
         for (SearchHit hit : searchHits.getHits()) {
-          CollectionUtil.addToMap(result, Long.valueOf(hit.getSourceAsMap().get(IncidentTemplate.WORKFLOW_INSTANCE_ID).toString()), hit.getId());
+          CollectionUtil.addToMap(result, Long.valueOf(hit.getSourceAsMap().get(IncidentTemplate.WORKFLOW_INSTANCE_ID).toString()), Long.valueOf(hit.getId()));
         }
       }, null, null);
       return result;
@@ -107,8 +107,8 @@ public class IncidentReader extends AbstractReader {
     }
   }
 
-  public IncidentEntity getIncidentById(String incidentId) {
-    final IdsQueryBuilder idsQ = idsQuery().addIds(incidentId);
+  public IncidentEntity getIncidentById(Long incidentKey) {
+    final IdsQueryBuilder idsQ = idsQuery().addIds(incidentKey.toString());
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(idsQ);
 
@@ -118,9 +118,9 @@ public class IncidentReader extends AbstractReader {
       if (response.getHits().totalHits == 1) {
         return ElasticsearchUtil.fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, IncidentEntity.class);
       } else if (response.getHits().totalHits > 1) {
-        throw new NotFoundException(String.format("Could not find unique incident with id '%s'.", incidentId));
+        throw new NotFoundException(String.format("Could not find unique incident with key '%s'.", incidentKey));
       } else {
-        throw new NotFoundException(String.format("Could not find incident with id '%s'.", incidentId));
+        throw new NotFoundException(String.format("Could not find incident with key '%s'.", incidentKey));
       }
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining incident: %s", e.getMessage());
@@ -156,7 +156,7 @@ public class IncidentReader extends AbstractReader {
             .forEach(b -> incidentResponse.getFlowNodes().add(new IncidentFlowNodeDto(b.getKeyAsString(), (int) b.getDocCount())));
       });
 
-      final Map<String, List<OperationEntity>> operations = operationReader.getOperationsPerIncidentId(workflowInstanceId);
+      final Map<Long, List<OperationEntity>> operations = operationReader.getOperationsPerIncidentKey(workflowInstanceId);
 
       incidentResponse.setIncidents(IncidentDto.sortDefault(IncidentDto.createFrom(incidents, operations)));
       incidentResponse.setCount(incidents.size());

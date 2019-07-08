@@ -12,7 +12,7 @@ import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.EventMetadataEntity;
 import org.camunda.operate.entities.EventSourceType;
 import org.camunda.operate.entities.EventType;
-import org.camunda.operate.util.StringUtils;
+import org.camunda.operate.util.ConversionUtils;
 
 public class EventDto {
 
@@ -124,13 +124,13 @@ public class EventDto {
     EventDto eventDto = new EventDto();
     eventDto.setId(eventEntity.getId());
     eventDto.setActivityId(eventEntity.getActivityId());
-    eventDto.setActivityInstanceId(StringUtils.toStringOrNull(eventEntity.getActivityInstanceId()));
+    eventDto.setActivityInstanceId(ConversionUtils.toStringOrNull(eventEntity.getActivityInstanceId()));
     eventDto.setBpmnProcessId(eventEntity.getBpmnProcessId());
     eventDto.setDateTime(eventEntity.getDateTime());
     eventDto.setEventSourceType(eventEntity.getEventSourceType());
     eventDto.setEventType(eventEntity.getEventType());
-    eventDto.setWorkflowId(StringUtils.toStringOrNull(eventEntity.getWorkflowId()));
-    eventDto.setWorkflowInstanceId(StringUtils.toStringOrNull(eventEntity.getWorkflowInstanceId()));
+    eventDto.setWorkflowId(ConversionUtils.toStringOrNull(eventEntity.getWorkflowId()));
+    eventDto.setWorkflowInstanceId(ConversionUtils.toStringOrNull(eventEntity.getWorkflowInstanceId()));
 
     EventMetadataEntity eventMetadataEntity = eventEntity.getMetadata();
     if (eventMetadataEntity != null) {

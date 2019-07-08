@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 
 import org.camunda.operate.entities.EventMetadataEntity;
-import org.camunda.operate.util.StringUtils;
+import org.camunda.operate.util.ConversionUtils;
 
 public class EventMetadataDto {
 
@@ -100,7 +100,7 @@ public class EventMetadataDto {
     eventMetadata.setIncidentErrorType(eventMetadataEntity.getIncidentErrorType());
     eventMetadata.setJobCustomHeaders(eventMetadataEntity.getJobCustomHeaders());
     eventMetadata.setJobDeadline(eventMetadataEntity.getJobDeadline());
-    eventMetadata.setJobId(StringUtils.toStringOrNull(eventMetadataEntity.getJobKey()));
+    eventMetadata.setJobId(ConversionUtils.toStringOrNull(eventMetadataEntity.getJobKey()));
     eventMetadata.setJobRetries(eventMetadataEntity.getJobRetries());
     eventMetadata.setJobType(eventMetadataEntity.getJobType());
     eventMetadata.setJobWorker(eventMetadataEntity.getJobWorker());

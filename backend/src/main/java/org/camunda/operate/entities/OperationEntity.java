@@ -11,7 +11,7 @@ import java.util.UUID;
 public class OperationEntity extends OperateEntity {
 
   private Long workflowInstanceId;
-  private String incidentId;
+  private Long incidentKey;
   private Long scopeKey;
   private String variableName;
   private String variableValue;
@@ -31,12 +31,12 @@ public class OperationEntity extends OperateEntity {
     this.workflowInstanceId = workflowInstanceId;
   }
 
-  public String getIncidentId() {
-    return incidentId;
+  public Long getIncidentKey() {
+    return incidentKey;
   }
 
-  public void setIncidentId(String incidentId) {
-    this.incidentId = incidentId;
+  public void setIncidentKey(Long incidentKey) {
+    this.incidentKey = incidentKey;
   }
 
   public Long getScopeKey() {
@@ -136,7 +136,7 @@ public class OperationEntity extends OperateEntity {
 
     if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
       return false;
-    if (incidentId != null ? !incidentId.equals(that.incidentId) : that.incidentId != null)
+    if (incidentKey != null ? !incidentKey.equals(that.incidentKey) : that.incidentKey != null)
       return false;
     if (scopeKey != null ? !scopeKey.equals(that.scopeKey) : that.scopeKey != null)
       return false;
@@ -163,7 +163,7 @@ public class OperationEntity extends OperateEntity {
   public int hashCode() {
     int result = super.hashCode();
     result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
-    result = 31 * result + (incidentId != null ? incidentId.hashCode() : 0);
+    result = 31 * result + (incidentKey != null ? incidentKey.hashCode() : 0);
     result = 31 * result + (scopeKey != null ? scopeKey.hashCode() : 0);
     result = 31 * result + (variableName != null ? variableName.hashCode() : 0);
     result = 31 * result + (variableValue != null ? variableValue.hashCode() : 0);

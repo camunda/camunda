@@ -32,7 +32,7 @@ import org.camunda.operate.rest.dto.listview.WorkflowInstanceStateDto;
 import org.camunda.operate.rest.exception.NotFoundException;
 import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.StringUtils;
+import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.junit.After;
@@ -141,7 +141,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //assert list view data
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
-    assertThat(wi.getWorkflowId()).isEqualTo(StringUtils.toStringOrNull(workflowId));
+    assertThat(wi.getWorkflowId()).isEqualTo(ConversionUtils.toStringOrNull(workflowId));
     assertThat(wi.getWorkflowName()).isEqualTo("Demo process");
     assertThat(wi.getWorkflowVersion()).isEqualTo(1);
     assertThat(wi.getId()).isEqualTo(workflowInstanceId.toString());

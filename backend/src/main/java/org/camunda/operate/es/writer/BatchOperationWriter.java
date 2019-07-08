@@ -32,6 +32,7 @@ import org.camunda.operate.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationResponseDto;
 import org.camunda.operate.rest.exception.InvalidRequestException;
 import org.camunda.operate.util.CollectionUtil;
+import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -135,17 +136,17 @@ public class BatchOperationWriter {
     }
   }
 
-  public void completeOperation(Long workflowInstanceId, String incidentId, OperationType operationType) throws PersistenceException {
+  public void completeOperation(Long workflowInstanceId, Long incidentKey, OperationType operationType) throws PersistenceException {
     try {
-      TermQueryBuilder incidentIdQ = null;
-      if (incidentId != null) {
-        incidentIdQ = termQuery(OperationTemplate.INCIDENT_ID, incidentId);
+      TermQueryBuilder incidentKeyQuery = null;
+      if (incidentKey != null) {
+        incidentKeyQuery = termQuery(OperationTemplate.INCIDENT_KEY, incidentKey);
       }
 
       QueryBuilder query =
         joinWithAnd(
           termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId),
-          incidentIdQ,
+          incidentKeyQuery,
           termsQuery(OperationTemplate.STATE, OperationState.SENT.name(), OperationState.LOCKED.name()),
           termQuery(OperationTemplate.TYPE, operationType.name())
         );
@@ -206,13 +207,13 @@ public class BatchOperationWriter {
         return new OperationResponseDto(0, "No incidents found.");
       } else {
         for (IncidentEntity incident: allIncidents) {
-          bulkRequest.add(getIndexOperationRequest(workflowInstanceId, incident.getId(), operationType));
+          bulkRequest.add(getIndexOperationRequest(workflowInstanceId, incident.getKey(), operationType));
         }
       }
     } else if (operationType.equals(OperationType.UPDATE_VARIABLE)) {
-      bulkRequest.add(getIndexUpdateVariableOperationRequest(workflowInstanceId, Long.valueOf(operationRequest.getScopeId()), operationRequest.getName(), operationRequest.getValue()));
+      bulkRequest.add(getIndexUpdateVariableOperationRequest(workflowInstanceId, ConversionUtils.toLongOrNull(operationRequest.getScopeId()), operationRequest.getName(), operationRequest.getValue()));
     } else {
-      bulkRequest.add(getIndexOperationRequest(workflowInstanceId, operationRequest.getIncidentId(), operationType));
+      bulkRequest.add(getIndexOperationRequest(workflowInstanceId, ConversionUtils.toLongOrNull(operationRequest.getIncidentId()), operationType));
     }
 
     ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
@@ -291,22 +292,22 @@ public class BatchOperationWriter {
     BulkRequest bulkRequest = new BulkRequest();
     final OperationType operationType = operationRequest.getOperationType();
 
-    Map<Long, List<String>> incidentIds = new HashMap<>();
+    Map<Long, List<Long>> incidentKeys = new HashMap<>();
     //prepare map of incident ids per workflow instance id
     if (operationType.equals(OperationType.RESOLVE_INCIDENT) && operationRequest.getIncidentId() == null) {
-      incidentIds = incidentReader.getIncidentIdsPerWorkflowInstance(workflowInstanceIds);
+      incidentKeys = incidentReader.getIncidentKeysPerWorkflowInstance(workflowInstanceIds);
     }
 
     for (Long wiId : workflowInstanceIds) {
       if (operationType.equals(OperationType.RESOLVE_INCIDENT) && operationRequest.getIncidentId() == null) {
-        final List<String> allIncidentsIds = incidentIds.get(wiId);
-        if (allIncidentsIds != null && allIncidentsIds.size() != 0) {
-          for (String incidentId: allIncidentsIds) {
-            bulkRequest.add(getIndexOperationRequest(wiId, incidentId, operationType));
+        final List<Long> allIncidentKeys = incidentKeys.get(wiId);
+        if (allIncidentKeys != null && allIncidentKeys.size() != 0) {
+          for (Long incidentKey: allIncidentKeys) {
+            bulkRequest.add(getIndexOperationRequest(wiId, incidentKey, operationType));
           }
         }
       } else {
-        bulkRequest.add(getIndexOperationRequest(wiId, operationRequest.getIncidentId(), operationType));
+        bulkRequest.add(getIndexOperationRequest(wiId, ConversionUtils.toLongOrNull(operationRequest.getIncidentId()), operationType));
       }
     }
     ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
@@ -323,10 +324,10 @@ public class BatchOperationWriter {
     return createIndexRequest(operationEntity, OperationType.UPDATE_VARIABLE, workflowInstanceId);
   }
 
-  private IndexRequest getIndexOperationRequest(Long workflowInstanceId, String incidentId, OperationType operationType) throws PersistenceException {
+  private IndexRequest getIndexOperationRequest(Long workflowInstanceId, Long incidentKey, OperationType operationType) throws PersistenceException {
     OperationEntity operationEntity = createOperationEntity(workflowInstanceId, operationType);
 
-    operationEntity.setIncidentId(incidentId);
+    operationEntity.setIncidentKey(incidentKey);
 
     return createIndexRequest(operationEntity, operationType, workflowInstanceId);
   }

@@ -38,7 +38,7 @@ import org.camunda.operate.rest.dto.operation.OperationResponseDto;
 import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.StringUtils;
+import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebe.operation.CancelWorkflowInstanceHandler;
 import org.camunda.operate.zeebe.operation.OperationExecutor;
@@ -234,7 +234,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final List<OperationEntity> operations = operationReader.getOperations(workflowInstanceId);
     assertThat(operations).hasSize(2);
     assertThat(operations).extracting(OperationTemplate.TYPE).containsOnly(OperationType.RESOLVE_INCIDENT);
-    assertThat(operations).extracting(OperationTemplate.INCIDENT_ID).containsExactlyInAnyOrder(incidents.get(0).getId(), incidents.get(1).getId());
+    assertThat(operations).extracting(OperationTemplate.INCIDENT_KEY).containsExactlyInAnyOrder(Long.valueOf(incidents.get(0).getId()), Long.valueOf(incidents.get(1).getId()));
     assertThat(operations).extracting(OperationTemplate.STATE).containsOnly(OperationState.SCHEDULED);
     assertThat(operations).extracting(OperationTemplate.START_DATE).doesNotContainNull();
     assertThat(operations).extracting(OperationTemplate.END_DATE).containsOnlyNulls();
@@ -469,7 +469,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
     op.setName(newVarName);
     op.setValue(newVarValue);
-    op.setScopeId(StringUtils.toStringOrNull(workflowInstanceId));
+    op.setScopeId(ConversionUtils.toStringOrNull(workflowInstanceId));
     postOperationWithOKResponse(workflowInstanceId, op);
   }
 
@@ -477,7 +477,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
     op.setName(newVarName);
     op.setValue(newVarValue);
-    op.setScopeId(StringUtils.toStringOrNull(scopeKey));
+    op.setScopeId(ConversionUtils.toStringOrNull(scopeKey));
     postOperationWithOKResponse(workflowInstanceId, op);
   }
 

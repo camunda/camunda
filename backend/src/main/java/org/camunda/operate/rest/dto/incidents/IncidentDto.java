@@ -15,7 +15,7 @@ import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.rest.dto.OperationDto;
-import org.camunda.operate.util.StringUtils;
+import org.camunda.operate.util.ConversionUtils;
 
 public class IncidentDto {
 
@@ -92,7 +92,7 @@ public class IncidentDto {
   }
   
   public void setJobId(String jobId) {
-    this.jobId = jobId!=null?Long.valueOf(jobId):null;
+    this.jobId = ConversionUtils.toLongOrNull(jobId);
   }
 
   public OffsetDateTime getCreationTime() {
@@ -127,10 +127,10 @@ public class IncidentDto {
     IncidentDto incident = new IncidentDto();
     incident.setId(incidentEntity.getId());
     incident.setFlowNodeId(incidentEntity.getFlowNodeId());
-    incident.setFlowNodeInstanceId(StringUtils.toStringOrNull(incidentEntity.getFlowNodeInstanceKey()));
+    incident.setFlowNodeInstanceId(ConversionUtils.toStringOrNull(incidentEntity.getFlowNodeInstanceKey()));
     incident.setErrorMessage(incidentEntity.getErrorMessage());
     incident.setErrorType(IncidentEntity.getErrorTypeTitle(incidentEntity.getErrorType()));
-    incident.setJobId(StringUtils.toStringOrNull(incidentEntity.getJobKey()));
+    incident.setJobId(ConversionUtils.toStringOrNull(incidentEntity.getJobKey()));
     incident.setCreationTime(incidentEntity.getCreationTime());
 
     if (operations != null && operations.size() > 0) {
@@ -146,12 +146,12 @@ public class IncidentDto {
     return incident;
   }
 
-  public static List<IncidentDto> createFrom(List<IncidentEntity> incidentEntities, Map<String, List<OperationEntity>> operations) {
+  public static List<IncidentDto> createFrom(List<IncidentEntity> incidentEntities, Map<Long, List<OperationEntity>> operations) {
     List<IncidentDto> result = new ArrayList<>();
     if (incidentEntities != null) {
       for (IncidentEntity incidentEntity : incidentEntities) {
         if (incidentEntity != null) {
-          result.add(createFrom(incidentEntity, operations.get(incidentEntity.getId())));
+          result.add(createFrom(incidentEntity, operations.get(incidentEntity.getKey())));
         }
       }
     }

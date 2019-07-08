@@ -37,14 +37,14 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
   @Override
   public void handleWithException(OperationEntity operation) throws PersistenceException {
 
-    if (operation.getIncidentId() == null) {
-      failOperation(operation, "Incident id must be defined.");
+    if (operation.getIncidentKey() == null) {
+      failOperation(operation, "Incident key must be defined.");
       return;
     }
 
     IncidentEntity incident = null;
     try {
-      incident = incidentReader.getIncidentById(operation.getIncidentId());
+      incident = incidentReader.getIncidentById(operation.getIncidentKey());
     } catch (NotFoundException ex) {
       failOperation(operation, "No appropriate incidents found: " + ex.getMessage());
       return;

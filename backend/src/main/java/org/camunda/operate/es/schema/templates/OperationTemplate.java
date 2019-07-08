@@ -18,7 +18,7 @@ public class OperationTemplate extends AbstractTemplateCreator implements Workfl
 
   public static final String ID = "id";
   public static final String TYPE = "type";
-  public static final String INCIDENT_ID = "incidentId";
+  public static final String INCIDENT_KEY = "incidentKey";
   public static final String SCOPE_KEY = "scopeKey";
   public static final String VARIABLE_NAME = "variableName";
   public static final String VARIABLE_VALUE = "variableValue";
@@ -46,8 +46,8 @@ public class OperationTemplate extends AbstractTemplateCreator implements Workfl
       .startObject(WORKFLOW_INSTANCE_ID)
         .field("type", "long")
       .endObject()
-      .startObject(INCIDENT_ID)
-        .field("type", "keyword")
+      .startObject(INCIDENT_KEY)
+        .field("type", "long")
       .endObject()
       .startObject(SCOPE_KEY)
         .field("type", "long")
