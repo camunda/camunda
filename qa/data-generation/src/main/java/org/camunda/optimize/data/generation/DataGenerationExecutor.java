@@ -6,7 +6,6 @@
 package org.camunda.optimize.data.generation;
 
 import org.camunda.optimize.data.generation.generators.DataGenerator;
-import org.camunda.optimize.data.generation.generators.UserTaskCompleter;
 import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
 import org.camunda.optimize.data.generation.generators.impl.AuthorizationArrangementDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.BookRequestDataGenerator;
@@ -60,7 +59,6 @@ public class DataGenerationExecutor {
   private BlockingQueue<Runnable> importJobsQueue;
 
   private ScheduledExecutorService progressReporter;
-  private UserTaskCompleter completer;
 
   public DataGenerationExecutor(long totalInstanceCount, String engineRestEndpoint, long timeoutInHours,
                                 boolean removeDeployments) {
@@ -74,7 +72,7 @@ public class DataGenerationExecutor {
     final int queueSize = 100;
     importJobsQueue = new ArrayBlockingQueue<>(queueSize);
     importExecutor = new ThreadPoolExecutor(
-      4, 20, Long.MAX_VALUE, TimeUnit.DAYS, importJobsQueue, new WaitHandler());
+      4, 4, Long.MAX_VALUE, TimeUnit.DAYS, importJobsQueue, new WaitHandler());
 
     engineClient = new SimpleEngineClient(engineRestEndpoint);
     if (this.removeDeployments) {
@@ -120,8 +118,6 @@ public class DataGenerationExecutor {
 
   public void executeDataGeneration() {
     init();
-    completer = new UserTaskCompleter(engineClient);
-    completer.startUserTaskCompletion();
     for (DataGenerator dataGenerator : getDataGenerators()) {
       importExecutor.execute(dataGenerator);
     }

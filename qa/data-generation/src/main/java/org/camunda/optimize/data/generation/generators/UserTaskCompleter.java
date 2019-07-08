@@ -12,10 +12,8 @@ import org.camunda.optimize.data.generation.generators.client.dto.TaskDto;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -35,14 +33,15 @@ public class UserTaskCompleter {
     Instant.EPOCH.atZone(ZoneId.of("UTC"))
   );
 
+  private final String processDefinitionId;
   private ExecutorService taskExecutorService;
   private SimpleEngineClient engineClient;
   private boolean shouldShutdown = false;
   private CountDownLatch finished = new CountDownLatch(0);
   private OffsetDateTime currentCreationDateFilter = OFFSET_DATE_TIME_OF_EPOCH;
-  private Set<String> currentIterationHandledTaskIds = new HashSet<>();
 
-  public UserTaskCompleter(SimpleEngineClient engineClient) {
+  public UserTaskCompleter(final String processDefinitionId, final SimpleEngineClient engineClient) {
+    this.processDefinitionId = processDefinitionId;
     this.engineClient = engineClient;
   }
 
@@ -57,39 +56,42 @@ public class UserTaskCompleter {
         do {
           if (isDateFilterInBackOffWindow()) {
             // we back off from tip of time to ensure to not miss pending writes and to batch up while data is generated
-            log.info("In backoff window, sleeping for {} seconds", BACKOFF_SECONDS);
+            log.info("[process-definition-id:{}] In backoff window, sleeping for {} seconds.",
+                     processDefinitionId, BACKOFF_SECONDS
+            );
             try {
               Thread.sleep(BACKOFF_SECONDS * 1000);
             } catch (InterruptedException e) {
-              log.debug("Was Interrupted while sleeping");
+              log.debug("[process-definition-id:{}] Was Interrupted while sleeping", processDefinitionId);
             }
           }
 
           final OffsetDateTime previousCreationDateFilter = currentCreationDateFilter;
-          final Set<String> previousHandledTaskIds = currentIterationHandledTaskIds;
           try {
             final List<TaskDto> lastTimestampTasks =
-              engineClient.getActiveTasksCreatedOn(currentCreationDateFilter);
+              engineClient.getActiveTasksCreatedOn(processDefinitionId, currentCreationDateFilter);
             handleTasksInParallel(lastTimestampTasks);
 
             final List<TaskDto> currentTasksPage =
-              engineClient.getActiveTasksCreatedAfter(currentCreationDateFilter, TASKS_TO_FETCH);
+              engineClient.getActiveTasksCreatedAfter(processDefinitionId, currentCreationDateFilter, TASKS_TO_FETCH);
             allUserTasksHandled = currentTasksPage.size() == 0;
             if (!allUserTasksHandled) {
               currentCreationDateFilter = currentTasksPage.get(currentTasksPage.size() - 1).getCreated();
-              currentIterationHandledTaskIds = new HashSet<>();
               handleTasksInParallel(currentTasksPage);
 
-              log.info("Handled page of {} tasks", currentTasksPage.size());
               log.info(
-                engineClient.getAllActiveTasksCountCreatedAfter(currentCreationDateFilter) + " tasks left to complete"
+                "[process-definition-id:{}] Handled page of {} tasks.",
+                processDefinitionId,
+                currentTasksPage.size()
               );
             }
           } catch (Exception e) {
-            log.error("User Task batch failed with [{}], will be retried.", e.getMessage(), e);
+            log.error(
+              "[process-definition-id:{}] User Task batch failed with [{}], will be retried.",
+              processDefinitionId, e.getMessage(), e
+            );
 
             currentCreationDateFilter = previousCreationDateFilter;
-            currentIterationHandledTaskIds = previousHandledTaskIds;
           }
         } while (!allUserTasksHandled || !shouldShutdown);
 
@@ -128,32 +130,21 @@ public class UserTaskCompleter {
   }
 
   private void claimAndCompleteUserTask(TaskDto task) {
-    if (isUnhandledTask(task.getId())) {
-      try {
-        engineClient.addOrRemoveIdentityLinks(task);
-        engineClient.claimTask(task);
+    try {
+      engineClient.addOrRemoveIdentityLinks(task);
+      engineClient.claimTask(task);
 
-        if (RANDOM.nextDouble() > 0.95) {
-          engineClient.unclaimTask(task);
-        } else {
-          if (RANDOM.nextDouble() < 0.97) {
-            engineClient.completeUserTask(task);
-          }
+      if (RANDOM.nextDouble() > 0.95) {
+        engineClient.unclaimTask(task);
+      } else {
+        if (RANDOM.nextDouble() < 0.97) {
+          engineClient.completeUserTask(task);
         }
-
-        addHandledTaskId(task);
-      } catch (Exception e) {
-        log.error("Could not claim user task!", e);
       }
+
+    } catch (Exception e) {
+      log.error("Could not claim user task!", e);
     }
-  }
-
-  private Boolean isUnhandledTask(String taskId) {
-    return !currentIterationHandledTaskIds.contains(taskId);
-  }
-
-  private void addHandledTaskId(TaskDto task) {
-    currentIterationHandledTaskIds.add(task.getId());
   }
 
 }

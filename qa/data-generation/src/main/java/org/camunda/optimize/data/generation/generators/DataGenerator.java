@@ -26,10 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
@@ -75,7 +75,7 @@ public abstract class DataGenerator implements Runnable {
   @Override
   public void run() {
     logger.info("Start {}...", getClass().getSimpleName());
-    BpmnModelInstance instance = retrieveDiagram();
+    final BpmnModelInstance instance = retrieveDiagram();
     try {
       startCorrelatingMessages();
       List<String> processDefinitionIds = engineClient.deployProcesses(instance, nVersions);
@@ -147,18 +147,21 @@ public abstract class DataGenerator implements Runnable {
     return new String[]{};
   }
 
-  private void startProcessInstances(final List<Integer> batchSizes, final List<String> processDefinitionIds) {
-    final ExecutorService instanceStartExecutorService = Executors.newFixedThreadPool(20);
+  private void startProcessInstances(final List<Integer> batchSizes,
+                                     final List<String> processDefinitionIds) {
+    final ExecutorService instanceStartExecutorService = Executors.newFixedThreadPool(1);
     try {
       for (int ithBatch = 0; ithBatch < batchSizes.size(); ithBatch++) {
-        final String procDefId = processDefinitionIds.get(ithBatch);
+        final String processDefinitionId = processDefinitionIds.get(ithBatch);
+        final UserTaskCompleter userTaskCompleter = new UserTaskCompleter(processDefinitionId, engineClient);
+        userTaskCompleter.startUserTaskCompletion();
         final CompletableFuture[] startInstanceFutures = IntStream
           .range(0, batchSizes.get(ithBatch))
           .mapToObj(taskDto -> runAsync(
             () -> {
               final Map<String, Object> variables = createVariablesForProcess();
               variables.putAll(createSimpleVariables());
-              startProcessInstance(procDefId, variables);
+              startProcessInstance(processDefinitionId, variables);
               incrementStartedInstanceCount();
             },
             instanceStartExecutorService
@@ -167,10 +170,15 @@ public abstract class DataGenerator implements Runnable {
 
         try {
           CompletableFuture.allOf(startInstanceFutures).get();
-        } catch (InterruptedException | ExecutionException e) {
-          logger.error("Failed batch execution", e);
+          logger.info("[process-definition-id:{}] Finished batch execution", processDefinitionId);
+        } catch (Exception e) {
+          logger.error("[process-definition-id:{}] Failed awaiting batch execution", processDefinitionId, e);
+        }  finally {
+          logger.info("[process-definition-id:{}] Awaiting user task completion.", processDefinitionId);
+          userTaskCompleter.shutdown();
+          userTaskCompleter.awaitUserTaskCompletion(Integer.MAX_VALUE, TimeUnit.SECONDS);
+          logger.info("[process-definition-id:{}] User tasks completion finished.", processDefinitionId);
         }
-
         if (Thread.currentThread().isInterrupted()) {
           return;
         }
@@ -239,6 +247,7 @@ public abstract class DataGenerator implements Runnable {
   public int getStartedInstanceCount() {
     return startedInstanceCount.get();
   }
+
   private void incrementStartedInstanceCount() {
     startedInstanceCount.incrementAndGet();
   }

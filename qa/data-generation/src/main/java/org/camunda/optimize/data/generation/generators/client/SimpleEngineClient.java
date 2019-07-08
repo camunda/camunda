@@ -318,8 +318,9 @@ public class SimpleEngineClient {
     }
   }
 
-  public List<TaskDto> getActiveTasksCreatedAfter(final OffsetDateTime afterDateTime, final int limit) {
-    HttpGet get = new HttpGet(getTaskListCreatedAfterUri(limit, afterDateTime));
+  public List<TaskDto> getActiveTasksCreatedAfter(final String processDefinitionId,
+                                                  final OffsetDateTime afterDateTime, final int limit) {
+    HttpGet get = new HttpGet(getTaskListCreatedAfterUri(processDefinitionId, limit, afterDateTime));
     List<TaskDto> tasks = new ArrayList<>();
     try (CloseableHttpResponse response = client.execute(get)) {
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
@@ -330,8 +331,9 @@ public class SimpleEngineClient {
     return tasks;
   }
 
-  public List<TaskDto> getActiveTasksCreatedOn(final OffsetDateTime creationDateTime) {
-    HttpGet get = new HttpGet(getTaskListCreatedOnUri(creationDateTime));
+  public List<TaskDto> getActiveTasksCreatedOn(final String processDefinitionId,
+                                               final OffsetDateTime creationDateTime) {
+    HttpGet get = new HttpGet(getTaskListCreatedOnUri(processDefinitionId, creationDateTime));
     List<TaskDto> tasks = new ArrayList<>();
     try (CloseableHttpResponse response = client.execute(get)) {
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
@@ -342,28 +344,18 @@ public class SimpleEngineClient {
     return tasks;
   }
 
-
-  public long getAllActiveTasksCountCreatedAfter(final OffsetDateTime afterDateTime) {
-    HttpGet get = new HttpGet(getActiveTasksCountListCreatedAfterUri(afterDateTime));
-    try (CloseableHttpResponse response = client.execute(get)) {
-      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      JsonNode jsonNode = objectMapper.readValue(responseString, JsonNode.class);
-      return jsonNode.get("count").asLong();
-    } catch (IOException e) {
-      log.error("Error while trying to fetch the user task!", e);
-      throw new OptimizeRuntimeException();
-    }
-  }
-
-  private String getTaskListCreatedAfterUri(long limit, final OffsetDateTime createdAfter) {
+  private String getTaskListCreatedAfterUri(final String processDefinitionId, long limit,
+                                            final OffsetDateTime createdAfter) {
     return engineRestEndpoint + "/task?active=true&sortBy=created&sortOrder=asc" +
+      "&processDefinitionId=" + processDefinitionId +
       "&maxResults=" + limit +
       "&createdAfter=" + serializeDateTimeToUrlEncodedString(createdAfter);
   }
 
-  private String getTaskListCreatedOnUri(final OffsetDateTime createdOn) {
-    return engineRestEndpoint + "/task" +
-      "?active=true&createdOn=" + serializeDateTimeToUrlEncodedString(createdOn);
+  private String getTaskListCreatedOnUri(final String processDefinitionId, final OffsetDateTime createdOn) {
+    return engineRestEndpoint + "/task?active=true" +
+      "&processDefinitionId=" + processDefinitionId +
+      "&createdOn=" + serializeDateTimeToUrlEncodedString(createdOn);
   }
 
   @SneakyThrows
