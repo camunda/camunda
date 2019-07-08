@@ -132,6 +132,7 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
     configuration.index.event = true;
     configuration.index.rejection = true;
     configuration.index.deployment = true;
+    configuration.index.error = true;
     configuration.index.incident = true;
     configuration.index.job = true;
     configuration.index.jobBatch = true;

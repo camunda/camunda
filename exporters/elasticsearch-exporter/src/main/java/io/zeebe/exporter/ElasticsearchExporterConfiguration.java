@@ -57,6 +57,7 @@ public class ElasticsearchExporterConfiguration {
 
     // value types to export
     public boolean deployment = true;
+    public boolean error = true;
     public boolean incident = true;
     public boolean job = true;
     public boolean jobBatch = false;
@@ -82,6 +83,8 @@ public class ElasticsearchExporterConfiguration {
           + event
           + ", rejection="
           + rejection
+          + ", error="
+          + error
           + ", deployment="
           + deployment
           + ", incident="
@@ -141,6 +144,8 @@ public class ElasticsearchExporterConfiguration {
     switch (valueType) {
       case DEPLOYMENT:
         return index.deployment;
+      case ERROR:
+        return index.error;
       case INCIDENT:
         return index.incident;
       case JOB:

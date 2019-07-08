@@ -29,7 +29,9 @@ import io.zeebe.exporter.api.context.Context;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.value.ErrorRecordValue;
 import io.zeebe.test.exporter.ExporterTestHarness;
+import io.zeebe.test.exporter.record.MockRecordValue;
 import io.zeebe.util.ZbLogger;
 import java.time.Duration;
 import java.util.Arrays;
@@ -69,6 +71,7 @@ public class ElasticsearchExporterTest {
     config.index.prefix = "foo-bar";
     config.index.createTemplate = true;
     config.index.deployment = true;
+    config.index.error = true;
     config.index.incident = true;
     config.index.job = true;
     config.index.jobBatch = true;
@@ -88,6 +91,7 @@ public class ElasticsearchExporterTest {
     verify(esClient).putIndexTemplate("foo-bar", ZEEBE_RECORD_TEMPLATE_JSON, "-");
 
     verify(esClient).putIndexTemplate(ValueType.DEPLOYMENT);
+    verify(esClient).putIndexTemplate(ValueType.ERROR);
     verify(esClient).putIndexTemplate(ValueType.INCIDENT);
     verify(esClient).putIndexTemplate(ValueType.JOB);
     verify(esClient).putIndexTemplate(ValueType.JOB_BATCH);
@@ -105,6 +109,7 @@ public class ElasticsearchExporterTest {
     // given
     config.index.event = true;
     config.index.deployment = true;
+    config.index.error = true;
     config.index.incident = true;
     config.index.job = true;
     config.index.jobBatch = true;
@@ -121,6 +126,7 @@ public class ElasticsearchExporterTest {
     final ValueType[] valueTypes =
         new ValueType[] {
           ValueType.DEPLOYMENT,
+          ValueType.ERROR,
           ValueType.INCIDENT,
           ValueType.JOB,
           ValueType.JOB_BATCH,
@@ -144,6 +150,7 @@ public class ElasticsearchExporterTest {
     // given
     config.index.event = true;
     config.index.deployment = false;
+    config.index.error = false;
     config.index.incident = false;
     config.index.job = false;
     config.index.jobBatch = false;
@@ -160,6 +167,7 @@ public class ElasticsearchExporterTest {
     final ValueType[] valueTypes =
         new ValueType[] {
           ValueType.DEPLOYMENT,
+          ValueType.ERROR,
           ValueType.INCIDENT,
           ValueType.JOB,
           ValueType.JOB_BATCH,
@@ -331,5 +339,33 @@ public class ElasticsearchExporterTest {
     when(client.putIndexTemplate(any(ValueType.class))).thenReturn(true);
     when(client.putIndexTemplate(anyString(), anyString(), anyString())).thenReturn(true);
     return client;
+  }
+
+  static class ErrorMockRecord extends MockRecordValue implements ErrorRecordValue {
+
+    static final String EXCEPTION_MESSAGE = "Expected Exception Message";
+    static final String STACKTRACE = "Expected Stacktrace";
+    static final long ERROR_EVENT_POSITION = 123;
+    static final long WORKFLOW_INSTANCE_KEY = 456;
+
+    @Override
+    public String getExceptionMessage() {
+      return EXCEPTION_MESSAGE;
+    }
+
+    @Override
+    public String getStacktrace() {
+      return STACKTRACE;
+    }
+
+    @Override
+    public long getErrorEventPosition() {
+      return ERROR_EVENT_POSITION;
+    }
+
+    @Override
+    public long getWorkflowInstanceKey() {
+      return WORKFLOW_INSTANCE_KEY;
+    }
   }
 }

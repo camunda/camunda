@@ -291,6 +291,7 @@
 #  rejection = false
 #
 #  deployment = true
+#  error = true
 #  incident = true
 #  job = true
 #  jobBatch = false
