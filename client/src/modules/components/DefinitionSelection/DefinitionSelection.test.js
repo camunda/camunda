@@ -168,7 +168,7 @@ it('should show a note if the selected ProcDef version is ALL', async () => {
     <DefinitionSelection {...props} enableAllVersionSelection definitionVersion="ALL" />
   );
 
-  expect(node.find('.warning')).toExist();
+  expect(node.find('InfoMessage')).toExist();
 });
 
 it('should pass an id for every entry to the typeahead', async () => {

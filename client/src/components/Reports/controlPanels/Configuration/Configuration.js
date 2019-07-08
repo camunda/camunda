@@ -107,10 +107,10 @@ export default class Configuration extends React.Component {
             {Component && <Component report={report} onChange={this.updateConfiguration} />}
             <NodeStatus report={report} onChange={this.updateConfiguration} />
             <VisibleNodesFilter report={report} onChange={this.updateConfiguration} />
-            <Button className="resetButton" onClick={this.resetToDefaults}>
-              Reset to Defaults
-            </Button>
           </Form>
+          <Button className="resetButton" onClick={this.resetToDefaults}>
+            Reset to Defaults
+          </Button>
         </Popover>
       </li>
     );

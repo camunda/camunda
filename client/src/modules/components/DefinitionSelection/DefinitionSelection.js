@@ -7,7 +7,15 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {BPMNDiagram, LoadingIndicator, Popover, Select, Typeahead} from 'components';
+import {
+  InfoMessage,
+  BPMNDiagram,
+  LoadingIndicator,
+  Popover,
+  Select,
+  Typeahead,
+  Labeled
+} from 'components';
 
 import {loadDefinitions, extractDefinitionName, capitalize} from 'services';
 
@@ -150,8 +158,7 @@ export default class DefinitionSelection extends React.Component {
         >
           <div className="selectionPanel">
             <div className="dropdowns">
-              <div className="entry">
-                <span className="label">Name</span>
+              <Labeled className="entry" label="Name">
                 <Typeahead
                   className="name"
                   initialValue={this.findSelectedKeyGroup(selectedKey)}
@@ -161,9 +168,8 @@ export default class DefinitionSelection extends React.Component {
                   onSelect={this.changeKey}
                   formatter={({name, key}) => name || key}
                 />
-              </div>
-              <div className="entry">
-                <span className="label">Version</span>
+              </Labeled>
+              <Labeled label="Version" className="entry">
                 <Select
                   className="version"
                   disabled={!selectedKey}
@@ -172,9 +178,9 @@ export default class DefinitionSelection extends React.Component {
                 >
                   {this.renderAllVersions(selectedKey)}
                 </Select>
-              </div>
+              </Labeled>
               <div className="tenant entry">
-                <span className="label">Tenant</span>
+                <Labeled label="Tenant" />
                 <TenantPopover
                   tenants={this.getAvailableTenants()}
                   selected={this.getSelectedTenants()}
@@ -183,10 +189,10 @@ export default class DefinitionSelection extends React.Component {
               </div>
             </div>
             {version === 'ALL' ? (
-              <div className="warning">
+              <InfoMessage>
                 Note: data from the older versions can deviate, therefore the report data can be
                 inconsistent
-              </div>
+              </InfoMessage>
             ) : (
               ''
             )}

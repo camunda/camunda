@@ -63,14 +63,15 @@ $modal-padding-h: 40px;
 }
 
 .Modal__header {
+  height: 60px;
   font-size: 1.4em;
   border-bottom: 1px solid lightgray;
-  padding: 12px $modal-padding-h 0;
+  padding: 17px $modal-padding-h 0;
   position: relative;
 }
 
 .Modal__heading {
-  font-size: 1.25em;
+  font-size: 1em;
   padding-right: 36px;
   overflow: hidden;
   white-space: nowrap;
@@ -100,14 +101,14 @@ $modal-padding-h: 40px;
 }
 
 .Modal__content {
-  padding: 20px $modal-padding-h 40px;
+  padding: 20px $modal-padding-h;
   flex-grow: 1;
   position: relative;
 }
 
 .Modal__actions {
   background: #f9fafb;
-  padding: 12px $modal-padding-h;
+  padding: 15px 20px;
   border-top: 1px solid lightgray;
   text-align: right;
   border-bottom-left-radius: 3px;
