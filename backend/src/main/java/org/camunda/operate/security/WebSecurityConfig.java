@@ -156,6 +156,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
       response.setHeader("X-CSRF-HEADER", token.getHeaderName());
       response.setHeader("X-CSRF-PARAM", token.getParameterName());
       response.setHeader("X-CSRF-TOKEN", token.getToken());
+      // We need to access the CSRF Token Cookie from JavaScript too:
+      cookieCSRFTokenRepository.setCookieHttpOnly(false);
       cookieCSRFTokenRepository.saveToken(token, request, response);
     }
     return response;
