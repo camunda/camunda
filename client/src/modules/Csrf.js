@@ -4,24 +4,19 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export default class Csrf {
-  static instance = null;
+export function getToken(cookies) {
+  let token;
 
-  static getInstance() {
-    if (Csrf.instance == null) {
-      Csrf.instance = new Csrf();
-    }
+  cookies
+    .replace(/ /g, '')
+    .split(';')
+    .forEach(cookie => {
+      const items = cookie.split('=');
 
-    return this.instance;
-  }
+      if (items[0] === 'X-CSRF-TOKEN') {
+        token = items[1];
+      }
+    });
 
-  token = null;
-
-  getToken() {
-    return this.token;
-  }
-
-  setToken(token) {
-    this.token = token;
-  }
+  return token;
 }

@@ -4,17 +4,62 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import Csrf from './Csrf';
+import {getToken} from './Csrf';
+
+const CSRF_TOKEN = '374q-2qc8jm4-mcfq97h43';
 
 describe('Csrf', () => {
-  it('should set and get token', () => {
-    // given
-    const token = 'my-token-123123123';
-
+  it('should return token (only item in cookie)', () => {
     // when
-    Csrf.getInstance().setToken(token);
+    const token = getToken(`X-CSRF-TOKEN=${CSRF_TOKEN}`);
 
-    //then
-    expect(Csrf.getInstance().getToken()).toBe(token);
+    // then
+    expect(token).toBe(CSRF_TOKEN);
+  });
+
+  it('should return token (1st of 2 items in cookie)', () => {
+    // when
+    const token = getToken(
+      `X-CSRF-TOKEN=${CSRF_TOKEN}; JSESSIONID=1987456796419`
+    );
+
+    // then
+    expect(token).toBe(CSRF_TOKEN);
+  });
+
+  it('should return token (2nd of 2 items in cookie)', () => {
+    // when
+    const token = getToken(
+      `JSESSIONID=1987456796419; X-CSRF-TOKEN=${CSRF_TOKEN}`
+    );
+
+    // then
+    expect(token).toBe(CSRF_TOKEN);
+  });
+
+  it('should return token (2nd of 3 items in cookie)', () => {
+    // when
+    const token = getToken(
+      `USERNAME=Operator; X-CSRF-TOKEN=${CSRF_TOKEN}; JSESSIONID=1987456796419`
+    );
+
+    // then
+    expect(token).toBe(CSRF_TOKEN);
+  });
+
+  it('should return undefined (no token in empty cookie)', () => {
+    // when
+    const token = getToken('');
+
+    // then
+    expect(token).toBe(undefined);
+  });
+
+  it('should return undefined (no token in cookie)', () => {
+    // when
+    const token = getToken('`USERNAME=Operator; JSESSIONID=1987456796419');
+
+    // then
+    expect(token).toBe(undefined);
   });
 });
