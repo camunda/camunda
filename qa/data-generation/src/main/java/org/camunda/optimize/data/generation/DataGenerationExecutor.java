@@ -60,8 +60,10 @@ public class DataGenerationExecutor {
 
   private ScheduledExecutorService progressReporter;
 
-  public DataGenerationExecutor(long totalInstanceCount, String engineRestEndpoint, long timeoutInHours,
-                                boolean removeDeployments) {
+  public DataGenerationExecutor(final long totalInstanceCount,
+                                final String engineRestEndpoint,
+                                final long timeoutInHours,
+                                final boolean removeDeployments) {
     this.totalInstanceCount = totalInstanceCount;
     this.engineRestEndpoint = engineRestEndpoint;
     this.timeoutInHours = timeoutInHours;
@@ -72,7 +74,7 @@ public class DataGenerationExecutor {
     final int queueSize = 100;
     importJobsQueue = new ArrayBlockingQueue<>(queueSize);
     importExecutor = new ThreadPoolExecutor(
-      4, 4, Long.MAX_VALUE, TimeUnit.DAYS, importJobsQueue, new WaitHandler());
+      1, 1, Long.MAX_VALUE, TimeUnit.DAYS, importJobsQueue, new WaitHandler());
 
     engineClient = new SimpleEngineClient(engineRestEndpoint);
     if (this.removeDeployments) {
@@ -136,10 +138,8 @@ public class DataGenerationExecutor {
         importExecutor.shutdownNow();
       }
 
-      completer.shutdown();
-      completer.awaitUserTaskCompletion(timeoutInHours, TimeUnit.HOURS);
-
-      // add some grace period after data generation for the engine to finish work (e.g. 10mio / 16 =~ 600000 ms = 10 minutes)
+      // add some grace period after data generation for the engine to finish work (e.g. 10mio / 16 =~ 600000 ms = 10
+      // minutes)
       // minimum 30 seconds
       final long sleepMillis = Math.max(30_000, totalInstanceCount / 16);
       logger.info("Sleeping for {}s as a grace period for the engine to finish pending work.", sleepMillis / 1000);
@@ -170,18 +170,27 @@ public class DataGenerationExecutor {
         totalInstancesToGenerate += dataGenerator.getInstanceCountToGenerate();
         finishedInstances += dataGenerator.getStartedInstanceCount();
         if (dataGenerator.getStartedInstanceCount() > 0
-                && dataGenerator.getInstanceCountToGenerate() != dataGenerator.getStartedInstanceCount()) {
-          logger.info("[{}/{}] {}",
-                  dataGenerator.getStartedInstanceCount(),
-                  dataGenerator.getInstanceCountToGenerate(),
-                  dataGenerator.getClass().getSimpleName().replaceAll("DataGenerator","")
+          && dataGenerator.getInstanceCountToGenerate() != dataGenerator.getStartedInstanceCount()) {
+          logger.info(
+            "[{}/{}] {}",
+            dataGenerator.getStartedInstanceCount(),
+            dataGenerator.getInstanceCountToGenerate(),
+            dataGenerator.getClass().getSimpleName().replaceAll("DataGenerator", "")
           );
         }
       }
-      double finishedAmountInPercentage = Math.round((double) finishedInstances / (double) totalInstancesToGenerate * 1000.0) / 10.0;
-      long timeETAFromNow = Math.round(((double) rb.getUptime() / finishedAmountInPercentage) * (100.0 - finishedAmountInPercentage));
+      double finishedAmountInPercentage =
+        Math.round((double) finishedInstances / (double) totalInstancesToGenerate * 1000.0) / 10.0;
+      long timeETAFromNow =
+        Math.round(((double) rb.getUptime() / finishedAmountInPercentage) * (100.0 - finishedAmountInPercentage));
       Date timeETA = new Date(System.currentTimeMillis() + timeETAFromNow);
-      logger.info("Overall data generation progress: {}% ({}/{}) ETA: {}", finishedAmountInPercentage, finishedInstances, totalInstancesToGenerate, timeETA);
+      logger.info(
+        "Overall data generation progress: {}% ({}/{}) ETA: {}",
+        finishedAmountInPercentage,
+        finishedInstances,
+        totalInstancesToGenerate,
+        timeETA
+      );
     };
 
     exec.scheduleAtFixedRate(reportFunc, 0, 30, TimeUnit.SECONDS);
