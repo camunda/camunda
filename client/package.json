@@ -42,7 +42,7 @@
     "jest-enzyme": "^7.0.2",
     "jest-junit": "^6.4.0",
     "lint-staged": "^8.2.0",
-    "prettier": "^1.15.3",
+    "prettier": "^1.18.2",
     "react-scripts": "2.1.2",
     "react-styleguidist": "^9.1.4"
   },
