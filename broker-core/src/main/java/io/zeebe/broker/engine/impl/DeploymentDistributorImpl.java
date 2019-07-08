@@ -240,10 +240,10 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
 
     if (pushDeploymentResponse.tryWrap(responseBuffer)) {
       pushDeploymentResponse.wrap(responseBuffer);
-      handlePushResponse();
-
-      final IntArrayList missingResponses = getPartitionResponses(topic);
-      missingResponses.remove(new Integer(partition));
+      if (handlePushResponse()) {
+        final IntArrayList missingResponses = getPartitionResponses(topic);
+        missingResponses.removeInt(partition);
+      }
     } else if (errorResponse.tryWrap(responseBuffer)) {
       errorResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
       LOG.warn(
@@ -282,20 +282,28 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
         });
   }
 
-  private void handlePushResponse() {
+  private boolean handlePushResponse() {
     final long deploymentKey = pushDeploymentResponse.deploymentKey();
     final PendingDeploymentDistribution pendingDeploymentDistribution =
         deploymentsState.getPendingDeployment(deploymentKey);
+    final boolean pendingDeploymentExists = pendingDeploymentDistribution != null;
 
-    final long remainingPartitions = pendingDeploymentDistribution.decrementCount();
-    if (remainingPartitions == 0) {
-      LOG.debug("Deployment pushed to all partitions successfully.");
-      pendingDeploymentFutures.remove(deploymentKey).complete(null);
+    if (pendingDeploymentExists) {
+      final long remainingPartitions = pendingDeploymentDistribution.decrementCount();
+      if (remainingPartitions == 0) {
+        LOG.debug("Deployment pushed to all partitions successfully.");
+        pendingDeploymentFutures.remove(deploymentKey).complete(null);
+      } else {
+        LOG.trace(
+            "Deployment was pushed to partition {} successfully.",
+            pushDeploymentResponse.partitionId());
+      }
     } else {
       LOG.trace(
-          "Deployment was pushed to partition {} successfully.",
-          pushDeploymentResponse.partitionId());
+          "Ignoring unexpected push deployment response for deployment key {}", deploymentKey);
     }
+
+    return pendingDeploymentExists;
   }
 
   public static String getDeploymentResponseTopic(final long deploymentKey) {
