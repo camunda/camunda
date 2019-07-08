@@ -21,7 +21,7 @@ management.endpoints.web.exposure.include: health,info,conditions,configprops,pr
 spring:
   profiles: dev
 camunda.operate:
-  csrfPreventionEnabled: false
+  csrfPreventionEnabled: true
   elasticsearch:
     clusterName: docker-cluster
     host: elasticsearch
