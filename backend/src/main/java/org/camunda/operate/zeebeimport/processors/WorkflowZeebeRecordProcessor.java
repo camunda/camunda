@@ -106,7 +106,7 @@ public class WorkflowZeebeRecordProcessor {
   }
 
   private void updateFieldsInInstancesFor(final WorkflowEntity workflowEntity, BulkRequest bulkRequest) {
-    List<Long> workflowInstanceIds = workflowInstanceReader.queryWorkflowInstancesWithEmptyWorkflowVersion(workflowEntity.getId());
+    List<Long> workflowInstanceIds = workflowInstanceReader.queryWorkflowInstancesWithEmptyWorkflowVersion(workflowEntity.getKey());
     for (Long workflowInstanceId : workflowInstanceIds) {
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(ListViewTemplate.WORKFLOW_NAME, workflowEntity.getName());

@@ -124,7 +124,7 @@ public class EventDto {
     EventDto eventDto = new EventDto();
     eventDto.setId(eventEntity.getId());
     eventDto.setActivityId(eventEntity.getActivityId());
-    eventDto.setActivityInstanceId(ConversionUtils.toStringOrNull(eventEntity.getActivityInstanceId()));
+    eventDto.setActivityInstanceId(ConversionUtils.toStringOrNull(eventEntity.getFlowNodeInstanceKey()));
     eventDto.setBpmnProcessId(eventEntity.getBpmnProcessId());
     eventDto.setDateTime(eventEntity.getDateTime());
     eventDto.setEventSourceType(eventEntity.getEventSourceType());

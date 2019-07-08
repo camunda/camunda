@@ -65,7 +65,7 @@ public class EventReader extends AbstractReader {
     }
     TermQueryBuilder activityInstanceQ = null;
     if (eventQuery.getActivityInstanceId() != null) {
-      activityInstanceQ = termQuery(EventTemplate.ACTIVITY_INSTANCE_ID, eventQuery.getActivityInstanceId());
+      activityInstanceQ = termQuery(EventTemplate.FLOW_NODE_INSTANCE_KEY, eventQuery.getActivityInstanceId());
     }
     QueryBuilder query = ElasticsearchUtil.joinWithAnd(workflowInstanceQ, activityInstanceQ);
     if (query == null) {

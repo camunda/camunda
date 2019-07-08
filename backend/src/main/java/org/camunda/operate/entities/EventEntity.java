@@ -20,7 +20,7 @@ public class EventEntity extends OperateZeebeEntity {
    * Activity data.
    */
   private String activityId;
-  private Long activityInstanceId;
+  private Long flowNodeInstanceKey;
 
   /**
    * Event data.
@@ -58,12 +58,12 @@ public class EventEntity extends OperateZeebeEntity {
     this.activityId = activityId;
   }
 
-  public Long getActivityInstanceId() {
-    return activityInstanceId;
+  public Long getFlowNodeInstanceKey() {
+    return flowNodeInstanceKey;
   }
 
-  public void setActivityInstanceId(Long activityInstanceId) {
-    this.activityInstanceId = activityInstanceId;
+  public void setFlowNodeInstanceKey(Long flowNodeInstanceKey) {
+    this.flowNodeInstanceKey = flowNodeInstanceKey;
   }
 
   public EventSourceType getEventSourceType() {
@@ -125,7 +125,7 @@ public class EventEntity extends OperateZeebeEntity {
       return false;
     if (activityId != null ? !activityId.equals(that.activityId) : that.activityId != null)
       return false;
-    if (activityInstanceId != null ? !activityInstanceId.equals(that.activityInstanceId) : that.activityInstanceId != null)
+    if (flowNodeInstanceKey != null ? !flowNodeInstanceKey.equals(that.flowNodeInstanceKey) : that.flowNodeInstanceKey != null)
       return false;
     if (eventSourceType != that.eventSourceType)
       return false;
@@ -143,7 +143,7 @@ public class EventEntity extends OperateZeebeEntity {
     result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
-    result = 31 * result + (activityInstanceId != null ? activityInstanceId.hashCode() : 0);
+    result = 31 * result + (flowNodeInstanceKey != null ? flowNodeInstanceKey.hashCode() : 0);
     result = 31 * result + (eventSourceType != null ? eventSourceType.hashCode() : 0);
     result = 31 * result + (eventType != null ? eventType.hashCode() : 0);
     result = 31 * result + (dateTime != null ? dateTime.hashCode() : 0);

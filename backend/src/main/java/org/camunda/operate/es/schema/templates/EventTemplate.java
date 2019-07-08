@@ -24,7 +24,7 @@ public class EventTemplate extends AbstractTemplateCreator implements WorkflowIn
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
 
   public static final String ACTIVITY_ID = "activityId";
-  public static final String ACTIVITY_INSTANCE_ID = "activityInstanceId";
+  public static final String FLOW_NODE_INSTANCE_KEY = "flowNodeInstanceKey";
 
   public static final String EVENT_SOURCE_TYPE = "eventSourceType";
   public static final String EVENT_TYPE = "eventType";
@@ -75,7 +75,7 @@ public class EventTemplate extends AbstractTemplateCreator implements WorkflowIn
       .startObject(ACTIVITY_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(ACTIVITY_INSTANCE_ID)
+      .startObject(FLOW_NODE_INSTANCE_KEY)
         .field("type", "long")
       .endObject()
       .startObject(EVENT_SOURCE_TYPE)

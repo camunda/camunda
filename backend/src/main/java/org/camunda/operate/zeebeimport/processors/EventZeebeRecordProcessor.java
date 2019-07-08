@@ -136,7 +136,7 @@ public class EventZeebeRecordProcessor {
     }
 
     if (record.getKey() != recordValue.getWorkflowInstanceKey()) {
-      eventEntity.setActivityInstanceId(record.getKey());
+      eventEntity.setFlowNodeInstanceKey(record.getKey());
     }
 
     persistEvent(eventEntity, bulkRequest);
@@ -163,7 +163,7 @@ public class EventZeebeRecordProcessor {
 
     final long activityInstanceKey = recordValue.getElementInstanceKey();
     if (activityInstanceKey > 0) {
-      eventEntity.setActivityInstanceId(activityInstanceKey);
+      eventEntity.setFlowNodeInstanceKey(activityInstanceKey);
     }
 
     EventMetadataEntity eventMetadata = new EventMetadataEntity();
@@ -198,7 +198,7 @@ public class EventZeebeRecordProcessor {
     eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
     eventEntity.setActivityId(recordValue.getElementId());
     if (recordValue.getElementInstanceKey() > 0) {
-      eventEntity.setActivityInstanceId(recordValue.getElementInstanceKey());
+      eventEntity.setFlowNodeInstanceKey(recordValue.getElementInstanceKey());
     }
 
     EventMetadataEntity eventMetadata = new EventMetadataEntity();

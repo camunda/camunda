@@ -224,7 +224,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
         if (activityId != null) {
           assertThat(eventEntity.getActivityId()).as(assertionName + ".activityId").isEqualTo(activityId);
           if (eventEntity.getKey() != eventEntity.getWorkflowInstanceId()) {
-            assertThat(eventEntity.getActivityInstanceId()).as(assertionName + ".activityInstanceId").isNotNull();
+            assertThat(eventEntity.getFlowNodeInstanceKey()).as(assertionName + ".flowNodeInstanceKey").isNotNull();
           }
         }
         if (eventSourceType.equals(EventSourceType.INCIDENT)) {
