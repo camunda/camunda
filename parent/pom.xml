@@ -46,7 +46,6 @@
     <version.httpcomponents>4.4.11</version.httpcomponents>
     <version.jackson>2.9.9</version.jackson>
     <version.java-grpc-prometheus>0.3.0</version.java-grpc-prometheus>
-    <version.jmh>1.21</version.jmh>
     <version.junit>4.12</version.junit>
     <version.log4j>2.12.0</version.log4j>
     <version.mockito>2.28.2</version.mockito>
@@ -159,18 +158,6 @@
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>
         <version>${version.assertj}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.openjdk.jmh</groupId>
-        <artifactId>jmh-core</artifactId>
-        <version>${version.jmh}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.openjdk.jmh</groupId>
-        <artifactId>jmh-generator-annprocess</artifactId>
-        <version>${version.jmh}</version>
       </dependency>
 
       <dependency>
@@ -593,7 +580,6 @@
             <sourceDirectories>
               <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
               <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
-              <sourceDirectory>${project.basedir}/src/test/jmh</sourceDirectory>
             </sourceDirectories>
           </configuration>
           <executions>
@@ -784,11 +770,6 @@
               </goals>
             </execution>
           </executions>
-          <configuration>
-            <additionalSourceDirectories>
-              <additionalSourceDirectory>${project.basedir}/src/test/jmh</additionalSourceDirectory>
-            </additionalSourceDirectories>
-          </configuration>
         </plugin>
 
         <plugin>
@@ -943,27 +924,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
       </plugin>
-
-      <!-- add jmh test sources to build -->
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>add-jmh-tests</id>
-            <phase>generate-test-sources</phase>
-            <goals>
-              <goal>add-test-source</goal>
-            </goals>
-            <configuration>
-              <sources>
-                <source>src/test/jmh</source>
-              </sources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
     </plugins>
   </build>
 
