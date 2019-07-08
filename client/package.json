@@ -44,7 +44,7 @@
     "lint-staged": "^8.2.0",
     "prettier": "^1.18.2",
     "react-scripts": "2.1.2",
-    "react-styleguidist": "^9.1.4"
+    "react-styleguidist": "^9.1.11"
   },
   "lint-staged": {
     "src/**/*.js": [
