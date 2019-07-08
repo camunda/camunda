@@ -28,7 +28,6 @@ import io.zeebe.client.api.response.DeploymentEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -111,7 +110,6 @@ public class DeploymentClusteredTest {
   }
 
   @Test
-  @Ignore
   public void shouldCreateInstancesOnRestartedBroker() {
     // given
 
