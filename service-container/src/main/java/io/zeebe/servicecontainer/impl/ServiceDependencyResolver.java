@@ -137,13 +137,6 @@ public class ServiceDependencyResolver {
           if (allStopped) {
             dependency.fireEvent(ServiceEventType.DEPENDENTS_STOPPED);
           }
-        } else {
-          // we should investigate this case - this seems to be wrong
-          // added this log to see if this ever happens
-          LOG.error(
-              "Removed service {}, but dependency service {} is not in closing yet, which means we do not remove dependents.",
-              controller,
-              dependency.getServiceName());
         }
       }
     }
