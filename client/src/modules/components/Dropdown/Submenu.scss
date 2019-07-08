@@ -1,7 +1,7 @@
 @import 'shared-styles/shared-styles.scss';
 
 .Submenu {
-  padding-right: 20px;
+  padding-right: 26px;
 
   &.open {
     background-color: $blue;
@@ -13,7 +13,7 @@
   .Icon.rightIcon {
     display: inline-block;
     position: absolute;
-    right: 0;
+    right: 6px;
     margin-right: 0;
   }
 
