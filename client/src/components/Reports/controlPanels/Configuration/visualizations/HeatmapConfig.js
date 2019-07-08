@@ -14,7 +14,7 @@ export default function HeatmapConfig(props) {
   } = props;
   return (
     <fieldset>
-      <legend>Always show tooltips</legend>
+      <legend>Tooltips</legend>
       <RelativeAbsoluteSelection
         hideRelative={data.view.property !== 'frequency'}
         absolute={data.configuration.alwaysShowAbsolute}

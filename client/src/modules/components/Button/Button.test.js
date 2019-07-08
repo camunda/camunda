@@ -36,7 +36,7 @@ it('renders a label as provided as a property', () => {
 
 it('renders a modifier class name based on the type provided as a property', () => {
   const type = 'primary';
-  const node = shallow(<Button type={type} />);
+  const node = shallow(<Button variant={type} />);
 
   expect(node).toHaveClassName('primary');
 });

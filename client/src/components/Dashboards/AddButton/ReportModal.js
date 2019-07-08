@@ -6,16 +6,7 @@
 
 import React from 'react';
 
-import {
-  Modal,
-  Button,
-  Select,
-  ControlGroup,
-  Input,
-  Typeahead,
-  LoadingIndicator,
-  Labeled
-} from 'components';
+import {Modal, Button, Select, Input, Typeahead, LoadingIndicator, Labeled, Form} from 'components';
 
 import {loadEntities} from 'services';
 
@@ -84,48 +75,52 @@ export default class ReportModal extends React.Component {
       >
         <Modal.Header>Add a Report</Modal.Header>
         <Modal.Content>
-          <ControlGroup layout="centered">
-            {!loading && !noReports && (
-              <Typeahead
-                disabled={noReports || loading || external}
-                placeholder="Select a Report"
-                values={availableReports}
-                onSelect={this.selectReport}
-                formatter={({name}) => this.truncate(name, 90)}
-              />
+          <Form>
+            <Form.Group>
+              {!loading && !noReports && (
+                <Labeled label="Add Report">
+                  <Typeahead
+                    disabled={noReports || loading || external}
+                    placeholder="Select a Report"
+                    values={availableReports}
+                    onSelect={this.selectReport}
+                    formatter={({name}) => this.truncate(name, 90)}
+                  />
+                </Labeled>
+              )}
+              {loading ? (
+                <LoadingIndicator />
+              ) : noReports ? (
+                <p className="muted">No reports created yet</p>
+              ) : (
+                ''
+              )}
+            </Form.Group>
+            <p className="externalSourceLink" onClick={this.toggleExternal}>
+              {external ? '- Add Optimize Report' : '+ Add External Source'}
+            </p>
+            {external && (
+              <Form.Group>
+                <Labeled label="External URL">
+                  <Input
+                    name="externalInput"
+                    className="externalInput"
+                    placeholder="https://www.example.com/widget/embed.html"
+                    value={externalUrl}
+                    onChange={({target: {value}}) =>
+                      this.setState({
+                        externalUrl: value
+                      })
+                    }
+                  />
+                </Labeled>
+              </Form.Group>
             )}
-            {loading ? (
-              <LoadingIndicator />
-            ) : noReports ? (
-              <p className="muted">No reports created yet</p>
-            ) : (
-              ''
-            )}
-          </ControlGroup>
-          <p className="ReportModal__externalSourceLink" onClick={this.toggleExternal}>
-            {external ? '- Add Optimize Report' : '+ Add External Source'}
-          </p>
-          {external && (
-            <ControlGroup className="externalSourceGroup">
-              <Labeled label="Enter URL of external datasource to be included on the dashboard">
-                <Input
-                  name="externalInput"
-                  className="externalInput"
-                  placeholder="https://www.example.com/widget/embed.html"
-                  value={externalUrl}
-                  onChange={({target: {value}}) =>
-                    this.setState({
-                      externalUrl: value
-                    })
-                  }
-                />
-              </Labeled>
-            </ControlGroup>
-          )}
+          </Form>
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.props.close}>Cancel</Button>
-          <Button type="primary" color="blue" onClick={this.addReport} disabled={isInvalid}>
+          <Button variant="primary" color="blue" onClick={this.addReport} disabled={isInvalid}>
             Add Report
           </Button>
         </Modal.Actions>

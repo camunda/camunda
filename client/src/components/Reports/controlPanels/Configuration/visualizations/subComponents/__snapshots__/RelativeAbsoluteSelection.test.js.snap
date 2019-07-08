@@ -1,42 +1,32 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`hide the relative selection when hideRelative is true 1`] = `
-<div
-  className="RelativeAbsoluteSelection"
->
-  <div
-    className="entry"
-  >
+<Fragment>
+  <label>
     <Switch
       checked={true}
       onChange={[Function]}
     />
     Show Absolute Value
-  </div>
-</div>
+  </label>
+</Fragment>
 `;
 
 exports[`should match snapshot 1`] = `
-<div
-  className="RelativeAbsoluteSelection"
->
-  <div
-    className="entry"
-  >
+<Fragment>
+  <label>
     <Switch
       checked={true}
       onChange={[Function]}
     />
     Show Absolute Value
-  </div>
-  <div
-    className="entry"
-  >
+  </label>
+  <label>
     <Switch
       checked={true}
       onChange={[Function]}
     />
     Show Relative Value
-  </div>
-</div>
+  </label>
+</Fragment>
 `;

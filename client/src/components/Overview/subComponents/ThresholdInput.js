@@ -11,10 +11,9 @@ import {Input, Select} from 'components';
 export default function ThresholdInput({id, value, onChange, type, isInvalid}) {
   if (type === 'duration') {
     return (
-      <div className="AlertModal__combinedInput">
+      <>
         <Input
           id={id}
-          className="AlertModal__input"
           value={value.value}
           isInvalid={isInvalid}
           onChange={({target}) => onChange({...value, value: target.value})}
@@ -28,13 +27,12 @@ export default function ThresholdInput({id, value, onChange, type, isInvalid}) {
           <Select.Option value="weeks">Weeks</Select.Option>
           <Select.Option value="months">Months</Select.Option>
         </Select>
-      </div>
+      </>
     );
   } else {
     return (
       <Input
         id={id}
-        className="AlertModal__input"
         value={value}
         isInvalid={isInvalid}
         onChange={({target: {value}}) => onChange(value)}

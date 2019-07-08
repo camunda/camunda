@@ -1,0 +1,20 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should allow switching between static date and dynamic date mode 1`] = `
+<ButtonGroup>
+  <ForwardRef(Button)
+    active={true}
+    name="button-static"
+    onClick={[Function]}
+  >
+    Fixed Date
+  </ForwardRef(Button)>
+  <ForwardRef(Button)
+    active={false}
+    name="button-dynamic"
+    onClick={[Function]}
+  >
+    Relative Date
+  </ForwardRef(Button)>
+</ButtonGroup>
+`;

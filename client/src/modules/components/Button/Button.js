@@ -10,9 +10,10 @@ import {Link} from 'react-router-dom';
 
 import './Button.scss';
 
-export default React.forwardRef(function Button({active, color, type, ...props}, ref) {
+export default React.forwardRef(function Button({active, color, variant, size, ...props}, ref) {
   const className = classnames(props.className, 'Button', {
-    [type]: type,
+    [variant]: variant,
+    [size]: size,
     [color]: color,
     isActive: active
   });
@@ -25,7 +26,7 @@ export default React.forwardRef(function Button({active, color, type, ...props},
     );
   } else {
     return (
-      <button {...props} className={className} ref={ref}>
+      <button type="button" {...props} className={className} ref={ref}>
         {props.children}
       </button>
     );

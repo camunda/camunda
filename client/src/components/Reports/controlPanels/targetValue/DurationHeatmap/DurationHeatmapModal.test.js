@@ -100,7 +100,7 @@ it('should save the changes target values', async () => {
 
   spy.mockClear();
 
-  node.find('[type="primary"]').simulate('click');
+  node.find('[variant="primary"]').simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
     a: {

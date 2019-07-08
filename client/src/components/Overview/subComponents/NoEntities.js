@@ -13,7 +13,7 @@ export default function NoEntities({label, createFunction}) {
   return (
     <li className="NoEntities">
       There are no {label}s configured.
-      <Button type="link" className="createLink" onClick={createFunction}>
+      <Button variant="link" className="createLink" onClick={createFunction}>
         Create a new {label}…
       </Button>
     </li>

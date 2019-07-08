@@ -1,16 +1,4 @@
 .Configuration {
-  .Popover {
-    fieldset {
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      margin: 7px 0;
-    }
-  }
-
-  .Select {
-    width: 100%;
-  }
-
   .content {
     min-width: 250px;
     padding: 0.5em;
@@ -18,11 +6,6 @@
     .resetButton {
       margin: 1em 0;
       float: right;
-    }
-
-    .Switch {
-      margin-right: 10px;
-      vertical-align: middle;
     }
   }
 }

@@ -5,7 +5,7 @@
  */
 
 import React, {Component} from 'react';
-import {Button, Input, Modal} from 'components';
+import {Button, LabeledInput, Modal, Form} from 'components';
 
 export default class EditCollectionModal extends Component {
   constructor(props) {
@@ -54,23 +54,33 @@ export default class EditCollectionModal extends Component {
           {collection.name ? 'Edit Collection name' : 'Create new Collection'}
         </Modal.Header>
         <Modal.Content>
-          <Input
-            type="text"
-            ref={this.inputRef}
-            style={{width: '100%'}}
-            value={this.state.name}
-            onChange={({target: {value}}) => this.setState({name: value})}
-            onKeyDown={this.handleKeyPress}
-            disabled={this.state.loading}
-            autoComplete="off"
-          />
+          <Form>
+            <Form.Group>
+              <LabeledInput
+                type="text"
+                label="Add Name"
+                ref={this.inputRef}
+                style={{width: '100%'}}
+                value={this.state.name}
+                onChange={({target: {value}}) => this.setState({name: value})}
+                onKeyDown={this.handleKeyPress}
+                disabled={this.state.loading}
+                autoComplete="off"
+              />
+            </Form.Group>
+          </Form>
         </Modal.Content>
         <Modal.Actions>
-          <Button className="cancel" type="primary" onClick={onClose} disabled={this.state.loading}>
+          <Button
+            className="cancel"
+            variant="primary"
+            onClick={onClose}
+            disabled={this.state.loading}
+          >
             Cancel
           </Button>
           <Button
-            type="primary"
+            variant="primary"
             color="blue"
             className="confirm"
             disabled={!this.state.name || this.state.loading}

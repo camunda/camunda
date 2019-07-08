@@ -3,7 +3,7 @@
 exports[`it should display correct configuration for piechart 1`] = `
 <fieldset>
   <legend>
-    Always show tooltips
+    Tooltips
   </legend>
   <RelativeAbsoluteSelection
     absolute={true}

@@ -1,0 +1,27 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should render child elements and their props 1`] = `
+<form
+  className="Form horizontal"
+>
+  <FormGroup>
+    <label>
+      <InputGroup>
+        <select
+          id="input1"
+        >
+          <option
+            value="test"
+          >
+            test
+          </option>
+        </select>
+        <input
+          id="input2"
+          type="text"
+        />
+      </InputGroup>
+    </label>
+  </FormGroup>
+</form>
+`;

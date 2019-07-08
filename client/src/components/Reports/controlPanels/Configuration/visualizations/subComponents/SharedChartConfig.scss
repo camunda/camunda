@@ -1,9 +1,0 @@
-.SharedChartConfig fieldset {
-  margin: 5px 0;
-
-  &.goalLine[disabled] .ChartTargetInput,
-  &.tooltipOptions[disabled] {
-    opacity: 0.4;
-    pointer-events: none;
-  }
-}

@@ -104,7 +104,7 @@ it('should create a new filter', () => {
     }
   });
 
-  node.find('button[type="primary"]').simulate('click');
+  node.find('button[variant="primary"]').simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
     type: 'variable',
@@ -152,7 +152,7 @@ it('should use custom filter adding logic from input components', () => {
 
   DateInput.addFilter.mockClear();
 
-  node.find('button[type="primary"]').simulate('click');
+  node.find('button[variant="primary"]').simulate('click');
 
   expect(DateInput.addFilter).toHaveBeenCalledWith(spy, selectedVariable, filter);
 });

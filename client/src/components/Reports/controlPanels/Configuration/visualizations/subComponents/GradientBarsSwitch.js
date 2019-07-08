@@ -10,12 +10,12 @@ import {Switch} from 'components';
 
 export default function GradientBarsSwitch({configuration, onChange}) {
   return (
-    <>
+    <label>
       <Switch
         checked={!!configuration.showGradientBars}
         onChange={({target: {checked}}) => onChange({showGradientBars: {$set: checked}})}
       />
       Show Gradient Bars
-    </>
+    </label>
   );
 }

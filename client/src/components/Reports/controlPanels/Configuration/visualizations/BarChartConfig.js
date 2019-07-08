@@ -5,11 +5,10 @@
  */
 
 import React from 'react';
-import {ColorPicker, Switch, LabeledInput} from 'components';
+import {ColorPicker, Switch, Input} from 'components';
 import ChartTargetInput from './subComponents/ChartTargetInput';
 import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection';
 import {isDurationReport} from 'services';
-
 import './BarChartConfig.scss';
 
 export default function BarChartConfig({onChange, report}) {
@@ -22,8 +21,8 @@ export default function BarChartConfig({onChange, report}) {
   return (
     <div className="BarChartConfig">
       {!combined && (
-        <fieldset className="ColorSection">
-          <legend>Visualization Color</legend>
+        <fieldset className="colorSection">
+          <legend>Color</legend>
           <ColorPicker
             selectedColor={configuration.color}
             onChange={color => onChange({color: {$set: color}})}
@@ -31,7 +30,7 @@ export default function BarChartConfig({onChange, report}) {
         </fieldset>
       )}
       <fieldset>
-        <legend>Always show tooltips</legend>
+        <legend>Tooltips</legend>
         <RelativeAbsoluteSelection
           hideRelative={isDurationReport(combined ? Object.values(result.data)[0] : report)}
           absolute={configuration.alwaysShowAbsolute}
@@ -45,24 +44,22 @@ export default function BarChartConfig({onChange, report}) {
           }}
         />
       </fieldset>
-      <fieldset className="axisConfig">
+      <fieldset>
         <legend>Axis Labels</legend>
-        <LabeledInput
-          label="X Axis"
+        <Input
           placeholder="X Axis Label"
           type="text"
           value={configuration.xLabel}
           onChange={({target: {value}}) => onChange({xLabel: {$set: value}})}
         />
-        <LabeledInput
-          label="Y Axis"
+        <Input
           placeholder="Y Axis Label"
           type="text"
           value={configuration.yLabel}
           onChange={({target: {value}}) => onChange({yLabel: {$set: value}})}
         />
       </fieldset>
-      <fieldset className="goalLine">
+      <fieldset>
         <legend>
           <Switch
             checked={configuration.targetValue.active}

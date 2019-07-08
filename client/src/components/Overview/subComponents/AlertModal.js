@@ -16,14 +16,14 @@ import {
   LabeledInput,
   Select,
   Typeahead,
-  Message
+  Message,
+  Switch,
+  Form
 } from 'components';
 import {emailNotificationIsEnabled} from './service';
 import {getOptimizeVersion} from 'services';
 
 import ThresholdInput from './ThresholdInput';
-
-import './AlertModal.scss';
 
 import {formatters, isDurationReport} from 'services';
 
@@ -39,6 +39,11 @@ const newAlert = {
   },
   reminder: null,
   fixNotification: false
+};
+
+const defaultReminder = {
+  value: '2',
+  unit: 'hours'
 };
 
 export default function AlertModal(reports) {
@@ -96,10 +101,7 @@ export default function AlertModal(reports) {
     updateReminder = ({target: {checked}}) => {
       if (checked) {
         this.setState({
-          reminder: {
-            value: '2',
-            unit: 'hours'
-          }
+          reminder: defaultReminder
         });
       } else {
         this.setState({
@@ -220,40 +222,30 @@ export default function AlertModal(reports) {
         <Modal open={this.props.entity} onClose={this.props.onClose}>
           <Modal.Header>{this.isInEditingMode() ? 'Edit Alert' : 'Create New Alert'}</Modal.Header>
           <Modal.Content>
-            <div className="AlertModal__topSection">
-              <div className="AlertModal__inputGroup">
-                {!emailNotificationIsEnabled && (
-                  <Message type="warning">
-                    The email notification service is not configured. Optimize won't be able to
-                    inform you about critical values. Please check out the{' '}
-                    <a
-                      href={`https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/setup/configuration/#email`}
-                    >
-                      Optimize documentation
-                    </a>{' '}
-                    on how to enable the notification service.
-                  </Message>
-                )}
+            <Form horizontal>
+              {!emailNotificationIsEnabled && (
+                <Message type="warning">
+                  The email notification service is not configured. Optimize won't be able to inform
+                  you about critical values. Please check out the{' '}
+                  <a
+                    href={`https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/setup/configuration/#email`}
+                  >
+                    Optimize documentation
+                  </a>{' '}
+                  on how to enable the notification service.
+                </Message>
+              )}
+              <Form.Group>
                 <LabeledInput
                   id="name-input"
-                  className="AlertModal__input"
-                  label="Name"
+                  label="Alert Name"
                   value={name}
                   onChange={({target: {value}}) => this.setState({name: value})}
                   autoComplete="off"
                 />
-              </div>
-              <div className="AlertModal__inputGroup">
-                <LabeledInput
-                  id="email-input"
-                  label="Send Email to"
-                  className="AlertModal__input"
-                  value={email}
-                  onChange={({target: {value}}) => this.setState({email: value})}
-                />
-              </div>
-              <div className="AlertModal__inputGroup">
-                <Labeled label="when Report">
+              </Form.Group>
+              <Form.Group>
+                <Labeled label="When Report">
                   <Typeahead
                     initialValue={reports.find(report => report.id === reportId)}
                     placeholder="Select a Report"
@@ -263,104 +255,108 @@ export default function AlertModal(reports) {
                   />
                 </Labeled>
                 <InfoMessage>Alerts only available for reports visualised as numbers</InfoMessage>
-              </div>
-              <div className="AlertModal__inputGroup">
-                <div className="AlertModal__combinedInput">
-                  <Labeled label="has a value">
-                    <Select
-                      value={thresholdOperator}
-                      className="thresholdSelect"
-                      onChange={value => this.setState({thresholdOperator: value})}
-                    >
-                      <Select.Option value=">">above</Select.Option>
-                      <Select.Option value="<">below</Select.Option>
-                    </Select>
-                  </Labeled>
+              </Form.Group>
+              <Form.Group>
+                <label>Has a Value</label>
+                <Form.InputGroup>
+                  <Select
+                    value={thresholdOperator}
+                    onChange={value => this.setState({thresholdOperator: value})}
+                  >
+                    <Select.Option value=">">above</Select.Option>
+                    <Select.Option value="<">below</Select.Option>
+                  </Select>
                   <ThresholdInput
                     id="value-input"
                     value={threshold}
                     onChange={threshold => this.setState({threshold})}
                     type={this.getReportType(reportId)}
                   />
-                </div>
-              </div>
-            </div>
-            <div className="AlertModal__inputGroup">
-              <div className="AlertModal__combinedInput">
-                <LabeledInput
-                  id="checkInterval-input"
-                  label="Check Report every"
-                  className="AlertModal__input"
-                  value={checkInterval.value}
-                  onChange={({target: {value}}) =>
-                    this.setState(update(this.state, {checkInterval: {value: {$set: value}}}))
-                  }
-                />
-                <Select
-                  value={checkInterval.unit}
-                  onChange={value =>
-                    this.setState(update(this.state, {checkInterval: {unit: {$set: value}}}))
-                  }
-                >
-                  <Select.Option value="seconds">Seconds</Select.Option>
-                  <Select.Option value="minutes">Minutes</Select.Option>
-                  <Select.Option value="hours">Hours</Select.Option>
-                  <Select.Option value="days">Days</Select.Option>
-                  <Select.Option value="weeks">Weeks</Select.Option>
-                  <Select.Option value="months">Months</Select.Option>
-                </Select>
-              </div>
-            </div>
-            <div className="AlertModal__inputGroup">
-              <Input
-                id="notification-checkbox"
-                type="checkbox"
-                checked={fixNotification}
-                onChange={({target: {checked}}) => this.setState({fixNotification: checked})}
-              />
-              <label htmlFor="notification-checkbox">Send notification when resolved</label>
-            </div>
-            <div className="AlertModal__inputGroup">
-              <Input
-                id="reminder-checkbox"
-                type="checkbox"
-                checked={!!reminder}
-                onChange={this.updateReminder}
-              />
-              <label htmlFor="reminder-checkbox">Send reminder notification</label>
-              {reminder && (
-                <div className="AlertModal__inputGroup">
-                  <div className="AlertModal__combinedInput">
-                    <LabeledInput
-                      id="reminder-input"
-                      label="every"
-                      className="AlertModal__input"
-                      value={reminder.value}
+                </Form.InputGroup>
+              </Form.Group>
+              <Form.Group>
+                <Labeled label="Check Report Every">
+                  <Form.InputGroup>
+                    <Input
+                      id="checkInterval-input"
+                      value={checkInterval.value}
                       onChange={({target: {value}}) =>
-                        this.setState(update(this.state, {reminder: {value: {$set: value}}}))
+                        this.setState(update(this.state, {checkInterval: {value: {$set: value}}}))
                       }
                     />
                     <Select
-                      value={reminder.unit}
+                      value={checkInterval.unit}
                       onChange={value =>
-                        this.setState(update(this.state, {reminder: {unit: {$set: value}}}))
+                        this.setState(update(this.state, {checkInterval: {unit: {$set: value}}}))
                       }
                     >
+                      <Select.Option value="seconds">Seconds</Select.Option>
                       <Select.Option value="minutes">Minutes</Select.Option>
                       <Select.Option value="hours">Hours</Select.Option>
                       <Select.Option value="days">Days</Select.Option>
                       <Select.Option value="weeks">Weeks</Select.Option>
                       <Select.Option value="months">Months</Select.Option>
                     </Select>
-                  </div>
-                </div>
-              )}
-            </div>
+                  </Form.InputGroup>
+                </Labeled>
+              </Form.Group>
+              <Form.Group>
+                <LabeledInput
+                  id="email-input"
+                  label="Send Email to"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={({target: {value}}) => this.setState({email: value})}
+                />
+              </Form.Group>
+              <Form.Group noSpacing>
+                <Input
+                  id="notification-checkbox"
+                  type="checkbox"
+                  checked={fixNotification}
+                  onChange={({target: {checked}}) => this.setState({fixNotification: checked})}
+                />
+                <label htmlFor="notification-checkbox">Send notification when resolved</label>
+              </Form.Group>
+              <Form.Group noSpacing>
+                <fieldset>
+                  <legend>
+                    <Switch checked={!!reminder} onChange={this.updateReminder} />
+                    Send reminder notification
+                  </legend>
+                  <Labeled label="every">
+                    <Form.InputGroup>
+                      <Input
+                        id="reminder-input"
+                        disabled={!reminder}
+                        value={reminder ? reminder.value : defaultReminder.value}
+                        onChange={({target: {value}}) =>
+                          this.setState(update(this.state, {reminder: {value: {$set: value}}}))
+                        }
+                      />
+                      <Select
+                        value={reminder ? reminder.unit : defaultReminder.unit}
+                        disabled={!reminder}
+                        onChange={value =>
+                          this.setState(update(this.state, {reminder: {unit: {$set: value}}}))
+                        }
+                      >
+                        <Select.Option value="minutes">Minutes</Select.Option>
+                        <Select.Option value="hours">Hours</Select.Option>
+                        <Select.Option value="days">Days</Select.Option>
+                        <Select.Option value="weeks">Weeks</Select.Option>
+                        <Select.Option value="months">Months</Select.Option>
+                      </Select>
+                    </Form.InputGroup>
+                  </Labeled>
+                </fieldset>
+              </Form.Group>
+            </Form>
           </Modal.Content>
           <Modal.Actions>
             <Button onClick={this.props.onClose}>Cancel</Button>
             <Button
-              type="primary"
+              variant="primary"
               color="blue"
               onClick={this.confirm}
               disabled={this.state.invalid}

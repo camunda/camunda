@@ -14,6 +14,7 @@ import {
   Input,
   Select,
   ErrorMessage,
+  Form,
   DatePicker,
   Message,
   Labeled
@@ -102,7 +103,7 @@ export default class DateFilter extends React.Component {
         open={true}
         onClose={this.props.close}
         onConfirm={mode === 'dynamic' && validDate ? this.createFilter : undefined}
-        className="DateFilter__modal"
+        className="DateFilter"
       >
         <Modal.Header>{`Add ${formatters.camelCaseToLabel(
           this.props.filterType
@@ -113,7 +114,7 @@ export default class DateFilter extends React.Component {
               Reports with an active End Date Filter will only show completed instances.
             </Message>
           )}
-          <ButtonGroup className="DateFilter__mode-buttons">
+          <ButtonGroup>
             <Button
               onClick={() => this.setMode('static')}
               name="button-static"
@@ -131,45 +132,43 @@ export default class DateFilter extends React.Component {
           </ButtonGroup>
           {mode === 'static' && (
             <React.Fragment>
-              <Labeled label="Select start and end dates to filter by:">
-                <DatePicker onDateChange={this.onDateChange} initialDates={{startDate, endDate}} />
-              </Labeled>
+              <label className="tip">Select start and end dates to filter by:</label>
+              <DatePicker onDateChange={this.onDateChange} initialDates={{startDate, endDate}} />
             </React.Fragment>
           )}
           {mode === 'dynamic' && (
-            <div className="DateFilter__inputs">
-              <Labeled
-                label={`Only include process instances ${
-                  this.props.filterType === 'startDate' ? 'started' : 'ended'
-                } within the last`}
-              >
-                <Input
-                  value={dynamicValue}
-                  onChange={this.setDynamicValue}
-                  className="DateFilter__rolling-input"
-                  isInvalid={!validDate}
-                />
+            <Form horizontal>
+              <Form.Group noSpacing>
+                <p className="tip">
+                  Only include process instances
+                  {this.props.filterType === 'startDate' ? ' started:' : ' ended:'}
+                </p>
+                <Labeled label="In the last">
+                  <Form.InputGroup>
+                    <Input
+                      value={dynamicValue}
+                      onChange={this.setDynamicValue}
+                      isInvalid={!validDate}
+                    />
 
-                <Select value={dynamicUnit} onChange={this.setDynamicUnit}>
-                  <Select.Option value="minutes">Minutes</Select.Option>
-                  <Select.Option value="hours">Hours</Select.Option>
-                  <Select.Option value="days">Days</Select.Option>
-                  <Select.Option value="weeks">Weeks</Select.Option>
-                  <Select.Option value="months">Months</Select.Option>
-                  <Select.Option value="years">Years</Select.Option>
-                </Select>
-                {!validDate && (
-                  <ErrorMessage className="DateFilter__warning">
-                    Please enter a numeric value
-                  </ErrorMessage>
-                )}
-              </Labeled>
-            </div>
+                    <Select value={dynamicUnit} onChange={this.setDynamicUnit}>
+                      <Select.Option value="minutes">Minutes</Select.Option>
+                      <Select.Option value="hours">Hours</Select.Option>
+                      <Select.Option value="days">Days</Select.Option>
+                      <Select.Option value="weeks">Weeks</Select.Option>
+                      <Select.Option value="months">Months</Select.Option>
+                      <Select.Option value="years">Years</Select.Option>
+                    </Select>
+                  </Form.InputGroup>
+                </Labeled>
+                {!validDate && <ErrorMessage>Please enter a numeric value</ErrorMessage>}
+              </Form.Group>
+            </Form>
           )}
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.props.close}>Cancel</Button>
-          <Button type="primary" color="blue" disabled={!validDate} onClick={this.createFilter}>
+          <Button variant="primary" color="blue" disabled={!validDate} onClick={this.createFilter}>
             {this.props.filterData ? 'Edit ' : 'Add '}Filter
           </Button>
         </Modal.Actions>

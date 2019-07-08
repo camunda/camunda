@@ -15,7 +15,7 @@ export default function PieChartConfig({onChange, report}) {
 
   return (
     <fieldset>
-      <legend>Always show tooltips</legend>
+      <legend>Tooltips</legend>
       <RelativeAbsoluteSelection
         hideRelative={isDurationReport(report)}
         absolute={configuration.alwaysShowAbsolute}

@@ -5,10 +5,10 @@ exports[`it should display correct configuration for barchart 1`] = `
   className="BarChartConfig"
 >
   <fieldset
-    className="ColorSection"
+    className="colorSection"
   >
     <legend>
-      Visualization Color
+      Color
     </legend>
     <ColorPicker
       onChange={[Function]}
@@ -17,37 +17,31 @@ exports[`it should display correct configuration for barchart 1`] = `
   </fieldset>
   <fieldset>
     <legend>
-      Always show tooltips
+      Tooltips
     </legend>
     <RelativeAbsoluteSelection
       hideRelative={false}
       onChange={[Function]}
     />
   </fieldset>
-  <fieldset
-    className="axisConfig"
-  >
+  <fieldset>
     <legend>
       Axis Labels
     </legend>
-    <LabeledInput
-      label="X Axis"
+    <ForwardRef(Input)
       onChange={[Function]}
       placeholder="X Axis Label"
       type="text"
       value=""
     />
-    <LabeledInput
-      label="Y Axis"
+    <ForwardRef(Input)
       onChange={[Function]}
       placeholder="Y Axis Label"
       type="text"
       value=""
     />
   </fieldset>
-  <fieldset
-    className="goalLine"
-  >
+  <fieldset>
     <legend>
       <Switch
         checked={false}

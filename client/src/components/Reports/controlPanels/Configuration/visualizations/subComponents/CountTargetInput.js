@@ -6,9 +6,7 @@
 
 import React from 'react';
 
-import {ControlGroup, LabeledInput, ErrorMessage} from 'components';
-
-import './CountTargetInput.scss';
+import {Form, LabeledInput, ErrorMessage} from 'components';
 
 import {numberParser} from 'services';
 const {isNonNegativeNumber} = numberParser;
@@ -20,7 +18,7 @@ export default function CountTargetInput({baseline, target, disabled, onChange})
   const tooLow = !baselineInvalid && !targetInvalid && parseFloat(target) <= parseFloat(baseline);
 
   return (
-    <ControlGroup className="CountTargetInput">
+    <Form.InputGroup className="CountTargetInput">
       <LabeledInput
         label="Baseline"
         type="number"
@@ -40,10 +38,9 @@ export default function CountTargetInput({baseline, target, disabled, onChange})
         disabled={disabled}
         isInvalid={targetInvalid || tooLow}
         onChange={evt => onChange('target', evt.target.value)}
-      >
-        {targetInvalid && <ErrorMessage>Must be a non-negative number</ErrorMessage>}
-        {tooLow && <ErrorMessage>Target must be greater than baseline</ErrorMessage>}
-      </LabeledInput>
-    </ControlGroup>
+      />
+      {targetInvalid && <ErrorMessage>Must be a non-negative number</ErrorMessage>}
+      {tooLow && <ErrorMessage>Target must be greater than baseline</ErrorMessage>}
+    </Form.InputGroup>
   );
 }

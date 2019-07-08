@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {Popover, Icon, Button, ColorPicker} from 'components';
+import {Popover, Form, Icon, Button, ColorPicker} from 'components';
 import * as visualizations from './visualizations';
 import ShowInstanceCount from './ShowInstanceCount';
 import UserTaskDurationTime from './UserTaskDurationTime';
@@ -94,7 +94,7 @@ export default class Configuration extends React.Component {
           title={<Icon type="settings" />}
           disabled={!type || disabledComponent}
         >
-          <div className="content">
+          <Form className="content" compact>
             {!report.combined && (
               <ShowInstanceCount
                 configuration={report.data.configuration}
@@ -110,7 +110,7 @@ export default class Configuration extends React.Component {
             <Button className="resetButton" onClick={this.resetToDefaults}>
               Reset to Defaults
             </Button>
-          </div>
+          </Form>
         </Popover>
       </li>
     );

@@ -96,7 +96,7 @@ export default class NodeSelectionModal extends Component {
         <Modal.Actions>
           <Button onClick={this.props.onClose}>Cancel</Button>
           <Button
-            type="primary"
+            variant="primary"
             color="blue"
             disabled={!this.isNodeSelected()}
             onClick={this.applyConfiguration}

@@ -10,6 +10,7 @@ import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection
 import GradientBarsSwitch from './subComponents/GradientBarsSwitch';
 
 import {isDurationReport} from 'services';
+import {Form} from 'components';
 
 export default function TableConfig({report, onChange}) {
   let typeSpecificComponent = null;
@@ -24,7 +25,7 @@ export default function TableConfig({report, onChange}) {
       break;
     case 'frequency':
       typeSpecificComponent = (
-        <>
+        <Form.Group>
           <RelativeAbsoluteSelection
             absolute={!report.data.configuration.hideAbsoluteValue}
             relative={!report.data.configuration.hideRelativeValue}
@@ -39,7 +40,7 @@ export default function TableConfig({report, onChange}) {
           {groupBy === 'matchedRule' && (
             <GradientBarsSwitch configuration={report.data.configuration} onChange={onChange} />
           )}
-        </>
+        </Form.Group>
       );
       break;
     default:

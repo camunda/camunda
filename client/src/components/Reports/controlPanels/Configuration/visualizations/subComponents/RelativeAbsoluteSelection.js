@@ -10,23 +10,23 @@ import {Switch} from 'components';
 
 export default function RelativeAbsoluteSelection({hideRelative, absolute, relative, onChange}) {
   return (
-    <div className="RelativeAbsoluteSelection">
-      <div className="entry">
+    <>
+      <label>
         <Switch
           checked={absolute}
           onChange={({target: {checked}}) => onChange('absolute', checked)}
         />
         Show Absolute Value
-      </div>
+      </label>
       {!hideRelative && (
-        <div className="entry">
+        <label>
           <Switch
             checked={relative}
             onChange={({target: {checked}}) => onChange('relative', checked)}
           />
           Show Relative Value
-        </div>
+        </label>
       )}
-    </div>
+    </>
   );
 }

@@ -6,16 +6,18 @@
 
 import React from 'react';
 
-import {Switch} from 'components';
+import {Form, Switch} from 'components';
 
 export default function ShowInstanceCount({configuration, onChange, label}) {
   return (
-    <>
-      <Switch
-        checked={!!configuration.showInstanceCount}
-        onChange={({target: {checked}}) => onChange({showInstanceCount: {$set: checked}})}
-      />
-      Show {label} Count
-    </>
+    <Form.Group noSpacing>
+      <label>
+        <Switch
+          checked={!!configuration.showInstanceCount}
+          onChange={({target: {checked}}) => onChange({showInstanceCount: {$set: checked}})}
+        />
+        Show {label} Count
+      </label>
+    </Form.Group>
   );
 }

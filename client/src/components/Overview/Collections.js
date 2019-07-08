@@ -31,7 +31,7 @@ class Collections extends React.Component {
       <div className="collectionBlankSlate">
         <strong>Group Reports and Dashboards into Collections.</strong> <br />
         <Button
-          type="link"
+          variant="link"
           className="createLink"
           onClick={() => this.props.setCollectionToUpdate({})}
         >
@@ -79,12 +79,15 @@ class Collections extends React.Component {
                   (this.state.showAllId !== collection.id ? (
                     <>
                       {collection.data.entities.length} Items.{' '}
-                      <Button type="link" onClick={() => this.setState({showAllId: collection.id})}>
+                      <Button
+                        variant="link"
+                        onClick={() => this.setState({showAllId: collection.id})}
+                      >
                         Show all...
                       </Button>
                     </>
                   ) : (
-                    <Button type="link" onClick={() => this.setState({showAllId: null})}>
+                    <Button variant="link" onClick={() => this.setState({showAllId: null})}>
                       Show less...
                     </Button>
                   ))}

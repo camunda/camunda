@@ -4,4 +4,4 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default as ControlGroup} from './ControlGroup';
+export {default as Form} from './Form';

@@ -58,7 +58,10 @@ export const tableCell = (row, column) =>
     .nth(row)
     .find('.rt-td')
     .nth(column);
-export const tooltipSwitch = Selector('.RelativeAbsoluteSelection .Switch');
+export const tooltipSwitch = Selector('.Configuration legend')
+  .withText('Tooltips')
+  .nextSibling()
+  .find('.Switch');
 export const instanceCountSwitch = Selector('.Configuration .Switch');
 export const filterButton = Selector('.Filter__dropdown .activateButton');
 export const filterOption = text => Selector('.Filter .DropdownOption').withText(text);

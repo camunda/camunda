@@ -113,7 +113,7 @@ it("should truncate report name if it's longer than 90 signs", () => {
 it('should contain an Add External Source field', () => {
   const node = shallow(<ReportModal />);
 
-  expect(node.find('.ReportModal__externalSourceLink')).toIncludeText('Add External Source');
+  expect(node.find('.externalSourceLink')).toIncludeText('Add External Source');
 });
 
 it('should contain a text input field if in external source mode', () => {

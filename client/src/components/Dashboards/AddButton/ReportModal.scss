@@ -1,19 +1,11 @@
-.ReportModal__externalSourceLink {
-  font-size: 0.9em;
-  color: gray;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
 .ReportModal {
-  .externalSourceGroup .label {
-    text-align: center;
-    font-size: inherit;
-    margin-bottom: 5px;
+  .externalSourceLink {
+    font-size: 0.9em;
+    color: gray;
+    text-decoration: underline;
+    cursor: pointer;
   }
-  .externalInput {
-    width: 100%;
-  }
+
   .muted {
     color: gray;
   }

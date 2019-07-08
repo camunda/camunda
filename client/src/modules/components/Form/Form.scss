@@ -1,0 +1,200 @@
+.Form {
+  .InputGroup {
+    display: flex;
+    align-items: flex-end;
+    > *:not(:first-child) {
+      margin-left: 10px;
+    }
+
+    > *:not(.Select) {
+      flex: 1;
+      min-width: 0px;
+    }
+  }
+
+  input[type='checkbox'],
+  input[type='radio'],
+  .Switch {
+    margin-right: 10px;
+
+    + label {
+      display: inline-block;
+    }
+  }
+
+  > fieldset:first-child legend {
+    padding: 0;
+  }
+
+  fieldset {
+    border: none;
+    margin: 0;
+    padding: 0;
+
+    legend {
+      padding: 10px 0;
+      font-weight: bold;
+      font-size: 0.875em;
+    }
+
+    > * {
+      width: 100%;
+      margin-top: 10px;
+    }
+  }
+
+  &:not(.compact) {
+    width: 100%;
+
+    .formTitle {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    .formDescription {
+      margin-top: 10px;
+      font-size: 0.875em;
+    }
+
+    .FormGroup {
+      &:not(.noSpacing) {
+        padding: 17px 0;
+      }
+
+      &:last-child {
+        padding-bottom: 0;
+      }
+
+      .Labeled label .label + * {
+        width: 100%;
+      }
+
+      input[type='checkbox'],
+      input[type='radio'],
+      .Switch {
+        + label {
+          padding: 10px 0px;
+        }
+      }
+    }
+
+    &.horizontal {
+      width: 90%;
+
+      .FormTitle,
+      .formDescription {
+        margin-left: 30%;
+      }
+
+      .InfoMessage,
+      .ErrorMessage {
+        margin-left: 30%;
+        margin-top: 3px;
+      }
+
+      input[type='checkbox'],
+      input[type='radio'],
+      .Switch {
+        margin-left: 30%;
+      }
+
+      legend {
+        margin-left: 30%;
+        .Switch {
+          margin-left: 0;
+        }
+      }
+
+      .FormGroup {
+        .Labeled label {
+          display: flex;
+          align-items: center;
+          text-align: right;
+
+          .label {
+            width: 30%;
+            padding-right: 10px;
+            margin-bottom: 0;
+
+            + * {
+              width: 70%;
+            }
+          }
+        }
+
+        > label:first-child {
+          display: inline-block;
+          text-align: right;
+          padding-right: 10px;
+          width: 30%;
+
+          + .InputGroup {
+            display: inline-flex;
+            width: 70%;
+          }
+        }
+      }
+
+      .Message {
+        width: 110%;
+      }
+    }
+  }
+
+  &.compact {
+    .FormTitle {
+      font-weight: bold;
+    }
+
+    .formDescription {
+      margin-top: 5px;
+      font-size: 0.875em;
+    }
+
+    > fieldset:first-child legend {
+      border: none;
+      padding: 0;
+    }
+
+    fieldset {
+      padding: 0 0 20px 0;
+
+      legend {
+        border-top: 1px solid #d3d3d3;
+        padding: 14px 0 0 0;
+      }
+
+      > label {
+        display: block;
+      }
+    }
+
+    .FormGroup {
+      &:not(.noSpacing) {
+        border-top: 1px solid #d3d3d3;
+        padding: 14px 0 20px 0;
+      }
+
+      &.noSpacing > label:only-child {
+        padding: 5px 0 14px 0;
+      }
+
+      > label {
+        display: block;
+
+        &:not(:first-child) {
+          margin-top: 10px;
+        }
+      }
+    }
+
+    .Labeled {
+      .label {
+        margin-bottom: 5px;
+        + * {
+          width: 100%;
+        }
+      }
+    }
+  }
+}

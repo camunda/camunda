@@ -84,7 +84,7 @@ it('should call the onConfirm method', () => {
 
   node.setProps({entity});
 
-  node.find({type: 'primary'}).simulate('click');
+  node.find({variant: 'primary'}).simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });
@@ -95,7 +95,7 @@ it('should disable the submit button if the name is empty', () => {
   node.setProps({entity});
   node.setState({name: ''});
 
-  expect(node.find({type: 'primary'})).toBeDisabled();
+  expect(node.find({variant: 'primary'})).toBeDisabled();
 });
 
 it('should disable the submit button if the email is not valid', () => {
@@ -103,7 +103,7 @@ it('should disable the submit button if the email is not valid', () => {
 
   node.setProps({entity});
   node.setState({email: 'this is not a valid email'});
-  expect(node.find({type: 'primary'})).toBeDisabled();
+  expect(node.find({variant: 'primary'})).toBeDisabled();
 });
 
 it('should disable the submit button if no report is selected', () => {
@@ -111,7 +111,7 @@ it('should disable the submit button if no report is selected', () => {
 
   node.setProps({entity});
   node.setState({reportId: ''});
-  expect(node.find({type: 'primary'})).toBeDisabled();
+  expect(node.find({variant: 'primary'})).toBeDisabled();
 });
 
 it('should disable the submit button if the threshold is not a number', () => {
@@ -119,7 +119,7 @@ it('should disable the submit button if the threshold is not a number', () => {
 
   node.setProps({entity});
   node.setState({threshold: 'five'});
-  expect(node.find({type: 'primary'})).toBeDisabled();
+  expect(node.find({variant: 'primary'})).toBeDisabled();
 });
 
 it('should disable the submit button if the check interval is negative', () => {
@@ -132,7 +132,7 @@ it('should disable the submit button if the check interval is negative', () => {
       unit: 'seconds'
     }
   });
-  expect(node.find({type: 'primary'})).toBeDisabled();
+  expect(node.find({variant: 'primary'})).toBeDisabled();
 });
 
 it('should show warning that email is not configured', async () => {

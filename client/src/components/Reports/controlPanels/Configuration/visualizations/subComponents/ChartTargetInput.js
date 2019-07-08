@@ -7,7 +7,6 @@
 import React from 'react';
 
 import {ButtonGroup, Button, Input, ErrorMessage, Select} from 'components';
-import './ChartTargetInput.scss';
 import {numberParser} from 'services';
 
 export default function ChartTargetInput({onChange, report}) {
@@ -30,7 +29,7 @@ export default function ChartTargetInput({onChange, report}) {
   const isInvalid = !numberParser.isNonNegativeNumber(targetValue[type].value);
 
   return (
-    <div className="ChartTargetInput">
+    <>
       <ButtonGroup className="buttonGroup" disabled={!targetValue.active}>
         <Button onClick={() => setValues('isBelow', false)} active={!targetValue[type].isBelow}>
           Above
@@ -40,7 +39,6 @@ export default function ChartTargetInput({onChange, report}) {
         </Button>
       </ButtonGroup>
       <Input
-        className="targetInput"
         type="number"
         min="0"
         placeholder="Goal value"
@@ -54,7 +52,6 @@ export default function ChartTargetInput({onChange, report}) {
       )}
       {type === 'durationChart' && (
         <Select
-          className="dataUnitSelect"
           value={targetValue[type].unit}
           onChange={value => setValues('unit', value)}
           disabled={!targetValue.active}
@@ -69,6 +66,6 @@ export default function ChartTargetInput({onChange, report}) {
           <Select.Option value="years">Years</Select.Option>
         </Select>
       )}
-    </div>
+    </>
   );
 }

@@ -71,7 +71,7 @@ it('should show a button to show all entities if the number of entities is great
 it('should show a button to show all entities if the number of entities is greater than 5', () => {
   const node = shallow(<Dashboards {...props} store={{dashboards, searchQuery: ''}} />);
 
-  const button = node.find(Button).filter('[type="link"]');
+  const button = node.find(Button).filter({variant: 'link'});
 
   button.simulate('click');
 

@@ -6,12 +6,10 @@
 
 import React from 'react';
 
-import {Switch, Input} from 'components';
+import {Switch, LabeledInput} from 'components';
 
 import CountTargetInput from './subComponents/CountTargetInput';
 import DurationTargetInput from './subComponents/DurationTargetInput';
-
-import './NumberConfig.scss';
 
 export default function NumberConfig({report, onChange}) {
   const {configuration} = report.data;
@@ -31,8 +29,9 @@ export default function NumberConfig({report, onChange}) {
           />
           Limit Precision
         </legend>
-        <Input
+        <LabeledInput
           className="precision"
+          label={`No. of ${countOperation ? ' digits' : ' units'}`}
           disabled={typeof configuration.precision !== 'number'}
           onChange={() => {}}
           onKeyDown={evt => {
@@ -43,8 +42,6 @@ export default function NumberConfig({report, onChange}) {
           }}
           value={precisionSet ? configuration.precision : 1}
         />
-        most significant
-        {countOperation ? ' digits' : ' units'}
       </fieldset>
       <fieldset>
         <legend>

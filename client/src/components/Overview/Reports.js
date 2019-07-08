@@ -76,12 +76,12 @@ class Reports extends React.Component {
                 (this.state.limit ? (
                   <>
                     {reports.length} Reports.{' '}
-                    <Button type="link" onClick={() => this.setState({limit: false})}>
+                    <Button variant="link" onClick={() => this.setState({limit: false})}>
                       Show all...
                     </Button>
                   </>
                 ) : (
-                  <Button type="link" onClick={() => this.setState({limit: true})}>
+                  <Button variant="link" onClick={() => this.setState({limit: true})}>
                     Show less...
                   </Button>
                 ))}

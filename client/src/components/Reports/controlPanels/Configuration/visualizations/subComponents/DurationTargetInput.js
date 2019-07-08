@@ -6,9 +6,7 @@
 
 import React from 'react';
 
-import {ControlGroup, LabeledInput, ErrorMessage, Select} from 'components';
-
-import './DurationTargetInput.scss';
+import {Form, LabeledInput, ErrorMessage, Select} from 'components';
 
 import {formatters, numberParser} from 'services';
 
@@ -25,16 +23,17 @@ export default function DurationTargetInput({baseline, target, disabled, onChang
     convertDurationToSingleNumber(target) <= convertDurationToSingleNumber(baseline);
 
   return (
-    <ControlGroup className="DurationTargetInput">
-      <LabeledInput
-        label="Baseline"
-        type="number"
-        min="0"
-        value={baseline.value}
-        disabled={disabled}
-        isInvalid={baselineInvalid}
-        onChange={evt => onChange('baseline', 'value', evt.target.value)}
-      >
+    <>
+      <Form.InputGroup className="DurationTargetInput">
+        <LabeledInput
+          label="Baseline"
+          type="number"
+          min="0"
+          value={baseline.value}
+          disabled={disabled}
+          isInvalid={baselineInvalid}
+          onChange={evt => onChange('baseline', 'value', evt.target.value)}
+        />
         <Select
           value={baseline.unit}
           disabled={disabled}
@@ -42,17 +41,18 @@ export default function DurationTargetInput({baseline, target, disabled, onChang
         >
           {selectionOptions()}
         </Select>
-        {baselineInvalid && <ErrorMessage>Must be a non-negative number</ErrorMessage>}
-      </LabeledInput>
-      <LabeledInput
-        label="Target"
-        type="number"
-        min="0"
-        value={target.value}
-        disabled={disabled}
-        isInvalid={targetInvalid || tooLow}
-        onChange={evt => onChange('target', 'value', evt.target.value)}
-      >
+      </Form.InputGroup>
+      {baselineInvalid && <ErrorMessage>Must be a non-negative number</ErrorMessage>}
+      <Form.InputGroup>
+        <LabeledInput
+          label="Target"
+          type="number"
+          min="0"
+          value={target.value}
+          disabled={disabled}
+          isInvalid={targetInvalid || tooLow}
+          onChange={evt => onChange('target', 'value', evt.target.value)}
+        />
         <Select
           value={target.unit}
           disabled={disabled}
@@ -60,10 +60,10 @@ export default function DurationTargetInput({baseline, target, disabled, onChang
         >
           {selectionOptions()}
         </Select>
-        {targetInvalid && <ErrorMessage>Must be a non-negative number</ErrorMessage>}
-        {tooLow && <ErrorMessage>Target must be greater than baseline</ErrorMessage>}
-      </LabeledInput>
-    </ControlGroup>
+      </Form.InputGroup>
+      {targetInvalid && <ErrorMessage>Must be a non-negative number</ErrorMessage>}
+      {tooLow && <ErrorMessage>Target must be greater than baseline</ErrorMessage>}
+    </>
   );
 }
 

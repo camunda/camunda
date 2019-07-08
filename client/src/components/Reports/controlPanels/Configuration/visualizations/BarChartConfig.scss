@@ -1,5 +1,9 @@
 .BarChartConfig {
-  .axisConfig .Input {
-    width: 100%;
+  .colorSection {
+    padding-bottom: 10px;
+    .ColorPicker {
+      width: 200px;
+      margin-top: 5px;
+    }
   }
 }

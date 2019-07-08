@@ -8,7 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import EditCollectionModal from './EditCollectionModal';
-import {Input} from 'components';
+import {LabeledInput} from 'components';
 
 const collection = {
   id: 'aCollectionId',
@@ -25,7 +25,7 @@ it('should provide name edit input', async () => {
   const node = await shallow(<EditCollectionModal {...props} />);
   node.setState({name: 'test name'});
 
-  expect(node.find(Input)).toExist();
+  expect(node.find(LabeledInput)).toExist();
 });
 
 it('have a cancel and save collection button', async () => {
@@ -55,7 +55,7 @@ it('should update name on input change', async () => {
   node.setState({name: 'test name'});
 
   const input = 'asdf';
-  node.find(Input).simulate('change', {target: {value: input}});
+  node.find(LabeledInput).simulate('change', {target: {value: input}});
   expect(node.state().name).toBe(input);
 });
 

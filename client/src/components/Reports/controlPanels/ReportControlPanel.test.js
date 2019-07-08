@@ -117,7 +117,7 @@ it('should include variables in the groupby options', () => {
 it('should not show an "Always show tooltips" button for other visualizations', () => {
   const node = shallow(<ReportControlPanel report={report} visualization="something" />);
 
-  expect(node).not.toIncludeText('Always show tooltips');
+  expect(node).not.toIncludeText('Tooltips');
 });
 
 it('should load the flownode names and hand them to the filter and process part', async () => {

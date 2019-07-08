@@ -44,7 +44,7 @@ export default function ConfirmationModal(props) {
         </Button>
         <Button
           disabled={loading}
-          type="primary"
+          variant="primary"
           color="red"
           className="confirm"
           onClick={modalProps.onConfirm}

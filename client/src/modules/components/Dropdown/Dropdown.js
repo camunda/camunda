@@ -181,7 +181,7 @@ export default class Dropdown extends React.Component {
       >
         <Button
           color={this.props.color}
-          type={this.props.color ? 'primary' : null}
+          variant={this.props.color ? 'primary' : null}
           className="activateButton"
           aria-haspopup="true"
           aria-expanded={open ? 'true' : 'false'}

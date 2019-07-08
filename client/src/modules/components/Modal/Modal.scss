@@ -1,6 +1,6 @@
 @import 'shared-styles/shared-styles.scss';
 
-$modal-padding-h: 20px;
+$modal-padding-h: 40px;
 
 .Modal {
   position: fixed;
@@ -100,7 +100,7 @@ $modal-padding-h: 20px;
 }
 
 .Modal__content {
-  padding: 18px $modal-padding-h 18px;
+  padding: 20px $modal-padding-h 40px;
   flex-grow: 1;
   position: relative;
 }

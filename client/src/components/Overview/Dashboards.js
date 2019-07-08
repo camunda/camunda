@@ -76,12 +76,12 @@ class Dashboards extends React.Component {
                 (this.state.limit ? (
                   <>
                     {dashboards.length} Dashboards.{' '}
-                    <Button type="link" onClick={() => this.setState({limit: false})}>
+                    <Button variant="link" onClick={() => this.setState({limit: false})}>
                       Show all...
                     </Button>
                   </>
                 ) : (
-                  <Button type="link" onClick={() => this.setState({limit: true})}>
+                  <Button variant="link" onClick={() => this.setState({limit: true})}>
                     Show less...
                   </Button>
                 ))}

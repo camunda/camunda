@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {Popover, ButtonGroup, Button, Switch} from 'components';
+import {Popover, ButtonGroup, Button, Switch, Form} from 'components';
 
 import './TenantPopover.scss';
 
@@ -30,32 +30,34 @@ export default function TenantPopover({tenants, selected, onChange}) {
 
   return (
     <Popover className="TenantPopover" disabled={tenants.length < 2} title={label}>
-      <ButtonGroup>
-        <Button active={allSelected} onClick={() => onChange(tenants.map(({id}) => id))}>
-          Enable All
-        </Button>
-        <Button active={noneSelected} onClick={() => onChange([])}>
-          Disable All
-        </Button>
-      </ButtonGroup>
-      <fieldset>
-        <legend>Include data from</legend>
-        {tenants.map(tenant => (
-          <div key={tenant.id}>
-            <Switch
-              checked={selected.includes(tenant.id)}
-              onChange={({target}) => {
-                if (target.checked) {
-                  onChange(selected.concat([tenant.id]));
-                } else {
-                  onChange(selected.filter(id => id !== tenant.id));
-                }
-              }}
-            />
-            {tenant.name}
-          </div>
-        ))}
-      </fieldset>
+      <Form compact>
+        <fieldset>
+          <legend>Include data from</legend>
+          <ButtonGroup>
+            <Button active={allSelected} onClick={() => onChange(tenants.map(({id}) => id))}>
+              Enable All
+            </Button>
+            <Button active={noneSelected} onClick={() => onChange([])}>
+              Disable All
+            </Button>
+          </ButtonGroup>
+          {tenants.map(tenant => (
+            <div key={tenant.id}>
+              <Switch
+                checked={selected.includes(tenant.id)}
+                onChange={({target}) => {
+                  if (target.checked) {
+                    onChange(selected.concat([tenant.id]));
+                  } else {
+                    onChange(selected.filter(id => id !== tenant.id));
+                  }
+                }}
+              />
+              {tenant.name}
+            </div>
+          ))}
+        </fieldset>
+      </Form>
     </Popover>
   );
 }

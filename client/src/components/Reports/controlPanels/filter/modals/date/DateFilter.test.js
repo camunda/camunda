@@ -7,39 +7,15 @@
 import React from 'react';
 
 import DateFilter from './DateFilter';
-import {mount} from 'enzyme';
+import {Modal, Button} from 'components';
+import {shallow} from 'enzyme';
 
 console.error = jest.fn();
 
-jest.mock('components', () => {
-  const Modal = props => <div id="modal">{props.children}</div>;
-  Modal.Header = props => <div id="modal_header">{props.children}</div>;
-  Modal.Content = props => <div id="modal_content">{props.children}</div>;
-  Modal.Actions = props => <div id="modal_actions">{props.children}</div>;
-
-  const Select = props => <select {...props}>{props.children}</select>;
-  Select.Option = props => <option {...props}>{props.children}</option>;
-
-  return {
-    Modal,
-    ErrorMessage: props => <div {...props}>{props.children}</div>,
-    Message: props => <div {...props}>{props.children}</div>,
-    Button: props => <button {...props}>{props.children}</button>,
-    ButtonGroup: props => <div {...props}>{props.children}</div>,
-    Input: props => <input {...props} />,
-    DatePicker: props => <div>DatePicker</div>,
-    Labeled: props => (
-      <div>
-        <label id={props.id}>{props.label}</label>
-        {props.children}
-      </div>
-    ),
-    Select
-  };
-});
-
 jest.mock('services', () => {
+  const rest = jest.requireActual('services');
   return {
+    ...rest,
     formatters: {
       camelCaseToLabel: text => text
     }
@@ -47,28 +23,31 @@ jest.mock('services', () => {
 });
 
 it('should contain a modal', () => {
-  const node = mount(<DateFilter />);
+  const node = shallow(<DateFilter />);
 
-  expect(node.find('#modal')).toExist();
+  expect(node.find('Modal')).toExist();
 });
 
 it('should contain a Date Picker', () => {
-  const node = mount(<DateFilter />);
+  const node = shallow(<DateFilter />);
 
-  expect(node).toIncludeText('DatePicker');
+  expect(node.find('DatePicker')).toExist();
 });
 
 it('should pass the onDateChangeFunction to the DatePicker', () => {
-  const node = mount(<DateFilter />);
+  const node = shallow(<DateFilter />);
 
   expect(node.find('DatePicker')).toHaveProp('onDateChange');
 });
 
 it('should contain a button to abort the filter creation', () => {
   const spy = jest.fn();
-  const node = mount(<DateFilter close={spy} />);
+  const node = shallow(<DateFilter close={spy} addFilter={jest.fn()} />);
 
-  const abortButton = node.find('#modal_actions button').at(0);
+  const abortButton = node
+    .find(Modal.Actions)
+    .find(Button)
+    .at(0);
 
   abortButton.simulate('click');
 
@@ -77,11 +56,14 @@ it('should contain a button to abort the filter creation', () => {
 
 it('should have a create filter button', () => {
   const spy = jest.fn();
-  const node = mount(<DateFilter addFilter={spy} />);
+  const node = shallow(<DateFilter addFilter={spy} />);
   node.setState({
     validDate: true
   });
-  const addButton = node.find('#modal_actions button').at(1);
+  const addButton = node
+    .find(Modal.Actions)
+    .find(Button)
+    .at(1);
 
   addButton.simulate('click');
 
@@ -89,14 +71,13 @@ it('should have a create filter button', () => {
 });
 
 it('should allow switching between static date and dynamic date mode', () => {
-  const node = mount(<DateFilter />);
+  const node = shallow(<DateFilter />);
 
-  expect(node.find('div.DateFilter__mode-buttons')).toIncludeText('Fixed');
-  expect(node.find('div.DateFilter__mode-buttons')).toIncludeText('Relative');
+  expect(node.find('ButtonGroup')).toMatchSnapshot();
 });
 
 it('should disable the add filter button when dynamic value is not valid', () => {
-  const node = mount(<DateFilter />);
+  const node = shallow(<DateFilter />);
 
   node.instance().setDynamicValue({target: {value: 'asd'}});
 
@@ -104,25 +85,38 @@ it('should disable the add filter button when dynamic value is not valid', () =>
 });
 
 it('shoud show a warning message if the modal is for end date filter', () => {
-  const endDateModal = mount(<DateFilter filterType="endDate" />);
+  const endDateModal = shallow(<DateFilter filterType="endDate" />);
 
   expect(endDateModal.find('Message')).toExist();
 });
 
 it('shoud make difference between start and end date filter modals', () => {
-  const endDateModal = mount(<DateFilter filterType="endDate" />);
+  const endDateModal = shallow(<DateFilter filterType="endDate" />);
 
-  expect(endDateModal).toIncludeText('Add endDate Filter');
+  expect(endDateModal.find(Modal.Header).dive()).toIncludeText('Add endDate Filter');
+
   endDateModal.instance().setState({
     mode: 'dynamic'
   });
-  expect(endDateModal).toIncludeText('Only include process instances ended within the last');
 
-  const startDateModal = mount(<DateFilter filterType="startDate" />);
+  expect(
+    endDateModal
+      .find(Modal.Header)
+      .dive()
+      .text()
+  ).toBe('Add endDate Filter');
 
-  expect(startDateModal).toIncludeText('Add startDate Filter');
+  const startDateModal = shallow(<DateFilter filterType="startDate" />);
+
+  expect(
+    startDateModal
+      .find(Modal.Header)
+      .dive()
+      .text()
+  ).toBe('Add startDate Filter');
+
   startDateModal.instance().setState({
     mode: 'dynamic'
   });
-  expect(startDateModal).toIncludeText('Only include process instances started within the last');
+  expect(startDateModal.find('.tip')).toIncludeText('Only include process instances started:');
 });

@@ -85,7 +85,12 @@ export default class DurationFilter extends React.Component {
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.props.close}>Cancel</Button>
-          <Button type="primary" color="blue" disabled={!isValidInput} onClick={this.createFilter}>
+          <Button
+            variant="primary"
+            color="blue"
+            disabled={!isValidInput}
+            onClick={this.createFilter}
+          >
             {this.props.filterData ? 'Edit ' : 'Add '}Filter
           </Button>
         </Modal.Actions>

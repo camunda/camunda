@@ -1,25 +1,9 @@
-.DateFilter__inputs {
-  margin-bottom: 36px;
-  text-align: center;
-
-  .Select {
-    width: 110px;
-  }
-}
-.DateFilter__modal {
-  .Labeled .label {
-    font-size: 0.875em;
+.DateFilter {
+  .tip {
+    font-size: 14px;
     color: #626264;
     display: block;
-    text-align: center;
-    margin-bottom: 12px;
+    margin: 30px 0 10px 0;
+    padding-left: 30%;
   }
-}
-
-.DateFilter__mode-buttons {
-  margin-bottom: 24px;
-}
-
-.DateFilter__rolling-input {
-  text-align: right;
 }

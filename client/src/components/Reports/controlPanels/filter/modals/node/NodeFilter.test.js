@@ -72,7 +72,7 @@ it('should create a new filter', () => {
     selectedNodes: [flowNode1, flowNode2]
   });
 
-  node.find({type: 'primary'}).simulate('click');
+  node.find({variant: 'primary'}).simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
     type: 'executedFlowNodes',
@@ -89,7 +89,7 @@ it('should disable create filter button if no node was selected', () => {
     selectedNodes: []
   });
 
-  expect(node.find({type: 'primary'}).prop('disabled')).toBeTruthy(); // create filter
+  expect(node.find({variant: 'primary'}).prop('disabled')).toBeTruthy(); // create filter
 });
 
 it('should create preview of selected node', () => {
