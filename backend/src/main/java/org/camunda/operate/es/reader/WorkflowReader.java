@@ -49,7 +49,6 @@ public class WorkflowReader extends AbstractReader {
    * @param workflowId
    * @return
    */
-  //TODO: Refactor ES-Schema
   public String getDiagram(Long workflowId) {
     final IdsQueryBuilder q = idsQuery().addIds(workflowId.toString());
 

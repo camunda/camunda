@@ -140,13 +140,13 @@ public class OperationReader extends AbstractReader {
 
   }
 
-  public Map<String, List<OperationEntity>> getOperationsPerVariableName(Long workflowInstanceId, String scopeId) {
+  public Map<String, List<OperationEntity>> getOperationsPerVariableName(Long workflowInstanceId, Long scopeKey) {
     Map<String, List<OperationEntity>> result = new HashMap<>();
 
     final TermQueryBuilder workflowInstanceIdQ = termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
-    final TermQueryBuilder scopeIdQ = termQuery(OperationTemplate.SCOPE_KEY, scopeId);
+    final TermQueryBuilder scopeKeyQuery = termQuery(OperationTemplate.SCOPE_KEY, scopeKey);
     final TermQueryBuilder operationTypeQ = termQuery(OperationTemplate.TYPE, OperationType.UPDATE_VARIABLE.name());
-    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceIdQ, scopeIdQ, operationTypeQ));
+    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceIdQ, scopeKeyQuery, operationTypeQ));
 
     final SearchRequest searchRequest = new SearchRequest(operationTemplate.getAlias())
       .source(new SearchSourceBuilder()

@@ -25,7 +25,7 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION);
 
   public Long getWorkflowInstanceId() {
-    return Long.valueOf(getKey());
+    return getKey();
   }
 
   public void setWorkflowInstanceId(Long workflowInstanceId) {

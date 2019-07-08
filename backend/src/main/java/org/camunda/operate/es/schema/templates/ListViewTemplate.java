@@ -61,8 +61,6 @@ public class ListViewTemplate extends AbstractTemplateCreator {
       .startObject(WORKFLOW_INSTANCE_ID)
         .field("type", "long")
       .endObject()
-    //TODO: Refactor ES-Schema
-      //workflow instance fields
       .startObject(WORKFLOW_ID)
         .field("type", "long")
       .endObject()

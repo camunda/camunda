@@ -100,7 +100,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether variable of given args[0] workflowInstanceId  (Long) and args[1] scopeId (Long) and args[2] varName (String) exists
+   * Checks whether variable of given args[0] workflowInstanceId  (Long) and args[1] scopeKey(Long) and args[2] varName (String) exists
    * @return
    */
   @Bean(name = "variableExistsCheck")
@@ -111,10 +111,10 @@ public class ElasticsearchChecks {
       assertThat(objects[1]).isInstanceOf(Long.class);
       assertThat(objects[2]).isInstanceOf(String.class);
       Long workflowInstanceId = (Long)objects[0];
-      String scopeId = IdTestUtil.getId((Long)objects[1]);
+      Long scopeKey = (Long)objects[1];
       String varName = (String)objects[2];
       try {
-        List<VariableDto> variables = variableReader.getVariables(workflowInstanceId, scopeId);
+        List<VariableDto> variables = variableReader.getVariables(workflowInstanceId, scopeKey);
         return variables.stream().anyMatch(v -> v.getName().equals(varName));
       } catch (NotFoundException ex) {
         return false;
@@ -123,7 +123,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether variable of given args[0] workflowInstanceId  (Long) and args[1] scopeId (Long) and args[2] varName (String) with args[3] (String) value exists
+   * Checks whether variable of given args[0] workflowInstanceId  (Long) and args[1] scopeKey (Long) and args[2] varName (String) with args[3] (String) value exists
    * @return
    */
   @Bean(name = "variableEqualsCheck")
@@ -135,11 +135,11 @@ public class ElasticsearchChecks {
       assertThat(objects[2]).isInstanceOf(String.class);
       assertThat(objects[3]).isInstanceOf(String.class);
       Long workflowInstanceId = (Long)objects[0];
-      String scopeId = IdTestUtil.getId((Long)objects[1]);
+      Long scopeKey = (Long)objects[1];
       String varName = (String)objects[2];
       String varValue = (String)objects[3];
       try {
-        List<VariableDto> variables = variableReader.getVariables(workflowInstanceId, scopeId);
+        List<VariableDto> variables = variableReader.getVariables(workflowInstanceId, scopeKey);
         return variables.stream().anyMatch( v -> v.getName().equals(varName) && v.getValue().equals(varValue));
       } catch (NotFoundException ex) {
         return false;

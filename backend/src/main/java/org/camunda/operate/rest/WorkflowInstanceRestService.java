@@ -137,7 +137,7 @@ public class WorkflowInstanceRestService {
   @ApiOperation("Get variables by workflow instance id and scope id")
   @GetMapping("/{workflowInstanceId}/variables")
   public List<VariableDto> getVariables(@PathVariable String workflowInstanceId, @RequestParam String scopeId) {
-    return variableReader.getVariables(Long.valueOf(workflowInstanceId), scopeId);
+    return variableReader.getVariables(Long.valueOf(workflowInstanceId), Long.valueOf(scopeId));
   }
 
   @ApiOperation("Get activity instance statistics")

@@ -12,6 +12,7 @@ import org.camunda.operate.es.reader.ActivityInstanceReader;
 import org.camunda.operate.rest.dto.VariableDto;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
+import org.camunda.operate.util.StringUtils;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.junit.Before;
 import org.junit.Rule;
@@ -64,8 +65,8 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     return String.format(WORKFLOW_INSTANCE_URL + "/%s/variables", workflowInstanceId);
   }
 
-  protected String getVariablesURL(Long workflowInstanceId, String scopeId) {
-    return String.format(WORKFLOW_INSTANCE_URL + "/%s/variables?scopeId=%s", workflowInstanceId, scopeId);
+  protected String getVariablesURL(Long workflowInstanceId, Long scopeKey) {
+    return String.format(WORKFLOW_INSTANCE_URL + "/%s/variables?scopeId=%s", workflowInstanceId, scopeKey);
   }
 
   @Test
@@ -138,7 +139,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     assertVariable(variables, "otherVar","123");
 
     //TC4 - when variables are updated
-    ZeebeTestUtil.updateVariables(zeebeClient, workflowInstanceId.toString(), "{\"var1\": \"updatedValue\" , \"newVar\": 555 }");
+    ZeebeTestUtil.updateVariables(zeebeClient, workflowInstanceId, "{\"var1\": \"updatedValue\" , \"newVar\": 555 }");
     //elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
     elasticsearchTestRule.processAllRecordsAndWait(variableEqualsCheck, workflowInstanceKey,workflowInstanceKey,"var1","\"updatedValue\"");
     elasticsearchTestRule.processAllRecordsAndWait(variableEqualsCheck, workflowInstanceKey,workflowInstanceKey,"newVar","555");
@@ -181,7 +182,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
 
   protected List<VariableDto> getVariables(Long workflowInstanceId) throws Exception {
     MvcResult mvcResult = mockMvc
-      .perform(get(getVariablesURL(workflowInstanceId, workflowInstanceId.toString())))
+      .perform(get(getVariablesURL(workflowInstanceId, workflowInstanceId)))
       .andExpect(status().isOk())
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
@@ -190,7 +191,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
 
   protected List<VariableDto> getVariables(Long workflowInstanceId, String activityId) throws Exception {
     final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceId);
-    final String task1Id = findActivityInstanceId(allActivityInstances, activityId);
+    final Long task1Id = findActivityInstanceId(allActivityInstances, activityId);
     MvcResult mvcResult = mockMvc
       .perform(get(getVariablesURL(workflowInstanceId, task1Id)))
       .andExpect(status().isOk())
@@ -199,9 +200,9 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     return mockMvcTestRule.listFromResponse(mvcResult, VariableDto.class);
   }
 
-  protected String findActivityInstanceId(List<ActivityInstanceEntity> allActivityInstances, String activityId) {
+  protected Long findActivityInstanceId(List<ActivityInstanceEntity> allActivityInstances, String activityId) {
     assertThat(allActivityInstances).filteredOn(ai -> ai.getActivityId().equals(activityId)).hasSize(1);
-    return allActivityInstances.stream().filter(ai -> ai.getActivityId().equals(activityId)).findFirst().get().getId();
+    return Long.valueOf(allActivityInstances.stream().filter(ai -> ai.getActivityId().equals(activityId)).findFirst().get().getId());
   }
 
 }

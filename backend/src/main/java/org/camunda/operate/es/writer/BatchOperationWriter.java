@@ -160,13 +160,13 @@ public class BatchOperationWriter {
 
   public void completeUpdateVariableOperation(Long workflowInstanceId, Long scopeKey, String variableName) throws PersistenceException {
     try {
-      TermQueryBuilder scopeIdQ = termQuery(OperationTemplate.SCOPE_KEY, scopeKey);
+      TermQueryBuilder scopeKeyQuery = termQuery(OperationTemplate.SCOPE_KEY, scopeKey);
       TermQueryBuilder variableNameIdQ = termQuery(OperationTemplate.VARIABLE_NAME, variableName);
 
       QueryBuilder query =
         joinWithAnd(
           termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId),
-          scopeIdQ,
+          scopeKeyQuery,
           variableNameIdQ,
           termsQuery(OperationTemplate.STATE, OperationState.SENT.name(), OperationState.LOCKED.name()),
           termQuery(OperationTemplate.TYPE, OperationType.UPDATE_VARIABLE.name())

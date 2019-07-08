@@ -35,9 +35,6 @@ public class EventEntity extends OperateZeebeEntity {
   private EventMetadataEntity metadata;
 
   public Long getWorkflowId() {
-    if(workflowId==null) {
-      return Long.valueOf(getId()); // FIXME - Refactor ES
-    }
     return workflowId;
   }
 

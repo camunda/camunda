@@ -210,13 +210,13 @@ public abstract class ZeebeTestUtil {
     }
   }
 
-  public static void resolveIncident(ZeebeClient client, Long jobKey, long incidentKey) {
+  public static void resolveIncident(ZeebeClient client, Long jobKey, Long incidentKey) {
     client.newUpdateRetriesCommand(jobKey).retries(3).send().join();
     client.newResolveIncidentCommand(incidentKey).send().join();
   }
 
-  public static void updateVariables(ZeebeClient client, String scopeId, String newPayload) {
-    client.newSetVariablesCommand(Long.valueOf(scopeId)).variables(newPayload).local(true).send().join();
+  public static void updateVariables(ZeebeClient client, Long scopeKey, String newPayload) {
+    client.newSetVariablesCommand(scopeKey).variables(newPayload).local(true).send().join();
   }
 
 }

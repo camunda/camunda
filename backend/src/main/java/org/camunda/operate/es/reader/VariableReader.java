@@ -37,11 +37,11 @@ public class VariableReader extends AbstractReader {
   @Autowired
   private OperationReader operationReader;
 
-  public List<VariableDto> getVariables(Long workflowInstanceId, String scopeId) {
+  public List<VariableDto> getVariables(Long workflowInstanceId, Long scopeKey) {
     final TermQueryBuilder workflowInstanceIdQ = termQuery(VariableTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
-    final TermQueryBuilder scopeIdQ = termQuery(VariableTemplate.SCOPE_KEY, scopeId);
+    final TermQueryBuilder scopeKeyQuery = termQuery(VariableTemplate.SCOPE_KEY, scopeKey);
 
-    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceIdQ, scopeIdQ));
+    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceIdQ, scopeKeyQuery));
 
     final SearchRequest searchRequest = new SearchRequest(variableTemplate.getAlias())
       .source(new SearchSourceBuilder()
@@ -49,7 +49,7 @@ public class VariableReader extends AbstractReader {
         .sort(VariableTemplate.NAME, SortOrder.ASC));
     try {
       final List<VariableEntity> variableEntities = scroll(searchRequest, VariableEntity.class);
-      final Map<String, List<OperationEntity>> operations = operationReader.getOperationsPerVariableName(workflowInstanceId, scopeId);
+      final Map<String, List<OperationEntity>> operations = operationReader.getOperationsPerVariableName(workflowInstanceId, scopeKey);
       return VariableDto.createFrom(variableEntities, operations);
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining variables: %s", e.getMessage());
