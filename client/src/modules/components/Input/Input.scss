@@ -23,3 +23,51 @@ textarea {
     border: 1px solid $cam-red;
   }
 }
+
+input[type='radio'],
+input[type='checkbox'] {
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
+  padding: 0;
+  appearance: none;
+  background-color: #fff;
+  border: 1px solid #d3d3d3;
+}
+
+input[type='checkbox'] {
+  border-radius: 3px;
+
+  &:checked {
+    background: url('./check-small.svg');
+    background-position: 0.5px;
+  }
+
+  &:indeterminate {
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0) calc(50% - 2px),
+      rgba(0, 0, 0, 1) calc(50%),
+      rgba(0, 0, 0, 0) calc(50% + 2px)
+    );
+    background-size: 6px 2px;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+}
+
+input[type='radio'] {
+  border-radius: 50%;
+
+  &:checked {
+    background: radial-gradient(#000 0, #000 40%, #fff 60%);
+
+    &:focus {
+      box-shadow: inset 0px 0px 0px 3px #fff, #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+    }
+
+    &:not(:focus) {
+      box-shadow: inset 0px 0px 0px 3px #fff;
+    }
+  }
+}
