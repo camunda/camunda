@@ -84,17 +84,25 @@ async function waitForData() {
 
 async function startTest() {
   const testCafe = await createTestCafe('localhost');
+  let hasFailures = false;
   try {
     for (let i = 0; i < browsers.length; i++) {
-      await testCafe
-        .createRunner()
-        .src('e2e/tests/*.js')
-        .browsers(browsers[i])
-        .run({skipJsErrors: true, assertionTimeout: 10000, pageLoadTimeout: 10000});
+      if (
+        await testCafe
+          .createRunner()
+          .src('e2e/tests/*.js')
+          .browsers(browsers[i])
+          .run({skipJsErrors: true, assertionTimeout: 10000, pageLoadTimeout: 10000})
+      ) {
+        hasFailures = true;
+      }
     }
   } finally {
-    testCafe.close();
-    kill(backendProcess.pid);
-    kill(frontendProcess.pid);
+    await testCafe.close();
+    kill(frontendProcess.pid, () => {
+      kill(backendProcess.pid, () => {
+        process.exit(hasFailures ? 3 : 0);
+      });
+    });
   }
 }
