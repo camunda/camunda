@@ -114,6 +114,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.deployment) {
         createValueIndexTemplate(ValueType.DEPLOYMENT);
       }
+      if (index.error) {
+        createValueIndexTemplate(ValueType.ERROR);
+      }
       if (index.incident) {
         createValueIndexTemplate(ValueType.INCIDENT);
       }

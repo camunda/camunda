@@ -1,0 +1,32 @@
+{
+  "index_patterns": [
+    "zeebe-record-error_*"
+  ],
+  "order": 20,
+  "aliases": {
+    "zeebe-record-error": {}
+  },
+  "mappings": {
+    "_doc": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "exceptionMessage": {
+              "type": "text"
+            },
+            "stacktrace": {
+              "type": "text"
+            },
+            "errorEventPosition": {
+              "type": "long"
+            },
+            "workflowInstanceKey": {
+              "type": "long"
+            }
+          }
+        }
+      }
+    }
+  }
+}
