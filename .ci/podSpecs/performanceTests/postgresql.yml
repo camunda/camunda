@@ -66,7 +66,7 @@ spec:
           mountPath: /db_dump/
           subPath: gcloud
       - name: postgresql
-        image: postgres:11.1
+        image: postgres:11.2
         args: ["-c", "log_statement=none", "-c", "wal_buffers=32MB", "-c", "checkpoint_timeout=600", "-c", "max_wal_size=30GB"]
         env:
         - name: POD_IP
