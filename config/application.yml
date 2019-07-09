@@ -1,6 +1,5 @@
 springfox.documentation.swagger.v2.path: /documentation
 camunda.operate:
-  csrfPreventionEnabled: true
   elasticsearch:
     clusterName: docker-cluster
     host: localhost
@@ -21,7 +20,6 @@ management.endpoints.web.exposure.include: health,info,conditions,configprops,pr
 spring:
   profiles: dev
 camunda.operate:
-  csrfPreventionEnabled: true
   elasticsearch:
     clusterName: docker-cluster
     host: elasticsearch

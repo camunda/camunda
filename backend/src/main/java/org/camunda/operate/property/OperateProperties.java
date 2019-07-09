@@ -27,7 +27,7 @@ public class OperateProperties {
   /**
    * Indicates, whether CSRF prevention is enabled.
    */
-  private boolean csrfPreventionEnabled = false;
+  private boolean csrfPreventionEnabled = true;
 
   /**
    * Maximum size of batch operation.
