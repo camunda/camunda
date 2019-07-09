@@ -7,7 +7,7 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import {extractDefinitionName, getFlowNodeNames} from 'services';
+import {getFlowNodeNames} from 'services';
 
 import AnalysisControlPanel from './AnalysisControlPanel';
 
@@ -41,7 +41,6 @@ jest.mock('components', () => {
 
 jest.mock('services', () => {
   return {
-    extractDefinitionName: jest.fn(),
     getFlowNodeNames: jest.fn().mockReturnValue({
       a: 'foo',
       b: 'bar'
@@ -67,7 +66,6 @@ const emptyData = {
   xml: null
 };
 
-extractDefinitionName.mockReturnValue('foo');
 const spy = jest.fn();
 
 it('should contain a gateway and end Event field', () => {

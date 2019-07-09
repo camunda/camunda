@@ -25,7 +25,7 @@ jest.mock('services', () => {
         versions: [
           {tenants: [{id: null, name: 'Not defined'}], version: 'ALL'},
           {tenants: [{id: null, name: 'Not defined'}], version: '2'},
-          {tenants: [{id: null, name: 'Not defined'}], version: '1'}
+          {tenants: [{id: 'sales', name: 'sales'}], version: '1'}
         ]
       },
       {
@@ -36,8 +36,7 @@ jest.mock('services', () => {
           {tenants: [{id: null, name: 'Not defined'}], version: '1'}
         ]
       }
-    ]),
-    extractDefinitionName: () => 'Definition'
+    ])
   };
 });
 
@@ -105,7 +104,7 @@ it('should set key and version, if process definition is already available', asy
     versions: [
       {tenants: [{id: null, name: 'Not defined'}], version: 'ALL'},
       {tenants: [{id: null, name: 'Not defined'}], version: '2'},
-      {tenants: [{id: null, name: 'Not defined'}], version: '1'}
+      {tenants: [{id: 'sales', name: 'sales'}], version: '1'}
     ]
   });
   expect(node.find('.version')).toHaveProp('value', '2');
@@ -202,7 +201,7 @@ it('should construct a popover title', async () => {
     tenants: [null]
   });
 
-  expect(node.find('Popover')).toHaveProp('title', 'Definition : 1');
+  expect(node.find('Popover')).toHaveProp('title', 'Foo : 1');
 });
 
 it('should construct a popover title even without xml', async () => {
@@ -212,7 +211,7 @@ it('should construct a popover title even without xml', async () => {
     definitionKey: 'foo',
     definitionVersion: '1',
     xml: null,
-    tenants: [null]
+    tenants: []
   });
 
   expect(node.find('Popover')).toHaveProp('title', 'Foo : 1 : -');
@@ -264,24 +263,24 @@ describe('tenants', () => {
       tenants: []
     });
 
-    expect(node.find('Popover')).toHaveProp('title', 'Definition : 1 : -');
+    expect(node.find('Popover')).toHaveProp('title', 'Foo : 1 : -');
 
     await node.setProps({
       tenants: ['a']
     });
 
-    expect(node.find('Popover')).toHaveProp('title', 'Definition : 1 : Tenant A');
+    expect(node.find('Popover')).toHaveProp('title', 'Foo : 1 : Tenant A');
 
     await node.setProps({
       tenants: ['a', 'b']
     });
 
-    expect(node.find('Popover')).toHaveProp('title', 'Definition : 1 : Multiple');
+    expect(node.find('Popover')).toHaveProp('title', 'Foo : 1 : Multiple');
     await node.setProps({
       tenants: ['a', 'b', null]
     });
 
-    expect(node.find('Popover')).toHaveProp('title', 'Definition : 1 : All');
+    expect(node.find('Popover')).toHaveProp('title', 'Foo : 1 : All');
   });
 
   it('should show a tenant selection component', async () => {

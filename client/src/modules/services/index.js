@@ -20,7 +20,6 @@ export {default as reportConfig} from './reportConfig';
 export {getDiagramElementsBetween} from './diagramServices';
 export {flatten} from './tableServices';
 export {default as getTooltipText} from './getTooltipText';
-export {extractDefinitionName} from './definitionService';
 export {toggleEntityCollection, getEntitiesCollections} from './collectionService';
 export {loadEntity, loadEntities, createEntity, updateEntity, deleteEntity} from './entityService';
 

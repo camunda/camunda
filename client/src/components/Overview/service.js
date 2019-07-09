@@ -4,8 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {extractDefinitionName} from 'services';
-
 import entityIcons from './entityIcons';
 
 export function filterEntitiesBySearch(entities, searchQuery) {
@@ -21,12 +19,15 @@ export function getReportInfo(report) {
       const reportsCount = report.data.reports.length;
       return `${reportsCount} report${reportsCount !== 1 ? 's' : ''}`;
     }
-    // if normal report
-    if (report.data.configuration.xml) {
-      return extractDefinitionName(
-        report.data.processDefinitionKey || report.data.decisionDefinitionKey,
-        report.data.configuration.xml
-      );
+
+    // if process
+    if (report.data.processDefinitionName) {
+      return report.data.processDefinitionName;
+    }
+
+    // if decision
+    if (report.data.decisionDefinitionName) {
+      return report.data.decisionDefinitionName;
     }
   }
   return '';

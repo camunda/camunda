@@ -17,7 +17,7 @@ import {
   Labeled
 } from 'components';
 
-import {loadDefinitions, extractDefinitionName, capitalize} from 'services';
+import {loadDefinitions, capitalize} from 'services';
 
 import TenantPopover from './TenantPopover';
 
@@ -101,21 +101,21 @@ export default class DefinitionSelection extends React.Component {
   };
 
   createTitle = () => {
-    const {definitionKey, definitionVersion, xml, type} = this.props;
+    const {definitionKey, definitionVersion, type} = this.props;
 
-    if (xml) {
+    if (definitionKey && definitionVersion) {
       const availableTenants = this.getAvailableTenants();
       const selectedTenants = this.getSelectedTenants();
 
-      const definition = extractDefinitionName(definitionKey, xml);
+      const definition = this.findSelectedKeyGroup(definitionKey).name;
       const version = definitionVersion.toLowerCase();
       let tenant = 'Multiple';
-      if (availableTenants.length === 1) {
+      if (selectedTenants.length === 0) {
+        tenant = '-';
+      } else if (availableTenants.length === 1) {
         tenant = null;
       } else if (selectedTenants.length === availableTenants.length) {
         tenant = 'All';
-      } else if (selectedTenants.length === 0) {
-        tenant = '-';
       } else if (selectedTenants.length === 1) {
         tenant = availableTenants.find(({id}) => id === selectedTenants[0]).name;
       }
@@ -125,10 +125,6 @@ export default class DefinitionSelection extends React.Component {
       } else {
         return `${definition} : ${version}`;
       }
-    } else if (definitionKey && definitionVersion) {
-      return `${
-        this.findSelectedKeyGroup(definitionKey).name
-      } : ${definitionVersion.toLowerCase()} : -`;
     } else {
       return `Select ${capitalize(type)}`;
     }

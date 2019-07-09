@@ -9,7 +9,7 @@ import update from 'immutability-helper';
 import React from 'react';
 import {ActionItem, DefinitionSelection} from 'components';
 
-import {extractDefinitionName, getFlowNodeNames} from 'services';
+import {getFlowNodeNames} from 'services';
 
 import {Filter} from '../Reports';
 
@@ -20,25 +20,13 @@ export default class AnalysisControlPanel extends React.Component {
     super(props);
 
     this.state = {
-      processDefinitionName: this.props.processDefinitionKey,
       flowNodeNames: null
     };
   }
 
   componentDidMount() {
-    this.loadProcessDefinitionName();
     this.loadFlowNodeNames();
   }
-
-  loadProcessDefinitionName = () => {
-    const {xml, processDefinitionKey} = this.props;
-    if (xml) {
-      const processDefinitionName = extractDefinitionName(processDefinitionKey, xml);
-      this.setState({
-        processDefinitionName
-      });
-    }
-  };
 
   loadFlowNodeNames = async () => {
     this.setState({
@@ -50,11 +38,7 @@ export default class AnalysisControlPanel extends React.Component {
     });
   };
 
-  componentDidUpdate({xml, processDefinitionKey, processDefinitionVersion}) {
-    if (this.props.xml !== xml) {
-      this.loadProcessDefinitionName();
-    }
-
+  componentDidUpdate({processDefinitionKey, processDefinitionVersion}) {
     if (
       this.props.processDefinitionKey !== processDefinitionKey ||
       this.props.processDefinitionVersion !== processDefinitionVersion
