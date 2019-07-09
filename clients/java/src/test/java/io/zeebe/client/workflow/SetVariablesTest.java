@@ -15,15 +15,15 @@
  */
 package io.zeebe.client.workflow;
 
-import static io.zeebe.test.util.JsonUtil.fromJsonAsMap;
+import static io.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.util.ClientTest;
+import io.zeebe.client.util.StringUtil;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
-import io.zeebe.util.StringUtil;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.Duration;

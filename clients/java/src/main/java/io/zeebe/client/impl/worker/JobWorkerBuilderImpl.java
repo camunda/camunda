@@ -30,7 +30,7 @@ import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest.Builder;
-import io.zeebe.util.CloseableSilently;
+import java.io.Closeable;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -43,7 +43,7 @@ public class JobWorkerBuilderImpl
   private final JobClient jobClient;
   private final ZeebeObjectMapper objectMapper;
   private final ScheduledExecutorService executorService;
-  private final List<CloseableSilently> closeables;
+  private final List<Closeable> closeables;
 
   private String jobType;
   private JobHandler handler;
@@ -60,7 +60,7 @@ public class JobWorkerBuilderImpl
       JobClient jobClient,
       ZeebeObjectMapper objectMapper,
       ScheduledExecutorService executorService,
-      List<CloseableSilently> closeables) {
+      List<Closeable> closeables) {
     this.gatewayStub = gatewayStub;
     this.jobClient = jobClient;
     this.objectMapper = objectMapper;

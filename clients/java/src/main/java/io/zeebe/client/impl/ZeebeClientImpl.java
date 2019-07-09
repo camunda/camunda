@@ -47,7 +47,8 @@ import io.zeebe.client.impl.worker.JobClientImpl;
 import io.zeebe.client.impl.worker.JobWorkerBuilderImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
-import io.zeebe.util.CloseableSilently;
+import java.io.Closeable;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -62,7 +63,7 @@ public class ZeebeClientImpl implements ZeebeClient {
   private final GatewayStub asyncStub;
   private final ManagedChannel channel;
   private final ScheduledExecutorService executorService;
-  private final List<CloseableSilently> closeables = new CopyOnWriteArrayList<>();
+  private final List<Closeable> closeables = new CopyOnWriteArrayList<>();
   private final JobClient jobClient;
 
   public ZeebeClientImpl(final ZeebeClientConfiguration configuration) {
@@ -130,7 +131,14 @@ public class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public void close() {
-    closeables.forEach(CloseableSilently::close);
+    closeables.forEach(
+        c -> {
+          try {
+            c.close();
+          } catch (IOException e) {
+            // ignore
+          }
+        });
 
     executorService.shutdown();
 
@@ -204,7 +212,7 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   private JobClient newJobClient() {
-    return new JobClientImpl(asyncStub, config, objectMapper, executorService, closeables);
+    return new JobClientImpl(asyncStub, config, objectMapper);
   }
 
   @Override
