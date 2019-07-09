@@ -22,9 +22,7 @@ Using Camunda Operate, or anything that integrates with Zeebe's streaming export
 
 ## Deploy to Kubernetes.
 
-Run your workloads on any cloud provider.
-
-![](cloud-providers.png)
+Run your workloads on any cloud provider or on-premises.
 
 ## Scalable. Fault-tolerant. Distributed.
 
