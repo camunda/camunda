@@ -47,7 +47,7 @@ public class ActivityInstanceTemplate extends AbstractTemplateCreator implements
       .startObject(POSITION)
         .field("type", "long")
       .endObject()
-      .startObject(WORKFLOW_INSTANCE_ID)
+      .startObject(WORKFLOW_INSTANCE_KEY)
         .field("type", "long")
       .endObject()
       .startObject(KEY)

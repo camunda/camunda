@@ -257,10 +257,10 @@ public class ElasticsearchTestRule extends TestWatcher {
           new IndexRequest(alias, ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
             .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
         if (entity instanceof ActivityInstanceForListViewEntity) {
-          indexRequest.routing(((ActivityInstanceForListViewEntity)entity).getWorkflowInstanceId().toString());
+          indexRequest.routing(((ActivityInstanceForListViewEntity)entity).getWorkflowInstanceKey().toString());
         }
         if (entity instanceof VariableForListViewEntity) {
-          indexRequest.routing(((VariableForListViewEntity)entity).getWorkflowInstanceId().toString());
+          indexRequest.routing(((VariableForListViewEntity)entity).getWorkflowInstanceKey().toString());
         }
         bulkRequest.add(indexRequest);
       }

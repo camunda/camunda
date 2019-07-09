@@ -33,7 +33,7 @@ public class VariableTemplate extends AbstractTemplateCreator implements Workflo
       .startObject(PARTITION_ID)
         .field("type", "integer")
       .endObject()
-      .startObject(WORKFLOW_INSTANCE_ID)
+      .startObject(WORKFLOW_INSTANCE_KEY)
         .field("type", "long")
       .endObject()
       .startObject(KEY)

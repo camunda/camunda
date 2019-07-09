@@ -70,7 +70,7 @@ public class ActivityInstanceReader extends AbstractReader {
   }
 
   public List<ActivityInstanceEntity> getAllActivityInstances(Long workflowInstanceId) {
-    final TermQueryBuilder workflowInstanceIdQ = termQuery(ActivityInstanceTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
+    final TermQueryBuilder workflowInstanceIdQ = termQuery(ActivityInstanceTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceId);
     final SearchRequest searchRequest = new SearchRequest(activityInstanceTemplate.getAlias())
       .source(new SearchSourceBuilder()
         .query(constantScoreQuery(workflowInstanceIdQ))

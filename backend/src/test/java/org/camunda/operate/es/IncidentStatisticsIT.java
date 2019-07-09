@@ -58,8 +58,8 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     List<OperateEntity> entities = new ArrayList<>();
     
     //Create a workflowInstance that has no matching workflow 
-    Long workflowId = 0L;
-    WorkflowInstanceForListViewEntity workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
+    Long workflowKey = 0L;
+    WorkflowInstanceForListViewEntity workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowKey);
     entities.add(workflowInstance);
     entities.addAll(createIncidents(workflowInstance, 1, 0));
     elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
@@ -216,37 +216,37 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     List<OperateEntity> entities = new ArrayList<>();
     
     //Demo process v1
-    Long workflowId = workflowVersions.get(0).getKey();
+    Long workflowKey = workflowVersions.get(0).getKey();
     //instance #1
-    WorkflowInstanceForListViewEntity workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
+    WorkflowInstanceForListViewEntity workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowKey);
     entities.add(workflowInstance);
     entities.addAll(createIncidents(workflowInstance, 1, 1));
     //instance #2
-    workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
+    workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowKey);
     entities.add(workflowInstance);
     entities.addAll(createIncidents(workflowInstance, 1, 1, true));
     //instance #3
-    workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
+    workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowKey);
     entities.add(workflowInstance);
     entities.addAll(createIncidents(workflowInstance, 1, 0));
     //entities #4,5,6
     for (int i = 4; i<=6; i++) {
-      entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
+      entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowKey));
     }
 
     //Demo process v2
-    workflowId = workflowVersions.get(1).getKey();
+    workflowKey = workflowVersions.get(1).getKey();
     //instance #1
-    workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
+    workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowKey);
     entities.add(workflowInstance);
     entities.addAll(createIncidents(workflowInstance, 2, 0, true));
     //entities #2-7
     for (int i = 2; i<=7; i++) {
-      entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
+      entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowKey));
     }
     //entities #8-9
     for (int i = 8; i<=9; i++) {
-      entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.COMPLETED, workflowId));
+      entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.COMPLETED, workflowKey));
     }
     
     elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
@@ -258,25 +258,25 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
 
     List<OperateEntity> entities = new ArrayList<>();
     //Order process v1
-    Long workflowId = workflowVersions.get(0).getKey(); 
+    Long workflowKey = workflowVersions.get(0).getKey(); 
     //entities #1-5
     for (int i = 1; i<=5; i++) {
-      entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
+      entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowKey));
     }
 
     //Order process v2
-    workflowId = workflowVersions.get(1).getKey();
+    workflowKey = workflowVersions.get(1).getKey();
     //instance #1
-    WorkflowInstanceForListViewEntity workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
+    WorkflowInstanceForListViewEntity workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowKey);
     entities.add(workflowInstance);
     entities.addAll(createIncidents(workflowInstance, 0, 1));
     //instance #2
-    workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
+    workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowKey);
     entities.add(workflowInstance);
     entities.addAll(createIncidents(workflowInstance, 2, 0));
     //entities #3,4
     for (int i = 3; i<=4; i++) {
-      entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
+      entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowKey));
     }
     
     elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
@@ -288,16 +288,16 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(workflowVersions.get(0));
     
     List<OperateEntity> entities = new ArrayList<>();
-    Long workflowId = workflowVersions.get(0).getKey();
+    Long workflowKey = workflowVersions.get(0).getKey();
     //entities #1-3
     for (int i = 1; i<=3; i++) {
-      WorkflowInstanceForListViewEntity workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
+      WorkflowInstanceForListViewEntity workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowKey);
       entities.add(workflowInstance);
       entities.addAll(createIncidents(workflowInstance, 0, 2));
     }
     //entities #4-5
     for (int i = 4; i<=5; i++) {
-      entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
+      entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowKey));
     }
 
     elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
@@ -337,16 +337,16 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     boolean withOtherMsg) {
     List<OperateEntity> entities = new ArrayList<>();
     for (int i = 0; i < activeIncidentsCount; i++) {
-      final ActivityInstanceForListViewEntity activityInstance = createActivityInstance(workflowInstance.getWorkflowInstanceId(), ActivityState.ACTIVE);
+      final ActivityInstanceForListViewEntity activityInstance = createActivityInstance(workflowInstance.getWorkflowInstanceKey(), ActivityState.ACTIVE);
       createIncident(activityInstance, withOtherMsg ? ERRMSG_OTHER : null, null);
       entities.add(activityInstance);
       IncidentEntity incidentEntity = TestUtil.createIncident(IncidentState.ACTIVE,activityInstance.getActivityId(), Long.valueOf(activityInstance.getId()),activityInstance.getErrorMessage());
       incidentEntity.setWorkflowKey(workflowInstance.getWorkflowKey());
-      incidentEntity.setWorkflowInstanceId(workflowInstance.getWorkflowInstanceId());
+      incidentEntity.setWorkflowInstanceKey(workflowInstance.getWorkflowInstanceKey());
       entities.add(incidentEntity);
     }
     for (int i = 0; i < resolvedIncidentsCount; i++) {
-      final ActivityInstanceForListViewEntity activityInstance = createActivityInstance(workflowInstance.getWorkflowInstanceId(), ActivityState.ACTIVE);
+      final ActivityInstanceForListViewEntity activityInstance = createActivityInstance(workflowInstance.getWorkflowInstanceKey(), ActivityState.ACTIVE);
       entities.add(activityInstance);
     }
     return entities;

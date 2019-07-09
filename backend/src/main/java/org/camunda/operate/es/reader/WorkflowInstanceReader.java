@@ -101,7 +101,7 @@ public class WorkflowInstanceReader extends AbstractReader {
 
         return ListViewWorkflowInstanceDto.createFrom(workflowInstance,
           activityInstanceWithIncidentExists(workflowInstanceId),
-          operationReader.getOperations(workflowInstance.getWorkflowInstanceId()));
+          operationReader.getOperations(workflowInstance.getWorkflowInstanceKey()));
 
       } else if (response.getHits().totalHits > 1) {
         throw new NotFoundException(String.format("Could not find unique workflow instance with id '%s'.", workflowInstanceId));
@@ -152,7 +152,7 @@ public class WorkflowInstanceReader extends AbstractReader {
 
   private boolean activityInstanceWithIncidentExists(Long workflowInstanceId) throws IOException {
 
-    final TermQueryBuilder workflowInstanceIdQ = termQuery(ListViewTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
+    final TermQueryBuilder workflowInstanceIdQ = termQuery(ListViewTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceId);
     final ExistsQueryBuilder existsIncidentQ = existsQuery(ListViewTemplate.INCIDENT_KEY);
 
     final SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias())

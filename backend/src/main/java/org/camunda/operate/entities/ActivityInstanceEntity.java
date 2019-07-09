@@ -15,7 +15,7 @@ public class ActivityInstanceEntity extends OperateZeebeEntity {
   private ActivityState state;
   private ActivityType type;
   private Long incidentKey;
-  private Long workflowInstanceId;
+  private Long workflowInstanceKey;
   private Long scopeKey;
   private Long position;
 
@@ -75,12 +75,12 @@ public class ActivityInstanceEntity extends OperateZeebeEntity {
     this.scopeKey = scopeKey;
   }
 
-  public Long getWorkflowInstanceId() {
-    return workflowInstanceId;
+  public Long getWorkflowInstanceKey() {
+    return workflowInstanceKey;
   }
 
-  public void setWorkflowInstanceId(Long workflowInstanceId) {
-    this.workflowInstanceId = workflowInstanceId;
+  public void setWorkflowInstanceKey(Long workflowInstanceKey) {
+    this.workflowInstanceKey = workflowInstanceKey;
   }
 
   public Long getPosition() {
@@ -114,7 +114,7 @@ public class ActivityInstanceEntity extends OperateZeebeEntity {
       return false;
     if (incidentKey != null ? !incidentKey.equals(that.incidentKey) : that.incidentKey != null)
       return false;
-    if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
+    if (workflowInstanceKey != null ? !workflowInstanceKey.equals(that.workflowInstanceKey) : that.workflowInstanceKey != null)
       return false;
     if (scopeKey != null ? !scopeKey.equals(that.scopeKey) : that.scopeKey != null)
       return false;
@@ -130,7 +130,7 @@ public class ActivityInstanceEntity extends OperateZeebeEntity {
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (type != null ? type.hashCode() : 0);
     result = 31 * result + (incidentKey != null ? incidentKey.hashCode() : 0);
-    result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
+    result = 31 * result + (workflowInstanceKey != null ? workflowInstanceKey.hashCode() : 0);
     result = 31 * result + (scopeKey != null ? scopeKey.hashCode() : 0);
     result = 31 * result + (position != null ? position.hashCode() : 0);
     return result;

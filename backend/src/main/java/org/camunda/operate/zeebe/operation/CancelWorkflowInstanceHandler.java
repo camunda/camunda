@@ -34,11 +34,11 @@ public class CancelWorkflowInstanceHandler extends AbstractOperationHandler impl
 
   @Override
   public void handleWithException(OperationEntity operation) throws PersistenceException {
-    if (operation.getWorkflowInstanceId() == null) {
+    if (operation.getWorkflowInstanceKey() == null) {
       failOperation(operation, "No workflow instance id is provided.");
       return;
     }
-    final WorkflowInstanceForListViewEntity workflowInstance = workflowInstanceReader.getWorkflowInstanceById(operation.getWorkflowInstanceId());
+    final WorkflowInstanceForListViewEntity workflowInstance = workflowInstanceReader.getWorkflowInstanceById(operation.getWorkflowInstanceKey());
 
     if (!workflowInstance.getState().equals(WorkflowInstanceState.ACTIVE) && !workflowInstance.getState().equals(WorkflowInstanceState.INCIDENT)) {
       //fail operation

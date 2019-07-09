@@ -74,7 +74,7 @@ public class IncidentZeebeRecordProcessor {
         incident.setJobKey(recordValue.getJobKey());
       }
       if (recordValue.getWorkflowInstanceKey() > 0) {
-        incident.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
+        incident.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
       }
       if (recordValue.getWorkflowKey() > 0) {
         incident.setWorkflowKey(recordValue.getWorkflowKey());

@@ -58,11 +58,11 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
   @Test
   public void testWorkflowCreated() {
     //when
-    final Long workflowId = deployWorkflow("demoProcess_v_1.bpmn");
+    final Long workflowKey = deployWorkflow("demoProcess_v_1.bpmn");
 
     //then
-    final WorkflowEntity workflowEntity = workflowReader.getWorkflow(workflowId);
-    assertThat(workflowEntity.getKey()).isEqualTo(workflowId);
+    final WorkflowEntity workflowEntity = workflowReader.getWorkflow(workflowKey);
+    assertThat(workflowEntity.getKey()).isEqualTo(workflowKey);
     assertThat(workflowEntity.getBpmnProcessId()).isEqualTo("demoProcess");
     assertThat(workflowEntity.getVersion()).isEqualTo(1);
     assertThat(workflowEntity.getBpmnXml()).isNotEmpty();
@@ -87,9 +87,9 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
   @Test
   public void testWorkflowGetDiagram() throws Exception {
     //given
-    final Long workflowId = deployWorkflow("demoProcess_v_1.bpmn");
+    final Long workflowKey = deployWorkflow("demoProcess_v_1.bpmn");
 
-    MockHttpServletRequestBuilder request = get(String.format(QUERY_WORKFLOW_XML_URL, workflowId));
+    MockHttpServletRequestBuilder request = get(String.format(QUERY_WORKFLOW_XML_URL, workflowKey));
 
     MvcResult mvcResult = mockMvc.perform(request)
       .andExpect(status().isOk())

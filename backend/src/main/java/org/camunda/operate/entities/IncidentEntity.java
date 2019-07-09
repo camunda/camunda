@@ -34,7 +34,7 @@ public class IncidentEntity extends OperateZeebeEntity {
 
   private Long jobKey;
 
-  private Long workflowInstanceId;
+  private Long workflowInstanceKey;
 
   private OffsetDateTime creationTime;
 
@@ -92,12 +92,12 @@ public class IncidentEntity extends OperateZeebeEntity {
     this.jobKey = jobKey;
   }
 
-  public Long getWorkflowInstanceId() {
-    return workflowInstanceId;
+  public Long getWorkflowInstanceKey() {
+    return workflowInstanceKey;
   }
 
-  public void setWorkflowInstanceId(Long workflowInstanceId) {
-    this.workflowInstanceId = workflowInstanceId;
+  public void setWorkflowInstanceKey(Long workflowInstanceKey) {
+    this.workflowInstanceKey = workflowInstanceKey;
   }
 
   public OffsetDateTime getCreationTime() {
@@ -131,7 +131,7 @@ public class IncidentEntity extends OperateZeebeEntity {
       return false;
     if (jobKey != null ? !jobKey.equals(that.jobKey) : that.jobKey != null)
       return false;
-    if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
+    if (workflowInstanceKey != null ? !workflowInstanceKey.equals(that.workflowInstanceKey) : that.workflowInstanceKey != null)
       return false;
     if (workflowKey != null ? !workflowKey.equals(that.workflowKey) : that.workflowKey != null)
       return false;
@@ -155,7 +155,7 @@ public class IncidentEntity extends OperateZeebeEntity {
     result = 31 * result + (flowNodeId != null ? flowNodeId.hashCode() : 0);
     result = 31 * result + (flowNodeInstanceKey != null ? flowNodeInstanceKey.hashCode() : 0);
     result = 31 * result + (jobKey != null ? jobKey.hashCode() : 0);
-    result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
+    result = 31 * result + (workflowInstanceKey != null ? workflowInstanceKey.hashCode() : 0);
     result = 31 * result + (creationTime != null ? creationTime.hashCode() : 0);
     result = 31 * result + (workflowKey != null ? workflowKey.hashCode() : 0);
     return result;

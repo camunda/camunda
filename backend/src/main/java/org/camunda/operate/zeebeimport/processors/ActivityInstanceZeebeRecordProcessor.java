@@ -94,7 +94,7 @@ public class ActivityInstanceZeebeRecordProcessor {
     entity.setId(ConversionUtils.toStringOrNull(record.getKey()));
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
-    entity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
+    entity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
     entity.setScopeKey(recordValue.getFlowScopeKey());
 
     if (AI_FINISH_STATES.contains(intentStr)) {
@@ -124,7 +124,7 @@ public class ActivityInstanceZeebeRecordProcessor {
     entity.setKey(recordValue.getElementInstanceKey());
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
-    entity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
+    entity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
       entity.setIncidentKey(record.getKey());
     } else if (intentStr.equals(IncidentIntent.CREATED.name())) {

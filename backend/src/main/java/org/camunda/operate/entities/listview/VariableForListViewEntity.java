@@ -13,23 +13,23 @@ import io.zeebe.protocol.record.value.VariableRecordValue;
 
 public class VariableForListViewEntity extends OperateZeebeEntity {
 
-  private Long workflowInstanceId;
+  private Long workflowInstanceKey;
   private Long scopeKey;
   private String varName;
   private String varValue;
 
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.VARIABLES_JOIN_RELATION);
 
-  public Long getWorkflowInstanceId() {
-    return workflowInstanceId;
+  public Long getWorkflowInstanceKey() {
+    return workflowInstanceKey;
   }
   
   public static String getIdBy(VariableRecordValue recordValue) {
     return String.format("%s-%s", recordValue.getScopeKey(), recordValue.getName());
   }
 
-  public void setWorkflowInstanceId(Long workflowInstanceId) {
-    this.workflowInstanceId = workflowInstanceId;
+  public void setWorkflowInstanceKey(Long workflowInstanceKey) {
+    this.workflowInstanceKey = workflowInstanceKey;
   }
 
   public Long getScopeKey() {
@@ -75,7 +75,7 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
 
     VariableForListViewEntity that = (VariableForListViewEntity) o;
 
-    if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
+    if (workflowInstanceKey != null ? !workflowInstanceKey.equals(that.workflowInstanceKey) : that.workflowInstanceKey != null)
       return false;
     if (scopeKey != null ? !scopeKey.equals(that.scopeKey) : that.scopeKey != null)
       return false;
@@ -89,7 +89,7 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
+    result = 31 * result + (workflowInstanceKey != null ? workflowInstanceKey.hashCode() : 0);
     result = 31 * result + (scopeKey != null ? scopeKey.hashCode() : 0);
     result = 31 * result + (varName != null ? varName.hashCode() : 0);
     result = 31 * result + (varValue != null ? varValue.hashCode() : 0);

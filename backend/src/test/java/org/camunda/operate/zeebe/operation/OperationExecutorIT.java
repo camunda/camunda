@@ -123,9 +123,9 @@ public class OperationExecutorIT extends OperateIntegrationTest {
     workflowInstance.setStartDate(DateUtil.getRandomStartDate());
     workflowInstance.setState(WorkflowInstanceState.ACTIVE);
     entities.add(workflowInstance);
-    entities.add(createOperation(workflowInstance.getWorkflowInstanceId(), OperationState.SCHEDULED));
-    entities.add(createOperation(workflowInstance.getWorkflowInstanceId(), OperationState.LOCKED, true));
-    entities.add(createOperation(workflowInstance.getWorkflowInstanceId(), OperationState.LOCKED, false));
+    entities.add(createOperation(workflowInstance.getWorkflowInstanceKey(), OperationState.SCHEDULED));
+    entities.add(createOperation(workflowInstance.getWorkflowInstanceKey(), OperationState.LOCKED, true));
+    entities.add(createOperation(workflowInstance.getWorkflowInstanceKey(), OperationState.LOCKED, false));
     return entities;
   }
 
@@ -140,7 +140,7 @@ public class OperationExecutorIT extends OperateIntegrationTest {
 
   private OperationEntity createOperation(Long workflowInstanceId, OperationState state) {
     OperationEntity operation = new OperationEntity();
-    operation.setWorkflowInstanceId(workflowInstanceId);
+    operation.setWorkflowInstanceKey(workflowInstanceId);
     operation.generateId();
     operation.setState(state);
     operation.setStartDate(OffsetDateTime.now());

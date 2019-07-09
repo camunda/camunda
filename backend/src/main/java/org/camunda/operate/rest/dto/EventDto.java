@@ -130,7 +130,7 @@ public class EventDto {
     eventDto.setEventSourceType(eventEntity.getEventSourceType());
     eventDto.setEventType(eventEntity.getEventType());
     eventDto.setWorkflowId(ConversionUtils.toStringOrNull(eventEntity.getWorkflowKey()));
-    eventDto.setWorkflowInstanceId(ConversionUtils.toStringOrNull(eventEntity.getWorkflowInstanceId()));
+    eventDto.setWorkflowInstanceId(ConversionUtils.toStringOrNull(eventEntity.getWorkflowInstanceKey()));
 
     EventMetadataEntity eventMetadataEntity = eventEntity.getMetadata();
     if (eventMetadataEntity != null) {

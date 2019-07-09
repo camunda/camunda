@@ -88,12 +88,12 @@ public class OperationReader extends AbstractReader {
   public Map<Long, List<OperationEntity>> getOperationsPerWorkflowInstanceId(List<Long> workflowInstanceIds) {
     Map<Long, List<OperationEntity>> result = new HashMap<>();
 
-    final ConstantScoreQueryBuilder query = constantScoreQuery(termsQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceIds));
+    final ConstantScoreQueryBuilder query = constantScoreQuery(termsQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceIds));
 
     final SearchRequest searchRequest = new SearchRequest(operationTemplate.getAlias())
       .source(new SearchSourceBuilder()
         .query(query)
-        .sort(OperationTemplate.WORKFLOW_INSTANCE_ID, SortOrder.ASC)
+        .sort(OperationTemplate.WORKFLOW_INSTANCE_KEY, SortOrder.ASC)
         .sort(OperationTemplate.START_DATE, SortOrder.DESC)
         .sort(OperationTemplate.ID, SortOrder.ASC));
 
@@ -101,7 +101,7 @@ public class OperationReader extends AbstractReader {
       ElasticsearchUtil.scroll(searchRequest, OperationEntity.class, objectMapper, esClient, hits -> {
         final List<OperationEntity> operationEntities = ElasticsearchUtil.mapSearchHits(hits.getHits(), objectMapper, OperationEntity.class);
         for (OperationEntity operationEntity: operationEntities) {
-          CollectionUtil.addToMap(result, operationEntity.getWorkflowInstanceId(), operationEntity);
+          CollectionUtil.addToMap(result, operationEntity.getWorkflowInstanceKey(), operationEntity);
         }
       }, null);
 
@@ -116,7 +116,7 @@ public class OperationReader extends AbstractReader {
   public Map<Long, List<OperationEntity>> getOperationsPerIncidentKey(Long workflowInstanceId) {
     Map<Long, List<OperationEntity>> result = new HashMap<>();
 
-    final ConstantScoreQueryBuilder query = constantScoreQuery(termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId));
+    final ConstantScoreQueryBuilder query = constantScoreQuery(termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceId));
 
     final SearchRequest searchRequest = new SearchRequest(operationTemplate.getAlias())
       .source(new SearchSourceBuilder()
@@ -143,7 +143,7 @@ public class OperationReader extends AbstractReader {
   public Map<String, List<OperationEntity>> getOperationsPerVariableName(Long workflowInstanceId, Long scopeKey) {
     Map<String, List<OperationEntity>> result = new HashMap<>();
 
-    final TermQueryBuilder workflowInstanceIdQ = termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
+    final TermQueryBuilder workflowInstanceIdQ = termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceId);
     final TermQueryBuilder scopeKeyQuery = termQuery(OperationTemplate.SCOPE_KEY, scopeKey);
     final TermQueryBuilder operationTypeQ = termQuery(OperationTemplate.TYPE, OperationType.UPDATE_VARIABLE.name());
     final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceIdQ, scopeKeyQuery, operationTypeQ));
@@ -175,7 +175,7 @@ public class OperationReader extends AbstractReader {
     if (workflowInstanceId == null) {
       query = constantScoreQuery(matchAllQuery());
     } else {
-      query = constantScoreQuery(termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId));
+      query = constantScoreQuery(termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceId));
     }
     final SearchRequest searchRequest = new SearchRequest(operationTemplate.getAlias())
       .source(new SearchSourceBuilder()

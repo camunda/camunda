@@ -48,7 +48,7 @@ public class SequenceFlowDto {
     }
     SequenceFlowDto sequenceFlowDto = new SequenceFlowDto();
     sequenceFlowDto.setId(sequenceFlowEntity.getId());
-    sequenceFlowDto.setWorkflowInstanceId(ConversionUtils.toStringOrNull(sequenceFlowEntity.getWorkflowInstanceId()));
+    sequenceFlowDto.setWorkflowInstanceId(ConversionUtils.toStringOrNull(sequenceFlowEntity.getWorkflowInstanceKey()));
     sequenceFlowDto.setActivityId(sequenceFlowEntity.getActivityId());
     return sequenceFlowDto;
   }

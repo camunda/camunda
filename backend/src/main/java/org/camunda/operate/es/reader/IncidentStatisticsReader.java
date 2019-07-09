@@ -51,6 +51,14 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.*;
 @Component
 public class IncidentStatisticsReader extends AbstractReader {
 
+  private static final String WORKFLOW_KEYS = "workflowKeys";
+
+  private static final String UNIQ_WORKFLOW_INSTANCES = "uniq_workflowInstances";
+
+  private static final String GROUP_BY_ERROR_MESSAGES = "group_by_errorMessages";
+
+  private static final String GROUP_BY_WORKFLOW_KEYS = "group_by_workflowKeys";
+
   private static final Logger logger = LoggerFactory.getLogger(IncidentStatisticsReader.class);
 
   @Autowired
@@ -62,7 +70,7 @@ public class IncidentStatisticsReader extends AbstractReader {
   @Autowired
   private WorkflowReader workflowReader;
   
-  private final AggregationBuilder countWorkflowIds = terms("workflowIds")
+  private final AggregationBuilder countWorkflowKeys = terms(WORKFLOW_KEYS)
                                                         .field(ListViewTemplate.WORKFLOW_KEY)
                                                         .size(ElasticsearchUtil.TERMS_AGG_SIZE);
 
@@ -82,16 +90,16 @@ public class IncidentStatisticsReader extends AbstractReader {
     SearchRequest searchRequest = new SearchRequest(workflowInstanceTemplate.getAlias())
         .source(new SearchSourceBuilder()
             .query(incidentsQuery)
-            .aggregation(countWorkflowIds).size(0));
+            .aggregation(countWorkflowKeys).size(0));
 
     try {
       SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
-      List<? extends Bucket> buckets = ((Terms) searchResponse.getAggregations().get("workflowIds")).getBuckets();
+      List<? extends Bucket> buckets = ((Terms) searchResponse.getAggregations().get(WORKFLOW_KEYS)).getBuckets();
       for (Bucket bucket : buckets) {
-        Long workflowId = (Long) bucket.getKey();
+        Long workflowKey = (Long) bucket.getKey();
         long incidents = bucket.getDocCount();
-        results.put(workflowId, new IncidentByWorkflowStatisticsDto(workflowId.toString(),incidents, 0));
+        results.put(workflowKey, new IncidentByWorkflowStatisticsDto(workflowKey.toString(),incidents, 0));
       }
       return results;
     } catch (IOException e) {
@@ -110,22 +118,22 @@ public class IncidentStatisticsReader extends AbstractReader {
       SearchRequest searchRequest = new SearchRequest(workflowInstanceTemplate.getAlias())
           .source(new SearchSourceBuilder()
               .query(runningInstanceQuery)
-              .aggregation(countWorkflowIds)
+              .aggregation(countWorkflowKeys)
               .size(0));
 
       SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
-      List<? extends Bucket> buckets = ((Terms) searchResponse.getAggregations().get("workflowIds")).getBuckets();
+      List<? extends Bucket> buckets = ((Terms) searchResponse.getAggregations().get(WORKFLOW_KEYS)).getBuckets();
       for (Bucket bucket : buckets) {
-        Long workflowId = (Long)bucket.getKey();
+        Long workflowKey = (Long)bucket.getKey();
         long runningCount = bucket.getDocCount();
-        IncidentByWorkflowStatisticsDto statistic = results.get(workflowId);
+        IncidentByWorkflowStatisticsDto statistic = results.get(workflowKey);
         if (statistic != null) {
           statistic.setActiveInstancesCount(runningCount - statistic.getInstancesWithActiveIncidentsCount());
         } else {
-          statistic = new IncidentByWorkflowStatisticsDto(workflowId.toString(), 0, runningCount);
+          statistic = new IncidentByWorkflowStatisticsDto(workflowKey.toString(), 0, runningCount);
         }
-        results.put(workflowId, statistic);
+        results.put(workflowKey, statistic);
       }
       return results;
     } catch (IOException e) {
@@ -187,14 +195,14 @@ public class IncidentStatisticsReader extends AbstractReader {
     Map<Long, WorkflowEntity> workflows = workflowReader.getWorkflowsWithFields(
         WorkflowIndex.KEY, WorkflowIndex.NAME, WorkflowIndex.BPMN_PROCESS_ID, WorkflowIndex.VERSION);
     
-    TermsAggregationBuilder aggregation = terms("group_by_errorMessages")
+    TermsAggregationBuilder aggregation = terms(GROUP_BY_ERROR_MESSAGES)
         .field(IncidentTemplate.ERROR_MSG)
         .size(ElasticsearchUtil.TERMS_AGG_SIZE)
-        .subAggregation(terms("group_by_workflowIds")
+        .subAggregation(terms(GROUP_BY_WORKFLOW_KEYS)
             .field(IncidentTemplate.WORKFLOW_KEY)
             .size(ElasticsearchUtil.TERMS_AGG_SIZE)
-            .subAggregation(cardinality("uniq_workflowInstances")
-                .field(IncidentTemplate.WORKFLOW_INSTANCE_ID)));
+            .subAggregation(cardinality(UNIQ_WORKFLOW_INSTANCES)
+                .field(IncidentTemplate.WORKFLOW_INSTANCE_KEY)));
 
     final SearchRequest searchRequest = new SearchRequest(incidentTemplate.getAlias())
         .source(new SearchSourceBuilder()
@@ -203,7 +211,7 @@ public class IncidentStatisticsReader extends AbstractReader {
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
       
-      Terms errorMessageAggregation = (Terms) searchResponse.getAggregations().get("group_by_errorMessages");
+      Terms errorMessageAggregation = (Terms) searchResponse.getAggregations().get(GROUP_BY_ERROR_MESSAGES);
       for (Bucket bucket : errorMessageAggregation.getBuckets()) {
         result.add(getIncidentsByErrorMsgStatistic(workflows, bucket));
       }
@@ -220,10 +228,10 @@ public class IncidentStatisticsReader extends AbstractReader {
     
     IncidentsByErrorMsgStatisticsDto workflowStatistics = new IncidentsByErrorMsgStatisticsDto(errorMessage);
     
-    Terms workflowIdAggregation = (Terms) errorMessageBucket.getAggregations().get("group_by_workflowIds");
-    for (Bucket workflowIdBucket : workflowIdAggregation.getBuckets()) {
-      Long workflowKey = (Long)workflowIdBucket.getKey();
-      long incidentsCount = ((Cardinality)workflowIdBucket.getAggregations().get("uniq_workflowInstances")).getValue();
+    Terms workflowKeyAggregation = (Terms) errorMessageBucket.getAggregations().get(GROUP_BY_WORKFLOW_KEYS);
+    for (Bucket workflowKeyBucket : workflowKeyAggregation.getBuckets()) {
+      Long workflowKey = (Long)workflowKeyBucket.getKey();
+      long incidentsCount = ((Cardinality)workflowKeyBucket.getAggregations().get(UNIQ_WORKFLOW_INSTANCES)).getValue();
 
       if (workflows.containsKey(workflowKey)) {
         IncidentByWorkflowStatisticsDto statisticForWorkflow = new IncidentByWorkflowStatisticsDto(workflowKey.toString(), errorMessage, incidentsCount);

@@ -221,9 +221,9 @@ public class ListViewReader {
       endDateQuery = createEndDateQuery(query);
     }
 
-    QueryBuilder workflowIdQuery = null;
+    QueryBuilder workflowKeyQuery = null;
     if (query.getWorkflowIds() != null && !query.getWorkflowIds().isEmpty()) {
-      workflowIdQuery = termsQuery(ListViewTemplate.WORKFLOW_KEY,query.getWorkflowIds());
+      workflowKeyQuery = termsQuery(ListViewTemplate.WORKFLOW_KEY,query.getWorkflowIds());
     }
 
     QueryBuilder bpmnProcessIdQuery = null;
@@ -241,7 +241,7 @@ public class ListViewReader {
       variablesQuery = createVariablesQuery(query.getVariable());
     }
 
-    return joinWithAnd(runningFinishedQuery, activityIdQuery, idsQuery, errorMessageQuery, createDateQuery, endDateQuery, workflowIdQuery, bpmnProcessIdQuery, excludeIdsQuery, variablesQuery);
+    return joinWithAnd(runningFinishedQuery, activityIdQuery, idsQuery, errorMessageQuery, createDateQuery, endDateQuery, workflowKeyQuery, bpmnProcessIdQuery, excludeIdsQuery, variablesQuery);
   }
 
   private QueryBuilder createBpmnProcessIdQuery(String bpmnProcessId, Integer workflowVersion) {

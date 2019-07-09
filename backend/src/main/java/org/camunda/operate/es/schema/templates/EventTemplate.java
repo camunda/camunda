@@ -66,7 +66,7 @@ public class EventTemplate extends AbstractTemplateCreator implements WorkflowIn
       .startObject(WORKFLOW_KEY)
         .field("type", "long")
       .endObject()
-      .startObject(WORKFLOW_INSTANCE_ID)
+      .startObject(WORKFLOW_INSTANCE_KEY)
         .field("type", "long")
       .endObject()
       .startObject(BPMN_PROCESS_ID)

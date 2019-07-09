@@ -151,8 +151,8 @@ public class ListViewWorkflowInstanceDto {
     if (workflowInstanceEntities != null) {
       for (WorkflowInstanceForListViewEntity workflowInstanceEntity: workflowInstanceEntities) {
         if (workflowInstanceEntity != null) {
-          final ListViewWorkflowInstanceDto instanceDto = createFrom(workflowInstanceEntity, instancesWithIncidents.contains(workflowInstanceEntity.getWorkflowInstanceId()),
-            operationsPerWorfklowInstance.get(workflowInstanceEntity.getWorkflowInstanceId()));
+          final ListViewWorkflowInstanceDto instanceDto = createFrom(workflowInstanceEntity, instancesWithIncidents.contains(workflowInstanceEntity.getWorkflowInstanceKey()),
+            operationsPerWorfklowInstance.get(workflowInstanceEntity.getWorkflowInstanceKey()));
           result.add(instanceDto);
         }
       }

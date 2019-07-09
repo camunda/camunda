@@ -73,7 +73,7 @@ public class ImportPerformanceStaticDataTest {
     //assert workflow instances count
     expectedCount = ElasticsearchUtil.getFieldCardinality(zeebeEsClient, getZeebeAliasName(ZeebeESConstants.WORKFLOW_INSTANCE_INDEX_NAME), "value.workflowInstanceKey");
     final ListViewTemplate listViewTemplate = applicationContext.getBean(ListViewTemplate.class);
-    count = ElasticsearchUtil.getFieldCardinality(esClient, listViewTemplate.getAlias(), ListViewTemplate.WORKFLOW_INSTANCE_ID);
+    count = ElasticsearchUtil.getFieldCardinality(esClient, listViewTemplate.getAlias(), ListViewTemplate.WORKFLOW_INSTANCE_KEY);
     assertThat(((double) abs(count - expectedCount)) / expectedCount).isLessThanOrEqualTo(PRECISION_RATE);
   }
 

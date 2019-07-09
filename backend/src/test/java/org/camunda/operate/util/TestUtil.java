@@ -116,7 +116,7 @@ public abstract class TestUtil {
 
   public static ActivityInstanceForListViewEntity createActivityInstance(Long workflowInstanceId, ActivityState state, String activityId, ActivityType activityType) {
     ActivityInstanceForListViewEntity activityInstanceEntity = new ActivityInstanceForListViewEntity();
-    activityInstanceEntity.setWorkflowInstanceId(workflowInstanceId);
+    activityInstanceEntity.setWorkflowInstanceKey(workflowInstanceId);
     Long activityInstanceId = random.nextLong();
     activityInstanceEntity.setId(activityInstanceId.toString());
     activityInstanceEntity.setActivityId(activityId);
@@ -135,7 +135,7 @@ public abstract class TestUtil {
     return createWorkflowInstanceEntity(state, null);
   }
 
-  public static WorkflowInstanceForListViewEntity createWorkflowInstanceEntity(WorkflowInstanceState state, Long workflowId) {
+  public static WorkflowInstanceForListViewEntity createWorkflowInstanceEntity(WorkflowInstanceState state, Long workflowKey) {
     WorkflowInstanceForListViewEntity workflowInstance = createWorkflowInstanceEntityWithIds();
     final int i = random.nextInt(10);
     workflowInstance.setBpmnProcessId("testProcess" + i);
@@ -147,7 +147,7 @@ public abstract class TestUtil {
       workflowInstance.setEndDate(endDate);
     }
     workflowInstance.setState(state);
-    workflowInstance.setWorkflowKey(workflowId);
+    workflowInstance.setWorkflowKey(workflowKey);
     return workflowInstance;
   }
   
@@ -155,7 +155,7 @@ public abstract class TestUtil {
     WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
     Long workflowInstanceId = random.nextLong();
     workflowInstance.setId(workflowInstanceId.toString());
-    workflowInstance.setWorkflowInstanceId(workflowInstanceId);
+    workflowInstance.setWorkflowInstanceKey(workflowInstanceId);
     workflowInstance.setKey(workflowInstanceId);
     return workflowInstance;
   }
@@ -271,7 +271,7 @@ public abstract class TestUtil {
   public static VariableForListViewEntity createVariable(Long workflowInstanceId, Long scopeKey, String name, String value) {
     VariableForListViewEntity variable = new VariableForListViewEntity();
     variable.setId(scopeKey + "_" + name);
-    variable.setWorkflowInstanceId(workflowInstanceId);
+    variable.setWorkflowInstanceKey(workflowInstanceId);
     variable.setScopeKey(scopeKey);
     variable.setVarName(name);
     variable.setVarValue(value);

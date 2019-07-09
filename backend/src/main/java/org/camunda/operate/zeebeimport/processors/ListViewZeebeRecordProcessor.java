@@ -132,7 +132,7 @@ public class ListViewZeebeRecordProcessor {
       wiEntity = new WorkflowInstanceForListViewEntity();
     }
     wiEntity.setId(String.valueOf(recordValue.getWorkflowInstanceKey()));
-    wiEntity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
+    wiEntity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
     wiEntity.setKey(recordValue.getWorkflowInstanceKey());
     
     wiEntity.setPartitionId(record.getPartitionId());
@@ -167,7 +167,7 @@ public class ListViewZeebeRecordProcessor {
     entity.setId( ConversionUtils.toStringOrNull(record.getKey()));
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
-    entity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
+    entity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
 
     if (AI_FINISH_STATES.contains(intentStr)) {
       if (intentStr.equals(ELEMENT_TERMINATED.name())) {
@@ -193,7 +193,7 @@ public class ListViewZeebeRecordProcessor {
     entity.setKey(recordValue.getElementInstanceKey());
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
-    entity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
+    entity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
       entity.setErrorMessage(recordValue.getErrorMessage());
       entity.setIncidentKey(record.getKey());
@@ -217,7 +217,7 @@ public class ListViewZeebeRecordProcessor {
     entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
     entity.setScopeKey(recordValue.getScopeKey());
-    entity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
+    entity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
     entity.setVarName(recordValue.getName());
     entity.setVarValue(recordValue.getValue());
 

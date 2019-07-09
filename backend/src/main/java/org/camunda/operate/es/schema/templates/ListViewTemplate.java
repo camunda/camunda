@@ -18,7 +18,7 @@ public class ListViewTemplate extends AbstractTemplateCreator {
 
   public static final String ID = "id";
   public static final String KEY = "key";
-  public static final String WORKFLOW_INSTANCE_ID = "workflowInstanceId";
+  public static final String WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String WORKFLOW_VERSION = "workflowVersion";
   public static final String WORKFLOW_KEY = "workflowKey";
@@ -58,7 +58,7 @@ public class ListViewTemplate extends AbstractTemplateCreator {
       .startObject(ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(WORKFLOW_INSTANCE_ID)
+      .startObject(WORKFLOW_INSTANCE_KEY)
         .field("type", "long")
       .endObject()
       .startObject(WORKFLOW_KEY)

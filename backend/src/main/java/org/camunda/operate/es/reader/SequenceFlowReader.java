@@ -32,7 +32,7 @@ public class SequenceFlowReader extends AbstractReader {
   private SequenceFlowTemplate sequenceFlowTemplate;
 
   public List<SequenceFlowEntity> getSequenceFlows(String workflowInstanceId) {
-    final TermQueryBuilder workflowInstanceIdQ = termQuery(VariableTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
+    final TermQueryBuilder workflowInstanceIdQ = termQuery(VariableTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceId);
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(workflowInstanceIdQ);
 

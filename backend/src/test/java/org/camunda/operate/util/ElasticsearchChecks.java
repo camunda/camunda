@@ -54,7 +54,7 @@ public class ElasticsearchChecks {
   private VariableReader variableReader;
 
   /**
-   * Checks whether the workflow of given args[0] workflowId (String) is deployed.
+   * Checks whether the workflow of given args[0] workflowKey (Long) is deployed.
    * @return
    */
   @Bean(name = "workflowIsDeployedCheck")

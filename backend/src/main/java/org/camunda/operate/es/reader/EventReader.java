@@ -61,7 +61,7 @@ public class EventReader extends AbstractReader {
   private SearchRequest createSearchRequest(EventQueryDto eventQuery) {
     TermQueryBuilder workflowInstanceQ = null;
     if (eventQuery.getWorkflowInstanceId() != null) {
-      workflowInstanceQ = termQuery(EventTemplate.WORKFLOW_INSTANCE_ID, eventQuery.getWorkflowInstanceId());
+      workflowInstanceQ = termQuery(EventTemplate.WORKFLOW_INSTANCE_KEY, eventQuery.getWorkflowInstanceId());
     }
     TermQueryBuilder activityInstanceQ = null;
     if (eventQuery.getActivityInstanceId() != null) {

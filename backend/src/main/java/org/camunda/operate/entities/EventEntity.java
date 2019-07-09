@@ -13,7 +13,7 @@ public class EventEntity extends OperateZeebeEntity {
    * Workflow data.
    */
   private Long workflowKey;
-  private Long workflowInstanceId;
+  private Long workflowInstanceKey;
   private String bpmnProcessId;
 
   /**
@@ -42,12 +42,12 @@ public class EventEntity extends OperateZeebeEntity {
     this.workflowKey = workflowKey;
   }
 
-  public Long getWorkflowInstanceId() {
-    return workflowInstanceId;
+  public Long getWorkflowInstanceKey() {
+    return workflowInstanceKey;
   }
 
-  public void setWorkflowInstanceId(Long workflowInstanceId) {
-    this.workflowInstanceId = workflowInstanceId;
+  public void setWorkflowInstanceKey(Long workflowInstanceKey) {
+    this.workflowInstanceKey = workflowInstanceKey;
   }
 
   public String getActivityId() {
@@ -119,7 +119,7 @@ public class EventEntity extends OperateZeebeEntity {
 
     if (workflowKey != null ? !workflowKey.equals(that.workflowKey) : that.workflowKey != null)
       return false;
-    if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
+    if (workflowInstanceKey != null ? !workflowInstanceKey.equals(that.workflowInstanceKey) : that.workflowInstanceKey != null)
       return false;
     if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
       return false;
@@ -140,7 +140,7 @@ public class EventEntity extends OperateZeebeEntity {
   public int hashCode() {
     int result = super.hashCode();
     result = 31 * result + (workflowKey != null ? workflowKey.hashCode() : 0);
-    result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
+    result = 31 * result + (workflowInstanceKey != null ? workflowInstanceKey.hashCode() : 0);
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
     result = 31 * result + (flowNodeInstanceKey != null ? flowNodeInstanceKey.hashCode() : 0);

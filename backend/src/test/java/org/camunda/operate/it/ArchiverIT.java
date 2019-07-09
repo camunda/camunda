@@ -240,7 +240,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     assertWorkflowInstanceIndex(instancesCount, ids, endDate);
     for (WorkflowInstanceDependant template : workflowInstanceDependantTemplates) {
       if (! (template instanceof IncidentTemplate || template instanceof SequenceFlowTemplate)) {
-        assertDependentIndex(template.getMainIndexName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_ID, ids, endDate);
+        assertDependentIndex(template.getMainIndexName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_KEY, ids, endDate);
       }
     }
   }
@@ -265,7 +265,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     final List<WorkflowInstanceForListViewEntity> workflowInstances = ElasticsearchUtil
       .mapSearchHits(response.getHits().getHits(), objectMapper, WorkflowInstanceForListViewEntity.class);
     assertThat(workflowInstances).hasSize(instancesCount);
-    assertThat(workflowInstances).extracting(ListViewTemplate.WORKFLOW_INSTANCE_ID).containsExactlyInAnyOrderElementsOf(ids);
+    assertThat(workflowInstances).extracting(ListViewTemplate.WORKFLOW_INSTANCE_KEY).containsExactlyInAnyOrderElementsOf(ids);
     if (endDate != null) {
       assertThat(workflowInstances).extracting(ListViewTemplate.END_DATE).allMatch(ed -> ((OffsetDateTime) ed).toInstant().equals(endDate));
     }

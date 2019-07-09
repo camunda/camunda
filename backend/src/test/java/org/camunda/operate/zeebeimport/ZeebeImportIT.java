@@ -117,7 +117,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   public void testWorkflowNameAndVersionAreLoaded() {
     // having
     String processId = "demoProcess";
-    final Long workflowId = ZeebeTestUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
+    final Long workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
@@ -129,7 +129,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //then
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceKey);
-    assertThat(workflowInstanceEntity.getWorkflowKey()).isEqualTo(workflowId);
+    assertThat(workflowInstanceEntity.getWorkflowKey()).isEqualTo(workflowKey);
     assertThat(workflowInstanceEntity.getWorkflowName()).isNotNull();
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
   }
@@ -148,14 +148,14 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
           .zeebeTaskType("taskA")
         .endEvent().done();
 
-    final Long workflowId = deployWorkflow(model,"emptyNameProcess.bpmn");
+    final Long workflowKey = deployWorkflow(model,"emptyNameProcess.bpmn");
     
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
 
     // then it should returns the processId instead of an empty name 
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceKey);
-    assertThat(workflowInstanceEntity.getWorkflowKey()).isEqualTo(workflowId);
+    assertThat(workflowInstanceEntity.getWorkflowKey()).isEqualTo(workflowKey);
     assertThat(workflowInstanceEntity.getBpmnProcessId()).isEqualTo(processId);
     assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo(processId);
   }
@@ -165,7 +165,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     // having
     String activityId = "taskA";
     String processId = "demoProcess";
-    final Long workflowId = deployWorkflow("demoProcess_v_1.bpmn");
+    final Long workflowKey = deployWorkflow("demoProcess_v_1.bpmn");
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     
     //create an incident
@@ -180,15 +180,15 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //then
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceKey);
-    assertWorkflowInstanceListViewEntityWithIncident(workflowInstanceEntity,"Demo process",workflowId,workflowInstanceKey);
+    assertWorkflowInstanceListViewEntityWithIncident(workflowInstanceEntity,"Demo process",workflowKey,workflowInstanceKey);
     //and
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceKey);
     assertThat(allIncidents).hasSize(1);
-    assertIncidentEntity(allIncidents.get(0),activityId, workflowId,IncidentState.ACTIVE);
+    assertIncidentEntity(allIncidents.get(0),activityId, workflowKey,IncidentState.ACTIVE);
 
     //and
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
-    assertListViewWorkflowInstanceDto(wi, workflowId, workflowInstanceKey);
+    assertListViewWorkflowInstanceDto(wi, workflowKey, workflowInstanceKey);
 
     //and
     final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
@@ -201,9 +201,9 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertActivityIsInIncidentState(tree.getChildren().get(1), activityId);
   }
 
-  private void assertListViewWorkflowInstanceDto(final ListViewWorkflowInstanceDto wi, final Long workflowId, final Long workflowInstanceKey) {
+  private void assertListViewWorkflowInstanceDto(final ListViewWorkflowInstanceDto wi, final Long workflowKey, final Long workflowInstanceKey) {
     assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.INCIDENT);
-    assertThat(wi.getWorkflowId()).isEqualTo(workflowId.toString());
+    assertThat(wi.getWorkflowId()).isEqualTo(workflowKey.toString());
     assertThat(wi.getWorkflowName()).isEqualTo("Demo process");
     assertThat(wi.getWorkflowVersion()).isEqualTo(1);
     assertThat(wi.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
@@ -212,17 +212,17 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(wi.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
   }
 
-  private void assertIncidentEntity(final IncidentEntity incidentEntity,String activityId, final Long workflowId,final IncidentState state) {
+  private void assertIncidentEntity(final IncidentEntity incidentEntity,String activityId, final Long workflowKey,final IncidentState state) {
     assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(incidentEntity.getFlowNodeInstanceKey()).isNotNull();
     assertThat(incidentEntity.getErrorMessage()).isNotEmpty();
     assertThat(incidentEntity.getErrorType()).isNotNull();
     assertThat(incidentEntity.getState()).isEqualTo(state);
-    assertThat(incidentEntity.getWorkflowKey()).isEqualTo(workflowId);
+    assertThat(incidentEntity.getWorkflowKey()).isEqualTo(workflowKey);
   }
 
-  private void assertWorkflowInstanceListViewEntityWithIncident(WorkflowInstanceForListViewEntity workflowInstanceEntity,final String workflowName,final Long workflowId, final Long workflowInstanceKey) {
-    assertThat(workflowInstanceEntity.getWorkflowKey()).isEqualTo(workflowId);
+  private void assertWorkflowInstanceListViewEntityWithIncident(WorkflowInstanceForListViewEntity workflowInstanceEntity,final String workflowName,final Long workflowKey, final Long workflowInstanceKey) {
+    assertThat(workflowInstanceEntity.getWorkflowKey()).isEqualTo(workflowKey);
     assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo(workflowName);
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
     assertThat(workflowInstanceEntity.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));

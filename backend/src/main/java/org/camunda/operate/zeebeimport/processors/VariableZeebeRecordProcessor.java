@@ -64,7 +64,7 @@ public class VariableZeebeRecordProcessor {
     entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
     entity.setScopeKey(recordValue.getScopeKey());
-    entity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
+    entity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
     entity.setName(recordValue.getName());
     entity.setValue(recordValue.getValue());
     return getVariableQuery(entity);
@@ -74,7 +74,7 @@ public class VariableZeebeRecordProcessor {
     try {
 
       //complete operation
-      batchOperationWriter.completeUpdateVariableOperation(entity.getWorkflowInstanceId(), entity.getScopeKey(), entity.getName());
+      batchOperationWriter.completeUpdateVariableOperation(entity.getWorkflowInstanceKey(), entity.getScopeKey(), entity.getName());
 
       logger.debug("Variable instance for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();

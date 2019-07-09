@@ -43,7 +43,7 @@ public class OperationTemplate extends AbstractTemplateCreator implements Workfl
       .startObject(ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(WORKFLOW_INSTANCE_ID)
+      .startObject(WORKFLOW_INSTANCE_KEY)
         .field("type", "long")
       .endObject()
       .startObject(INCIDENT_KEY)

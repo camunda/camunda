@@ -16,7 +16,7 @@ public class SequenceFlowTemplate extends AbstractTemplateCreator implements Wor
 
   public static final String ID = "id";
   public static final String KEY = "key";
-  public static final String WORKFLOW_INSTANCE_ID = "workflowInstanceId";
+  public static final String WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
   public static final String ACTIVITY_ID = "activityId";
 
   @Override
@@ -36,7 +36,7 @@ public class SequenceFlowTemplate extends AbstractTemplateCreator implements Wor
       .startObject(KEY)
         .field("type", "long")
       .endObject()
-      .startObject(WORKFLOW_INSTANCE_ID)
+      .startObject(WORKFLOW_INSTANCE_KEY)
         .field("type", "long")
       .endObject()
       .startObject(ACTIVITY_ID)

@@ -82,7 +82,7 @@ public class VariableDto {
     variable.setName(variableEntity.getName());
     variable.setValue(variableEntity.getValue());
     variable.setScopeId(ConversionUtils.toStringOrNull(variableEntity.getScopeKey()));
-    variable.setWorkflowInstanceId(ConversionUtils.toStringOrNull(variableEntity.getWorkflowInstanceId()));
+    variable.setWorkflowInstanceId(ConversionUtils.toStringOrNull(variableEntity.getWorkflowInstanceKey()));
 
     if (operations != null && operations.size() > 0) {
       List <OperationEntity> activeOperations = operations.stream().filter(o ->
@@ -130,7 +130,7 @@ public class VariableDto {
         variable.setName(operation.getVariableName());
         variable.setValue(operation.getVariableValue());
         variable.setScopeId(ConversionUtils.toStringOrNull(operation.getScopeKey()));
-        variable.setWorkflowInstanceId(ConversionUtils.toStringOrNull(operation.getWorkflowInstanceId()));
+        variable.setWorkflowInstanceId(ConversionUtils.toStringOrNull(operation.getWorkflowInstanceKey()));
         variable.setHasActiveOperation(true);
         return variable;
       }

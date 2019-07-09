@@ -7,15 +7,15 @@ package org.camunda.operate.entities;
 
 public class SequenceFlowEntity extends  OperateZeebeEntity {
 
-  private Long workflowInstanceId;
+  private Long workflowInstanceKey;
   private String activityId;
 
-  public Long getWorkflowInstanceId() {
-    return workflowInstanceId;
+  public Long getWorkflowInstanceKey() {
+    return workflowInstanceKey;
   }
 
-  public void setWorkflowInstanceId(Long workflowInstanceId) {
-    this.workflowInstanceId = workflowInstanceId;
+  public void setWorkflowInstanceKey(Long workflowInstanceKey) {
+    this.workflowInstanceKey = workflowInstanceKey;
   }
 
   public String getActivityId() {
@@ -37,7 +37,7 @@ public class SequenceFlowEntity extends  OperateZeebeEntity {
 
     SequenceFlowEntity that = (SequenceFlowEntity) o;
 
-    if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
+    if (workflowInstanceKey != null ? !workflowInstanceKey.equals(that.workflowInstanceKey) : that.workflowInstanceKey != null)
       return false;
     return activityId != null ? activityId.equals(that.activityId) : that.activityId == null;
   }
@@ -45,7 +45,7 @@ public class SequenceFlowEntity extends  OperateZeebeEntity {
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
+    result = 31 * result + (workflowInstanceKey != null ? workflowInstanceKey.hashCode() : 0);
     result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
     return result;
   }

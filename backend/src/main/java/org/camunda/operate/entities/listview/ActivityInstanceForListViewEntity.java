@@ -12,7 +12,7 @@ import org.camunda.operate.es.schema.templates.ListViewTemplate;
 
 public class ActivityInstanceForListViewEntity extends OperateZeebeEntity {
 
-  private Long workflowInstanceId;
+  private Long workflowInstanceKey;
   private String activityId;
   private ActivityState activityState;
   private ActivityType activityType;
@@ -22,12 +22,12 @@ public class ActivityInstanceForListViewEntity extends OperateZeebeEntity {
 
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.ACTIVITIES_JOIN_RELATION);
 
-  public Long getWorkflowInstanceId() {
-    return workflowInstanceId;
+  public Long getWorkflowInstanceKey() {
+    return workflowInstanceKey;
   }
 
-  public void setWorkflowInstanceId(Long workflowInstanceId) {
-    this.workflowInstanceId = workflowInstanceId;
+  public void setWorkflowInstanceKey(Long workflowInstanceKey) {
+    this.workflowInstanceKey = workflowInstanceKey;
   }
 
   public String getActivityId() {
@@ -97,7 +97,7 @@ public class ActivityInstanceForListViewEntity extends OperateZeebeEntity {
 
     ActivityInstanceForListViewEntity that = (ActivityInstanceForListViewEntity) o;
 
-    if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
+    if (workflowInstanceKey != null ? !workflowInstanceKey.equals(that.workflowInstanceKey) : that.workflowInstanceKey != null)
       return false;
     if (activityId != null ? !activityId.equals(that.activityId) : that.activityId != null)
       return false;
@@ -117,7 +117,7 @@ public class ActivityInstanceForListViewEntity extends OperateZeebeEntity {
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
+    result = 31 * result + (workflowInstanceKey != null ? workflowInstanceKey.hashCode() : 0);
     result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
     result = 31 * result + (activityState != null ? activityState.hashCode() : 0);
     result = 31 * result + (activityType != null ? activityType.hashCode() : 0);

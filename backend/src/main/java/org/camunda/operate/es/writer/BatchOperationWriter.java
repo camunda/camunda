@@ -132,7 +132,7 @@ public class BatchOperationWriter {
     } catch (IOException e) {
       logger.error("Error preparing the query to update operation", e);
       throw new PersistenceException(String.format("Error preparing the query to update operation [%s] for workflow instance id [%s]",
-        operation.getId(), operation.getWorkflowInstanceId()), e);
+        operation.getId(), operation.getWorkflowInstanceKey()), e);
     }
   }
 
@@ -145,7 +145,7 @@ public class BatchOperationWriter {
 
       QueryBuilder query =
         joinWithAnd(
-          termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId),
+          termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceId),
           incidentKeyQuery,
           termsQuery(OperationTemplate.STATE, OperationState.SENT.name(), OperationState.LOCKED.name()),
           termQuery(OperationTemplate.TYPE, operationType.name())
@@ -166,7 +166,7 @@ public class BatchOperationWriter {
 
       QueryBuilder query =
         joinWithAnd(
-          termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId),
+          termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceId),
           scopeKeyQuery,
           variableNameIdQ,
           termsQuery(OperationTemplate.STATE, OperationState.SENT.name(), OperationState.LOCKED.name()),
@@ -335,7 +335,7 @@ public class BatchOperationWriter {
   private OperationEntity createOperationEntity(Long workflowInstanceId, OperationType operationType) {
     OperationEntity operationEntity = new OperationEntity();
     operationEntity.generateId();
-    operationEntity.setWorkflowInstanceId(workflowInstanceId);
+    operationEntity.setWorkflowInstanceKey(workflowInstanceId);
     operationEntity.setType(operationType);
     operationEntity.setStartDate(OffsetDateTime.now());
     operationEntity.setState(OperationState.SCHEDULED);

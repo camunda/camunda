@@ -115,12 +115,12 @@ public class Archiver extends Thread implements Shutdownable{
       try {
         //1st remove dependent data
         for (WorkflowInstanceDependant template: workflowInstanceDependantTemplates) {
-          reindexHelper.moveDocuments(template.getMainIndexName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_ID, finishedAtDateIds.getFinishDate(),
+          reindexHelper.moveDocuments(template.getMainIndexName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_KEY, finishedAtDateIds.getFinishDate(),
             finishedAtDateIds.getWorkflowInstanceIds());
         }
 
         //then remove workflow instances themselves
-        reindexHelper.moveDocuments(workflowInstanceTemplate.getMainIndexName(), ListViewTemplate.WORKFLOW_INSTANCE_ID, finishedAtDateIds.getFinishDate(),
+        reindexHelper.moveDocuments(workflowInstanceTemplate.getMainIndexName(), ListViewTemplate.WORKFLOW_INSTANCE_KEY, finishedAtDateIds.getFinishDate(),
           finishedAtDateIds.getWorkflowInstanceIds());
         return finishedAtDateIds.getWorkflowInstanceIds().size();
       } catch (ReindexException e) {

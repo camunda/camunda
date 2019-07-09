@@ -120,7 +120,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
   public void testWorkflowInstanceCreated() {
     // having
     String processId = "demoProcess";
-    final Long workflowId = deployWorkflow("demoProcess_v_1.bpmn");
+    final Long workflowKey = deployWorkflow("demoProcess_v_1.bpmn");
 
     //when
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
@@ -129,7 +129,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     //then
     final Long workflowInstanceId = workflowInstanceKey;
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-    assertThat(workflowInstanceEntity.getWorkflowKey()).isEqualTo(workflowId);
+    assertThat(workflowInstanceEntity.getWorkflowKey()).isEqualTo(workflowKey);
     assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo("Demo process");
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
     assertThat(workflowInstanceEntity.getId()).isEqualTo(workflowInstanceId.toString());
@@ -141,7 +141,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //assert list view data
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
-    assertThat(wi.getWorkflowId()).isEqualTo(ConversionUtils.toStringOrNull(workflowId));
+    assertThat(wi.getWorkflowId()).isEqualTo(ConversionUtils.toStringOrNull(workflowKey));
     assertThat(wi.getWorkflowName()).isEqualTo("Demo process");
     assertThat(wi.getWorkflowVersion()).isEqualTo(1);
     assertThat(wi.getId()).isEqualTo(workflowInstanceId.toString());
@@ -161,7 +161,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
   public void testVariablesAreLoaded() {
     // having
     String processId = "demoProcess";
-    /*final String workflowId =*/ deployWorkflow("demoProcess_v_1.bpmn");
+    deployWorkflow("demoProcess_v_1.bpmn");
 
     //when TC 1
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
@@ -320,7 +320,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     String activityId = "taskA";
 
     String processId = "demoProcess";
-    /*final String workflowId =*/ deployWorkflow("demoProcess_v_1.bpmn");
+    deployWorkflow("demoProcess_v_1.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
@@ -357,7 +357,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     final String errorMessage = "Error occurred when working on the job";
 
     String processId = "demoProcess";
-    final Long workflowId = deployWorkflow("demoProcess_v_1.bpmn");
+    final Long workflowKey = deployWorkflow("demoProcess_v_1.bpmn");
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //when
@@ -368,7 +368,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceKey);
     assertThat(allIncidents).hasSize(1);
     IncidentEntity incidentEntity = allIncidents.get(0);
-    assertThat(incidentEntity.getWorkflowKey()).isEqualTo(workflowId);
+    assertThat(incidentEntity.getWorkflowKey()).isEqualTo(workflowKey);
     assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(incidentEntity.getFlowNodeInstanceKey()).isNotNull();
     assertThat(incidentEntity.getErrorMessage()).isEqualTo(errorMessage);
@@ -406,7 +406,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
           .endEvent()
       .done();
     final String resourceName = processId + ".bpmn";
-    final Long workflowId = deployWorkflow(workflow, resourceName);
+    final Long workflowKey = deployWorkflow(workflow, resourceName);
 
     //when
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
@@ -416,7 +416,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceKey);
     assertThat(allIncidents).hasSize(1);
     IncidentEntity incidentEntity = allIncidents.get(0);
-    assertThat(incidentEntity.getWorkflowKey()).isEqualTo(workflowId);
+    assertThat(incidentEntity.getWorkflowKey()).isEqualTo(workflowKey);
     assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(incidentEntity.getFlowNodeInstanceKey()).isNotNull();
     assertThat(incidentEntity.getErrorMessage()).isNotEmpty();
@@ -470,7 +470,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
           .endEvent()
       .done();
     final String resourceName = processId + ".bpmn";
-    final Long workflowId = deployWorkflow(workflow, resourceName);
+    final Long workflowKey = deployWorkflow(workflow, resourceName);
 
     //when
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
@@ -480,7 +480,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceKey);
     assertThat(allIncidents).hasSize(1);
     IncidentEntity incidentEntity = allIncidents.get(0);
-    assertThat(incidentEntity.getWorkflowKey()).isEqualTo(workflowId);
+    assertThat(incidentEntity.getWorkflowKey()).isEqualTo(workflowKey);
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
 
     //when I cancel workflow instance
@@ -582,7 +582,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     final OffsetDateTime testStartTime = OffsetDateTime.now();
 
     String processId = "demoProcess";
-    /*final String workflowId =*/ deployWorkflow("demoProcess_v_1.bpmn");
+    deployWorkflow("demoProcess_v_1.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
 
@@ -623,7 +623,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     final OffsetDateTime testStartTime = OffsetDateTime.now();
 
     String processId = "eventProcess";
-    /*final String workflowId =*/ deployWorkflow("messageEventProcess_v_1.bpmn");
+    deployWorkflow("messageEventProcess_v_1.bpmn");
 //    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"clientId\": \"5\"}");
 
@@ -667,7 +667,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
   @Test
   public void testWorkflowInstanceById() {
     String processId = "demoProcess";
-    /*final String workflowId =*/ deployWorkflow("demoProcess_v_1.bpmn");
+    deployWorkflow("demoProcess_v_1.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCreatedCheck, workflowInstanceKey);
 
@@ -681,7 +681,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     String activityId = "taskA";
     final String errorMessage = "Error occurred when working on the job";
     String processId = "demoProcess";
-    /*final String workflowId =*/ deployWorkflow("demoProcess_v_1.bpmn");
+    deployWorkflow("demoProcess_v_1.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCreatedCheck, workflowInstanceKey);
 
@@ -697,7 +697,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
   @Test(expected = NotFoundException.class)
   public void testWorkflowInstanceByIdFailForUnknownId() {
     String processId = "demoProcess";
-    /*final String workflowId =*/ deployWorkflow("demoProcess_v_1.bpmn");
+    deployWorkflow("demoProcess_v_1.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCreatedCheck, workflowInstanceKey);
 

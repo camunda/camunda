@@ -47,7 +47,7 @@ public class SequenceFlowZeebeRecordProcessor {
     entity.setId( ConversionUtils.toStringOrNull(record.getKey()));
     entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
-    entity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
+    entity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
     entity.setActivityId(recordValue.getElementId());
     bulkRequest.add(getSequenceFlowInsertQuery(entity));
   }

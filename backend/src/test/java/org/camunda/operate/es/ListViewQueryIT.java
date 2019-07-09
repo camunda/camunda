@@ -161,11 +161,11 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     //given we have 2 workflow instances: one with active activity with given error msg, another with active activity with another error message
     final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
-    final ActivityInstanceForListViewEntity activityInstance1 = createActivityInstanceWithIncident(workflowInstance1.getWorkflowInstanceId(), ActivityState.ACTIVE,
+    final ActivityInstanceForListViewEntity activityInstance1 = createActivityInstanceWithIncident(workflowInstance1.getWorkflowInstanceKey(), ActivityState.ACTIVE,
       errorMessage, null);
 
     final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
-    final ActivityInstanceForListViewEntity activityInstance2 = createActivityInstanceWithIncident(workflowInstance2.getWorkflowInstanceId(), ActivityState.ACTIVE,
+    final ActivityInstanceForListViewEntity activityInstance2 = createActivityInstanceWithIncident(workflowInstance2.getWorkflowInstanceKey(), ActivityState.ACTIVE,
       "other error message", null);
 
     elasticsearchTestRule.persistNew(workflowInstance1, activityInstance1, workflowInstance2, activityInstance2);
@@ -258,9 +258,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //wi 1: active with active activity with given id
     final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
 
-    final ActivityInstanceForListViewEntity activeWithIdActivityInstance = createActivityInstance(workflowInstance1.getWorkflowInstanceId(), ActivityState.ACTIVE, activityId);
+    final ActivityInstanceForListViewEntity activeWithIdActivityInstance = createActivityInstance(workflowInstance1.getWorkflowInstanceKey(), ActivityState.ACTIVE, activityId);
 
-    final ActivityInstanceForListViewEntity completedWithoutIdActivityInstance = createActivityInstance(workflowInstance1.getWorkflowInstanceId(), ActivityState.COMPLETED, "otherActivityId");
+    final ActivityInstanceForListViewEntity completedWithoutIdActivityInstance = createActivityInstance(workflowInstance1.getWorkflowInstanceKey(), ActivityState.COMPLETED, "otherActivityId");
 
     entities.add(workflowInstance1);
     activityInstances.addAll(Arrays.asList(activeWithIdActivityInstance, completedWithoutIdActivityInstance));
@@ -268,9 +268,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //wi 2: active with active activity with another id and incident activity with given id
     final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
 
-    final ActivityInstanceForListViewEntity activeWithoutIdActivityInstance = createActivityInstance(workflowInstance2.getWorkflowInstanceId(), ActivityState.ACTIVE, "otherActivityId");
+    final ActivityInstanceForListViewEntity activeWithoutIdActivityInstance = createActivityInstance(workflowInstance2.getWorkflowInstanceKey(), ActivityState.ACTIVE, "otherActivityId");
 
-    final ActivityInstanceForListViewEntity incidentWithIdActivityInstance = createActivityInstanceWithIncident(workflowInstance2.getWorkflowInstanceId(), ActivityState.ACTIVE, "error", null);
+    final ActivityInstanceForListViewEntity incidentWithIdActivityInstance = createActivityInstanceWithIncident(workflowInstance2.getWorkflowInstanceKey(), ActivityState.ACTIVE, "error", null);
     incidentWithIdActivityInstance.setActivityId(activityId);
 
     entities.add(workflowInstance2);
@@ -317,10 +317,10 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //wi1: active with activity in INCIDENT state with given id
     final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
 
-    final ActivityInstanceForListViewEntity incidentWithIdActivityInstance = createActivityInstanceWithIncident(workflowInstance1.getWorkflowInstanceId(), ActivityState.ACTIVE, "error", null);
+    final ActivityInstanceForListViewEntity incidentWithIdActivityInstance = createActivityInstanceWithIncident(workflowInstance1.getWorkflowInstanceKey(), ActivityState.ACTIVE, "error", null);
     incidentWithIdActivityInstance.setActivityId(activityId);
 
-    final ActivityInstanceForListViewEntity completedWithoutIdActivityInstance = createActivityInstance(workflowInstance1.getWorkflowInstanceId(), ActivityState.COMPLETED, "otherActivityId");
+    final ActivityInstanceForListViewEntity completedWithoutIdActivityInstance = createActivityInstance(workflowInstance1.getWorkflowInstanceKey(), ActivityState.COMPLETED, "otherActivityId");
 
     entities.add(workflowInstance1);
     activityInstances.addAll(Arrays.asList(incidentWithIdActivityInstance, completedWithoutIdActivityInstance));
@@ -328,10 +328,10 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //wi2: active with activity in INCIDENT state with another id
     final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
 
-    final ActivityInstanceForListViewEntity incidentWithoutIdActivityInstance = createActivityInstanceWithIncident(workflowInstance2.getWorkflowInstanceId(), ActivityState.ACTIVE, "error", null);
+    final ActivityInstanceForListViewEntity incidentWithoutIdActivityInstance = createActivityInstanceWithIncident(workflowInstance2.getWorkflowInstanceKey(), ActivityState.ACTIVE, "error", null);
     incidentWithoutIdActivityInstance.setActivityId("otherActivityId");
 
-    final ActivityInstanceForListViewEntity completedWithIdActivityInstance = createActivityInstance(workflowInstance2.getWorkflowInstanceId(), ActivityState.COMPLETED, activityId);
+    final ActivityInstanceForListViewEntity completedWithIdActivityInstance = createActivityInstance(workflowInstance2.getWorkflowInstanceKey(), ActivityState.COMPLETED, activityId);
 
     entities.add(workflowInstance2);
     activityInstances.addAll(Arrays.asList(incidentWithoutIdActivityInstance, completedWithIdActivityInstance));
@@ -339,9 +339,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //wi3: active with activity in ACTIVE state with given id
     final WorkflowInstanceForListViewEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
 
-    final ActivityInstanceForListViewEntity activeWithIdActivityInstance = createActivityInstance(workflowInstance3.getWorkflowInstanceId(), ActivityState.ACTIVE, activityId);
+    final ActivityInstanceForListViewEntity activeWithIdActivityInstance = createActivityInstance(workflowInstance3.getWorkflowInstanceKey(), ActivityState.ACTIVE, activityId);
 
-    final ActivityInstanceForListViewEntity completedWithoutIdActivityInstance2 = createActivityInstance(workflowInstance3.getWorkflowInstanceId(), ActivityState.COMPLETED, "otherActivityId");
+    final ActivityInstanceForListViewEntity completedWithoutIdActivityInstance2 = createActivityInstance(workflowInstance3.getWorkflowInstanceKey(), ActivityState.COMPLETED, "otherActivityId");
 
     entities.add(workflowInstance3);
     activityInstances.addAll(Arrays.asList(activeWithIdActivityInstance, completedWithoutIdActivityInstance2));
@@ -386,27 +386,27 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //wi1: canceled with TERMINATED activity with given id
     final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
 
-    final ActivityInstanceForListViewEntity terminatedWithIdActivityInstance = createActivityInstance(workflowInstance1.getWorkflowInstanceId(), ActivityState.TERMINATED, activityId);
+    final ActivityInstanceForListViewEntity terminatedWithIdActivityInstance = createActivityInstance(workflowInstance1.getWorkflowInstanceKey(), ActivityState.TERMINATED, activityId);
 
-    final ActivityInstanceForListViewEntity completedWithoutIdActivityInstance = createActivityInstance(workflowInstance1.getWorkflowInstanceId(), ActivityState.COMPLETED, "otherActivityId");
+    final ActivityInstanceForListViewEntity completedWithoutIdActivityInstance = createActivityInstance(workflowInstance1.getWorkflowInstanceKey(), ActivityState.COMPLETED, "otherActivityId");
 
     entities.addAll(Arrays.asList(workflowInstance1, terminatedWithIdActivityInstance, completedWithoutIdActivityInstance));
 
     //wi2: canceled with TERMINATED activity with another id
     final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
 
-    final ActivityInstanceForListViewEntity terminatedWithoutIdActivityInstance = createActivityInstance(workflowInstance2.getWorkflowInstanceId(), ActivityState.TERMINATED, "otherActivityId");
+    final ActivityInstanceForListViewEntity terminatedWithoutIdActivityInstance = createActivityInstance(workflowInstance2.getWorkflowInstanceKey(), ActivityState.TERMINATED, "otherActivityId");
 
-    final ActivityInstanceForListViewEntity completedWithIdActivityInstance = createActivityInstance(workflowInstance2.getWorkflowInstanceId(), ActivityState.COMPLETED, activityId);
+    final ActivityInstanceForListViewEntity completedWithIdActivityInstance = createActivityInstance(workflowInstance2.getWorkflowInstanceKey(), ActivityState.COMPLETED, activityId);
 
     entities.addAll(Arrays.asList(workflowInstance2, terminatedWithoutIdActivityInstance, completedWithIdActivityInstance));
 
     //wi3: active with TERMINATED activity with given id
     final WorkflowInstanceForListViewEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
 
-    final ActivityInstanceForListViewEntity activeWithIdActivityInstance = createActivityInstance(workflowInstance3.getWorkflowInstanceId(), ActivityState.TERMINATED, activityId);
+    final ActivityInstanceForListViewEntity activeWithIdActivityInstance = createActivityInstance(workflowInstance3.getWorkflowInstanceKey(), ActivityState.TERMINATED, activityId);
 
-    final ActivityInstanceForListViewEntity completedWithoutIdActivityInstance2 = createActivityInstance(workflowInstance3.getWorkflowInstanceId(), ActivityState.COMPLETED, "otherActivityId");
+    final ActivityInstanceForListViewEntity completedWithoutIdActivityInstance2 = createActivityInstance(workflowInstance3.getWorkflowInstanceKey(), ActivityState.COMPLETED, "otherActivityId");
 
     entities.addAll(Arrays.asList(workflowInstance3, activeWithIdActivityInstance, completedWithoutIdActivityInstance2));
 
@@ -462,24 +462,24 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //wi 1: completed with completed end event
     final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
 
-    final ActivityInstanceForListViewEntity completedEndEventWithIdActivityInstance = createActivityInstance(workflowInstance1.getWorkflowInstanceId(), ActivityState.COMPLETED, activityId, ActivityType.END_EVENT);
+    final ActivityInstanceForListViewEntity completedEndEventWithIdActivityInstance = createActivityInstance(workflowInstance1.getWorkflowInstanceKey(), ActivityState.COMPLETED, activityId, ActivityType.END_EVENT);
 
-    final ActivityInstanceForListViewEntity completedWithoutIdActivityInstance = createActivityInstance(workflowInstance1.getWorkflowInstanceId(), ActivityState.COMPLETED, "otherActivityId");
+    final ActivityInstanceForListViewEntity completedWithoutIdActivityInstance = createActivityInstance(workflowInstance1.getWorkflowInstanceKey(), ActivityState.COMPLETED, "otherActivityId");
 
     //wi 2: completed without completed end event
     final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
 
-    final ActivityInstanceForListViewEntity activeEndEventWithIdActivityInstance = createActivityInstance(workflowInstance2.getWorkflowInstanceId(), ActivityState.ACTIVE, activityId, ActivityType.END_EVENT);
+    final ActivityInstanceForListViewEntity activeEndEventWithIdActivityInstance = createActivityInstance(workflowInstance2.getWorkflowInstanceKey(), ActivityState.ACTIVE, activityId, ActivityType.END_EVENT);
 
     //wi 3: completed with completed end event (but not of type END_EVENT)
     final WorkflowInstanceForListViewEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
 
-    final ActivityInstanceForListViewEntity completedWithIdActivityInstance = createActivityInstance(workflowInstance3.getWorkflowInstanceId(), ActivityState.COMPLETED, activityId);
+    final ActivityInstanceForListViewEntity completedWithIdActivityInstance = createActivityInstance(workflowInstance3.getWorkflowInstanceKey(), ActivityState.COMPLETED, activityId);
 
     //wi 4: active with completed end event
     final WorkflowInstanceForListViewEntity workflowInstance4 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
 
-    final ActivityInstanceForListViewEntity completedEndEventWithIdActivityInstance2 = createActivityInstance(workflowInstance4.getWorkflowInstanceId(), ActivityState.COMPLETED, activityId, ActivityType.END_EVENT);
+    final ActivityInstanceForListViewEntity completedEndEventWithIdActivityInstance2 = createActivityInstance(workflowInstance4.getWorkflowInstanceKey(), ActivityState.COMPLETED, activityId, ActivityType.END_EVENT);
 
     elasticsearchTestRule.persistNew(workflowInstance1, completedEndEventWithIdActivityInstance, completedWithoutIdActivityInstance,
       workflowInstance2, activeEndEventWithIdActivityInstance,
@@ -554,21 +554,21 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   }
 
   @Test
-  public void testQueryByWorkflowIds() throws Exception {
+  public void testQueryByWorkflowKeys() throws Exception {
     //given
-    Long wfId1 = 1L, wfId2 = 2L, wfId3 = 3L;
+    Long wfKey1 = 1L, wfKey2 = 2L, wfKey3 = 3L;
     final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
-    workflowInstance1.setWorkflowKey(wfId1);
+    workflowInstance1.setWorkflowKey(wfKey1);
     final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
-    workflowInstance2.setWorkflowKey(wfId2);
+    workflowInstance2.setWorkflowKey(wfKey2);
     final WorkflowInstanceForListViewEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
     final WorkflowInstanceForListViewEntity workflowInstance4 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
-    workflowInstance3.setWorkflowKey(wfId3);
-    workflowInstance4.setWorkflowKey(wfId3);
+    workflowInstance3.setWorkflowKey(wfKey3);
+    workflowInstance4.setWorkflowKey(wfKey3);
 
     elasticsearchTestRule.persistNew(workflowInstance1, workflowInstance2, workflowInstance3, workflowInstance4);
 
-    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setWorkflowIds(Arrays.asList(wfId1.toString(), wfId3.toString())));
+    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setWorkflowIds(Arrays.asList(wfKey1.toString(), wfKey3.toString())));
 
     //when
     MvcResult mvcResult = postRequest(query(0, 100),query);
@@ -1023,34 +1023,34 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     createWorkflowInstanceWithUpperLowerCaseWorkflowname();
     createWorkflowInstanceWithoutWorkflowname();
     //running instance with one activity and without incidents
-    final Long workflowId = 27L;
-    runningInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    final ActivityInstanceForListViewEntity activityInstance1 = createActivityInstance(runningInstance.getWorkflowInstanceId(), ActivityState.ACTIVE);
-    vars.add(createVariable(runningInstance.getWorkflowInstanceId(), runningInstance.getWorkflowInstanceId(), "var1", "X"));
-    vars.add(createVariable(runningInstance.getWorkflowInstanceId(), runningInstance.getWorkflowInstanceId(), "var2", "Y"));
+    final Long workflowKey = 27L;
+    runningInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowKey);
+    final ActivityInstanceForListViewEntity activityInstance1 = createActivityInstance(runningInstance.getWorkflowInstanceKey(), ActivityState.ACTIVE);
+    vars.add(createVariable(runningInstance.getWorkflowInstanceKey(), runningInstance.getWorkflowInstanceKey(), "var1", "X"));
+    vars.add(createVariable(runningInstance.getWorkflowInstanceKey(), runningInstance.getWorkflowInstanceKey(), "var2", "Y"));
 
     //completed instance with one activity and without incidents
-    completedInstance = createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowId);
-    final ActivityInstanceForListViewEntity activityInstance2 = createActivityInstance(completedInstance.getWorkflowInstanceId(), ActivityState.COMPLETED);
-    vars.add(createVariable(completedInstance.getWorkflowInstanceId(), completedInstance.getWorkflowInstanceId(), "var1", "X"));
-    vars.add(createVariable(completedInstance.getWorkflowInstanceId(), completedInstance.getWorkflowInstanceId(), "var2", "Z"));
+    completedInstance = createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowKey);
+    final ActivityInstanceForListViewEntity activityInstance2 = createActivityInstance(completedInstance.getWorkflowInstanceKey(), ActivityState.COMPLETED);
+    vars.add(createVariable(completedInstance.getWorkflowInstanceKey(), completedInstance.getWorkflowInstanceKey(), "var1", "X"));
+    vars.add(createVariable(completedInstance.getWorkflowInstanceKey(), completedInstance.getWorkflowInstanceKey(), "var2", "Z"));
 
     //canceled instance with two activities and without incidents
     canceledInstance = createWorkflowInstance(WorkflowInstanceState.CANCELED);
-    final ActivityInstanceForListViewEntity activityInstance3 = createActivityInstance(canceledInstance.getWorkflowInstanceId(), ActivityState.COMPLETED);
-    final ActivityInstanceForListViewEntity activityInstance4 = createActivityInstance(canceledInstance.getWorkflowInstanceId(), ActivityState.TERMINATED);
-    vars.add(createVariable(canceledInstance.getWorkflowInstanceId(), Long.valueOf(activityInstance3.getId()), "var1", "X"));
-    vars.add(createVariable(canceledInstance.getWorkflowInstanceId(), canceledInstance.getWorkflowInstanceId(), "var2", "W"));
+    final ActivityInstanceForListViewEntity activityInstance3 = createActivityInstance(canceledInstance.getWorkflowInstanceKey(), ActivityState.COMPLETED);
+    final ActivityInstanceForListViewEntity activityInstance4 = createActivityInstance(canceledInstance.getWorkflowInstanceKey(), ActivityState.TERMINATED);
+    vars.add(createVariable(canceledInstance.getWorkflowInstanceKey(), Long.valueOf(activityInstance3.getId()), "var1", "X"));
+    vars.add(createVariable(canceledInstance.getWorkflowInstanceKey(), canceledInstance.getWorkflowInstanceKey(), "var2", "W"));
 
     //instance with incidents (one resolved and one active) and one active activity
     final WorkflowInstanceForListViewEntity instanceWithIncident = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
-    final ActivityInstanceForListViewEntity activityInstance5 = createActivityInstance(instanceWithIncident.getWorkflowInstanceId(), ActivityState.ACTIVE);
-    vars.add(createVariable(instanceWithIncident.getWorkflowInstanceId(), instanceWithIncident.getWorkflowInstanceId(), "var1", "Y"));
+    final ActivityInstanceForListViewEntity activityInstance5 = createActivityInstance(instanceWithIncident.getWorkflowInstanceKey(), ActivityState.ACTIVE);
+    vars.add(createVariable(instanceWithIncident.getWorkflowInstanceKey(), instanceWithIncident.getWorkflowInstanceKey(), "var1", "Y"));
     createIncident(activityInstance5, null, null);
 
     //instance with one resolved incident and one completed activity
     instanceWithoutIncident = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
-    final ActivityInstanceForListViewEntity activityInstance6 = createActivityInstance(instanceWithoutIncident.getWorkflowInstanceId(), ActivityState.COMPLETED);
+    final ActivityInstanceForListViewEntity activityInstance6 = createActivityInstance(instanceWithoutIncident.getWorkflowInstanceKey(), ActivityState.COMPLETED);
 
     //persist instances
     elasticsearchTestRule.persistNew(runningInstance, completedInstance, instanceWithIncident, instanceWithoutIncident, canceledInstance,

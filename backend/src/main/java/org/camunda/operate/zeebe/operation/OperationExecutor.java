@@ -111,7 +111,7 @@ public class OperationExecutor extends Thread implements Shutdownable{
     for (OperationEntity operation : lockedOperations) {
       final OperationHandler handler = getOperationHandlers().get(operation.getType());
       if (handler == null) {
-        logger.info("Operation {} on worflowInstanceId {} won't be processed, as no suitable handler was found.", operation.getType(), operation.getWorkflowInstanceId());
+        logger.info("Operation {} on worflowInstanceId {} won't be processed, as no suitable handler was found.", operation.getType(), operation.getWorkflowInstanceKey());
       } else {
         OperationCommand operationCommand = new OperationCommand(operation, handler);
         futures.add(operationsTaskExecutor.submit(operationCommand));

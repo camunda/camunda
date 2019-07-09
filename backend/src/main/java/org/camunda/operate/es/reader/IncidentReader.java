@@ -61,7 +61,7 @@ public class IncidentReader extends AbstractReader {
   private OperateProperties operateProperties;
 
   public List<IncidentEntity> getAllIncidents(Long workflowInstanceId) {
-    final TermQueryBuilder workflowInstanceIdQ = termQuery(IncidentTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
+    final TermQueryBuilder workflowInstanceIdQ = termQuery(IncidentTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceId);
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(workflowInstanceIdQ);
 
@@ -83,20 +83,20 @@ public class IncidentReader extends AbstractReader {
    * @return
    */
   public Map<Long, List<Long>> getIncidentKeysPerWorkflowInstance(List<Long> workflowInstanceIds) {
-    final QueryBuilder workflowInstanceIdsQ = constantScoreQuery(termsQuery(IncidentTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceIds));
+    final QueryBuilder workflowInstanceIdsQ = constantScoreQuery(termsQuery(IncidentTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceIds));
     final int batchSize = operateProperties.getElasticsearch().getBatchSize();
 
     final SearchRequest searchRequest = new SearchRequest(incidentTemplate.getAlias())
         .source(new SearchSourceBuilder()
             .query(workflowInstanceIdsQ)
-            .fetchSource(IncidentTemplate.WORKFLOW_INSTANCE_ID, null)
+            .fetchSource(IncidentTemplate.WORKFLOW_INSTANCE_KEY, null)
             .size(batchSize));
 
     Map<Long, List<Long>> result = new HashMap<>();
     try {
       ElasticsearchUtil.scrollWith(searchRequest, esClient, searchHits -> {
         for (SearchHit hit : searchHits.getHits()) {
-          CollectionUtil.addToMap(result, Long.valueOf(hit.getSourceAsMap().get(IncidentTemplate.WORKFLOW_INSTANCE_ID).toString()), Long.valueOf(hit.getId()));
+          CollectionUtil.addToMap(result, Long.valueOf(hit.getSourceAsMap().get(IncidentTemplate.WORKFLOW_INSTANCE_KEY).toString()), Long.valueOf(hit.getId()));
         }
       }, null, null);
       return result;
@@ -131,7 +131,7 @@ public class IncidentReader extends AbstractReader {
   }
 
   public IncidentResponseDto getIncidents(Long workflowInstanceId) {
-    final TermQueryBuilder workflowInstanceQ = termQuery(IncidentTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
+    final TermQueryBuilder workflowInstanceQ = termQuery(IncidentTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceId);
 
     final String errorTypesAggName = "errorTypesAgg";
     final String flowNodesAggName = "flowNodesAgg";

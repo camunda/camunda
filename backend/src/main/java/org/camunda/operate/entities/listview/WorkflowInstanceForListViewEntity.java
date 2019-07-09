@@ -24,12 +24,12 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
 
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION);
 
-  public Long getWorkflowInstanceId() {
+  public Long getWorkflowInstanceKey() {
     return getKey();
   }
 
-  public void setWorkflowInstanceId(Long workflowInstanceId) {
-    this.setKey(workflowInstanceId);
+  public void setWorkflowInstanceKey(Long workflowInstanceKey) {
+    this.setKey(workflowInstanceKey);
   }
 
   public Long getWorkflowKey() {
@@ -107,8 +107,8 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
 
     WorkflowInstanceForListViewEntity that = (WorkflowInstanceForListViewEntity) o;
 
-    Long workflowInstanceId = getWorkflowInstanceId();
-    if (workflowInstanceId != null ? !workflowInstanceId.equals(that.getWorkflowInstanceId()) : that.getWorkflowInstanceId() != null)
+    Long workflowInstanceId = getWorkflowInstanceKey();
+    if (workflowInstanceId != null ? !workflowInstanceId.equals(that.getWorkflowInstanceKey()) : that.getWorkflowInstanceKey() != null)
       return false;
     if (workflowKey != null ? !workflowKey.equals(that.workflowKey) : that.workflowKey != null)
       return false;
@@ -130,7 +130,7 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + (getWorkflowInstanceId() != null ? getWorkflowInstanceId().hashCode() : 0);
+    result = 31 * result + (getWorkflowInstanceKey() != null ? getWorkflowInstanceKey().hashCode() : 0);
     result = 31 * result + (workflowKey != null ? workflowKey.hashCode() : 0);
     result = 31 * result + (workflowName != null ? workflowName.hashCode() : 0);
     result = 31 * result + (workflowVersion != null ? workflowVersion.hashCode() : 0);

@@ -128,7 +128,7 @@ public class EventZeebeRecordProcessor {
     loadEventGeneralData(record, eventEntity);
 
     eventEntity.setWorkflowKey(recordValue.getWorkflowKey());
-    eventEntity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
+    eventEntity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
     eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
 
     if (recordValue.getElementId() != null) {
@@ -154,7 +154,7 @@ public class EventZeebeRecordProcessor {
 
     final long workflowInstanceKey = recordValue.getWorkflowInstanceKey();
     if (workflowInstanceKey > 0) {
-      eventEntity.setWorkflowInstanceId(workflowInstanceKey);
+      eventEntity.setWorkflowInstanceKey(workflowInstanceKey);
     }
 
     eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
@@ -193,7 +193,7 @@ public class EventZeebeRecordProcessor {
     loadEventGeneralData(record, eventEntity);
 
     if (recordValue.getWorkflowInstanceKey() > 0) {
-      eventEntity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
+      eventEntity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
     }
     eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
     eventEntity.setActivityId(recordValue.getElementId());
@@ -225,7 +225,7 @@ public class EventZeebeRecordProcessor {
   private void persistEvent(EventEntity entity, BulkRequest bulkRequest) throws PersistenceException {
     try {
       logger.debug("Event: id {}, eventSourceType {}, eventType {}, workflowInstanceId {}", entity.getId(), entity.getEventSourceType(), entity.getEventType(),
-        entity.getWorkflowInstanceId());
+        entity.getWorkflowInstanceKey());
 
       //write event
       bulkRequest.add(new IndexRequest(eventTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())

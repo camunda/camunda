@@ -147,11 +147,11 @@ public class WorkflowInstanceRestService {
     if (queries.size() != 1) {
       throw new InvalidRequestException("Exactly one query must be specified in the request.");
     }
-    final List<Long> workflowIds = CollectionUtil.toSafeListOfLongs(queries.get(0).getWorkflowIds());
+    final List<Long> workflowKeys = CollectionUtil.toSafeListOfLongs(queries.get(0).getWorkflowIds());
     final String bpmnProcessId = queries.get(0).getBpmnProcessId();
     final Integer workflowVersion = queries.get(0).getWorkflowVersion();
 
-    if ( (workflowIds != null && workflowIds.size() == 1) == (bpmnProcessId != null && workflowVersion != null) ) {
+    if ( (workflowKeys != null && workflowKeys.size() == 1) == (bpmnProcessId != null && workflowVersion != null) ) {
       throw new InvalidRequestException("Exactly one workflow must be specified in the request (via workflowIds or bpmnProcessId/version).");
     }
     return listViewReader.getActivityStatistics(queries.get(0));
