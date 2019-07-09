@@ -6,8 +6,6 @@ def static DOCKER_IMAGE() { return "google/cloud-sdk:alpine" }
 
 static String agent(env) {
   return """
-apiVersion: v1
-kind: Pod
 metadata:
   labels:
     agent: optimize-ci-build

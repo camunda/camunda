@@ -5,9 +5,6 @@ def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
 
 static String gcloudAgent() {
   return """
----
-apiVersion: v1
-kind: Pod
 metadata:
   labels:
     agent: optimize-ci-build

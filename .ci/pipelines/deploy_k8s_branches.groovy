@@ -6,8 +6,6 @@ def static GCLOUD_DOCKER_IMAGE() { return "google/cloud-sdk:alpine" }
 def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { "postgres:${postgresVersion}" }
 static String kubectlAgent(env, postgresVersion='9.6-alpine') {
   return """
-apiVersion: v1
-kind: Pod
 metadata:
   labels:
     agent: optimize-ci-build

@@ -9,9 +9,6 @@ def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "camunda/camunda-b
 
 static String agent(env, postgresVersion='9.6-alpine', cambpmVersion = '7.10.0') {
     return """
-apiVersion: v1
-kind: Pod
-name: stage-
 metadata:
   labels:
     agent: optimize-ci-build

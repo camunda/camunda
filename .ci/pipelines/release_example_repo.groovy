@@ -23,8 +23,6 @@ static Boolean isValidReleaseVersion(releaseVersion) {
 
 static String mavenDindAgent(env) {
   return """---
-apiVersion: v1
-kind: Pod
 metadata:
   labels:
     agent: optimize-ci-build

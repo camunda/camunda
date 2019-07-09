@@ -5,8 +5,6 @@ def static NODE_POOL() { return "slaves" }
 
 static String mavenElasticsearchAgent() {
     return """
-apiVersion: v1
-kind: Pod
 metadata:
   labels:
     agent: optimize-ci-build
