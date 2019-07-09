@@ -101,6 +101,7 @@ multibranchPipelineJob('camunda-optimize') {
 
   branchSources {
     github {
+      id 'optimize-repo'
       repoOwner githubOrga
       repository gitRepository
       scanCredentialsId 'camunda-jenkins-github'
