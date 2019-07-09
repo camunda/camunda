@@ -62,14 +62,23 @@
     }
 
     .diagram {
-      border-top: 1px solid #dfdfdf;
-
-      padding: 10px;
       display: flex;
       flex-grow: 1;
 
-      .BPMNDiagram .ZoomControls {
-        display: none;
+      hr {
+        position: absolute;
+        left: 0;
+        border: none;
+        border-bottom: 1px solid #d3d3d3;
+        width: 100%;
+        margin: 0;
+      }
+
+      .BPMNDiagram {
+        padding: 10px 0;
+        .ZoomControls {
+          display: none;
+        }
       }
     }
   }

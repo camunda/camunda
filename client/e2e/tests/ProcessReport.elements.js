@@ -13,7 +13,7 @@ export const report = Selector('.ReportItem');
 export const editButton = Selector('a[title="Edit Report"]');
 export const shareButton = Selector('.share-button > .Button');
 export const shareSwitch = Selector('.ShareEntity .Switch');
-export const shareUrl = Selector('.ShareEntity .ShareEntity__share-link input');
+export const shareUrl = Selector('.ShareEntity .shareLink input');
 export const deleteButton = Selector('.delete-button');
 export const modalConfirmbutton = Selector('.Modal .confirm.Button');
 export const groupbyDropdown = Selector('.label')

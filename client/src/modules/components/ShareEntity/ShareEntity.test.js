@@ -60,10 +60,7 @@ it('should construct special link', () => {
 
   node.setState({loaded: true, id: 10});
 
-  expect(node.find('.ShareEntity__share-link')).toHaveProp(
-    'value',
-    'http://example.com/#/share/report/10'
-  );
+  expect(node.find('.shareLink')).toHaveProp('value', 'http://example.com/#/share/report/10');
 });
 
 it('should construct special link for embedding', () => {
@@ -74,7 +71,7 @@ it('should construct special link for embedding', () => {
 
   node.setState({loaded: true, id: 10});
 
-  expect(node.find('.ShareEntity__embed-link').prop('value')).toContain(
+  expect(node.find('.embedLink').prop('value')).toContain(
     '<iframe src="http://example.com/#/share/report/10'
   );
 });

@@ -1,7 +1,7 @@
 .ShareEntity {
   width: 300px;
 
-  .ShareEntity__enable {
+  .enable {
     border-bottom: 1px solid lightgray;
     padding: 0;
     margin: 0;
@@ -12,46 +12,41 @@
     align-items: center;
   }
 
-  .ShareEntity__enable-text {
+  .enableText {
     vertical-align: middle;
     font-weight: bold;
   }
 
-  .ShareEntity__icon {
-    width: 125px;
-    height: 100px;
-    position: relative;
-    top: 50px;
-    margin-right: 13px;
-    display: inline-block;
-    background-repeat: no-repeat;
-  }
-
-  .ShareEntity__icon-container {
-    display: inline-flex;
-    width: 100%;
-  }
-
-  .ShareEntity__link-area--disabled {
-    opacity: 0.5;
-  }
-
-  .ShareEntity__label {
-    color: #626262;
-    font-weight: bold;
-    margin-bottom: 15px;
-    display: inline-block;
-  }
-
-  .ShareEntity__label-description {
-    color: #626262;
-    font-size: 0.8em;
-    padding-bottom: 5px;
-    display: block;
-  }
-
-  .ShareEntity__clipboard {
+  .clipboard {
     width: 100%;
     padding-top: 25px;
+
+    .icon {
+      width: 125px;
+      height: 100px;
+      position: relative;
+      top: 50px;
+      margin-right: 13px;
+      display: inline-block;
+      background-repeat: no-repeat;
+    }
+
+    .label {
+      color: #626262;
+      font-weight: bold;
+      margin-bottom: 15px;
+      display: inline-block;
+    }
+
+    .labelDescription {
+      color: #626262;
+      font-size: 0.8em;
+      padding-bottom: 5px;
+      display: block;
+    }
+  }
+
+  .linkAreaDisabled {
+    opacity: 0.5;
   }
 }

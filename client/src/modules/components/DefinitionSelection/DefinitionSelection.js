@@ -199,6 +199,7 @@ export default class DefinitionSelection extends React.Component {
           </div>
           {this.canRenderDiagram() && (
             <div className="diagram">
+              <hr />
               <BPMNDiagram xml={this.props.xml} disableNavigation />
             </div>
           )}
