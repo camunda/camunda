@@ -6,10 +6,10 @@ exports[`Selection should contain Actions 1`] = `
 >
   <StyledComponent
     data-test="actions"
-    forwardedClass={
+    forwardedComponent={
       Object {
         "$$typeof": Symbol(react.forward_ref),
-        "attrs": undefined,
+        "attrs": Array [],
         "componentStyle": ComponentStyle {
           "componentId": "sc-gPEVay",
           "isStatic": true,
@@ -24,6 +24,7 @@ exports[`Selection should contain Actions 1`] = `
           ],
         },
         "displayName": "styled.div",
+        "foldedComponentIds": Array [],
         "render": [Function],
         "styledComponentId": "sc-gPEVay",
         "target": "div",
@@ -42,10 +43,10 @@ exports[`Selection should contain Actions 1`] = `
         onClick={[Function]}
       >
         <StyledComponent
-          forwardedClass={
+          forwardedComponent={
             Object {
               "$$typeof": Symbol(react.forward_ref),
-              "attrs": undefined,
+              "attrs": Array [],
               "componentStyle": ComponentStyle {
                 "componentId": "sc-iRbamj",
                 "isStatic": true,
@@ -67,6 +68,7 @@ exports[`Selection should contain Actions 1`] = `
                 ],
               },
               "displayName": "styled.div",
+              "foldedComponentIds": Array [],
               "render": [Function],
               "styledComponentId": "sc-iRbamj",
               "target": "div",
@@ -91,15 +93,15 @@ exports[`Selection should contain Actions 1`] = `
 ",
                 ]
               }
-              label={<ForwardRef />}
+              label={<ForwardRef(Styled(ReactComponent)) />}
               placement="bottom"
             >
               <styled.div>
                 <StyledComponent
-                  forwardedClass={
+                  forwardedComponent={
                     Object {
                       "$$typeof": Symbol(react.forward_ref),
-                      "attrs": undefined,
+                      "attrs": Array [],
                       "componentStyle": ComponentStyle {
                         "componentId": "sc-fjdhpX",
                         "isStatic": true,
@@ -112,6 +114,7 @@ exports[`Selection should contain Actions 1`] = `
                         ],
                       },
                       "displayName": "styled.div",
+                      "foldedComponentIds": Array [],
                       "render": [Function],
                       "styledComponentId": "sc-fjdhpX",
                       "target": "div",
@@ -176,10 +179,10 @@ exports[`Selection should contain Actions 1`] = `
                             }
                             data-button-open={false}
                             data-test="dropdown-toggle"
-                            forwardedClass={
+                            forwardedComponent={
                               Object {
                                 "$$typeof": Symbol(react.forward_ref),
-                                "attrs": undefined,
+                                "attrs": Array [],
                                 "componentStyle": ComponentStyle {
                                   "componentId": "sc-jzJRlG",
                                   "isStatic": false,
@@ -222,6 +225,7 @@ exports[`Selection should contain Actions 1`] = `
                                   ],
                                 },
                                 "displayName": "styled.button",
+                                "foldedComponentIds": Array [],
                                 "render": [Function],
                                 "styledComponentId": "sc-jzJRlG",
                                 "target": "button",
@@ -244,10 +248,10 @@ exports[`Selection should contain Actions 1`] = `
                             >
                               <Styled(ReactComponent)>
                                 <StyledComponent
-                                  forwardedClass={
+                                  forwardedComponent={
                                     Object {
                                       "$$typeof": Symbol(react.forward_ref),
-                                      "attrs": undefined,
+                                      "attrs": Array [],
                                       "componentStyle": ComponentStyle {
                                         "componentId": "sc-hzDkRC",
                                         "isStatic": true,
@@ -259,6 +263,7 @@ exports[`Selection should contain Actions 1`] = `
                                         ],
                                       },
                                       "displayName": "Styled(ReactComponent)",
+                                      "foldedComponentIds": Array [],
                                       "render": [Function],
                                       "styledComponentId": "sc-hzDkRC",
                                       "target": [Function],
@@ -337,10 +342,10 @@ exports[`Selection should contain Actions 1`] = `
       >
         <StyledComponent
           aria-label="Drop Selection 1"
-          forwardedClass={
+          forwardedComponent={
             Object {
               "$$typeof": Symbol(react.forward_ref),
-              "attrs": undefined,
+              "attrs": Array [],
               "componentStyle": ComponentStyle {
                 "componentId": "sc-jlyJG",
                 "isStatic": true,
@@ -357,6 +362,7 @@ exports[`Selection should contain Actions 1`] = `
                 ],
               },
               "displayName": "styled.button",
+              "foldedComponentIds": Array [],
               "render": [Function],
               "styledComponentId": "sc-jlyJG",
               "target": "button",
@@ -375,10 +381,10 @@ exports[`Selection should contain Actions 1`] = `
           >
             <Styled(ReactComponent)>
               <StyledComponent
-                forwardedClass={
+                forwardedComponent={
                   Object {
                     "$$typeof": Symbol(react.forward_ref),
-                    "attrs": undefined,
+                    "attrs": Array [],
                     "componentStyle": ComponentStyle {
                       "componentId": "sc-gipzik",
                       "isStatic": true,
@@ -391,6 +397,7 @@ exports[`Selection should contain Actions 1`] = `
                       ],
                     },
                     "displayName": "Styled(ReactComponent)",
+                    "foldedComponentIds": Array [],
                     "render": [Function],
                     "styledComponentId": "sc-gipzik",
                     "target": [Function],
@@ -452,10 +459,10 @@ exports[`Selection should contain Instances 1`] = `
         >
           <StyledComponent
             data-test="addInstanceTransition"
-            forwardedClass={
+            forwardedComponent={
               Object {
                 "$$typeof": Symbol(react.forward_ref),
-                "attrs": undefined,
+                "attrs": Array [],
                 "componentStyle": ComponentStyle {
                   "componentId": "sc-cvbbAY",
                   "isStatic": false,
@@ -478,6 +485,7 @@ exports[`Selection should contain Instances 1`] = `
                   ],
                 },
                 "displayName": "Styled(Transition)",
+                "foldedComponentIds": Array [],
                 "render": [Function],
                 "styledComponentId": "sc-cvbbAY",
                 "target": [Function],
@@ -547,10 +555,10 @@ exports[`Selection should contain Instances 1`] = `
                         <StyledComponent
                           className="sc-cvbbAY fiOHD"
                           data-test="addInstanceTransition"
-                          forwardedClass={
+                          forwardedComponent={
                             Object {
                               "$$typeof": Symbol(react.forward_ref),
-                              "attrs": undefined,
+                              "attrs": Array [],
                               "componentStyle": ComponentStyle {
                                 "componentId": "sc-fBuWsC",
                                 "isStatic": false,
@@ -595,6 +603,7 @@ exports[`Selection should contain Instances 1`] = `
                                 ],
                               },
                               "displayName": "styled.li",
+                              "foldedComponentIds": Array [],
                               "render": [Function],
                               "styledComponentId": "sc-fBuWsC",
                               "target": "li",
@@ -612,10 +621,10 @@ exports[`Selection should contain Instances 1`] = `
                           >
                             <styled.div>
                               <StyledComponent
-                                forwardedClass={
+                                forwardedComponent={
                                   Object {
                                     "$$typeof": Symbol(react.forward_ref),
-                                    "attrs": undefined,
+                                    "attrs": Array [],
                                     "componentStyle": ComponentStyle {
                                       "componentId": "sc-fMiknA",
                                       "isStatic": true,
@@ -627,6 +636,7 @@ exports[`Selection should contain Instances 1`] = `
                                       ],
                                     },
                                     "displayName": "styled.div",
+                                    "foldedComponentIds": Array [],
                                     "render": [Function],
                                     "styledComponentId": "sc-fMiknA",
                                     "target": "div",
@@ -655,10 +665,10 @@ exports[`Selection should contain Instances 1`] = `
                                           theme="dark"
                                         >
                                           <StyledComponent
-                                            forwardedClass={
+                                            forwardedComponent={
                                               Object {
                                                 "$$typeof": Symbol(react.forward_ref),
-                                                "attrs": undefined,
+                                                "attrs": Array [],
                                                 "componentStyle": ComponentStyle {
                                                   "componentId": "sc-bwzfXH",
                                                   "isStatic": true,
@@ -679,6 +689,7 @@ exports[`Selection should contain Instances 1`] = `
                                                   ],
                                                 },
                                                 "displayName": "Styled(ReactComponent)",
+                                                "foldedComponentIds": Array [],
                                                 "render": [Function],
                                                 "styledComponentId": "sc-bwzfXH",
                                                 "target": [Function],
@@ -712,10 +723,10 @@ exports[`Selection should contain Instances 1`] = `
                             </styled.div>
                             <styled.div>
                               <StyledComponent
-                                forwardedClass={
+                                forwardedComponent={
                                   Object {
                                     "$$typeof": Symbol(react.forward_ref),
-                                    "attrs": undefined,
+                                    "attrs": Array [],
                                     "componentStyle": ComponentStyle {
                                       "componentId": "sc-dVhcbM",
                                       "isStatic": true,
@@ -727,6 +738,7 @@ exports[`Selection should contain Instances 1`] = `
                                       ],
                                     },
                                     "displayName": "styled.div",
+                                    "foldedComponentIds": Array [],
                                     "render": [Function],
                                     "styledComponentId": "sc-dVhcbM",
                                     "target": "div",
@@ -746,10 +758,10 @@ exports[`Selection should contain Instances 1`] = `
                             </styled.div>
                             <styled.div>
                               <StyledComponent
-                                forwardedClass={
+                                forwardedComponent={
                                   Object {
                                     "$$typeof": Symbol(react.forward_ref),
-                                    "attrs": undefined,
+                                    "attrs": Array [],
                                     "componentStyle": ComponentStyle {
                                       "componentId": "sc-eqIVtm",
                                       "isStatic": true,
@@ -761,6 +773,7 @@ exports[`Selection should contain Instances 1`] = `
                                       ],
                                     },
                                     "displayName": "styled.div",
+                                    "foldedComponentIds": Array [],
                                     "render": [Function],
                                     "styledComponentId": "sc-eqIVtm",
                                     "target": "div",
@@ -780,10 +793,10 @@ exports[`Selection should contain Instances 1`] = `
                             </styled.div>
                             <styled.div>
                               <StyledComponent
-                                forwardedClass={
+                                forwardedComponent={
                                   Object {
                                     "$$typeof": Symbol(react.forward_ref),
-                                    "attrs": undefined,
+                                    "attrs": Array [],
                                     "componentStyle": ComponentStyle {
                                       "componentId": "sc-fAjcbJ",
                                       "isStatic": true,
@@ -795,6 +808,7 @@ exports[`Selection should contain Instances 1`] = `
                                       ],
                                     },
                                     "displayName": "styled.div",
+                                    "foldedComponentIds": Array [],
                                     "render": [Function],
                                     "styledComponentId": "sc-fAjcbJ",
                                     "target": "div",
@@ -844,14 +858,14 @@ exports[`Selection should contain Instances 1`] = `
                                     operationType="RESOLVE_INCIDENT"
                                   >
                                     <StyledComponent
-                                      forwardedClass={
+                                      forwardedComponent={
                                         Object {
                                           "$$typeof": Symbol(react.forward_ref),
                                           "Spinner": Object {
                                             "$$typeof": Symbol(react.forward_ref),
                                             "WrappedComponent": Object {
                                               "$$typeof": Symbol(react.forward_ref),
-                                              "attrs": undefined,
+                                              "attrs": Array [],
                                               "componentStyle": ComponentStyle {
                                                 "componentId": "sc-dxgOiQ",
                                                 "isStatic": false,
@@ -868,6 +882,7 @@ exports[`Selection should contain Instances 1`] = `
                                                 ],
                                               },
                                               "displayName": "Styled(Spinner)",
+                                              "foldedComponentIds": Array [],
                                               "render": [Function],
                                               "styledComponentId": "sc-dxgOiQ",
                                               "target": [Function],
@@ -879,7 +894,7 @@ exports[`Selection should contain Instances 1`] = `
                                             "displayName": "Themed(Styled(Spinner))",
                                             "render": [Function],
                                           },
-                                          "attrs": undefined,
+                                          "attrs": Array [],
                                           "componentStyle": ComponentStyle {
                                             "componentId": "sc-caSCKo",
                                             "isStatic": true,
@@ -891,6 +906,7 @@ exports[`Selection should contain Instances 1`] = `
                                             ],
                                           },
                                           "displayName": "Styled(ActionStatus)",
+                                          "foldedComponentIds": Array [],
                                           "render": [Function],
                                           "styledComponentId": "sc-caSCKo",
                                           "target": [Function],
@@ -987,10 +1003,10 @@ exports[`Selection should contain Instances 1`] = `
                                             >
                                               <StyledComponent
                                                 className="sc-caSCKo lEUMA"
-                                                forwardedClass={
+                                                forwardedComponent={
                                                   Object {
                                                     "$$typeof": Symbol(react.forward_ref),
-                                                    "attrs": undefined,
+                                                    "attrs": Array [],
                                                     "componentStyle": ComponentStyle {
                                                       "componentId": "sc-dxgOiQ",
                                                       "isStatic": false,
@@ -1007,6 +1023,7 @@ exports[`Selection should contain Instances 1`] = `
                                                       ],
                                                     },
                                                     "displayName": "Styled(Spinner)",
+                                                    "foldedComponentIds": Array [],
                                                     "render": [Function],
                                                     "styledComponentId": "sc-dxgOiQ",
                                                     "target": [Function],
@@ -1043,10 +1060,10 @@ exports[`Selection should contain Instances 1`] = `
                                                       >
                                                         <StyledComponent
                                                           className="sc-caSCKo lEUMA sc-dxgOiQ fnVsKo"
-                                                          forwardedClass={
+                                                          forwardedComponent={
                                                             Object {
                                                               "$$typeof": Symbol(react.forward_ref),
-                                                              "attrs": undefined,
+                                                              "attrs": Array [],
                                                               "componentStyle": ComponentStyle {
                                                                 "componentId": "sc-kpOJdX",
                                                                 "isStatic": false,
@@ -1083,6 +1100,7 @@ exports[`Selection should contain Instances 1`] = `
                                                                 ],
                                                               },
                                                               "displayName": "styled.div",
+                                                              "foldedComponentIds": Array [],
                                                               "render": [Function],
                                                               "styledComponentId": "sc-kpOJdX",
                                                               "target": "div",
@@ -1133,10 +1151,10 @@ exports[`Selection should contain Instances 1`] = `
 exports[`Selection should contain a Footer 1`] = `
 <styled.footer>
   <StyledComponent
-    forwardedClass={
+    forwardedComponent={
       Object {
         "$$typeof": Symbol(react.forward_ref),
-        "attrs": undefined,
+        "attrs": Array [],
         "componentStyle": ComponentStyle {
           "componentId": "sc-gisBJw",
           "isStatic": true,
@@ -1160,6 +1178,7 @@ exports[`Selection should contain a Footer 1`] = `
           ],
         },
         "displayName": "styled.footer",
+        "foldedComponentIds": Array [],
         "render": [Function],
         "styledComponentId": "sc-gisBJw",
         "target": "footer",
@@ -1175,10 +1194,10 @@ exports[`Selection should contain a Footer 1`] = `
     >
       <styled.div>
         <StyledComponent
-          forwardedClass={
+          forwardedComponent={
             Object {
               "$$typeof": Symbol(react.forward_ref),
-              "attrs": undefined,
+              "attrs": Array [],
               "componentStyle": ComponentStyle {
                 "componentId": "sc-kjoXOD",
                 "isStatic": true,
@@ -1190,6 +1209,7 @@ exports[`Selection should contain a Footer 1`] = `
                 ],
               },
               "displayName": "styled.div",
+              "foldedComponentIds": Array [],
               "render": [Function],
               "styledComponentId": "sc-kjoXOD",
               "target": "div",
