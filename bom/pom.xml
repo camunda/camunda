@@ -24,6 +24,8 @@
     </nexus.snapshot.repository>
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/
     </nexus.release.repository>
+
+    <version.netty>4.1.37.Final</version.netty>
   </properties>
 
   <dependencyManagement>
@@ -176,6 +178,14 @@
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-protocol-asserts</artifactId>
         <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>${version.netty}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
