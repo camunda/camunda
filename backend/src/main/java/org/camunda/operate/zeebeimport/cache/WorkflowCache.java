@@ -32,16 +32,16 @@ public class WorkflowCache {
   @Autowired
   private WorkflowReader workflowReader;
 
-  public String getWorkflowNameOrDefaultValue(Long workflowId, String defaultValue) {
-    final WorkflowEntity cachedWorkflowData = cache.get(workflowId);
+  public String getWorkflowNameOrDefaultValue(Long workflowKey, String defaultValue) {
+    final WorkflowEntity cachedWorkflowData = cache.get(workflowKey);
     String workflowName = defaultValue;
     if (cachedWorkflowData != null) {
       workflowName = cachedWorkflowData.getName();    
     } else {
-      final Optional<WorkflowEntity> workflowMaybe = findOrWaitWorkflow(workflowId, MAX_ATTEMPTS, WAIT_TIME);
+      final Optional<WorkflowEntity> workflowMaybe = findOrWaitWorkflow(workflowKey, MAX_ATTEMPTS, WAIT_TIME);
       if (workflowMaybe.isPresent()) {
         WorkflowEntity workflow = workflowMaybe.get();
-        putToCache(workflowId, workflow);
+        putToCache(workflowKey, workflow);
         workflowName = workflow.getName();
       }
     }
@@ -52,20 +52,20 @@ public class WorkflowCache {
     return workflowName;
   }
   
-  private Optional<WorkflowEntity> readWorkflowById(Long workflowId) {
+  private Optional<WorkflowEntity> readWorkflowByKey(Long workflowKey) {
     try {
-      return Optional.of(workflowReader.getWorkflow(workflowId));
+      return Optional.of(workflowReader.getWorkflow(workflowKey));
     } catch (NotFoundException nfe) {
       return Optional.empty();
     }
   }
 
-  public Optional<WorkflowEntity> findOrWaitWorkflow(Long workflowId, int attempts, long sleepInMilliseconds) {
+  public Optional<WorkflowEntity> findOrWaitWorkflow(Long workflowKey, int attempts, long sleepInMilliseconds) {
     int attemptsCount = 0;
     Optional<WorkflowEntity> foundWorkflow = Optional.empty();
     while (!foundWorkflow.isPresent() && attemptsCount < attempts) {
       attemptsCount++;
-      foundWorkflow = readWorkflowById(workflowId);
+      foundWorkflow = readWorkflowByKey(workflowKey);
       if (!foundWorkflow.isPresent()) {
         logger.debug("{} attempts left. Waiting {} ms.", attempts - attemptsCount, sleepInMilliseconds);
         try {
@@ -80,7 +80,7 @@ public class WorkflowCache {
     return foundWorkflow;
   }
 
-  public void putToCache(Long workflowId, WorkflowEntity workflow) {
+  public void putToCache(Long workflowKey, WorkflowEntity workflow) {
     if (cache.size() >= CACHE_MAX_SIZE) {
       // remove 1st element
       final Iterator<Long> iterator = cache.keySet().iterator();
@@ -89,7 +89,7 @@ public class WorkflowCache {
         iterator.remove();
       }
     }
-    cache.put(workflowId, workflow);
+    cache.put(workflowKey, workflow);
   }
 
   public void clearCache() {

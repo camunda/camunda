@@ -127,7 +127,7 @@ public class EventZeebeRecordProcessor {
 
     loadEventGeneralData(record, eventEntity);
 
-    eventEntity.setWorkflowId(recordValue.getWorkflowKey());
+    eventEntity.setWorkflowKey(recordValue.getWorkflowKey());
     eventEntity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
     eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
 
@@ -149,7 +149,7 @@ public class EventZeebeRecordProcessor {
 
     final long workflowKey = recordValue.getWorkflowKey();
     if (workflowKey > 0) {
-      eventEntity.setWorkflowId(workflowKey);
+      eventEntity.setWorkflowKey(workflowKey);
     }
 
     final long workflowInstanceKey = recordValue.getWorkflowInstanceKey();

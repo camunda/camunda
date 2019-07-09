@@ -13,6 +13,7 @@ import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
+import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
@@ -67,7 +68,7 @@ public class IncidentZeebeRecordProcessor {
       bulkRequest.add(getIncidentDeleteQuery(incidentKey));
     } else if (intentStr.equals(CREATED.toString())) {
       IncidentEntity incident = new IncidentEntity();
-      incident.setId(incidentKey);
+      incident.setId( ConversionUtils.toStringOrNull(incidentKey));
       incident.setKey(incidentKey);
       if (recordValue.getJobKey() > 0) {
         incident.setJobKey(recordValue.getJobKey());
@@ -76,7 +77,7 @@ public class IncidentZeebeRecordProcessor {
         incident.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
       }
       if (recordValue.getWorkflowKey() > 0) {
-        incident.setWorkflowId(recordValue.getWorkflowKey());
+        incident.setWorkflowKey(recordValue.getWorkflowKey());
       }
       incident.setErrorMessage(recordValue.getErrorMessage());
       incident.setErrorType(recordValue.getErrorType());

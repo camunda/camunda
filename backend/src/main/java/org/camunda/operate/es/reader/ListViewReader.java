@@ -223,7 +223,7 @@ public class ListViewReader {
 
     QueryBuilder workflowIdQuery = null;
     if (query.getWorkflowIds() != null && !query.getWorkflowIds().isEmpty()) {
-      workflowIdQuery = termsQuery(ListViewTemplate.WORKFLOW_ID,query.getWorkflowIds());
+      workflowIdQuery = termsQuery(ListViewTemplate.WORKFLOW_KEY,query.getWorkflowIds());
     }
 
     QueryBuilder bpmnProcessIdQuery = null;

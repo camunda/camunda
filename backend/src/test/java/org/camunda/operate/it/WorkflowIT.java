@@ -62,7 +62,7 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
 
     //then
     final WorkflowEntity workflowEntity = workflowReader.getWorkflow(workflowId);
-    assertThat(workflowEntity.getWorkflowId()).isEqualTo(workflowId);
+    assertThat(workflowEntity.getKey()).isEqualTo(workflowId);
     assertThat(workflowEntity.getBpmnProcessId()).isEqualTo("demoProcess");
     assertThat(workflowEntity.getVersion()).isEqualTo(1);
     assertThat(workflowEntity.getBpmnXml()).isNotEmpty();

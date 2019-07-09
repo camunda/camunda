@@ -57,20 +57,20 @@ public class WorkflowInstanceReader extends AbstractReader {
 
   /**
    *
-   * @param workflowId
+   * @param workflowKey
    * @return
    */
-  public List<Long> queryWorkflowInstancesWithEmptyWorkflowVersion(Long workflowId) {
+  public List<Long> queryWorkflowInstancesWithEmptyWorkflowVersion(Long workflowKey) {
       QueryBuilder queryBuilder = constantScoreQuery(
           joinWithAnd(
-              termQuery(ListViewTemplate.WORKFLOW_ID, workflowId),
+              termQuery(ListViewTemplate.WORKFLOW_KEY, workflowKey),
               boolQuery().mustNot(existsQuery(ListViewTemplate.WORKFLOW_VERSION))
           )
       );
       SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias())
                                       .source(new SearchSourceBuilder()
                                       .query(queryBuilder)
-                                      .fetchSource(ListViewTemplate.WORKFLOW_ID, null));
+                                      .fetchSource(ListViewTemplate.WORKFLOW_KEY, null));
       try {
         return CollectionUtil.toSafeListOfLongs(ElasticsearchUtil.scrollIdsToList(searchRequest, esClient));
       } catch (IOException e) {

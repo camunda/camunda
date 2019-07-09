@@ -62,9 +62,9 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long workflowId = (Long)objects[0];
+      Long workflowKey = (Long)objects[0];
       try {
-        final WorkflowEntity workflow = workflowReader.getWorkflow(workflowId);
+        final WorkflowEntity workflow = workflowReader.getWorkflow(workflowKey);
         return workflow != null;
       } catch (NotFoundException ex) {
         return false;

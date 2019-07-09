@@ -18,6 +18,7 @@ import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
+import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.record.Intent;
@@ -89,7 +90,8 @@ public class ActivityInstanceZeebeRecordProcessor {
     if (entity == null) {
       entity = new ActivityInstanceEntity();
     }
-    entity.setId(record.getKey());
+    entity.setKey(record.getKey());
+    entity.setId(ConversionUtils.toStringOrNull(record.getKey()));
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
@@ -118,7 +120,7 @@ public class ActivityInstanceZeebeRecordProcessor {
 
   private UpdateRequest persistActivityInstanceFromIncident(Record record, String intentStr, IncidentRecordValueImpl recordValue) throws PersistenceException {
     ActivityInstanceEntity entity = new ActivityInstanceEntity();
-    entity.setId(recordValue.getElementInstanceKey());
+    entity.setId(ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()));
     entity.setKey(recordValue.getElementInstanceKey());
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());

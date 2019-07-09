@@ -21,7 +21,7 @@ public class ListViewTemplate extends AbstractTemplateCreator {
   public static final String WORKFLOW_INSTANCE_ID = "workflowInstanceId";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String WORKFLOW_VERSION = "workflowVersion";
-  public static final String WORKFLOW_ID = "workflowId";
+  public static final String WORKFLOW_KEY = "workflowKey";
   public static final String WORKFLOW_NAME = "workflowName";
   public static final String START_DATE = "startDate";
   public static final String END_DATE = "endDate";
@@ -61,7 +61,7 @@ public class ListViewTemplate extends AbstractTemplateCreator {
       .startObject(WORKFLOW_INSTANCE_ID)
         .field("type", "long")
       .endObject()
-      .startObject(WORKFLOW_ID)
+      .startObject(WORKFLOW_KEY)
         .field("type", "long")
       .endObject()
       // WORKFLOW_NAME index is stored as lowercase keyword: https://www.elastic.co/guide/en/elasticsearch/reference/current/keyword.html

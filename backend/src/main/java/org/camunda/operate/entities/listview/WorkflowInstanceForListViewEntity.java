@@ -12,7 +12,7 @@ import org.camunda.operate.es.schema.templates.ListViewTemplate;
 
 public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
   
-  private Long workflowId;
+  private Long workflowKey;
   private String workflowName;
   private Integer workflowVersion;
   private String bpmnProcessId;
@@ -32,12 +32,12 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
     this.setKey(workflowInstanceId);
   }
 
-  public Long getWorkflowId() {
-    return workflowId;
+  public Long getWorkflowKey() {
+    return workflowKey;
   }
 
-  public void setWorkflowId(Long workflowId) {
-    this.workflowId = workflowId;
+  public void setWorkflowKey(Long workflowKey) {
+    this.workflowKey = workflowKey;
   }
 
   public String getWorkflowName() {
@@ -110,7 +110,7 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
     Long workflowInstanceId = getWorkflowInstanceId();
     if (workflowInstanceId != null ? !workflowInstanceId.equals(that.getWorkflowInstanceId()) : that.getWorkflowInstanceId() != null)
       return false;
-    if (workflowId != null ? !workflowId.equals(that.workflowId) : that.workflowId != null)
+    if (workflowKey != null ? !workflowKey.equals(that.workflowKey) : that.workflowKey != null)
       return false;
     if (workflowName != null ? !workflowName.equals(that.workflowName) : that.workflowName != null)
       return false;
@@ -131,7 +131,7 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
   public int hashCode() {
     int result = super.hashCode();
     result = 31 * result + (getWorkflowInstanceId() != null ? getWorkflowInstanceId().hashCode() : 0);
-    result = 31 * result + (workflowId != null ? workflowId.hashCode() : 0);
+    result = 31 * result + (workflowKey != null ? workflowKey.hashCode() : 0);
     result = 31 * result + (workflowName != null ? workflowName.hashCode() : 0);
     result = 31 * result + (workflowVersion != null ? workflowVersion.hashCode() : 0);
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);

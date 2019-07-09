@@ -12,7 +12,7 @@ public class EventEntity extends OperateZeebeEntity {
   /**
    * Workflow data.
    */
-  private Long workflowId;
+  private Long workflowKey;
   private Long workflowInstanceId;
   private String bpmnProcessId;
 
@@ -34,12 +34,12 @@ public class EventEntity extends OperateZeebeEntity {
    */
   private EventMetadataEntity metadata;
 
-  public Long getWorkflowId() {
-    return workflowId;
+  public Long getWorkflowKey() {
+    return workflowKey;
   }
 
-  public void setWorkflowId(Long workflowId) {
-    this.workflowId = workflowId;
+  public void setWorkflowKey(Long workflowKey) {
+    this.workflowKey = workflowKey;
   }
 
   public Long getWorkflowInstanceId() {
@@ -117,7 +117,7 @@ public class EventEntity extends OperateZeebeEntity {
 
     EventEntity that = (EventEntity) o;
 
-    if (workflowId != null ? !workflowId.equals(that.workflowId) : that.workflowId != null)
+    if (workflowKey != null ? !workflowKey.equals(that.workflowKey) : that.workflowKey != null)
       return false;
     if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
       return false;
@@ -139,7 +139,7 @@ public class EventEntity extends OperateZeebeEntity {
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + (workflowId != null ? workflowId.hashCode() : 0);
+    result = 31 * result + (workflowKey != null ? workflowKey.hashCode() : 0);
     result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (activityId != null ? activityId.hashCode() : 0);

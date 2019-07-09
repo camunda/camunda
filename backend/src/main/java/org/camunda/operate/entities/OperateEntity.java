@@ -17,10 +17,6 @@ public abstract class OperateEntity {
   public void setId(String id) {
     this.id = id;
   }
-
-  public void setId(Long idAsLong) {
-    setId(idAsLong.toString());
-  }
   
   @Override
   public boolean equals(Object o) {

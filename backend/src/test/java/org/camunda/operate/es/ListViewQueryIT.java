@@ -558,13 +558,13 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //given
     Long wfId1 = 1L, wfId2 = 2L, wfId3 = 3L;
     final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
-    workflowInstance1.setWorkflowId(wfId1);
+    workflowInstance1.setWorkflowKey(wfId1);
     final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
-    workflowInstance2.setWorkflowId(wfId2);
+    workflowInstance2.setWorkflowKey(wfId2);
     final WorkflowInstanceForListViewEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
     final WorkflowInstanceForListViewEntity workflowInstance4 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
-    workflowInstance3.setWorkflowId(wfId3);
-    workflowInstance4.setWorkflowId(wfId3);
+    workflowInstance3.setWorkflowKey(wfId3);
+    workflowInstance4.setWorkflowKey(wfId3);
 
     elasticsearchTestRule.persistNew(workflowInstance1, workflowInstance2, workflowInstance3, workflowInstance4);
 

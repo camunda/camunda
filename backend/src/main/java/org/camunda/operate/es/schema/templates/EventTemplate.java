@@ -20,7 +20,7 @@ public class EventTemplate extends AbstractTemplateCreator implements WorkflowIn
 
   public static final String KEY = "key";
 
-  public static final String WORKFLOW_ID = "workflowId";
+  public static final String WORKFLOW_KEY = "workflowKey";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
 
   public static final String ACTIVITY_ID = "activityId";
@@ -63,7 +63,7 @@ public class EventTemplate extends AbstractTemplateCreator implements WorkflowIn
       .startObject(KEY)
         .field("type", "long")
       .endObject()
-      .startObject(WORKFLOW_ID)
+      .startObject(WORKFLOW_KEY)
         .field("type", "long")
       .endObject()
       .startObject(WORKFLOW_INSTANCE_ID)

@@ -26,6 +26,7 @@ import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
+import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.record.value.DeploymentRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -90,18 +91,17 @@ public class WorkflowZeebeRecordProcessor {
     DeploymentResource resource = resources.get(resourceName);
 
     final WorkflowEntity workflowEntity = createEntity(workflow, resource);
-    workflowEntity.setKey(record.getKey());
-    logger.debug("Workflow: id {}, bpmnProcessId {}", workflowEntity.getId(), workflowEntity.getBpmnProcessId());
+    logger.debug("Workflow: key {}, bpmnProcessId {}", workflowEntity.getKey(), workflowEntity.getBpmnProcessId());
 
     try {
       updateFieldsInInstancesFor(workflowEntity, bulkRequest);
 
-      bulkRequest.add(new IndexRequest(workflowIndex.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, workflowEntity.getId())
+      bulkRequest.add(new IndexRequest(workflowIndex.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, ConversionUtils.toStringOrNull(workflowEntity.getKey()))
           .source(objectMapper.writeValueAsString(workflowEntity), XContentType.JSON)
       );
     } catch (JsonProcessingException e) {
       logger.error("Error preparing the query to insert workflow", e);
-      throw new PersistenceException(String.format("Error preparing the query to insert workflow [%s]", workflowEntity.getId()), e);
+      throw new PersistenceException(String.format("Error preparing the query to insert workflow [%s]", workflowEntity.getKey()), e);
     }
   }
 
@@ -121,7 +121,7 @@ public class WorkflowZeebeRecordProcessor {
     WorkflowEntity workflowEntity = new WorkflowEntity();
 
     workflowEntity.setId(String.valueOf(workflow.getWorkflowKey()));
-    workflowEntity.setWorkflowId(workflow.getWorkflowKey());
+    workflowEntity.setKey(workflow.getWorkflowKey());
     workflowEntity.setBpmnProcessId(workflow.getBpmnProcessId());
     workflowEntity.setVersion(workflow.getVersion());
 

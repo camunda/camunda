@@ -5,27 +5,26 @@
  */
 package org.camunda.operate.entities;
 
+import org.camunda.operate.util.ConversionUtils;
+
 public class WorkflowEntity extends OperateZeebeEntity {
 
-  private Long workflowId;
   private String name;
   private int version;
   private String bpmnProcessId;
   private String bpmnXml;
   private String resourceName;
-  
-  public Long getWorkflowId() {
-    return workflowId;
-  }
-  
-  public void setWorkflowId(Long workflowId) {
-    this.workflowId = workflowId;
-  }
 
   public String getName() {
     return name;
   }
 
+  @Override
+  public void setId(String id) {
+    super.setId(id);
+    setKey(ConversionUtils.toLongOrNull(id));
+  }
+  
   public void setName(String name) {
     this.name = name;
   }
@@ -81,8 +80,6 @@ public class WorkflowEntity extends OperateZeebeEntity {
       return false;
     if (bpmnXml != null ? !bpmnXml.equals(that.bpmnXml) : that.bpmnXml != null)
       return false;
-    if (workflowId != null ? !workflowId.equals(that.workflowId) : that.workflowId != null)
-      return false;
     return resourceName != null ? resourceName.equals(that.resourceName) : that.resourceName == null;
   }
 
@@ -94,13 +91,12 @@ public class WorkflowEntity extends OperateZeebeEntity {
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (bpmnXml != null ? bpmnXml.hashCode() : 0);
     result = 31 * result + (resourceName != null ? resourceName.hashCode() : 0);
-    result = 31 * result + (workflowId != null ? workflowId.hashCode(): 0);
     return result;
   }
 
   @Override
   public String toString() {
-    return "WorkflowEntity{"+ "workflowId="+workflowId+" " + "name='" + name + '\'' + ", version=" + version + ", bpmnProcessId='" + bpmnProcessId + '\'' + ", bpmnXml='" + bpmnXml + '\''
+    return "WorkflowEntity{"+ "name='" + name + '\'' + ", version=" + version + ", bpmnProcessId='" + bpmnProcessId + '\'' + ", bpmnXml='" + bpmnXml + '\''
       + ", resourceName='" + resourceName + '\'' + "} " + super.toString();
   }
 

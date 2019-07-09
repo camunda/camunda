@@ -216,7 +216,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
       .forEach(eventEntity -> {
         assertThat(eventEntity.getWorkflowInstanceId()).as(assertionName + ".workflowInstanceId").isEqualTo(workflowInstanceKey);
         if (workflowId != null) {
-          assertThat(eventEntity.getWorkflowId()).as(assertionName + ".workflowId").isEqualTo(workflowId);
+          assertThat(eventEntity.getWorkflowKey()).as(assertionName + ".workflowId").isEqualTo(workflowId);
         }
         assertThat(eventEntity.getDateTime()).as(assertionName + ".dateTimeAfter").isAfterOrEqualTo(testStartTime);
         assertThat(eventEntity.getDateTime()).as(assertionName + ".dateTimeBefore").isBeforeOrEqualTo(OffsetDateTime.now());

@@ -130,7 +130,7 @@ public class ListViewWorkflowInstanceDto {
       workflowInstance.setState(WorkflowInstanceStateDto.INCIDENT);
     }
 
-    workflowInstance.setWorkflowId(ConversionUtils.toStringOrNull(workflowInstanceEntity.getWorkflowId()));
+    workflowInstance.setWorkflowId(ConversionUtils.toStringOrNull(workflowInstanceEntity.getWorkflowKey()));
     workflowInstance.setBpmnProcessId(workflowInstanceEntity.getBpmnProcessId());
     workflowInstance.setWorkflowName(workflowInstanceEntity.getWorkflowName());
     workflowInstance.setWorkflowVersion(workflowInstanceEntity.getWorkflowVersion());

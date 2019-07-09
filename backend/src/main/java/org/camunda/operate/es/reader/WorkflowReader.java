@@ -46,11 +46,11 @@ public class WorkflowReader extends AbstractReader {
 
   /**
    * Gets the workflow diagram XML as a string.
-   * @param workflowId
+   * @param workflowKey
    * @return
    */
-  public String getDiagram(Long workflowId) {
-    final IdsQueryBuilder q = idsQuery().addIds(workflowId.toString());
+  public String getDiagram(Long workflowKey) {
+    final IdsQueryBuilder q = idsQuery().addIds(workflowKey.toString());
 
     final SearchRequest searchRequest = new SearchRequest(workflowType.getAlias())
       .source(new SearchSourceBuilder()
@@ -64,9 +64,9 @@ public class WorkflowReader extends AbstractReader {
         Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
         return (String) result.get(BPMN_XML);
       } else if (response.getHits().totalHits > 1) {
-        throw new NotFoundException(String.format("Could not find unique workflow with id '%s'.", workflowId));
+        throw new NotFoundException(String.format("Could not find unique workflow with id '%s'.", workflowKey));
       } else {
-        throw new NotFoundException(String.format("Could not find workflow with id '%s'.", workflowId));
+        throw new NotFoundException(String.format("Could not find workflow with id '%s'.", workflowKey));
       }
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining the workflow diagram: %s", e.getMessage());
@@ -77,22 +77,22 @@ public class WorkflowReader extends AbstractReader {
 
   /**
    * Gets the workflow by id.
-   * @param workflowId
+   * @param workflowKey
    * @return
    */
-  public WorkflowEntity getWorkflow(Long workflowId) {
+  public WorkflowEntity getWorkflow(Long workflowKey) {
     final SearchRequest searchRequest = new SearchRequest(workflowType.getAlias())
       .source(new SearchSourceBuilder()
-        .query(QueryBuilders.termQuery(WorkflowIndex.WORKFLOW_ID, workflowId)));
+        .query(QueryBuilders.termQuery(WorkflowIndex.KEY, workflowKey)));
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       if (response.getHits().totalHits == 1) {
         return fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
       } else if (response.getHits().totalHits > 1) {
-        throw new NotFoundException(String.format("Could not find unique workflow with id '%s'.", workflowId));
+        throw new NotFoundException(String.format("Could not find unique workflow with key '%s'.", workflowKey));
       } else {
-        throw new NotFoundException(String.format("Could not find workflow with id '%s'.", workflowId));
+        throw new NotFoundException(String.format("Could not find workflow with key '%s'.", workflowKey));
       }
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining the workflow: %s", e.getMessage());
@@ -119,7 +119,7 @@ public class WorkflowReader extends AbstractReader {
         .size(ElasticsearchUtil.TERMS_AGG_SIZE)
         .subAggregation(
           topHits(workflowsAggName)
-            .fetchSource(new String[] { WorkflowIndex.ID, WorkflowIndex.WORKFLOW_ID, WorkflowIndex.NAME, WorkflowIndex.VERSION, WorkflowIndex.BPMN_PROCESS_ID  }, null)
+            .fetchSource(new String[] { WorkflowIndex.ID,WorkflowIndex.NAME, WorkflowIndex.VERSION, WorkflowIndex.BPMN_PROCESS_ID  }, null)
             .size(ElasticsearchUtil.TOPHITS_AGG_SIZE)
             .sort(WorkflowIndex.VERSION, SortOrder.DESC));
 
@@ -167,7 +167,7 @@ public class WorkflowReader extends AbstractReader {
     try {
       final List<WorkflowEntity> workflowsList = scroll(searchRequest);
       for (WorkflowEntity workflowEntity: workflowsList) {
-        map.put(workflowEntity.getWorkflowId(), workflowEntity);
+        map.put(workflowEntity.getKey(), workflowEntity);
       }
       return map;
     } catch (IOException e) {
@@ -181,8 +181,8 @@ public class WorkflowReader extends AbstractReader {
    * Returns up to maxSize WorkflowEntities only filled with the given field names.
    * @return Map of id -> WorkflowEntity
    */
-  public Map<String, WorkflowEntity> getWorkflowsWithFields(int maxSize,String ...fields) {
-    final Map<String, WorkflowEntity> map = new HashMap<>();
+  public Map<Long, WorkflowEntity> getWorkflowsWithFields(int maxSize,String ...fields) {
+    final Map<Long, WorkflowEntity> map = new HashMap<>();
 
     final SearchRequest searchRequest = new SearchRequest(workflowType.getAlias())
       .source(new SearchSourceBuilder()
@@ -193,7 +193,7 @@ public class WorkflowReader extends AbstractReader {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       response.getHits().forEach( hit -> {
         final WorkflowEntity entity = fromSearchHit(hit.getSourceAsString());
-        map.put(entity.getId(), entity);
+        map.put(entity.getKey(), entity);
       });
       return map;
     } catch (IOException e) {
@@ -207,7 +207,7 @@ public class WorkflowReader extends AbstractReader {
    * Returns up to 1000 WorkflowEntities only filled with the given field names.
    * @return Map of id -> WorkflowEntity
    */
-  public Map<String, WorkflowEntity> getWorkflowsWithFields(String ...fields){
+  public Map<Long, WorkflowEntity> getWorkflowsWithFields(String ...fields){
     return getWorkflowsWithFields(1000, fields);
   }
 

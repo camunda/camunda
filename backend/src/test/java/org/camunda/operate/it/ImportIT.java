@@ -129,7 +129,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     //then
     final Long workflowInstanceId = workflowInstanceKey;
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-    assertThat(workflowInstanceEntity.getWorkflowId()).isEqualTo(workflowId);
+    assertThat(workflowInstanceEntity.getWorkflowKey()).isEqualTo(workflowId);
     assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo("Demo process");
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
     assertThat(workflowInstanceEntity.getId()).isEqualTo(workflowInstanceId.toString());
@@ -368,7 +368,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceKey);
     assertThat(allIncidents).hasSize(1);
     IncidentEntity incidentEntity = allIncidents.get(0);
-    assertThat(incidentEntity.getWorkflowId()).isEqualTo(workflowId);
+    assertThat(incidentEntity.getWorkflowKey()).isEqualTo(workflowId);
     assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(incidentEntity.getFlowNodeInstanceKey()).isNotNull();
     assertThat(incidentEntity.getErrorMessage()).isEqualTo(errorMessage);
@@ -416,7 +416,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceKey);
     assertThat(allIncidents).hasSize(1);
     IncidentEntity incidentEntity = allIncidents.get(0);
-    assertThat(incidentEntity.getWorkflowId()).isEqualTo(workflowId);
+    assertThat(incidentEntity.getWorkflowKey()).isEqualTo(workflowId);
     assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(incidentEntity.getFlowNodeInstanceKey()).isNotNull();
     assertThat(incidentEntity.getErrorMessage()).isNotEmpty();
@@ -480,7 +480,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceKey);
     assertThat(allIncidents).hasSize(1);
     IncidentEntity incidentEntity = allIncidents.get(0);
-    assertThat(incidentEntity.getWorkflowId()).isEqualTo(workflowId);
+    assertThat(incidentEntity.getWorkflowKey()).isEqualTo(workflowId);
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
 
     //when I cancel workflow instance

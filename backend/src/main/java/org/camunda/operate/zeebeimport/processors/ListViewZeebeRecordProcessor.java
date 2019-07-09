@@ -27,6 +27,7 @@ import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
+import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
@@ -135,11 +136,11 @@ public class ListViewZeebeRecordProcessor {
     wiEntity.setKey(recordValue.getWorkflowInstanceKey());
     
     wiEntity.setPartitionId(record.getPartitionId());
-    wiEntity.setWorkflowId(recordValue.getWorkflowKey());
+    wiEntity.setWorkflowKey(recordValue.getWorkflowKey());
     wiEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
     wiEntity.setWorkflowVersion(recordValue.getVersion());
  
-    wiEntity.setWorkflowName(workflowCache.getWorkflowNameOrDefaultValue(wiEntity.getWorkflowId(), recordValue.getBpmnProcessId()));
+    wiEntity.setWorkflowName(workflowCache.getWorkflowNameOrDefaultValue(wiEntity.getWorkflowKey(), recordValue.getBpmnProcessId()));
 
     if (intentStr.equals(ELEMENT_COMPLETED.name()) || intentStr.equals(ELEMENT_TERMINATED.name())) {
       wiEntity.setEndDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
@@ -162,7 +163,8 @@ public class ListViewZeebeRecordProcessor {
       entities.put(record.getKey(), new ActivityInstanceForListViewEntity());
     }
     ActivityInstanceForListViewEntity entity = entities.get(record.getKey());
-    entity.setId(record.getKey());
+    entity.setKey(record.getKey());
+    entity.setId( ConversionUtils.toStringOrNull(record.getKey()));
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setWorkflowInstanceId(recordValue.getWorkflowInstanceKey());
@@ -187,7 +189,7 @@ public class ListViewZeebeRecordProcessor {
 
   private UpdateRequest persistActivityInstanceFromIncident(Record record, String intentStr, IncidentRecordValueImpl recordValue) throws PersistenceException {
     ActivityInstanceForListViewEntity entity = new ActivityInstanceForListViewEntity();
-    entity.setId(recordValue.getElementInstanceKey());
+    entity.setId( ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()));
     entity.setKey(recordValue.getElementInstanceKey());
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());

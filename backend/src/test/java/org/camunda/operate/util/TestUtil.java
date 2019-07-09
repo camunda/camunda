@@ -59,13 +59,13 @@ public abstract class TestUtil {
     }
     workflowInstance.setState(state);
     if (workflowId != null) {
-      workflowInstance.setWorkflowId(workflowId);
+      workflowInstance.setWorkflowKey(workflowId);
       workflowInstance.setBpmnProcessId("testProcess" + workflowId);
       //no workflow name to test sorting
       workflowInstance.setWorkflowVersion(random.nextInt(10));
     } else {
       final int i = random.nextInt(10);
-      workflowInstance.setWorkflowId(Long.valueOf(i));
+      workflowInstance.setWorkflowKey(Long.valueOf(i));
       workflowInstance.setBpmnProcessId("testProcess" + i);
       workflowInstance.setWorkflowName(UUID.randomUUID().toString());
       workflowInstance.setWorkflowVersion(i);
@@ -147,7 +147,7 @@ public abstract class TestUtil {
       workflowInstance.setEndDate(endDate);
     }
     workflowInstance.setState(state);
-    workflowInstance.setWorkflowId(workflowId);
+    workflowInstance.setWorkflowKey(workflowId);
     return workflowInstance;
   }
   
@@ -209,7 +209,7 @@ public abstract class TestUtil {
     for (int i = 1; i <= versionsCount; i++) {
       WorkflowEntity workflowEntity = new WorkflowEntity();
       Long workflowId = workflowIdGenerator.nextLong();
-      workflowEntity.setWorkflowId(workflowId);
+      workflowEntity.setKey(workflowId);
       workflowEntity.setId(workflowId.toString());
       workflowEntity.setBpmnProcessId(bpmnProcessId);
       workflowEntity.setName(name + i);

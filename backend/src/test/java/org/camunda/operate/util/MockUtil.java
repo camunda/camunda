@@ -14,7 +14,7 @@ public abstract class MockUtil {
   public static EventEntity createEventEntity(Long workflowId, Long workflowInstanceId, EventSourceType eventSourceType, EventType eventType) {
     EventEntity eventEntity = new EventEntity();
     eventEntity.setId(TestUtil.createRandomString(10));
-    eventEntity.setWorkflowId(workflowId);
+    eventEntity.setWorkflowKey(workflowId);
     eventEntity.setWorkflowInstanceId(workflowInstanceId);
     eventEntity.setEventSourceType(eventSourceType);
     eventEntity.setEventType(eventType);
