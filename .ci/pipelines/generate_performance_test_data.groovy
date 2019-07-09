@@ -5,7 +5,7 @@
 def static NODE_POOL() { return "slaves-ssd-stable" }
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
 def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { return "postgres:${postgresVersion}" }
-def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "camunda/camunda-bpm-platform:${cambpmVersion}" }
+def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "registry.camunda.cloud/camunda-bpm-platform-ee:${cambpmVersion}" }
 
 static String agent(env, postgresVersion='9.6-alpine', cambpmVersion = '7.10.0') {
     return """
@@ -19,6 +19,8 @@ spec:
    - key: \"${NODE_POOL()}"
      operator: "Exists"
      effect: "NoSchedule"
+  imagePullSecrets:
+    - name: registry-camunda-cloud-secret
   securityContext:
     fsGroup: 1000
   volumes:
