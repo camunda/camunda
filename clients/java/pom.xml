@@ -13,6 +13,17 @@
     <relativePath>../../parent</relativePath>
   </parent>
 
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <properties>
+    <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>

@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Parent</name>
@@ -15,9 +17,18 @@
     <relativePath>../bom</relativePath>
   </parent>
 
+  <licenses>
+    <license>
+      <name>Zeebe Community License v1.0</name>
+      <url>https://zeebe.io/legal/zeebe-community-license-1.0</url>
+    </license>
+  </licenses>
+
   <properties>
+    <!-- Zeebe Community License v1.0 header -->
+    <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
+
     <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
-    <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
     <!-- disable jdk8 javadoc checks on release build -->
     <additionalparam>-Xdoclint:none</additionalparam>
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
