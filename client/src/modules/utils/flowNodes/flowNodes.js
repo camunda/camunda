@@ -9,10 +9,7 @@ export function isFlowNode(bpmnElement) {
     bpmnElement = bpmnElement.businessObject;
   }
 
-  return (
-    bpmnElement.$type !== 'bpmn:SequenceFlow' &&
-    bpmnElement.$instanceOf('bpmn:FlowNode')
-  );
+  return bpmnElement.$instanceOf('bpmn:FlowNode');
 }
 
 export function getFlowNodes(bpmnElements) {

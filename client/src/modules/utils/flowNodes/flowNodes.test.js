@@ -17,13 +17,7 @@ const createElement = (type, isFlowNode, id) => {
 };
 
 describe('flowNodes', () => {
-  describe('isFLowNode', () => {
-    it('should return false for sequence flows', () => {
-      const element = createElement('bpmn:SequenceFlow', true);
-
-      expect(isFlowNode(element)).toBeFalsy();
-    });
-
+  describe('isFlowNode', () => {
     it('should return true for tasks', () => {
       const element = createElement('bpmn:Task', true);
 
@@ -43,7 +37,7 @@ describe('flowNodes', () => {
       const Root = createElement('bpmn:Process', false, 'Root');
       const SequenceFlow1 = createElement(
         'bpmn:SequenceFlow',
-        true,
+        false,
         'SequenceFlow1'
       );
 

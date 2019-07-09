@@ -7,6 +7,7 @@
 import {STATE, TYPE, FLOWNODE_TYPE_HANDLE} from 'modules/constants';
 import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
 import * as api from 'modules/api/instances';
+import {isFlowNode} from 'modules/utils/flowNodes/flowNodes';
 
 function getEventType(bpmnElement) {
   // doesn't return a event type when element of type 'multiple event'
@@ -52,7 +53,7 @@ export function createNodeMetaDataMap(bpmnElements) {
 /**
  * Filter for selectable bpmnElements only
  * @param {Object} bpmnElements
- * @return {Object} All selectable flowNodes, excluded: sequenseFlows, diagramElment etc.
+ * @return {Object} All selectable flowNodes, excluded: sequenceFlows, diagramElements etc.
  */
 
 export function getSelectableFlowNodes(bpmnElements) {
@@ -63,8 +64,8 @@ export function getSelectableFlowNodes(bpmnElements) {
   let bpmnElementSubset = {};
 
   Object.entries(bpmnElements).forEach(([key, bpmnElement]) => {
-    if (bpmnElement.$instanceOf('bpmn:FlowNode')) {
-      bpmnElementSubset = {...bpmnElementSubset, [key]: bpmnElement};
+    if (isFlowNode(bpmnElement)) {
+      bpmnElementSubset[key] = bpmnElement;
     }
   });
 
