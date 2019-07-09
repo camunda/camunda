@@ -34,6 +34,7 @@ import io.zeebe.test.broker.protocol.commandapi.PartitionTestClient;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -86,6 +87,7 @@ public class ExporterManagerTest {
   }
 
   @Test
+  @Ignore("https://github.com/zeebe-io/zeebe/issues/2810")
   public void shouldRemoveExporterFromState() {
     // given
     final long deploymentKey1 = testClient.deploy(WORKFLOW);
