@@ -7,60 +7,38 @@ package org.camunda.optimize.service.es.report.command.process.mapping;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.VariableInstanceDto;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHits;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+@Slf4j
 public class RawProcessDataResultDtoMapper {
-  private static final Logger logger = LoggerFactory.getLogger(RawProcessDataResultDtoMapper.class);
 
-  private final Long recordLimit;
-
-  public RawProcessDataResultDtoMapper(final Long recordLimit) {
-    this.recordLimit = recordLimit;
-  }
-
-  public RawDataProcessReportResultDto mapFrom(final SearchResponse searchResponse, final ObjectMapper objectMapper) {
-    List<RawDataProcessInstanceDto> rawData = new ArrayList<>();
-    Set<String> allVariableNames = new HashSet<>();
-    SearchHits searchHits = searchResponse.getHits();
-
-    Arrays.stream(searchHits.getHits())
-      .limit(recordLimit)
-      .forEach(hit -> {
-        final String sourceAsString = hit.getSourceAsString();
-        try {
-          final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
-            sourceAsString,
-            ProcessInstanceDto.class
-          );
-
-          Map<String, Object> variables = getVariables(processInstanceDto, objectMapper);
-          allVariableNames.addAll(variables.keySet());
-          RawDataProcessInstanceDto dataEntry = convertToRawDataEntry(processInstanceDto, variables);
-          rawData.add(dataEntry);
-        } catch (IOException e) {
-          logger.error("can't map process instance {}", sourceAsString, e);
-        }
+  public RawDataProcessReportResultDto mapFrom(final List<ProcessInstanceDto> processInstanceDtos,
+                                               final long totalHits,
+                                               final ObjectMapper objectMapper) {
+    final List<RawDataProcessInstanceDto> rawData = new ArrayList<>();
+    final Set<String> allVariableNames = new HashSet<>();
+    processInstanceDtos
+      .forEach(processInstanceDto -> {
+        Map<String, Object> variables = getVariables(processInstanceDto, objectMapper);
+        allVariableNames.addAll(variables.keySet());
+        RawDataProcessInstanceDto dataEntry = convertToRawDataEntry(processInstanceDto, variables);
+        rawData.add(dataEntry);
       });
 
     ensureEveryRawDataInstanceContainsAllVariableNames(rawData, allVariableNames);
 
-    return createResult(rawData, searchHits.getTotalHits());
+    return createResult(rawData, totalHits);
   }
 
   private void ensureEveryRawDataInstanceContainsAllVariableNames(final List<RawDataProcessInstanceDto> rawData,
@@ -95,7 +73,7 @@ public class RawProcessDataResultDtoMapper {
         result.put(instance.getName(), instance.getValue());
       } else {
         try {
-          logger.debug("Found variable with null name [{}]", objectMapper.writeValueAsString(instance));
+          log.debug("Found variable with null name [{}]", objectMapper.writeValueAsString(instance));
         } catch (JsonProcessingException e) {
           //nothing to do
         }

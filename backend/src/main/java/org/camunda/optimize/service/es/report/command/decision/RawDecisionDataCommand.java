@@ -5,11 +5,13 @@
  */
 package org.camunda.optimize.service.es.report.command.decision;
 
+import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionParametersDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.es.reader.ElasticsearchHelper;
 import org.camunda.optimize.service.es.report.command.decision.mapping.RawDecisionDataResultDtoMapper;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionRawDataReportResult;
 import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
@@ -17,6 +19,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
@@ -25,6 +28,7 @@ import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
@@ -34,16 +38,15 @@ import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariab
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableMultivalueFields;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecisionRawDataReportResult> {
   public static final String INPUT_VARIABLE_PREFIX = "inputVariable:";
   public static final String OUTPUT_VARIABLE_PREFIX = "outputVariable:";
 
-  private static final Long RAW_DATA_LIMIT = 1_000L;
-
   private final RawDecisionDataResultDtoMapper rawDataSingleReportResultDtoMapper =
-    new RawDecisionDataResultDtoMapper(RAW_DATA_LIMIT);
+    new RawDecisionDataResultDtoMapper();
 
   public SingleDecisionRawDataReportResult evaluate() {
     final DecisionReportDataDto reportData = getReportData();
@@ -57,18 +60,29 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
-      .size(RAW_DATA_LIMIT.intValue());
+      // size of each scroll page, needs to be capped to max size of elasticsearch
+      .size(recordLimit > MAX_RESPONSE_SIZE_LIMIT ? MAX_RESPONSE_SIZE_LIMIT : recordLimit);
 
     addSortingToQuery(reportData, searchSourceBuilder);
 
-    final SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
+    final SearchRequest scrollSearchRequest = new SearchRequest(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
       .types(DECISION_INSTANCE_TYPE)
-      .source(searchSourceBuilder);
+      .source(searchSourceBuilder)
+      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = esClient.search(scrollSearchRequest, RequestOptions.DEFAULT);
+      final List<DecisionInstanceDto> rawDataProcessInstanceDtos = ElasticsearchHelper.retrieveScrollResultsTillLimit(
+        response,
+        DecisionInstanceDto.class,
+        objectMapper,
+        esClient,
+        configurationService.getElasticsearchScrollTimeout(),
+        recordLimit
+      );
+
       final RawDataDecisionReportResultDto rawDataDecisionReportResultDto = rawDataSingleReportResultDtoMapper.mapFrom(
-        response, objectMapper
+        rawDataProcessInstanceDtos, response.getHits().getTotalHits()
       );
       return new SingleDecisionRawDataReportResult(rawDataDecisionReportResultDto, reportDefinition);
     } catch (IOException e) {

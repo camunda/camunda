@@ -10,6 +10,8 @@ public class ElasticsearchConstants {
   // Note: we cap listings to 1000 as a generous practical limit, no paging
   public static final int LIST_FETCH_LIMIT = 1000;
 
+  public static final int MAX_RESPONSE_SIZE_LIMIT = 10_000;
+
   public static final int NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION = 80;
 
   public static final int NUMBER_OF_RETRIES_ON_CONFLICT = 5;

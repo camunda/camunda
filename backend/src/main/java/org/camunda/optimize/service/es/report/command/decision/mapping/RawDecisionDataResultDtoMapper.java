@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.command.decision.mapping;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.InputInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.OutputInstanceDto;
@@ -13,14 +13,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHits;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -29,45 +23,29 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
 
+@Slf4j
 public class RawDecisionDataResultDtoMapper {
-  private static final Logger logger = LoggerFactory.getLogger(RawDecisionDataResultDtoMapper.class);
 
-  private final Long recordLimit;
-
-  public RawDecisionDataResultDtoMapper(final Long recordLimit) {
-    this.recordLimit = recordLimit;
-  }
-
-  public RawDataDecisionReportResultDto mapFrom(final SearchResponse searchResponse, final ObjectMapper objectMapper) {
+  public RawDataDecisionReportResultDto mapFrom(final List<DecisionInstanceDto> decisionInstanceDtos,
+                                                final long totalHits) {
     final List<RawDataDecisionInstanceDto> rawData = new ArrayList<>();
     final Set<InputVariableEntry> allInputVariablesWithBlankValue = new LinkedHashSet<>();
     final Set<OutputVariableEntry> allOutputVariablesWithNoValues = new LinkedHashSet<>();
 
-    final SearchHits searchHits = searchResponse.getHits();
-    Arrays.stream(searchHits.getHits())
-      .limit(recordLimit)
-      .forEach(hit -> {
-        final String sourceAsString = hit.getSourceAsString();
-        try {
-          final DecisionInstanceDto processInstanceDto = objectMapper.readValue(
-            sourceAsString, DecisionInstanceDto.class
-          );
+    decisionInstanceDtos
+      .forEach(decisionInstanceDto -> {
+        allInputVariablesWithBlankValue.addAll(getInputVariables(decisionInstanceDto));
+        allOutputVariablesWithNoValues.addAll(getOutputVariables(decisionInstanceDto));
 
-          allInputVariablesWithBlankValue.addAll(getInputVariables(processInstanceDto));
-          allOutputVariablesWithNoValues.addAll(getOutputVariables(processInstanceDto));
-
-          RawDataDecisionInstanceDto dataEntry = convertToRawDataEntry(processInstanceDto);
-          rawData.add(dataEntry);
-        } catch (IOException e) {
-          logger.error("can't map process instance {}", sourceAsString, e);
-        }
+        RawDataDecisionInstanceDto dataEntry = convertToRawDataEntry(decisionInstanceDto);
+        rawData.add(dataEntry);
       });
 
     ensureEveryRawDataInstanceContainsAllVariables(
       rawData, allInputVariablesWithBlankValue, allOutputVariablesWithNoValues
     );
 
-    return createResult(rawData, searchHits.getTotalHits());
+    return createResult(rawData, totalHits);
   }
 
   private void ensureEveryRawDataInstanceContainsAllVariables(final List<RawDataDecisionInstanceDto> rawData,

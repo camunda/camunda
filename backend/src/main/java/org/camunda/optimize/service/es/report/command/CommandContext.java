@@ -28,5 +28,6 @@ public class CommandContext<T extends ReportDefinitionDto> {
   private Range<OffsetDateTime> dateIntervalRange;
   private IntervalAggregationService intervalAggregationService;
   private ProcessDefinitionReader processDefinitionReader;
+  private Integer recordLimit;
 
 }

@@ -74,6 +74,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -122,6 +123,7 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 @RequiredArgsConstructor
 @Component
 public class SingleReportEvaluator {
+  public static final Integer DEFAULT_RECORD_LIMIT = 1_000;
 
   private static Map<String, Supplier<? extends Command>> commandSuppliers = new HashMap<>();
 
@@ -408,13 +410,25 @@ public class SingleReportEvaluator {
     );
   }
 
-  <T extends ReportDefinitionDto> ReportEvaluationResult<?, T> evaluate(T reportDefinition) throws OptimizeException {
-    CommandContext<T> commandContext = createCommandContext(reportDefinition);
+  <T extends ReportDefinitionDto> ReportEvaluationResult<?, T> evaluate(final T reportDefinition)
+    throws OptimizeException {
+    return evaluate(reportDefinition, DEFAULT_RECORD_LIMIT);
+  }
+
+  <T extends ReportDefinitionDto> ReportEvaluationResult<?, T> evaluate(final T reportDefinition,
+                                                                        final Integer customRecordLimit)
+    throws OptimizeException {
+    CommandContext<T> commandContext = createCommandContext(reportDefinition, customRecordLimit);
     Command<T> evaluationCommand = extractCommandWithValidation(reportDefinition);
     return evaluationCommand.evaluate(commandContext);
   }
 
-  protected <T extends ReportDefinitionDto> CommandContext<T> createCommandContext(T reportDefinition) {
+  protected <T extends ReportDefinitionDto> CommandContext<T> createCommandContext(final T reportDefinition) {
+    return createCommandContext(reportDefinition, DEFAULT_RECORD_LIMIT);
+  }
+
+  protected <T extends ReportDefinitionDto> CommandContext<T> createCommandContext(final T reportDefinition,
+                                                                                   final Integer customRecordLimit) {
     CommandContext<T> commandContext = new CommandContext<>();
     commandContext.setConfigurationService(configurationService);
     commandContext.setEsClient(esClient);
@@ -427,6 +441,7 @@ public class SingleReportEvaluator {
     }
     commandContext.setProcessDefinitionReader(processDefinitionReader);
     commandContext.setReportDefinition(reportDefinition);
+    commandContext.setRecordLimit(Optional.ofNullable(customRecordLimit).orElse(DEFAULT_RECORD_LIMIT));
     return commandContext;
   }
 

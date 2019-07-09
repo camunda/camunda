@@ -111,8 +111,9 @@ public class CombinedReportEvaluator {
     }
 
     @Override
-    protected <T extends ReportDefinitionDto> CommandContext<T> createCommandContext(final T reportDefinition) {
-      CommandContext<T> commandContext = super.createCommandContext(reportDefinition);
+    protected <T extends ReportDefinitionDto> CommandContext<T> createCommandContext(final T reportDefinition,
+                                                                                     final Integer customRecordLimit) {
+      CommandContext<T> commandContext = super.createCommandContext(reportDefinition, customRecordLimit);
       commandContext.setDateIntervalRange(dateIntervalRange);
       return commandContext;
     }

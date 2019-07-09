@@ -6,18 +6,16 @@
 package org.camunda.optimize.service.es.report.command.process.mapping;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
 import org.junit.Test;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class RawDataProcessReportResultDtoMapperTest {
 
@@ -26,16 +24,16 @@ public class RawDataProcessReportResultDtoMapperTest {
   @Test
   public void testMapFromSearchResponse_hitCountNotEqualTotalCount() {
     // given
-    Long rawDataLimit = 2L;
-    Long actualInstanceCount = 3L;
-    final RawProcessDataResultDtoMapper mapper = new RawProcessDataResultDtoMapper(rawDataLimit);
-    final SearchResponse searchResponse = createSearchResponseMock(rawDataLimit.intValue(), actualInstanceCount);
+    final Integer rawDataLimit = 2;
+    final Long actualInstanceCount = 3L;
+    final RawProcessDataResultDtoMapper mapper = new RawProcessDataResultDtoMapper();
+    final List<ProcessInstanceDto> processInstanceDtos = generateInstanceList(rawDataLimit);
 
     // when
-    final RawDataProcessReportResultDto result = mapper.mapFrom(searchResponse, objectMapper);
+    final RawDataProcessReportResultDto result = mapper.mapFrom(processInstanceDtos, actualInstanceCount, objectMapper);
 
     // then
-    assertThat(result.getData().size(), is(rawDataLimit.intValue()));
+    assertThat(result.getData().size(), is(rawDataLimit));
     assertThat(result.getIsComplete(), is(false));
     assertThat(result.getProcessInstanceCount(), is(actualInstanceCount));
   }
@@ -43,36 +41,22 @@ public class RawDataProcessReportResultDtoMapperTest {
   @Test
   public void testMapFromSearchResponse_hitCountEqualsTotalCount() {
     // given
-    Long rawDataLimit = 3L;
-    Long actualInstanceCount = 3L;
-    final RawProcessDataResultDtoMapper mapper = new RawProcessDataResultDtoMapper(rawDataLimit);
-    final SearchResponse searchResponse = createSearchResponseMock(rawDataLimit.intValue(), actualInstanceCount);
+    final Integer rawDataLimit = 3;
+    final Long actualInstanceCount = 3L;
+    final RawProcessDataResultDtoMapper mapper = new RawProcessDataResultDtoMapper();
+    final List<ProcessInstanceDto> processInstanceDtos = generateInstanceList(rawDataLimit);
 
     // when
-    final RawDataProcessReportResultDto result = mapper.mapFrom(searchResponse, objectMapper);
+    final RawDataProcessReportResultDto result = mapper.mapFrom(processInstanceDtos, actualInstanceCount, objectMapper);
 
     // then
-    assertThat(result.getData().size(), is(rawDataLimit.intValue()));
+    assertThat(result.getData().size(), is(rawDataLimit));
     assertThat(result.getIsComplete(), is(true));
     assertThat(result.getProcessInstanceCount(), is(actualInstanceCount));
   }
 
-  private SearchResponse createSearchResponseMock(final Integer hitCount, final Long totalCount) {
-    final SearchHits searchHits = mock(SearchHits.class);
-    when(searchHits.getTotalHits()).thenReturn(totalCount);
-    final SearchHit[] mockedHits = IntStream.range(0, hitCount)
-        .mapToObj(operand -> {
-          final SearchHit searchHit = mock(SearchHit.class);
-          // no actual data needed
-          when(searchHit.getSourceAsString()).thenReturn("{}");
-          return searchHit;
-        })
-        .toArray(SearchHit[]::new);
-    when(searchHits.getHits()).thenReturn(mockedHits);
-
-    final SearchResponse searchResponse = mock(SearchResponse.class);
-    when(searchResponse.getHits()).thenReturn(searchHits);
-
-    return searchResponse;
+  private List<ProcessInstanceDto> generateInstanceList(final Integer rawDataLimit) {
+    return IntStream.range(0, rawDataLimit).mapToObj(i -> new ProcessInstanceDto()).collect(Collectors.toList());
   }
+
 }

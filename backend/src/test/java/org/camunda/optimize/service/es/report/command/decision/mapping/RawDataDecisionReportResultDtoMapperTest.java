@@ -5,16 +5,11 @@
  */
 package org.camunda.optimize.service.es.report.command.decision.mapping;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.InputInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.OutputInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -24,27 +19,22 @@ import java.util.stream.IntStream;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class RawDataDecisionReportResultDtoMapperTest {
-
-  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Test
   public void testMapFromSearchResponse_hitCountNotEqualTotalCount() {
     // given
-    final Long rawDataLimit = 2L;
+    final Integer rawDataLimit = 2;
     final Long actualInstanceCount = 3L;
-    final RawDecisionDataResultDtoMapper mapper = new RawDecisionDataResultDtoMapper(rawDataLimit);
-
-    final SearchResponse searchResponse = createSearchResponseMock(rawDataLimit.intValue(), actualInstanceCount);
+    final RawDecisionDataResultDtoMapper mapper = new RawDecisionDataResultDtoMapper();
+    final List<DecisionInstanceDto> decisionInstanceDtos = generateInstanceList(rawDataLimit);
 
     // when
-    final RawDataDecisionReportResultDto result = mapper.mapFrom(searchResponse, objectMapper);
+    final RawDataDecisionReportResultDto result = mapper.mapFrom(decisionInstanceDtos, actualInstanceCount);
 
     // then
-    assertThat(result.getData().size(), is(rawDataLimit.intValue()));
+    assertThat(result.getData().size(), is(rawDataLimit));
     assertThat(result.getIsComplete(), is(false));
     assertThat(result.getDecisionInstanceCount(), is(actualInstanceCount));
   }
@@ -52,17 +42,16 @@ public class RawDataDecisionReportResultDtoMapperTest {
   @Test
   public void testMapFromSearchResponse_hitCountEqualsTotalCount() {
     // given
-    final Long rawDataLimit = 3L;
+    final Integer rawDataLimit = 3;
     final Long actualInstanceCount = 3L;
-    final RawDecisionDataResultDtoMapper mapper = new RawDecisionDataResultDtoMapper(rawDataLimit);
-
-    final SearchResponse searchResponse = createSearchResponseMock(rawDataLimit.intValue(), actualInstanceCount);
+    final RawDecisionDataResultDtoMapper mapper = new RawDecisionDataResultDtoMapper();
+    final List<DecisionInstanceDto> decisionInstanceDtos = generateInstanceList(rawDataLimit);
 
     // when
-    final RawDataDecisionReportResultDto result = mapper.mapFrom(searchResponse, objectMapper);
+    final RawDataDecisionReportResultDto result = mapper.mapFrom(decisionInstanceDtos, actualInstanceCount);
 
     // then
-    assertThat(result.getData().size(), is(rawDataLimit.intValue()));
+    assertThat(result.getData().size(), is(rawDataLimit));
     assertThat(result.getIsComplete(), is(true));
     assertThat(result.getDecisionInstanceCount(), is(actualInstanceCount));
   }
@@ -70,11 +59,11 @@ public class RawDataDecisionReportResultDtoMapperTest {
   @Test
   public void testAllInputAndOutVariablesAreAvailableAtEachInstance() {
     // given
-    final Long rawDataLimit = 2L;
+    final Integer rawDataLimit = 2;
     final Long actualInstanceCount = 3L;
-    final RawDecisionDataResultDtoMapper mapper = new RawDecisionDataResultDtoMapper(rawDataLimit);
+    final RawDecisionDataResultDtoMapper mapper = new RawDecisionDataResultDtoMapper();
 
-    final List<DecisionInstanceDto> decisionInstances = IntStream.rangeClosed(1, rawDataLimit.intValue())
+    final List<DecisionInstanceDto> decisionInstances = IntStream.rangeClosed(1, rawDataLimit)
       .mapToObj(i -> {
         final OutputInstanceDto outputInstanceDto = new OutputInstanceDto();
         outputInstanceDto.setType(VariableType.SHORT);
@@ -93,52 +82,20 @@ public class RawDataDecisionReportResultDtoMapperTest {
       })
       .collect(Collectors.toList());
 
-    final SearchResponse searchResponse = createSearchResponseMock(
-      rawDataLimit.intValue(), actualInstanceCount, decisionInstances
-    );
-
     // when
-    final RawDataDecisionReportResultDto result = mapper.mapFrom(searchResponse, objectMapper);
+    final RawDataDecisionReportResultDto result = mapper.mapFrom(decisionInstances, actualInstanceCount);
 
     // then
-    assertThat(result.getData().size(), is(rawDataLimit.intValue()));
+    assertThat(result.getData().size(), is(rawDataLimit));
     assertThat(result.getDecisionInstanceCount(), is(actualInstanceCount));
-    IntStream.range(0, rawDataLimit.intValue())
+    IntStream.range(0, rawDataLimit)
       .forEach(i -> {
-        assertThat(result.getData().get(i).getInputVariables().size(), is(rawDataLimit.intValue()));
-        assertThat(result.getData().get(i).getOutputVariables().size(), is(rawDataLimit.intValue()));
+        assertThat(result.getData().get(i).getInputVariables().size(), is(rawDataLimit));
+        assertThat(result.getData().get(i).getOutputVariables().size(), is(rawDataLimit));
       });
   }
 
-  private SearchResponse createSearchResponseMock(final Integer hitCount, final Long totalCount) {
-    return createSearchResponseMock(hitCount, totalCount, Collections.emptyList());
-  }
-
-  private SearchResponse createSearchResponseMock(final Integer hitCount,
-                                                  final Long totalCount,
-                                                  final List<DecisionInstanceDto> hitsData) {
-    final SearchHits searchHits = mock(SearchHits.class);
-    when(searchHits.getTotalHits()).thenReturn(totalCount);
-    final SearchHit[] mockedHits = IntStream.range(0, hitCount)
-      .mapToObj(i -> {
-        final SearchHit searchHit = mock(SearchHit.class);
-        String hitJson = "{}";
-        if (hitsData.size() > i) {
-          try {
-            hitJson = objectMapper.writeValueAsString(hitsData.get(i));
-          } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed serializing test hit");
-          }
-        }
-        when(searchHit.getSourceAsString()).thenReturn(hitJson);
-        return searchHit;
-      })
-      .toArray(SearchHit[]::new);
-    when(searchHits.getHits()).thenReturn(mockedHits);
-
-    final SearchResponse searchResponse = mock(SearchResponse.class);
-    when(searchResponse.getHits()).thenReturn(searchHits);
-
-    return searchResponse;
+  private List<DecisionInstanceDto> generateInstanceList(final Integer rawDataLimit) {
+    return IntStream.range(0, rawDataLimit).mapToObj(i -> new DecisionInstanceDto()).collect(Collectors.toList());
   }
 }

@@ -40,30 +40,45 @@ import java.util.stream.Collectors;
 @Component
 public abstract class ReportEvaluationHandler {
 
+
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final ReportReader reportReader;
   private final SingleReportEvaluator singleReportEvaluator;
   private final CombinedReportEvaluator combinedReportEvaluator;
 
-  public ReportEvaluationResult evaluateSavedReport(String userId, String reportId) {
-    ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
-    return evaluateReport(userId, reportDefinition);
+  public ReportEvaluationResult evaluateSavedReport(final String userId,
+                                                    final String reportId) {
+    return evaluateSavedReport(userId, reportId, null);
   }
 
-  protected ReportEvaluationResult evaluateReport(String userId, ReportDefinitionDto reportDefinition) {
+  public ReportEvaluationResult evaluateSavedReport(final String userId,
+                                                    final String reportId,
+                                                    final Integer customRecordLimit) {
+    ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
+    return evaluateReport(userId, reportDefinition, customRecordLimit);
+  }
+
+  protected ReportEvaluationResult evaluateReport(final String userId,
+                                                  final ReportDefinitionDto reportDefinition) {
+    return evaluateReport(userId, reportDefinition, null);
+  }
+
+  protected ReportEvaluationResult evaluateReport(final String userId,
+                                                  final ReportDefinitionDto reportDefinition,
+                                                  final Integer customRecordLimit) {
     final ReportEvaluationResult result;
     if (!reportDefinition.getCombined()) {
       switch (reportDefinition.getReportType()) {
         case PROCESS:
           SingleProcessReportDefinitionDto processDefinition =
             (SingleProcessReportDefinitionDto) reportDefinition;
-          result = evaluateSingleProcessReport(userId, processDefinition);
+          result = evaluateSingleProcessReport(userId, processDefinition, customRecordLimit);
           break;
         case DECISION:
           SingleDecisionReportDefinitionDto decisionDefinition =
             (SingleDecisionReportDefinitionDto) reportDefinition;
-          result = evaluateSingleDecisionReport(userId, decisionDefinition);
+          result = evaluateSingleDecisionReport(userId, decisionDefinition, customRecordLimit);
           break;
         default:
           throw new IllegalStateException("Unsupported reportType: " + reportDefinition.getReportType());
@@ -133,7 +148,8 @@ public abstract class ReportEvaluationHandler {
   protected abstract boolean isAuthorizedToSeeReport(String userId, ReportDefinitionDto report);
 
   private ReportEvaluationResult evaluateSingleProcessReport(final String userId,
-                                                             final SingleProcessReportDefinitionDto reportDefinition) {
+                                                             final SingleProcessReportDefinitionDto reportDefinition,
+                                                             final Integer customRecordLimit) {
 
     if (!isAuthorizedToSeeReport(userId, reportDefinition)) {
       ProcessReportDataDto reportData = reportDefinition.getData();
@@ -144,13 +160,14 @@ public abstract class ReportEvaluationHandler {
       );
     }
 
-    ReportEvaluationResult result = evaluateSingleReportWithErrorCheck(reportDefinition);
+    ReportEvaluationResult result = evaluateSingleReportWithErrorCheck(reportDefinition, customRecordLimit);
 
     return result;
   }
 
   private ReportEvaluationResult evaluateSingleDecisionReport(final String userId,
-                                                              final SingleDecisionReportDefinitionDto reportDefinition) {
+                                                              final SingleDecisionReportDefinitionDto reportDefinition,
+                                                              final Integer customRecordLimit) {
 
     if (!isAuthorizedToSeeReport(userId, reportDefinition)) {
       DecisionReportDataDto reportData = reportDefinition.getData();
@@ -161,13 +178,14 @@ public abstract class ReportEvaluationHandler {
       );
     }
 
-    ReportEvaluationResult result = evaluateSingleReportWithErrorCheck(reportDefinition);
+    ReportEvaluationResult result = evaluateSingleReportWithErrorCheck(reportDefinition, customRecordLimit);
     return result;
   }
 
-  private ReportEvaluationResult evaluateSingleReportWithErrorCheck(ReportDefinitionDto reportDefinition) {
+  private ReportEvaluationResult evaluateSingleReportWithErrorCheck(final ReportDefinitionDto reportDefinition,
+                                                                    final Integer customRecordLimit) {
     try {
-      return singleReportEvaluator.evaluate(reportDefinition);
+      return singleReportEvaluator.evaluate(reportDefinition, customRecordLimit);
     } catch (OptimizeException | OptimizeValidationException e) {
       throw new ReportEvaluationException(reportDefinition, e);
     }

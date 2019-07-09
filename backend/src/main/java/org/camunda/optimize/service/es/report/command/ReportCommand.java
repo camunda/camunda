@@ -43,6 +43,7 @@ public abstract class ReportCommand<R extends ReportEvaluationResult, RD extends
   protected ConfigurationService configurationService;
   protected ObjectMapper objectMapper;
   protected Range<OffsetDateTime> dateIntervalRange;
+  protected Integer recordLimit;
 
   @Override
   public R evaluate(final CommandContext<RD> commandContext) throws OptimizeException {
@@ -51,6 +52,8 @@ public abstract class ReportCommand<R extends ReportEvaluationResult, RD extends
     configurationService = commandContext.getConfigurationService();
     objectMapper = commandContext.getObjectMapper();
     dateIntervalRange = commandContext.getDateIntervalRange();
+    recordLimit = commandContext.getRecordLimit();
+
     beforeEvaluate(commandContext);
 
     final R evaluationResult = evaluate();

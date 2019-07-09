@@ -5,9 +5,11 @@
  */
 package org.camunda.optimize.service.es.report.command.process;
 
+import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
+import org.camunda.optimize.service.es.reader.ElasticsearchHelper;
 import org.camunda.optimize.service.es.report.command.process.mapping.RawProcessDataResultDtoMapper;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessRawDataReportResult;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
@@ -16,6 +18,7 @@ import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.NestedSortBuilder;
@@ -23,21 +26,20 @@ import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 
 import java.io.IOException;
+import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_NAME;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_VALUE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRawDataReportResult> {
   private static final String VARIABLE_PREFIX = "variable:";
 
-  private static final Long RAW_DATA_LIMIT = 1_000L;
-
-  private final RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper =
-    new RawProcessDataResultDtoMapper(RAW_DATA_LIMIT);
+  private final RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper = new RawProcessDataResultDtoMapper();
 
   public SingleProcessRawDataReportResult evaluate() {
     final ProcessReportDataDto processReportData = getReportData();
@@ -60,19 +62,29 @@ public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRaw
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .fetchSource(null, EVENTS)
-      .size(RAW_DATA_LIMIT.intValue());
+      // size of each scroll page, needs to be capped to max size of elasticsearch
+      .size(recordLimit > MAX_RESPONSE_SIZE_LIMIT ? MAX_RESPONSE_SIZE_LIMIT : recordLimit);
 
     addSorting(sortByField, sortOrder, searchSourceBuilder);
 
-    final SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
-        .types(PROC_INSTANCE_TYPE)
-        .source(searchSourceBuilder);
+    final SearchRequest scrollSearchRequest = new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+      .types(PROC_INSTANCE_TYPE)
+      .source(searchSourceBuilder)
+      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
     try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = esClient.search(scrollSearchRequest, RequestOptions.DEFAULT);
+      final List<ProcessInstanceDto> rawDataProcessInstanceDtos = ElasticsearchHelper.retrieveScrollResultsTillLimit(
+        response,
+        ProcessInstanceDto.class,
+        objectMapper,
+        esClient,
+        configurationService.getElasticsearchScrollTimeout(),
+        recordLimit
+      );
+
       final RawDataProcessReportResultDto rawDataProcessReportResultDto = rawDataSingleReportResultDtoMapper.mapFrom(
-        response, objectMapper
+        rawDataProcessInstanceDtos, response.getHits().getTotalHits(), objectMapper
       );
       return new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
     } catch (IOException e) {

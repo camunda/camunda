@@ -282,6 +282,10 @@ email:
 export:
   csv:
     # Maximum number of records returned by CSV export
+    # Note: Increasing this value comes at a memory cost for the Optimize application that varies based on the actual data.
+    # As a rough guideline, an export of a 50000 records raw data report containing 8 variables on each instance
+    # can cause temporary heap memory peaks of up to ~200MB with the actual CSV file having a size of ~20MB.
+    # Please adjust the heap memory accordingly.
     limit: 1000
     # Position of first record which will be exported in CSV
     offset: 0

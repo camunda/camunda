@@ -57,7 +57,7 @@ public class ExportServiceTest {
     rawDataProcessReportResultDto.setData(RawDataHelper.getRawDataProcessInstanceDtos());
     SingleProcessRawDataReportResult rawDataReportResult =
       new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, new SingleProcessReportDefinitionDto());
-    when(reportService.evaluateSavedReport(any(), any())).thenReturn(rawDataReportResult);
+    when(reportService.evaluateSavedReport(any(), any(), any())).thenReturn(rawDataReportResult);
 
     // when
     Optional<byte[]> csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "", Collections.emptySet());
@@ -75,7 +75,7 @@ public class ExportServiceTest {
     rawDataDecisionReportResultDto.setData(RawDataHelper.getRawDataDecisionInstanceDtos());
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDataDecisionReportResultDto, new SingleDecisionReportDefinitionDto());
-    when(reportService.evaluateSavedReport(any(), any())).thenReturn(rawDataReportResult);
+    when(reportService.evaluateSavedReport(any(), any(), any())).thenReturn(rawDataReportResult);
 
     // when
     Optional<byte[]> csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "", Collections.emptySet());
