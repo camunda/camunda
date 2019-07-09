@@ -128,7 +128,7 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
   @Override
   protected void onActorStarted() {
     try {
-      LOG.info("Recovering state of partition {} from snapshot", partitionId);
+      LOG.debug("Recovering state of partition {} from snapshot", partitionId);
       snapshotPosition = recoverFromSnapshot();
 
       initProcessors();

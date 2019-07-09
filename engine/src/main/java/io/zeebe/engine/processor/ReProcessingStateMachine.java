@@ -144,9 +144,9 @@ public final class ReProcessingStateMachine {
   ActorFuture<Void> startRecover(final long snapshotPosition) {
     recoveryFuture = new CompletableActorFuture<>();
 
-    LOG.info("Start scanning the log for error events.");
+    LOG.trace("Start scanning the log for error events.");
     lastSourceEventPosition = scanLog(snapshotPosition);
-    LOG.info("Finished scanning the log for error events.");
+    LOG.trace("Finished scanning the log for error events.");
 
     if (lastSourceEventPosition > snapshotPosition) {
       LOG.info(

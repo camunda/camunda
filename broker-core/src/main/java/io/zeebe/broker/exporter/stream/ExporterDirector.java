@@ -134,15 +134,16 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   @Override
   protected void onActorStarted() {
     try {
-      LOG.info("Recovering exporter '{}' from snapshot", getName());
+      LOG.debug("Recovering exporter from snapshot");
       recoverFromSnapshot();
 
       for (final ExporterContainer container : containers) {
+        LOG.debug("Configure exporter with id '{}'", container.getId());
         container.exporter.configure(container.context);
       }
 
       eventFilter = createEventFilter(containers);
-      LOG.info("Set event filter for exporters: {}", eventFilter);
+      LOG.debug("Set event filter for exporters: {}", eventFilter);
 
     } catch (final Throwable e) {
       onFailure();
@@ -163,7 +164,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
           String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, snapshotPosition, getName()));
     }
 
-    LOG.info(
+    LOG.debug(
         "Recovered exporter '{}' from snapshot at lastExportedPosition {}",
         getName(),
         snapshotPosition);
@@ -212,6 +213,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
       if (container.position == ExportersState.VALUE_NOT_FOUND) {
         state.setPosition(container.getId(), -1L);
       }
+      LOG.debug("Open exporter with id '{}'", container.getId());
       container.exporter.open(container);
     }
 
@@ -327,6 +329,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
       context =
           new ExporterContext(
               Loggers.getExporterLogger(descriptor.getId()), descriptor.getConfiguration());
+
       exporter = descriptor.newInstance();
     }
 

@@ -151,7 +151,7 @@ public class AsyncSnapshotDirector extends Actor {
     final long end = System.currentTimeMillis();
     final long snapshotCreationTime = end - start;
 
-    LOG.info("Creation of snapshot for {} took {} ms.", processorName, snapshotCreationTime);
+    LOG.debug("Creation of snapshot for {} took {} ms.", processorName, snapshotCreationTime);
   }
 
   private void onCommitCheck() {

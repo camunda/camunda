@@ -136,9 +136,6 @@ public class SystemContext implements AutoCloseable {
     final int cpuThreads = cfg.getCpuThreadCount();
     final int ioThreads = cfg.getIoThreadCount();
 
-    Loggers.SYSTEM_LOGGER.info(
-        "Scheduler configuration: Threads{cpu-bound: {}, io-bound: {}}.", cpuThreads, ioThreads);
-
     return ActorScheduler.newActorScheduler()
         .setActorClock(clock)
         .setCpuBoundActorThreadCount(cpuThreads)
@@ -188,7 +185,7 @@ public class SystemContext implements AutoCloseable {
 
   @Override
   public void close() {
-    LOG.info("Closing...");
+    LOG.info("Broker shutting down...");
 
     try {
       serviceContainer.close(getCloseTimeout().toMillis(), TimeUnit.MILLISECONDS);
