@@ -8,4 +8,4 @@ Zeebe is designed for performance, applying the following design principles:
 * Lock-free algorithms and actor concurrency (green threads model)
 * Broker is garbage-free in the hot/data path
 
-As a result, Zeebe is capable of very high throughput on a single node and scales horizontally (see this [benchmarking blog post](https://zeebe.io/blog/2018/06/benchmarking-zeebe-horizontal-scaling/) for more detail). 
+In addition, using partitions as a scaling mechanism, Zeebe scales horizontally to achieve high throughput (without a relational database as a potential bottleneck).
