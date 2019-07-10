@@ -23,6 +23,7 @@ import com.google.common.base.Charsets;
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.api.response.DeploymentEvent;
 import io.zeebe.client.api.response.Workflow;
+import io.zeebe.client.impl.command.StreamUtil;
 import io.zeebe.client.impl.response.WorkflowImpl;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
@@ -30,7 +31,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.util.StreamUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -268,7 +268,7 @@ public class DeployWorkflowTest extends ClientTest {
 
   private byte[] getBytes(String filename) {
     try {
-      return StreamUtil.read(DeployWorkflowTest.class.getResourceAsStream(filename));
+      return StreamUtil.readInputStream(DeployWorkflowTest.class.getResourceAsStream(filename));
     } catch (IOException e) {
       throw new AssertionError("Failed to read bytes of file: " + filename, e);
     }

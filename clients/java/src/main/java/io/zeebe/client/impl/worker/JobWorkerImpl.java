@@ -18,7 +18,7 @@ package io.zeebe.client.impl.worker;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.worker.JobWorker;
 import io.zeebe.client.impl.Loggers;
-import io.zeebe.util.CloseableSilently;
+import java.io.Closeable;
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 
-public class JobWorkerImpl implements JobWorker, CloseableSilently {
+public class JobWorkerImpl implements JobWorker, Closeable {
 
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
 

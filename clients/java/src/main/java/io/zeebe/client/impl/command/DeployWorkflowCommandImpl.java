@@ -15,7 +15,8 @@
  */
 package io.zeebe.client.impl.command;
 
-import static io.zeebe.util.EnsureUtil.ensureNotNull;
+import static io.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
+import static io.zeebe.client.impl.command.StreamUtil.readInputStream;
 
 import com.google.protobuf.ByteString;
 import io.zeebe.client.api.ZeebeFuture;
@@ -32,7 +33,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.util.StreamUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -86,7 +86,7 @@ public class DeployWorkflowCommandImpl
     ensureNotNull("resource stream", resourceStream);
 
     try {
-      final byte[] bytes = StreamUtil.read(resourceStream);
+      final byte[] bytes = readInputStream(resourceStream);
 
       return addResourceBytes(bytes, resourceName);
     } catch (final IOException e) {
