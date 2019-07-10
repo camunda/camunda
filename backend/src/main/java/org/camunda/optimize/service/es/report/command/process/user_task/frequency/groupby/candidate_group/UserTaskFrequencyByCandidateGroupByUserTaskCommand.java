@@ -7,14 +7,10 @@ package org.camunda.optimize.service.es.report.command.process.user_task.frequen
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportHyperMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
-import org.camunda.optimize.service.es.report.command.CommandContext;
-import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
-import org.camunda.optimize.service.es.report.command.process.util.GroupByFlowNodeCommandUtil;
-import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
+import org.camunda.optimize.service.es.report.command.process.user_task.UserTaskDistributedByUserTaskCommand;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessHyperMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -45,7 +41,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
-public class UserTaskFrequencyByCandidateGroupByUserTaskCommand extends ProcessReportCommand<SingleProcessHyperMapReportResult> {
+public class UserTaskFrequencyByCandidateGroupByUserTaskCommand extends UserTaskDistributedByUserTaskCommand {
 
   private static final String USER_TASK_ID_TERMS_AGGREGATION = "tasks";
   private static final String USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION = "candidateGroups";
@@ -86,24 +82,6 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskCommand extends ProcessR
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-  }
-
-  @Override
-  protected void sortResultData(final SingleProcessHyperMapReportResult evaluationResult) {
-    ((ProcessReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
-      sorting -> evaluationResult.getResultAsDto()
-        .getData()
-        .forEach(groupByEntry -> MapResultSortingUtility.sortResultData(sorting, groupByEntry))
-    );
-  }
-
-  @Override
-  protected SingleProcessHyperMapReportResult enrichResultData(final CommandContext<SingleProcessReportDefinitionDto> commandContext,
-                                                               final SingleProcessHyperMapReportResult evaluationResult) {
-    GroupByFlowNodeCommandUtil.enrichResultData(
-      commandContext, evaluationResult
-    );
-    return evaluationResult;
   }
 
   private AggregationBuilder createAggregation(FlowNodeExecutionState flowNodeExecutionState) {

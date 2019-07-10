@@ -29,10 +29,13 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.SQLException;
+import java.time.temporal.ChronoUnit;
 
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskFrequencyMapGroupByAssigneeByUserTaskReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskIdleDurationMapGroupByAssigneeByUserTaskReport;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -68,14 +71,14 @@ public class ProcessHyperMapExportServiceIT {
   }
 
   @Test
-  public void hyperMapReportHasExpectedValue() throws Exception {
+  public void hyperMapFrequencyReportHasExpectedValue() throws Exception {
     //given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
-    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final ProcessReportDataDto reportData = createFrequencyReport(processDefinition);
     String reportId = createNewSingleMapReport(reportData);
 
     // when
@@ -95,12 +98,41 @@ public class ProcessHyperMapExportServiceIT {
   }
 
   @Test
+  public void hyperMapDurationReportHasExpectedValue() throws Exception {
+    //given
+    ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto);
+    changeDuration(processInstanceDto, 10L);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+    final ProcessReportDataDto reportData = createDurationReport(processDefinition);
+    String reportId = createNewSingleMapReport(reportData);
+
+    // when
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCsvExportRequest(reportId, "my_file.csv")
+      .execute();
+
+    // then
+    assertThat(response.getStatus(), is(200));
+
+    String actualContent = getActualContentAsString(response);
+    String stringExpected =
+      getExpectedContentAsString("/csv/process/hyper/usertask_duration_group_by_assignee_by_usertask.csv");
+
+    assertThat(actualContent, is(stringExpected));
+  }
+
+  @Test
   public void reportWithEmptyResultProducesEmptyCsv() throws Exception {
     //given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
-    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final ProcessReportDataDto reportData = createFrequencyReport(processDefinition);
     String reportId = createNewSingleMapReport(reportData);
 
     // when
@@ -119,12 +151,20 @@ public class ProcessHyperMapExportServiceIT {
     assertThat(actualContent, is(stringExpected));
   }
 
-  protected ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
+  private ProcessReportDataDto createFrequencyReport(final String processDefinitionKey, final String version) {
     return createUserTaskFrequencyMapGroupByAssigneeByUserTaskReport(processDefinitionKey, version);
   }
 
-  private ProcessReportDataDto createReport(final ProcessDefinitionEngineDto processDefinition) {
-    return createReport(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+  private ProcessReportDataDto createFrequencyReport(final ProcessDefinitionEngineDto processDefinition) {
+    return createFrequencyReport(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+  }
+
+  private ProcessReportDataDto createDurationReport(final String processDefinitionKey, final String version) {
+    return createUserTaskIdleDurationMapGroupByAssigneeByUserTaskReport(processDefinitionKey, version);
+  }
+
+  private ProcessReportDataDto createDurationReport(final ProcessDefinitionEngineDto processDefinition) {
+    return createDurationReport(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
   }
 
   private void finishUserTask1AWithDefaultAndTaskB2WithSecondUser(final ProcessInstanceEngineDto processInstanceDto1) {
@@ -135,18 +175,38 @@ public class ProcessHyperMapExportServiceIT {
   }
 
   private ProcessDefinitionEngineDto deployFourUserTasksDefinition() {
+    // @formatter:off
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
-      .parallelGateway()
-      .userTask(USER_TASK_1)
-      .userTask(USER_TASK_2)
-      .endEvent()
+        .parallelGateway()
+          .userTask(USER_TASK_1)
+          .userTask(USER_TASK_2)
+          .endEvent()
       .moveToLastGateway()
-      .userTask(USER_TASK_A)
-      .userTask(USER_TASK_B)
-      .endEvent()
+        .userTask(USER_TASK_A)
+        .userTask(USER_TASK_B)
+        .endEvent()
       .done();
+    // @formatter:on
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
+  }
+
+  @SuppressWarnings("SameParameterValue")
+  private void changeDuration(ProcessInstanceEngineDto processInstanceDto, long millis) {
+    engineRule.getHistoricTaskInstances(processInstanceDto.getId())
+      .forEach(
+        historicUserTaskInstanceDto ->
+        {
+          try {
+            engineDatabaseRule.changeUserTaskClaimOperationTimestamp(
+              processInstanceDto.getId(),
+              historicUserTaskInstanceDto.getId(),
+              historicUserTaskInstanceDto.getStartTime().plus(millis, ChronoUnit.MILLIS)
+            );
+          } catch (SQLException ex) {
+            throw new RuntimeException(ex);
+          }
+        });
   }
 
   private String getActualContentAsString(Response response) throws IOException {

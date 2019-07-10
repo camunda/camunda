@@ -115,6 +115,32 @@ public class ProcessReportDataCreator {
     return reportData;
   }
 
+  public static ProcessReportDataDto createUserTaskIdleDurationGroupByAssigneeByUserTaskReport(AggregationType aggroType) {
+    return createUserTaskDurationGroupByAssigneeByUserTaskReport(aggroType, UserTaskDurationTime.IDLE);
+  }
+
+  public static ProcessReportDataDto createUserTaskTotalDurationGroupByAssigneeByUserTaskReport(AggregationType aggroType) {
+    return createUserTaskDurationGroupByAssigneeByUserTaskReport(aggroType, UserTaskDurationTime.TOTAL);
+  }
+
+  public static ProcessReportDataDto createUserTaskWorkDurationGroupByAssigneeByUserTaskReport(AggregationType aggroType) {
+    return createUserTaskDurationGroupByAssigneeByUserTaskReport(aggroType, UserTaskDurationTime.WORK);
+  }
+
+  private static ProcessReportDataDto createUserTaskDurationGroupByAssigneeByUserTaskReport(final AggregationType aggroType,
+                                                                                            final UserTaskDurationTime userTaskDurationTime) {
+    final ProcessViewDto view = createUserTaskDurationView();
+    final ProcessGroupByDto groupByDto = createGroupByAssignee();
+
+    final ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    reportData.getConfiguration().setAggregationType(aggroType);
+    reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
+    reportData.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
+    return reportData;
+  }
+
   public static ProcessReportDataDto createUserTaskFrequencyGroupByCandidateGroupReport() {
     final ProcessViewDto view = createUserTaskFrequencyView();
     final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
@@ -153,6 +179,32 @@ public class ProcessReportDataCreator {
     reportData.setGroupBy(groupByDto);
     reportData.getConfiguration().setAggregationType(aggroType);
     reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
+    return reportData;
+  }
+
+  public static ProcessReportDataDto createUserTaskIdleDurationGroupByCandidateGroupByUserTaskReport(AggregationType aggroType) {
+    return createUserTaskDurationGroupByCandidateGroupByUserTaskReport(aggroType, UserTaskDurationTime.IDLE);
+  }
+
+  public static ProcessReportDataDto createUserTaskTotalDurationGroupByCandidateGroupByUserTaskReport(AggregationType aggroType) {
+    return createUserTaskDurationGroupByCandidateGroupByUserTaskReport(aggroType, UserTaskDurationTime.TOTAL);
+  }
+
+  public static ProcessReportDataDto createUserTaskWorkDurationGroupByCandidateGroupByUserTaskReport(AggregationType aggroType) {
+    return createUserTaskDurationGroupByCandidateGroupByUserTaskReport(aggroType, UserTaskDurationTime.WORK);
+  }
+
+  private static ProcessReportDataDto createUserTaskDurationGroupByCandidateGroupByUserTaskReport(final AggregationType aggroType,
+                                                                                                  final UserTaskDurationTime userTaskDurationTime) {
+    final ProcessViewDto view = createUserTaskDurationView();
+    final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
+
+    final ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    reportData.getConfiguration().setAggregationType(aggroType);
+    reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
+    reportData.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
     return reportData;
   }
 

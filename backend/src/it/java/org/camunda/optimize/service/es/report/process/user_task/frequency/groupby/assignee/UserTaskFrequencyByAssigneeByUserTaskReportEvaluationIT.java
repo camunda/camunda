@@ -101,13 +101,13 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
       .processInstanceCount(1L)
       .groupByContains(DEFAULT_USERNAME)
         .distributedByContains(USER_TASK_1, 1L)
-        .distributedByContains(USER_TASK_2, 0L)
+        .distributedByContains(USER_TASK_2, null)
         .distributedByContains(USER_TASK_A, 1L)
-        .distributedByContains(USER_TASK_B, 0L)
+        .distributedByContains(USER_TASK_B, null)
       .groupByContains(SECOND_USER)
-        .distributedByContains(USER_TASK_1, 0L)
+        .distributedByContains(USER_TASK_1, null)
         .distributedByContains(USER_TASK_2, 1L)
-        .distributedByContains(USER_TASK_A, 0L)
+        .distributedByContains(USER_TASK_A, null)
         .distributedByContains(USER_TASK_B, 1L)
       .doAssert(actualResult);
     // @formatter:on
@@ -136,13 +136,13 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
       .processInstanceCount(2L)
       .groupByContains(DEFAULT_USERNAME)
         .distributedByContains(USER_TASK_1, 2L)
-        .distributedByContains(USER_TASK_2, 0L)
+        .distributedByContains(USER_TASK_2, null)
         .distributedByContains(USER_TASK_A, 2L)
-        .distributedByContains(USER_TASK_B, 0L)
+        .distributedByContains(USER_TASK_B, null)
       .groupByContains(SECOND_USER)
-        .distributedByContains(USER_TASK_1, 0L)
+        .distributedByContains(USER_TASK_1, null)
         .distributedByContains(USER_TASK_2, 2L)
-        .distributedByContains(USER_TASK_A, 0L)
+        .distributedByContains(USER_TASK_A, null)
         .distributedByContains(USER_TASK_B, 2L)
       .doAssert(actualResult);
     // @formatter:on
@@ -175,6 +175,9 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
       .isComplete(false)
       .groupByContains(DEFAULT_USERNAME)
         .distributedByContains(USER_TASK_1, 2L)
+        .distributedByContains(USER_TASK_2, null)
+        .distributedByContains(USER_TASK_A, null)
+        .distributedByContains(USER_TASK_B, null)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -203,9 +206,9 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
       .processInstanceCount(1L)
       .groupByContains(DEFAULT_USERNAME)
         .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 0L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .groupByContains(SECOND_USER)
-        .distributedByContains(USER_TASK_1, 0L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
       .doAssert(actualResult);
     // @formatter:on
@@ -424,10 +427,8 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     List<MapResultEntryDto<Long>> groupByResults = new ArrayList<>();
     MapResultEntryDto<Long> firstUserTask = new MapResultEntryDto<>(USER_TASK_1, userTask1Result, USER_TASK_1_NAME);
     groupByResults.add(firstUserTask);
-    if (Objects.nonNull(userTask2Result)) {
-      MapResultEntryDto<Long> secondUserTask = new MapResultEntryDto<>(USER_TASK_2, userTask2Result, USER_TASK_2_NAME);
-      groupByResults.add(secondUserTask);
-    }
+    MapResultEntryDto<Long> secondUserTask = new MapResultEntryDto<>(USER_TASK_2, userTask2Result, USER_TASK_2_NAME);
+    groupByResults.add(secondUserTask);
     return new HyperMapResultEntryDto<>(DEFAULT_USERNAME, groupByResults);
   }
 
@@ -440,7 +441,6 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
       new ExecutionStateTestValues(FlowNodeExecutionState.ALL, getExpectedResultsMap(2L, 1L))
     };
   }
-
 
   @Test
   @Parameters(method = "getExecutionStateExpectedValues")

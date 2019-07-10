@@ -99,13 +99,13 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
       .processInstanceCount(1L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_1, 1L)
-        .distributedByContains(USER_TASK_2, 0L)
+        .distributedByContains(USER_TASK_2, null)
         .distributedByContains(USER_TASK_A, 1L)
-        .distributedByContains(USER_TASK_B, 0L)
+        .distributedByContains(USER_TASK_B, null)
       .groupByContains(SECOND_CANDIDATE_GROUP)
-        .distributedByContains(USER_TASK_1, 0L)
+        .distributedByContains(USER_TASK_1, null)
         .distributedByContains(USER_TASK_2, 1L)
-        .distributedByContains(USER_TASK_A, 0L)
+        .distributedByContains(USER_TASK_A, null)
         .distributedByContains(USER_TASK_B, 1L)
       .doAssert(actualResult);
     // @formatter:on
@@ -140,7 +140,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
         .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
       .groupByContains(SECOND_CANDIDATE_GROUP)
-        .distributedByContains(USER_TASK_1, 0L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
       .doAssert(actualResult);
     // @formatter:on
@@ -169,13 +169,13 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
       .processInstanceCount(2L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_1, 2L)
-        .distributedByContains(USER_TASK_2, 0L)
+        .distributedByContains(USER_TASK_2, null)
         .distributedByContains(USER_TASK_A, 2L)
-        .distributedByContains(USER_TASK_B, 0L)
+        .distributedByContains(USER_TASK_B, null)
       .groupByContains(SECOND_CANDIDATE_GROUP)
-        .distributedByContains(USER_TASK_1, 0L)
+        .distributedByContains(USER_TASK_1, null)
         .distributedByContains(USER_TASK_2, 2L)
-        .distributedByContains(USER_TASK_A, 0L)
+        .distributedByContains(USER_TASK_A, null)
         .distributedByContains(USER_TASK_B, 2L)
       .doAssert(actualResult);
     // @formatter:on
@@ -208,6 +208,9 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
       .isComplete(false)
       .groupByContains(FIRST_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_1, 2L)
+        .distributedByContains(USER_TASK_2, null)
+        .distributedByContains(USER_TASK_A, null)
+        .distributedByContains(USER_TASK_B, null)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -238,9 +241,9 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
       .processInstanceCount(1L)
       .groupByContains(FIRST_CANDIDATE_GROUP)
         .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 0L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .groupByContains(SECOND_CANDIDATE_GROUP)
-        .distributedByContains(USER_TASK_1, 0L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
       .doAssert(actualResult);
     // @formatter:on
@@ -474,10 +477,8 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     List<MapResultEntryDto<Long>> groupByResults = new ArrayList<>();
     MapResultEntryDto<Long> firstUserTask = new MapResultEntryDto<>(USER_TASK_1, userTask1Result, USER_TASK_1_NAME);
     groupByResults.add(firstUserTask);
-    if (Objects.nonNull(userTask2Result)) {
-      MapResultEntryDto<Long> secondUserTask = new MapResultEntryDto<>(USER_TASK_2, userTask2Result, USER_TASK_2_NAME);
-      groupByResults.add(secondUserTask);
-    }
+    MapResultEntryDto<Long> secondUserTask = new MapResultEntryDto<>(USER_TASK_2, userTask2Result, USER_TASK_2_NAME);
+    groupByResults.add(secondUserTask);
     return new HyperMapResultEntryDto<>(FIRST_CANDIDATE_GROUP, groupByResults);
   }
 
@@ -490,7 +491,6 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
       new ExecutionStateTestValues(FlowNodeExecutionState.ALL, getExpectedResultsMap(2L, 1L))
     };
   }
-
 
   @Test
   @Parameters(method = "getExecutionStateExpectedValues")

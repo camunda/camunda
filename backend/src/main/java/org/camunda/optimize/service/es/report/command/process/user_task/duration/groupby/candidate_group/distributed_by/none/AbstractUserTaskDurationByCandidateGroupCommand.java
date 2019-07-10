@@ -3,24 +3,27 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.process.user_task.frequency.groupby.assignee;
+package org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.candidate_group.distributed_by.none;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportHyperMapResult;
-import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
-import org.camunda.optimize.service.es.report.command.process.user_task.UserTaskDistributedByUserTaskCommand;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessHyperMapReportResult;
+import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
+import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
+import org.camunda.optimize.service.es.report.command.util.FlowNodeExecutionStateAggregationUtil;
+import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -33,27 +36,31 @@ import java.util.List;
 import static org.camunda.optimize.service.es.report.command.util.FlowNodeExecutionStateAggregationUtil.addExecutionStateFilter;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ACTIVITY_ID;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ASSIGNEE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_CANDIDATE_GROUPS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_END_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
-public class UserTaskFrequencyByAssigneeByUserTaskCommand extends UserTaskDistributedByUserTaskCommand {
+public abstract class AbstractUserTaskDurationByCandidateGroupCommand extends ProcessReportCommand<SingleProcessMapDurationReportResult> {
 
-  private static final String USER_TASK_ID_TERMS_AGGREGATION = "tasks";
-  private static final String USER_TASK_ASSIGNEE_TERMS_AGGREGATION = "assignees";
+  private static final String USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION = "candidateGroups";
   private static final String USER_TASKS_AGGREGATION = "userTasks";
   private static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
 
+  protected AggregationStrategy aggregationStrategy;
+
+  AbstractUserTaskDurationByCandidateGroupCommand(AggregationStrategy strategy) {
+    aggregationStrategy = strategy;
+  }
+
+
   @Override
-  protected SingleProcessHyperMapReportResult evaluate() {
+  protected SingleProcessMapDurationReportResult evaluate() {
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
-      "Evaluating user task frequency grouped by assignee distributed by user task report " +
-        "for process definition key [{}] and version [{}]",
+      "Evaluating user task duration grouped by candidate group report for process definition key [{}] and version [{}]",
       processReportData.getProcessDefinitionKey(),
       processReportData.getProcessDefinitionVersion()
     );
@@ -70,11 +77,11 @@ public class UserTaskFrequencyByAssigneeByUserTaskCommand extends UserTaskDistri
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final ProcessReportHyperMapResult resultDto = mapToReportResult(response);
-      return new SingleProcessHyperMapReportResult(resultDto, reportDefinition);
+      final ProcessDurationReportMapResultDto resultDto = mapToReportResult(response);
+      return new SingleProcessMapDurationReportResult(resultDto, reportDefinition);
     } catch (IOException e) {
       final String reason = String.format(
-        "Could not evaluate user task frequency grouped by assignee distributed by user task report " +
+        "Could not evaluate user task duration grouped by candidate group report " +
           "for process definition key [%s] and version [%s]",
         processReportData.getProcessDefinitionKey(),
         processReportData.getProcessDefinitionVersion()
@@ -83,6 +90,16 @@ public class UserTaskFrequencyByAssigneeByUserTaskCommand extends UserTaskDistri
       throw new OptimizeRuntimeException(reason, e);
     }
   }
+
+  @Override
+  protected void sortResultData(final SingleProcessMapDurationReportResult evaluationResult) {
+    ((ProcessReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
+      sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
+    );
+  }
+
+  protected abstract String getDurationFieldName();
+
 
   private AggregationBuilder createAggregation(FlowNodeExecutionState flowNodeExecutionState) {
     return nested(USER_TASKS, USER_TASKS_AGGREGATION)
@@ -97,42 +114,45 @@ public class UserTaskFrequencyByAssigneeByUserTaskCommand extends UserTaskDistri
         )
           .subAggregation(
             AggregationBuilders
-              .terms(USER_TASK_ASSIGNEE_TERMS_AGGREGATION)
+              .terms(USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION)
               .size(configurationService.getEsAggregationBucketLimit())
-              .order(BucketOrder.key(true))
-              .field(USER_TASKS + "." + USER_TASK_ASSIGNEE)
+              .field(USER_TASKS + "." + USER_TASK_CANDIDATE_GROUPS)
               .subAggregation(
-                AggregationBuilders
-                  .terms(USER_TASK_ID_TERMS_AGGREGATION)
-                  .size(configurationService.getEsAggregationBucketLimit())
-                  .order(BucketOrder.key(true))
-                  .field(USER_TASKS + "." + USER_TASK_ACTIVITY_ID)
+                aggregationStrategy.getAggregationBuilder()
+                  .script(getScriptedAggregationField())
               )
           )
       );
   }
 
-  private ProcessReportHyperMapResult mapToReportResult(final SearchResponse response) {
-    final ProcessReportHyperMapResult resultDto = new ProcessReportHyperMapResult();
+
+  private Script getScriptedAggregationField() {
+    return FlowNodeExecutionStateAggregationUtil.getAggregationScript(
+      LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
+      USER_TASKS + "." + getDurationFieldName(),
+      USER_TASKS + "." + getReferenceDateFieldName()
+    );
+  }
+
+  protected abstract String getReferenceDateFieldName();
+
+  private ProcessDurationReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ProcessDurationReportMapResultDto resultDto = new ProcessDurationReportMapResultDto();
 
     final Aggregations aggregations = response.getAggregations();
     final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
-    final Terms byAssigneeAggregation = filteredUserTasks.getAggregations().get(USER_TASK_ASSIGNEE_TERMS_AGGREGATION);
+    final Terms byTaskIdAggregation = filteredUserTasks.getAggregations().get(
+      USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION);
 
-    final List<HyperMapResultEntryDto<Long>> resultData = new ArrayList<>();
-    for (Terms.Bucket assigneeBucket : byAssigneeAggregation.getBuckets()) {
-
-      final List<MapResultEntryDto<Long>> byAssigneeEntry = new ArrayList<>();
-      final Terms byTaskIdAggregation = assigneeBucket.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION);
-      for (Terms.Bucket taskBucket : byTaskIdAggregation.getBuckets()) {
-        byAssigneeEntry.add(new MapResultEntryDto<>(taskBucket.getKeyAsString(), taskBucket.getDocCount()));
-      }
-      resultData.add(new HyperMapResultEntryDto<>(assigneeBucket.getKeyAsString(), byAssigneeEntry));
+    final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
+    for (Terms.Bucket b : byTaskIdAggregation.getBuckets()) {
+      final Long value = aggregationStrategy.getValue(b.getAggregations());
+      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), value));
     }
 
     resultDto.setData(resultData);
-    resultDto.setIsComplete(byAssigneeAggregation.getSumOfOtherDocCounts() == 0L);
+    resultDto.setIsComplete(byTaskIdAggregation.getSumOfOtherDocCounts() == 0L);
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
 
     return resultDto;

@@ -54,6 +54,31 @@ public class GroupByFlowNodeCommandUtil {
     }
   }
 
+  public static void filterHyperMapResultData(
+    final CommandContext<SingleProcessReportDefinitionDto> commandContext,
+    final ReportEvaluationResult<ProcessReportHyperMapResult, SingleProcessReportDefinitionDto> evaluationResult) {
+
+    final ProcessReportDataDto reportData = commandContext.getReportDefinition().getData();
+    // if version is set to all, filter for only latest flow nodes
+    if (ReportConstants.ALL_VERSIONS.equalsIgnoreCase(reportData.getProcessDefinitionVersion())) {
+      getProcessDefinitionIfAvailable(commandContext, reportData)
+        .ifPresent(processDefinition -> {
+          final Map<String, String> userTaskNames = processDefinition.getUserTaskNames();
+
+          evaluationResult.getResultAsDto()
+            .getData()
+            .forEach(hyperMapEntry -> {
+              List<MapResultEntryDto<Long>> hyperMapValue = hyperMapEntry
+                .getValue()
+                .stream()
+                .filter(resultEntry -> userTaskNames.containsKey(resultEntry.getKey()))
+                .collect(Collectors.toList());
+              hyperMapEntry.setValue(hyperMapValue);
+            });
+        });
+    }
+  }
+
   public static <MAP extends ProcessReportMapResult<V>, V extends Comparable> void enrichResultData(
     final CommandContext<SingleProcessReportDefinitionDto> commandContext,
     final ReportEvaluationResult<MAP, SingleProcessReportDefinitionDto> evaluationResult,
@@ -81,7 +106,7 @@ public class GroupByFlowNodeCommandUtil {
       });
   }
 
-  public static <V extends Comparable> void enrichResultData(
+  public static void enrichResultData(
     final CommandContext<SingleProcessReportDefinitionDto> commandContext,
     final ReportEvaluationResult<ProcessReportHyperMapResult, SingleProcessReportDefinitionDto> evaluationResult) {
 
@@ -90,25 +115,23 @@ public class GroupByFlowNodeCommandUtil {
       .ifPresent(processDefinition -> {
         final Map<String, String> flowNodeNames = processDefinition.getUserTaskNames();
 
-        Set<String> flowNodeKeysWithResult = new HashSet<>();
         List<HyperMapResultEntryDto<Long>> resultData = evaluationResult.getResultAsDto().getData();
         resultData
           .forEach(groupedByKeyEntry -> groupedByKeyEntry.getValue().forEach(
             distributedByEntry -> {
               distributedByEntry.setLabel(flowNodeNames.get(distributedByEntry.getKey()));
-              flowNodeKeysWithResult.add(distributedByEntry.getKey());
             })
           );
-
+        Set<String> allFlowNodeKeys = flowNodeNames.keySet();
         resultData.forEach(groupByEntry -> {
-          List<String> allUserTasksForAssignee = groupByEntry.getValue()
-            .stream()
-            .map(MapResultEntryDto::getKey)
-            .collect(Collectors.toList());
-          flowNodeKeysWithResult.stream()
-            .filter(taskId -> !allUserTasksForAssignee.contains(taskId))
+          allFlowNodeKeys.stream()
+            .filter(key -> !groupByEntry.getDataEntryForKey(key).isPresent())
             .forEach(taskId -> groupByEntry.getValue()
-              .add(new MapResultEntryDto<>(taskId, 0L, flowNodeNames.get(taskId))));
+              // We are enriching the Result Data with not executed user tasks.
+              // For those user tasks, count value is set to null since in the front-end
+              // we handle the cases of null (not being executed) and
+              // 0 (it might have been executed, but has a very low value) differently.
+              .add(new MapResultEntryDto<>(taskId, null, flowNodeNames.get(taskId))));
           groupByEntry.getValue()
             .sort(Comparator.comparing(MapResultEntryDto::getLabel));
         });

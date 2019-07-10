@@ -514,6 +514,26 @@ public class ProcessReportDataBuilderHelper {
     return reportDataViewRaw;
   }
 
+  public static ProcessReportDataDto createUserTaskTotalDurationMapGroupByAssigneeByUserTaskReport(
+    final String processDefinitionKey,
+    final String processDefinitionVersion
+  ) {
+    final ProcessViewDto view = createUserTaskDurationView();
+    final ProcessGroupByDto groupByDto = createGroupByAssignee();
+
+    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
+      view,
+      groupByDto
+    );
+    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.TOTAL);
+    reportDataViewRaw.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
+
+    return reportDataViewRaw;
+  }
+
   public static ProcessReportDataDto createUserTaskIdleDurationMapGroupByAssigneeReport(
     final String processDefinitionKey,
     final String processDefinitionVersion
@@ -529,6 +549,46 @@ public class ProcessReportDataBuilderHelper {
       groupByDto
     );
     reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
+
+    return reportDataViewRaw;
+  }
+
+  public static ProcessReportDataDto createUserTaskIdleDurationMapGroupByAssigneeByUserTaskReport(
+    final String processDefinitionKey,
+    final String processDefinitionVersion
+  ) {
+    final ProcessViewDto view = createUserTaskDurationView();
+    final ProcessGroupByDto groupByDto = createGroupByAssignee();
+
+    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
+      view,
+      groupByDto
+    );
+    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
+    reportDataViewRaw.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
+
+    return reportDataViewRaw;
+  }
+
+  public static ProcessReportDataDto createUserTaskIdleDurationMapGroupByCandidateGroupByUserTaskReport(
+    final String processDefinitionKey,
+    final String processDefinitionVersion
+  ) {
+    final ProcessViewDto view = createUserTaskDurationView();
+    final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
+
+    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
+      view,
+      groupByDto
+    );
+    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
+    reportDataViewRaw.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
 
     return reportDataViewRaw;
   }
@@ -551,6 +611,44 @@ public class ProcessReportDataBuilderHelper {
     return reportDataViewRaw;
   }
 
+  public static ProcessReportDataDto createUserTaskWorkDurationMapGroupByAssigneeByUserTaskReport(
+    final String processDefinitionKey,
+    final String processDefinitionVersion) {
+    final ProcessViewDto view = createUserTaskDurationView();
+    final ProcessGroupByDto groupByDto = createGroupByAssignee();
+
+    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
+      view,
+      groupByDto
+    );
+    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.WORK);
+    reportDataViewRaw.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
+
+    return reportDataViewRaw;
+  }
+
+  public static ProcessReportDataDto createUserTaskWorkDurationMapGroupByCandidateGroupByUserTaskReport(
+    final String processDefinitionKey,
+    final String processDefinitionVersion) {
+    final ProcessViewDto view = createUserTaskDurationView();
+    final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
+
+    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
+      view,
+      groupByDto
+    );
+    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.WORK);
+    reportDataViewRaw.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
+
+    return reportDataViewRaw;
+  }
+
   public static ProcessReportDataDto createUserTaskTotalDurationMapGroupByCandidateGroupReport(
     final String processDefinitionKey,
     final String processDefinitionVersion
@@ -566,6 +664,26 @@ public class ProcessReportDataBuilderHelper {
       groupByDto
     );
     reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.TOTAL);
+
+    return reportDataViewRaw;
+  }
+
+  public static ProcessReportDataDto createUserTaskTotalDurationMapGroupByCandidateGroupByUserTaskReport(
+    final String processDefinitionKey,
+    final String processDefinitionVersion
+  ) {
+    final ProcessViewDto view = createUserTaskDurationView();
+    final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
+
+    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
+      view,
+      groupByDto
+    );
+    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.TOTAL);
+    reportDataViewRaw.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
 
     return reportDataViewRaw;
   }
