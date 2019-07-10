@@ -239,6 +239,10 @@ describe('tenants', () => {
             version: 'ALL'
           },
           {
+            tenants: [{id: 'a', name: 'Tenant A'}],
+            version: '2'
+          },
+          {
             tenants: [
               {id: 'a', name: 'Tenant A'},
               {id: 'b', name: 'Tenant B'},
@@ -289,5 +293,19 @@ describe('tenants', () => {
     );
 
     expect(node.find('.container')).toHaveClassName('withTenants');
+  });
+
+  it('should select all tenants when changing the version', async () => {
+    const node = await shallow(
+      <DefinitionSelection {...props} definitionKey="foo" definitionVersion="1" />
+    );
+
+    spy.mockClear();
+    node.find(Select).prop('onChange')('2');
+    expect(spy).toHaveBeenCalledWith('foo', '2', ['a']);
+
+    spy.mockClear();
+    node.find(Select).prop('onChange')('1');
+    expect(spy).toHaveBeenCalledWith('foo', '1', ['a', 'b', null]);
   });
 });

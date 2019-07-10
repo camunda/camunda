@@ -73,12 +73,10 @@ export default class DefinitionSelection extends React.Component {
   canRenderDiagram = () =>
     this.props.renderDiagram && this.props.definitionKey && this.props.definitionVersion;
 
-  getAvailableTenants = () => {
-    const definition = this.findSelectedKeyGroup(this.props.definitionKey);
+  getAvailableTenants = (definitionKey, definitionVersion) => {
+    const definition = this.findSelectedKeyGroup(definitionKey);
     if (definition) {
-      const version = definition.versions.find(
-        ({version}) => version === this.props.definitionVersion
-      );
+      const version = definition.versions.find(({version}) => version === definitionVersion);
       if (version) {
         return version.tenants;
       }
@@ -104,7 +102,7 @@ export default class DefinitionSelection extends React.Component {
     const {definitionKey, definitionVersion, type} = this.props;
 
     if (definitionKey && definitionVersion) {
-      const availableTenants = this.getAvailableTenants();
+      const availableTenants = this.getAvailableTenants(definitionKey, definitionVersion);
       const selectedTenants = this.getSelectedTenants();
 
       const definition = this.findSelectedKeyGroup(definitionKey).name;
@@ -169,7 +167,9 @@ export default class DefinitionSelection extends React.Component {
                 <Select
                   className="version"
                   disabled={!selectedKey}
-                  onChange={version => this.changeVersion(version, this.getAvailableTenants())}
+                  onChange={version =>
+                    this.changeVersion(version, this.getAvailableTenants(selectedKey, version))
+                  }
                   value={this.getVersion()}
                 >
                   {this.renderAllVersions(selectedKey)}
@@ -178,7 +178,7 @@ export default class DefinitionSelection extends React.Component {
               <div className="tenant entry">
                 <Labeled label="Tenant" />
                 <TenantPopover
-                  tenants={this.getAvailableTenants()}
+                  tenants={this.getAvailableTenants(selectedKey, version)}
                   selected={this.getSelectedTenants()}
                   onChange={this.changeTenants}
                 />

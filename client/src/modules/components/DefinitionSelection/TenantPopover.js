@@ -24,9 +24,6 @@ export default function TenantPopover({tenants, selected, onChange}) {
   if (selected.length === 1 && tenants.length !== 0) {
     label = tenants.find(({id}) => id === selected[0]).name;
   }
-  if (tenants.length < 2) {
-    label = '--';
-  }
 
   return (
     <Popover className="TenantPopover" disabled={tenants.length < 2} title={label}>
