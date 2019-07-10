@@ -13,6 +13,7 @@ import UserTaskDurationTime from './UserTaskDurationTime';
 import AggregationType from './AggregationType';
 import VisibleNodesFilter from './VisibleNodesFilter';
 import NodeStatus from './NodeStatus';
+import DistributedBy from './DistributedBy';
 
 import './Configuration.scss';
 
@@ -33,6 +34,7 @@ export default class Configuration extends React.Component {
         aggregationType: 'avg',
         userTaskDurationTime: 'total',
         flowNodeExecutionState: 'all',
+        distributedBy: 'none',
         precision: null,
         targetValue: {
           active: false,
@@ -82,7 +84,7 @@ export default class Configuration extends React.Component {
   };
 
   render() {
-    const {report, type} = this.props;
+    const {report, type, onChange} = this.props;
     const Component = visualizations[type];
 
     const disabledComponent = Component && Component.isDisabled && Component.isDisabled(report);
@@ -105,6 +107,7 @@ export default class Configuration extends React.Component {
             <AggregationType report={report} onChange={this.updateConfiguration} />
             <UserTaskDurationTime report={report} onChange={this.updateConfiguration} />
             {Component && <Component report={report} onChange={this.updateConfiguration} />}
+            <DistributedBy report={report} onChange={onChange} />
             <NodeStatus report={report} onChange={this.updateConfiguration} />
             <VisibleNodesFilter report={report} onChange={this.updateConfiguration} />
           </Form>

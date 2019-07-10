@@ -38,26 +38,29 @@ it('should get a label for group by variables for dmn', () => {
 });
 
 it('should always allow view selection', () => {
-  expect(isAllowed({property: 'rawData', entity: null})).toBe(true);
+  expect(isAllowed(null, {property: 'rawData', entity: null})).toBe(true);
 });
 
 it('should allow only groupBy options that make sense for the selected view', () => {
-  expect(isAllowed({property: 'rawData', entity: null}, {type: 'none', value: null})).toBeTruthy();
   expect(
-    isAllowed({property: 'rawData', entity: null}, {type: 'flowNodes', value: null})
+    isAllowed(null, {property: 'rawData', entity: null}, {type: 'none', value: null})
+  ).toBeTruthy();
+  expect(
+    isAllowed(null, {property: 'rawData', entity: null}, {type: 'flowNodes', value: null})
   ).toBeFalsy();
 });
 
 it('should allow only visualization options that make sense for the selected view and group', () => {
   expect(
-    isAllowed({property: 'rawData', entity: null}, {type: 'none', value: null}, 'table')
+    isAllowed(null, {property: 'rawData', entity: null}, {type: 'none', value: null}, 'table')
   ).toBeTruthy();
   expect(
-    isAllowed({property: 'rawData', entity: null}, {type: 'none', value: null}, 'heat')
+    isAllowed(null, {property: 'rawData', entity: null}, {type: 'none', value: null}, 'heat')
   ).toBeFalsy();
 
   expect(
     isAllowed(
+      null,
       {
         entity: 'processInstance',
         property: 'duration'
@@ -73,6 +76,7 @@ it('should allow only visualization options that make sense for the selected vie
   ).toBeTruthy();
   expect(
     isAllowed(
+      null,
       {
         entity: 'processInstance',
         property: 'duration'
@@ -84,6 +88,16 @@ it('should allow only visualization options that make sense for the selected vie
       'pie'
     )
   ).toBeFalsy();
+});
+
+it('should forbid line and pie charts for distributed user task reports', () => {
+  const report = {data: {configuration: {distributedBy: 'userTask'}}};
+  const view = {entity: 'userTask', property: 'frequency'};
+  const groupBy = {type: 'assignee', value: null};
+
+  expect(isAllowed(report, view, groupBy, 'bar')).toBeTruthy();
+  expect(isAllowed(report, view, groupBy, 'line')).toBeFalsy();
+  expect(isAllowed(report, view, groupBy, 'pie')).toBeFalsy();
 });
 
 describe('update', () => {

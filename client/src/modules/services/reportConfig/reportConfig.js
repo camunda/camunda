@@ -39,10 +39,18 @@ export default function reportConfig({view, groupBy, visualization, combinations
   /**
    * Checks whether a certain combination of view, groupby and visualization is allowed.
    */
-  const isAllowed = (targetView, targetGroupBy, targetVisualization) => {
+  const isAllowed = (report, targetView, targetGroupBy, targetVisualization) => {
     const viewGroup = getGroupFor(view, targetView);
     const groupGroup = getGroupFor(groupBy, targetGroupBy);
     const visualizationGroup = getGroupFor(visualization, targetVisualization);
+
+    if (
+      (targetVisualization === 'line' || targetVisualization === 'pie') &&
+      groupGroup === 'user' &&
+      report.data.configuration.distributedBy === 'userTask'
+    ) {
+      return false;
+    }
 
     if (viewGroup && groupGroup && visualizationGroup) {
       return (
@@ -122,7 +130,7 @@ export default function reportConfig({view, groupBy, visualization, combinations
       changes.groupBy = {$set: newGroup};
     }
 
-    if (!isAllowed(newView, newGroup)) {
+    if (!isAllowed(props.report, newView, newGroup)) {
       changes.groupBy = {$set: null};
       changes.visualization = {$set: null};
 
@@ -134,7 +142,7 @@ export default function reportConfig({view, groupBy, visualization, combinations
       changes.visualization = {$set: newVisualization};
     }
 
-    if (!isAllowed(newView, newGroup, newVisualization)) {
+    if (!isAllowed(props.report, newView, newGroup, newVisualization)) {
       changes.visualization = {$set: null};
     }
 
@@ -151,7 +159,7 @@ export default function reportConfig({view, groupBy, visualization, combinations
     if (newVisualization) {
       // if we have a predetermined next visualization, we set it
       changes.visualization = {$set: newVisualization};
-    } else if (!isAllowed(view, newGroupBy, visualization)) {
+    } else if (!isAllowed(props.report, view, newGroupBy, visualization)) {
       // if the current visualization is not valid anymore for the new group, we reset it
       changes.visualization = {$set: null};
     }

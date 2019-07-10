@@ -29,6 +29,8 @@ export default class CombinedReportPanel extends React.Component {
         !report.combined &&
         report.reportType === 'process' &&
         acceptedVisualizations.includes(report.data.visualization) &&
+        (report.data.configuration.distributedBy === 'none' ||
+          !['assignee', 'candidateGroup'].includes(report.data.groupBy.type)) &&
         report.data.view.property !== 'rawData'
     );
 

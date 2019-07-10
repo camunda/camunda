@@ -19,6 +19,7 @@ export default function ReportSelect({
   disabled,
   onChange,
   variables,
+  report,
   previous = []
 }) {
   const config = reportConfig[type];
@@ -43,14 +44,14 @@ export default function ReportSelect({
             <Select.Submenu
               key={idx}
               label={label}
-              disabled={options.every(({data}) => !config.isAllowed(...previous, data))}
+              disabled={options.every(({data}) => !config.isAllowed(report, ...previous, data))}
             >
               {options.map(({key, data, label}, idx) => {
                 return (
                   <Select.Option
                     key={idx}
                     value={key}
-                    disabled={!config.isAllowed(...previous, data)}
+                    disabled={!config.isAllowed(report, ...previous, data)}
                   >
                     {label}
                   </Select.Option>
@@ -60,7 +61,11 @@ export default function ReportSelect({
           );
         } else {
           return (
-            <Select.Option key={idx} value={key} disabled={!config.isAllowed(...previous, data)}>
+            <Select.Option
+              key={idx}
+              value={key}
+              disabled={!config.isAllowed(report, ...previous, data)}
+            >
               {label}
             </Select.Option>
           );

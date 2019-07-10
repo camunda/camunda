@@ -9,6 +9,7 @@ import React from 'react';
 import CombinedReportRenderer from './CombinedReportRenderer';
 import ProcessReportRenderer from './ProcessReportRenderer';
 import DecisionReportRenderer from './DecisionReportRenderer';
+import HyperReportRenderer from './HyperReportRenderer';
 import SetupNotice from './SetupNotice';
 import IncompleteReport from './IncompleteReport';
 import NoDataNotice from './NoDataNotice';
@@ -29,6 +30,7 @@ export default function ReportRenderer(props) {
   let View, somethingMissing;
   if (report) {
     const isDecision = report.reportType === 'decision';
+    const isHyper = report.result && report.result.type === 'hyperMap';
 
     if (report.combined) {
       View = CombinedReportRenderer;
@@ -37,7 +39,7 @@ export default function ReportRenderer(props) {
       View = DecisionReportRenderer;
       somethingMissing = checkDecisionReport(report.data);
     } else {
-      View = ProcessReportRenderer;
+      View = isHyper ? HyperReportRenderer : ProcessReportRenderer;
       somethingMissing = checkProcessReport(report.data);
     }
 
@@ -98,7 +100,7 @@ function containsData(report) {
     return report.data.reports.length > 0 && Object.values(report.result.data).some(containsData);
   } else {
     const {type, processInstanceCount, decisionInstanceCount, data} = report.result;
-    if ((type === 'durationMap' || type === 'frequencyMap') && data.length === 0) {
+    if (type && type.includes('Map') && data.length === 0) {
       return false;
     }
     return (

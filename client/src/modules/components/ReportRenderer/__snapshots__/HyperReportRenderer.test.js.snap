@@ -1,0 +1,166 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should convert a hypermap to a combined report 1`] = `
+<CombinedReportRendererErrorHandler
+  report={
+    Object {
+      "combined": true,
+      "data": Object {
+        "configuration": Object {
+          "distributedBy": "userTask",
+        },
+        "reports": Array [
+          Object {
+            "color": "#1991c8",
+            "id": "taskId1",
+          },
+          Object {
+            "color": "#00bcd4",
+            "id": "taskId2",
+          },
+          Object {
+            "color": "#00d0a3",
+            "id": "taskId3",
+          },
+        ],
+        "visualization": "bar",
+      },
+      "reportType": "process",
+      "result": Object {
+        "data": Object {
+          "taskId1": Object {
+            "combined": false,
+            "data": Object {
+              "configuration": Object {
+                "distributedBy": "userTask",
+              },
+              "groupBy": Object {
+                "type": "assignee",
+              },
+              "processDefinitionKey": "aKey",
+              "processDefinitionVersion": "1",
+              "view": Object {
+                "entity": "userTask",
+                "property": "duration",
+              },
+              "visualization": "bar",
+            },
+            "id": "taskId1",
+            "name": "Usertask 1",
+            "reportType": "process",
+            "result": Object {
+              "data": Array [
+                Object {
+                  "key": "Anne",
+                  "label": "Anne",
+                  "value": 8,
+                },
+                Object {
+                  "key": "Bernd",
+                  "label": "Bernd",
+                  "value": 3,
+                },
+                Object {
+                  "key": "Chris",
+                  "label": "Chris",
+                  "value": 1,
+                },
+              ],
+              "isComplete": true,
+              "processInstanceCount": 1234,
+              "type": "durationMap",
+            },
+          },
+          "taskId2": Object {
+            "combined": false,
+            "data": Object {
+              "configuration": Object {
+                "distributedBy": "userTask",
+              },
+              "groupBy": Object {
+                "type": "assignee",
+              },
+              "processDefinitionKey": "aKey",
+              "processDefinitionVersion": "1",
+              "view": Object {
+                "entity": "userTask",
+                "property": "duration",
+              },
+              "visualization": "bar",
+            },
+            "id": "taskId2",
+            "name": "Usertask 2",
+            "reportType": "process",
+            "result": Object {
+              "data": Array [
+                Object {
+                  "key": "Anne",
+                  "label": "Anne",
+                  "value": 1,
+                },
+                Object {
+                  "key": "Bernd",
+                  "label": "Bernd",
+                  "value": 17,
+                },
+                Object {
+                  "key": "Chris",
+                  "label": "Chris",
+                  "value": 0,
+                },
+              ],
+              "isComplete": true,
+              "processInstanceCount": 1234,
+              "type": "durationMap",
+            },
+          },
+          "taskId3": Object {
+            "combined": false,
+            "data": Object {
+              "configuration": Object {
+                "distributedBy": "userTask",
+              },
+              "groupBy": Object {
+                "type": "assignee",
+              },
+              "processDefinitionKey": "aKey",
+              "processDefinitionVersion": "1",
+              "view": Object {
+                "entity": "userTask",
+                "property": "duration",
+              },
+              "visualization": "bar",
+            },
+            "id": "taskId3",
+            "name": "Usertask 3",
+            "reportType": "process",
+            "result": Object {
+              "data": Array [
+                Object {
+                  "key": "Anne",
+                  "label": "Anne",
+                  "value": 65,
+                },
+                Object {
+                  "key": "Bernd",
+                  "label": "Bernd",
+                  "value": 22,
+                },
+                Object {
+                  "key": "Chris",
+                  "label": "Chris",
+                  "value": 73,
+                },
+              ],
+              "isComplete": true,
+              "processInstanceCount": 1234,
+              "type": "durationMap",
+            },
+          },
+        },
+        "type": null,
+      },
+    }
+  }
+/>
+`;
