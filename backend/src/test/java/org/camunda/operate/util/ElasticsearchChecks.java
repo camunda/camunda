@@ -73,7 +73,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether the activity of given args[0] workflowInstanceId (Long) and args[1] activityId (String) is in state ACTIVE
+   * Checks whether the activity of given args[0] workflowInstanceKey (Long) and args[1] activityId (String) is in state ACTIVE
    * @return
    */
   @Bean(name = "activityIsActiveCheck")
@@ -82,10 +82,10 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      Long workflowInstanceId = (Long)objects[0];
+      Long workflowInstanceKey = (Long)objects[0];
       String activityId = (String)objects[1];
       try {
-        List<ActivityInstanceEntity> activityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceId);
+        List<ActivityInstanceEntity> activityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceKey);
         final List<ActivityInstanceEntity> activities = activityInstances.stream().filter(a -> a.getActivityId().equals(activityId))
           .collect(Collectors.toList());
         if (activities.size() == 0) {
@@ -100,7 +100,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether variable of given args[0] workflowInstanceId  (Long) and args[1] scopeKey(Long) and args[2] varName (String) exists
+   * Checks whether variable of given args[0] workflowInstanceKey  (Long) and args[1] scopeKey(Long) and args[2] varName (String) exists
    * @return
    */
   @Bean(name = "variableExistsCheck")
@@ -110,11 +110,11 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(Long.class);
       assertThat(objects[2]).isInstanceOf(String.class);
-      Long workflowInstanceId = (Long)objects[0];
+      Long workflowInstanceKey = (Long)objects[0];
       Long scopeKey = (Long)objects[1];
       String varName = (String)objects[2];
       try {
-        List<VariableDto> variables = variableReader.getVariables(workflowInstanceId, scopeKey);
+        List<VariableDto> variables = variableReader.getVariables(workflowInstanceKey, scopeKey);
         return variables.stream().anyMatch(v -> v.getName().equals(varName));
       } catch (NotFoundException ex) {
         return false;
@@ -123,7 +123,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether variable of given args[0] workflowInstanceId  (Long) and args[1] scopeKey (Long) and args[2] varName (String) with args[3] (String) value exists
+   * Checks whether variable of given args[0] workflowInstanceKey  (Long) and args[1] scopeKey (Long) and args[2] varName (String) with args[3] (String) value exists
    * @return
    */
   @Bean(name = "variableEqualsCheck")
@@ -134,12 +134,12 @@ public class ElasticsearchChecks {
       assertThat(objects[1]).isInstanceOf(Long.class);
       assertThat(objects[2]).isInstanceOf(String.class);
       assertThat(objects[3]).isInstanceOf(String.class);
-      Long workflowInstanceId = (Long)objects[0];
+      Long workflowInstanceKey = (Long)objects[0];
       Long scopeKey = (Long)objects[1];
       String varName = (String)objects[2];
       String varValue = (String)objects[3];
       try {
-        List<VariableDto> variables = variableReader.getVariables(workflowInstanceId, scopeKey);
+        List<VariableDto> variables = variableReader.getVariables(workflowInstanceKey, scopeKey);
         return variables.stream().anyMatch( v -> v.getName().equals(varName) && v.getValue().equals(varValue));
       } catch (NotFoundException ex) {
         return false;
@@ -148,7 +148,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether the activity of given args[0] workflowInstanceId (Long) and args[1] activityId (String) is in state COMPLETED
+   * Checks whether the activity of given args[0] workflowInstanceKey (Long) and args[1] activityId (String) is in state COMPLETED
    * @return
    */
   @Bean(name = "activityIsCompletedCheck")
@@ -157,10 +157,10 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      Long workflowInstanceId = (Long)objects[0];
+      Long workflowInstanceKey = (Long)objects[0];
       String activityId = (String)objects[1];
       try {
-        List<ActivityInstanceEntity> activityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceId);
+        List<ActivityInstanceEntity> activityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceKey);
         final List<ActivityInstanceEntity> activities = activityInstances.stream().filter(a -> a.getActivityId().equals(activityId))
           .collect(Collectors.toList());
         if (activities.size() == 0) {
@@ -175,7 +175,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether the activity of given args[0] workflowInstanceId (Long) and args[1] activityId (String) is in state TERMINATED
+   * Checks whether the activity of given args[0] workflowInstanceKey (Long) and args[1] activityId (String) is in state TERMINATED
    * @return
    */
   @Bean(name = "activityIsTerminatedCheck")
@@ -184,10 +184,10 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      Long workflowInstanceId = (Long)objects[0];
+      Long workflowInstanceKey = (Long)objects[0];
       String activityId = (String)objects[1];
       try {
-        List<ActivityInstanceEntity> activityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceId);
+        List<ActivityInstanceEntity> activityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceKey);
         final List<ActivityInstanceEntity> activities = activityInstances.stream().filter(a -> a.getActivityId().equals(activityId))
           .collect(Collectors.toList());
         if (activities.size() == 0) {
@@ -202,7 +202,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether any incidents is active in workflowInstance of given workflowInstanceId (Long)
+   * Checks whether any incidents is active in workflowInstance of given workflowInstanceKey (Long)
    * @return
    */
   @Bean(name = "incidentIsActiveCheck")
@@ -210,12 +210,12 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long workflowInstanceId = (Long)objects[0];
+      Long workflowInstanceKey = (Long)objects[0];
       try {
-        final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceId);
+        final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceKey);
         boolean found = allActivityInstances.stream().anyMatch(ai -> ai.getIncidentKey() != null);
         if (found) {
-          List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceId);
+          List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
           found = allIncidents.size() > 0;
         }
         return found;
@@ -226,7 +226,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether the incidents of given args[0] workflowInstanceId (Long) equals given args[1] incidentsCount (Integer)
+   * Checks whether the incidents of given args[0] workflowInstanceKey (Long) equals given args[1] incidentsCount (Integer)
    * @return
    */
   @Bean(name = "incidentsAreActiveCheck")
@@ -235,10 +235,10 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(Integer.class);
-      Long workflowInstanceId = (Long)objects[0];
+      Long workflowInstanceKey = (Long)objects[0];
       int incidentsCount = (int)objects[1];
       try {
-        final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceId);
+        final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceKey);
         return allActivityInstances.stream().filter(ai -> ai.getIncidentKey() != null).count() == incidentsCount;
       } catch (NotFoundException ex) {
         return false;
@@ -247,7 +247,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether there are no incidents in activities exists in given workflowInstanceId (Long)
+   * Checks whether there are no incidents in activities exists in given workflowInstanceKey (Long)
    * @return
    */
   @Bean(name = "incidentIsResolvedCheck")
@@ -255,9 +255,9 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long workflowInstanceId = (Long)objects[0];
+      Long workflowInstanceKey = (Long)objects[0];
       try {
-        final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceId);
+        final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceKey);
         return allActivityInstances.stream().noneMatch(ai -> ai.getIncidentKey() != null);
       } catch (NotFoundException ex) {
         return false;
@@ -266,7 +266,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether the workflowInstance of given workflowInstanceId (Long) is CANCELED.
+   * Checks whether the workflowInstance of given workflowInstanceKey (Long) is CANCELED.
    * @return
    */
   @Bean(name = "workflowInstanceIsCanceledCheck")
@@ -274,9 +274,9 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long workflowInstanceId = (Long)objects[0];
+      Long workflowInstanceKey = (Long)objects[0];
       try {
-        final WorkflowInstanceForListViewEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+        final WorkflowInstanceForListViewEntity instance = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
         return instance.getState().equals(WorkflowInstanceState.CANCELED);
       } catch (NotFoundException ex) {
         return false;
@@ -285,7 +285,7 @@ public class ElasticsearchChecks {
   }
   
   /**
-   * Checks whether the workflowInstance of given workflowInstanceId (Long) is CREATED.
+   * Checks whether the workflowInstance of given workflowInstanceKey (Long) is CREATED.
    * @return
    */
   @Bean(name = "workflowInstanceIsCreatedCheck")
@@ -293,9 +293,9 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long workflowInstanceId = (Long)objects[0];
+      Long workflowInstanceKey = (Long)objects[0];
       try {
-        workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+        workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
         return true;
       } catch (NotFoundException ex) {
         return false;
@@ -304,7 +304,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether the workflowInstance of given workflowInstanceId (Long) is COMPLETED.
+   * Checks whether the workflowInstance of given workflowInstanceKey (Long) is COMPLETED.
    * @return
    */
   @Bean(name = "workflowInstanceIsCompletedCheck")
@@ -312,9 +312,9 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long workflowInstanceId = (Long)objects[0];
+      Long workflowInstanceKey = (Long)objects[0];
       try {
-        final WorkflowInstanceForListViewEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+        final WorkflowInstanceForListViewEntity instance = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
         return instance.getState().equals(WorkflowInstanceState.COMPLETED);
       } catch (NotFoundException ex) {
         return false;
@@ -323,7 +323,7 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether all workflowInstances from given workflowInstanceIds (List<String) are finished
+   * Checks whether all workflowInstances from given workflowInstanceKeys (List<Long>) are finished
    * @return
    */
   @Bean(name = "workflowInstancesAreFinished")
@@ -332,16 +332,16 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(List.class);
       @SuppressWarnings("unchecked")
-      List<String> ids = (List<String>)objects[0];
+      List<Long> ids = (List<Long>)objects[0];
       final ListViewRequestDto getFinishedQuery =
-        TestUtil.createGetAllFinishedQuery(q -> q.setIds(ids));
+        TestUtil.createGetAllFinishedQuery(q -> q.setIds(CollectionUtil.toSafeListOfStrings(ids)));
       final ListViewResponseDto responseDto = listViewReader.queryWorkflowInstances(getFinishedQuery, 0, ids.size());
       return responseDto.getTotalCount() == ids.size();
     };
   }
 
   /**
-   * Checks whether all workflowInstances from given workflowInstanceIds (List<String) are started
+   * Checks whether all workflowInstances from given workflowInstanceKeys (List<Long>) are started
    * @return
    */
   @Bean(name = "workflowInstancesAreStarted")
@@ -350,10 +350,10 @@ public class ElasticsearchChecks {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(List.class);
       @SuppressWarnings("unchecked")
-      List<String> ids = (List<String>)objects[0];
+      List<Long> ids = (List<Long>)objects[0];
       final ListViewRequestDto getActiveQuery =
         TestUtil.createWorkflowInstanceQuery(q -> {
-          q.setIds(ids);
+          q.setIds(CollectionUtil.toSafeListOfStrings(ids));
           q.setRunning(true);
           q.setActive(true);
         });
@@ -363,7 +363,7 @@ public class ElasticsearchChecks {
   }
   
   /**
-   * Checks whether all operations for given workflowInstanceId (String) are completed
+   * Checks whether all operations for given workflowInstanceKey (Long) are completed
    * @return
    */
   @Bean(name = "operationsByWorkflowInstanceAreCompleted")
@@ -371,8 +371,8 @@ public class ElasticsearchChecks {
     return objects -> {
       assertThat(objects).hasSize(1);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      Long workflowInstanceId = (Long)objects[0];
-      ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsById(workflowInstanceId);
+      Long workflowInstanceKey = (Long)objects[0];
+      ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsByKey(workflowInstanceKey);
       return workflowInstance.getOperations().stream().allMatch( operation -> {
           return operation.getState().equals(OperationState.COMPLETED);
       });

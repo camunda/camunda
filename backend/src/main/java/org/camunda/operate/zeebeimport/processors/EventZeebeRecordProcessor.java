@@ -224,7 +224,7 @@ public class EventZeebeRecordProcessor {
 
   private void persistEvent(EventEntity entity, BulkRequest bulkRequest) throws PersistenceException {
     try {
-      logger.debug("Event: id {}, eventSourceType {}, eventType {}, workflowInstanceId {}", entity.getId(), entity.getEventSourceType(), entity.getEventType(),
+      logger.debug("Event: id {}, eventSourceType {}, eventType {}, workflowInstanceKey {}", entity.getId(), entity.getEventSourceType(), entity.getEventType(),
         entity.getWorkflowInstanceKey());
 
       //write event

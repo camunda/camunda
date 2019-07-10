@@ -69,11 +69,11 @@ public class ActivityInstanceReader extends AbstractReader {
     }
   }
 
-  public List<ActivityInstanceEntity> getAllActivityInstances(Long workflowInstanceId) {
-    final TermQueryBuilder workflowInstanceIdQ = termQuery(ActivityInstanceTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceId);
+  public List<ActivityInstanceEntity> getAllActivityInstances(Long workflowInstanceKey) {
+    final TermQueryBuilder workflowInstanceKeyQuery = termQuery(ActivityInstanceTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
     final SearchRequest searchRequest = new SearchRequest(activityInstanceTemplate.getAlias())
       .source(new SearchSourceBuilder()
-        .query(constantScoreQuery(workflowInstanceIdQ))
+        .query(constantScoreQuery(workflowInstanceKeyQuery))
         .sort(ActivityInstanceTemplate.POSITION, SortOrder.ASC));
     try {
       return scroll(searchRequest, ActivityInstanceEntity.class);

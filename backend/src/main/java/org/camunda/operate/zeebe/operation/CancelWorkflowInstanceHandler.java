@@ -38,7 +38,7 @@ public class CancelWorkflowInstanceHandler extends AbstractOperationHandler impl
       failOperation(operation, "No workflow instance id is provided.");
       return;
     }
-    final WorkflowInstanceForListViewEntity workflowInstance = workflowInstanceReader.getWorkflowInstanceById(operation.getWorkflowInstanceKey());
+    final WorkflowInstanceForListViewEntity workflowInstance = workflowInstanceReader.getWorkflowInstanceByKey(operation.getWorkflowInstanceKey());
 
     if (!workflowInstance.getState().equals(WorkflowInstanceState.ACTIVE) && !workflowInstance.getState().equals(WorkflowInstanceState.INCIDENT)) {
       //fail operation

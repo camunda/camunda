@@ -30,22 +30,22 @@ public class ArchiverHelper {
   @Autowired
   private RestHighLevelClient esClient;
 
-  public void moveDocuments(String sourceIndexName, String idFieldName, String finishDate, List<String> workflowInstanceIds) throws ReindexException {
+  public void moveDocuments(String sourceIndexName, String idFieldName, String finishDate, List<Long> workflowInstanceKeys) throws ReindexException {
 
     String destinationIndexName = getDestinationIndexName(sourceIndexName, finishDate);
 
-    reindexDocuments(sourceIndexName, destinationIndexName, idFieldName, workflowInstanceIds);
+    reindexDocuments(sourceIndexName, destinationIndexName, idFieldName, workflowInstanceKeys);
 
-    deleteDocuments(sourceIndexName, idFieldName, workflowInstanceIds);
+    deleteDocuments(sourceIndexName, idFieldName, workflowInstanceKeys);
   }
 
   public String getDestinationIndexName(String sourceIndexName, String finishDate) {
     return String.format(INDEX_NAME_PATTERN, sourceIndexName, finishDate);
   }
 
-  private void deleteDocuments(String sourceIndexName, String idFieldName, List<String> workflowInstanceIds) throws ReindexException {
+  private void deleteDocuments(String sourceIndexName, String idFieldName, List<Long> workflowInstanceKeys) throws ReindexException {
     final DeleteByQueryRequest request = new DeleteByQueryRequest(sourceIndexName)
-      .setQuery(termsQuery(idFieldName, workflowInstanceIds))
+      .setQuery(termsQuery(idFieldName, workflowInstanceKeys))
       .setRefresh(true);
     try {
       final BulkByScrollResponse response = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
@@ -57,13 +57,13 @@ public class ArchiverHelper {
     }
   }
 
-  private void reindexDocuments(String sourceIndexName, String destinationIndexName, String idFieldName, List<String> workflowInstanceIds)
+  private void reindexDocuments(String sourceIndexName, String destinationIndexName, String idFieldName, List<Long> workflowInstanceKeys)
     throws ReindexException {
 
     final ReindexRequest reindexRequest = new ReindexRequest()
       .setSourceIndices(sourceIndexName)
       .setDestIndex(destinationIndexName)
-      .setSourceQuery(termsQuery(idFieldName, workflowInstanceIds));
+      .setSourceQuery(termsQuery(idFieldName, workflowInstanceKeys));
 
     try {
       BulkByScrollResponse response = esClient.reindex(reindexRequest, RequestOptions.DEFAULT);

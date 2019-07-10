@@ -107,8 +107,8 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
 
     WorkflowInstanceForListViewEntity that = (WorkflowInstanceForListViewEntity) o;
 
-    Long workflowInstanceId = getWorkflowInstanceKey();
-    if (workflowInstanceId != null ? !workflowInstanceId.equals(that.getWorkflowInstanceKey()) : that.getWorkflowInstanceKey() != null)
+    Long workflowInstanceKey = getWorkflowInstanceKey();
+    if (workflowInstanceKey != null ? !workflowInstanceKey.equals(that.getWorkflowInstanceKey()) : that.getWorkflowInstanceKey() != null)
       return false;
     if (workflowKey != null ? !workflowKey.equals(that.workflowKey) : that.workflowKey != null)
       return false;

@@ -128,7 +128,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //then
-    final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceKey);
+    final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
     assertThat(workflowInstanceEntity.getWorkflowKey()).isEqualTo(workflowKey);
     assertThat(workflowInstanceEntity.getWorkflowName()).isNotNull();
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
@@ -154,7 +154,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
 
     // then it should returns the processId instead of an empty name 
-    final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceKey);
+    final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
     assertThat(workflowInstanceEntity.getWorkflowKey()).isEqualTo(workflowKey);
     assertThat(workflowInstanceEntity.getBpmnProcessId()).isEqualTo(processId);
     assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo(processId);
@@ -179,10 +179,10 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     processAllEvents(8, ImportValueType.WORKFLOW_INSTANCE);
 
     //then
-    final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceKey);
+    final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
     assertWorkflowInstanceListViewEntityWithIncident(workflowInstanceEntity,"Demo process",workflowKey,workflowInstanceKey);
     //and
-    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceKey);
+    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
     assertThat(allIncidents).hasSize(1);
     assertIncidentEntity(allIncidents.get(0),activityId, workflowKey,IncidentState.ACTIVE);
 
@@ -313,7 +313,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     processAllEvents(2, ImportValueType.INCIDENT);
 
     //then
-    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceKey);
+    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
     assertThat(allIncidents).hasSize(0);
 
     //assert list view data
@@ -367,7 +367,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     processAllEvents(2, ImportValueType.INCIDENT);
 
     //then
-    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceKey);
+    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
     assertThat(allIncidents).hasSize(0);
 
     //assert list view data

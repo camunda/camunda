@@ -91,8 +91,8 @@ public abstract class TestUtil {
     return workflowInstance;
   }
 
-  public static ActivityInstanceForListViewEntity createActivityInstanceWithIncident(Long workflowInstanceId, ActivityState state, String errorMsg, Long incidentKey) {
-    ActivityInstanceForListViewEntity activityInstanceForListViewEntity = createActivityInstance(workflowInstanceId, state);
+  public static ActivityInstanceForListViewEntity createActivityInstanceWithIncident(Long workflowInstanceKey, ActivityState state, String errorMsg, Long incidentKey) {
+    ActivityInstanceForListViewEntity activityInstanceForListViewEntity = createActivityInstance(workflowInstanceKey, state);
     createIncident(activityInstanceForListViewEntity, errorMsg, incidentKey);
     return activityInstanceForListViewEntity;
   }
@@ -110,24 +110,24 @@ public abstract class TestUtil {
     }
   }
 
-  public static ActivityInstanceForListViewEntity createActivityInstance(Long workflowInstanceId, ActivityState state) {
-    return createActivityInstance(workflowInstanceId, state, "start", null);
+  public static ActivityInstanceForListViewEntity createActivityInstance(Long workflowInstanceKey, ActivityState state) {
+    return createActivityInstance(workflowInstanceKey, state, "start", null);
   }
 
-  public static ActivityInstanceForListViewEntity createActivityInstance(Long workflowInstanceId, ActivityState state, String activityId, ActivityType activityType) {
+  public static ActivityInstanceForListViewEntity createActivityInstance(Long workflowInstanceKey, ActivityState state, String activityId, ActivityType activityType) {
     ActivityInstanceForListViewEntity activityInstanceEntity = new ActivityInstanceForListViewEntity();
-    activityInstanceEntity.setWorkflowInstanceKey(workflowInstanceId);
+    activityInstanceEntity.setWorkflowInstanceKey(workflowInstanceKey);
     Long activityInstanceId = random.nextLong();
     activityInstanceEntity.setId(activityInstanceId.toString());
     activityInstanceEntity.setActivityId(activityId);
     activityInstanceEntity.setActivityType(activityType);
     activityInstanceEntity.setActivityState(state);
-    activityInstanceEntity.getJoinRelation().setParent(workflowInstanceId);
+    activityInstanceEntity.getJoinRelation().setParent(workflowInstanceKey);
     return activityInstanceEntity;
   }
 
-  public static ActivityInstanceForListViewEntity createActivityInstance(Long workflowInstanceId, ActivityState state, String activityId) {
-    return createActivityInstance(workflowInstanceId, state, activityId, ActivityType.SERVICE_TASK);
+  public static ActivityInstanceForListViewEntity createActivityInstance(Long workflowInstanceKey, ActivityState state, String activityId) {
+    return createActivityInstance(workflowInstanceKey, state, activityId, ActivityType.SERVICE_TASK);
   }
 
 
@@ -153,10 +153,10 @@ public abstract class TestUtil {
   
   public static WorkflowInstanceForListViewEntity createWorkflowInstanceEntityWithIds() {
     WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
-    Long workflowInstanceId = random.nextLong();
-    workflowInstance.setId(workflowInstanceId.toString());
-    workflowInstance.setWorkflowInstanceKey(workflowInstanceId);
-    workflowInstance.setKey(workflowInstanceId);
+    Long workflowInstanceKey = random.nextLong();
+    workflowInstance.setId(workflowInstanceKey.toString());
+    workflowInstance.setWorkflowInstanceKey(workflowInstanceKey);
+    workflowInstance.setKey(workflowInstanceKey);
     return workflowInstance;
   }
 
@@ -268,14 +268,14 @@ public abstract class TestUtil {
       });
   }
 
-  public static VariableForListViewEntity createVariable(Long workflowInstanceId, Long scopeKey, String name, String value) {
+  public static VariableForListViewEntity createVariable(Long workflowInstanceKey, Long scopeKey, String name, String value) {
     VariableForListViewEntity variable = new VariableForListViewEntity();
     variable.setId(scopeKey + "_" + name);
-    variable.setWorkflowInstanceKey(workflowInstanceId);
+    variable.setWorkflowInstanceKey(workflowInstanceKey);
     variable.setScopeKey(scopeKey);
     variable.setVarName(name);
     variable.setVarValue(value);
-    variable.getJoinRelation().setParent(workflowInstanceId);
+    variable.getJoinRelation().setParent(workflowInstanceKey);
     return variable;
   }
 

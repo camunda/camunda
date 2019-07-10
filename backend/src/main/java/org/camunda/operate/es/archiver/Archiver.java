@@ -116,13 +116,13 @@ public class Archiver extends Thread implements Shutdownable{
         //1st remove dependent data
         for (WorkflowInstanceDependant template: workflowInstanceDependantTemplates) {
           reindexHelper.moveDocuments(template.getMainIndexName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_KEY, finishedAtDateIds.getFinishDate(),
-            finishedAtDateIds.getWorkflowInstanceIds());
+            finishedAtDateIds.getWorkflowInstanceKeys());
         }
 
         //then remove workflow instances themselves
         reindexHelper.moveDocuments(workflowInstanceTemplate.getMainIndexName(), ListViewTemplate.WORKFLOW_INSTANCE_KEY, finishedAtDateIds.getFinishDate(),
-          finishedAtDateIds.getWorkflowInstanceIds());
-        return finishedAtDateIds.getWorkflowInstanceIds().size();
+          finishedAtDateIds.getWorkflowInstanceKeys());
+        return finishedAtDateIds.getWorkflowInstanceKeys().size();
       } catch (ReindexException e) {
         logger.error(e.getMessage(), e);
         throw e;
@@ -183,8 +183,8 @@ public class Archiver extends Thread implements Shutdownable{
         final Histogram.Bucket bucket = buckets.get(0);
         final String finishDate = bucket.getKeyAsString();
         SearchHits hits = ((TopHits)bucket.getAggregations().get(instancesAgg)).getHits();
-        final ArrayList<String> ids = Arrays.stream(hits.getHits())
-          .collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2));
+        final ArrayList<Long> ids = Arrays.stream(hits.getHits())
+          .collect(ArrayList::new, (list, hit) -> list.add(Long.valueOf(hit.getId())), (list1, list2) -> list1.addAll(list2));
         return new FinishedAtDateIds(finishDate, ids);
       } else {
         return null;
@@ -199,11 +199,11 @@ public class Archiver extends Thread implements Shutdownable{
   static class FinishedAtDateIds {
 
     private String finishDate;
-    private List<String> workflowInstanceIds;
+    private List<Long> workflowInstanceKeys;
 
-    public FinishedAtDateIds(String finishDate, List<String> workflowInstanceIds) {
+    public FinishedAtDateIds(String finishDate, List<Long> workflowInstanceKeys) {
       this.finishDate = finishDate;
-      this.workflowInstanceIds = workflowInstanceIds;
+      this.workflowInstanceKeys = workflowInstanceKeys;
     }
 
     public String getFinishDate() {
@@ -214,17 +214,17 @@ public class Archiver extends Thread implements Shutdownable{
       this.finishDate = finishDate;
     }
 
-    public List<String> getWorkflowInstanceIds() {
-      return workflowInstanceIds;
+    public List<Long> getWorkflowInstanceKeys() {
+      return workflowInstanceKeys;
     }
 
-    public void setWorkflowInstanceIds(List<String> workflowInstanceIds) {
-      this.workflowInstanceIds = workflowInstanceIds;
+    public void setWorkflowInstanceKeys(List<Long> workflowInstanceKeys) {
+      this.workflowInstanceKeys = workflowInstanceKeys;
     }
 
     @Override
     public String toString() {
-      return "FinishedAtDateIds{" + "finishDate='" + finishDate + '\'' + ", workflowInstanceIds=" + workflowInstanceIds + '}';
+      return "FinishedAtDateIds{" + "finishDate='" + finishDate + '\'' + ", workflowInstanceKeys=" + workflowInstanceKeys + '}';
     }
   }
 

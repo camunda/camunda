@@ -82,14 +82,13 @@ public class EventIT extends OperateZeebeIntegrationTest {
     final String errorMessage = "Some error";
     final Long workflowKey = deployWorkflow("processWithGateway.bpmn");
 
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, "{\"a\": \"b\"}");
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, "{\"a\": \"b\"}");
 
     //create an incident
     /*final Long jobKey =*/ failTaskWithNoRetriesLeft(taskA, workflowInstanceKey, errorMessage);
 
     //update retries
-    final Long workflowInstanceId = workflowInstanceKey;
-    List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceId);
+    List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
     assertThat(allIncidents).hasSize(1);
     ZeebeTestUtil.resolveIncident(zeebeClient, allIncidents.get(0).getJobKey(), allIncidents.get(0).getKey());
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
@@ -214,7 +213,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
       .filteredOn(eventEntityFilterCriteria).as(assertionName + ".size").hasSize(count);
     eventEntities.stream().filter(eventEntityFilterCriteria)
       .forEach(eventEntity -> {
-        assertThat(eventEntity.getWorkflowInstanceKey()).as(assertionName + ".workflowInstanceId").isEqualTo(workflowInstanceKey);
+        assertThat(eventEntity.getWorkflowInstanceKey()).as(assertionName + ".workflowInstanceKey").isEqualTo(workflowInstanceKey);
         if (workflowKey != null) {
           assertThat(eventEntity.getWorkflowKey()).as(assertionName + ".workflowKey").isEqualTo(workflowKey);
         }

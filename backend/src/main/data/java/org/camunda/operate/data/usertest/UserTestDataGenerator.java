@@ -534,14 +534,14 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   protected void createWorkflowWithInstancesThatHasOnlyIncidents(int forVersion1,int forVersion2) {
     ZeebeTestUtil.deployWorkflow(client, "usertest/onlyIncidentsProcess_v_1.bpmn");
     for (int i = 0; i < forVersion1; i++) {
-      long workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(client, "onlyIncidentsProcess", null);
-      failTask(workflowInstanceId, "alwaysFails", "No memory left.");
+      Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(client, "onlyIncidentsProcess", null);
+      failTask(workflowInstanceKey, "alwaysFails", "No memory left.");
     }
     ZeebeTestUtil.deployWorkflow(client, "usertest/onlyIncidentsProcess_v_2.bpmn");
     for (int i = 0; i < forVersion2; i++) {
-      long workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(client, "onlyIncidentsProcess", null);
-      failTask(workflowInstanceId, "alwaysFails", "No space left on device.");
-      failTask(workflowInstanceId, "alwaysFails2", "No space left on device.");
+      Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(client, "onlyIncidentsProcess", null);
+      failTask(workflowInstanceKey, "alwaysFails", "No space left on device.");
+      failTask(workflowInstanceKey, "alwaysFails2", "No space left on device.");
     }
     logger.info("Created workflow 'onlyIncidentsProcess' with {} instances for version 1 and {} instances for version 2", forVersion1, forVersion2);
   }
@@ -553,8 +553,8 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     }
     ZeebeTestUtil.deployWorkflow(client, "usertest/withoutIncidentsProcess_v_2.bpmn");
     for (int i = 0; i < forVersion2; i++) {
-      long workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(client, "withoutIncidentsProcess", null);
-      completeTask(workflowInstanceId, "neverFails", null);
+      Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(client, "withoutIncidentsProcess", null);
+      completeTask(workflowInstanceKey, "neverFails", null);
     }
     logger.info("Created workflow 'withoutIncidentsProcess' with {} instances for version 1 and {} instances for version 2", forVersion1, forVersion2);
   }

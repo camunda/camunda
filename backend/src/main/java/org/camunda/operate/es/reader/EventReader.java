@@ -59,15 +59,15 @@ public class EventReader extends AbstractReader {
   }
 
   private SearchRequest createSearchRequest(EventQueryDto eventQuery) {
-    TermQueryBuilder workflowInstanceQ = null;
+    TermQueryBuilder workflowInstanceQuery = null;
     if (eventQuery.getWorkflowInstanceId() != null) {
-      workflowInstanceQ = termQuery(EventTemplate.WORKFLOW_INSTANCE_KEY, eventQuery.getWorkflowInstanceId());
+      workflowInstanceQuery = termQuery(EventTemplate.WORKFLOW_INSTANCE_KEY, eventQuery.getWorkflowInstanceId());
     }
     TermQueryBuilder activityInstanceQ = null;
     if (eventQuery.getActivityInstanceId() != null) {
       activityInstanceQ = termQuery(EventTemplate.FLOW_NODE_INSTANCE_KEY, eventQuery.getActivityInstanceId());
     }
-    QueryBuilder query = ElasticsearchUtil.joinWithAnd(workflowInstanceQ, activityInstanceQ);
+    QueryBuilder query = ElasticsearchUtil.joinWithAnd(workflowInstanceQuery, activityInstanceQ);
     if (query == null) {
       query = matchAllQuery();
     }

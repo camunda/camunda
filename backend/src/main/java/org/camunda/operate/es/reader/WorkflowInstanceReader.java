@@ -81,12 +81,12 @@ public class WorkflowInstanceReader extends AbstractReader {
   }
 
   /**
-   * Searches for workflow instance by id.
-   * @param workflowInstanceId
+   * Searches for workflow instance by key.
+   * @param workflowInstanceKey
    * @return
    */
-  public ListViewWorkflowInstanceDto getWorkflowInstanceWithOperationsById(Long workflowInstanceId) {
-    final IdsQueryBuilder q = idsQuery().addIds(String.valueOf(workflowInstanceId));
+  public ListViewWorkflowInstanceDto getWorkflowInstanceWithOperationsByKey(Long workflowInstanceKey) {
+    final IdsQueryBuilder q = idsQuery().addIds(String.valueOf(workflowInstanceKey));
 
     final SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias())
       .source(new SearchSourceBuilder()
@@ -100,13 +100,13 @@ public class WorkflowInstanceReader extends AbstractReader {
           .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, WorkflowInstanceForListViewEntity.class);
 
         return ListViewWorkflowInstanceDto.createFrom(workflowInstance,
-          activityInstanceWithIncidentExists(workflowInstanceId),
-          operationReader.getOperations(workflowInstance.getWorkflowInstanceKey()));
+          activityInstanceWithIncidentExists(workflowInstanceKey),
+          operationReader.getOperationsByWorkflowInstanceKey(workflowInstance.getWorkflowInstanceKey()));
 
       } else if (response.getHits().totalHits > 1) {
-        throw new NotFoundException(String.format("Could not find unique workflow instance with id '%s'.", workflowInstanceId));
+        throw new NotFoundException(String.format("Could not find unique workflow instance with id '%s'.", workflowInstanceKey));
       } else {
-        throw new NotFoundException(String.format("Could not find workflow instance with id '%s'.", workflowInstanceId));
+        throw new NotFoundException(String.format("Could not find workflow instance with id '%s'.", workflowInstanceKey));
       }
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining workflow instance: %s", e.getMessage());
@@ -116,13 +116,12 @@ public class WorkflowInstanceReader extends AbstractReader {
   }
 
   /**
-   * Searches for workflow instance by id.
-   * @param workflowInstanceId
+   * Searches for workflow instance by key.
+   * @param workflowInstanceKey
    * @return
    */
-  public WorkflowInstanceForListViewEntity getWorkflowInstanceById(Long workflowInstanceId) {
-    String workflowInstanceIdStr = String.valueOf(workflowInstanceId);
-    final IdsQueryBuilder q = idsQuery().addIds(workflowInstanceIdStr);
+  public WorkflowInstanceForListViewEntity getWorkflowInstanceByKey(Long workflowInstanceKey) {
+    final IdsQueryBuilder q = idsQuery().addIds(String.valueOf(workflowInstanceKey));
 
     final SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias())
       .source(new SearchSourceBuilder()
@@ -133,15 +132,15 @@ public class WorkflowInstanceReader extends AbstractReader {
         final WorkflowInstanceForListViewEntity workflowInstance = ElasticsearchUtil
           .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, WorkflowInstanceForListViewEntity.class);
 
-        if (activityInstanceWithIncidentExists(workflowInstanceId)) {
+        if (activityInstanceWithIncidentExists(workflowInstanceKey)) {
           workflowInstance.setState(WorkflowInstanceState.INCIDENT);
         }
 
         return workflowInstance;
       } else if (response.getHits().totalHits > 1) {
-        throw new NotFoundException(String.format("Could not find unique workflow instance with id '%s'.", workflowInstanceId));
+        throw new NotFoundException(String.format("Could not find unique workflow instance with id '%s'.", workflowInstanceKey));
       } else {
-        throw new NotFoundException(String.format("Could not find workflow instance with id '%s'.", workflowInstanceId));
+        throw new NotFoundException(String.format("Could not find workflow instance with id '%s'.", workflowInstanceKey));
       }
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining workflow instance: %s", e.getMessage());
@@ -150,14 +149,14 @@ public class WorkflowInstanceReader extends AbstractReader {
     }
   }
 
-  private boolean activityInstanceWithIncidentExists(Long workflowInstanceId) throws IOException {
+  private boolean activityInstanceWithIncidentExists(Long workflowInstanceKey) throws IOException {
 
-    final TermQueryBuilder workflowInstanceIdQ = termQuery(ListViewTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceId);
+    final TermQueryBuilder workflowInstanceKeyQuery = termQuery(ListViewTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
     final ExistsQueryBuilder existsIncidentQ = existsQuery(ListViewTemplate.INCIDENT_KEY);
 
     final SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias())
       .source(new SearchSourceBuilder()
-        .query(constantScoreQuery(joinWithAnd(workflowInstanceIdQ, existsIncidentQ)))
+        .query(constantScoreQuery(joinWithAnd(workflowInstanceKeyQuery, existsIncidentQ)))
         .fetchSource(ListViewTemplate.ID, null));
     final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
 

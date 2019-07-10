@@ -87,13 +87,13 @@ public class OperationExecutorIT extends OperateIntegrationTest {
     //when execute 1st batch
     operationExecutor.executeOneBatch();
     //then
-    assertOperationsLocked(operationReader.getOperations(null), batchSize, "lockFirstBatch");
+    assertOperationsLocked(operationReader.getOperationsByWorkflowInstanceKey(null), batchSize, "lockFirstBatch");
 
     //when execute 2nd batch
     operationExecutor.executeOneBatch();
     //then
     final int expectedLockedOperations = instancesCount*2;
-    assertOperationsLocked(operationReader.getOperations(null), expectedLockedOperations, "lockSecondBatch");
+    assertOperationsLocked(operationReader.getOperationsByWorkflowInstanceKey(null), expectedLockedOperations, "lockSecondBatch");
   }
 
   private void assertOperationsLocked(List<OperationEntity> allOperations, int operationCount, String assertionLabel) {
@@ -129,8 +129,8 @@ public class OperationExecutorIT extends OperateIntegrationTest {
     return entities;
   }
 
-  private OperationEntity createOperation(Long workflowInstanceId, OperationState state, boolean lockExpired) {
-    final OperationEntity operation = createOperation(workflowInstanceId, state);
+  private OperationEntity createOperation(Long workflowInstanceKey, OperationState state, boolean lockExpired) {
+    final OperationEntity operation = createOperation(workflowInstanceKey, state);
     if (lockExpired) {
       operation.setLockExpirationTime(OffsetDateTime.now().minus(1, ChronoUnit.MILLIS));
       operation.setLockOwner("otherWorkerId");
@@ -138,9 +138,9 @@ public class OperationExecutorIT extends OperateIntegrationTest {
     return operation;
   }
 
-  private OperationEntity createOperation(Long workflowInstanceId, OperationState state) {
+  private OperationEntity createOperation(Long workflowInstanceKey, OperationState state) {
     OperationEntity operation = new OperationEntity();
-    operation.setWorkflowInstanceKey(workflowInstanceId);
+    operation.setWorkflowInstanceKey(workflowInstanceKey);
     operation.generateId();
     operation.setState(state);
     operation.setStartDate(OffsetDateTime.now());

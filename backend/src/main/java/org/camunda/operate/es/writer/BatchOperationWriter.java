@@ -136,7 +136,7 @@ public class BatchOperationWriter {
     }
   }
 
-  public void completeOperation(Long workflowInstanceId, Long incidentKey, OperationType operationType) throws PersistenceException {
+  public void completeOperation(Long workflowInstanceKey, Long incidentKey, OperationType operationType) throws PersistenceException {
     try {
       TermQueryBuilder incidentKeyQuery = null;
       if (incidentKey != null) {
@@ -145,7 +145,7 @@ public class BatchOperationWriter {
 
       QueryBuilder query =
         joinWithAnd(
-          termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceId),
+          termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey),
           incidentKeyQuery,
           termsQuery(OperationTemplate.STATE, OperationState.SENT.name(), OperationState.LOCKED.name()),
           termQuery(OperationTemplate.TYPE, operationType.name())
@@ -155,18 +155,18 @@ public class BatchOperationWriter {
     } catch (IOException e) {
       logger.error("Error preparing the query to complete operation", e);
       throw new PersistenceException(String.format("Error preparing the query to complete operation of type [%s] for workflow instance id [%s]",
-        operationType, workflowInstanceId), e);
+        operationType, workflowInstanceKey), e);
     }
   }
 
-  public void completeUpdateVariableOperation(Long workflowInstanceId, Long scopeKey, String variableName) throws PersistenceException {
+  public void completeUpdateVariableOperation(Long workflowInstanceKey, Long scopeKey, String variableName) throws PersistenceException {
     try {
       TermQueryBuilder scopeKeyQuery = termQuery(OperationTemplate.SCOPE_KEY, scopeKey);
       TermQueryBuilder variableNameIdQ = termQuery(OperationTemplate.VARIABLE_NAME, variableName);
 
       QueryBuilder query =
         joinWithAnd(
-          termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceId),
+          termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey),
           scopeKeyQuery,
           variableNameIdQ,
           termsQuery(OperationTemplate.STATE, OperationState.SENT.name(), OperationState.LOCKED.name()),
@@ -177,7 +177,7 @@ public class BatchOperationWriter {
     } catch (IOException e) {
       logger.error("Error preparing the query to complete operation", e);
       throw new PersistenceException(String.format("Error preparing the query to complete operation of type [%s] for workflow instance id [%s]",
-        OperationType.UPDATE_VARIABLE, workflowInstanceId), e);
+        OperationType.UPDATE_VARIABLE, workflowInstanceKey), e);
     }
   }
 
@@ -189,31 +189,31 @@ public class BatchOperationWriter {
   /**
    * Schedule operation for one workflow instance.
    *
-   * @param workflowInstanceId
+   * @param workflowInstanceKey
    * @param operationRequest
    * @return
    * @throws PersistenceException
    */
-  public OperationResponseDto scheduleOperation(Long workflowInstanceId, OperationRequestDto operationRequest) throws PersistenceException {
-    logger.debug("Creating operation: workflowInstanceId [{}], operation type [{}]", workflowInstanceId, operationRequest.getOperationType());
+  public OperationResponseDto scheduleOperation(Long workflowInstanceKey, OperationRequestDto operationRequest) throws PersistenceException {
+    logger.debug("Creating operation: workflowInstanceKey [{}], operation type [{}]", workflowInstanceKey, operationRequest.getOperationType());
 
     BulkRequest bulkRequest = new BulkRequest();
 
     final OperationType operationType = operationRequest.getOperationType();
     if (operationType.equals(OperationType.RESOLVE_INCIDENT) && operationRequest.getIncidentId() == null) {
-      final List<IncidentEntity> allIncidents = incidentReader.getAllIncidents(workflowInstanceId);
+      final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
       if (allIncidents.size() == 0) {
         //nothing to schedule
         return new OperationResponseDto(0, "No incidents found.");
       } else {
         for (IncidentEntity incident: allIncidents) {
-          bulkRequest.add(getIndexOperationRequest(workflowInstanceId, incident.getKey(), operationType));
+          bulkRequest.add(getIndexOperationRequest(workflowInstanceKey, incident.getKey(), operationType));
         }
       }
     } else if (operationType.equals(OperationType.UPDATE_VARIABLE)) {
-      bulkRequest.add(getIndexUpdateVariableOperationRequest(workflowInstanceId, ConversionUtils.toLongOrNull(operationRequest.getScopeId()), operationRequest.getName(), operationRequest.getValue()));
+      bulkRequest.add(getIndexUpdateVariableOperationRequest(workflowInstanceKey, ConversionUtils.toLongOrNull(operationRequest.getScopeId()), operationRequest.getName(), operationRequest.getValue()));
     } else {
-      bulkRequest.add(getIndexOperationRequest(workflowInstanceId, ConversionUtils.toLongOrNull(operationRequest.getIncidentId()), operationType));
+      bulkRequest.add(getIndexOperationRequest(workflowInstanceKey, ConversionUtils.toLongOrNull(operationRequest.getIncidentId()), operationType));
     }
 
     ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
@@ -239,8 +239,8 @@ public class BatchOperationWriter {
       ElasticsearchUtil.scrollWith(searchRequest, esClient,
         searchHits -> {
           try {
-            final List<Long> workflowInstanceIds = CollectionUtil.toSafeListOfLongs(Arrays.stream(searchHits.getHits()).map(SearchHit::getId).collect(Collectors.toList()));
-            operationsCount.addAndGet(persistOperations(workflowInstanceIds, batchOperationRequest));
+            final List<Long> workflowInstanceKeys = CollectionUtil.toSafeListOfLongs(Arrays.stream(searchHits.getHits()).map(SearchHit::getId).collect(Collectors.toList()));
+            operationsCount.addAndGet(persistOperations(workflowInstanceKeys, batchOperationRequest));
           } catch (PersistenceException e) {
             throw new RuntimeException(e);
           }
@@ -288,17 +288,17 @@ public class BatchOperationWriter {
       }
   }
 
-  private int persistOperations(List<Long> workflowInstanceIds, OperationRequestDto operationRequest) throws PersistenceException {
+  private int persistOperations(List<Long> workflowInstanceKeys, OperationRequestDto operationRequest) throws PersistenceException {
     BulkRequest bulkRequest = new BulkRequest();
     final OperationType operationType = operationRequest.getOperationType();
 
     Map<Long, List<Long>> incidentKeys = new HashMap<>();
     //prepare map of incident ids per workflow instance id
     if (operationType.equals(OperationType.RESOLVE_INCIDENT) && operationRequest.getIncidentId() == null) {
-      incidentKeys = incidentReader.getIncidentKeysPerWorkflowInstance(workflowInstanceIds);
+      incidentKeys = incidentReader.getIncidentKeysPerWorkflowInstance(workflowInstanceKeys);
     }
 
-    for (Long wiId : workflowInstanceIds) {
+    for (Long wiId : workflowInstanceKeys) {
       if (operationType.equals(OperationType.RESOLVE_INCIDENT) && operationRequest.getIncidentId() == null) {
         final List<Long> allIncidentKeys = incidentKeys.get(wiId);
         if (allIncidentKeys != null && allIncidentKeys.size() != 0) {
@@ -314,42 +314,42 @@ public class BatchOperationWriter {
     return bulkRequest.requests().size();
   }
 
-  private IndexRequest getIndexUpdateVariableOperationRequest(Long workflowInstanceId, Long scopeKey, String name, String value) throws PersistenceException {
-    OperationEntity operationEntity = createOperationEntity(workflowInstanceId, OperationType.UPDATE_VARIABLE);
+  private IndexRequest getIndexUpdateVariableOperationRequest(Long workflowInstanceKey, Long scopeKey, String name, String value) throws PersistenceException {
+    OperationEntity operationEntity = createOperationEntity(workflowInstanceKey, OperationType.UPDATE_VARIABLE);
 
     operationEntity.setScopeKey(scopeKey);
     operationEntity.setVariableName(name);
     operationEntity.setVariableValue(value);
 
-    return createIndexRequest(operationEntity, OperationType.UPDATE_VARIABLE, workflowInstanceId);
+    return createIndexRequest(operationEntity, OperationType.UPDATE_VARIABLE, workflowInstanceKey);
   }
 
-  private IndexRequest getIndexOperationRequest(Long workflowInstanceId, Long incidentKey, OperationType operationType) throws PersistenceException {
-    OperationEntity operationEntity = createOperationEntity(workflowInstanceId, operationType);
+  private IndexRequest getIndexOperationRequest(Long workflowInstanceKey, Long incidentKey, OperationType operationType) throws PersistenceException {
+    OperationEntity operationEntity = createOperationEntity(workflowInstanceKey, operationType);
 
     operationEntity.setIncidentKey(incidentKey);
 
-    return createIndexRequest(operationEntity, operationType, workflowInstanceId);
+    return createIndexRequest(operationEntity, operationType, workflowInstanceKey);
   }
 
-  private OperationEntity createOperationEntity(Long workflowInstanceId, OperationType operationType) {
+  private OperationEntity createOperationEntity(Long workflowInstanceKey, OperationType operationType) {
     OperationEntity operationEntity = new OperationEntity();
     operationEntity.generateId();
-    operationEntity.setWorkflowInstanceKey(workflowInstanceId);
+    operationEntity.setWorkflowInstanceKey(workflowInstanceKey);
     operationEntity.setType(operationType);
     operationEntity.setStartDate(OffsetDateTime.now());
     operationEntity.setState(OperationState.SCHEDULED);
     return operationEntity;
   }
 
-  private IndexRequest createIndexRequest(OperationEntity operationEntity,OperationType operationType,Long workflowInstanceId) throws PersistenceException {
+  private IndexRequest createIndexRequest(OperationEntity operationEntity,OperationType operationType,Long workflowInstanceKey) throws PersistenceException {
     try {
       return new IndexRequest(operationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, operationEntity.getId())
           .source(objectMapper.writeValueAsString(operationEntity), XContentType.JSON);
     } catch (IOException e) {
       logger.error("Error preparing the query to insert operation", e);
       throw new PersistenceException(
-          String.format("Error preparing the query to insert operation [%s] for workflow instance id [%s]", operationType, workflowInstanceId), e);
+          String.format("Error preparing the query to insert operation [%s] for workflow instance id [%s]", operationType, workflowInstanceKey), e);
     }
   }
 

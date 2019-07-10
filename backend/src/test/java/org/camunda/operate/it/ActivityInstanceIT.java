@@ -12,6 +12,7 @@ import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.rest.dto.activity.ActivityInstanceDto;
 import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeDto;
 import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeRequestDto;
+import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
@@ -48,7 +49,7 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
     // having
     String processId = "nonInterruptingBoundaryEvent";
     deployWorkflow("nonInterruptingBoundaryEvent_v_2.bpmn");
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
     //let the boundary event happen
     Thread.sleep(1500L);
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task2");
@@ -58,12 +59,11 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
 
     //then
     assertThat(response.getChildren()).hasSize(4);
-    String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
     assertThat(response.getChildren()).hasSize(4);
-    assertChild(response.getChildren(), 0, "startEvent", ActivityState.COMPLETED, workflowInstanceId, ActivityType.START_EVENT, 0);
-    assertChild(response.getChildren(), 1, "task1", ActivityState.ACTIVE, workflowInstanceId, ActivityType.SERVICE_TASK, 0);
-    assertChild(response.getChildren(), 2, "boundaryEvent", ActivityState.COMPLETED, workflowInstanceId, ActivityType.BOUNDARY_EVENT, 0);
-    assertChild(response.getChildren(), 3, "task2", ActivityState.ACTIVE, workflowInstanceId, ActivityType.SERVICE_TASK, 0);
+    assertChild(response.getChildren(), 0, "startEvent", ActivityState.COMPLETED, workflowInstanceKey, ActivityType.START_EVENT, 0);
+    assertChild(response.getChildren(), 1, "task1", ActivityState.ACTIVE, workflowInstanceKey, ActivityType.SERVICE_TASK, 0);
+    assertChild(response.getChildren(), 2, "boundaryEvent", ActivityState.COMPLETED, workflowInstanceKey, ActivityType.BOUNDARY_EVENT, 0);
+    assertChild(response.getChildren(), 3, "task2", ActivityState.ACTIVE, workflowInstanceKey, ActivityType.SERVICE_TASK, 0);
   }
 
   @Test
@@ -71,7 +71,7 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
     // having
     String processId = "prWithSubprocess";
     deployWorkflow("subProcess.bpmn");
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
     ZeebeTestUtil.completeTask(zeebeClient, "taskA", getWorkerName(), null, 3);
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskB");
     ZeebeTestUtil.completeTask(zeebeClient, "taskB", getWorkerName(), null, 3);
@@ -87,31 +87,30 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
     //then
     assertThat(response.getChildren()).hasSize(3);
 
-    String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
     assertThat(response.getChildren()).hasSize(3);
-    assertChild(response.getChildren(), 0, "startEvent", ActivityState.COMPLETED, workflowInstanceId, ActivityType.START_EVENT, 0);
-    assertChild(response.getChildren(), 1, "taskA", ActivityState.COMPLETED, workflowInstanceId, ActivityType.SERVICE_TASK, 0);
-    ActivityInstanceDto subprocess = assertChild(response.getChildren(), 2, "subprocess", ActivityState.INCIDENT, workflowInstanceId, ActivityType.SUB_PROCESS, 3);
+    assertChild(response.getChildren(), 0, "startEvent", ActivityState.COMPLETED, workflowInstanceKey, ActivityType.START_EVENT, 0);
+    assertChild(response.getChildren(), 1, "taskA", ActivityState.COMPLETED, workflowInstanceKey, ActivityType.SERVICE_TASK, 0);
+    ActivityInstanceDto subprocess = assertChild(response.getChildren(), 2, "subprocess", ActivityState.INCIDENT, workflowInstanceKey, ActivityType.SUB_PROCESS, 3);
 
     assertThat(subprocess.getChildren()).hasSize(3);
-    assertChild(subprocess.getChildren(), 0, "startEventSubprocess", ActivityState.COMPLETED, subprocess.getId(), ActivityType.START_EVENT, 0);
+    assertChild(subprocess.getChildren(), 0, "startEventSubprocess", ActivityState.COMPLETED, ConversionUtils.toLongOrNull(subprocess.getId()), ActivityType.START_EVENT, 0);
     final ActivityInstanceDto innerSubprocess = assertChild(subprocess.getChildren(), 1, "innerSubprocess", ActivityState.COMPLETED,
-      subprocess.getId(), ActivityType.SUB_PROCESS, 3);
-    assertChild(subprocess.getChildren(), 2, "taskC", ActivityState.INCIDENT, subprocess.getId(), ActivityType.SERVICE_TASK, 0);
+        ConversionUtils.toLongOrNull(subprocess.getId()), ActivityType.SUB_PROCESS, 3);
+    assertChild(subprocess.getChildren(), 2, "taskC", ActivityState.INCIDENT, ConversionUtils.toLongOrNull(subprocess.getId()), ActivityType.SERVICE_TASK, 0);
 
     assertThat(innerSubprocess.getChildren()).hasSize(3);
-    assertChild(innerSubprocess.getChildren(), 0, "startEventInnerSubprocess", ActivityState.COMPLETED, innerSubprocess.getId(), ActivityType.START_EVENT, 0);
-    assertChild(innerSubprocess.getChildren(), 1, "taskB", ActivityState.COMPLETED, innerSubprocess.getId(), ActivityType.SERVICE_TASK, 0);
-    assertChild(innerSubprocess.getChildren(), 2, "endEventInnerSubprocess", ActivityState.COMPLETED, innerSubprocess.getId(), ActivityType.END_EVENT, 0);
+    assertChild(innerSubprocess.getChildren(), 0, "startEventInnerSubprocess", ActivityState.COMPLETED, ConversionUtils.toLongOrNull(innerSubprocess.getId()), ActivityType.START_EVENT, 0);
+    assertChild(innerSubprocess.getChildren(), 1, "taskB", ActivityState.COMPLETED, ConversionUtils.toLongOrNull(innerSubprocess.getId()), ActivityType.SERVICE_TASK, 0);
+    assertChild(innerSubprocess.getChildren(), 2, "endEventInnerSubprocess", ActivityState.COMPLETED, ConversionUtils.toLongOrNull(innerSubprocess.getId()), ActivityType.END_EVENT, 0);
 
   }
 
-  protected ActivityInstanceDto assertChild(List<ActivityInstanceDto> children, int childPosition, String activityId, ActivityState state, String parentId, ActivityType type, int numberOfChildren) {
+  protected ActivityInstanceDto assertChild(List<ActivityInstanceDto> children, int childPosition, String activityId, ActivityState state, Long parentId, ActivityType type, int numberOfChildren) {
     final ActivityInstanceDto ai = children.get(childPosition);
     assertThat(ai.getActivityId()).isEqualTo(activityId);
     assertThat(ai.getId()).isNotNull();
     assertThat(ai.getState()).isEqualTo(state);
-    assertThat(ai.getParentId()).isEqualTo(parentId);
+    assertThat(ai.getParentId()).isEqualTo(ConversionUtils.toStringOrNull(parentId));
     assertThat(ai.getStartDate()).isNotNull();
     if (state.equals(ActivityState.COMPLETED) || state.equals(ActivityState.TERMINATED)) {
       assertThat(ai.getEndDate()).isNotNull();

@@ -11,11 +11,11 @@ import org.camunda.operate.entities.EventType;
 
 public abstract class MockUtil {
 
-  public static EventEntity createEventEntity(Long workflowKey, Long workflowInstanceId, EventSourceType eventSourceType, EventType eventType) {
+  public static EventEntity createEventEntity(Long workflowKey, Long workflowInstanceKey, EventSourceType eventSourceType, EventType eventType) {
     EventEntity eventEntity = new EventEntity();
     eventEntity.setId(TestUtil.createRandomString(10));
     eventEntity.setWorkflowKey(workflowKey);
-    eventEntity.setWorkflowInstanceKey(workflowInstanceId);
+    eventEntity.setWorkflowInstanceKey(workflowInstanceKey);
     eventEntity.setEventSourceType(eventSourceType);
     eventEntity.setEventType(eventType);
     return eventEntity;

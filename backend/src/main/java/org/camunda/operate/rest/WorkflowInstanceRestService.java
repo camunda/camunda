@@ -118,19 +118,19 @@ public class WorkflowInstanceRestService {
   @ApiOperation("Get workflow instance by id")
   @GetMapping("/{id}")
   public ListViewWorkflowInstanceDto queryWorkflowInstanceById(@PathVariable String id) {
-    return workflowInstanceReader.getWorkflowInstanceWithOperationsById(Long.valueOf(id));
+    return workflowInstanceReader.getWorkflowInstanceWithOperationsByKey(Long.valueOf(id));
   }
 
   @ApiOperation("Get incidents by workflow instance id")
   @GetMapping("/{id}/incidents")
   public IncidentResponseDto queryIncidentsByWorkflowInstanceId(@PathVariable String id) {
-    return incidentReader.getIncidents(Long.valueOf(id));
+    return incidentReader.getIncidentsByWorkflowInstanceKey(Long.valueOf(id));
   }
 
   @ApiOperation("Get sequence flows by workflow instance id")
   @GetMapping("/{id}/sequence-flows")
   public List<SequenceFlowDto> querySequenceFlowsByWorkflowInstanceId(@PathVariable String id) {
-    final List<SequenceFlowEntity> sequenceFlows = sequenceFlowReader.getSequenceFlows(id);
+    final List<SequenceFlowEntity> sequenceFlows = sequenceFlowReader.getSequenceFlowsByWorkflowInstanceKey(Long.valueOf(id));
     return SequenceFlowDto.createFrom(sequenceFlows);
   }
 

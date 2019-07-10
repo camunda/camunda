@@ -123,7 +123,7 @@ public class ListViewReader {
 
     final Set<Long> instancesWithIncidentsIds = findInstancesWithIncidents(ids);
 
-    final Map<Long, List<OperationEntity>> operationsPerWorfklowInstance = operationReader.getOperationsPerWorkflowInstanceId(ids);
+    final Map<Long, List<OperationEntity>> operationsPerWorfklowInstance = operationReader.getOperationsPerWorkflowInstanceKey(ids);
 
     final List<ListViewWorkflowInstanceDto> workflowInstanceDtoList = ListViewWorkflowInstanceDto
       .createFrom(workflowInstanceEntities, instancesWithIncidentsIds, operationsPerWorfklowInstance);
@@ -297,14 +297,14 @@ public class ListViewReader {
     return termsQuery(ListViewTemplate.ID, ids);
   }
 
-  private Set<Long> findInstancesWithIncidents(List<Long> ids) {
-    final TermQueryBuilder isWorkflowInstanceQ = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);
-    final TermsQueryBuilder workflowInstanceIdsQ = termsQuery(ListViewTemplate.ID, ids);
+  private Set<Long> findInstancesWithIncidents(List<Long> workflowInstanceKeys) {
+    final TermQueryBuilder isWorkflowInstanceQuery = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);
+    final TermsQueryBuilder workflowInstanceKeysQuery = termsQuery(ListViewTemplate.ID, workflowInstanceKeys);
     final HasChildQueryBuilder hasIncidentQ = hasChildQuery(ACTIVITIES_JOIN_RELATION, existsQuery(ListViewTemplate.INCIDENT_KEY), None);
 
     SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
     searchRequest.source(new SearchSourceBuilder()
-      .query(constantScoreQuery(joinWithAnd(isWorkflowInstanceQ, workflowInstanceIdsQ, hasIncidentQ))));
+      .query(constantScoreQuery(joinWithAnd(isWorkflowInstanceQuery, workflowInstanceKeysQuery, hasIncidentQ))));
 
     try {
       return CollectionUtil.toSafeSetOfLongs(ElasticsearchUtil.scrollIdsToSet(searchRequest, esClient));

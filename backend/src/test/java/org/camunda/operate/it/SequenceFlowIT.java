@@ -49,8 +49,8 @@ public class SequenceFlowIT extends OperateZeebeIntegrationTest {
     this.mockMvc = mockMvcTestRule.getMockMvc();
   }
 
-  protected String getSequenceFlowURL(String workflowInstanceId) {
-    return String.format(WORKFLOW_INSTANCE_URL + "/%s/sequence-flows", workflowInstanceId);
+  protected String getSequenceFlowURL(Long workflowInstanceKey) {
+    return String.format(WORKFLOW_INSTANCE_URL + "/%s/sequence-flows", workflowInstanceKey);
   }
 
   @Test
@@ -67,22 +67,21 @@ public class SequenceFlowIT extends OperateZeebeIntegrationTest {
       .done();
     deployWorkflow(workflow, processId + ".bpmn");
 
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"var1\": \"initialValue\", \"otherVar\": 123}");
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"var1\": \"initialValue\", \"otherVar\": 123}");
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
     ZeebeTestUtil.completeTask(zeebeClient, "task1", getWorkerName(), null);
-    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task2");
 
 
     //when
-    List<SequenceFlowDto> sequenceFlows = getSequenceFlows(workflowInstanceId);
+    List<SequenceFlowDto> sequenceFlows = getSequenceFlows(workflowInstanceKey);
 
     assertThat(sequenceFlows).extracting(SequenceFlowTemplate.ACTIVITY_ID).containsExactlyInAnyOrder("sf1", "sf2");
   }
 
-  private List<SequenceFlowDto> getSequenceFlows(String workflowInstanceId) throws Exception {
+  private List<SequenceFlowDto> getSequenceFlows(Long workflowInstanceKey) throws Exception {
     MvcResult mvcResult = mockMvc
-      .perform(get(getSequenceFlowURL(workflowInstanceId)))
+      .perform(get(getSequenceFlowURL(workflowInstanceKey)))
       .andExpect(status().isOk())
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
