@@ -344,6 +344,28 @@ public class JobStateTest {
   }
 
   @Test
+  public void shouldCleanUpOnForEachTimedOutAndVisitNext() {
+    // given
+    createAndActivateJobRecord(1, newJobRecord().setDeadline(1L));
+    jobState.cancel(1, newJobRecord());
+    createAndActivateJobRecord(2, newJobRecord().setDeadline(256L));
+
+    // when
+    final List<Long> timedOutKeys = new ArrayList<>();
+    final long since = 65536L;
+    jobState.forEachTimedOutEntry(
+        since,
+        (k, e) -> {
+          timedOutKeys.add(k);
+          return true;
+        });
+
+    // then
+    assertThat(timedOutKeys).hasSize(1);
+    assertThat(timedOutKeys).containsExactly(2L);
+  }
+
+  @Test
   public void shouldDoNothingIfNotTimedOutJobs() {
     // given
     jobState.create(5, newJobRecord().setDeadline(512L));

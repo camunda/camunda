@@ -48,7 +48,7 @@ public class FailJobTest {
   private static final String PROCESS_ID = "process";
   private static String jobType;
 
-  @ClassRule public static final EngineRule ENGINE = new EngineRule();
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

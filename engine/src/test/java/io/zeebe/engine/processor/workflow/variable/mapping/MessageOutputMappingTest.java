@@ -54,7 +54,7 @@ public class MessageOutputMappingTest {
   private static final String MESSAGE_NAME = "message";
   private static final String CORRELATION_VARIABLE = "key";
 
-  @ClassRule public static final EngineRule ENGINE_RULE = new EngineRule();
+  @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

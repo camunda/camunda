@@ -56,7 +56,7 @@ public class CreateDeploymentMultiplePartitionsTest {
   public static final int PARTITION_ID = DEPLOYMENT_PARTITION;
   public static final int PARTITION_COUNT = 3;
 
-  @ClassRule public static final EngineRule ENGINE = new EngineRule(PARTITION_COUNT);
+  @ClassRule public static final EngineRule ENGINE = EngineRule.multiplePartition(PARTITION_COUNT);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

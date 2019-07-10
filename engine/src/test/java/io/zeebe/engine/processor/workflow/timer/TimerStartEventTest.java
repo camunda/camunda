@@ -67,7 +67,7 @@ public class TimerStartEventTest {
 
   private static final BpmnModelInstance MULTI_TIMER_START_MODEL = createMultipleTimerStartModel();
 
-  @Rule public final EngineRule engine = new EngineRule();
+  @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   private static BpmnModelInstance createTimerAndMessageStartEventsModel() {
     final ProcessBuilder builder = Bpmn.createExecutableProcess("process");

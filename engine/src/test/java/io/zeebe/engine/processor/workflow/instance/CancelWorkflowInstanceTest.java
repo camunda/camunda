@@ -80,7 +80,7 @@ public class CancelWorkflowInstanceTest {
         builder.serviceTask("task2", b -> b.zeebeTaskType("type2")).endEvent("end2").done();
   }
 
-  @ClassRule public static final EngineRule ENGINE = new EngineRule();
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

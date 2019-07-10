@@ -254,6 +254,10 @@ public class StreamProcessorRule implements TestRule {
         .write();
   }
 
+  public long writeBatch(RecordToWrite... recordToWrites) {
+    return streams.writeBatch(getLogName(startPartitionId), recordToWrites);
+  }
+
   public long writeCommandOnPartition(int partition, Intent intent, UnpackedObject value) {
     return streams
         .newRecord(getLogName(partition))

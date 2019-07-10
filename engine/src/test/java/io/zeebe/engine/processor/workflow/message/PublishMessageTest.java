@@ -22,7 +22,11 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.engine.util.client.PublishMessageClient;
-import io.zeebe.protocol.record.*;
+import io.zeebe.protocol.record.Assertions;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.value.MessageRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -34,7 +38,7 @@ import org.junit.Test;
 
 public class PublishMessageTest {
 
-  @ClassRule public static final EngineRule ENGINE_RULE = new EngineRule();
+  @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

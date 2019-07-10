@@ -46,7 +46,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class BpmnElementTypeTest {
 
-  @ClassRule public static final EngineRule ENGINE = new EngineRule();
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

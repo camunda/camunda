@@ -63,7 +63,7 @@ public class CreateDeploymentTest {
   private static final BpmnModelInstance WORKFLOW_2_V2 =
       Bpmn.createExecutableProcess(PROCESS_ID_2).startEvent("v2").endEvent().done();
 
-  @ClassRule public static final EngineRule ENGINE = new EngineRule();
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

@@ -39,7 +39,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class TimerCatchEventTest {
-  @ClassRule public static final EngineRule ENGINE = new EngineRule();
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
