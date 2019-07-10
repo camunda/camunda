@@ -221,7 +221,7 @@ public class BlacklistInstanceTest {
     final RecordMetadata metadata = new RecordMetadata();
     metadata.intent(recordIntent);
     metadata.valueType(recordValueType);
-    final TypedEventImpl typedEvent = new TypedEventImpl();
+    final TypedEventImpl typedEvent = new TypedEventImpl(1);
     final LoggedEvent loggedEvent = mock(LoggedEvent.class);
     when(loggedEvent.getPosition()).thenReturn(1024L);
 

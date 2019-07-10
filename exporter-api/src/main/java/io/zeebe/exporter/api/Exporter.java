@@ -58,13 +58,17 @@ public interface Exporter {
   default void close() {}
 
   /**
-   * Called at least once for every record to be exporter. Once a record is guaranteed to have been
+   * Called at least once for every record to be exported. Once a record is guaranteed to have been
    * exported, implementations should call {@link Controller#updateLastExportedRecordPosition(long)}
    * to signal that this record should not be received here ever again.
    *
    * <p>Should the export method throw an unexpected {@link RuntimeException}, the method will be
    * called indefinitely until it terminates without any exception. It is up to the implementation
    * to handle errors properly, to implement retry strategies, etc.
+   *
+   * <p>Given Record just wraps the underlying internal buffer. This means if the implementation
+   * needs to collect multiple records it either has to call {@link Record#toJson()} to get the
+   * serialized version of the record or {@link Record#clone()} to get a deep copy.
    *
    * @param record the record to export
    */

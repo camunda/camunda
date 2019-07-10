@@ -159,7 +159,7 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
   }
 
   @Override
-  public Object clone() {
+  public Record clone() {
     try {
       final MockRecord cloned = (MockRecord) super.clone();
       cloned.metadata = (MockRecordMetadata) metadata.clone();
