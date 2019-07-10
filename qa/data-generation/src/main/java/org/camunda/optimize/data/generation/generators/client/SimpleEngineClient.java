@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.data.generation.generators.client;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -35,7 +34,6 @@ import org.camunda.optimize.data.generation.generators.client.dto.TaskDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.mapper.CustomDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomSerializer;
 
@@ -63,7 +61,7 @@ public class SimpleEngineClient {
   private static final String ENGINE_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
   // @formatter:on
   private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(ENGINE_DATE_FORMAT);
-  private static final int MAX_CONNECTIONS = 100;
+  private static final int MAX_CONNECTIONS = 150;
 
   private CloseableHttpClient client;
   private String engineRestEndpoint;
@@ -109,8 +107,7 @@ public class SimpleEngineClient {
     HttpGet get = new HttpGet(getDeploymentUri());
     String responseString;
     List<DeploymentDto> result = null;
-    try {
-      CloseableHttpResponse response = client.execute(get);
+    try (CloseableHttpResponse response = client.execute(get)) {
       responseString = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
       result = objectMapper.readValue(
         responseString,
@@ -129,7 +126,7 @@ public class SimpleEngineClient {
             .addParameter("cascade", "true")
             .build();
           delete.setURI(uri);
-          client.execute(delete);
+          client.execute(delete).close();
           log.info("Deleted deployment with id " + deployment.getId());
         } catch (IOException | URISyntaxException e) {
           log.error("Could not delete deployment");
@@ -158,10 +155,8 @@ public class SimpleEngineClient {
       log.error("Could not build uri!", e);
     }
     get.setURI(uri);
-    CloseableHttpResponse response = null;
     List<ProcessDefinitionEngineDto> result = new ArrayList<>();
-    try {
-      response = client.execute(get);
+    try (CloseableHttpResponse response = client.execute(get)) {
       String responseString = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
       result = objectMapper.readValue(
         responseString,
@@ -170,8 +165,6 @@ public class SimpleEngineClient {
       );
     } catch (Exception e) {
       log.error("Could not fetch all process definitions for given deployment!", e);
-    } finally {
-      closeResponse(response);
     }
 
     return result;
@@ -194,20 +187,15 @@ public class SimpleEngineClient {
     String process = Bpmn.convertToString(bpmnModelInstance);
     HttpPost deploymentRequest = createProcessDeploymentRequest(process);
     DeploymentDto deployment = new DeploymentDto();
-    CloseableHttpResponse response = null;
-    try {
-      response = client.execute(deploymentRequest);
+    try (CloseableHttpResponse response = client.execute(deploymentRequest)) {
       if (response.getStatusLine().getStatusCode() != 200) {
         throw new RuntimeException("Something really bad happened during deployment, " +
                                      "could not create a deployment!");
       }
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       deployment = objectMapper.readValue(responseString, DeploymentDto.class);
-      response.close();
     } catch (IOException e) {
       log.error("Error during deployment request! Could not deploy the given process model!", e);
-    } finally {
-      closeResponse(response);
     }
     return deployment;
   }
@@ -220,31 +208,25 @@ public class SimpleEngineClient {
     String decision = Dmn.convertToString(dmnModelInstance);
     HttpPost deploymentRequest = createDecisionDeploymentRequest(decision);
     DeploymentDto deployment = new DeploymentDto();
-    CloseableHttpResponse response = null;
-    try {
-      response = client.execute(deploymentRequest);
+    try (CloseableHttpResponse response = client.execute(deploymentRequest)) {
       if (response.getStatusLine().getStatusCode() != 200) {
         throw new RuntimeException("Something really bad happened during deployment, " +
                                      "could not create a deployment!");
       }
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       deployment = objectMapper.readValue(responseString, DeploymentDto.class);
-      response.close();
     } catch (IOException e) {
       log.error("Error during deployment request! Could not deploy the given dmn model!", e);
-    } finally {
-      closeResponse(response);
     }
     return deployment;
   }
 
+
   public void startProcessInstance(String procDefId, Map<String, Object> variables) {
-    CloseableHttpResponse response = null;
-    try {
-      HttpPost post = new HttpPost(getStartProcessInstanceUri(procDefId));
-      post.addHeader("content-type", "application/json");
-      post.setEntity(new StringEntity(convertVariableMapToJsonString(variables)));
-      response = client.execute(post);
+    HttpPost post = new HttpPost(getStartProcessInstanceUri(procDefId));
+    post.addHeader("content-type", "application/json");
+    post.setEntity(new StringEntity(convertVariableMapToJsonString(variables), StandardCharsets.UTF_8));
+    try (CloseableHttpResponse response = client.execute(post)) {
 
       if (response.getStatusLine().getStatusCode() != 200) {
         throw new RuntimeException("Could not start the process definition " + procDefId +
@@ -253,12 +235,11 @@ public class SimpleEngineClient {
     } catch (Exception e) {
       log.error("Error during start of process instance!");
       throw new RuntimeException(e);
-    } finally {
-      closeResponse(response);
     }
   }
 
-  private String convertVariableMapToJsonString(Map<String, Object> plainVariables) throws JsonProcessingException {
+  @SneakyThrows
+  private String convertVariableMapToJsonString(Map<String, Object> plainVariables) {
     Map<String, Object> variables = new HashMap<>();
     for (Map.Entry<String, Object> nameToValue : plainVariables.entrySet()) {
       Object value = nameToValue.getValue();
@@ -316,6 +297,7 @@ public class SimpleEngineClient {
     return post;
   }
 
+  @SneakyThrows
   public void correlateMessage(String messageName) {
     HttpPost post = new HttpPost(engineRestEndpoint + "/message/");
     post.setHeader("Content-type", "application/json");
@@ -323,11 +305,9 @@ public class SimpleEngineClient {
     message.setAll(true);
     message.setMessageName(messageName);
     StringEntity content;
-    CloseableHttpResponse response = null;
-    try {
-      content = new StringEntity(objectMapper.writeValueAsString(message), Charset.defaultCharset());
-      post.setEntity(content);
-      response = client.execute(post);
+    content = new StringEntity(objectMapper.writeValueAsString(message), Charset.defaultCharset());
+    post.setEntity(content);
+    try (CloseableHttpResponse response = client.execute(post)) {
       int statusCode = response.getStatusLine().getStatusCode();
       if (statusCode != 204) {
         throw new RuntimeException("Warning: response code for correlating message should be 204, got " + statusCode
@@ -335,18 +315,6 @@ public class SimpleEngineClient {
       }
     } catch (Exception e) {
       log.error("Error while trying to correlate message!", e);
-    } finally {
-      closeResponse(response);
-    }
-  }
-
-  private void closeResponse(CloseableHttpResponse response) {
-    if (response != null) {
-      try {
-        response.close();
-      } catch (IOException e) {
-        log.error("Can't close response", e);
-      }
     }
   }
 
@@ -403,19 +371,13 @@ public class SimpleEngineClient {
     return URLEncoder.encode(DATE_TIME_FORMATTER.format(createdAfter), StandardCharsets.UTF_8.name());
   }
 
-  private String getActiveTasksCountListCreatedAfterUri(final OffsetDateTime createdAfter) {
-    return engineRestEndpoint + "/task/count?active=true"
-      + "&createdAfter=" + serializeDateTimeToUrlEncodedString(createdAfter);
-  }
-
   private String getTaskIdentityLinksUri(String taskId) {
     return engineRestEndpoint + "/task/" + taskId + "/identity-links";
   }
 
   public void unclaimTask(TaskDto task) throws IOException {
     HttpPost unclaimPost = new HttpPost(getUnclaimTaskUri(task.getId()));
-    CloseableHttpResponse response = client.execute(unclaimPost);
-    closeResponse(response);
+    client.execute(unclaimPost).close();
   }
 
   public void claimTask(TaskDto task) throws IOException {
@@ -442,12 +404,12 @@ public class SimpleEngineClient {
           new StringEntity("{\"userId\":\"demo\", \"type\":\"candidate\"}")
         );
         candidatePost.addHeader("Content-Type", "application/json");
-        client.execute(candidatePost);
+        client.execute(candidatePost).close();
       } else {
         HttpPost candidateDeletePost = new HttpPost(getTaskIdentityLinksUri(task.getId()) + "/delete");
         candidateDeletePost.addHeader("Content-Type", "application/json");
         candidateDeletePost.setEntity(new StringEntity(objectMapper.writeValueAsString(links.get(0))));
-        client.execute(candidateDeletePost);
+        client.execute(candidateDeletePost).close();
       }
     }
   }
