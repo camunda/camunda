@@ -44,6 +44,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Configuration
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
+  public static final String X_CSRF_PARAM = "X-CSRF-PARAM";
+  public static final String X_CSRF_HEADER = "X-CSRF-HEADER";
+  public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
   public static final String COOKIE_JSESSIONID = "JSESSIONID";
   public static final String LOGIN_RESOURCE = "/api/login";
   public static final String LOGOUT_RESOURCE = "/api/logout";
@@ -94,7 +97,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   @Override
   public void configure(HttpSecurity http) throws Exception {
     if(operateProperties.isCsrfPreventionEnabled()){
-      cookieCSRFTokenRepository.setCookieName("X-CSRF-TOKEN");
+      cookieCSRFTokenRepository.setCookieName(X_CSRF_TOKEN);
       http.csrf()
       .ignoringAntMatchers(LOGIN_RESOURCE)
       .and()
@@ -153,9 +156,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   private HttpServletResponse addCSRFTokenWhenAvailable(HttpServletRequest request, HttpServletResponse response) {
     CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName()); 
     if (token != null) {
-      response.setHeader("X-CSRF-HEADER", token.getHeaderName());
-      response.setHeader("X-CSRF-PARAM", token.getParameterName());
-      response.setHeader("X-CSRF-TOKEN", token.getToken());
+      response.setHeader(X_CSRF_HEADER, token.getHeaderName());
+      response.setHeader(X_CSRF_PARAM, token.getParameterName());
+      response.setHeader(X_CSRF_TOKEN, token.getToken());
       // We need to access the CSRF Token Cookie from JavaScript too:
       cookieCSRFTokenRepository.setCookieHttpOnly(false);
       cookieCSRFTokenRepository.saveToken(token, request, response);

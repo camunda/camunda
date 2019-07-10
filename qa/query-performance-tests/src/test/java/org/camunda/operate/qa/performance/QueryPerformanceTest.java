@@ -20,7 +20,9 @@ import org.apache.http.client.CookieStore;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.camunda.operate.qa.performance.util.StatefulRestTemplate;
 import org.camunda.operate.qa.performance.util.URLUtil;
+import org.camunda.operate.security.WebSecurityConfig;
 import org.camunda.operate.util.CollectionUtil;
+import org.camunda.operate.util.ConversionUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -76,6 +78,8 @@ public class QueryPerformanceTest {
 
   @Parameterized.Parameter
   public TestQuery testQuery;
+  
+  private static String csrfToken;
 
   @Before
   public void init() {
@@ -96,6 +100,7 @@ public class QueryPerformanceTest {
     HttpEntity<Map<String,Object>> requestEntity = new HttpEntity<>(CollectionUtil.asMap("username",username,
                                                                                          "password",password));
     ResponseEntity<Object> response = restTemplate.postForEntity(urlUtil.getURL("/api/login?username=demo&password=demo"), requestEntity, Object.class);
+    saveCSRFTokenWhenAvailable(response);
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
   }
 
@@ -129,10 +134,12 @@ public class QueryPerformanceTest {
     try {
       RequestEntity<String> requestEntity =
           RequestEntity.method(testQuery.getMethod(), urlUtil.getURL(testQuery.getUrl(), testQuery.getPathParams()))
+              .header(WebSecurityConfig.X_CSRF_TOKEN, ConversionUtils.toStringOrDefault(csrfToken,""))
               .contentType(MediaType.APPLICATION_JSON)
               .body(testQuery.getBody());
       start = Instant.now();
       ResponseEntity<String> response = restTemplate.exchange(requestEntity, String.class);
+      saveCSRFTokenWhenAvailable(response);
       assertThat(response.getStatusCode()).as(testQuery.getTitle() + " (status)").isEqualTo(HttpStatus.OK);
     } catch (HttpClientErrorException ex) {
       fail(String.format("Query %s failed with the error: %s", testQuery.getTitle(), ex.getResponseBodyAsString()));
@@ -142,6 +149,14 @@ public class QueryPerformanceTest {
     //    logger.info("Running of query took {} milliseconds", timeElapsed);
 
     assertThat(timeElapsed).as(testQuery.getTitle() + " (duration)").isLessThan(timeout);
+  }
+  
+  private ResponseEntity saveCSRFTokenWhenAvailable(ResponseEntity response) {
+    List<String> csrfHeaders = response.getHeaders().get(WebSecurityConfig.X_CSRF_TOKEN);
+    if(!csrfHeaders.isEmpty()) {
+      csrfToken = csrfHeaders.get(0);
+    }
+    return response;
   }
 
 }
