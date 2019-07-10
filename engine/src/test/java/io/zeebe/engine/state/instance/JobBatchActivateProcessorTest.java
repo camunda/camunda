@@ -81,7 +81,7 @@ public class JobBatchActivateProcessorTest {
     processor.processRecord(record, responseWriter, streamWriter);
 
     // then
-    verify(jobState, times(expectedIterations)).visitJob(anyLong(), any());
+    verify(jobState, times(expectedIterations)).visitJob(anyLong(), any(), any());
   }
 
   @Test
@@ -98,7 +98,7 @@ public class JobBatchActivateProcessorTest {
     processor.processRecord(record, responseWriter, streamWriter);
 
     // then
-    verify(jobState, times(expectedIterations)).visitJob(anyLong(), any());
+    verify(jobState, times(expectedIterations)).visitJob(anyLong(), any(), any());
   }
 
   private void createJobs(int amount, String type) {

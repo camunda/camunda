@@ -25,14 +25,18 @@ import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
 import io.zeebe.db.impl.DbString;
+import io.zeebe.engine.Loggers;
 import io.zeebe.engine.metrics.JobMetrics;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.util.EnsureUtil;
 import java.util.function.BiFunction;
 import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
 
 public class JobState {
+
+  private static final Logger LOG = Loggers.WORKFLOW_PROCESSOR_LOGGER;
 
   // key => job record value
   // we need two separate wrapper to not interfere with get and put
@@ -201,7 +205,7 @@ public class JobState {
           final boolean isDue = deadline < upperBound;
           if (isDue) {
             final long jobKey = compositeKey.getSecond().getValue();
-            return visitJob(jobKey, callback);
+            return visitJob(jobKey, callback, () -> deadlinesColumnFamily.delete(compositeKey));
           }
           return false;
         });
@@ -236,15 +240,17 @@ public class JobState {
         jobTypeKey,
         ((compositeKey, zbNil) -> {
           final long jobKey = compositeKey.getSecond().getValue();
-          return visitJob(jobKey, callback);
+          return visitJob(jobKey, callback, () -> activatableColumnFamily.delete(compositeKey));
         }));
   }
 
-  boolean visitJob(long jobKey, BiFunction<Long, JobRecord, Boolean> callback) {
+  boolean visitJob(
+      long jobKey, BiFunction<Long, JobRecord, Boolean> callback, Runnable cleanupRunnable) {
     final JobRecord job = getJob(jobKey);
     if (job == null) {
-      throw new IllegalStateException(
-          String.format("Expected to find job with key %d, but no job found", jobKey));
+      LOG.error("Expected to find job with key {}, but no job found", jobKey);
+      cleanupRunnable.run();
+      return true; // we want to continue with the iteration
     }
     return callback.apply(jobKey, job);
   }
