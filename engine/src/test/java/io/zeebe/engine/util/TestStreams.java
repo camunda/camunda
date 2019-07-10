@@ -45,6 +45,7 @@ import io.zeebe.engine.state.StateStorageFactory;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
@@ -53,6 +54,7 @@ import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.record.CopiedRecord;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
@@ -310,6 +312,22 @@ public class TestStreams {
     zeebeDb.close();
   }
 
+  public long writeBatch(String logName, RecordToWrite[] recordToWrites) {
+    final LogStream logStream = getLogStream(logName);
+    final LogStreamBatchWriterImpl logStreamBatchWriter = new LogStreamBatchWriterImpl(logStream);
+
+    for (RecordToWrite recordToWrite : recordToWrites) {
+      logStreamBatchWriter
+          .event()
+          .key(recordToWrite.getKey())
+          .sourceIndex(recordToWrite.getSourceIndex())
+          .metadataWriter(recordToWrite.getRecordMetadata())
+          .valueWriter(recordToWrite.getUnifiedRecordValue())
+          .done();
+    }
+    return logStreamBatchWriter.tryWrite();
+  }
+
   public static class FluentLogWriter {
 
     protected RecordMetadata metadata = new RecordMetadata();
@@ -322,6 +340,15 @@ public class TestStreams {
       this.logStream = logStream;
 
       metadata.protocolVersion(Protocol.PROTOCOL_VERSION);
+    }
+
+    public FluentLogWriter record(CopiedRecord record) {
+      intent(record.getIntent());
+      key(record.getKey());
+      sourceRecordPosition(record.getSourceRecordPosition());
+      recordType(record.getRecordType());
+      event(record.getValue());
+      return this;
     }
 
     public FluentLogWriter intent(final Intent intent) {

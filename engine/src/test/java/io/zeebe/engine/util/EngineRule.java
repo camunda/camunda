@@ -72,7 +72,7 @@ import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public class EngineRule extends ExternalResource {
+public final class EngineRule extends ExternalResource {
 
   private static final int PARTITION_ID = Protocol.DEPLOYMENT_PARTITION;
   private static final RecordingExporter RECORDING_EXPORTER = new RecordingExporter();
@@ -80,16 +80,30 @@ public class EngineRule extends ExternalResource {
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private final StreamProcessorRule environmentRule;
+  protected final StreamProcessorRule environmentRule;
 
   private final int partitionCount;
+  private final boolean explicitStart;
 
-  public EngineRule() {
-    this(1);
+  public static EngineRule singlePartition() {
+    return new EngineRule(1);
   }
 
-  public EngineRule(int partitionCount) {
+  public static EngineRule multiplePartition(int partitionCount) {
+    return new EngineRule(partitionCount);
+  }
+
+  public static EngineRule explicitStart() {
+    return new EngineRule(1, true);
+  }
+
+  private EngineRule(int partitionCount) {
+    this(partitionCount, false);
+  }
+
+  private EngineRule(int partitionCount, boolean explicitStart) {
     this.partitionCount = partitionCount;
+    this.explicitStart = explicitStart;
     environmentRule =
         new StreamProcessorRule(
             PARTITION_ID, partitionCount, DefaultZeebeDbFactory.DEFAULT_DB_FACTORY);
@@ -104,6 +118,12 @@ public class EngineRule extends ExternalResource {
 
   @Override
   protected void before() {
+    if (!explicitStart) {
+      startProcessors();
+    }
+  }
+
+  public void start() {
     startProcessors();
   }
 
@@ -222,6 +242,10 @@ public class EngineRule extends ExternalResource {
         .withType(type)
         .filter(r -> r.getValue().getWorkflowInstanceKey() == instanceKey)
         .getFirst();
+  }
+
+  public void writeRecords(RecordToWrite... records) {
+    environmentRule.writeBatch(records);
   }
 
   private class DeploymentDistributionImpl implements DeploymentDistributor {

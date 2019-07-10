@@ -88,7 +88,7 @@ public class MessageCorrelationTest {
           .endEvent("taskEnd")
           .done();
 
-  @Rule public EngineRule engine = new EngineRule();
+  @Rule public EngineRule engine = EngineRule.singlePartition();
 
   @Test
   public void shouldCorrelateMessageIfEnteredBefore() {

@@ -44,7 +44,7 @@ import org.junit.Test;
 
 public class UpdateVariableDocumentTest {
 
-  @ClassRule public static final EngineRule ENGINE_RULE = new EngineRule();
+  @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

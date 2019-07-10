@@ -101,7 +101,8 @@ public class MessageCatchElementTest {
           .endEvent()
           .done();
 
-  @ClassRule public static final EngineRule ENGINE_RULE = new EngineRule(PARTITION_COUNT);
+  @ClassRule
+  public static final EngineRule ENGINE_RULE = EngineRule.multiplePartition(PARTITION_COUNT);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
