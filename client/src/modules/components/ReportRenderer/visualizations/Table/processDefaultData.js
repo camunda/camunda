@@ -12,7 +12,7 @@ const {formatReportResult} = formatters;
 export default function processDefaultData({formatter = v => v, report}) {
   const {data, result, reportType} = report;
   const {
-    configuration: {hideAbsoluteValue, hideRelativeValue, xml},
+    configuration: {hideAbsoluteValue, hideRelativeValue},
     view,
     groupBy
   } = data;
@@ -21,8 +21,8 @@ export default function processDefaultData({formatter = v => v, report}) {
   const instanceCount = result.processInstanceCount || result.decisionInstanceCount || 0;
   const config = reportConfig[reportType];
   const labels = [
-    config.getLabelFor(config.options.groupBy, groupBy, xml),
-    config.getLabelFor(config.options.view, view, xml)
+    config.getLabelFor(config.options.groupBy, groupBy),
+    config.getLabelFor(config.options.view, view)
   ];
 
   if (view.entity === 'userTask' && groupBy.type === 'flowNodes') {

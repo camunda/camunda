@@ -78,13 +78,10 @@ export function getCombinedTableProps(reportResult, reports) {
   const combinedProps = reports.reduce((prevReport, {id}) => {
     const report = reportResult[id];
     const {data, result, name} = report;
-    const {
-      configuration: {xml}
-    } = data;
 
     // build 2d array of all labels
-    const viewLabel = getLabelFor(view, data.view, xml);
-    const groupByLabel = getLabelFor(groupBy, data.groupBy, xml);
+    const viewLabel = getLabelFor(view, data.view);
+    const groupByLabel = getLabelFor(groupBy, data.groupBy);
     const labels = [...prevReport.labels, [groupByLabel, viewLabel]];
 
     // 2d array of all names
