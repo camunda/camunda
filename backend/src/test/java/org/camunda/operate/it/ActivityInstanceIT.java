@@ -13,7 +13,6 @@ import org.camunda.operate.rest.dto.activity.ActivityInstanceDto;
 import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeDto;
 import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeRequestDto;
 import org.camunda.operate.util.ConversionUtils;
-import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.junit.Before;
@@ -165,8 +164,8 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
     assertErrorMessageIsEqualTo(mvcResult, "Workflow instance id must be provided when requesting for activity instance tree.");
   }
 
-  protected ActivityInstanceTreeDto getActivityInstanceTreeFromRest(long workflowInstanceKey) throws Exception {
-    ActivityInstanceTreeRequestDto treeRequest = new ActivityInstanceTreeRequestDto(IdTestUtil.getId(workflowInstanceKey));
+  protected ActivityInstanceTreeDto getActivityInstanceTreeFromRest(Long workflowInstanceKey) throws Exception {
+    ActivityInstanceTreeRequestDto treeRequest = new ActivityInstanceTreeRequestDto(workflowInstanceKey.toString());
   
     MvcResult mvcResult =  postRequest(ACTIVITY_INSTANCE_URL,treeRequest);
 

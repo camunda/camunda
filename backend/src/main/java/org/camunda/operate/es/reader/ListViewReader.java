@@ -7,12 +7,12 @@ package org.camunda.operate.es.reader;
 
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.OperationEntity;
@@ -119,17 +119,14 @@ public class ListViewReader {
     ListViewResponseDto result = new ListViewResponseDto();
 
     List<WorkflowInstanceForListViewEntity> workflowInstanceEntities = queryListView(workflowInstanceRequest, firstResult, maxResults, result);
-    List<Long> ids = workflowInstanceEntities.stream().collect(ArrayList::new, (list, hit) -> list.add(Long.valueOf(hit.getId())), (list1, list2) -> list1.addAll(list2));
+    List<Long> workflowInstanceKeys = CollectionUtil.map(workflowInstanceEntities,workflowInstanceEntity -> Long.valueOf(workflowInstanceEntity.getId()));
+    final Set<Long> instancesWithIncidentsIds = findInstancesWithIncidents(workflowInstanceKeys);
 
-    final Set<Long> instancesWithIncidentsIds = findInstancesWithIncidents(ids);
+    final Map<Long, List<OperationEntity>> operationsPerWorfklowInstance = operationReader.getOperationsPerWorkflowInstanceKey(workflowInstanceKeys);
 
-    final Map<Long, List<OperationEntity>> operationsPerWorfklowInstance = operationReader.getOperationsPerWorkflowInstanceKey(ids);
-
-    final List<ListViewWorkflowInstanceDto> workflowInstanceDtoList = ListViewWorkflowInstanceDto
-      .createFrom(workflowInstanceEntities, instancesWithIncidentsIds, operationsPerWorfklowInstance);
+    final List<ListViewWorkflowInstanceDto> workflowInstanceDtoList = ListViewWorkflowInstanceDto.createFrom(workflowInstanceEntities, instancesWithIncidentsIds, operationsPerWorfklowInstance);
     result.setWorkflowInstances(workflowInstanceDtoList);
     return result;
-
   }
 
   protected List<WorkflowInstanceForListViewEntity> queryListView(ListViewRequestDto workflowInstanceRequest,
@@ -183,15 +180,10 @@ public class ListViewReader {
   }
 
   private QueryBuilder createRequestQuery(ListViewRequestDto request) {
-
-    List<QueryBuilder> queries = new ArrayList<>();
-
-    request.getQueries().stream()
-      .forEach(query -> queries.add(createQueryFragment(query)));
+    List<QueryBuilder> queries = CollectionUtil.map(request.getQueries(), (queryDto) -> createQueryFragment(queryDto));
 
     final TermQueryBuilder isWorkflowInstanceQuery = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);
-
-    final QueryBuilder queryBuilder = joinWithAnd(isWorkflowInstanceQuery, joinWithOr(queries.toArray(new QueryBuilder[request.getQueries().size()])));
+    final QueryBuilder queryBuilder = joinWithAnd(isWorkflowInstanceQuery, joinWithOr(queries));
 
     return queryBuilder;
   }
@@ -307,7 +299,7 @@ public class ListViewReader {
       .query(constantScoreQuery(joinWithAnd(isWorkflowInstanceQuery, workflowInstanceKeysQuery, hasIncidentQ))));
 
     try {
-      return CollectionUtil.toSafeSetOfLongs(ElasticsearchUtil.scrollIdsToSet(searchRequest, esClient));
+      return ElasticsearchUtil.scrollKeysToSet(searchRequest, esClient);
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining instances with incidents: %s", e.getMessage());
       logger.error(message, e);

@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.function.Predicate;
 import org.camunda.operate.es.schema.templates.SequenceFlowTemplate;
 import org.camunda.operate.rest.dto.SequenceFlowDto;
-import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;

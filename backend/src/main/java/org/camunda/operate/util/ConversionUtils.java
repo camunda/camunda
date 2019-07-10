@@ -5,7 +5,12 @@
  */
 package org.camunda.operate.util;
 
+import java.util.function.Function;
+
 public class ConversionUtils {
+  
+  public static final Function<String,Long> stringToLong = (aString) -> aString==null?null:Long.valueOf(aString);
+  public static final Function<Long,String> longToString= (aLong) -> aLong==null?null:String.valueOf(aLong);
 
   public static String toStringOrNull(Object object) {
     return toStringOrDefault(object, null);

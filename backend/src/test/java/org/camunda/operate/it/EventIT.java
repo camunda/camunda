@@ -18,7 +18,6 @@ import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.es.reader.EventReader;
 import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.rest.dto.EventQueryDto;
-import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.junit.Before;
@@ -106,7 +105,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
 
     //when
     EventQueryDto eventQueryDto = new EventQueryDto();
-    eventQueryDto.setWorkflowInstanceId(IdTestUtil.getId(workflowInstanceKey));
+    eventQueryDto.setWorkflowInstanceId(workflowInstanceKey.toString());
     final List<EventEntity> eventEntities = eventReader.queryEvents(eventQueryDto);
 
     assertThat(eventEntities).isSortedAccordingTo((e1, e2) -> {
@@ -138,7 +137,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
 
     String processId = "demoProcess";
     final Long workflowKey = deployWorkflow("demoProcess_v_1.bpmn");
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, null);
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, null);
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
 
     cancelWorkflowInstance(workflowInstanceKey);
@@ -148,7 +147,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
 
     //when
     EventQueryDto eventQueryDto = new EventQueryDto();
-    eventQueryDto.setWorkflowInstanceId(IdTestUtil.getId(workflowInstanceKey));
+    eventQueryDto.setWorkflowInstanceId(workflowInstanceKey.toString());
     final List<EventEntity> eventEntities = eventReader.queryEvents(eventQueryDto);
 
     //then
@@ -171,12 +170,12 @@ public class EventIT extends OperateZeebeIntegrationTest {
 
     deployWorkflow(workflow, processId + ".bpmn");
 
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
 
     //when
     EventQueryDto eventQueryDto = new EventQueryDto();
-    eventQueryDto.setWorkflowInstanceId(IdTestUtil.getId(workflowInstanceKey));
+    eventQueryDto.setWorkflowInstanceId(workflowInstanceKey.toString());
     final List<EventEntity> eventEntities = eventReader.queryEvents(eventQueryDto);
 
     //then last event does not have a jobId

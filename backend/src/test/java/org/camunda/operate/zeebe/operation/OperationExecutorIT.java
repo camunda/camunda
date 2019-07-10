@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.stream.Collectors;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
@@ -22,6 +21,7 @@ import org.camunda.operate.es.reader.OperationReader;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
@@ -98,9 +98,9 @@ public class OperationExecutorIT extends OperateIntegrationTest {
 
   private void assertOperationsLocked(List<OperationEntity> allOperations, int operationCount, String assertionLabel) {
     String workerId = operateProperties.getOperationExecutor().getWorkerId();
-    List<OperationEntity> lockedOperations = allOperations.stream()
-        .filter(op -> op.getState().equals(OperationState.LOCKED) && op.getLockOwner().equals(workerId))
-        .collect(Collectors.toList());
+    List<OperationEntity> lockedOperations = CollectionUtil.filter(allOperations,
+        op -> op.getState().equals(OperationState.LOCKED) && op.getLockOwner().equals(workerId)
+    );
     assertThat(lockedOperations).as(assertionLabel + ".operations.size").hasSize(operationCount);
     assertThat(lockedOperations).extracting(OperationTemplate.LOCK_OWNER).as(assertionLabel + "operation.lockOwner").containsOnly(
         workerId);

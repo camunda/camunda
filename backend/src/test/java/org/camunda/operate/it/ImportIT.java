@@ -30,7 +30,6 @@ import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.rest.dto.listview.VariablesQueryDto;
 import org.camunda.operate.rest.dto.listview.WorkflowInstanceStateDto;
 import org.camunda.operate.rest.exception.NotFoundException;
-import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.TestUtil;
@@ -188,18 +187,18 @@ public class ImportIT extends OperateZeebeIntegrationTest {
       TestUtil.createGetAllWorkflowInstancesQuery(q -> {
         q.setVariable(new VariablesQueryDto(name, value));
       }));
-    assertThat(wi.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(wi.getId()).isEqualTo(workflowInstanceKey.toString());
   }
 
-  private void assertVariableDoesNotExist(long workflowInstanceKey, String name, String value) {
+  private void assertVariableDoesNotExist(Long workflowInstanceKey, String name, String value) {
     final ListViewResponseDto listViewResponse = listViewReader.queryWorkflowInstances(TestUtil.createGetAllWorkflowInstancesQuery(q ->
       q.setVariable(new VariablesQueryDto(name, value))), 0, 100);
     assertThat(listViewResponse.getTotalCount()).isEqualTo(0);
     assertThat(listViewResponse.getWorkflowInstances()).hasSize(0);
   }
 
-  private ActivityInstanceTreeDto getActivityInstanceTree(long workflowInstanceKey) {
-    return activityInstanceReader.getActivityInstanceTree(new ActivityInstanceTreeRequestDto(IdTestUtil.getId(workflowInstanceKey)));
+  private ActivityInstanceTreeDto getActivityInstanceTree(Long workflowInstanceKey) {
+    return activityInstanceReader.getActivityInstanceTree(new ActivityInstanceTreeRequestDto(workflowInstanceKey.toString()));
   }
 
   private ListViewWorkflowInstanceDto getSingleWorkflowInstanceForListView(ListViewRequestDto request) {
@@ -581,7 +580,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     String processId = "demoProcess";
     deployWorkflow("demoProcess_v_1.bpmn");
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
 
     //when
@@ -589,7 +588,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //then
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
-    assertThat(workflowInstanceEntity.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(workflowInstanceEntity.getId()).isEqualTo(workflowInstanceKey.toString());
     assertThat(workflowInstanceEntity.getKey()).isEqualTo(workflowInstanceKey);
     assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.CANCELED);
     assertThat(workflowInstanceEntity.getEndDate()).isNotNull();
@@ -599,7 +598,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     //assert list view data
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
     assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.CANCELED);
-    assertThat(wi.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(wi.getId()).isEqualTo(workflowInstanceKey.toString());
     assertThat(wi.getEndDate()).isNotNull();
     assertThat(wi.getEndDate()).isAfterOrEqualTo(testStartTime);
     assertThat(wi.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
@@ -623,7 +622,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     String processId = "eventProcess";
     deployWorkflow("messageEventProcess_v_1.bpmn");
 //    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"clientId\": \"5\"}");
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"clientId\": \"5\"}");
 
         try {
           Thread.sleep(1000L);
@@ -636,7 +635,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //then
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
-    assertThat(workflowInstanceEntity.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(workflowInstanceEntity.getId()).isEqualTo(workflowInstanceKey.toString());
     assertThat(workflowInstanceEntity.getKey()).isEqualTo(workflowInstanceKey);
     assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.CANCELED);
     assertThat(workflowInstanceEntity.getEndDate()).isNotNull();
@@ -646,7 +645,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     //assert list view data
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
     assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.CANCELED);
-    assertThat(wi.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(wi.getId()).isEqualTo(workflowInstanceKey.toString());
     assertThat(wi.getEndDate()).isNotNull();
     assertThat(wi.getEndDate()).isAfterOrEqualTo(testStartTime);
     assertThat(wi.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());

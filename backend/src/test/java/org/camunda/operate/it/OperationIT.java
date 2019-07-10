@@ -35,7 +35,6 @@ import org.camunda.operate.rest.dto.listview.WorkflowInstanceStateDto;
 import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationResponseDto;
-import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ConversionUtils;
@@ -543,12 +542,12 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   @Test
   public void testCancelExecutedOnOneInstance() throws Exception {
     // given
-    final long workflowInstanceKey = startDemoWorkflowInstance();
+    final Long workflowInstanceKey = startDemoWorkflowInstance();
 
     //when
     //we call CANCEL_WORKFLOW_INSTANCE operation on instance
     final ListViewQueryDto workflowInstanceQuery = createAllQuery();
-    workflowInstanceQuery.setIds(Collections.singletonList(IdTestUtil.getId(workflowInstanceKey)));
+    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
     postBatchOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //and execute the operation
@@ -702,14 +701,14 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   @Test
   public void testFailCancelOnCanceledInstance() throws Exception {
     // given
-    final long workflowInstanceKey = startDemoWorkflowInstance();
+    final Long workflowInstanceKey = startDemoWorkflowInstance();
     ZeebeTestUtil.cancelWorkflowInstance(super.getClient(), workflowInstanceKey);
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
 
     //when
     //we call CANCEL_WORKFLOW_INSTANCE operation on instance
     final ListViewQueryDto workflowInstanceQuery = createAllQuery();
-    workflowInstanceQuery.setIds(Collections.singletonList(IdTestUtil.getId(workflowInstanceKey)));
+    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
     postBatchOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //and execute the operation
@@ -739,14 +738,14 @@ public class OperationIT extends OperateZeebeIntegrationTest {
         .endEvent()
         .done();
     deployWorkflow(startEndProcess, "startEndProcess.bpmn");
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), bpmnProcessId, null);
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), bpmnProcessId, null);
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when
     //we call CANCEL_WORKFLOW_INSTANCE operation on instance
     final ListViewQueryDto workflowInstanceQuery = createAllQuery();
-    workflowInstanceQuery.setIds(Collections.singletonList(IdTestUtil.getId(workflowInstanceKey)));
+    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
     postBatchOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //and execute the operation

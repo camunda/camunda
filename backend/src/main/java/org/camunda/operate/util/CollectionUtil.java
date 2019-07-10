@@ -10,11 +10,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static org.camunda.operate.util.ConversionUtils.*;
 
 import org.camunda.operate.exceptions.OperateRuntimeException;
 
@@ -34,7 +37,7 @@ public abstract class CollectionUtil {
   @SuppressWarnings("unchecked")
   public static <T> List<T> withoutNulls(Collection<T> aCollection){
     if(aCollection!=null) {
-      return aCollection.stream().filter( obj -> obj != null).collect(Collectors.toList());
+      return filter(aCollection, obj -> obj != null);
     }
     return Collections.EMPTY_LIST;
   }
@@ -55,12 +58,32 @@ public abstract class CollectionUtil {
     return result;
   }
   
+  public static <S,T> List<T> map(Collection<S> sourceList,Function<S,T> mapper){
+    return map(sourceList.stream(),mapper);
+  }
+  
+  public static <S,T> List<T> map(S[] sourceArray, Function<S, T> mapper) {
+    return map(Arrays.stream(sourceArray).parallel(),mapper);
+  }
+  
+  public static <S,T> List<T> map(Stream<S> sequenceStream, Function<S, T> mapper) {
+    return sequenceStream.map(mapper).collect(Collectors.toList());
+  }
+ 
+  public static <T> List<T> filter(Collection<T> collection, Predicate<T> predicate){
+    return filter(collection.stream(),predicate);
+  }
+  
+  public static <T> List<T> filter(Stream<T> filterStream, Predicate<T> predicate){
+    return filterStream.filter(predicate).collect(Collectors.toList());
+  }
+  
   public static List<String> toSafeListOfStrings(Collection<?> aCollection){
-      return withoutNulls(aCollection).stream().map(obj -> obj.toString()).collect(Collectors.toList());
+      return map(withoutNulls(aCollection),obj -> obj.toString());
   }
   
   public static String[] toSafeArrayOfStrings(Collection<?> aCollection){
-    return withoutNulls(aCollection).stream().map(obj -> obj.toString()).collect(Collectors.toList()).toArray(new String[]{});
+    return toSafeListOfStrings(aCollection).toArray(new String[]{});
   }
    
   public static List<String> toSafeListOfStrings(Object... objects){
@@ -68,17 +91,9 @@ public abstract class CollectionUtil {
   }
   
   public static List<Long> toSafeListOfLongs(Collection<String> aCollection){
-    return withoutNulls(aCollection).stream().map(obj -> Long.valueOf(obj)).collect(Collectors.toList());
+    return map(withoutNulls(aCollection),stringToLong);
   }
   
-  public static List<Long> toSafeListOfLongs(String... strings){
-    return toSafeListOfLongs(Arrays.asList(strings));
-  }
-  
-  public static Set<Long> toSafeSetOfLongs(Collection<String> ids) {
-    return new HashSet<>(toSafeListOfLongs(ids));
-  }
-
   public static <T> void addNotNull(Collection<T> collection, T object) {
     if (collection!= null && object != null) {
       collection.add(object);
@@ -92,4 +107,5 @@ public abstract class CollectionUtil {
     }
     return result;
   }
+
 }

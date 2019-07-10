@@ -23,7 +23,6 @@ import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.rest.dto.WorkflowInstanceCoreStatisticsDto;
 import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.rest.exception.NotFoundException;
-import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -72,7 +71,7 @@ public class WorkflowInstanceReader extends AbstractReader {
                                       .query(queryBuilder)
                                       .fetchSource(ListViewTemplate.WORKFLOW_KEY, null));
       try {
-        return CollectionUtil.toSafeListOfLongs(ElasticsearchUtil.scrollIdsToList(searchRequest, esClient));
+        return ElasticsearchUtil.scrollKeysToList(searchRequest, esClient);
       } catch (IOException e) {
         final String message = String.format("Exception occurred, while obtaining workflow instance that has empty versions: %s", e.getMessage());
         logger.error(message, e);

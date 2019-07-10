@@ -9,15 +9,17 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
+import static org.camunda.operate.util.CollectionUtil.*;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -51,9 +53,12 @@ public abstract class ElasticsearchUtil {
   public static final int SCROLL_KEEP_ALIVE_MS = 60000;
   public static final int TERMS_AGG_SIZE = 10000;
   public static final int TOPHITS_AGG_SIZE = 100;
+  
+  public static final Function<SearchHit,Long> searchHitIdToLong = (hit) -> Long.valueOf(hit.getId());
+  public static final Function<SearchHit,String> searchHitIdToString = (hit) -> hit.getId();
 
   public static QueryBuilder joinWithOr(BoolQueryBuilder boolQueryBuilder, QueryBuilder... queries) {
-    List<QueryBuilder> notNullQueries = CollectionUtil.throwAwayNullElements(queries);
+    List<QueryBuilder> notNullQueries = throwAwayNullElements(queries);
     for (QueryBuilder query: notNullQueries) {
       boolQueryBuilder.should(query);
     }
@@ -67,7 +72,7 @@ public abstract class ElasticsearchUtil {
    * @return
    */
   public static QueryBuilder joinWithOr(QueryBuilder... queries) {
-    List<QueryBuilder> notNullQueries = CollectionUtil.throwAwayNullElements(queries);
+    List<QueryBuilder> notNullQueries = throwAwayNullElements(queries);
     switch (notNullQueries.size()) {
     case 0:
       return null;
@@ -81,6 +86,10 @@ public abstract class ElasticsearchUtil {
       return boolQ;
     }
   }
+  
+  public static QueryBuilder joinWithOr(Collection<QueryBuilder> queries) {
+    return joinWithOr(queries.toArray(new QueryBuilder[queries.size()]));
+  }
 
   /**
    * Join queries with AND clause. If 0 queries are passed for wrapping, then null is returned. If 1 parameter is passed, it will be returned back as ia. Otherwise, the new
@@ -89,7 +98,7 @@ public abstract class ElasticsearchUtil {
    * @return
    */
   public static QueryBuilder joinWithAnd(QueryBuilder... queries) {
-    List<QueryBuilder> notNullQueries = CollectionUtil.throwAwayNullElements(queries);
+    List<QueryBuilder> notNullQueries = throwAwayNullElements(queries);
     switch (notNullQueries.size()) {
     case 0:
       return null;
@@ -108,7 +117,7 @@ public abstract class ElasticsearchUtil {
     if (boolQuery.mustNot().size() != 0 || boolQuery.filter().size() != 0 || boolQuery.should().size() != 0) {
       throw new IllegalArgumentException("BoolQuery with only must elements is expected here.");
     }
-    List<QueryBuilder> notNullQueries = CollectionUtil.throwAwayNullElements(queries);
+    List<QueryBuilder> notNullQueries = throwAwayNullElements(queries);
     for (QueryBuilder query : notNullQueries) {
       boolQuery.must(query);
     }
@@ -120,12 +129,7 @@ public abstract class ElasticsearchUtil {
   }
 
   public static <T> List<T> mapSearchHits(SearchHit[] searchHits, ObjectMapper objectMapper, Class<T> clazz) {
-    List<T> result = new ArrayList<>();
-    for (SearchHit searchHit : searchHits) {
-      String searchHitAsString = searchHit.getSourceAsString();
-      result.add(fromSearchHit(searchHitAsString, objectMapper, clazz));
-    }
-    return result;
+    return map(searchHits, (searchHit) -> fromSearchHit(searchHit.getSourceAsString(), objectMapper, clazz)); 
   }
 
   public static <T> T fromSearchHit(String searchHitString, ObjectMapper objectMapper, Class<T> clazz) {
@@ -140,12 +144,7 @@ public abstract class ElasticsearchUtil {
   }
 
   public static <T> List<T> mapSearchHits(SearchHit[] searchHits, ObjectMapper objectMapper, JavaType valueType) {
-    List<T> result = new ArrayList<>();
-    for (SearchHit searchHit : searchHits) {
-      String searchHitAsString = searchHit.getSourceAsString();
-      result.add(fromSearchHit(searchHitAsString, objectMapper, valueType));
-    }
-    return result;
+    return map(searchHits,(searchHit) -> fromSearchHit(searchHit.getSourceAsString(), objectMapper, valueType));
   }
 
   public static <T> T fromSearchHit(String searchHitString, ObjectMapper objectMapper, JavaType valueType) {
@@ -288,12 +287,22 @@ public abstract class ElasticsearchUtil {
     }
   }
 
-  public static List<String> scrollIdsToList(SearchRequest request, RestHighLevelClient esClient) throws IOException {
-    List<String> result = new ArrayList<>();
+  public static List<String> scrollIdsToList(SearchRequest request, RestHighLevelClient esClient) throws IOException {    
+    List<String> result = new ArrayList<>();   
     
     Consumer<SearchHits> collectIds = (hits) -> {
-      result.addAll(Arrays.stream(hits.getHits()).collect(HashSet::new, (set, hit) -> set.add(hit.getId()), (set1, set2) -> set1.addAll(set2))); 
-      result.addAll(Arrays.stream(hits.getHits()).collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2)));
+      result.addAll(map(hits.getHits(),searchHitIdToString));
+    };
+    
+    scrollWith(request, esClient, collectIds, null, collectIds);
+    return result;
+  }
+  
+  public static List<Long> scrollKeysToList(SearchRequest request, RestHighLevelClient esClient) throws IOException {
+    List<Long> result = new ArrayList<>();
+    
+    Consumer<SearchHits> collectIds = (hits) -> {
+      result.addAll(map(hits.getHits(),searchHitIdToLong));
     };
     
     scrollWith(request, esClient, collectIds, null, collectIds);
@@ -302,14 +311,10 @@ public abstract class ElasticsearchUtil {
 
   public static List<String> scrollFieldToList(SearchRequest request, String fieldName, RestHighLevelClient esClient) throws IOException {
     List<String> result = new ArrayList<>();
+    Function<SearchHit,String> searchHitFieldToString = (searchHit) -> searchHit.getSourceAsMap().get(fieldName).toString();
     
     Consumer<SearchHits> collectFields = (hits) -> {
-        
-      result.addAll(Arrays.stream(hits.getHits()).collect(
-            ArrayList::new, 
-            (list, hit) -> list.add(hit.getSourceAsMap().get(fieldName).toString()),
-            (list1, list2) -> list1.addAll(list2)));
-        
+        result.addAll(map(hits.getHits(),searchHitFieldToString));
     };
 
     scrollWith(request, esClient, collectFields,null, collectFields);
@@ -318,13 +323,18 @@ public abstract class ElasticsearchUtil {
 
   public static Set<String> scrollIdsToSet(SearchRequest request, RestHighLevelClient esClient) throws IOException {
     Set<String> result = new HashSet<>();
+    
     Consumer<SearchHits> collectIds= (hits) -> {
-      
-      result.addAll(Arrays.stream(hits.getHits()).collect(
-          HashSet::new, 
-          (set, hit) -> set.add(hit.getId()),
-          (set1, set2) -> set1.addAll(set2)));
-        
+        result.addAll(map(hits.getHits(),searchHitIdToString));        
+    };
+    scrollWith(request, esClient, collectIds, null, collectIds);
+    return result;
+  }
+  
+  public static Set<Long> scrollKeysToSet(SearchRequest request, RestHighLevelClient esClient) throws IOException {
+    Set<Long> result = new HashSet<>();
+    Consumer<SearchHits> collectIds= (hits) -> {
+      result.addAll(map(hits.getHits(), searchHitIdToLong));   
     };
     scrollWith(request, esClient, collectIds, null, collectIds);
     return result;

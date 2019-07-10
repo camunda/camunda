@@ -26,7 +26,6 @@ import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.rest.dto.listview.WorkflowInstanceStateDto;
-import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
@@ -206,7 +205,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(wi.getWorkflowId()).isEqualTo(workflowKey.toString());
     assertThat(wi.getWorkflowName()).isEqualTo("Demo process");
     assertThat(wi.getWorkflowVersion()).isEqualTo(1);
-    assertThat(wi.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(wi.getId()).isEqualTo(workflowInstanceKey.toString());
     assertThat(wi.getEndDate()).isNull();
     assertThat(wi.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(wi.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
@@ -225,7 +224,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(workflowInstanceEntity.getWorkflowKey()).isEqualTo(workflowKey);
     assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo(workflowName);
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
-    assertThat(workflowInstanceEntity.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(workflowInstanceEntity.getId()).isEqualTo(workflowInstanceKey.toString());
     assertThat(workflowInstanceEntity.getKey()).isEqualTo(workflowInstanceKey);
     assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.INCIDENT);
     assertThat(workflowInstanceEntity.getEndDate()).isNull();
@@ -241,8 +240,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
 
-  protected ActivityInstanceTreeDto getActivityInstanceTree(long workflowInstanceKey) {
-    return activityInstanceReader.getActivityInstanceTree(new ActivityInstanceTreeRequestDto(IdTestUtil.getId(workflowInstanceKey)));
+  protected ActivityInstanceTreeDto getActivityInstanceTree(Long workflowInstanceKey) {
+    return activityInstanceReader.getActivityInstanceTree(new ActivityInstanceTreeRequestDto(workflowInstanceKey.toString()));
   }
 
 
@@ -299,7 +298,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
         .endEvent()
       .done();
     deployWorkflow(modelInstance, "demoProcess_v_1.bpmn");
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
     final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
@@ -318,7 +317,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //assert list view data
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
-    assertThat(wi.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(wi.getId()).isEqualTo(workflowInstanceKey.toString());
     assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.COMPLETED);
     assertThat(wi.getEndDate()).isNotNull();
 
@@ -351,7 +350,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
         .endEvent()
         .done();
     deployWorkflow(modelInstance, "demoProcess_v_1.bpmn");
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
     final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
@@ -372,7 +371,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //assert list view data
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
-    assertThat(wi.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(wi.getId()).isEqualTo(workflowInstanceKey.toString());
     assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.CANCELED);
     assertThat(wi.getEndDate()).isNotNull();
 

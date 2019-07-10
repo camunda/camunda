@@ -35,8 +35,7 @@ public class ActivityInstanceRestService {
 
   @ApiOperation("Query activity instance tree")
   @PostMapping
-  public ActivityInstanceTreeDto queryActivityInstanceTree(
-      @RequestBody ActivityInstanceTreeRequestDto request) {
+  public ActivityInstanceTreeDto queryActivityInstanceTree(@RequestBody ActivityInstanceTreeRequestDto request) {
     if (request == null || request.getWorkflowInstanceId() == null) {
       throw new InvalidRequestException("Workflow instance id must be provided when requesting for activity instance tree.");
     }
