@@ -1,4 +1,6 @@
 camunda.operate:
+  username: demo
+  password: demo
   startLoadingDataOnStartup: false
   elasticsearch:
     clusterName: docker-cluster

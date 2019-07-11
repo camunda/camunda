@@ -19,6 +19,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.user.ElasticSearchUserDetailsManager;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,12 +30,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -58,6 +57,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   @Autowired
   private OperateProperties operateProperties;
   
+  @Autowired
+  private RestHighLevelClient esClient;
+  
+  
   private static final String[] AUTH_WHITELIST = {
     // -- swagger ui
     "/swagger-resources",
@@ -69,31 +72,14 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
   @Bean
   public UserDetailsService userDetailsService() {
-    String demoPsw = passwordEncoder().encode("demo");
-    UserDetails demoUserDetails = User.builder()
-      .username("demo")
-      .password(demoPsw)
-      .roles("USER")
-      .build();
-
-    String actadminPsw = passwordEncoder().encode("act");
-    UserDetails actadminUserDetails = User.builder()
-      .username("act")
-      .password(actadminPsw)
-      .roles("ACTRADMIN")
-      .build();
-
-    InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
-    manager.createUser(demoUserDetails);
-    manager.createUser(actadminUserDetails);
-    return manager;
+    return ElasticSearchUserDetailsManager.buildWith(passwordEncoder(), operateProperties, esClient);
   }
 
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
   }
-
+  
   @Override
   public void configure(HttpSecurity http) throws Exception {
     if(operateProperties.isCsrfPreventionEnabled()){

@@ -28,6 +28,12 @@ public class OperateProperties {
    * Indicates, whether CSRF prevention is enabled.
    */
   private boolean csrfPreventionEnabled = true;
+  
+  /** 
+   * Standard user data
+   */
+  private String username = "demo";
+  private String password = "demo";
 
   /**
    * Maximum size of batch operation.
@@ -96,7 +102,21 @@ public class OperateProperties {
   public void setZeebe(ZeebeProperties zeebe) {
     this.zeebe = zeebe;
   }
+  public String getUsername() {
+    return username;
+  }
 
+  public void setUsername(String username) {
+    this.username = username;
+  }
+
+  public String getPassword() {
+    return password;
+  }
+
+  public void setPassword(String password) {
+    this.password = password;
+  }
   public OperationExecutorProperties getOperationExecutor() {
     return operationExecutor;
   }
