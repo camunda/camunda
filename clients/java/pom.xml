@@ -36,7 +36,7 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-gateway-protocol</artifactId>
+      <artifactId>zeebe-gateway-protocol-impl</artifactId>
     </dependency>
 
     <dependency>

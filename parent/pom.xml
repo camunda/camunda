@@ -508,6 +508,14 @@
   </dependencies>
 
   <build>
+    <extensions>
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>${extension.version.os-maven-plugin}</version>
+      </extension>
+    </extensions>
+
     <pluginManagement>
       <plugins>
         <!-- MAVEN COMPILER -->
@@ -862,6 +870,7 @@
                   <dep>org.apache.logging.log4j:log4j-slf4j-impl</dep>
                   <dep>org.apache.logging.log4j:log4j-core</dep>
                   <dep>io.zeebe:zeebe-build-tools</dep>
+                  <dep>io.zeebe:zeebe-gateway-protocol</dep>
                 </ignoredUnusedDeclaredDependencies>
               </configuration>
             </execution>
