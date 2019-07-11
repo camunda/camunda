@@ -36,7 +36,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -58,41 +57,6 @@ public class ExportLimitsIT {
     .outerRule(elasticSearchRule)
     .around(engineRule)
     .around(embeddedOptimizeRule);
-
-
-  @Test
-  public void exportWithOffset() throws Exception {
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    String reportId = createAndStoreRawReportDefinition(
-      processInstance.getProcessDefinitionKey(),
-      ALL_VERSIONS
-    );
-    deployAndStartSimpleProcess();
-    deployAndStartSimpleProcess();
-
-    embeddedOptimizeRule.getConfigurationService().setExportCsvOffset(1);
-
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCsvExportRequest(reportId, "my_file.csv")
-      .execute();
-
-
-    assertThat(response.getStatus(), is(200));
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    IOUtils.copy(response.readEntity(InputStream.class), bos);
-    byte[] result = bos.toByteArray();
-    CSVReader reader = new CSVReader(new InputStreamReader(new ByteArrayInputStream(result)));
-
-    // then
-    List<String[]> csvLines = reader.readAll();
-    assertThat(csvLines.size(), is(3));
-    reader.close();
-  }
 
   @Test
   public void exportWithLimit() throws Exception {
@@ -127,38 +91,6 @@ public class ExportLimitsIT {
     reader.close();
   }
 
-  @Test
-  public void exportWithOffsetAndLimit() throws Exception {
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    String reportId = createAndStoreRawReportDefinition(
-      processInstance.getProcessDefinitionKey(),
-      ALL_VERSIONS
-    );
-    deployAndStartSimpleProcess();
-    deployAndStartSimpleProcess();
-
-    embeddedOptimizeRule.getConfigurationService().setExportCsvOffset(1);
-    embeddedOptimizeRule.getConfigurationService().setExportCsvLimit(1);
-
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCsvExportRequest(reportId, "my_file.csv")
-      .execute();
-
-    assertThat(response.getStatus(), is(200));
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    IOUtils.copy(response.readEntity(InputStream.class), bos);
-    byte[] result = bos.toByteArray();
-    CSVReader reader = new CSVReader(new InputStreamReader(new ByteArrayInputStream(result)));
-
-    // then
-    assertThat(reader.readAll().size(), is(2));
-    reader.close();
-  }
 
   @Test
   public void exportWithBiggerThanDefaultReportLimit() throws Exception {

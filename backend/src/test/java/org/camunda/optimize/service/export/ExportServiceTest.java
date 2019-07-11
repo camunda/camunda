@@ -47,7 +47,6 @@ public class ExportServiceTest {
   @Before
   public void init() {
     when(configurationService.getExportCsvLimit()).thenReturn(100);
-    when(configurationService.getExportCsvOffset()).thenReturn(0);
   }
 
   @Test

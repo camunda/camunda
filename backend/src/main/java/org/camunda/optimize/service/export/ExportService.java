@@ -33,14 +33,12 @@ public class ExportService {
                                                               final Set<String> excludedColumns) {
     log.debug("Exporting report with id [{}] as csv.", reportId);
     final Integer exportCsvLimit = configurationService.getExportCsvLimit();
-    final Integer exportCsvOffset = configurationService.getExportCsvOffset();
-
 
     try {
       final ReportEvaluationResult<?, ?> reportResult = reportService.evaluateSavedReport(
-        userId, reportId, exportCsvOffset + exportCsvLimit
+        userId, reportId, exportCsvLimit
       );
-      final List<String[]> resultAsCsv = reportResult.getResultAsCsv(exportCsvLimit, exportCsvOffset, excludedColumns);
+      final List<String[]> resultAsCsv = reportResult.getResultAsCsv(exportCsvLimit, 0, excludedColumns);
       return Optional.of(mapCsvLinesToCsvBytes(resultAsCsv));
     } catch (Exception e) {
       log.debug("Could not evaluate report to export the result to csv!", e);

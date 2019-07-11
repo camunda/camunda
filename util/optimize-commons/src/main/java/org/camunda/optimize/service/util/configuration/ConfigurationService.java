@@ -170,7 +170,6 @@ public class ConfigurationService {
   private String alertEmailProtocol;
 
   private Integer exportCsvLimit;
-  private Integer exportCsvOffset;
 
   private Properties quartzProperties;
 
@@ -974,13 +973,6 @@ public class ConfigurationService {
       exportCsvLimit = configJsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_LIMIT, Integer.class);
     }
     return exportCsvLimit;
-  }
-
-  public Integer getExportCsvOffset() {
-    if (exportCsvOffset == null) {
-      exportCsvOffset = configJsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_OFFSET, Integer.class);
-    }
-    return exportCsvOffset;
   }
 
   public String getElasticsearchSecurityUsername() {
