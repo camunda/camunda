@@ -1,29 +1,17 @@
 ![Zeebe Logo](/zeebe-logo.png)
 
-# Zeebe: Cloud-Native Workflow Engine for Microservices Orchestration.
+### Zeebe is a cloud-native workflow engine for microservices orchestration
 
-## Graphically model your workflows.
+* Define workflows graphically in BPMN 2.0
+* Choose any gRPC-supported programming language
+* Deploy with Docker and Kubernetes (in the cloud or on-premises)
+* Build workflows that react to events from Apache Kafka and other messaging platforms
+* Scale horizontally to handle very high throughput
+* Fault tolerance (no relational database required)
+* Export workflow data for monitoring and analysis
+* Engage with an active community
 
-Using industry-standard BPMN.
-
-![BPMN](workflows-data-based-conditions.png)
-
-## Write light-weight services to handle tasks.
-
-In any programming language that supports gRPC: Java, Go, JavaScript, C#, Ruby, Python, Rust....
-
-![](lightweight-workers.png)
-
-## Inspect the running state of your system.
-
-Using Camunda Operate, or anything that integrates with Zeebe's streaming exporter.
-
-![](Operate-Batch-Cancel-Or-Retry.png)
-
-## Deploy to Kubernetes.
-
-Run your workloads on any cloud provider or on-premises.
-
-## Scalable. Fault-tolerant. Distributed.
-
-Choose three.
+**First Steps**
+* [Read up on Zeebe's core concepts](/basics/README.html)
+* [Run Zeebe with Docker or download a distribution](/introduction/install.html)
+* [Try the Getting Started tutorial](/getting-started/README.html)
