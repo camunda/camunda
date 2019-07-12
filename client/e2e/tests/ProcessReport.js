@@ -29,6 +29,14 @@ test('create and name a report', async t => {
   await t.expect(e.reportRenderer.textContent).contains('Start Date');
 });
 
+test('add a report to a collection', async t => {
+  await t.click(e.report);
+  await t.click(e.collectionsDropdown);
+  await t.click(e.collectionOption('Add to new Collection'));
+  await t.click(e.createCollectionButton);
+  await t.expect(e.collectionsDropdown.textContent).contains('In 1 Collection');
+});
+
 test('sort table columns', async t => {
   await t.hover(e.report);
   await t.click(e.editButton);
@@ -102,10 +110,9 @@ test('update definition', async t => {
   await t.expect(e.reportRenderer.textContent).contains('leadQualification');
 });
 
-test('should only enable valid combinations', async t => {
+test('should only enable valid combinations for process instance count grouped by none', async t => {
   await t.hover(e.report);
   await t.click(e.editButton);
-
   await u.selectView(t, 'Process Instance', 'Count');
 
   await t.click(e.groupbyDropdown);
@@ -124,14 +131,90 @@ test('should only enable valid combinations', async t => {
   await t.expect(e.option('Bar Chart').hasAttribute('disabled')).ok();
   await t.expect(e.option('Heatmap').hasAttribute('disabled')).ok();
 
+  await t.expect(e.reportNumber.visible).ok();
+
+  await u.save(t);
+});
+
+test('Limit the precsion in number report', async t => {
+  await t.hover(e.report);
+  await t.click(e.editButton);
+
+  await u.selectView(t, 'Process Instance', 'Duration');
+  await u.selectGroupby(t, 'None');
+
+  await t.click(e.configurationButton);
+  await t.click(e.limitPrecisionSwitch);
+
+  await t.expect(e.reportNumber.visible).ok();
+});
+
+test('Disable absolute and relative values for table reports', async t => {
+  await t.hover(e.report);
+  await t.click(e.editButton);
+
+  await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'Start Date of Process Instance', 'Month');
+
+  await u.selectVisualization(t, 'Table');
+  await t.click(e.configurationButton);
+  await t.click(e.selectLabel('Show Absolute Value'));
+  await t.click(e.selectLabel('Show Relative Value'));
+
+  await t.expect(e.reportTable.textContent).contains('Start Date of Process Instance: Month');
+  await t.expect(e.reportTable.textContent).notContains('Process Instance: Count');
+  await t.expect(e.reportTable.textContent).notContains('Relative Frequency');
+});
+
+test('select process instance count grouped by end date', async t => {
+  await t.hover(e.report);
+  await t.click(e.editButton);
+
+  await u.selectDefinition(t, 'Lead Qualification', '1');
+  await u.selectView(t, 'Process Instance', 'Count');
+
+  await u.selectGroupby(t, 'End Date of Process Instance', 'Automatic');
 
   await t.click(e.visualizationDropdown);
 
   await t.expect(e.option('Number').hasAttribute('disabled')).ok();
   await t.expect(e.option('Table').hasAttribute('disabled')).notOk();
   await t.expect(e.option('Bar Chart').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Line Chart').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Pie Chart').hasAttribute('disabled')).notOk();
   await t.expect(e.option('Heatmap').hasAttribute('disabled')).ok();
+  await t.click(e.visualizationDropdown);
+
+  await u.selectVisualization(t, 'Table');
+  await t.expect(e.reportTable.visible).ok();
+});
+
+test('select process instance count grouped by variable', async t => {
+  await t.hover(e.report);
+  await t.click(e.editButton);
+
+  await u.selectView(t, 'Process Instance', 'Count');
+
+  await u.selectGroupby(t, 'Variable', 'amount');
+
+  await t.click(e.visualizationDropdown);
+
+  await t.expect(e.option('Number').hasAttribute('disabled')).ok();
+  await t.expect(e.option('Table').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Bar Chart').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Line Chart').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Pie Chart').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Heatmap').hasAttribute('disabled')).ok();
+
+  await t.click(e.visualizationDropdown);
+
+  await u.selectVisualization(t, 'Table');
+  await t.expect(e.reportTable.textContent).contains('Variable: amount');
+});
+
+test('should only enable valid combinations for Flow Node Count', async t => {
+  await t.hover(e.report);
+  await t.click(e.editButton);
 
   await u.selectView(t, 'Flow Node', 'Count');
 
@@ -146,6 +229,58 @@ test('should only enable valid combinations', async t => {
 
   await t.click(e.option('Table'));
   await u.save(t);
+});
+
+test('select which flow nodes to show from the configuration', async t => {
+  await t.hover(e.report);
+  await t.click(e.editButton);
+
+  await t.expect(e.nodeTableCell('received').exists).ok();
+
+  await t.click(e.configurationButton);
+
+  await t.click(e.showFlowNodes);
+
+  await t.click(e.flowNode('StartEvent_1'));
+
+  await t.click(e.primaryModalButton);
+
+  await t.expect(e.nodeTableCell('recieved').exists).notOk();
+});
+
+test('select to show only running or completed nodes', async t => {
+  await t.hover(e.report);
+  await t.click(e.editButton);
+
+  await t.click(e.configurationButton);
+  await t.click(e.flowNodeStatusSelect);
+  await t.click(e.option('Running'));
+
+  await t.click(e.flowNodeStatusSelect);
+  await t.click(e.option('Completed'));
+
+  await t.expect(e.reportTable.visible).ok();
+});
+
+test('bar/line chart configuration', async t => {
+  await t.hover(e.report);
+  await t.click(e.editButton);
+
+  await u.selectVisualization(t, 'Line Chart');
+  await t.click(e.configurationButton);
+  await t.click(e.pointMarkersSwitch);
+
+  await t.click(e.pointMarkersSwitch);
+  await t.click(e.redColor);
+  await t.typeText(e.axisInputs('X Axis Label'), 'x axis label');
+  await t.typeText(e.axisInputs('Y Axis Label'), 'y axis label');
+
+  await t.click(e.goalSwitch);
+
+  await t.typeText(e.chartGoalInput, '22', {replace: true});
+  await t.expect(e.chartGoalInput.hasAttribute('disabled')).notOk();
+
+  await t.expect(e.reportChart.visible).ok();
 });
 
 test('different visualizations', async t => {
@@ -248,6 +383,93 @@ test('always show tooltips', async t => {
   await t.click(e.tooltipSwitch);
 
   await t.expect(e.tooltip.visible).ok();
+});
+
+test('should only enable valid combinations for user task', async t => {
+  await t.hover(e.report);
+  await t.click(e.editButton);
+  await u.selectView(t, 'User Task', 'Count');
+
+  await t.click(e.groupbyDropdown);
+
+  await t.expect(e.option('None').hasAttribute('disabled')).ok();
+  await t.expect(e.option('Flow Nodes').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Assignee').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Candidate Group').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Start Date of Process Instance').hasAttribute('disabled')).ok();
+
+  await t.click(e.option('Flow Nodes'));
+
+  await t.click(e.visualizationDropdown);
+
+  await t.expect(e.option('Number').hasAttribute('disabled')).ok();
+  await t.expect(e.option('Table').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Bar Chart').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Heatmap').hasAttribute('disabled')).notOk();
+
+  await u.selectGroupby(t, 'Assignee');
+
+  await t.click(e.visualizationDropdown);
+
+  await t.expect(e.option('Heatmap').hasAttribute('disabled')).ok();
+
+  await t.click(e.option('Table'));
+
+  await t.expect(e.reportTable.visible).ok();
+
+  await u.save(t);
+});
+
+test('should be able to distribute candidate group by user task', async t => {
+  await t.hover(e.report);
+  await t.click(e.editButton);
+
+  await u.selectGroupby(t, 'Candidate Group');
+
+  await u.selectVisualization(t, 'Pie Chart');
+
+  await t.click(e.configurationButton);
+
+  await t.click(e.distributedBySelect);
+
+  await t.click(e.option('User Task'));
+
+  await t.expect(e.visualizationDropdown.textContent).contains('Bar Chart');
+
+  await t.click(e.visualizationDropdown);
+
+  await t.expect(e.option('Table').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Bar Chart').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Number').hasAttribute('disabled')).ok();
+  await t.expect(e.option('Line Chart').hasAttribute('disabled')).ok();
+  await t.expect(e.option('Pie Chart').hasAttribute('disabled')).ok();
+
+  await t.click(e.option('Table'));
+
+  await t.expect(e.reportTable.textContent).contains('Invoice');
+  await t.expect(e.reportTable.textContent).contains('Bank');
+});
+
+test('should be able to select how the time of the user task is calculated', async t => {
+  await t.hover(e.report);
+  await t.click(e.editButton);
+
+  await t.click(e.configurationButton);
+  await u.selectView(t, 'User Task', 'Duration');
+
+  await u.selectVisualization(t, 'Table');
+
+  await t.click(e.configurationButton);
+
+  await t.click(e.userTaskDurationSelect);
+
+  await t.click(e.option('Idle'));
+  await t.expect(e.reportTable.visible).ok();
+
+  await t.click(e.userTaskDurationSelect);
+
+  await t.click(e.option('Work'));
+  await t.expect(e.reportTable.visible).ok();
 });
 
 test('show process instance count', async t => {

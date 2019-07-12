@@ -35,7 +35,8 @@ export const resetButton = Selector('.resetButton');
 export const goalSwitch = Selector('.Configuration .Popover fieldset')
   .withText('Goal')
   .find('.Switch');
-export const flowNode = id => reportRenderer.find(`[data-element-id="${id}"]`);
+
+export const flowNode = id => Selector(`.BPMNDiagram [data-element-id="${id}"]`);
 export const tooltip = reportRenderer.find('.Tooltip');
 export const targetValueButton = Selector('.toggleButton');
 export const targetValueInput = name =>
@@ -71,3 +72,23 @@ export const variableFilterTypeaheadOption = text =>
 export const variableFilterOperatorButton = text =>
   Selector('.Modal .VariableFilter__buttonRow .Button').withText(text);
 export const variableFilterValueInput = Selector('.Modal .VariableFilter__valueFields input');
+export const collectionsDropdown = Selector(`.CollectionsDropdown`);
+export const createCollectionButton = Selector('.Modal button').withText('Create Collection');
+export const collectionOption = text =>
+  Selector('.CollectionsDropdown.is-open .DropdownOption').withText(text);
+export const limitPrecisionSwitch = Selector('.NumberConfig .Switch:first-child');
+export const selectLabel = text =>
+  Selector('label')
+    .withText(text)
+    .find('.Switch');
+export const showFlowNodes = Selector('.Button').withText('Show Flow Nodes...');
+export const flowNodeStatusSelect = Selector('.NodeStatus .Select');
+export const nodeTableCell = text => Selector('.rt-tbody .rt-td').withText(text);
+export const distributedBySelect = Selector('legend')
+  .withText('Distributed By')
+  .nextSibling();
+export const userTaskDurationSelect = Selector('.UserTaskDurationTime button');
+export const pointMarkersSwitch = Selector('.PointMarkersConfig .Switch');
+export const redColor = Selector('div[color="#DB3E00"]');
+export const axisInputs = label => Selector(`input[placeholder="${label}"]`);
+export const chartGoalInput = Selector('input[placeholder="Goal value"]');
