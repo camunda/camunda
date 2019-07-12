@@ -183,14 +183,29 @@ submitted. Please make sure to address any hints from the bot.
 
 ## License
 
-Most Zeebe source files are made available under the [Apache License, Version
-2.0](/APACHE-2.0) except for the [broker-core](/broker-core) component. The
-[broker-core](/broker-core) source files are made available under the terms of
-the [GNU Affero General Public License (GNU AGPLv3)](/GNU-AGPL-3.0). See
-individual source files for details.
+Zeebe source files are made available under the [Zeebe Community License
+Version 1.0](/licenses/ZEEBE-COMMUNITY-LICENSE-1.0.txt) except for the parts listed
+below, which are made available under the [Apache License, Version
+2.0](/licenses/APACHE-2.0.txt).  See individual source files for details.
+
+Available under the [Apache License, Version 2.0](/licenses/APACHE-2.0.txt):
+- Java Client ([clients/java](/clients/java))
+- Go Client ([clients/go](/clients/go))
+- Exporter API ([exporter-api](/exporter-api))
+- Protocol ([protocol](/protocol))
+- Gateway Protocol Implementation ([gateway-protocol-impl](/gateway-protocol-impl))
+- BPMN Model API ([bpmn-model](/bpmn-model))
 
 If you would like to contribute something, or simply want to hack on the code
 this document should help you get started.
+
+### Sign the Contributor License Agreement
+
+Please make sure you have signed our Contributor License Agreement. We are not
+asking you to assign copyright to us, but to give us the right to distribute
+your code without restriction. We ask this of all contributors in order to
+assure our users of the origin and continuing existence of the code. You only
+need to sign the CLA once.
 
 ## Code of Conduct
 
