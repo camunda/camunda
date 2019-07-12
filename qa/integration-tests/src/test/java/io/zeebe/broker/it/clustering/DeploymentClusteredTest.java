@@ -23,10 +23,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.grpc.Status.Code;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.ClientStatusException;
 import io.zeebe.client.api.response.DeploymentEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
+import io.zeebe.test.util.record.RecordingExporter;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -130,6 +133,36 @@ public class DeploymentClusteredTest {
                   clusteringRule.createWorkflowInstanceOnPartition(partitionId, "process");
               assertWorkflowInstanceCreated(instanceKey);
             });
+  }
+
+  @Test
+  public void shouldCreateMultipleDeployments() {
+    // given
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
+    final BpmnModelInstance workflow2 =
+        Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
+
+    final ZeebeFuture<DeploymentEvent> firstRequestFuture =
+        clientRule
+            .getClient()
+            .newDeployCommand()
+            .addWorkflowModel(workflow, "workflow.bpmn")
+            .send();
+    final ZeebeFuture<DeploymentEvent> secondRequestFuture =
+        clientRule
+            .getClient()
+            .newDeployCommand()
+            .addWorkflowModel(workflow2, "workflow.bpmn")
+            .send();
+
+    // when
+    firstRequestFuture.join();
+    secondRequestFuture.join();
+
+    // then
+    assertThat(RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED).limit(2).count())
+        .isEqualTo(2);
   }
 
   @Test

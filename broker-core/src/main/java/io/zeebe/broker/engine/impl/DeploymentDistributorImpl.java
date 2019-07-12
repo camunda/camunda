@@ -30,10 +30,12 @@ import io.zeebe.engine.processor.workflow.deployment.distribute.PendingDeploymen
 import io.zeebe.engine.state.deployment.DeploymentsState;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.encoding.ErrorResponse;
+import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.nio.ByteOrder;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -95,7 +97,8 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
     final ActorFuture<Void> pushedFuture = new CompletableActorFuture<>();
 
     final PendingDeploymentDistribution pendingDeploymentDistribution =
-        new PendingDeploymentDistribution(buffer, position);
+        new PendingDeploymentDistribution(buffer, position, partitionsToDistributeTo.size());
+
     deploymentsState.putPendingDeployment(key, pendingDeploymentDistribution);
     pendingDeploymentFutures.put(key, pushedFuture);
 
@@ -112,19 +115,17 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
     if (!partitionsToDistributeTo.isEmpty()) {
       deployOnMultiplePartitions(key);
     } else {
-      LOG.trace("No other partitions to distribute deployment.");
-      LOG.trace("Deployment finished.");
+      LOG.trace("No other partitions to distribute deployment {}. Deployment finished", key);
       pendingDeploymentFutures.remove(key).complete(null);
     }
   }
 
   private void deployOnMultiplePartitions(final long key) {
-    LOG.trace("Distribute deployment to other partitions.");
+    LOG.trace("Distribute deployment {} to other partitions.", key);
 
     final PendingDeploymentDistribution pendingDeploymentDistribution =
         deploymentsState.getPendingDeployment(key);
     final DirectBuffer directBuffer = pendingDeploymentDistribution.getDeployment();
-    pendingDeploymentDistribution.setDistributionCount(partitionsToDistributeTo.size());
 
     pushDeploymentRequest.reset();
     pushDeploymentRequest.deployment(directBuffer).deploymentKey(key);
@@ -160,7 +161,7 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
         distributeDeploymentToPartitions(partitionsToDistribute);
 
     if (remainingPartitions.isEmpty()) {
-      LOG.trace("Pushed deployment to all partitions");
+      LOG.trace("Pushed deployment {} to all partitions.", pushDeploymentRequest.deploymentKey());
       return;
     }
 
@@ -187,9 +188,8 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
     pushDeploymentRequest.partitionId(partition);
     final byte[] bytes = pushDeploymentRequest.toBytes();
     final MemberId memberId = new MemberId(Integer.toString(partitionLeaderId));
-    final String topic = getDeploymentResponseTopic(pushDeploymentRequest.deploymentKey());
 
-    createResponseSubscription(partitionLeaderId, partition, topic);
+    createResponseSubscription(pushDeploymentRequest.deploymentKey());
     final CompletableFuture<byte[]> pushDeploymentFuture =
         atomix.getCommunicationService().send("deployment", bytes, memberId, PUSH_REQUEST_TIMEOUT);
 
@@ -204,12 +204,36 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
                         partition,
                         throwable);
                     handleRetry(partitionLeaderId, partition);
+
+                  } else {
+                    final DirectBuffer responseBuffer = new UnsafeBuffer(response);
+                    if (errorResponse.tryWrap(responseBuffer)) {
+                      errorResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
+
+                      if (errorResponse.getErrorCode() == ErrorCode.PARTITION_LEADER_MISMATCH) {
+                        final int responsePartition =
+                            errorResponse.getErrorData().getInt(0, ByteOrder.LITTLE_ENDIAN);
+                        LOG.debug(
+                            "Received partition leader mismatch error from partition {} for deployment {}. Retrying.",
+                            partition,
+                            pushDeploymentRequest.deploymentKey());
+
+                      } else {
+                        LOG.warn(
+                            "Received rejected deployment push due to error of type {}: '{}'",
+                            errorResponse.getErrorCode().name(),
+                            BufferUtil.bufferAsString(errorResponse.getErrorData()));
+                      }
+
+                      handleRetry(partitionLeaderId, partition);
+                    }
                   }
                 }));
   }
 
-  private void createResponseSubscription(
-      final int partitionLeaderId, final int partition, final String topic) {
+  private void createResponseSubscription(final long deploymentKey) {
+    final String topic = getDeploymentResponseTopic(pushDeploymentRequest.deploymentKey());
+
     if (atomix.getEventService().getSubscriptions(topic).isEmpty()) {
       LOG.trace("Setting up deployment subscription for topic {}", topic);
       atomix
@@ -220,13 +244,9 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
                 final CompletableFuture future = new CompletableFuture();
                 actor.call(
                     () -> {
-                      LOG.debug(
-                          "Receiving deployment response on topic {} from partition {}",
-                          topic,
-                          partition);
+                      LOG.debug("Receiving deployment response on topic {}", topic);
 
-                      handleResponse(response, partitionLeaderId, partition, topic);
-
+                      handleResponse(response, deploymentKey, topic);
                       future.complete(null);
                       return future;
                     });
@@ -235,38 +255,28 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
     }
   }
 
-  private void handleResponse(byte[] response, int partitionLeaderId, int partition, String topic) {
+  private void handleResponse(byte[] response, final long deploymentKey, String topic) {
     final DirectBuffer responseBuffer = new UnsafeBuffer(response);
 
     if (pushDeploymentResponse.tryWrap(responseBuffer)) {
       pushDeploymentResponse.wrap(responseBuffer);
       if (handlePushResponse()) {
         final IntArrayList missingResponses = getPartitionResponses(topic);
-        missingResponses.removeInt(partition);
+        missingResponses.removeInt(pushDeploymentResponse.partitionId());
       }
     } else if (errorResponse.tryWrap(responseBuffer)) {
       errorResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
       LOG.warn(
-          "Node {} rejected deployment on partition {} due to error of type {} :'{}'",
-          partitionLeaderId,
-          partition,
+          "Received rejected deployment push due to error of type {}: '{}'",
           errorResponse.getErrorCode().name(),
           BufferUtil.bufferAsString(errorResponse.getErrorData()));
-      handleRetry(partitionLeaderId, partition);
     } else {
-      LOG.warn(
-          "Received unknown deployment response from node {} for partition {}",
-          partitionLeaderId,
-          partition);
-      handleRetry(partitionLeaderId, partition);
+      LOG.warn("Received unknown deployment response on topic {}", topic);
     }
   }
 
   private void handleRetry(int partitionLeaderId, int partition) {
-    LOG.debug(
-        "Retry deployment to push to partition {} after {}ms",
-        partition,
-        PUSH_REQUEST_TIMEOUT.toMillis());
+    LOG.debug("Retry deployment push to partition {} after {}", partition, RETRY_DELAY);
 
     actor.runDelayed(
         RETRY_DELAY,
@@ -290,13 +300,16 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
 
     if (pendingDeploymentExists) {
       final long remainingPartitions = pendingDeploymentDistribution.decrementCount();
+      deploymentsState.putPendingDeployment(deploymentKey, pendingDeploymentDistribution);
+
+      LOG.trace(
+          "Deployment {} was pushed to partition {} successfully.",
+          deploymentKey,
+          pushDeploymentResponse.partitionId());
+
       if (remainingPartitions == 0) {
-        LOG.debug("Deployment pushed to all partitions successfully.");
+        LOG.debug("Deployment {} pushed to all partitions successfully.", deploymentKey);
         pendingDeploymentFutures.remove(deploymentKey).complete(null);
-      } else {
-        LOG.trace(
-            "Deployment was pushed to partition {} successfully.",
-            pushDeploymentResponse.partitionId());
       }
     } else {
       LOG.trace(

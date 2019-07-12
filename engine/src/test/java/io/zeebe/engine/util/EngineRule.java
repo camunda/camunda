@@ -255,7 +255,7 @@ public final class EngineRule extends ExternalResource {
     @Override
     public ActorFuture<Void> pushDeployment(long key, long position, DirectBuffer buffer) {
       final PendingDeploymentDistribution pendingDeployment =
-          new PendingDeploymentDistribution(buffer, position);
+          new PendingDeploymentDistribution(buffer, position, partitionCount);
       pendingDeployments.put(key, pendingDeployment);
 
       forEachPartition(

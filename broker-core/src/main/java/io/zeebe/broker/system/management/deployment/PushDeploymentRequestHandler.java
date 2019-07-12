@@ -110,7 +110,7 @@ public class PushDeploymentRequestHandler
     final String topic = DeploymentDistributorImpl.getDeploymentResponseTopic(deploymentKey);
 
     atomix.getEventService().broadcast(topic, deploymentResponse.toBytes());
-    LOG.trace("Send deployment response on topic {}", topic);
+    LOG.trace("Send deployment response on topic {} for partition {}", topic, partitionId);
   }
 
   private void handleValidRequest(
@@ -153,7 +153,10 @@ public class PushDeploymentRequestHandler
           final boolean success =
               writeCreatingDeployment(partition, deploymentKey, deploymentRecord);
           if (success) {
-            LOG.debug("Deployment CREATE command was written on partition {}", partitionId);
+            LOG.debug(
+                "Deployment CREATE command for deployment {} was written on partition {}",
+                deploymentKey,
+                partitionId);
             actor.done();
 
             sendResponse(responseFuture, deploymentKey, partitionId);

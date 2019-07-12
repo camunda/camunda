@@ -35,7 +35,8 @@ public class DeploymentsState {
   public DeploymentsState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
 
     deploymentKey = new DbLong();
-    pendingDeploymentDistribution = new PendingDeploymentDistribution(new UnsafeBuffer(0, 0), -1);
+    pendingDeploymentDistribution =
+        new PendingDeploymentDistribution(new UnsafeBuffer(0, 0), -1, 0);
     pendingDeploymentColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PENDING_DEPLOYMENT,

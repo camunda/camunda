@@ -27,23 +27,21 @@ import org.agrona.MutableDirectBuffer;
 
 public class PendingDeploymentDistribution implements DbValue {
 
-  private static final int DEPLOYMENT_LENGTH_OFFSET = SIZE_OF_LONG;
+  private static final int DEPLOYMENT_LENGTH_OFFSET = SIZE_OF_LONG + SIZE_OF_INT;
   private static final int DEPLOYMENT_OFFSET = DEPLOYMENT_LENGTH_OFFSET + SIZE_OF_INT;
 
   private final DirectBuffer deployment;
   private long sourcePosition;
-  private long distributionCount;
+  private int distributionCount;
 
-  public PendingDeploymentDistribution(DirectBuffer deployment, long sourcePosition) {
+  public PendingDeploymentDistribution(
+      DirectBuffer deployment, long sourcePosition, int distributionCount) {
     this.deployment = deployment;
     this.sourcePosition = sourcePosition;
-  }
-
-  public void setDistributionCount(long distributionCount) {
     this.distributionCount = distributionCount;
   }
 
-  public long decrementCount() {
+  public int decrementCount() {
     return --distributionCount;
   }
 
@@ -59,6 +57,9 @@ public class PendingDeploymentDistribution implements DbValue {
   public void wrap(DirectBuffer buffer, int offset, int length) {
     this.sourcePosition = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
+
+    this.distributionCount = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
+    offset += Integer.BYTES;
 
     final int deploymentSize = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
@@ -78,6 +79,9 @@ public class PendingDeploymentDistribution implements DbValue {
     final int startOffset = offset;
     buffer.putLong(offset, sourcePosition, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
+
+    buffer.putInt(offset, distributionCount, ZB_DB_BYTE_ORDER);
+    offset += Integer.BYTES;
 
     final int deploymentSize = deployment.capacity();
     buffer.putInt(offset, deploymentSize, ZB_DB_BYTE_ORDER);
