@@ -129,7 +129,7 @@
   }
 
   function checkboxForRecord(record) {
-    switch (record.metadata.valueType) {
+    switch (record.valueType) {
       case 'WORKFLOW_INSTANCE':
         return $('#filter-workflow-instance');
       case 'JOB':
@@ -141,6 +141,7 @@
       case 'MESSAGE':
       case 'MESSAGE_SUBSCRIPTION':
       case 'WORKFLOW_INSTANCE_SUBSCRIPTION':
+      case 'MESSAGE_START_EVENT_SUBSCRIPTION':
         return $('#filter-message');
       case 'DEPLOYMENT':
         return $('#filter-deployment');
@@ -152,27 +153,15 @@
   function preProcessRecords(records) {
     return records.map(r => {
       r._json = JSON.stringify(r, null, 2);
-      r._id = r.metadata.partitionId + '-' + r.position;
-      r._name = normalize(r.metadata.valueType + " " + r.metadata.intent);
-      switch (r.metadata.valueType) {
-          case 'WORKFLOW_INSTANCE':
-          case 'INCIDENT':
-          case 'MESSAGE_SUBSCRIPTION':
-          case 'WORKFLOW_INSTANCE_SUBSCRIPTION':
-            r._bpmnProcessId = r.value.bpmnProcessId;
-            r._elementId = r.value.elementId;
-            r._workflowInstanceKey = r.value.workflowInstanceKey;
-            r._flowScopeKey = r.value.flowScopeKey;
-            r._elementInstanceKey = r.value.elementInstanceKey;
-            break;
-          case 'JOB':
-            r._bpmnProcessId = r.value.headers.bpmnProcessId;
-            r._elementId = r.value.headers.elementId;
-            r._workflowInstanceKey = r.value.headers.workflowInstanceKey;
-            r._flowScopeKey = r.value.headers.flowScopeKey;
-            r._elementInstanceKey = r.value.headers.elementInstanceKey;
-            break;
-      }
+      r._id = r.partitionId + '-' + r.position;
+      r._name = normalize(r.valueType + " - " + r.intent);
+
+      r._bpmnProcessId = r.value.bpmnProcessId;
+      r._elementId = r.value.elementId;
+      r._workflowInstanceKey = r.value.workflowInstanceKey;
+      r._flowScopeKey = r.value.flowScopeKey;
+      r._elementInstanceKey = r.value.elementInstanceKey;
+
       return r;
     });
   }

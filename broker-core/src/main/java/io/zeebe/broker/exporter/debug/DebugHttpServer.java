@@ -18,9 +18,6 @@
 package io.zeebe.broker.exporter.debug;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.base.Charsets;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -63,14 +60,12 @@ public class DebugHttpServer {
   private final int maxSize;
   private HttpServer server;
   private final Map<String, byte[]> resources;
-  private ObjectMapper objectMapper;
   private final LinkedList<String> records;
 
   public DebugHttpServer(int port, int maxSize) {
     this.maxSize = maxSize;
     server = startHttpServer(port);
     resources = loadResources();
-    objectMapper = createObjectMapper();
     records = new LinkedList<>();
   }
 
@@ -113,19 +108,12 @@ public class DebugHttpServer {
     }
   }
 
-  private ObjectMapper createObjectMapper() {
-    final ObjectMapper objectMapper = new ObjectMapper();
-    objectMapper.registerModule(new JavaTimeModule());
-    objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-    return objectMapper;
-  }
-
   public synchronized void add(Record record) throws JsonProcessingException {
     while (records.size() >= maxSize) {
       records.removeLast();
     }
 
-    records.addFirst(objectMapper.writeValueAsString(record));
+    records.addFirst(record.toJson());
   }
 
   class RequestHandler implements HttpHandler {
