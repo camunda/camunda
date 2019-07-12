@@ -239,7 +239,7 @@ public class VariableImportIT extends AbstractImportIT {
 
 
   @Test
-  public void oldVariableUpdatesAreOverwritten() {
+  public void oldVariableUpdatesAreOverwritten() throws Exception {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
@@ -247,7 +247,6 @@ public class VariableImportIT extends AbstractImportIT {
         .serviceTask()
           .camundaExpression("${true}")
           .camundaOutputParameter("stringVar", "foo")
-        .userTask()
       .endEvent()
       .done();
 
@@ -259,6 +258,8 @@ public class VariableImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     engineRule.finishAllRunningUserTasks(instanceDto.getId());
+    engineRule.waitForAllProcessesToFinish();
+
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
