@@ -85,10 +85,10 @@ public abstract class VariableWriter {
     if (addVariablesToProcessInstanceBulkRequest.numberOfActions() != 0) {
       BulkResponse bulkResponse = esClient.bulk(addVariablesToProcessInstanceBulkRequest, RequestOptions.DEFAULT);
       if (bulkResponse.hasFailures()) {
-        logger.warn(
-          "There were failures while writing variables with message: {}",
-          bulkResponse.buildFailureMessage()
+        final String errorMessage = String.format(
+          "There were failures while writing variables with message: %s", bulkResponse.buildFailureMessage()
         );
+        throw new OptimizeRuntimeException(errorMessage);
       }
     }
   }
