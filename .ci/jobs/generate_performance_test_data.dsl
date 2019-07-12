@@ -17,11 +17,10 @@ pipelineJob('generate-performance-test-data') {
 
     parameters {
         stringParam('BRANCH', 'master', 'Branch to use for performance tests.')
-        stringParam('POSTGRES_VERSION', '9.6-alpine', 'Postgres version to use.')
-        stringParam('CAMBPM_VERSION', '7.11.0', 'Camunda BPM version to use.')
+        stringParam('POSTGRES_VERSION', '11.2', 'Postgres version to use.')
+        stringParam('CAMBPM_VERSION', '7.11.1', 'Camunda BPM version to use.')
         choiceParam('SQL_DUMP', ['optimize_large_data-performance.sqlc', 'optimize_large_data-stage.sqlc'])
-        stringParam('NUM_INSTANCES', '100000', 'Number of process instances to generate')
-
+        stringParam('NUM_INSTANCES', '10000000', 'Number of process instances to generate')
     }
 
 }

@@ -2,7 +2,7 @@
 
 
 // general properties for CI execution
-def static NODE_POOL() { return "slaves-ssd-small" }
+def static NODE_POOL() { return "slaves-ssd-stable" }
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
 def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { return "postgres:${postgresVersion}" }
 def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "camunda/camunda-bpm-platform:${cambpmVersion}" }
@@ -22,20 +22,17 @@ spec:
   securityContext:
     fsGroup: 1000
   volumes:
-    - name: cambpm-storage
-      emptyDir: {}
     - name: ssd-storage
       hostPath:
-        path: /mnt/disks/ssd0
+        path: /mnt/disks/array0
         type: Directory
   initContainers:
   - name: init-cleanup
     image: busybox
-    command: ['sh', '-c', 'rm -fr /var/lib/postgresql/data/*; rm -fr /export/*']
+    command: ['sh', '-c', 'rm -fr /ssd-storage/*']
     volumeMounts:
     - name: ssd-storage
-      mountPath: /var/lib/postgresql/data
-      subPath: pgdata
+      mountPath: /ssd-storage
   containers:
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}
@@ -50,14 +47,14 @@ spec:
         value: Europe/Berlin
     resources:
       limits:
-        cpu: 1.5
-        memory: 2Gi
+        cpu: 2
       requests:
-        cpu: 1.5
-        memory: 1Gi
+        cpu: 2
+        memory: 6Gi
     volumeMounts:
-      - name: cambpm-storage
+      - name: ssd-storage
         mountPath: /cambpm-storage
+        subPath: cambpm-storage
       - name: ssd-storage
         mountPath: /export
         subPath: gcloud
@@ -77,9 +74,11 @@ spec:
       name: postgres
       protocol: TCP
     resources:
+      limits:
+        cpu: 12
       requests:
-        cpu: 3 
-        memory: 10Gi
+        cpu: 12
+        memory: 64Gi
     volumeMounts:
         - name: ssd-storage
           mountPath: /var/lib/postgresql/data
@@ -98,19 +97,28 @@ spec:
         value: camunda
       - name: DB_URL
         value: jdbc:postgresql://localhost:5432/engine
+      - name: DB_CONN_MAXACTIVE
+        value: 500
+      - name: DB_CONN_MAXIDLE
+        value: 500
+      - name: DB_CONN_MINIDLE
+        value: 150
       - name: TZ
         value: Europe/Berlin
       - name: WAIT_FOR
         value: localhost:5432
       - name: JAVA_OPTS
-        value: "-Xms2g -Xmx2g -XX:MaxMetaspaceSize=256m"
+        value: "-Xms2g -Xmx2g -XX:MaxMetaspaceSize=256m -XX:+UseConcMarkSweepGC -XX:+CMSParallelRemarkEnabled -XX:+UseCMSInitiatingOccupancyOnly -XX:CMSInitiatingOccupancyFraction=70 -XX:+ScavengeBeforeFullGC -XX:+CMSScavengeBeforeRemark"
     resources:
       limits:
-        cpu: 2 
-        memory: 3Gi
+        cpu: 16 
+      requests:
+        cpu: 16
+        memory: 12Gi
     volumeMounts:
-      - name: cambpm-storage
+      - name: ssd-storage
         mountPath: /camunda/logs
+        subPath: camunda-logs 
   - name: gcloud
     image: google/cloud-sdk:alpine
     imagePullPolicy: Always
@@ -121,8 +129,8 @@ spec:
         cpu: 500m 
         memory: 512Mi
       requests:
-        cpu: 200m
-        memory: 128Mi
+        cpu: 500m 
+        memory: 512Mi 
     volumeMounts:
       - name: ssd-storage
         mountPath: /export
@@ -137,6 +145,7 @@ pipeline {
             cloud 'optimize-ci'
             label "optimize-ci-build_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
             defaultContainer 'jnlp'
+            slaveConnectTimeout 600
             yaml agent(env, POSTGRES_VERSION, CAMBPM_VERSION)
         }
     }
@@ -146,7 +155,7 @@ pipeline {
     }
 
     options {
-        buildDiscarder(logRotator(numToKeepStr: '10'))
+        buildDiscarder(logRotator(daysToKeepStr: '5'))
         timestamps()
         timeout(time: 48, unit: 'HOURS')
     }
