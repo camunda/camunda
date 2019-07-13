@@ -68,8 +68,6 @@ services:
     - 5432:5432
     restart: always
     mem_limit: 4g
-    volumes:
-      - "/mnt/DATA/postgres:/var/lib/postgresql/data"
     healthcheck:
       test: ["CMD-SHELL", "PGPASSWORD=$${POSTGRES_PASSWORD} psql --username=$${POSTGRES_USER} --host=localhost --dbname=$${POSTGRES_DB} --command='\\q'"]
       interval: 30s

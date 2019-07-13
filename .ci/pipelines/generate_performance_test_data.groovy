@@ -71,6 +71,7 @@ spec:
         value: engine
       - name: TZ
         value: Europe/Berlin
+    args: ["-c", "max_connections=200", "-c", "effective_cache_size=4GB", "-c", "shared_buffers=2GB", "-c", "synchronous_commit=off", "-c", "log_statement=none", "-c", "checkpoint_timeout=600", "-c", "max_wal_size=30GB"]
     ports:
     - containerPort: 5432
       name: postgres

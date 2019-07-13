@@ -21,6 +21,8 @@
       <property name="jdbcDriver">org.postgresql.Driver</property>
       <property name="jdbcUsername">camunda</property>
       <property name="jdbcPassword">camunda</property>
+      <property name="jdbcMaxActiveConnections">100</property>
+      <property name="jdbcBatchProcessing">true</property>
       <property name="restrictUserOperationLogToAuthenticatedUsers">false</property>
     </properties>
 
@@ -40,41 +42,6 @@
         <class>org.camunda.connect.plugin.impl.ConnectProcessEnginePlugin</class>
       </plugin>
     </plugins>
-  </process-engine>
-
-  <process-engine name="anotherEngine">
-    <job-acquisition>default</job-acquisition>
-    <configuration>org.camunda.bpm.engine.impl.cfg.StandaloneProcessEngineConfiguration</configuration>
-
-    <properties>
-      <property name="history">full</property>
-      <property name="databaseSchemaUpdate">true</property>
-      <property name="authorizationEnabled">true</property>
-      <property name="jobExecutorDeploymentAware">true</property>
-
-      <property name="jdbcUrl">jdbc:h2:mem:camunda2;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE</property>
-      <property name="jdbcDriver">org.h2.Driver</property>
-      <property name="jdbcUsername">sa</property>
-      <property name="jdbcPassword"></property>
-    </properties>
-
-    <plugins>
-      <!-- plugin enabling Process Application event listener support -->
-      <plugin>
-        <class>org.camunda.bpm.application.impl.event.ProcessApplicationEventListenerPlugin</class>
-      </plugin>
-
-      <!-- plugin enabling integration of camunda Spin -->
-      <plugin>
-        <class>org.camunda.spin.plugin.impl.SpinProcessEnginePlugin</class>
-      </plugin>
-
-      <!-- plugin enabling connect support -->
-      <plugin>
-        <class>org.camunda.connect.plugin.impl.ConnectProcessEnginePlugin</class>
-      </plugin>
-    </plugins>
-
   </process-engine>
 
 </bpm-platform>
