@@ -65,7 +65,7 @@ public class AuthenticationTest {
   
   @Before
   public void setUp() {
-    given(userStorage.getUserByName("demo")).willReturn(new UserEntity().setUsername("demo").setPassword(new BCryptPasswordEncoder().encode("demo")).setRoles("USER"));
+    given(userStorage.getByName("demo")).willReturn(new UserEntity().setUsername("demo").setPassword(new BCryptPasswordEncoder().encode("demo")).setRoles("USER"));
   }
 
   @Test

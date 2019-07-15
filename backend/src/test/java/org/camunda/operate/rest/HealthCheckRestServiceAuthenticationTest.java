@@ -5,6 +5,9 @@
  */
 package org.camunda.operate.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
+
 import org.camunda.operate.entities.UserEntity;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.security.WebSecurityConfig;
@@ -18,11 +21,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
 
 /**
  * Tests the health check with enabled authentication.
@@ -40,10 +41,13 @@ public class HealthCheckRestServiceAuthenticationTest {
   
   @MockBean(name="userStorage")
   UserStorage userStorage;
+  
+  @Autowired
+  PasswordEncoder passwordEncoder;
 
   @Test
   public void testHealthStateEndpointIsSecured() {
-    given(userStorage.getUserByName("demo")).willReturn(new UserEntity().setUsername("demo").setPassword(new BCryptPasswordEncoder().encode("demo")).setRoles("USER"));
+    given(userStorage.getByName("demo")).willReturn(new UserEntity().setUsername("demo").setPassword(passwordEncoder.encode("demo")).setRoles("USER"));
     final ResponseEntity<String> response = testRestTemplate.getForEntity(HealthCheckRestService.HEALTH_CHECK_URL, String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);

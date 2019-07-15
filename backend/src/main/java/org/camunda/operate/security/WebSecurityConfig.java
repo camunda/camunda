@@ -19,7 +19,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.user.ElasticSearchUserDetailsManager;
+import org.camunda.operate.user.ElasticSearchUserDetailsService;
 import org.camunda.operate.user.UserStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -67,11 +67,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     "/swagger-ui.html",
     "/documentation",
     "/webjars/**"
-  };
+  };  
 
   @Bean
   public UserDetailsService userDetailsService() {
-    return ElasticSearchUserDetailsManager.buildWith(passwordEncoder(), operateProperties, userStorage);
+    return new ElasticSearchUserDetailsService(operateProperties, userStorage,passwordEncoder());
   }
 
   @Bean

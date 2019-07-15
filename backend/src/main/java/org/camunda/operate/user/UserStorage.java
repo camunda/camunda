@@ -41,7 +41,7 @@ public class UserStorage extends AbstractReader {
   @Autowired
   private UserTemplate userTemplate;
 
-  public UserEntity getUserByName(String username) {
+  public UserEntity getByName(String username) {
     final SearchRequest searchRequest = new SearchRequest(userTemplate.getAlias())
         .source(new SearchSourceBuilder()
           .query(QueryBuilders.matchQuery(UserTemplate.USERNAME, username)));
@@ -61,7 +61,7 @@ public class UserStorage extends AbstractReader {
       }
   }
 
-  public void createUser(UserEntity user) {
+  public void create(UserEntity user) {
     try {
       IndexRequest request = new IndexRequest(userTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE,user.getId())
           .source(userEntityToJSONString(user), XCONTENT_TYPE)
@@ -72,7 +72,7 @@ public class UserStorage extends AbstractReader {
     }    
   }
 
-  public void saveUser(UserEntity user) {
+  public void save(UserEntity user) {
     try {
       UpdateRequest request = new UpdateRequest(userTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, user.getId())
           .setRefreshPolicy(REFRESH_POLICY)
@@ -83,7 +83,7 @@ public class UserStorage extends AbstractReader {
     }
   }
 
-  public void deleteUserById(String id) {
+  public void deleteById(String id) {
     try {
       DeleteRequest request = new DeleteRequest(userTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE,id)
           .setRefreshPolicy(REFRESH_POLICY); 
@@ -91,17 +91,6 @@ public class UserStorage extends AbstractReader {
     } catch (Throwable t) {
       logger.error("Could not delete user by id {}", id, t);
     }    
-  }
-
-  public boolean usersExists() {
-    try {
-      final SearchRequest request = new SearchRequest(userTemplate.getAlias()).source(new SearchSourceBuilder());
-      final SearchResponse response = esClient.search(request,REQUEST_OPTIONS);
-      return response.getHits().totalHits > 0;
-    } catch (Throwable t) {
-      logger.info("Could not request existing users. ", t);
-      return false;
-    }
   }
  
   protected String userEntityToJSONString(UserEntity aUser) throws JsonProcessingException {
