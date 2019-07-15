@@ -48,6 +48,8 @@ public class ActivateJobsTest extends GatewayTest {
             .addAllFetchVariable(fetchVariables)
             .build();
 
+    stub.addAvailableJobs(jobType, maxJobsToActivate);
+
     // when
     final Iterator<ActivateJobsResponse> responses = client.activateJobs(request);
 
@@ -93,10 +95,16 @@ public class ActivateJobsTest extends GatewayTest {
     final ActivateJobsStub stub = new ActivateJobsStub();
     stub.registerWith(gateway);
 
+    final String type = "test";
+    final int maxJobsToActivate = 2;
     final ActivateJobsRequest request =
-        ActivateJobsRequest.newBuilder().setType("test").setMaxJobsToActivate(2).build();
+        ActivateJobsRequest.newBuilder()
+            .setType(type)
+            .setMaxJobsToActivate(maxJobsToActivate)
+            .build();
 
     for (int partitionOffset = 0; partitionOffset < 3; partitionOffset++) {
+      stub.addAvailableJobs(type, maxJobsToActivate);
       // when
       final Iterator<ActivateJobsResponse> responses = client.activateJobs(request);
 

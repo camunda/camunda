@@ -22,7 +22,7 @@ import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
-import io.zeebe.gateway.impl.job.ActivateJobsHandler;
+import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
@@ -60,12 +60,13 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
-  private final ActivateJobsHandler activateJobsHandler;
+  private final LongPollingActivateJobsHandler activateJobsHandler;
 
-  public EndpointManager(final BrokerClient brokerClient) {
+  public EndpointManager(
+      final BrokerClient brokerClient, LongPollingActivateJobsHandler longPollingHandler) {
     this.brokerClient = brokerClient;
     this.topologyManager = brokerClient.getTopologyManager();
-    this.activateJobsHandler = new ActivateJobsHandler(brokerClient);
+    this.activateJobsHandler = longPollingHandler;
   }
 
   private void addBrokerInfo(Builder brokerInfo, Integer brokerId, BrokerClusterState topology) {
@@ -105,8 +106,7 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
   @Override
   public void activateJobs(
       ActivateJobsRequest request, StreamObserver<ActivateJobsResponse> responseObserver) {
-    final BrokerClusterState topology = topologyManager.getTopology();
-    activateJobsHandler.activateJobs(topology.getPartitionsCount(), request, responseObserver);
+    activateJobsHandler.activateJobs(request, responseObserver);
   }
 
   @Override

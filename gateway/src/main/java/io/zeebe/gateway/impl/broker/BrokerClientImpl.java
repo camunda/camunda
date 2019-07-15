@@ -10,6 +10,7 @@ package io.zeebe.gateway.impl.broker;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
+import io.atomix.cluster.messaging.Subscription;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.gateway.Loggers;
@@ -30,6 +31,7 @@ import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -41,10 +43,12 @@ public class BrokerClientImpl implements BrokerClient {
   protected final ActorScheduler actorScheduler;
   protected final ClientTransport transport;
   protected final BrokerTopologyManagerImpl topologyManager;
+  private final AtomixCluster atomixCluster;
   private final boolean ownsActorScheduler;
   private final Dispatcher dataFrameReceiveBuffer;
   private final BrokerRequestManager requestManager;
   protected boolean isClosed;
+  private Subscription jobAvailableSubscription;
 
   public BrokerClientImpl(final GatewayCfg configuration, final AtomixCluster atomixCluster) {
     this(configuration, atomixCluster, null);
@@ -71,6 +75,7 @@ public class BrokerClientImpl implements BrokerClient {
       final AtomixCluster atomixCluster,
       final ActorScheduler actorScheduler,
       final boolean ownsActorScheduler) {
+    this.atomixCluster = atomixCluster;
     this.actorScheduler = actorScheduler;
     this.ownsActorScheduler = ownsActorScheduler;
 
@@ -148,6 +153,10 @@ public class BrokerClientImpl implements BrokerClient {
     doAndLogException(dataFrameReceiveBuffer::close);
     LOG.debug("data frame receive buffer closed");
 
+    if (jobAvailableSubscription != null) {
+      jobAvailableSubscription.close();
+    }
+
     if (ownsActorScheduler) {
       try {
         actorScheduler.stop().get(15, TimeUnit.SECONDS);
@@ -178,6 +187,20 @@ public class BrokerClientImpl implements BrokerClient {
   @Override
   public BrokerTopologyManager getTopologyManager() {
     return topologyManager;
+  }
+
+  @Override
+  public void subscribeJobAvailableNotification(String topic, Consumer<String> handler) {
+    jobAvailableSubscription =
+        atomixCluster
+            .getEventService()
+            .subscribe(
+                topic,
+                msg -> {
+                  handler.accept((String) msg);
+                  return CompletableFuture.completedFuture(null);
+                })
+            .join();
   }
 
   protected void doAndLogException(final Runnable r) {

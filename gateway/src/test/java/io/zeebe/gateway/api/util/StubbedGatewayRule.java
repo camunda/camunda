@@ -8,16 +8,22 @@
 package io.zeebe.gateway.api.util;
 
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.rules.ExternalResource;
 
 public class StubbedGatewayRule extends ExternalResource {
 
+  private final ActorSchedulerRule actorSchedulerRule;
   protected StubbedGateway gateway;
   protected GatewayBlockingStub client;
 
+  public StubbedGatewayRule(ActorSchedulerRule actorSchedulerRule) {
+    this.actorSchedulerRule = actorSchedulerRule;
+  }
+
   @Override
   protected void before() throws Throwable {
-    gateway = new StubbedGateway();
+    gateway = new StubbedGateway(actorSchedulerRule.get());
     gateway.start();
     client = gateway.buildClient();
   }

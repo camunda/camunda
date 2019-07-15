@@ -43,6 +43,7 @@ import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.FileUtil;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.io.File;
 import java.io.IOException;
@@ -303,9 +304,15 @@ public class ClusteringRule extends ExternalResource {
 
     atomixCluster.start().join();
 
-    final Gateway gateway = new Gateway(gatewayCfg, atomixCluster);
+    final ActorScheduler actorScheduler =
+        ActorScheduler.newActorScheduler().setCpuBoundActorThreadCount(1).build();
+
+    actorScheduler.start();
+
+    final Gateway gateway = new Gateway(gatewayCfg, atomixCluster, actorScheduler);
     closeables.manage(gateway::stop);
     closeables.manage(atomixCluster::stop);
+    closeables.manage(actorScheduler::stop);
     return gateway;
   }
 

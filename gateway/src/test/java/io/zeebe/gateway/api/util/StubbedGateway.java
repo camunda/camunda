@@ -28,6 +28,7 @@ import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,8 +44,14 @@ public class StubbedGateway extends Gateway {
   private Map<Class<?>, RequestHandler> requestHandlers = new HashMap<>();
   private List<BrokerRequest> brokerRequests = new ArrayList<>();
 
-  public StubbedGateway() {
-    super(new GatewayCfg(), cfg -> null, cfg -> InProcessServerBuilder.forName(SERVER_NAME));
+  private StubbedBrokerClient brokerClient;
+
+  public StubbedGateway(ActorScheduler actorScheduler) {
+    super(
+        new GatewayCfg(),
+        cfg -> null,
+        cfg -> InProcessServerBuilder.forName(SERVER_NAME),
+        actorScheduler);
   }
 
   public <RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>>
@@ -60,13 +67,23 @@ public class StubbedGateway extends Gateway {
   }
 
   @Override
+  public StubbedBrokerClient getBrokerClient() {
+    return brokerClient;
+  }
+
+  @Override
   protected BrokerClient buildBrokerClient() {
-    return new StubbedBrokerClient();
+    this.brokerClient = new StubbedBrokerClient();
+    return brokerClient;
   }
 
   public <T extends BrokerRequest<?>> T getSingleBrokerRequest() {
     assertThat(brokerRequests).hasSize(1);
     return (T) brokerRequests.get(0);
+  }
+
+  public void notifyJobsAvailable(String type) {
+    brokerClient.notifyJobAvailable(type);
   }
 
   public interface RequestStub<
@@ -83,6 +100,7 @@ public class StubbedGateway extends Gateway {
   private class StubbedBrokerClient implements BrokerClient {
 
     BrokerTopologyManager topologyManager = new StubbedTopologyManager();
+    private Consumer<String> jobsAvalableHandler;
 
     @Override
     public void close() {}
@@ -119,6 +137,15 @@ public class StubbedGateway extends Gateway {
     @Override
     public BrokerTopologyManager getTopologyManager() {
       return topologyManager;
+    }
+
+    @Override
+    public void subscribeJobAvailableNotification(String topic, Consumer<String> handler) {
+      this.jobsAvalableHandler = handler;
+    }
+
+    public void notifyJobAvailable(String type) {
+      jobsAvalableHandler.accept(type);
     }
   }
 
