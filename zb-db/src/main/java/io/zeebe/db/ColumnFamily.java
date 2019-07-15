@@ -159,6 +159,14 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> 
   boolean exists(KeyType key);
 
   /**
+   * Checks if a key with prefix keyPrefix exists in the column family.
+   *
+   * @param keyPrefix the prefix to look for
+   * @return true if atleast one key exists in this column family with the prefix, false otherwise
+   */
+  boolean existsPrefix(DbKey keyPrefix);
+
+  /**
    * Checks if the column family has any entry.
    *
    * @return <code>true</code> if the column family has no entry

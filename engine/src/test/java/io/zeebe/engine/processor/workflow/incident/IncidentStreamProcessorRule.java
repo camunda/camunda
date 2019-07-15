@@ -87,7 +87,7 @@ public class IncidentStreamProcessorRule extends ExternalResource {
                   mockTimerEventScheduler);
 
           IncidentEventProcessors.addProcessors(typedRecordProcessors, zeebeState, stepProcessor);
-          JobEventProcessors.addJobProcessors(typedRecordProcessors, zeebeState);
+          JobEventProcessors.addJobProcessors(typedRecordProcessors, zeebeState, type -> {});
           return typedRecordProcessors;
         });
   }

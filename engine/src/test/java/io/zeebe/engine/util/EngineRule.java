@@ -74,6 +74,7 @@ public final class EngineRule extends ExternalResource {
 
   private final int partitionCount;
   private final boolean explicitStart;
+  private Consumer<String> jobsAvailableCallback = type -> {};
 
   public static EngineRule singlePartition() {
     return new EngineRule(1);
@@ -117,6 +118,11 @@ public final class EngineRule extends ExternalResource {
     startProcessors();
   }
 
+  public EngineRule withJobsAvailableCallback(Consumer<String> callback) {
+    this.jobsAvailableCallback = callback;
+    return this;
+  }
+
   private void startProcessors() {
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
     final UnsafeBuffer deploymentBuffer = new UnsafeBuffer(new byte[deploymentRecord.getLength()]);
@@ -138,7 +144,8 @@ public final class EngineRule extends ExternalResource {
                           new SubscriptionCommandSender(
                               currentPartitionId, new PartitionCommandSenderImpl()),
                           new DeploymentDistributionImpl(),
-                          (key, partition) -> {})
+                          (key, partition) -> {},
+                          jobsAvailableCallback)
                       .withListener(new ProcessingExporterTransistor()));
         });
   }
