@@ -73,6 +73,7 @@ public class ReportConstants {
 
   // miscellaneous report constants
   public static final String ALL_VERSIONS = "ALL";
+  public static final String LATEST_VERSION = "LATEST";
 
   public static final String FIXED_DATE_FILTER = "fixed";
   public static final String RELATIVE_DATE_FILTER = "relative";

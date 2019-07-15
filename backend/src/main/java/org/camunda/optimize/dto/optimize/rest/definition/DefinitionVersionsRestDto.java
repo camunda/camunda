@@ -10,15 +10,11 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
-
-import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
-public class DefinitionWithTenantsRestDto {
+public class DefinitionVersionsRestDto {
   private String version;
   private String versionTag;
-  private List<TenantRestDto> tenants;
 }

@@ -11,10 +11,10 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenants;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersions;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static java.util.Comparator.naturalOrder;
 
 @AllArgsConstructor
 abstract class AbstractDefinitionService {
@@ -63,15 +65,15 @@ abstract class AbstractDefinitionService {
 
       final String tenantId = process.getTenantId();
       boolean isTenantSpecificDefinition = tenantId != null;
-      final Map<String, TenantDto> tenantsForUserAndDefinitoionByKey =
+      final Map<String, TenantDto> tenantsForUserAndDefinitionByKey =
         getAvailableTenantsForUserAndDefinition(userId, process);
       if (isTenantSpecificDefinition) {
-        final TenantDto tenantDto = tenantsForUserAndDefinitoionByKey.get(tenantId);
+        final TenantDto tenantDto = tenantsForUserAndDefinitionByKey.get(tenantId);
         if (tenantDto != null) {
           byVersionMap.get(version).getTenants().add(tenantDto);
         }
       } else {
-        byVersionMap.get(version).getTenants().addAll(tenantsForUserAndDefinitoionByKey.values());
+        byVersionMap.get(version).getTenants().addAll(tenantsForUserAndDefinitionByKey.values());
       }
     }
     return byKeyMap;
@@ -92,23 +94,30 @@ abstract class AbstractDefinitionService {
     return byKeyMap.entrySet().stream()
       .map(byKeyEntry -> {
         final String definitionName = byKeyEntry.getValue().values().iterator().next().getName();
-        final Set<TenantDto> allVersionsTenants = new HashSet<>();
-        final List<DefinitionWithTenants> versions = byKeyEntry.getValue().values().stream()
-          .map(internalDto -> new DefinitionWithTenants(
-            internalDto.key, internalDto.name, internalDto.version, internalDto.versionTag, new ArrayList<>(internalDto.tenants)
+        final List<DefinitionVersions> versions = byKeyEntry.getValue().values().stream()
+          .map(internalDto -> new DefinitionVersions(
+            internalDto.key, internalDto.name, internalDto.version, internalDto.versionTag
           ))
-          .peek(DefinitionWithTenants::sort)
-          .peek(definitionWithTenants -> allVersionsTenants.addAll(definitionWithTenants.getTenants()))
+          .collect(Collectors.toList());
+        final List<TenantDto> tenants = byKeyEntry.getValue().values().stream()
+          .map(InternalDefinitionWithTenants::getTenants)
+          .flatMap(Collection::stream)
+          .collect(Collectors.toSet())
+          .stream()
+          .sorted(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())))
           .collect(Collectors.toList());
 
-        final DefinitionWithTenants allVersionDefinitionWithTenants = new DefinitionWithTenants(
-          byKeyEntry.getKey(), definitionName, ReportConstants.ALL_VERSIONS, null, new ArrayList<>(allVersionsTenants)
+        final DefinitionVersions latestVersionDefinitionVersion = new DefinitionVersions(
+          byKeyEntry.getKey(), definitionName, ReportConstants.LATEST_VERSION, null
         );
-        allVersionDefinitionWithTenants.sort();
-        versions.add(allVersionDefinitionWithTenants);
+        versions.add(latestVersionDefinitionVersion);
+        final DefinitionVersions allVersionDefinitionVersions = new DefinitionVersions(
+          byKeyEntry.getKey(), definitionName, ReportConstants.ALL_VERSIONS, null
+        );
+        versions.add(allVersionDefinitionVersions);
 
         final DefinitionAvailableVersionsWithTenants definitionVersionsWithTenants =
-          new DefinitionAvailableVersionsWithTenants(byKeyEntry.getKey(), definitionName, versions);
+          new DefinitionAvailableVersionsWithTenants(byKeyEntry.getKey(), definitionName, versions, tenants);
         definitionVersionsWithTenants.sort();
 
         return definitionVersionsWithTenants;

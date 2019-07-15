@@ -38,8 +38,8 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     return new Object[]{RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION};
   }
 
-  public AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(defaultEngineRule);
-  public AuthorizationClient secondAuthorizationClient = new AuthorizationClient(secondEngineRule);
+  private AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(defaultEngineRule);
+  private AuthorizationClient secondAuthorizationClient = new AuthorizationClient(secondEngineRule);
 
   @Test
   public void getAllStoredTenantsGrantedAccessToByAllEngines() {
@@ -180,10 +180,10 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
 
     //then
     Assert.assertThat(definitions.size(), is(1));
-    Assert.assertThat(definitions.get(0).getVersions().size(), is(2));
-    Assert.assertThat(definitions.get(0).getVersions().get(0).getTenants().size(), is(2));
+    Assert.assertThat(definitions.get(0).getVersions().size(), is(3));
+    Assert.assertThat(definitions.get(0).getTenants().size(), is(2));
     Assert.assertThat(
-      definitions.get(0).getVersions().get(0)
+      definitions.get(0)
         .getTenants().stream().map(TenantRestDto::getId).collect(Collectors.toList()),
       containsInAnyOrder(tenantId1, tenantId2)
     );
@@ -214,9 +214,9 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
 
     //then
     Assert.assertThat(definitions.size(), is(1));
-    Assert.assertThat(definitions.get(0).getVersions().size(), is(2));
-    Assert.assertThat(definitions.get(0).getVersions().get(0).getTenants().size(), is(1));
-    Assert.assertThat(definitions.get(0).getVersions().get(0).getTenants().get(0).getId(), is(tenantId1));
+    Assert.assertThat(definitions.get(0).getVersions().size(), is(3));
+    Assert.assertThat(definitions.get(0).getTenants().size(), is(1));
+    Assert.assertThat(definitions.get(0).getTenants().get(0).getId(), is(tenantId1));
   }
 
   private void deployStartAndImportDefinitionsWithSameKeyOnAllEngines(final int definitionResourceType) {

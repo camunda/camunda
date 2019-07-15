@@ -8,8 +8,8 @@ package org.camunda.optimize.rest.mapper;
 import lombok.experimental.UtilityClass;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
 import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
+import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsRestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
-import org.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsRestDto;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,14 +25,14 @@ public class DefinitionVersionsWithTenantsMapper {
         entry.getName(),
         entry.getVersions()
           .stream()
-          .map(definitionWithTenants -> new DefinitionWithTenantsRestDto(
+          .map(definitionWithTenants -> new DefinitionVersionsRestDto(
             definitionWithTenants.getVersion(),
-            definitionWithTenants.getVersionTag(),
-            definitionWithTenants.getTenants()
-              .stream()
-              .map(tenantDto -> new TenantRestDto(tenantDto.getId(), tenantDto.getName()))
-              .collect(Collectors.toList())
+            definitionWithTenants.getVersionTag()
           ))
+          .collect(Collectors.toList()),
+        entry.getTenants()
+          .stream()
+          .map(tenantDto -> new TenantRestDto(tenantDto.getId(), tenantDto.getName()))
           .collect(Collectors.toList())
       ))
       .collect(Collectors.toList());

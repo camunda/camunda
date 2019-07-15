@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
 
 import java.util.List;
 
@@ -22,5 +23,6 @@ public class DefinitionVersionsWithTenantsRestDto {
   private String key;
   private String name;
   @NonNull
-  private List<DefinitionWithTenantsRestDto> versions;
+  private List<DefinitionVersionsRestDto> versions;
+  private List<TenantRestDto> tenants;
 }
