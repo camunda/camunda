@@ -29,7 +29,7 @@ public class DataGeneratorProperties {
 
   private String zeebeElasticsearchPrefix = "zeebe-record";
 
-  private int queueSize = 200;
+  private int queueSize = 50;
 
   public int getWorkflowCount() {
     return workflowCount;
