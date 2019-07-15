@@ -11,7 +11,7 @@
     "react-contenteditable": "^3.2.6",
     "react-dom": "^16.8.6",
     "react-router-dom": "^5.0.1",
-    "react-transition-group": "^4.2.0",
+    "react-transition-group": "^4.2.1",
     "sanitize-html": "^1.20.1",
     "styled-components": "^4.3.2"
   },
