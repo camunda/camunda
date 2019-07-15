@@ -280,16 +280,9 @@ public class EmbeddedBrokerRule extends ExternalResource {
           dataDirectory.listFiles((d, f) -> new File(d, f).isDirectory());
 
       for (final File partitionDirectory : partitionDirectories) {
-        deleteSnapshots(partitionDirectory);
-
         final File stateDirectory = new File(partitionDirectory, STATE_DIRECTORY);
         if (stateDirectory.exists()) {
-          final File[] stateDirs = stateDirectory.listFiles();
-          for (final File processorStateDir : stateDirs) {
-            if (processorStateDir.exists()) {
-              deleteSnapshots(processorStateDir);
-            }
-          }
+          deleteSnapshots(stateDirectory);
         }
       }
     }
