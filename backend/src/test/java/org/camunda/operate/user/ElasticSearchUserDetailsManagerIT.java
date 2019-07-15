@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.operate.TestApplication;
 import org.camunda.operate.property.OperateProperties;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.camunda.operate.util.OperateIntegrationTest;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,7 +22,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {TestApplication.class})
-public class ElasticSearchUserDetailsManagerIT {
+public class ElasticSearchUserDetailsManagerIT extends OperateIntegrationTest {
 
   @Autowired
   OperateProperties operateProperties;
