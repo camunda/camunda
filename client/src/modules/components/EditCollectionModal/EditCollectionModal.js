@@ -32,12 +32,6 @@ export default class EditCollectionModal extends Component {
     this.props.onConfirm(this.state.name);
   };
 
-  handleKeyPress = evt => {
-    if (evt.key === 'Enter') {
-      this.onConfirm();
-    }
-  };
-
   getConfirmButtonText = () => {
     const {name} = this.props.collection;
     if (this.state.loading) {
@@ -49,7 +43,7 @@ export default class EditCollectionModal extends Component {
   render() {
     const {collection, onClose} = this.props;
     return (
-      <Modal open={true} onClose={onClose}>
+      <Modal open onClose={onClose} onConfirm={this.onConfirm}>
         <Modal.Header>
           {collection.name ? 'Edit Collection name' : 'Create new Collection'}
         </Modal.Header>
@@ -63,7 +57,6 @@ export default class EditCollectionModal extends Component {
                 style={{width: '100%'}}
                 value={this.state.name}
                 onChange={({target: {value}}) => this.setState({name: value})}
-                onKeyDown={this.handleKeyPress}
                 disabled={this.state.loading}
                 autoComplete="off"
               />
