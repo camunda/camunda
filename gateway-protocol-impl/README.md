@@ -1,4 +1,4 @@
-# Zeebe Gateway Protocol
+# Zeebe Gateway Protocol Implementation
 
 Zeebe client grpc protobuf protocol.
 

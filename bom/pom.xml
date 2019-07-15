@@ -158,6 +158,12 @@
 
       <dependency>
         <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-gateway-protocol-impl</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
         <artifactId>zeebe-gateway</artifactId>
         <version>${project.version}</version>
       </dependency>
