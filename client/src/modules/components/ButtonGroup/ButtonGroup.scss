@@ -20,25 +20,19 @@
 
   .Button,
   a.Button {
-    flex: 1 0 auto;
+    flex: 1 0 0;
     border-radius: 0;
-    border-right-width: 0;
     position: relative;
 
     &.isActive {
       color: white;
       background-color: $blue;
       border: 1px solid darken($blue, 5%);
-      border-right-width: 0;
       transition: background-color 0.2s, border-color 0.2s;
     }
 
     &:focus {
       z-index: 1;
-    }
-
-    &:hover {
-      border-right-width: 0;
     }
 
     &:first-child {
@@ -49,11 +43,6 @@
     &:last-child {
       border-top-right-radius: 3px;
       border-bottom-right-radius: 3px;
-      border-right-width: 1px;
-
-      &:hover {
-        border-right-width: 1px;
-      }
     }
   }
 }

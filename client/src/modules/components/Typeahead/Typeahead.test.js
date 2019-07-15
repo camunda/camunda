@@ -99,10 +99,10 @@ it('should show the dropdown menu options on input focus', () => {
 });
 
 it('should show a no results message if no values are provided', () => {
-  const node = shallow(<Typeahead values={[]} label="results" />);
+  const node = shallow(<Typeahead values={[]} noValuesMessage="No reports have been created" />);
 
   expect(node.find(Input)).toBeDisabled();
-  expect(node.find(Input)).toHaveValue('No results found');
+  expect(node.find(Input)).toHaveValue('No reports have been created');
 });
 
 it('should show the initial value if provided on mount', () => {

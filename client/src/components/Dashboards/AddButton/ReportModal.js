@@ -14,13 +14,10 @@ import {
   Typeahead,
   LoadingIndicator,
   Labeled,
-  Message,
   Form
 } from 'components';
 
 import {loadEntities} from 'services';
-
-import './ReportModal.scss';
 
 export default class ReportModal extends React.Component {
   state = {
@@ -51,11 +48,7 @@ export default class ReportModal extends React.Component {
     );
   };
 
-  setExternal = external => {
-    this.setState({
-      external: external
-    });
-  };
+  setExternal = external => this.setState({external});
 
   isValid = url => {
     // url has to start with https:// or http://
@@ -91,26 +84,20 @@ export default class ReportModal extends React.Component {
                 Add External Source
               </Button>
             </ButtonGroup>
-            {!loading && noReports && (
-              <Message type="warning">No reports have been created. </Message>
-            )}
             {!external && (
               <Form.Group>
                 {!loading && (
-                  <>
-                    {/* {noReports && <Message type="warning">No reports have been created. </Message>} */}
-                    <Labeled label="Add Report">
-                      <Typeahead
-                        initialValue={selectedReport}
-                        disabled={noReports}
-                        placeholder="Select a Report"
-                        values={availableReports}
-                        onSelect={this.selectReport}
-                        formatter={({name}) => this.truncate(name, 74)}
-                        label="reports"
-                      />
-                    </Labeled>
-                  </>
+                  <Labeled label="Add Report">
+                    <Typeahead
+                      initialValue={selectedReport}
+                      disabled={noReports}
+                      placeholder="Select a Report"
+                      values={availableReports}
+                      onSelect={this.selectReport}
+                      formatter={({name}) => this.truncate(name, 74)}
+                      noValuesMessage="No Reports have been created"
+                    />
+                  </Labeled>
                 )}
                 {loading && <LoadingIndicator />}
               </Form.Group>
