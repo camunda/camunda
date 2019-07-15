@@ -25,15 +25,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
-
-import static java.util.concurrent.CompletableFuture.runAsync;
 
 public abstract class DataGenerator implements Runnable {
 
@@ -77,16 +72,14 @@ public abstract class DataGenerator implements Runnable {
     logger.info("Start {}...", getClass().getSimpleName());
     final BpmnModelInstance instance = retrieveDiagram();
     try {
-      startCorrelatingMessages();
+      createMessageEventCorrelater();
       List<String> processDefinitionIds = engineClient.deployProcesses(instance, nVersions);
       deployAdditionalDiagrams();
       List<Integer> processInstanceSizePerDefinition = createProcessInstanceSizePerDefinition();
       startProcessInstances(processInstanceSizePerDefinition, processDefinitionIds);
-      messageEventCorrelater.correlateMessages();
     } catch (Exception e) {
       logger.error("Error while generating the data", e);
     } finally {
-      stopCorrelatingMessages();
       logger.info("{} finished data generation!", getClass().getSimpleName());
     }
   }
@@ -131,16 +124,8 @@ public abstract class DataGenerator implements Runnable {
     return variables;
   }
 
-  private void startCorrelatingMessages() {
-    messageEventCorrelater =
-      new MessageEventCorrelater(engineClient, getCorrelationNames());
-    messageEventCorrelater.startCorrelatingMessages();
-  }
-
-  private void stopCorrelatingMessages() {
-    if (messageEventCorrelater != null) {
-      messageEventCorrelater.stopCorrelatingMessages();
-    }
+  private void createMessageEventCorrelater() {
+    messageEventCorrelater = new MessageEventCorrelater(engineClient, getCorrelationNames());
   }
 
   protected String[] getCorrelationNames() {
@@ -149,43 +134,35 @@ public abstract class DataGenerator implements Runnable {
 
   private void startProcessInstances(final List<Integer> batchSizes,
                                      final List<String> processDefinitionIds) {
-    final ExecutorService instanceStartExecutorService = Executors.newFixedThreadPool(1);
-    try {
-      for (int ithBatch = 0; ithBatch < batchSizes.size(); ithBatch++) {
-        final String processDefinitionId = processDefinitionIds.get(ithBatch);
-        final UserTaskCompleter userTaskCompleter = new UserTaskCompleter(processDefinitionId, engineClient);
-        userTaskCompleter.startUserTaskCompletion();
-        final CompletableFuture[] startInstanceFutures = IntStream
-          .range(0, batchSizes.get(ithBatch))
-          .mapToObj(taskDto -> runAsync(
-            () -> {
-              final Map<String, Object> variables = createVariablesForProcess();
-              variables.putAll(createSimpleVariables());
-              startProcessInstance(processDefinitionId, variables);
-              incrementStartedInstanceCount();
-            },
-            instanceStartExecutorService
-          ))
-          .toArray(CompletableFuture[]::new);
+    for (int ithBatch = 0; ithBatch < batchSizes.size(); ithBatch++) {
+      final String processDefinitionId = processDefinitionIds.get(ithBatch);
+      final UserTaskCompleter userTaskCompleter = new UserTaskCompleter(processDefinitionId, engineClient);
+      userTaskCompleter.startUserTaskCompletion();
+      IntStream
+        .range(0, batchSizes.get(ithBatch))
+        .forEach(i -> {
+          final Map<String, Object> variables = createVariablesForProcess();
+          variables.putAll(createSimpleVariables());
+          startProcessInstance(processDefinitionId, variables);
+          incrementStartedInstanceCount();
+          if (i % 1000 == 0) {
+            messageEventCorrelater.correlateMessages();
+          }
+        });
 
-        try {
-          CompletableFuture.allOf(startInstanceFutures).get();
-          logger.info("[process-definition-id:{}] Finished batch execution", processDefinitionId);
-        } catch (Exception e) {
-          logger.error("[process-definition-id:{}] Failed awaiting batch execution", processDefinitionId, e);
-        }  finally {
-          logger.info("[process-definition-id:{}] Awaiting user task completion.", processDefinitionId);
-          userTaskCompleter.shutdown();
-          userTaskCompleter.awaitUserTaskCompletion(Integer.MAX_VALUE, TimeUnit.SECONDS);
-          logger.info("[process-definition-id:{}] User tasks completion finished.", processDefinitionId);
-        }
-        if (Thread.currentThread().isInterrupted()) {
-          return;
-        }
+      messageEventCorrelater.correlateMessages();
+      logger.info("[process-definition-id:{}] Finished batch execution", processDefinitionId);
+
+      logger.info("[process-definition-id:{}] Awaiting user task completion.", processDefinitionId);
+      userTaskCompleter.shutdown();
+      userTaskCompleter.awaitUserTaskCompletion(Integer.MAX_VALUE, TimeUnit.SECONDS);
+      logger.info("[process-definition-id:{}] User tasks completion finished.", processDefinitionId);
+
+      if (Thread.currentThread().isInterrupted()) {
+        return;
       }
-    } finally {
-      instanceStartExecutorService.shutdown();
     }
+
   }
 
   private void startProcessInstance(final String procDefId, final Map<String, Object> variables) {

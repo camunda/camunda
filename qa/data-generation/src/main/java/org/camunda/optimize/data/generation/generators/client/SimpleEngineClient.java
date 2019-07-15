@@ -36,8 +36,10 @@ import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.util.mapper.CustomDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomSerializer;
+import org.elasticsearch.common.io.Streams;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
@@ -297,7 +299,6 @@ public class SimpleEngineClient {
     return post;
   }
 
-  @SneakyThrows
   public void correlateMessage(String messageName) {
     HttpPost post = new HttpPost(engineRestEndpoint + "/message/");
     post.setHeader("Content-type", "application/json");
@@ -305,16 +306,21 @@ public class SimpleEngineClient {
     message.setAll(true);
     message.setMessageName(messageName);
     StringEntity content;
-    content = new StringEntity(objectMapper.writeValueAsString(message), Charset.defaultCharset());
-    post.setEntity(content);
-    try (CloseableHttpResponse response = client.execute(post)) {
-      int statusCode = response.getStatusLine().getStatusCode();
-      if (statusCode != 204) {
-        throw new RuntimeException("Warning: response code for correlating message should be 204, got " + statusCode
-                                     + " instead");
+    try {
+      content = new StringEntity(objectMapper.writeValueAsString(message), Charset.defaultCharset());
+      post.setEntity(content);
+      try (CloseableHttpResponse response = client.execute(post)) {
+        int statusCode = response.getStatusLine().getStatusCode();
+        if (statusCode != 204) {
+          log.warn("Response code for correlating message should be 204, got " + statusCode + " instead");
+          final String reponseBody = Streams.copyToString(new InputStreamReader(
+            response.getEntity().getContent(), StandardCharsets.UTF_8
+          ));
+          log.warn("Response body was: " + reponseBody);
+        }
       }
     } catch (Exception e) {
-      log.error("Error while trying to correlate message!", e);
+      log.warn("Error while trying to correlate message for name {}!", messageName);
     }
   }
 
