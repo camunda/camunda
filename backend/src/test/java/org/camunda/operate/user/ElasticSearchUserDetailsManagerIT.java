@@ -21,23 +21,21 @@ import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(
-  classes = {TestApplication.class})
-public class ElasticSearchUserDetailsManagerTest {
+@SpringBootTest(classes = {TestApplication.class})
+public class ElasticSearchUserDetailsManagerIT {
 
   @Autowired
   OperateProperties operateProperties;
   
-  @Autowired 
-  RestHighLevelClient esClient;
-  
+  @Autowired
+  UserStorage userStorage;
   UserDetailsManager userManagerService;
   @Before
   public void setUp() {
     //TODO: Factor passwordEncoder out
     operateProperties.setUsername("test-user");
     operateProperties.setPassword("test-password");
-    userManagerService = ElasticSearchUserDetailsManager.buildWith(new BCryptPasswordEncoder(), operateProperties, esClient);
+    userManagerService = ElasticSearchUserDetailsManager.buildWith(new BCryptPasswordEncoder(), operateProperties, userStorage);
   }
   
   @Test
