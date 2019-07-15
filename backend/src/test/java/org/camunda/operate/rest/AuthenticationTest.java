@@ -9,11 +9,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.camunda.operate.es.schema.templates.UserTemplate;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.UserDto;
 import org.camunda.operate.security.WebSecurityConfig;
-import org.camunda.operate.user.UserStorage;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,7 +38,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-  classes = {OperateProperties.class,TestApplicationWithNoBeans.class, WebSecurityConfig.class, AuthenticationRestService.class,UserStorage.class,UserTemplate.class},
+  classes = {OperateProperties.class,TestApplicationWithNoBeans.class, WebSecurityConfig.class, AuthenticationRestService.class},
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ActiveProfiles("auth")

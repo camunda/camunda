@@ -10,6 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.operate.TestApplication;
 import org.camunda.operate.property.OperateProperties;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,7 +29,7 @@ public class ElasticSearchUserDetailsManagerTest {
   OperateProperties operateProperties;
   
   @Autowired 
-  UserStorage userStorage;
+  RestHighLevelClient esClient;
   
   UserDetailsManager userManagerService;
   @Before
@@ -36,7 +37,7 @@ public class ElasticSearchUserDetailsManagerTest {
     //TODO: Factor passwordEncoder out
     operateProperties.setUsername("test-user");
     operateProperties.setPassword("test-password");
-    userManagerService = ElasticSearchUserDetailsManager.buildWith(new BCryptPasswordEncoder(), operateProperties, userStorage);
+    userManagerService = ElasticSearchUserDetailsManager.buildWith(new BCryptPasswordEncoder(), operateProperties, esClient);
   }
   
   @Test
@@ -44,5 +45,6 @@ public class ElasticSearchUserDetailsManagerTest {
     assertThat(userManagerService.userExists("test-user")).isTrue();
     assertThat(userManagerService.userExists("act")).isTrue();
   }
+  
 
 }

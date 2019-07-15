@@ -5,47 +5,42 @@
  */
 package org.camunda.operate.user;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import org.camunda.operate.entities.UserEntity;
 import org.camunda.operate.property.OperateProperties;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.provisioning.UserDetailsManager;
-import org.springframework.util.Assert;
 
 public class ElasticSearchUserDetailsManager implements UserDetailsManager {
 
   private OperateProperties operateProperties;
-  private UserStorage userStorage;
-
+  private RestHighLevelClient esClient;
+  
+  private UserDetailsManager delegate = new InMemoryUserDetailsManager();
   private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
   
-  public static ElasticSearchUserDetailsManager buildWith(PasswordEncoder passwordEncoder, OperateProperties operateProperties,UserStorage userStorage) {
+  public static ElasticSearchUserDetailsManager buildWith(PasswordEncoder passwordEncoder, OperateProperties operateProperties,RestHighLevelClient esClient) {
     return new ElasticSearchUserDetailsManager()
-        .setUserStorage(userStorage)
+        .setEsClient(esClient)
         .setOperateProperties(operateProperties)
         .setPasswordEncoder(passwordEncoder)
         .build();
   }
   
-  private ElasticSearchUserDetailsManager setUserStorage(UserStorage userStorage) {
-    this.userStorage = userStorage;
-    return this;
-  }
-
   private ElasticSearchUserDetailsManager() {
   }
   
   public ElasticSearchUserDetailsManager setOperateProperties(OperateProperties operateProperties) {
     this.operateProperties = operateProperties;
+    return this;
+  }
+
+  public ElasticSearchUserDetailsManager setEsClient(RestHighLevelClient esClient) {
+    this.esClient = esClient;
     return this;
   }
 
@@ -67,47 +62,32 @@ public class ElasticSearchUserDetailsManager implements UserDetailsManager {
   
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-    UserEntity userEntity = userStorage.getUserByName(username);
-    return new User(userEntity.getUsername(), userEntity.getPassword(),true,
-        true, true,
-        true, toAuthorities(userEntity.getRoles()));
-  }
-
-  private Collection<? extends GrantedAuthority> toAuthorities(String role) {
-    List<GrantedAuthority> authorities = new ArrayList<>();
-    Assert.isTrue(!role.startsWith("ROLE_"), () -> role
-          + " cannot start with ROLE_ (it is automatically added)");
-    authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-    return authorities;
+    return delegate.loadUserByUsername(username);
   }
 
   @Override
   public void createUser(UserDetails user) {
-    userStorage.createUser(UserEntity.fromUserDetails(user));
+    delegate.createUser(user);
   }
 
   @Override
   public void updateUser(UserDetails user) {
-    userStorage.saveUser(UserEntity.fromUserDetails(user));
+    delegate.updateUser(user);
   }
 
   @Override
   public void deleteUser(String username) {
-    userStorage.deleteUserById(userStorage.getUserByName(username).getId());
+    delegate.deleteUser(username);
   }
 
   @Override
   public void changePassword(String oldPassword, String newPassword) {
-    throw new UnsupportedOperationException("Change password is not supported yet.");
+   delegate.changePassword(oldPassword, newPassword);
   }
 
   @Override
   public boolean userExists(String username) {
-    try {
-      return userStorage.getUserByName(username)!=null;
-    }catch(Throwable t) {
-      return false;
-    }
+    return delegate.userExists(username);
   }
 
   public ElasticSearchUserDetailsManager build() {

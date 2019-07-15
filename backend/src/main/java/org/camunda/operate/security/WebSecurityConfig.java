@@ -20,7 +20,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.user.ElasticSearchUserDetailsManager;
-import org.camunda.operate.user.UserStorage;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -58,7 +58,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   private OperateProperties operateProperties;
   
   @Autowired
-  private UserStorage userStorage;
+  private RestHighLevelClient esClient;
+  
   
   private static final String[] AUTH_WHITELIST = {
     // -- swagger ui
@@ -71,7 +72,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
   @Bean
   public UserDetailsService userDetailsService() {
-    return ElasticSearchUserDetailsManager.buildWith(passwordEncoder(), operateProperties, userStorage);
+    return ElasticSearchUserDetailsManager.buildWith(passwordEncoder(), operateProperties, esClient);
   }
 
   @Bean
