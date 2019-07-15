@@ -6,6 +6,8 @@
 
 export const ALL_VERSIONS_OPTION = 'all';
 
+export const DEBOUNCE_DELAY = 1000;
+
 // values that we read from the url and prefill the inputs
 export const DEFAULT_CONTROLLED_VALUES = {
   ids: '',

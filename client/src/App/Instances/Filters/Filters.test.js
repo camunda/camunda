@@ -15,109 +15,23 @@ import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import Filters from './Filters';
 import * as Styled from './styled';
-import {ALL_VERSIONS_OPTION} from './constants';
+import {
+  groupedWorkflowsMock,
+  workflows,
+  mockProps,
+  mockPropsWithSelectableFlowNodes,
+  COMPLETE_FILTER
+} from './Filters.setup';
 
-const COMPLETE_FILTER = {
-  ...DEFAULT_FILTER,
-  ids: 'a, b, c',
-  errorMessage: 'This is an error message',
-  startDate: '08 October 2018',
-  endDate: '10-10-2018',
-  workflow: 'demoProcess',
-  version: '2',
-  activityId: '4'
-};
+import {DEBOUNCE_DELAY, ALL_VERSIONS_OPTION} from './constants';
 
-const groupedWorkflowsMock = [
-  {
-    bpmnProcessId: 'demoProcess',
-    name: 'New demo process',
-    workflows: [
-      {
-        id: '6',
-        name: 'New demo process',
-        version: 3,
-        bpmnProcessId: 'demoProcess'
-      },
-      {
-        id: '4',
-        name: 'Demo process',
-        version: 2,
-        bpmnProcessId: 'demoProcess'
-      },
-      {
-        id: '1',
-        name: 'Demo process',
-        version: 1,
-        bpmnProcessId: 'demoProcess'
-      }
-    ]
-  },
-  {
-    bpmnProcessId: 'orderProcess',
-    name: 'Order',
-    workflows: []
-  }
-];
-
-// transformed groupedWorkflowsMock in an object structure
-const workflows = {
-  demoProcess: {
-    bpmnProcessId: 'demoProcess',
-    name: 'New demo process',
-    workflows: [
-      {
-        id: '6',
-        name: 'New demo process',
-        version: 3,
-        bpmnProcessId: 'demoProcess'
-      },
-      {
-        id: '4',
-        name: 'Demo process',
-        version: 2,
-        bpmnProcessId: 'demoProcess'
-      },
-      {
-        id: '1',
-        name: 'Demo process',
-        version: 1,
-        bpmnProcessId: 'demoProcess'
-      }
-    ]
-  },
-  orderProcess: {
-    bpmnProcessId: 'orderProcess',
-    name: 'Order',
-    workflows: []
-  }
-};
+jest.mock('./constants');
 
 api.fetchGroupedWorkflows = mockResolvedAsyncFn(groupedWorkflowsMock);
 
 describe('Filters', () => {
-  const spy = jest.fn();
-  const resetSpy = jest.fn();
-  const mockProps = {
-    onFilterChange: spy,
-    onFilterReset: resetSpy,
-    filterCount: 1,
-    selectableFlowNodes: []
-  };
-
-  const mockPropsWithSelectableFlowNodes = {
-    onFilterChange: spy,
-    onFilterReset: resetSpy,
-    filterCount: 1,
-    selectableFlowNodes: [
-      {id: 'TaskA', $type: 'bpmn:StartEvent', name: 'task A'},
-      {id: 'TaskB', $type: 'bpmn:EndEvent'}
-    ]
-  };
-
   beforeEach(() => {
-    spy.mockClear();
-    resetSpy.mockClear();
+    jest.clearAllMocks();
   });
 
   it('should render with the right initial state', () => {
@@ -168,7 +82,7 @@ describe('Filters', () => {
   });
 
   describe('errorMessage filter', () => {
-    it('should render an errorMessage field', () => {
+    it('should render an errorMessage field', done => {
       // given
       const node = mount(
         <ThemeProvider>
@@ -184,14 +98,47 @@ describe('Filters', () => {
       const field = node
         .find(Styled.TextInput)
         .filterWhere(n => n.props().name === 'errorMessage');
-      const onBlur = field.props().onBlur;
-      onBlur({target: {value: '', name: 'errorMessage'}});
 
-      // then
-      expect(field.length).toEqual(1);
-      expect(field.prop('placeholder')).toEqual('Error Message');
-      expect(field.prop('value')).toEqual('');
-      expect(spy).toHaveBeenCalledWith({errorMessage: ''});
+      field.simulate('change', {target: {value: '', name: 'errorMessage'}});
+
+      setTimeout(() => {
+        // then
+        expect(field.length).toEqual(1);
+        expect(field.prop('placeholder')).toEqual('Error Message');
+        expect(field.prop('value')).toEqual('');
+        expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+          errorMessage: ''
+        });
+
+        done();
+      }, DEBOUNCE_DELAY * 2);
+    });
+
+    it('should not call onFilterChange before debounce delay', done => {
+      // given
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflows={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
+      );
+      const field = node
+        .find(Styled.TextInput)
+        .filterWhere(n => n.props().name === 'errorMessage');
+
+      field.simulate('change', {target: {value: '', name: 'errorMessage'}});
+
+      setTimeout(() => {
+        // then
+        expect(mockProps.onFilterChange).not.toHaveBeenCalled();
+
+        done();
+      }, DEBOUNCE_DELAY / 2);
     });
 
     // test behaviour here
@@ -261,7 +208,7 @@ describe('Filters', () => {
       });
 
       // then
-      expect(spy).toHaveBeenCalledWith({errorMessage});
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({errorMessage});
     });
 
     it('should call onFilterChange with empty error message', () => {
@@ -282,7 +229,7 @@ describe('Filters', () => {
       });
 
       // then
-      expect(spy).toHaveBeenCalledWith({errorMessage: ''});
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({errorMessage: ''});
     });
   });
 
@@ -314,7 +261,7 @@ describe('Filters', () => {
       expect(field.prop('placeholder')).toEqual(
         'Instance Id(s) separated by space or comma'
       );
-      expect(spy).toHaveBeenCalledWith({ids: ''});
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({ids: ''});
     });
 
     it('should initialize the field with empty value', () => {
@@ -383,7 +330,7 @@ describe('Filters', () => {
         .handleFieldChange({target: {value: instanceIds, name: 'ids'}});
 
       // then
-      expect(spy).toHaveBeenCalledWith({ids: instanceIds});
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({ids: instanceIds});
     });
 
     it('should call onFilterChange with an empty array', () => {
@@ -404,7 +351,7 @@ describe('Filters', () => {
         .handleFieldChange({target: {value: emptyInstanceIds, name: 'ids'}});
 
       // then
-      expect(spy).toHaveBeenCalledWith({
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
         ids: ''
       });
     });
@@ -436,7 +383,7 @@ describe('Filters', () => {
       expect(field.length).toEqual(1);
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Workflow');
-      expect(spy).toHaveBeenCalledWith({
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
         workflow: '',
         activityId: '',
         version: ''
@@ -535,7 +482,7 @@ describe('Filters', () => {
       expect(field.length).toEqual(1);
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Workflow Version');
-      expect(spy).toHaveBeenCalled();
+      expect(mockProps.onFilterChange).toHaveBeenCalled();
     });
 
     it('should render the value from this.props.filter.version', () => {
@@ -587,7 +534,7 @@ describe('Filters', () => {
       expect(field.props().value).toEqual(
         String(groupedWorkflowsMock[0].workflows[0].version)
       );
-      expect(spy.mock.calls[0][0].version).toEqual(
+      expect(mockProps.onFilterChange.mock.calls[0][0].version).toEqual(
         String(groupedWorkflowsMock[0].workflows[0].version)
       );
     });
@@ -665,7 +612,7 @@ describe('Filters', () => {
           .props().value
       ).toEqual(String(groupedWorkflowsMock[0].workflows[0].version));
       // should update the workflow in Instances
-      expect(spy.mock.calls.length).toEqual(1);
+      expect(mockProps.onFilterChange.mock.calls.length).toEqual(1);
     });
 
     it('should reset after a the workflowName field is also reseted ', async () => {
@@ -726,7 +673,7 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(spy).toHaveBeenCalledWith({
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
         workflow: 'demoProcess',
         version: '3',
         activityId: ''
@@ -752,11 +699,11 @@ describe('Filters', () => {
         .handleWorkflowVersionChange({target: {value: ALL_VERSIONS_OPTION}});
 
       // then
-      expect(spy).toHaveBeenCalled();
-      expect(spy.mock.calls[0][0].version).toEqual('3');
-      expect(spy.mock.calls[0][0].activityId).toBe('');
-      expect(spy.mock.calls[1][0].version).toEqual('all');
-      expect(spy.mock.calls[1][0].activityId).toBe('');
+      expect(mockProps.onFilterChange).toHaveBeenCalled();
+      expect(mockProps.onFilterChange.mock.calls[0][0].version).toEqual('3');
+      expect(mockProps.onFilterChange.mock.calls[0][0].activityId).toBe('');
+      expect(mockProps.onFilterChange.mock.calls[1][0].version).toEqual('all');
+      expect(mockProps.onFilterChange.mock.calls[1][0].activityId).toBe('');
     });
   });
 
@@ -787,7 +734,7 @@ describe('Filters', () => {
       expect(field.props().placeholder).toEqual('Flow Node');
       expect(field.props().disabled).toBe(true);
       expect(field.props().options.length).toBe(0);
-      expect(spy).toHaveBeenCalledWith({activityId: ''});
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({activityId: ''});
     });
 
     it('should render the value from this.props.filter.activityId', () => {
@@ -1075,7 +1022,9 @@ describe('Filters', () => {
       expect(field.length).toEqual(1);
       expect(field.props().placeholder).toEqual('Start Date');
       expect(field.props().value).toEqual('');
-      expect(spy).toHaveBeenCalledWith({startDate: '08 October 1084'});
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+        startDate: '08 October 1084'
+      });
     });
 
     it('should be prefilled with the value from props.filter.startDate', async () => {
@@ -1133,8 +1082,10 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(spy).toHaveBeenCalled();
-      expect(spy.mock.calls[0][0].startDate).toBe('25 January 2009');
+      expect(mockProps.onFilterChange).toHaveBeenCalled();
+      expect(mockProps.onFilterChange.mock.calls[0][0].startDate).toBe(
+        '25 January 2009'
+      );
     });
 
     it('should send null values for empty start dates', async () => {
@@ -1153,7 +1104,7 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(spy).toHaveBeenCalledWith({startDate: ''});
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({startDate: ''});
     });
   });
 
@@ -1183,7 +1134,9 @@ describe('Filters', () => {
       expect(field.props().name).toEqual('endDate');
       expect(field.props().placeholder).toEqual('End Date');
       expect(field.props().value).toEqual('');
-      expect(spy).toHaveBeenCalledWith({endDate: '08 October 1984'});
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+        endDate: '08 October 1984'
+      });
     });
 
     it('should be prefilled with the value from props.filter.endDate', async () => {
@@ -1244,8 +1197,10 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(spy).toHaveBeenCalled();
-      expect(spy.mock.calls[0][0].endDate).toBe('25 January 2009');
+      expect(mockProps.onFilterChange).toHaveBeenCalled();
+      expect(mockProps.onFilterChange.mock.calls[0][0].endDate).toBe(
+        '25 January 2009'
+      );
     });
   });
 
@@ -1273,7 +1228,7 @@ describe('Filters', () => {
       expect(ResetButtonNode.text()).toBe('Reset Filters');
       expect(ResetButtonNode).toHaveLength(1);
       expect(ResetButtonNode.prop('disabled')).toBe(false);
-      expect(resetSpy).toHaveBeenCalled();
+      expect(mockProps.onFilterReset).toHaveBeenCalled();
     });
 
     it('should render the disabled reset filters button', () => {
@@ -1349,7 +1304,7 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(resetSpy).toHaveBeenCalled();
+      expect(mockProps.onFilterReset).toHaveBeenCalled();
     });
   });
 });

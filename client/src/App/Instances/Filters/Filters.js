@@ -28,7 +28,11 @@ import {
   getLastVersionOfWorkflow
 } from './service';
 
-import {ALL_VERSIONS_OPTION, DEFAULT_CONTROLLED_VALUES} from './constants';
+import {
+  ALL_VERSIONS_OPTION,
+  DEFAULT_CONTROLLED_VALUES,
+  DEBOUNCE_DELAY
+} from './constants';
 
 export default class Filters extends React.Component {
   static propTypes = {
@@ -71,11 +75,22 @@ export default class Filters extends React.Component {
   };
 
   componentDidUpdate = prevProps => {
-    if (prevProps.filter !== this.props.filter)
+    if (!isEqual(prevProps.filter, this.props.filter)) {
       this.setState({
         filter: {...getFilterWithDefaults(this.props.filter)}
       });
+    }
   };
+
+  componentWillUnmount = () => {
+    this.resetTimer();
+  };
+
+  resetTimer = () => {
+    clearTimeout(this.timer);
+  };
+
+  timer = null;
 
   updateByWorkflowVersion = () => {
     const version = this.state.filter.version;
@@ -124,6 +139,20 @@ export default class Filters extends React.Component {
     }
 
     this.props.onFilterChange({[name]: value});
+  };
+
+  // handles input changes and triggers onFilterChange, when
+  // no input changes were made for a given timeout delay
+  handleInputChangeDebounced = event => {
+    const {value, name} = event.target;
+
+    this.handleInputChange(event);
+
+    this.resetTimer();
+
+    this.timer = setTimeout(() => {
+      this.props.onFilterChange({[name]: value});
+    }, DEBOUNCE_DELAY);
   };
 
   // handler for controlled inputs
@@ -267,8 +296,7 @@ export default class Filters extends React.Component {
                       value={this.state.filter.errorMessage}
                       name="errorMessage"
                       placeholder="Error Message"
-                      onBlur={this.handleFieldChange}
-                      onChange={this.handleInputChange}
+                      onChange={this.handleInputChangeDebounced}
                     />
                   </Styled.Field>
                   <Styled.Field>
