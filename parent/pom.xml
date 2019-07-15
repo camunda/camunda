@@ -24,7 +24,7 @@
     <spotbugs.include>spotbugs/spotbugs-include.xml</spotbugs.include>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>1.0.2</version.agrona>
+    <version.agrona>1.0.3</version.agrona>
     <version.animal-sniffer>1.18</version.animal-sniffer>
     <version.assertj>3.12.2</version.assertj>
     <version.atomix>3.2.0-alpha3</version.atomix>
@@ -54,9 +54,9 @@
     <version.netty>4.1.37.Final</version.netty>
     <version.objenesis>3.0.1</version.objenesis>
     <version.prometheus>0.6.0</version.prometheus>
-    <version.protobuf>3.8.0</version.protobuf>
+    <version.protobuf>3.9.0</version.protobuf>
     <version.rocksdbjni>6.0.1</version.rocksdbjni>
-    <version.sbe>1.12.7</version.sbe>
+    <version.sbe>1.12.8</version.sbe>
     <version.scala-parser>1.1.2</version.scala-parser>
     <version.scala>2.13.0</version.scala>
     <version.slf4j>1.7.26</version.slf4j>
