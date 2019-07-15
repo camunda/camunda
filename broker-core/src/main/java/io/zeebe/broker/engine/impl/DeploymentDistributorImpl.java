@@ -44,7 +44,6 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
   public static final Duration PUSH_REQUEST_TIMEOUT = Duration.ofSeconds(15);
   public static final Duration RETRY_DELAY = Duration.ofMillis(100);
 
-  private final PushDeploymentRequest pushDeploymentRequest = new PushDeploymentRequest();
   private final PushDeploymentResponse pushDeploymentResponse = new PushDeploymentResponse();
 
   private final ErrorResponse errorResponse = new ErrorResponse();
@@ -85,7 +84,6 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
   public ActorFuture<Void> pushDeployment(
       final long key, final long position, final DirectBuffer buffer) {
     final ActorFuture<Void> pushedFuture = new CompletableActorFuture<>();
-
     final PendingDeploymentDistribution pendingDeploymentDistribution =
         new PendingDeploymentDistribution(buffer, position, partitionsToDistributeTo.size());
 
@@ -117,20 +115,21 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
         deploymentsState.getPendingDeployment(key);
     final DirectBuffer directBuffer = pendingDeploymentDistribution.getDeployment();
 
-    pushDeploymentRequest.reset();
-    pushDeploymentRequest.deployment(directBuffer).deploymentKey(key);
+    final PushDeploymentRequest pushRequest =
+        new PushDeploymentRequest().deployment(directBuffer).deploymentKey(key);
 
     final IntArrayList modifiablePartitionsList = new IntArrayList();
     modifiablePartitionsList.addAll(partitionsToDistributeTo);
 
-    prepareToDistribute(modifiablePartitionsList);
+    prepareToDistribute(modifiablePartitionsList, pushRequest);
   }
 
-  private void prepareToDistribute(IntArrayList partitionsToDistributeTo) {
+  private void prepareToDistribute(
+      IntArrayList partitionsToDistributeTo, final PushDeploymentRequest pushRequest) {
     actor.runDelayed(
         PUSH_REQUEST_TIMEOUT,
         () -> {
-          final String topic = getDeploymentResponseTopic(pushDeploymentRequest.deploymentKey());
+          final String topic = getDeploymentResponseTopic(pushRequest.deploymentKey());
           final IntArrayList missingResponses = getPartitionResponses(topic);
 
           if (!missingResponses.isEmpty()) {
@@ -139,26 +138,28 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
                 missingResponses,
                 topic);
 
-            prepareToDistribute(missingResponses);
+            prepareToDistribute(missingResponses, pushRequest);
           }
         });
 
-    distributeDeployment(partitionsToDistributeTo);
+    distributeDeployment(partitionsToDistributeTo, pushRequest);
   }
 
-  private void distributeDeployment(final IntArrayList partitionsToDistribute) {
+  private void distributeDeployment(
+      final IntArrayList partitionsToDistribute, final PushDeploymentRequest pushRequest) {
     final IntArrayList remainingPartitions =
-        distributeDeploymentToPartitions(partitionsToDistribute);
+        distributeDeploymentToPartitions(partitionsToDistribute, pushRequest);
 
     if (remainingPartitions.isEmpty()) {
-      LOG.trace("Pushed deployment {} to all partitions.", pushDeploymentRequest.deploymentKey());
+      LOG.trace("Pushed deployment {} to all partitions.", pushRequest.deploymentKey());
       return;
     }
 
-    actor.runDelayed(RETRY_DELAY, () -> distributeDeployment(remainingPartitions));
+    actor.runDelayed(RETRY_DELAY, () -> distributeDeployment(remainingPartitions, pushRequest));
   }
 
-  private IntArrayList distributeDeploymentToPartitions(final IntArrayList remainingPartitions) {
+  private IntArrayList distributeDeploymentToPartitions(
+      final IntArrayList remainingPartitions, final PushDeploymentRequest pushRequest) {
     final Int2ObjectHashMap<NodeInfo> currentPartitionLeaders =
         partitionListener.getPartitionLeaders();
 
@@ -168,18 +169,19 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
       final NodeInfo leader = currentPartitionLeaders.get(partitionId);
       if (leader != null) {
         iterator.remove();
-        pushDeploymentToPartition(leader.getNodeId(), partitionId);
+        pushDeploymentToPartition(leader.getNodeId(), partitionId, pushRequest);
       }
     }
     return remainingPartitions;
   }
 
-  private void pushDeploymentToPartition(final int partitionLeaderId, final int partition) {
-    pushDeploymentRequest.partitionId(partition);
-    final byte[] bytes = pushDeploymentRequest.toBytes();
+  private void pushDeploymentToPartition(
+      final int partitionLeaderId, final int partition, final PushDeploymentRequest pushRequest) {
+    pushRequest.partitionId(partition);
+    final byte[] bytes = pushRequest.toBytes();
     final MemberId memberId = new MemberId(Integer.toString(partitionLeaderId));
 
-    createResponseSubscription(pushDeploymentRequest.deploymentKey());
+    createResponseSubscription(pushRequest.deploymentKey(), pushRequest);
     final CompletableFuture<byte[]> pushDeploymentFuture =
         atomix.getCommunicationService().send("deployment", bytes, memberId, PUSH_REQUEST_TIMEOUT);
 
@@ -193,7 +195,7 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
                         partitionLeaderId,
                         partition,
                         throwable);
-                    handleRetry(partitionLeaderId, partition);
+                    handleRetry(partitionLeaderId, partition, pushRequest);
 
                   } else {
                     final DirectBuffer responseBuffer = new UnsafeBuffer(response);
@@ -206,7 +208,7 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
                         LOG.debug(
                             "Received partition leader mismatch error from partition {} for deployment {}. Retrying.",
                             partition,
-                            pushDeploymentRequest.deploymentKey());
+                            pushRequest.deploymentKey());
 
                       } else {
                         LOG.warn(
@@ -215,14 +217,15 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
                             BufferUtil.bufferAsString(errorResponse.getErrorData()));
                       }
 
-                      handleRetry(partitionLeaderId, partition);
+                      handleRetry(partitionLeaderId, partition, pushRequest);
                     }
                   }
                 }));
   }
 
-  private void createResponseSubscription(final long deploymentKey) {
-    final String topic = getDeploymentResponseTopic(pushDeploymentRequest.deploymentKey());
+  private void createResponseSubscription(
+      final long deploymentKey, final PushDeploymentRequest pushRequest) {
+    final String topic = getDeploymentResponseTopic(pushRequest.deploymentKey());
 
     if (atomix.getEventService().getSubscriptions(topic).isEmpty()) {
       LOG.trace("Setting up deployment subscription for topic {}", topic);
@@ -265,7 +268,8 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
     }
   }
 
-  private void handleRetry(int partitionLeaderId, int partition) {
+  private void handleRetry(
+      int partitionLeaderId, int partition, final PushDeploymentRequest pushRequest) {
     LOG.debug("Retry deployment push to partition {} after {}", partition, RETRY_DELAY);
 
     actor.runDelayed(
@@ -275,9 +279,9 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
               partitionListener.getPartitionLeaders();
           final NodeInfo currentLeader = partitionLeaders.get(partition);
           if (currentLeader != null) {
-            pushDeploymentToPartition(currentLeader.getNodeId(), partition);
+            pushDeploymentToPartition(currentLeader.getNodeId(), partition, pushRequest);
           } else {
-            pushDeploymentToPartition(partitionLeaderId, partition);
+            pushDeploymentToPartition(partitionLeaderId, partition, pushRequest);
           }
         });
   }
