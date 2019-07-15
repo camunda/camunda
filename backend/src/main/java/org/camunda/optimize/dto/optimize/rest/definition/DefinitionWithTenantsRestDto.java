@@ -19,5 +19,6 @@ import java.util.List;
 @Data
 public class DefinitionWithTenantsRestDto {
   private String version;
+  private String versionTag;
   private List<TenantRestDto> tenants;
 }

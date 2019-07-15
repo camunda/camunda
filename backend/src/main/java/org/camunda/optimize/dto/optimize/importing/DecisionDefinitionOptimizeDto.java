@@ -19,16 +19,18 @@ public class DecisionDefinitionOptimizeDto implements DefinitionOptimizeDto {
   private String id;
   private String key;
   private String version;
+  private String versionTag;
   private String name;
   private String dmn10Xml;
   private String engine;
   private String tenantId;
 
-  public DecisionDefinitionOptimizeDto(final String id, final String key, final String version, final String name,
-                                       final String engine, final String tenantId) {
+  public DecisionDefinitionOptimizeDto(final String id, final String key, final String version, final String versionTag,
+                                       final String name, final String engine, final String tenantId) {
     this.id = id;
     this.key = key;
     this.version = version;
+    this.versionTag = versionTag;
     this.name = name;
     this.engine = engine;
     this.tenantId = tenantId;

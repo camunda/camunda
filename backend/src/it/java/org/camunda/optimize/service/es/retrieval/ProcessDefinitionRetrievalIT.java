@@ -29,6 +29,7 @@ import static org.junit.Assert.assertThat;
 public class ProcessDefinitionRetrievalIT {
 
   private final static String PROCESS_DEFINITION_KEY = "aProcess";
+  private final static String VERSION_TAG = "aVersionTag";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -83,6 +84,8 @@ public class ProcessDefinitionRetrievalIT {
     assertThat(definitions.get(0).getId(), is(processDefinitionId));
     assertThat(definitions.get(0).getKey(), is(processId));
     assertThat(definitions.get(0).getBpmn20Xml(), nullValue());
+    assertThat(definitions.get(0).getVersion(), is("1"));
+    assertThat(definitions.get(0).getVersionTag(), is(VERSION_TAG));
   }
 
   @Test
@@ -265,6 +268,7 @@ public class ProcessDefinitionRetrievalIT {
   private String deploySimpleServiceTaskProcessDefinition(String processId) {
     // @formatter:off
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
+      .camundaVersionTag(VERSION_TAG)
       .startEvent()
       .serviceTask()
         .camundaExpression("${true}")

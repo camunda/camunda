@@ -45,12 +45,12 @@
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-bpmn-model</artifactId>
-      <version>${camunda.engine.version}-ee</version>
+      <version>${camunda.model.version}-ee</version>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-dmn-model</artifactId>
-      <version>${camunda.engine.version}-ee</version>
+      <version>${camunda.model.version}-ee</version>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm</groupId>

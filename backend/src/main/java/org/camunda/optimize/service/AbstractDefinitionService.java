@@ -52,7 +52,13 @@ abstract class AbstractDefinitionService {
       final Map<String, InternalDefinitionWithTenants> byVersionMap = byKeyMap.get(definitionKey);
       byVersionMap.putIfAbsent(
         process.getVersion(),
-        new InternalDefinitionWithTenants(definitionKey, process.getName(), process.getVersion(), new HashSet<>())
+        new InternalDefinitionWithTenants(
+          definitionKey,
+          process.getName(),
+          process.getVersion(),
+          process.getVersionTag(),
+          new HashSet<>()
+        )
       );
 
       final String tenantId = process.getTenantId();
@@ -89,14 +95,14 @@ abstract class AbstractDefinitionService {
         final Set<TenantDto> allVersionsTenants = new HashSet<>();
         final List<DefinitionWithTenants> versions = byKeyEntry.getValue().values().stream()
           .map(internalDto -> new DefinitionWithTenants(
-            internalDto.key, internalDto.name, internalDto.version, new ArrayList<>(internalDto.tenants)
+            internalDto.key, internalDto.name, internalDto.version, internalDto.versionTag, new ArrayList<>(internalDto.tenants)
           ))
           .peek(DefinitionWithTenants::sort)
           .peek(definitionWithTenants -> allVersionsTenants.addAll(definitionWithTenants.getTenants()))
           .collect(Collectors.toList());
 
         final DefinitionWithTenants allVersionDefinitionWithTenants = new DefinitionWithTenants(
-          byKeyEntry.getKey(), definitionName, ReportConstants.ALL_VERSIONS, new ArrayList<>(allVersionsTenants)
+          byKeyEntry.getKey(), definitionName, ReportConstants.ALL_VERSIONS, null, new ArrayList<>(allVersionsTenants)
         );
         allVersionDefinitionWithTenants.sort();
         versions.add(allVersionDefinitionWithTenants);
@@ -118,6 +124,7 @@ abstract class AbstractDefinitionService {
     private String key;
     private String name;
     private String version;
+    private String versionTag;
     // internal dto uses a set to eliminate duplicates
     private Set<TenantDto> tenants;
   }

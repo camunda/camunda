@@ -26,6 +26,7 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <maven.compiler.source>1.8</maven.compiler.source>
     <camunda.engine-7.10>7.10.6</camunda.engine-7.10>
+    <camunda.model.version>7.11.0</camunda.model.version>
 
     <jackson.version>2.9.9</jackson.version>
     <jsonpath.version>2.4.0</jsonpath.version>

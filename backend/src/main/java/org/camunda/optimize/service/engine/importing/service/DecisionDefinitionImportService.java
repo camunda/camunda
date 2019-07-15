@@ -66,15 +66,15 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
   }
 
   private DecisionDefinitionOptimizeDto mapEngineEntityToOptimizeEntity(final DecisionDefinitionEngineDto engineDto) {
-    final DecisionDefinitionOptimizeDto optimizeDto = new DecisionDefinitionOptimizeDto(
+    return new DecisionDefinitionOptimizeDto(
       engineDto.getId(),
       engineDto.getKey(),
       String.valueOf(engineDto.getVersion()),
+      engineDto.getVersionTag(),
       engineDto.getName(),
       engineContext.getEngineAlias(),
       engineDto.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null))
     );
-    return optimizeDto;
   }
 
 }

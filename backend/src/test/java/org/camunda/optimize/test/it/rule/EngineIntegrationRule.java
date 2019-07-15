@@ -98,7 +98,7 @@ public class EngineIntegrationRule extends TestWatcher {
   private static final String COUNT = "count";
   private static final String DEFAULT_PROPERTIES_PATH = "integration-rules.properties";
   private static final CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().build();
-  public static final String DEFAULT_DMN_DEFINITION_PATH = "dmn/invoiceBusinessDecision_withName.xml";
+  public static final String DEFAULT_DMN_DEFINITION_PATH = "dmn/invoiceBusinessDecision_withName_and_versionTag.xml";
 
   private Properties properties;
   private Logger logger = LoggerFactory.getLogger(EngineIntegrationRule.class);

@@ -114,6 +114,7 @@ public abstract class AbstractImportIT {
   protected BpmnModelInstance createSimpleProcessDefinition() {
     // @formatter:off
     return Bpmn.createExecutableProcess("aProcess")
+      .camundaVersionTag("aVersionTag")
       .name("aProcessName")
       .startEvent()
       .serviceTask()

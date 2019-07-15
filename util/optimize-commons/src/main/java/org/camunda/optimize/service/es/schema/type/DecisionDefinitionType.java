@@ -20,6 +20,7 @@ public class DecisionDefinitionType extends StrictTypeMappingCreator {
   public static final String DECISION_DEFINITION_ID = "id";
   public static final String DECISION_DEFINITION_KEY = "key";
   public static final String DECISION_DEFINITION_VERSION = "version";
+  public static final String DECISION_DEFINITION_VERSION_TAG = "versionTag";
   public static final String DECISION_DEFINITION_NAME = "name";
   public static final String DECISION_DEFINITION_XML = "dmn10Xml";
   public static final String ENGINE = "engine";
@@ -46,6 +47,9 @@ public class DecisionDefinitionType extends StrictTypeMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(DECISION_DEFINITION_VERSION)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(DECISION_DEFINITION_VERSION_TAG)
         .field("type", "keyword")
       .endObject()
       .startObject(ENGINE)

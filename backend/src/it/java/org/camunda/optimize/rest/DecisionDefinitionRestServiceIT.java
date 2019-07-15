@@ -42,6 +42,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DecisionDefinitionRestServiceIT {
   private static final String TENANT_NONE_NAME = TenantService.TENANT_NOT_DEFINED.getName();
+  private static final String VERSION_TAG = "aVersionTag";
 
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
@@ -307,6 +308,7 @@ public class DecisionDefinitionRestServiceIT {
     final List<DefinitionWithTenantsRestDto> firstDefinitionVersions = firstDefinition.getVersions();
     assertThat(firstDefinitionVersions.size(), is(4));
     assertThat(firstDefinitionVersions.get(0).getVersion(), is(ALL_VERSIONS));
+    assertThat(firstDefinitionVersions.get(0).getVersionTag(), nullValue());
     final List<TenantRestDto> tenantsAvailableOnFirstDefinition = firstDefinitionVersions.get(0).getTenants();
     assertThat(tenantsAvailableOnFirstDefinition.size(), is(3));
     assertThat(tenantsAvailableOnFirstDefinition.get(0).getId(), is(nullValue()));
@@ -316,10 +318,13 @@ public class DecisionDefinitionRestServiceIT {
     assertThat(tenantsAvailableOnFirstDefinition.get(2).getId(), is(tenantId2));
     assertThat(tenantsAvailableOnFirstDefinition.get(2).getName(), is(tenantName2));
     assertThat(firstDefinitionVersions.get(1).getVersion(), is("2"));
+    assertThat(firstDefinitionVersions.get(1).getVersionTag(), is(VERSION_TAG));
     assertThat(firstDefinitionVersions.get(1).getTenants(), is(tenantsAvailableOnFirstDefinition));
     assertThat(firstDefinitionVersions.get(2).getVersion(), is("1"));
+    assertThat(firstDefinitionVersions.get(2).getVersionTag(), is(VERSION_TAG));
     assertThat(firstDefinitionVersions.get(2).getTenants(), is(tenantsAvailableOnFirstDefinition));
     assertThat(firstDefinitionVersions.get(3).getVersion(), is("0"));
+    assertThat(firstDefinitionVersions.get(3).getVersionTag(), is(VERSION_TAG));
     assertThat(firstDefinitionVersions.get(3).getTenants(), is(tenantsAvailableOnFirstDefinition));
 
     final DefinitionVersionsWithTenantsRestDto secondDefinition = definitions.get(1);
@@ -327,6 +332,7 @@ public class DecisionDefinitionRestServiceIT {
     final List<DefinitionWithTenantsRestDto> secondDefinitionVersions = secondDefinition.getVersions();
     assertThat(secondDefinitionVersions.size(), is(4));
     assertThat(firstDefinitionVersions.get(0).getVersion(), is(ALL_VERSIONS));
+    assertThat(firstDefinitionVersions.get(0).getVersionTag(), nullValue());
     final List<TenantRestDto> tenantsAvailableOnSecondDefinitionVersionAll = secondDefinitionVersions.get(0).getTenants();
     assertThat(tenantsAvailableOnSecondDefinitionVersionAll.size(), is(2));
     assertThat(tenantsAvailableOnSecondDefinitionVersionAll.get(0).getId(), is(tenantId1));
@@ -334,12 +340,15 @@ public class DecisionDefinitionRestServiceIT {
     assertThat(tenantsAvailableOnSecondDefinitionVersionAll.get(1).getId(), is(tenantId2));
     assertThat(tenantsAvailableOnSecondDefinitionVersionAll.get(1).getName(), is(tenantName2));
     assertThat(secondDefinitionVersions.get(2).getVersion(), is("1"));
+    assertThat(secondDefinitionVersions.get(2).getVersionTag(), is(VERSION_TAG));
     assertThat(secondDefinitionVersions.get(1).getVersion(), is("2"));
+    assertThat(secondDefinitionVersions.get(1).getVersionTag(), is(VERSION_TAG));
     final List<TenantRestDto> tenantsAvailableOnSecondDefinitionVersion2 = secondDefinitionVersions.get(1).getTenants();
     assertThat(tenantsAvailableOnSecondDefinitionVersion2.size(), is(1));
     assertThat(tenantsAvailableOnSecondDefinitionVersion2.get(0).getId(), is(tenantId2));
     assertThat(tenantsAvailableOnSecondDefinitionVersion2.get(0).getName(), is(tenantName2));
     assertThat(secondDefinitionVersions.get(2).getVersion(), is("1"));
+    assertThat(secondDefinitionVersions.get(2).getVersionTag(), is(VERSION_TAG));
     final List<TenantRestDto> tenantsAvailableOnSecondDefinitionVersion1 = secondDefinitionVersions.get(2).getTenants();
     assertThat(tenantsAvailableOnSecondDefinitionVersion1.size(), is(2));
     assertThat(tenantsAvailableOnSecondDefinitionVersion1.get(0).getId(), is(tenantId1));
@@ -347,6 +356,7 @@ public class DecisionDefinitionRestServiceIT {
     assertThat(tenantsAvailableOnSecondDefinitionVersion1.get(1).getId(), is(tenantId2));
     assertThat(tenantsAvailableOnSecondDefinitionVersion1.get(1).getName(), is(tenantName2));
     assertThat(secondDefinitionVersions.get(3).getVersion(), is("0"));
+    assertThat(secondDefinitionVersions.get(3).getVersionTag(), is(VERSION_TAG));
     final List<TenantRestDto> tenantsAvailableOnSecondDefinitionVersion0 = secondDefinitionVersions.get(3).getTenants();
     assertThat(tenantsAvailableOnSecondDefinitionVersion0.size(), is(2));
     assertThat(tenantsAvailableOnSecondDefinitionVersion0.get(0).getId(), is(tenantId1));
@@ -388,11 +398,13 @@ public class DecisionDefinitionRestServiceIT {
     assertThat(tenantsAvailableOnVersionAll.get(1).getId(), is(tenantId1));
     assertThat(tenantsAvailableOnVersionAll.get(1).getName(), is(tenantName1));
     assertThat(firstDefinitionVersions.get(1).getVersion(), is("2"));
+    assertThat(firstDefinitionVersions.get(1).getVersionTag(), is(VERSION_TAG));
     final List<TenantRestDto> tenantsAvailableOnVersion2 = firstDefinitionVersions.get(1).getTenants();
     assertThat(tenantsAvailableOnVersion2.size(), is(1));
     assertThat(tenantsAvailableOnVersion2.get(0).getId(), is(tenantId1));
     assertThat(tenantsAvailableOnVersion2.get(0).getName(), is(tenantName1));
     assertThat(firstDefinitionVersions.get(2).getVersion(), is("1"));
+    assertThat(firstDefinitionVersions.get(2).getVersionTag(), is(VERSION_TAG));
     final List<TenantRestDto> tenantsAvailableOnVersion1 = firstDefinitionVersions.get(2).getTenants();
     assertThat(tenantsAvailableOnVersion1.size(), is(2));
     assertThat(tenantsAvailableOnVersion1.get(0).getId(), is(nullValue()));
@@ -400,6 +412,7 @@ public class DecisionDefinitionRestServiceIT {
     assertThat(tenantsAvailableOnVersion1.get(1).getId(), is(tenantId1));
     assertThat(tenantsAvailableOnVersion1.get(1).getName(), is(tenantName1));
     assertThat(firstDefinitionVersions.get(3).getVersion(), is("0"));
+    assertThat(firstDefinitionVersions.get(3).getVersionTag(), is(VERSION_TAG));
     assertThat(firstDefinitionVersions.get(3).getTenants(), is(tenantsAvailableOnVersion1));
   }
 
@@ -551,6 +564,7 @@ public class DecisionDefinitionRestServiceIT {
       .setId("id-" + key + "-version-" + version + "-" + tenantId)
       .setKey(key)
       .setVersion(version)
+      .setVersionTag(VERSION_TAG)
       .setTenantId(tenantId)
       .setEngine(DEFAULT_ENGINE_ALIAS)
       .setDmn10Xml("id-" + key + "-version-" + version + "-" + tenantId);

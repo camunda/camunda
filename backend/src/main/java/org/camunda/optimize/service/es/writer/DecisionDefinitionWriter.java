@@ -28,6 +28,7 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_NAME;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_VERSION;
+import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_VERSION_TAG;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.ENGINE;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.TENANT_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
@@ -39,7 +40,12 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 @Slf4j
 public class DecisionDefinitionWriter {
   private static final Set<String> FIELDS_TO_UPDATE = ImmutableSet.of(
-    DECISION_DEFINITION_KEY, DECISION_DEFINITION_VERSION, DECISION_DEFINITION_NAME, ENGINE, TENANT_ID
+    DECISION_DEFINITION_KEY,
+    DECISION_DEFINITION_VERSION,
+    DECISION_DEFINITION_VERSION_TAG,
+    DECISION_DEFINITION_NAME,
+    ENGINE,
+    TENANT_ID
   );
 
   private final ObjectMapper objectMapper;

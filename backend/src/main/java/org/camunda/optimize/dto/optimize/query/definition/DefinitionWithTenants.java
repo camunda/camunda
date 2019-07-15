@@ -24,6 +24,7 @@ public class DefinitionWithTenants {
   private String key;
   private String name;
   private String version;
+  private String versionTag;
   private List<TenantDto> tenants;
 
   public void sort() {

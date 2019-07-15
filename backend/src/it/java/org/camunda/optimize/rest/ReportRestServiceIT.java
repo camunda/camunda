@@ -46,7 +46,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 public class ReportRestServiceIT {
   private static final String PROCESS_DEFINITION_XML_WITH_NAME = "bpmn/simple_withName.bpmn";
   private static final String PROCESS_DEFINITION_XML_WO_NAME = "bpmn/simple_woName.bpmn";
-  private static final String DECISION_DEFINITION_XML = "dmn/invoiceBusinessDecision_withName.xml";
+  private static final String DECISION_DEFINITION_XML = "dmn/invoiceBusinessDecision_withName_and_versionTag.xml";
   private static final String DECISION_DEFINITION_XML_WO_NAME = "dmn/invoiceBusinessDecision_woName.xml";
   private static final String PROCESS_DEFINITION_KEY = "simple";
   private static final String DECISION_DEFINITION_KEY = "invoiceClassification";

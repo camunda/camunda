@@ -14,6 +14,7 @@ public interface DefinitionOptimizeDto extends Serializable, OptimizeDto {
   String getKey();
   String getName();
   String getVersion();
+  String getVersionTag();
   String getTenantId();
   String getEngine();
 

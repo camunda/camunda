@@ -20,6 +20,7 @@ public class ProcessDefinitionType extends StrictTypeMappingCreator {
   public static final String PROCESS_DEFINITION_ID = "id";
   public static final String PROCESS_DEFINITION_KEY = "key";
   public static final String PROCESS_DEFINITION_VERSION = "version";
+  public static final String PROCESS_DEFINITION_VERSION_TAG = "versionTag";
   public static final String PROCESS_DEFINITION_NAME = "name";
   public static final String PROCESS_DEFINITION_XML = "bpmn20Xml";
   public static final String FLOW_NODE_NAMES = "flowNodeNames";
@@ -48,6 +49,9 @@ public class ProcessDefinitionType extends StrictTypeMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(PROCESS_DEFINITION_VERSION)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(PROCESS_DEFINITION_VERSION_TAG)
         .field("type", "keyword")
       .endObject()
       .startObject(ENGINE)

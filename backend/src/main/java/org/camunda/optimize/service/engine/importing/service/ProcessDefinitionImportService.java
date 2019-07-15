@@ -65,15 +65,15 @@ public class ProcessDefinitionImportService implements ImportService<ProcessDefi
   }
 
   private ProcessDefinitionOptimizeDto mapEngineEntityToOptimizeEntity(ProcessDefinitionEngineDto engineEntity) {
-    final ProcessDefinitionOptimizeDto optimizeDto = new ProcessDefinitionOptimizeDto(
+    return new ProcessDefinitionOptimizeDto(
       engineEntity.getId(),
       engineEntity.getKey(),
       String.valueOf(engineEntity.getVersion()),
+      engineEntity.getVersionTag(),
       engineEntity.getName(),
       engineContext.getEngineAlias(),
       engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null))
     );
-    return optimizeDto;
   }
 
 }

@@ -27,6 +27,7 @@ public class DefinitionVersionsWithTenantsMapper {
           .stream()
           .map(definitionWithTenants -> new DefinitionWithTenantsRestDto(
             definitionWithTenants.getVersion(),
+            definitionWithTenants.getVersionTag(),
             definitionWithTenants.getTenants()
               .stream()
               .map(tenantDto -> new TenantRestDto(tenantDto.getId(), tenantDto.getName()))

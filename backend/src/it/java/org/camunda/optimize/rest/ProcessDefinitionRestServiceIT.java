@@ -8,34 +8,21 @@ package org.camunda.optimize.rest;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsRestDto;
 import org.camunda.optimize.service.TenantService;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
@@ -45,7 +32,6 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -54,31 +40,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 
 public class ProcessDefinitionRestServiceIT {
-  private static final String DIAGRAM = "org/camunda/optimize/service/es/reader/gateway_process.bpmn";
-  private static final String PROCESS_DEFINITION_ID_2 = "procDef2";
-  private static final String PROCESS_DEFINITION_ID = "procDef1";
-  private static final String PROCESS_DEFINITION_KEY = "procDef";
-  private static final String PROCESS_DEFINITION_VERSION_1 = "1";
-  private static final String PROCESS_DEFINITION_VERSION_2 = "2";
-  private static final String END_ACTIVITY = "endActivity";
-  private static final String GATEWAY_ACTIVITY = "gw_1";
-  private static final String PROCESS_INSTANCE_ID = "processInstanceId";
-  private static final String PROCESS_INSTANCE_ID_2 = PROCESS_INSTANCE_ID + "2";
-  private static final String TASK = "task_1";
 
+  private static final String VERSION_TAG = "aVersionTag";
   private static final String KEY = "testKey";
   private static final String TENANT_NONE_NAME = TenantService.TENANT_NOT_DEFINED.getName();
 
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-
-  private ConfigurationService configurationService;
-
-  @Before
-  public void init() {
-    configurationService = embeddedOptimizeRule.getConfigurationService();
-  }
 
   @Rule
   public RuleChain chain = RuleChain
@@ -320,45 +289,6 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   @Test
-  public void getCorrelationWithoutAuthentication() {
-    // when
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildProcessDefinitionCorrelation(new BranchAnalysisQueryDto())
-      .withoutAuthentication()
-      .execute();
-
-    // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
-  }
-
-  @Test
-  public void getCorrelation() throws IOException {
-    //given
-    setupFullInstanceFlow();
-
-    // when
-    BranchAnalysisQueryDto branchAnalysisQueryDto = new BranchAnalysisQueryDto();
-    branchAnalysisQueryDto.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
-    branchAnalysisQueryDto.setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION_1);
-    branchAnalysisQueryDto.setGateway(GATEWAY_ACTIVITY);
-    branchAnalysisQueryDto.setEnd(END_ACTIVITY);
-
-    Response response =
-      embeddedOptimizeRule
-        .getRequestExecutor()
-        .buildProcessDefinitionCorrelation(branchAnalysisQueryDto)
-        .execute();
-
-    // then the status code is okay
-    assertThat(response.getStatus(), is(200));
-    BranchAnalysisDto actual =
-      response.readEntity(BranchAnalysisDto.class);
-    assertThat(actual, is(notNullValue()));
-    assertThat(actual.getTotal(), is(2L));
-  }
-
-  @Test
   public void testGetProcessDefinitionVersionsWithTenants() {
     //given
     final String tenantId1 = "tenant1";
@@ -397,10 +327,13 @@ public class ProcessDefinitionRestServiceIT {
     assertThat(tenantsAvailableOnFirstDefinition.get(2).getId(), is(tenantId2));
     assertThat(tenantsAvailableOnFirstDefinition.get(2).getName(), is(tenantName2));
     assertThat(firstDefinitionVersions.get(1).getVersion(), is("2"));
+    assertThat(firstDefinitionVersions.get(1).getVersionTag(), is(VERSION_TAG));
     assertThat(firstDefinitionVersions.get(1).getTenants(), is(tenantsAvailableOnFirstDefinition));
     assertThat(firstDefinitionVersions.get(2).getVersion(), is("1"));
+    assertThat(firstDefinitionVersions.get(2).getVersionTag(), is(VERSION_TAG));
     assertThat(firstDefinitionVersions.get(2).getTenants(), is(tenantsAvailableOnFirstDefinition));
     assertThat(firstDefinitionVersions.get(3).getVersion(), is("0"));
+    assertThat(firstDefinitionVersions.get(3).getVersionTag(), is(VERSION_TAG));
     assertThat(firstDefinitionVersions.get(3).getTenants(), is(tenantsAvailableOnFirstDefinition));
 
     final DefinitionVersionsWithTenantsRestDto secondDefinition = definitions.get(1);
@@ -408,6 +341,7 @@ public class ProcessDefinitionRestServiceIT {
     final List<DefinitionWithTenantsRestDto> secondDefinitionVersions = secondDefinition.getVersions();
     assertThat(secondDefinitionVersions.size(), is(4));
     assertThat(firstDefinitionVersions.get(0).getVersion(), is(ALL_VERSIONS));
+    assertThat(firstDefinitionVersions.get(0).getVersionTag(), nullValue());
     final List<TenantRestDto> tenantsAvailableOnSecondDefinitionVersionAll = secondDefinitionVersions.get(0)
       .getTenants();
     assertThat(tenantsAvailableOnSecondDefinitionVersionAll.size(), is(2));
@@ -416,12 +350,15 @@ public class ProcessDefinitionRestServiceIT {
     assertThat(tenantsAvailableOnSecondDefinitionVersionAll.get(1).getId(), is(tenantId2));
     assertThat(tenantsAvailableOnSecondDefinitionVersionAll.get(1).getName(), is(tenantName2));
     assertThat(secondDefinitionVersions.get(2).getVersion(), is("1"));
+    assertThat(secondDefinitionVersions.get(2).getVersionTag(), is(VERSION_TAG));
     assertThat(secondDefinitionVersions.get(1).getVersion(), is("2"));
+    assertThat(secondDefinitionVersions.get(1).getVersionTag(), is(VERSION_TAG));
     final List<TenantRestDto> tenantsAvailableOnSecondDefinitionVersion2 = secondDefinitionVersions.get(1).getTenants();
     assertThat(tenantsAvailableOnSecondDefinitionVersion2.size(), is(1));
     assertThat(tenantsAvailableOnSecondDefinitionVersion2.get(0).getId(), is(tenantId2));
     assertThat(tenantsAvailableOnSecondDefinitionVersion2.get(0).getName(), is(tenantName2));
     assertThat(secondDefinitionVersions.get(2).getVersion(), is("1"));
+    assertThat(secondDefinitionVersions.get(2).getVersionTag(), is(VERSION_TAG));
     final List<TenantRestDto> tenantsAvailableOnSecondDefinitionVersion1 = secondDefinitionVersions.get(2).getTenants();
     assertThat(tenantsAvailableOnSecondDefinitionVersion1.size(), is(2));
     assertThat(tenantsAvailableOnSecondDefinitionVersion1.get(0).getId(), is(tenantId1));
@@ -429,6 +366,7 @@ public class ProcessDefinitionRestServiceIT {
     assertThat(tenantsAvailableOnSecondDefinitionVersion1.get(1).getId(), is(tenantId2));
     assertThat(tenantsAvailableOnSecondDefinitionVersion1.get(1).getName(), is(tenantName2));
     assertThat(secondDefinitionVersions.get(3).getVersion(), is("0"));
+    assertThat(secondDefinitionVersions.get(3).getVersionTag(), is(VERSION_TAG));
     final List<TenantRestDto> tenantsAvailableOnSecondDefinitionVersion0 = secondDefinitionVersions.get(3).getTenants();
     assertThat(tenantsAvailableOnSecondDefinitionVersion0.size(), is(2));
     assertThat(tenantsAvailableOnSecondDefinitionVersion0.get(0).getId(), is(tenantId1));
@@ -463,6 +401,7 @@ public class ProcessDefinitionRestServiceIT {
     final List<DefinitionWithTenantsRestDto> firstDefinitionVersions = firstDefinition.getVersions();
     assertThat(firstDefinitionVersions.size(), is(4));
     assertThat(firstDefinitionVersions.get(0).getVersion(), is(ALL_VERSIONS));
+    assertThat(firstDefinitionVersions.get(0).getVersionTag(), nullValue());
     final List<TenantRestDto> tenantsAvailableOnVersionAll = firstDefinitionVersions.get(0).getTenants();
     assertThat(tenantsAvailableOnVersionAll.size(), is(2));
     assertThat(tenantsAvailableOnVersionAll.get(0).getId(), is(nullValue()));
@@ -470,11 +409,13 @@ public class ProcessDefinitionRestServiceIT {
     assertThat(tenantsAvailableOnVersionAll.get(1).getId(), is(tenantId1));
     assertThat(tenantsAvailableOnVersionAll.get(1).getName(), is(tenantName1));
     assertThat(firstDefinitionVersions.get(1).getVersion(), is("2"));
+    assertThat(firstDefinitionVersions.get(1).getVersionTag(), is(VERSION_TAG));
     final List<TenantRestDto> tenantsAvailableOnVersion2 = firstDefinitionVersions.get(1).getTenants();
     assertThat(tenantsAvailableOnVersion2.size(), is(1));
     assertThat(tenantsAvailableOnVersion2.get(0).getId(), is(tenantId1));
     assertThat(tenantsAvailableOnVersion2.get(0).getName(), is(tenantName1));
     assertThat(firstDefinitionVersions.get(2).getVersion(), is("1"));
+    assertThat(firstDefinitionVersions.get(2).getVersionTag(), is(VERSION_TAG));
     final List<TenantRestDto> tenantsAvailableOnVersion1 = firstDefinitionVersions.get(2).getTenants();
     assertThat(tenantsAvailableOnVersion1.size(), is(2));
     assertThat(tenantsAvailableOnVersion1.get(0).getId(), is(nullValue()));
@@ -482,6 +423,7 @@ public class ProcessDefinitionRestServiceIT {
     assertThat(tenantsAvailableOnVersion1.get(1).getId(), is(tenantId1));
     assertThat(tenantsAvailableOnVersion1.get(1).getName(), is(tenantName1));
     assertThat(firstDefinitionVersions.get(3).getVersion(), is("0"));
+    assertThat(firstDefinitionVersions.get(3).getVersionTag(), is(VERSION_TAG));
     assertThat(firstDefinitionVersions.get(3).getTenants(), is(tenantsAvailableOnVersion1));
   }
 
@@ -620,6 +562,7 @@ public class ProcessDefinitionRestServiceIT {
       .setId(key + version + tenantId)
       .setKey(key)
       .setVersion(version)
+      .setVersionTag(VERSION_TAG)
       .setTenantId(tenantId)
       .setEngine(DEFAULT_ENGINE_ALIAS)
       .setBpmn20Xml(key + version + tenantId);
@@ -635,55 +578,5 @@ public class ProcessDefinitionRestServiceIT {
     IntStream.range(0, count).forEach(
       i -> addProcessDefinitionToElasticsearch(key, String.valueOf(i), tenantId)
     );
-  }
-
-  private void setupFullInstanceFlow() throws IOException {
-    final ProcessDefinitionOptimizeDto processDefinitionXmlDto = new ProcessDefinitionOptimizeDto()
-      .setId(PROCESS_DEFINITION_ID)
-      .setKey(PROCESS_DEFINITION_KEY)
-      .setVersion(PROCESS_DEFINITION_VERSION_1)
-      .setEngine(DEFAULT_ENGINE_ALIAS)
-      .setBpmn20Xml(readDiagram(DIAGRAM));
-    elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, PROCESS_DEFINITION_ID, processDefinitionXmlDto);
-
-    processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_2);
-    processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_2);
-    elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
-
-    final ProcessInstanceDto procInst = new ProcessInstanceDto()
-      .setProcessDefinitionId(PROCESS_DEFINITION_ID)
-      .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
-      .setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION_1)
-      .setProcessInstanceId(PROCESS_INSTANCE_ID)
-      .setStartDate(OffsetDateTime.now())
-      .setEndDate(OffsetDateTime.now())
-      .setEvents(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}));
-    elasticSearchRule.addEntryToElasticsearch(PROC_INSTANCE_TYPE, PROCESS_INSTANCE_ID, procInst);
-
-    procInst.setEvents(
-      createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY})
-    );
-    procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
-    elasticSearchRule.addEntryToElasticsearch(PROC_INSTANCE_TYPE, PROCESS_INSTANCE_ID_2, procInst);
-  }
-
-  private List<SimpleEventDto> createEventList(String[] activityIds) {
-    List<SimpleEventDto> events = new ArrayList<>(activityIds.length);
-    for (String activityId : activityIds) {
-      SimpleEventDto event = new SimpleEventDto();
-      event.setActivityId(activityId);
-      events.add(event);
-    }
-    return events;
-  }
-
-  private String readDiagram(String diagramPath) throws IOException {
-    return read(Thread.currentThread().getContextClassLoader().getResourceAsStream(diagramPath));
-  }
-
-  private static String read(InputStream input) throws IOException {
-    try (BufferedReader buffer = new BufferedReader(new InputStreamReader(input))) {
-      return buffer.lines().collect(Collectors.joining("\n"));
-    }
   }
 }

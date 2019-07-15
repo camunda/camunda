@@ -30,6 +30,7 @@ import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_NAME;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_VERSION;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_VERSION_TAG;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.TENANT_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
@@ -38,7 +39,12 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_R
 @Slf4j
 public class ProcessDefinitionWriter {
   private static final Set<String> FIELDS_TO_UPDATE = ImmutableSet.of(
-    PROCESS_DEFINITION_KEY, PROCESS_DEFINITION_VERSION, PROCESS_DEFINITION_NAME, ENGINE, TENANT_ID
+    PROCESS_DEFINITION_KEY,
+    PROCESS_DEFINITION_VERSION,
+    PROCESS_DEFINITION_VERSION_TAG,
+    PROCESS_DEFINITION_NAME,
+    ENGINE,
+    TENANT_ID
   );
 
   private RestHighLevelClient esClient;

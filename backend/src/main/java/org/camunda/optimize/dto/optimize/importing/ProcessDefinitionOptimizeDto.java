@@ -22,6 +22,7 @@ public class ProcessDefinitionOptimizeDto implements DefinitionOptimizeDto {
   private String id;
   private String key;
   private String version;
+  private String versionTag;
   private String name;
   private String engine;
   private String tenantId;
@@ -32,12 +33,14 @@ public class ProcessDefinitionOptimizeDto implements DefinitionOptimizeDto {
   public ProcessDefinitionOptimizeDto(final String id,
                                       final String key,
                                       final String version,
+                                      final String versionTag,
                                       final String name,
                                       final String engine,
                                       final String tenantId) {
     this.id = id;
     this.key = key;
     this.version = version;
+    this.versionTag = versionTag;
     this.name = name;
     this.engine = engine;
     this.tenantId = tenantId;

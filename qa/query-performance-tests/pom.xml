@@ -29,7 +29,7 @@
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-bpmn-model</artifactId>
-      <version>${version.camunda}-ee</version>
+      <version>${camunda.model.version}-ee</version>
       <scope>test</scope>
     </dependency>
 

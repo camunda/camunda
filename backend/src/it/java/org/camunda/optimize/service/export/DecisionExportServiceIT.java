@@ -43,7 +43,7 @@ public class DecisionExportServiceIT {
 
   private static final String START = "aStart";
   private static final String END = "anEnd";
-  public static final String DEFAULT_DMN_DEFINITION_PATH = "dmn/invoiceBusinessDecision_withName.xml";
+  public static final String DEFAULT_DMN_DEFINITION_PATH = "dmn/invoiceBusinessDecision_withName_and_versionTag.xml";
 
   @Parameterized.Parameters(name = "{2}")
   public static Collection<Object[]> data() {
