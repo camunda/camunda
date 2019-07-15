@@ -6,7 +6,17 @@
 
 import React from 'react';
 
-import {Modal, Button, Select, Input, Typeahead, LoadingIndicator, Labeled, Form} from 'components';
+import {
+  Modal,
+  Button,
+  ButtonGroup,
+  Input,
+  Typeahead,
+  LoadingIndicator,
+  Labeled,
+  Message,
+  Form
+} from 'components';
 
 import {loadEntities} from 'services';
 
@@ -17,8 +27,7 @@ export default class ReportModal extends React.Component {
     availableReports: null,
     selectedReportId: '',
     external: false,
-    externalUrl: '',
-    error: false
+    externalUrl: ''
   };
 
   componentDidMount = async () => {
@@ -42,13 +51,9 @@ export default class ReportModal extends React.Component {
     );
   };
 
-  toggleExternal = () => {
-    this.setState(({external}) => {
-      return {
-        external: !external,
-        externalUrl: '',
-        selectedReportId: ''
-      };
+  setExternal = external => {
+    this.setState({
+      external: external
     });
   };
 
@@ -66,6 +71,8 @@ export default class ReportModal extends React.Component {
 
     const isInvalid = external ? isInvalidExternal : !selectedReportId;
 
+    const selectedReport = !loading && availableReports.find(({id}) => selectedReportId === id);
+
     return (
       <Modal
         className="ReportModal"
@@ -76,29 +83,38 @@ export default class ReportModal extends React.Component {
         <Modal.Header>Add a Report</Modal.Header>
         <Modal.Content>
           <Form>
-            <Form.Group>
-              {!loading && !noReports && (
-                <Labeled label="Add Report">
-                  <Typeahead
-                    disabled={noReports || loading || external}
-                    placeholder="Select a Report"
-                    values={availableReports}
-                    onSelect={this.selectReport}
-                    formatter={({name}) => this.truncate(name, 90)}
-                  />
-                </Labeled>
-              )}
-              {loading ? (
-                <LoadingIndicator />
-              ) : noReports ? (
-                <p className="muted">No reports created yet</p>
-              ) : (
-                ''
-              )}
-            </Form.Group>
-            <p className="externalSourceLink" onClick={this.toggleExternal}>
-              {external ? '- Add Optimize Report' : '+ Add External Source'}
-            </p>
+            <ButtonGroup>
+              <Button onClick={() => this.setExternal(false)} active={!external}>
+                Select Report
+              </Button>
+              <Button onClick={() => this.setExternal(true)} active={external}>
+                Add External Source
+              </Button>
+            </ButtonGroup>
+            {!loading && noReports && (
+              <Message type="warning">No reports have been created. </Message>
+            )}
+            {!external && (
+              <Form.Group>
+                {!loading && (
+                  <>
+                    {/* {noReports && <Message type="warning">No reports have been created. </Message>} */}
+                    <Labeled label="Add Report">
+                      <Typeahead
+                        initialValue={selectedReport}
+                        disabled={noReports}
+                        placeholder="Select a Report"
+                        values={availableReports}
+                        onSelect={this.selectReport}
+                        formatter={({name}) => this.truncate(name, 74)}
+                        label="reports"
+                      />
+                    </Labeled>
+                  </>
+                )}
+                {loading && <LoadingIndicator />}
+              </Form.Group>
+            )}
             {external && (
               <Form.Group>
                 <Labeled label="External URL">
@@ -130,17 +146,5 @@ export default class ReportModal extends React.Component {
 
   truncate = (str, index) => {
     return str.length > index ? str.substr(0, index - 1) + '\u2026' : str;
-  };
-
-  renderPleaseSelectOption = hasReports => {
-    if (hasReports) {
-      return (
-        <Select.Option defaultValue value="">
-          Select...
-        </Select.Option>
-      );
-    } else {
-      return '';
-    }
   };
 }

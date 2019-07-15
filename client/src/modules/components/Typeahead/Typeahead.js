@@ -239,7 +239,7 @@ export default class Typeahead extends React.Component {
       <div ref={this.containerRef} className={classnames('Typeahead', this.props.className)}>
         <Input
           className={classnames({isInvalid: this.props.isInvalid})}
-          value={hasNoValues ? 'No results found' : query}
+          value={hasNoValues ? `No ${this.props.label} found` : query}
           onChange={this.updateQuery}
           onClick={this.showOptions}
           onFocus={this.showOptions}

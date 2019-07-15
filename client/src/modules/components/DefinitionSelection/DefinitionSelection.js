@@ -161,6 +161,7 @@ export default class DefinitionSelection extends React.Component {
                   values={availableDefinitions}
                   onSelect={this.changeKey}
                   formatter={({name, key}) => name || key}
+                  label="defintions"
                 />
               </Labeled>
               <Labeled label="Version" className="entry">

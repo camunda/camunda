@@ -67,20 +67,17 @@ it('should call the callback when adding a report', () => {
     selectedReportId: 'a'
   });
 
-  node
-    .find(Button)
-    .at(1)
-    .simulate('click');
+  node.find({variant: 'primary'}).simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
     id: 'a'
   });
 });
 
-it('should show only "No reports created yet" option if no reports are available', async () => {
+it('should disable typeahead if no reports created yet', async () => {
   const node = await shallow(<ReportModal />);
 
-  expect(node.find('p').at(0)).toIncludeText('No reports created yet');
+  expect(node.find('Typeahead')).toBeDisabled();
 });
 
 it('should show a loading message while loading available reports', () => {
@@ -113,7 +110,15 @@ it("should truncate report name if it's longer than 90 signs", () => {
 it('should contain an Add External Source field', () => {
   const node = shallow(<ReportModal />);
 
-  expect(node.find('.externalSourceLink')).toIncludeText('Add External Source');
+  expect(node.find(Button).at(1)).toIncludeText('Add External Source');
+});
+
+it('should hide the typeahead when external mode is enabled', () => {
+  const node = shallow(<ReportModal />);
+
+  node.setState({external: true});
+
+  expect(node.find('Typeahead')).not.toExist();
 });
 
 it('should contain a text input field if in external source mode', () => {
@@ -129,13 +134,5 @@ it('should  disable the submit button if the url does not start with http in ext
 
   node.setState({external: true, externalUrl: 'Dear computer, please show me a report. Thanks.'});
 
-  expect(node.find(Button).at(1)).toBeDisabled();
-});
-
-it('should disable the typeahead when external mode is enabled', () => {
-  const node = shallow(<ReportModal />);
-
-  node.setState({external: true, availableReports: [{name: 'test name'}]});
-
-  expect(node.find('Typeahead')).toBeDisabled();
+  expect(node.find({variant: 'primary'})).toBeDisabled();
 });

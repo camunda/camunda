@@ -252,6 +252,7 @@ export default function AlertModal(reports) {
                     values={reports}
                     onSelect={this.updateReport}
                     formatter={({name}) => name}
+                    label="number reports"
                   />
                 </Labeled>
                 <InfoMessage>Alerts only available for reports visualised as numbers</InfoMessage>

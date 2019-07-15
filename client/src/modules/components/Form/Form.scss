@@ -56,6 +56,14 @@
       font-size: 0.875em;
     }
 
+    .ButtonGroup {
+      padding-bottom: 10px;
+    }
+
+    .Message {
+      margin-bottom: 10px;
+    }
+
     .FormGroup {
       &:not(.noSpacing) {
         padding: 17px 0;

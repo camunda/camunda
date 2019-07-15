@@ -99,7 +99,7 @@ it('should show the dropdown menu options on input focus', () => {
 });
 
 it('should show a no results message if no values are provided', () => {
-  const node = shallow(<Typeahead values={[]} />);
+  const node = shallow(<Typeahead values={[]} label="results" />);
 
   expect(node.find(Input)).toBeDisabled();
   expect(node.find(Input)).toHaveValue('No results found');
