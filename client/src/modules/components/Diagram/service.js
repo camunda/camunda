@@ -6,6 +6,7 @@
 
 import {Colors, themeStyle} from 'modules/theme';
 import {POPOVER_SIDE} from 'modules/constants';
+import {isFlowNode} from 'modules/utils/flowNodes';
 
 const POPOVER_TO_FLOWNODE_SPACE = 16;
 
@@ -121,4 +122,12 @@ export function getPopoverPostion(
     left: flowNodeBBox.width / 2,
     side: POPOVER_SIDE.BOTTOM_MIRROR
   };
+}
+
+export function isNonSelectableFlowNode(element, selectableFlowNodes) {
+  return (
+    !selectableFlowNodes.includes(element.id) &&
+    element.type !== 'label' &&
+    isFlowNode(element)
+  );
 }

@@ -13,14 +13,16 @@ import {themed} from 'modules/theme';
 
 import {STATE} from 'modules/constants';
 
-import {isFlowNode} from 'modules/utils/flowNodes';
-
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
 import StateOverlay from './StateOverlay';
 import StatisticOverlay from './StatisticOverlay';
 import PopoverOverlay from './PopoverOverlay';
-import {getDiagramColors, getPopoverPostion} from './service';
+import {
+  getDiagramColors,
+  getPopoverPostion,
+  isNonSelectableFlowNode
+} from './service';
 
 class Diagram extends React.PureComponent {
   static propTypes = {
@@ -201,12 +203,7 @@ class Diagram extends React.PureComponent {
     const elementRegistry = this.Viewer.get('elementRegistry');
 
     elementRegistry.forEach(element => {
-      const isNonSelectableFlowNode =
-        !this.props.selectableFlowNodes.includes(element.id) &&
-        element.type !== 'label' &&
-        isFlowNode(element);
-
-      if (isNonSelectableFlowNode) {
+      if (isNonSelectableFlowNode(element, this.props.selectableFlowNodes)) {
         const gfx = elementRegistry.getGraphics(element);
         gfx.style.cursor = 'not-allowed';
       }
@@ -226,9 +223,15 @@ class Diagram extends React.PureComponent {
   };
 
   handleElementClick = ({element = {}}) => {
-    const {selectedFlowNodeId} = this.props;
+    const {selectedFlowNodeId, selectableFlowNodes} = this.props;
+
+    if (isNonSelectableFlowNode(element, selectableFlowNodes)) {
+      // Don't handle click if flow node is not selectable.
+      return;
+    }
+
     const isSelectableElement =
-      this.props.selectableFlowNodes.filter(id => id === element.id).length > 0;
+      selectableFlowNodes.filter(id => id === element.id).length > 0;
 
     // Only select the flownode if it's selectable and if it's not already selected.
     if (isSelectableElement && element.id !== selectedFlowNodeId) {
