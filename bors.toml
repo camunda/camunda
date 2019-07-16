@@ -5,3 +5,5 @@ status = [
 required_approvals = 1
 
 delete_merged_branches = true
+
+cut_body_after = "# Pull Request Checklist"
