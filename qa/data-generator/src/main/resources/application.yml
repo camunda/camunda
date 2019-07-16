@@ -6,4 +6,4 @@ camunda.operate.qa.data:
   zeebeBrokerContactPoint: localhost:26500
   elasticsearchHost: localhost
   elasticsearchPort: 9200
-  queueSize: 100
+  queueSize: 150
