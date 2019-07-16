@@ -23,29 +23,18 @@ import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.client.impl.command.CompleteJobCommandImpl;
 import io.zeebe.client.impl.command.FailJobCommandImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
-import io.zeebe.util.CloseableSilently;
-import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class JobClientImpl implements JobClient {
 
   private final GatewayStub asyncStub;
   private final ZeebeClientConfiguration config;
   private final ZeebeObjectMapper objectMapper;
-  private final ScheduledExecutorService executorService;
-  private final List<CloseableSilently> closeables;
 
   public JobClientImpl(
-      GatewayStub asyncStub,
-      ZeebeClientConfiguration config,
-      ZeebeObjectMapper objectMapper,
-      ScheduledExecutorService executorService,
-      List<CloseableSilently> closeables) {
+      GatewayStub asyncStub, ZeebeClientConfiguration config, ZeebeObjectMapper objectMapper) {
     this.asyncStub = asyncStub;
     this.config = config;
     this.objectMapper = objectMapper;
-    this.executorService = executorService;
-    this.closeables = closeables;
   }
 
   @Override

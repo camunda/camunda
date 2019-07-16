@@ -8,7 +8,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.20.0-SNAPSHOT</version>
+    <version>0.21.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -46,81 +46,5 @@
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <dependency>
-      <groupId>org.openjdk.jmh</groupId>
-      <artifactId>jmh-core</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
-
-  <profiles>
-    <profile>
-      <id>jmh</id>
-
-      <dependencies>
-        <dependency>
-          <groupId>org.openjdk.jmh</groupId>
-          <artifactId>jmh-generator-annprocess</artifactId>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>package-jmh-jar</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>single</goal>
-                </goals>
-                <configuration>
-                  <attach>true</attach>
-                  <archive>
-                    <manifest>
-                      <mainClass>org.openjdk.jmh.Main</mainClass>
-                    </manifest>
-                  </archive>
-                  <descriptor>src/test/jmh/assembly.xml</descriptor>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>run-jmh-test</id>
-                <phase>integration-test</phase>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <configuration>
-                  <classpathScope>test</classpathScope>
-                  <executable>java</executable>
-                  <arguments>
-                    <argument>-classpath</argument>
-                    <classpath />
-                    <argument>org.openjdk.jmh.Main</argument>
-                    <argument>.*</argument>
-                    <argument>-rf</argument>
-                    <argument>json</argument>
-                    <argument>-rff</argument>
-                    <argument>target/jmh-result.json</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
-
 </project>

@@ -51,8 +51,24 @@ code-of-conduct@zeebe.io.
 
 ## License
 
-Most Zeebe source files are made available under the [Apache License, Version
-2.0](/APACHE-2.0) except for the [broker-core](/broker-core) component. The
-[broker-core](/broker-core) source files are made available under the terms of
-the [GNU Affero General Public License (GNU AGPLv3)](/GNU-AGPL-3.0). See
-individual source files for details.
+Zeebe source files are made available under the [Zeebe Community License
+Version 1.0](/licenses/ZEEBE-COMMUNITY-LICENSE-1.0.txt) except for the parts listed
+below, which are made available under the [Apache License, Version
+2.0](/licenses/APACHE-2.0.txt).  See individual source files for details.
+
+Available under the [Apache License, Version 2.0](/licenses/APACHE-2.0.txt):
+- Java Client ([clients/java](/clients/java))
+- Go Client ([clients/go](/clients/go))
+- Exporter API ([exporter-api](/exporter-api))
+- Protocol ([protocol](/protocol))
+- Gateway Protocol Implementation ([gateway-protocol-impl](/gateway-protocol-impl))
+- BPMN Model API ([bpmn-model](/bpmn-model))
+
+### Clarification on gRPC Code Generation
+
+The Zeebe Gateway Protocol (API) as published in the
+[gateway-protocol](/gateway-protocol/src/main/proto/gateway.proto) is licensed
+under the Zeebe Community License 1.0. Using gRPC tooling to generate stubs for
+the protocol does not constitute creating a derivative work under the Zeebe
+Community License 1.0 and no licensing restrictions are imposed on the
+resulting stub code by the Zeebe Community License 1.0.

@@ -18,9 +18,9 @@ package io.zeebe.client.job;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.client.util.ClientTest;
+import io.zeebe.client.util.JsonUtil;
+import io.zeebe.client.util.StringUtil;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
-import io.zeebe.test.util.JsonUtil;
-import io.zeebe.util.StringUtil;
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
 import java.util.Collections;

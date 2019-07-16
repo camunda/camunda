@@ -9,7 +9,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.20.0-SNAPSHOT</version>
+    <version>0.21.0-SNAPSHOT</version>
     <relativePath>parent/</relativePath>
   </parent>
 
@@ -25,7 +25,7 @@
     <module>service-container</module>
     <module>bpmn-model</module>
     <module>logstreams</module>
-    <module>engine</module>  
+    <module>engine</module>
     <module>transport</module>
     <module>test</module>
     <module>util</module>
@@ -37,6 +37,7 @@
     <module>json-path</module>
     <module>build-tools</module>
     <module>gateway-protocol</module>
+    <module>gateway-protocol-impl</module>
     <module>gateway</module>
     <module>clients/java</module>
     <module>exporter-api</module>

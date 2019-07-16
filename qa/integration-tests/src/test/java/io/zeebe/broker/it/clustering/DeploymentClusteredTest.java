@@ -1,17 +1,9 @@
 /*
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.0. You may not use this file
+ * except in compliance with the Zeebe Community License 1.0.
  */
 package io.zeebe.broker.it.clustering;
 
@@ -23,12 +15,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.grpc.Status.Code;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.ClientStatusException;
 import io.zeebe.client.api.response.DeploymentEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.record.intent.DeploymentIntent;
+import io.zeebe.test.util.record.RecordingExporter;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -111,7 +105,6 @@ public class DeploymentClusteredTest {
   }
 
   @Test
-  @Ignore
   public void shouldCreateInstancesOnRestartedBroker() {
     // given
 
@@ -132,6 +125,36 @@ public class DeploymentClusteredTest {
                   clusteringRule.createWorkflowInstanceOnPartition(partitionId, "process");
               assertWorkflowInstanceCreated(instanceKey);
             });
+  }
+
+  @Test
+  public void shouldCreateMultipleDeployments() {
+    // given
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
+    final BpmnModelInstance workflow2 =
+        Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
+
+    final ZeebeFuture<DeploymentEvent> firstRequestFuture =
+        clientRule
+            .getClient()
+            .newDeployCommand()
+            .addWorkflowModel(workflow, "workflow.bpmn")
+            .send();
+    final ZeebeFuture<DeploymentEvent> secondRequestFuture =
+        clientRule
+            .getClient()
+            .newDeployCommand()
+            .addWorkflowModel(workflow2, "workflow.bpmn")
+            .send();
+
+    // when
+    firstRequestFuture.join();
+    secondRequestFuture.join();
+
+    // then
+    assertThat(RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED).limit(2).count())
+        .isEqualTo(2);
   }
 
   @Test

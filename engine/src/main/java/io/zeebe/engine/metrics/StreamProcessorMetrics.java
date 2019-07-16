@@ -1,23 +1,15 @@
 /*
- * Zeebe Workflow Engine
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.0. You may not use this file
+ * except in compliance with the Zeebe Community License 1.0.
  */
 package io.zeebe.engine.metrics;
 
 import io.prometheus.client.Counter;
+import io.prometheus.client.Histogram;
+import io.zeebe.protocol.record.RecordType;
 
 public class StreamProcessorMetrics {
 
@@ -29,6 +21,14 @@ public class StreamProcessorMetrics {
           .labelNames("action", "partition")
           .register();
 
+  private static final Histogram PROCESSING_LATENCY =
+      Histogram.build()
+          .namespace("zeebe")
+          .name("stream_processor_latency")
+          .help("Latency of processing in seconds")
+          .labelNames("recordType", "partition")
+          .register();
+
   private final String partitionIdLabel;
 
   public StreamProcessorMetrics(int partitionId) {
@@ -37,6 +37,12 @@ public class StreamProcessorMetrics {
 
   private void event(String action) {
     STREAM_PROCESSOR_EVENTS.labels(action, partitionIdLabel).inc();
+  }
+
+  public void processingLatency(RecordType recordType, long written, long processed) {
+    PROCESSING_LATENCY
+        .labels(recordType.name(), partitionIdLabel)
+        .observe((processed - written) / 1000f);
   }
 
   public void eventProcessed() {

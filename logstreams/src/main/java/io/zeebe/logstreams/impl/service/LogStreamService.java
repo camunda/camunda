@@ -1,26 +1,13 @@
 /*
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.0. You may not use this file
+ * except in compliance with the Zeebe Community License 1.0.
  */
 package io.zeebe.logstreams.impl.service;
 
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderRootService;
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderServiceName;
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamRootServiceName;
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logWriteBufferServiceName;
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logWriteBufferSubscriptionServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.*;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.DispatcherBuilder;
@@ -32,13 +19,7 @@ import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.servicecontainer.CompositeServiceBuilder;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.ActorConditions;
@@ -213,7 +194,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
     }
 
     final long blockAddress = reader.lastReadAddress();
-    LOG.info(
+    LOG.debug(
         "Delete data from log stream until position '{}' (address: '{}').", position, blockAddress);
 
     logStorage.delete(blockAddress);

@@ -1,17 +1,9 @@
 /*
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.0. You may not use this file
+ * except in compliance with the Zeebe Community License 1.0.
  */
 package io.zeebe.logstreams.log;
 
@@ -64,6 +56,7 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
   private long key;
 
   private long sourceEventPosition;
+  private int sourceIndex;
 
   private BufferWriter metadataWriter;
   private BufferWriter valueWriter;
@@ -90,6 +83,11 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
   public LogEntryBuilder event() {
     copyExistingEventToBuffer();
     resetEvent();
+    return this;
+  }
+
+  public LogEntryBuilder sourceIndex(int index) {
+    sourceIndex = index;
     return this;
   }
 
@@ -159,6 +157,9 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
     eventBuffer.putLong(eventBufferOffset, key, Protocol.ENDIANNESS);
     eventBufferOffset += SIZE_OF_LONG;
 
+    eventBuffer.putInt(eventBufferOffset, sourceIndex, Protocol.ENDIANNESS);
+    eventBufferOffset += SIZE_OF_INT;
+
     eventBuffer.putInt(eventBufferOffset, metadataLength, Protocol.ENDIANNESS);
     eventBufferOffset += SIZE_OF_INT;
 
@@ -219,9 +220,13 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
     long lastEventPosition = -1L;
     eventBufferOffset = 0;
 
+    final long[] positions = new long[eventCount];
     for (int i = 0; i < eventCount; i++) {
       final long key = eventBuffer.getLong(eventBufferOffset, Protocol.ENDIANNESS);
       eventBufferOffset += SIZE_OF_LONG;
+
+      final int sourceIndex = eventBuffer.getInt(eventBufferOffset, Protocol.ENDIANNESS);
+      eventBufferOffset += SIZE_OF_INT;
 
       final int metadataLength = eventBuffer.getInt(eventBufferOffset, Protocol.ENDIANNESS);
       eventBufferOffset += SIZE_OF_INT;
@@ -236,10 +241,17 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
       final int bufferOffset = claimedBatch.getFragmentOffset();
 
       final long position = nextFragmentPosition - alignedFramedLength(fragmentLength);
+      positions[i] = position;
 
       // write log entry header
       setPosition(writeBuffer, bufferOffset, position);
-      setSourceEventPosition(writeBuffer, bufferOffset, sourceEventPosition);
+
+      if (sourceIndex >= 0 && sourceIndex < i) {
+        setSourceEventPosition(writeBuffer, bufferOffset, positions[sourceIndex]);
+      } else {
+        setSourceEventPosition(writeBuffer, bufferOffset, sourceEventPosition);
+      }
+
       setKey(writeBuffer, bufferOffset, key);
       setTimestamp(writeBuffer, bufferOffset, ActorClock.currentTimeMillis());
       setMetadataLength(writeBuffer, bufferOffset, (short) metadataLength);
@@ -271,6 +283,7 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
 
   private void resetEvent() {
     key = LogEntryDescriptor.KEY_NULL_VALUE;
+    sourceIndex = -1;
 
     metadataWriter = metadataWriterInstance;
     valueWriter = null;

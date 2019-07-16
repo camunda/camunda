@@ -15,7 +15,7 @@
  */
 package io.zeebe.client.workflow;
 
-import static io.zeebe.test.util.JsonUtil.fromJsonAsMap;
+import static io.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;

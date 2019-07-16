@@ -1,26 +1,13 @@
 /*
- * Zeebe Broker Core
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.0. You may not use this file
+ * except in compliance with the Zeebe Community License 1.0.
  */
 package io.zeebe.broker.exporter.debug;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.base.Charsets;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -63,14 +50,12 @@ public class DebugHttpServer {
   private final int maxSize;
   private HttpServer server;
   private final Map<String, byte[]> resources;
-  private ObjectMapper objectMapper;
   private final LinkedList<String> records;
 
   public DebugHttpServer(int port, int maxSize) {
     this.maxSize = maxSize;
     server = startHttpServer(port);
     resources = loadResources();
-    objectMapper = createObjectMapper();
     records = new LinkedList<>();
   }
 
@@ -113,19 +98,12 @@ public class DebugHttpServer {
     }
   }
 
-  private ObjectMapper createObjectMapper() {
-    final ObjectMapper objectMapper = new ObjectMapper();
-    objectMapper.registerModule(new JavaTimeModule());
-    objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-    return objectMapper;
-  }
-
   public synchronized void add(Record record) throws JsonProcessingException {
     while (records.size() >= maxSize) {
       records.removeLast();
     }
 
-    records.addFirst(objectMapper.writeValueAsString(record));
+    records.addFirst(record.toJson());
   }
 
   class RequestHandler implements HttpHandler {

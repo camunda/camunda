@@ -1,17 +1,9 @@
 /*
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.0. You may not use this file
+ * except in compliance with the Zeebe Community License 1.0.
  */
 package io.zeebe.test;
 
@@ -141,7 +133,7 @@ public class WorkflowInstanceAssert
     return this;
   }
 
-  public WorkflowInstanceAssert hasVariables(String key, Object expectedValue) {
+  public WorkflowInstanceAssert hasVariable(String key, Object expectedValue) {
     final Optional<Record<WorkflowInstanceRecordValue>> record =
         RecordingExporter.workflowInstanceRecords()
             .withWorkflowInstanceKey(workflowInstanceKey)
@@ -150,7 +142,7 @@ public class WorkflowInstanceAssert
             .findFirst();
 
     if (record.isPresent()) {
-      hasVariables(record.get(), key, expectedValue);
+      hasVariable(record.get(), key, expectedValue);
     } else {
       failWithMessage("Expected workflow instance to contain variables but instance is not ended");
     }
@@ -158,27 +150,29 @@ public class WorkflowInstanceAssert
     return this;
   }
 
-  private WorkflowInstanceAssert hasVariables(
+  private WorkflowInstanceAssert hasVariable(
       final Record<WorkflowInstanceRecordValue> record, String key, Object expectedValue) {
     final Map<String, String> variables =
         WorkflowInstances.getCurrentVariables(workflowInstanceKey, record.getPosition());
 
-    if (variables.containsKey(key)) {
-      final Object value;
-      try {
-        value = OBJECT_MAPPER.readValue(variables.get(key), Object.class);
-      } catch (IOException e) {
-        failWithMessage("Expected variable values to be JSON, but got <%s>", e.getMessage());
-        return this;
-      }
-
-      if (!expectedValue.equals(value)) {
-        failWithMessage(
-            "Expected variables value of <%s> to be <%s> but was <%s>", key, expectedValue, value);
-      }
-    } else {
+    if (!variables.containsKey(key)) {
       failWithMessage(
           "Expected variables <%s> to contain <%s> but could not find entry", variables, key);
+      return this;
+    }
+
+    final Object value;
+    try {
+      value = OBJECT_MAPPER.readValue(variables.get(key), Object.class);
+    } catch (IOException e) {
+      failWithMessage("Expected variable values to be JSON, but got <%s>", e.getMessage());
+      return this;
+    }
+
+    if ((expectedValue == null && value != null)
+        || (expectedValue != null && !expectedValue.equals(value))) {
+      failWithMessage(
+          "Expected variables value of <%s> to be <%s> but was <%s>", key, expectedValue, value);
     }
 
     return this;

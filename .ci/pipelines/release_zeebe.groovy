@@ -10,8 +10,6 @@ pipeline {
         label "zeebe-ci-release_${buildName}"
         defaultContainer 'jnlp'
         yaml '''\
-apiVersion: v1
-kind: Pod
 metadata:
   labels:
     agent: zeebe-ci-build

@@ -41,7 +41,7 @@ cd $GOPATH/src/github.com/{{your username}}/zb-example
 Install Zeebe Go client library:
 
 ```
-go get github.com/zeebe-io/zeebe/clients/go
+go get -u github.com/zeebe-io/zeebe/clients/go/...
 ```
 
 Create a main.go file inside the module and add the following lines to bootstrap the Zeebe client:
