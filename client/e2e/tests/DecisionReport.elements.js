@@ -22,3 +22,12 @@ export const variableFilterTypeaheadOption = text =>
 export const variableFilterOperatorButton = text =>
   Selector('.Modal .VariableFilter__buttonRow .Button').withText(text);
 export const variableFilterValueInput = Selector('.Modal .VariableFilter__valueFields input');
+export const reportTable = reportRenderer.find('.Table');
+export const visualizationDropdown = Selector('.label')
+  .withText('Visualization')
+  .nextSibling();
+export const option = text => Selector('.DropdownOption').withText(text);
+export const reportChart = reportRenderer.find('canvas');
+export const configurationButton = Selector('.Configuration .Popover');
+export const gradientBarsSwitch = Selector('.Popover label').withText('Show Gradient Bars');
+export const reportNumber = reportRenderer.find('.Number');
