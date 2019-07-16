@@ -18,14 +18,13 @@ public class Main {
 
   private long numberOfProcessInstancesToGenerate;
   private String engineRestEndpoint;
-  private long timeoutInHours;
   private boolean removeDeployments;
 
-  private Main(long numberOfProcessInstancesToGenerate, String engineRestEndpoint, long timeoutInHours,
+  private Main(long numberOfProcessInstancesToGenerate,
+               String engineRestEndpoint,
                boolean removeDeployments) {
     this.numberOfProcessInstancesToGenerate = numberOfProcessInstancesToGenerate;
     this.engineRestEndpoint = engineRestEndpoint;
-    this.timeoutInHours = timeoutInHours;
     this.removeDeployments = removeDeployments;
   }
 
@@ -35,11 +34,9 @@ public class Main {
     long numberOfProcessInstancesToGenerate =
       Long.parseLong(arguments.get("numberOfProcessInstances"));
     String engineRestEndpoint = arguments.get("engineRest");
-    long timeoutInHours =
-      Long.parseLong(arguments.get("timeoutInHours"));
     boolean removeDeployments = Boolean.parseBoolean(arguments.get("removeDeployments"));
 
-    Main main = new Main(numberOfProcessInstancesToGenerate, engineRestEndpoint, timeoutInHours, removeDeployments);
+    Main main = new Main(numberOfProcessInstancesToGenerate, engineRestEndpoint, removeDeployments);
     main.generateData();
   }
 
@@ -67,7 +64,6 @@ public class Main {
   private static void fillArgumentMapWithDefaultValues(Map<String, String> arguments) {
     arguments.put("numberOfProcessInstances", String.valueOf(100_000));
     arguments.put("engineRest", "http://localhost:8080/engine-rest");
-    arguments.put("timeoutInHours", String.valueOf(16));
     arguments.put("removeDeployments", "true");
   }
 
@@ -86,7 +82,7 @@ public class Main {
 
   private void generateData() {
     DataGenerationExecutor dataGenerationExecutor =
-      new DataGenerationExecutor(numberOfProcessInstancesToGenerate, engineRestEndpoint, timeoutInHours, removeDeployments);
+      new DataGenerationExecutor(numberOfProcessInstancesToGenerate, engineRestEndpoint, removeDeployments);
     dataGenerationExecutor.executeDataGeneration();
     dataGenerationExecutor.awaitDataGenerationTermination();
     logger.info("Finished data generation!");

@@ -74,7 +74,6 @@ public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
       final DataGenerationExecutor dataGenerationExecutor = new DataGenerationExecutor(
         totalInstanceCount,
         configurationService.getEngineRestApiEndpoint("camunda-bpm"),
-        1,
         false
       );
       dataGenerationExecutor.executeDataGeneration();

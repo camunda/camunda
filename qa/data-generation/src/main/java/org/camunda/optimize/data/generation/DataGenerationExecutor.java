@@ -50,7 +50,6 @@ public class DataGenerationExecutor {
 
   private Long totalInstanceCount;
   private String engineRestEndpoint;
-  private long timeoutInHours;
   private boolean removeDeployments;
   private SimpleEngineClient engineClient;
 
@@ -62,11 +61,9 @@ public class DataGenerationExecutor {
 
   public DataGenerationExecutor(final long totalInstanceCount,
                                 final String engineRestEndpoint,
-                                final long timeoutInHours,
                                 final boolean removeDeployments) {
     this.totalInstanceCount = totalInstanceCount;
     this.engineRestEndpoint = engineRestEndpoint;
-    this.timeoutInHours = timeoutInHours;
     this.removeDeployments = removeDeployments;
   }
 
@@ -130,8 +127,7 @@ public class DataGenerationExecutor {
     importExecutor.shutdown();
     try {
 
-      boolean finishedGeneration =
-        importExecutor.awaitTermination(timeoutInHours, TimeUnit.HOURS);
+      boolean finishedGeneration = importExecutor.awaitTermination(Integer.MAX_VALUE, TimeUnit.HOURS);
 
       if (!finishedGeneration) {
         logger.error("Could not finish data generation in time. Trying to interrupt!");
