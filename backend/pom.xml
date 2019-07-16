@@ -545,6 +545,9 @@
               <useSystemClassLoader>false</useSystemClassLoader>
               <argLine>${test.argLine}</argLine>
               <excludedGroups>${it.test.excludedGroups}</excludedGroups>
+              <forkCount>1</forkCount>
+              <reuseForks>true</reuseForks>
+              <reportsDirectory>target/surefire-reports-${surefire.forkNumber}</reportsDirectory>
               <properties>
                 <property>
                   <name>listener</name>
@@ -557,6 +560,9 @@
                   <value>${database}</value>
                 </property>
               </systemProperties>
+              <systemPropertyVariables>
+                <indexPrefix>test-fork-${surefire.forkNumber}</indexPrefix>
+              </systemPropertyVariables>
             </configuration>
             <executions>
               <execution>

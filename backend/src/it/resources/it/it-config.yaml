@@ -17,3 +17,7 @@ import:
         max: 30
   elasticsearchJobExecutorThreadCount: 1
   currentTimeBackoffMilliseconds: 0
+es:
+  settings:
+    index:
+      prefix: ${indexPrefix:optimize}

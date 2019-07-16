@@ -60,6 +60,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_ID;
@@ -127,7 +128,9 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   public void refreshAllOptimizeIndices() {
     try {
       RefreshRequest refreshAllIndicesRequest = new RefreshRequest();
-      getOptimizeElasticClient().getHighLevelClient().indices().refresh(refreshAllIndicesRequest, RequestOptions.DEFAULT);
+      getOptimizeElasticClient().getHighLevelClient()
+        .indices()
+        .refresh(refreshAllIndicesRequest, RequestOptions.DEFAULT);
     } catch (Exception e) {
       throw new OptimizeIntegrationTestException("Could not refresh Optimize indices!", e);
     }
@@ -355,9 +358,11 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   private void initConfigurationService() {
     if (configurationService == null) {
-      configurationService = new ConfigurationService();
+      configurationService = new ConfigurationService(new String[]{"service-config.yaml", "it/it-config.yaml"});
       if (customIndexPrefix != null) {
-        configurationService.setEsIndexPrefix(customIndexPrefix);
+        configurationService.setEsIndexPrefix(
+          configurationService.getEsIndexPrefix() + Optional.ofNullable(customIndexPrefix).orElse("")
+        );
       }
     }
   }

@@ -18,6 +18,7 @@ import org.camunda.optimize.rest.engine.dto.UserProfileDto;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.camunda.optimize.service.cleanup.OptimizeCleanupScheduler;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.util.PropertyUtil;
@@ -111,13 +112,14 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   public void start() throws Exception {
     if (!testOptimizeInstance.isOptimizeStarted()) {
       testOptimizeInstance.startOptimize();
-      storeAuthenticationToken();
       if (isThisTheFirstTimeOptimizeWasStarted()) {
         // store the default configuration to restore it later
-        serializedDefaultConfiguration = configObjectMapper.writeValueAsString(testOptimizeInstance.getConfigurationService());
+        serializedDefaultConfiguration =
+          configObjectMapper.writeValueAsString(testOptimizeInstance.getConfigurationService());
       }
       resetConfiguration();
       reloadConfiguration();
+      storeAuthenticationToken();
     }
   }
 
@@ -169,6 +171,10 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   public OptimizeCleanupScheduler getCleanupService() {
     return getApplicationContext().getBean(OptimizeCleanupScheduler.class);
+  }
+
+  public OptimizeElasticsearchClient getOptimizeElasticClient() {
+    return getApplicationContext().getBean(OptimizeElasticsearchClient.class);
   }
 
   public DateTimeFormatter getDateTimeFormatter() {

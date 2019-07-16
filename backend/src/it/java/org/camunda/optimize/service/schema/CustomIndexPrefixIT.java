@@ -114,7 +114,9 @@ public class CustomIndexPrefixIT {
     defaultElasticSearchRule.refreshAllOptimizeIndices();
 
     //when
-    embeddedOptimizeRule.getConfigurationService().setEsIndexPrefix(CUSTOM_PREFIX);
+    embeddedOptimizeRule.getConfigurationService().setEsIndexPrefix(
+      customPrefixElasticSearchRule.getOptimizeElasticClient().getIndexNameService().getIndexPrefix()
+    );
     embeddedOptimizeRule.reloadConfiguration();
     initializeSchema();
 
