@@ -99,7 +99,7 @@ public class QueryPerformanceTest {
   private void login() {
     HttpEntity<Map<String,Object>> requestEntity = new HttpEntity<>(CollectionUtil.asMap("username",username,
                                                                                          "password",password));
-    ResponseEntity<Object> response = restTemplate.postForEntity(urlUtil.getURL("/api/login?username=demo&password=demo"), requestEntity, Object.class);
+    ResponseEntity<Object> response = restTemplate.postForEntity(urlUtil.getURL(String.format("/api/login?username=%s&password=%s",username,password)), requestEntity, Object.class);
     saveCSRFTokenWhenAvailable(response);
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
   }
