@@ -17,18 +17,3 @@ export const decisionTableCell = (row, column) =>
 export const primaryModalButton = Selector('.Modal .Modal__actions .primary');
 export const filterButton = Selector('.Filter__dropdown .activateButton');
 export const filterOption = text => Selector('.Filter .DropdownOption').withText(text);
-export const variableFilterTypeahead = Selector('.Modal__content .Typeahead');
-export const variableFilterTypeaheadOption = text =>
-  Selector('.Modal__content .Typeahead .DropdownOption').withText(text);
-export const variableFilterOperatorButton = text =>
-  Selector('.Modal .VariableFilter__buttonRow .Button').withText(text);
-export const variableFilterValueInput = Selector('.Modal .VariableFilter__valueFields input');
-export const reportTable = reportRenderer.find('.Table');
-export const visualizationDropdown = Selector('.label')
-  .withText('Visualization')
-  .nextSibling();
-export const option = text => Selector('.DropdownOption').withText(text);
-export const reportChart = reportRenderer.find('canvas');
-export const configurationButton = Selector('.Configuration .Popover');
-export const gradientBarsSwitch = Selector('.Popover label').withText('Show Gradient Bars');
-export const reportNumber = reportRenderer.find('.Number');

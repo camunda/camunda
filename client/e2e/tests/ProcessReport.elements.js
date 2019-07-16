@@ -66,12 +66,6 @@ export const tooltipSwitch = Selector('.Configuration legend')
 export const instanceCountSwitch = Selector('.Configuration .Switch');
 export const filterButton = Selector('.Filter__dropdown .activateButton');
 export const filterOption = text => Selector('.Filter .DropdownOption').withText(text);
-export const variableFilterTypeahead = Selector('.Modal__content .Typeahead');
-export const variableFilterTypeaheadOption = text =>
-  Selector('.Modal__content .Typeahead .DropdownOption').withText(text);
-export const variableFilterOperatorButton = text =>
-  Selector('.Modal .VariableFilter__buttonRow .Button').withText(text);
-export const variableFilterValueInput = Selector('.Modal .VariableFilter__valueFields input');
 export const collectionsDropdown = Selector(`.CollectionsDropdown`);
 export const createCollectionButton = Selector('.Modal button').withText('Create Collection');
 export const collectionOption = text =>
@@ -92,3 +86,5 @@ export const pointMarkersSwitch = Selector('.PointMarkersConfig .Switch');
 export const redColor = Selector('div[color="#DB3E00"]');
 export const axisInputs = label => Selector(`input[placeholder="${label}"]`);
 export const chartGoalInput = Selector('input[placeholder="Goal value"]');
+export const warningMessage = Selector('.Report .Message--warning');
+export const filterRemoveButton = Selector('.ActionItem .Button');

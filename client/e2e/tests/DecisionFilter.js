@@ -10,6 +10,7 @@ import * as u from '../utils';
 
 import * as Homepage from './Homepage.elements.js';
 import * as Report from './DecisionReport.elements.js';
+import * as Filter from './Filter.elements.js';
 
 fixture('Decision Report Filter')
   .page(config.endpoint)
@@ -29,16 +30,38 @@ test('should apply a filter to the report result', async t => {
 
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Input Variable'));
+  await t.click(Filter.variableFilterTypeahead);
+  await t.click(Filter.variableFilterTypeaheadOption('Invoice Amount'));
+  await t.click(Filter.variableFilterOperatorButton('is less than'));
 
-  await t.click(Report.variableFilterTypeahead);
-  await t.click(Report.variableFilterTypeaheadOption('Invoice Amount'));
-  await t.click(Report.variableFilterOperatorButton('is less than'));
-
-  await t.typeText(Report.variableFilterValueInput, '100', {replace: true});
+  await t.typeText(Filter.variableFilterValueInput, '100', {replace: true});
 
   await t.click(Report.primaryModalButton);
 
   const filtered = +(await Report.reportRenderer.textContent);
 
   await t.expect(unfiltered).gt(filtered);
+});
+
+test('should have seperate input and output variables', async t => {
+  await t.click(Homepage.createNewMenu);
+  await t.click(Homepage.option('New Report'));
+  await t.click(Homepage.submenuOption('Decision Report'));
+
+  await u.selectDefinition(t, 'Invoice Classification', '2');
+  await u.selectView(t, 'Evaluation Count');
+  await u.selectGroupby(t, 'None');
+
+  await t.click(Report.filterButton);
+  await t.click(Report.filterOption('Input Variable'));
+  await t.click(Filter.variableFilterTypeahead);
+  await t.expect(Filter.variableFilterTypeahead.textContent).notContains('Classification');
+  await t.click(Filter.modalCancel);
+
+  await t.click(Report.filterButton);
+  await t.click(Report.filterOption('Output Variable'));
+  await t.click(Filter.variableFilterTypeahead);
+
+  await t.expect(Filter.variableFilterTypeahead.textContent).notContains('Invoice Amount');
+  await t.expect(Filter.variableFilterTypeahead.textContent).contains('Classification');
 });
