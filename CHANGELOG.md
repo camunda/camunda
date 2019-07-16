@@ -9,12 +9,10 @@
 #### Bug Fixes
 
 * **broker:**
-  *  set distribution count when receiving response ([3fe670a7](https://github.com/zeebe-io/zeebe/commit/3fe670a72337a7bc7c74b7f9a213f9bd31698d51))
+  *  fix missing deployment distribution during concurrent deployments ([3fe670a7](https://github.com/zeebe-io/zeebe/commit/3fe670a72337a7bc7c74b7f9a213f9bd31698d51))
   *  fix JS script of DEBUG HTTP exporter ([615b2f26](https://github.com/zeebe-io/zeebe/commit/615b2f269e07d915fd9facc35b0578fad4479b21))
+  *  fix cleaning up job state on cancelling ([9413afbc](https://github.com/zeebe-io/zeebe/commit/9413afbc25aeb9ad907f52c12902f8f3fc562576))
 * **clients/java:**  assertion for variables allow null values ([739427cd](https://github.com/zeebe-io/zeebe/commit/739427cd8ecbde7c9e1d586c9d1803d8359dff0b))
-* **docs:**  fix go get cmd ([b1162637](https://github.com/zeebe-io/zeebe/commit/b1162637aae505df46550e1c53f9de7596cd85ed))
-* **engine:**  use current state on cancel processing ([9413afbc](https://github.com/zeebe-io/zeebe/commit/9413afbc25aeb9ad907f52c12902f8f3fc562576))
-
 
 
 <a name="0.19.0"></a>
