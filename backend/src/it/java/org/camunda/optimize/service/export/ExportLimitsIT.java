@@ -154,25 +154,33 @@ public class ExportLimitsIT {
     reader.close();
   }
 
-  private void addProcessInstancesToElasticsearch(final int instanceCount, final String processDefinitionKey)
+  private void addProcessInstancesToElasticsearch(final int totalInstanceCount, final String processDefinitionKey)
     throws IOException {
-    final BulkRequest bulkInsert = new BulkRequest();
+    final int maxBulkSize = 10000;
+    final int batchCount = Double.valueOf(Math.ceil((double) totalInstanceCount / maxBulkSize)).intValue();
+
     final ProcessInstanceDto processInstanceDto = new ProcessInstanceDto();
-    for (int i = 0; i < instanceCount; i++) {
-      processInstanceDto.setProcessInstanceId(UUID.randomUUID().toString());
-      processInstanceDto.setProcessDefinitionKey(processDefinitionKey);
-      processInstanceDto.setProcessDefinitionVersion("1");
+    processInstanceDto.setProcessDefinitionKey(processDefinitionKey);
+    processInstanceDto.setProcessDefinitionVersion("1");
 
-      final IndexRequest indexRequest = new IndexRequest(
-        getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE),
-        PROC_INSTANCE_TYPE,
-        processInstanceDto.getProcessInstanceId()
-      ).source(elasticSearchRule.getObjectMapper().writeValueAsString(processInstanceDto), XContentType.JSON);
+    for (int i = 0; i < batchCount; i++) {
+      final BulkRequest bulkInsert = new BulkRequest();
+      final int alreadyInsertedInstanceCount = i * maxBulkSize;
+      final int endOfThisBatchCount = alreadyInsertedInstanceCount + maxBulkSize;
+      for (int j = alreadyInsertedInstanceCount; j < endOfThisBatchCount && j < totalInstanceCount; j++) {
+        processInstanceDto.setProcessInstanceId(UUID.randomUUID().toString());
 
-      bulkInsert.add(indexRequest);
+        final IndexRequest indexRequest = new IndexRequest(
+          getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE),
+          PROC_INSTANCE_TYPE,
+          processInstanceDto.getProcessInstanceId()
+        ).source(elasticSearchRule.getObjectMapper().writeValueAsString(processInstanceDto), XContentType.JSON);
+
+        bulkInsert.add(indexRequest);
+      }
+
+      elasticSearchRule.getEsClient().bulk(bulkInsert, RequestOptions.DEFAULT);
     }
-
-    elasticSearchRule.getEsClient().bulk(bulkInsert, RequestOptions.DEFAULT);
     elasticSearchRule.refreshAllOptimizeIndices();
   }
 
