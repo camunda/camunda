@@ -15,7 +15,6 @@ data:
       url = "http://localhost:9200"
 
   application.yml: |
-    debug: true
     springfox.documentation.swagger.v2.path: /documentation
     camunda.operate:
       elasticsearch:
