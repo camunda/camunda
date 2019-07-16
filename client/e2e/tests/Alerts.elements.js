@@ -15,3 +15,6 @@ export const mailField = Selector('.Modal input[id="email-input"]');
 export const reportTypeahead = Selector('.Modal .Typeahead');
 export const reportTypeaheadOption = text =>
   Selector('.Modal .Typeahead .DropdownOption').withText(text);
+export const editButton = Selector('[title="Edit Alert"]');
+export const cancelButton = Selector('.Modal__actions button');
+export const deleteButton = Selector('[title="Delete Alert"]');

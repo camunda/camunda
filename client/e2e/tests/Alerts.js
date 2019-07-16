@@ -43,3 +43,29 @@ test('add an alert', async t => {
   await t.expect(Alert.list.textContent).contains('Number Report');
   await t.expect(Alert.list.textContent).contains('optimize-test@camunda.com');
 });
+
+test('edit an alert', async t => {
+  await t.click(Alert.navItem);
+  await t.click(Alert.editButton);
+
+  await t.typeText(Alert.nameField, 'Edited Alert', {replace: true});
+
+  await t.click(Alert.cancelButton);
+
+  await t.expect(Alert.list.textContent).notContains('Edited Alert');
+
+  await t.click(Alert.editButton);
+  await t.typeText(Alert.nameField, 'Saved Alert', {replace: true});
+
+  await t.click(Alert.primaryModalButton);
+
+  await t.expect(Alert.list.textContent).contains('Saved Alert');
+});
+
+test('delete an alert', async t => {
+  await t.click(Alert.navItem);
+  await t.click(Alert.deleteButton);
+  await t.click(Alert.primaryModalButton);
+
+  await t.expect(Alert.list.textContent).notContains('Saved Alert');
+});
