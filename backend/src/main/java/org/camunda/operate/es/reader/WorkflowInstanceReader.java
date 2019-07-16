@@ -69,7 +69,7 @@ public class WorkflowInstanceReader extends AbstractReader {
       SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias())
                                       .source(new SearchSourceBuilder()
                                       .query(queryBuilder)
-                                      .fetchSource(ListViewTemplate.WORKFLOW_KEY, null));
+                                      .fetchSource(false));
       try {
         return ElasticsearchUtil.scrollKeysToList(searchRequest, esClient);
       } catch (IOException e) {

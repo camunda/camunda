@@ -108,6 +108,14 @@ public class IncidentEntity extends OperateZeebeEntity {
     this.creationTime = creationTime;
   }
 
+  public void setWorkflowKey(Long workflowKey) {
+    this.workflowKey = workflowKey;
+  }
+
+  public Long getWorkflowKey() {
+    return workflowKey;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -136,14 +144,6 @@ public class IncidentEntity extends OperateZeebeEntity {
     if (workflowKey != null ? !workflowKey.equals(that.workflowKey) : that.workflowKey != null)
       return false;
     return creationTime != null ? creationTime.equals(that.creationTime) : that.creationTime == null;
-  }
-  
-  public void setWorkflowKey(Long workflowKey) {
-    this.workflowKey = workflowKey;
-  }
-
-  public Long getWorkflowKey() {
-    return workflowKey;
   }
 
   @Override
