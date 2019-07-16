@@ -30,6 +30,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -43,6 +44,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Configuration
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
+  private static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";
   public static final String X_CSRF_PARAM = "X-CSRF-PARAM";
   public static final String X_CSRF_HEADER = "X-CSRF-HEADER";
   public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
@@ -107,7 +109,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         .logoutSuccessHandler(this::logoutSuccessHandler)
         .permitAll()
         .invalidateHttpSession(true)
-        .deleteCookies(COOKIE_JSESSIONID)
+        .deleteCookies(COOKIE_JSESSIONID,X_CSRF_TOKEN)
       .and()
       .exceptionHandling().authenticationEntryPoint(this::failureHandler);
   }
@@ -117,7 +119,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   }
 
   private void failureHandler(HttpServletRequest request, HttpServletResponse response, AuthenticationException ex) throws IOException {
-    response.setCharacterEncoding("UTF-8");
+    request.getSession().invalidate();
+    response.reset();
+    response.setCharacterEncoding(RESPONSE_CHARACTER_ENCODING);
+    
     PrintWriter writer = response.getWriter();
     String jsonResponse = Json.createObjectBuilder()
       .add("message", ex.getMessage())
@@ -139,16 +144,27 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
    * @return
    */
   private HttpServletResponse addCSRFTokenWhenAvailable(HttpServletRequest request, HttpServletResponse response) {
-    CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName()); 
-    if (token != null) {
-      response.setHeader(X_CSRF_HEADER, token.getHeaderName());
-      response.setHeader(X_CSRF_PARAM, token.getParameterName());
-      response.setHeader(X_CSRF_TOKEN, token.getToken());
-      // We need to access the CSRF Token Cookie from JavaScript too:
-      cookieCSRFTokenRepository.setCookieHttpOnly(false);
-      cookieCSRFTokenRepository.saveToken(token, request, response);
+    if(shouldAddCSRF(request)) {
+      CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+      if (token != null) {
+        response.setHeader(X_CSRF_HEADER, token.getHeaderName());
+        response.setHeader(X_CSRF_PARAM, token.getParameterName());
+        response.setHeader(X_CSRF_TOKEN, token.getToken());
+        // We need to access the CSRF Token Cookie from JavaScript too:
+        cookieCSRFTokenRepository.setCookieHttpOnly(false);
+        cookieCSRFTokenRepository.saveToken(token, request, response);
+      }
     }
     return response;
+  }
+  
+  protected boolean shouldAddCSRF(HttpServletRequest request) {
+    final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    String path = request.getRequestURI();
+    if(auth!=null && auth.isAuthenticated() && (path==null || !path.contains("logout"))) {
+      return true;
+    }
+    return false;
   }
 
   private void successHandler(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
