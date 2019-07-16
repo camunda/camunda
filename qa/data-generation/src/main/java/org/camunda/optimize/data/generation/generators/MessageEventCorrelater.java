@@ -5,11 +5,14 @@
  */
 package org.camunda.optimize.data.generation.generators;
 
+import lombok.Getter;
 import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
 
 public class MessageEventCorrelater {
 
   private SimpleEngineClient engineClient;
+
+  @Getter
   private String[] messagesToCorrelate;
 
   public MessageEventCorrelater(SimpleEngineClient engineClient, String[] messagesToCorrelate) {

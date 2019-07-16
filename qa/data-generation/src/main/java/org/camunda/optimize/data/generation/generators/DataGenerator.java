@@ -144,9 +144,16 @@ public abstract class DataGenerator implements Runnable {
           final Map<String, Object> variables = createVariablesForProcess();
           variables.putAll(createSimpleVariables());
           startProcessInstance(processDefinitionId, variables);
+          try {
+            Thread.sleep(5L);
+          } catch (InterruptedException e) {
+            logger.warn("Got interrupted while sleeping starting single instance");
+          }
           incrementStartedInstanceCount();
           if (i % 1000 == 0) {
-            messageEventCorrelater.correlateMessages();
+            if (messageEventCorrelater.getMessagesToCorrelate().length > 0) {
+              messageEventCorrelater.correlateMessages();
+            }
           }
         });
 
