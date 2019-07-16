@@ -4,25 +4,65 @@ Every workflow instance created for the workflow model used in the Getting Start
 
 Let’s look at a case where `orderValue` is present but was set as a string, but our `order-process.bpmn` model requires an integer in order to properly evaluate the `orderValue` and route the instance. 
 
+**Linux**
+
+```
+./bin/zbctl create instance order-process --variables '{"orderId": "1234", "orderValue":"99"}'
+```
+
+**Mac** 
+
 ```
 ./bin/zbctl.darwin create instance order-process --variables '{"orderId": "1234", "orderValue":"99"}'
 ```
 
+**Windows (Powershell)**
+
+```
+./bin/zbctl.exe create instance order-process --variables '{\"orderId\": \"1234\", \
+"orderValue\": \"99\"}'
+```
+
 To advance the instance to our XOR gateway, we’ll quickly create a job worker to complete the “Initiate Payment” task: 
 
+**Linux**
+
+```
+./bin/zbctl create worker initiate-payment --handler cat
+```
+
+
+**Mac**
 
 ```
 ./bin/zbctl.darwin create worker initiate-payment --handler cat
 ```
 
 
+**Windows (Powershell)**
+
+```
+./bin/zbctl.exe create worker initiate-payment --handler "findstr .*"
+```
+
 And we’ll publish a message that will be correlated with the instance so we can advance past the “Payment Received” Intermediate Message Catch Event: 
 
+**Linux**
+```
+./bin/zbctl publish message "payment-received" --correlationKey="1234"
+```
+
+**Mac**
 
 ```
 ./bin/zbctl.darwin publish message "payment-received" --correlationKey="1234"
 ```
 
+**Windows (Powershell)**
+
+```
+./bin/zbctl.exe publish message "payment-received" --correlationKey="1234"
+```
 
 In the Operate interface, you should now see that the workflow instance has an [“Incident”](https://docs.zeebe.io/reference/incidents.html), which means there’s a problem with workflow execution that needs to be fixed before the workflow instance can progress to the next step. 
 
@@ -30,7 +70,7 @@ In the Operate interface, you should now see that the workflow instance has an [
 
 Operate provides tools for diagnosing and resolving incidents. Let’s go through incident diagnosis and resolution step-by-step. 
 
-When we inspect the workflow instance, we can see exactly what our incident is: `Expected to evaluate condition 'orderValue>=100' successfully, but failed because: Cannot compare values of different types: STRING and INTEGER`.
+When we inspect the workflow instance, we can see exactly what our incident is: `Expected to evaluate condition 'orderValue>=100' successfully, but failed because: Cannot compare values of different types: STRING and INTEGER`
 
 ![operate-incident-instance-view](/operate-user-guide/img/Operate-View-Instance-Incident.png)
 
@@ -52,4 +92,22 @@ You should now see that the incident has been resolved, and the workflow instanc
 
 ![operate-incident-resolved-instance-view](/operate-user-guide/img/Operate-Incident-Resolved.png)
 
-If you’d like to complete the workflow instance, you can create a worker for the “Ship Without Insurance” task: `./bin/zbctl.darwin create worker ship-without-insurance --handler cat`
+If you’d like to complete the workflow instance, you can create a worker for the “Ship Without Insurance” task: 
+
+**Linux**
+
+```
+./bin/zbctl create worker ship-without-insurance --handler cat
+```
+
+**Mac**
+
+```
+./bin/zbctl.darwin create worker ship-without-insurance --handler cat
+```
+
+**Windows (Powershell)**
+
+```
+./bin/zbctl.exe create worker ship-without-insurance --handler "findstr .*"
+```
