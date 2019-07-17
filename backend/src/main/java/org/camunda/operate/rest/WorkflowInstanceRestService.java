@@ -42,6 +42,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.micrometer.core.annotation.Timed;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.SwaggerDefinition;
@@ -54,7 +55,7 @@ import io.swagger.annotations.Tag;
 @RestController
 @RequestMapping(value = WORKFLOW_INSTANCE_URL)
 public class WorkflowInstanceRestService {
-
+  
   public static final String WORKFLOW_INSTANCE_URL = "/api/workflow-instances";
 
   @Autowired
@@ -159,8 +160,9 @@ public class WorkflowInstanceRestService {
   
   @ApiOperation("Get workflow instance core statistics (aggregations)")
   @GetMapping(path = "/core-statistics")
+  @Timed(value = "operate.core-statistics.timer",description = "How long does it take to retrieve the core statistics.")
   public WorkflowInstanceCoreStatisticsDto getCoreStatistics() {
-      return workflowInstanceReader.getCoreStatistics();
+    return workflowInstanceReader.getCoreStatistics(); 
   }
 
 }

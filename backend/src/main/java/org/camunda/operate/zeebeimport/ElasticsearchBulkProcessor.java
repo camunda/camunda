@@ -26,6 +26,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import io.zeebe.protocol.record.Record;
 
 @Component
@@ -56,9 +59,12 @@ public class ElasticsearchBulkProcessor {
 
   @Autowired
   private SequenceFlowZeebeRecordProcessor sequenceFlowZeebeRecordProcessor;
+  
+  @Autowired
+  MeterRegistry meterRegistry;
 
   public void persistZeebeRecords(List<Record> zeebeRecords, ImportValueType importValueType) throws PersistenceException {
-
+    meterRegistry.counter("operate.zeebe.records", Tags.empty()).increment(zeebeRecords.size());
     logger.debug("Writing [{}] Zeebe records to Elasticsearch", zeebeRecords.size());
 
       BulkRequest bulkRequest = new BulkRequest();

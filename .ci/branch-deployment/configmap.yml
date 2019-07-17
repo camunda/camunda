@@ -34,4 +34,4 @@ data:
       level:
         ROOT: INFO
         org.camunda.operate: INFO
-    management.endpoints.web.exposure.include: health,info,conditions,configprops,env
+    management.endpoints.web.exposure.include: health,info,conditions,configprops,env,prometheus
