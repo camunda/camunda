@@ -38,6 +38,7 @@ public class ImportPerformanceStaticDataTest {
   public void setup() {
     applicationContext = new SpringApplicationBuilder(Application.class)
       .addCommandLineProperties(true)
+      .profiles("auth")
       .run();
     operateProperties = applicationContext.getBean(OperateProperties.class);
   }
