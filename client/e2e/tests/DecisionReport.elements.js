@@ -6,6 +6,7 @@
 
 import {Selector} from 'testcafe';
 
+export const nameEditField = Selector('.EntityNameForm .name-input');
 export const reportRenderer = Selector('.ReportRenderer');
 export const decisionTable = Selector('.DecisionTable');
 export const decisionTableCell = (row, column) =>

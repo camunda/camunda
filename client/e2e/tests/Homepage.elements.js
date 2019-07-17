@@ -27,3 +27,4 @@ export const addButton = Selector('.AddButton');
 export const createCollectionButton = Selector('.Modal button').withText('Create Collection');
 export const collectionsDropdownFor = type => Selector(`.${type}Item .CollectionsDropdown`);
 export const dashboardInCollection = Selector('.CollectionItem .DashboardItem');
+export const reportLabel = Selector('.ReportItem .dataTitle span');

@@ -32,6 +32,37 @@ test('create a dmn js table report', async t => {
   await t.expect(Report.decisionTableCell(1, 5).textContent).eql('2 (33.3%)');
 });
 
+test('create raw date report', async t => {
+  await t.click(Homepage.createNewMenu);
+  await t.click(Homepage.option('New Report'));
+  await t.click(Homepage.submenuOption('Decision Report'));
+
+  await u.selectDefinition(t, 'Invoice Classification', '2');
+  await u.selectView(t, 'Raw Data');
+
+  await t.expect(Report.reportTable.textContent).contains('Decision Definition Key');
+  await t.expect(Report.reportTable.textContent).contains('Input Variables');
+  await t.expect(Report.reportTable.textContent).contains('Output Variables');
+});
+
+test('save the report', async t => {
+  await t.click(Homepage.createNewMenu);
+  await t.click(Homepage.option('New Report'));
+  await t.click(Homepage.submenuOption('Decision Report'));
+
+  await u.selectDefinition(t, 'Invoice Classification', '2');
+  await u.selectView(t, 'Raw Data');
+
+  await t.typeText(Report.nameEditField, 'new decision report', {replace: true});
+  await u.save(t);
+
+  await t.expect(Report.reportTable.visible).ok();
+
+  await u.gotoOverview(t);
+
+  await t.expect(Homepage.reportLabel.textContent).contains('Decision');
+});
+
 test('create a single number report', async t => {
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Report'));

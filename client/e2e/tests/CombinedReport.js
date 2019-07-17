@@ -52,6 +52,12 @@ test('combine two single number reports', async t => {
   await t.expect(Combined.chartRenderer.visible).ok();
 
   await u.save(t);
+
+  await t.expect(Combined.chartRenderer.visible).ok();
+
+  await u.gotoOverview(t);
+
+  await t.expect(Homepage.reportLabel.textContent).contains('Combined');
 });
 
 test('combine two single table reports', async t => {
