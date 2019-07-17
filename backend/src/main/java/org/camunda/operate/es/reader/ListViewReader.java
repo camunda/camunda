@@ -527,7 +527,7 @@ public class ListViewReader {
              .subAggregation(parent(activityToWorkflowAggName, ACTIVITIES_JOIN_RELATION))    //we need this to count workflow instances, not the activity instances
             ));
 
-    logger.debug("Activities statistics request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
+    logger.debug("Active activities statistics request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
 
     SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
     searchRequest.source(new SearchSourceBuilder()
@@ -577,7 +577,7 @@ public class ListViewReader {
              .subAggregation(parent(activityToWorkflowAggName, ACTIVITIES_JOIN_RELATION))    //we need this to count workflow instances, not the activity instances
             ));
 
-    logger.debug("Activities statistics request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
+    logger.debug("Incident activities statistics request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
 
     SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
     searchRequest.source(new SearchSourceBuilder()

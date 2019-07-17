@@ -148,8 +148,8 @@ public class ElasticsearchSchemaManager {
       .loadFromSource(Strings.toString(jsonBuilder()
       .startObject()
         .field("refresh_interval", "2s")
-        .field("number_of_replicas", "0")
-        .field("number_of_shards", "1")
+        .field("number_of_replicas", operateProperties.getElasticsearch().getNumberOfReplicas())
+        .field("number_of_shards", operateProperties.getElasticsearch().getNumberOfShards())
         .startObject("analysis")
           // define a lowercase normalizer: https://www.elastic.co/guide/en/elasticsearch/reference/current/keyword.html
           .startObject("normalizer")
