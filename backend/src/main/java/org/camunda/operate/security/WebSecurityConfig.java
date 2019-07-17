@@ -68,7 +68,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     "/swagger-resources/**",
     "/swagger-ui.html",
     "/documentation",
-    "/webjars/**"
+    "/webjars/**",
+    "/actuator/prometheus" // TODO: OPE-637
   };  
 
   @Bean

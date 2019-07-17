@@ -24,3 +24,5 @@ logging:
   level:
     ROOT: INFO
     org.camunda.operate: DEBUG
+#Spring Boot Actuator endpoints to be exposed
+management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus

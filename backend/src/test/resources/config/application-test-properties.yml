@@ -23,3 +23,5 @@ camunda.operate:
     workerId: someWorker
     lockTimeout: 15000
     executorEnabled: false
+#Spring Boot Actuator endpoints to be exposed
+management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
