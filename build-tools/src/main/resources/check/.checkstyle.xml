@@ -109,5 +109,7 @@
             <property name="illegalPattern" value="true"/>
             <property name="message" value="Trailing whitespace"/>
         </module>
+
+        <module name="DefaultComesLast" />
     </module>
 </module>
