@@ -9,11 +9,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.TerminatedUserSessionDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.type.TerminatedUserSessionType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TERMINATED_USER_SESSION_TYPE;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
@@ -36,7 +35,7 @@ import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 @Slf4j
 public class TerminatedUserSessionWriter {
 
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
 
@@ -45,13 +44,10 @@ public class TerminatedUserSessionWriter {
     try {
       final String jsonSource = objectMapper.writeValueAsString(sessionDto);
 
-      final IndexRequest request = new IndexRequest(
-        getOptimizeIndexAliasForType(TERMINATED_USER_SESSION_TYPE),
-        TERMINATED_USER_SESSION_TYPE,
-        sessionDto.getId()
-      )
-        .source(jsonSource, XContentType.JSON)
-        .setRefreshPolicy(IMMEDIATE);
+      final IndexRequest request =
+        new IndexRequest(TERMINATED_USER_SESSION_TYPE, TERMINATED_USER_SESSION_TYPE, sessionDto.getId())
+          .source(jsonSource, XContentType.JSON)
+          .setRefreshPolicy(IMMEDIATE);
 
       esClient.index(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
@@ -69,11 +65,10 @@ public class TerminatedUserSessionWriter {
         .lt(dateTimeFormatter.format(timestamp))
         .format(OPTIMIZE_DATE_FORMAT)
     );
-    final DeleteByQueryRequest request =
-      new DeleteByQueryRequest(getOptimizeIndexAliasForType(TERMINATED_USER_SESSION_TYPE))
-        .setQuery(filterQuery)
-        .setAbortOnVersionConflict(false)
-        .setRefresh(true);
+    final DeleteByQueryRequest request = new DeleteByQueryRequest(TERMINATED_USER_SESSION_TYPE)
+      .setQuery(filterQuery)
+      .setAbortOnVersionConflict(false)
+      .setRefresh(true);
 
     final BulkByScrollResponse bulkByScrollResponse;
     try {

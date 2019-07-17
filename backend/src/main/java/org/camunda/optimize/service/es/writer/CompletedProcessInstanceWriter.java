@@ -12,13 +12,13 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
@@ -33,7 +33,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.BUSINESS_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DURATION;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
@@ -60,9 +59,9 @@ public class CompletedProcessInstanceWriter {
     ENGINE, TENANT_ID
   );
 
-  private RestHighLevelClient esClient;
-  private ObjectMapper objectMapper;
-  private DateTimeFormatter dateTimeFormatter;
+  private final OptimizeElasticsearchClient esClient;
+  private final ObjectMapper objectMapper;
+  private final DateTimeFormatter dateTimeFormatter;
 
   public void importProcessInstances(List<ProcessInstanceDto> processInstances) throws Exception {
     log.debug("Writing [{}] completed process instances to elasticsearch", processInstances.size());
@@ -98,7 +97,7 @@ public class CompletedProcessInstanceWriter {
       final BoolQueryBuilder filterQuery = boolQuery()
         .filter(termQuery(ProcessInstanceType.PROCESS_DEFINITION_KEY, processDefinitionKey))
         .filter(rangeQuery(ProcessInstanceType.END_DATE).lt(dateTimeFormatter.format(endDate)));
-      DeleteByQueryRequest request = new DeleteByQueryRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+      DeleteByQueryRequest request = new DeleteByQueryRequest(PROC_INSTANCE_TYPE)
         .setQuery(filterQuery)
         .setAbortOnVersionConflict(false)
         .setRefresh(true);
@@ -138,14 +137,16 @@ public class CompletedProcessInstanceWriter {
       log.warn("End date should not be null for completed process instances!");
     }
 
-    final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(PRIMITIVE_UPDATABLE_FIELDS, procInst);
+    final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(
+      PRIMITIVE_UPDATABLE_FIELDS,
+      procInst
+    );
     final String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
     final String processInstanceId = procInst.getProcessInstanceId();
-    UpdateRequest request =
-      new UpdateRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE), PROC_INSTANCE_TYPE, processInstanceId)
-        .script(updateScript)
-        .upsert(newEntryIfAbsent, XContentType.JSON)
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+    UpdateRequest request = new UpdateRequest(PROC_INSTANCE_TYPE, PROC_INSTANCE_TYPE, processInstanceId)
+      .script(updateScript)
+      .upsert(newEntryIfAbsent, XContentType.JSON)
+      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
     bulkRequest.add(request);
 

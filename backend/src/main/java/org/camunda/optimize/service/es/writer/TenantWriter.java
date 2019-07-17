@@ -10,13 +10,12 @@ import com.google.common.collect.ImmutableSet;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
@@ -25,8 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_TYPE;
 
 @AllArgsConstructor
 @Component
@@ -34,8 +33,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_R
 public class TenantWriter {
   private static final Set<String> FIELDS_TO_UPDATE = ImmutableSet.of(TenantDto.Fields.name.name());
 
-  private RestHighLevelClient esClient;
-  private ObjectMapper objectMapper;
+  private final OptimizeElasticsearchClient esClient;
+  private final ObjectMapper objectMapper;
 
   public void writeTenants(final List<TenantDto> tenantDtos) {
     log.debug("Writing [{}] tenants to elasticsearch", tenantDtos.size());
@@ -63,14 +62,11 @@ public class TenantWriter {
     for (TenantDto tenantDto : tenantDtos) {
       final String id = tenantDto.getId();
       final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(FIELDS_TO_UPDATE, tenantDto);
-      final UpdateRequest request = new UpdateRequest(
-        getOptimizeIndexAliasForType(ElasticsearchConstants.TENANT_TYPE),
-        ElasticsearchConstants.TENANT_TYPE,
-        id
-      )
-        .script(updateScript)
-        .upsert(objectMapper.convertValue(tenantDto, Map.class))
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      final UpdateRequest request =
+        new UpdateRequest(TENANT_TYPE, TENANT_TYPE, id)
+          .script(updateScript)
+          .upsert(objectMapper.convertValue(tenantDto, Map.class))
+          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
       bulkRequest.add(request);
     }

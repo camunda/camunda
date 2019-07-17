@@ -266,7 +266,7 @@ public class SessionServiceIT {
       Assert.assertThat(getReportsResponse.getStatus(), is(200));
     } finally {
       embeddedOptimizeRule.getElasticSearchSchemaManager().initializeSchema(
-        embeddedOptimizeRule.getElasticsearchClient()
+        embeddedOptimizeRule.getOptimizeElasticClient()
       );
     }
   }

@@ -8,9 +8,10 @@ package org.camunda.optimize.reimport.preparation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.TypeMappingCreator;
 import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
 import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
@@ -58,8 +59,13 @@ public class ReimportPreparation {
            ElasticsearchHighLevelRestClientBuilder.build(configurationService)) {
       logger.info("Successfully created connection to Elasticsearch.");
 
-      deleteImportAndEngineDataIndexes(restHighLevelClient);
-      recreateImportAndEngineDataIndexes(restHighLevelClient);
+      final OptimizeElasticsearchClient prefixAwareClient = new OptimizeElasticsearchClient(
+        restHighLevelClient,
+        new OptimizeIndexNameService(configurationService)
+      );
+
+      deleteImportAndEngineDataIndexes(prefixAwareClient);
+      recreateImportAndEngineDataIndexes(prefixAwareClient);
 
       logger.info(
         "Optimize was successfully prepared such it can reimport the engine data. Feel free to start Optimize again!"
@@ -70,15 +76,15 @@ public class ReimportPreparation {
 
   }
 
-  private static void deleteImportAndEngineDataIndexes(RestHighLevelClient restHighLevelClient) {
+  private static void deleteImportAndEngineDataIndexes(OptimizeElasticsearchClient prefixAwareClient) {
     logger.info("Deleting import and engine data indexes from Optimize...");
 
     TYPES_TO_CLEAR.stream()
-      .map(OptimizeIndexNameHelper::getVersionedOptimizeIndexNameForTypeMapping)
+      .map(type -> prefixAwareClient.getIndexNameService().getVersionedOptimizeIndexNameForTypeMapping(type))
       .forEach(indexName -> {
         final Request request = new Request("DELETE", "/" + indexName);
         try {
-          restHighLevelClient.getLowLevelClient().performRequest(request);
+          prefixAwareClient.getLowLevelClient().performRequest(request);
         } catch (IOException e) {
           logger.warn("Failed to delete index {}, reason: {}", indexName, e.getMessage());
           throw new RuntimeException(e);
@@ -88,18 +94,19 @@ public class ReimportPreparation {
     logger.info("Finished deleting import and engine data indexes from Elasticsearch.");
   }
 
-  private static void recreateImportAndEngineDataIndexes(RestHighLevelClient restHighLevelClient) {
+  private static void recreateImportAndEngineDataIndexes(OptimizeElasticsearchClient prefixAwareClient) {
     logger.info("Recreating import indexes and engine data from Optimize...");
 
     final ObjectMapper objectMapper = new ObjectMapper();
     final ElasticSearchSchemaManager schemaManager = new ElasticSearchSchemaManager(
       new ElasticsearchMetadataService(objectMapper),
       configurationService,
+      prefixAwareClient.getIndexNameService(),
       TYPES_TO_CLEAR,
       objectMapper
     );
 
-    schemaManager.createOptimizeIndices(restHighLevelClient);
+    schemaManager.createOptimizeIndices(prefixAwareClient.getHighLevelClient());
 
     logger.info("Finished recreating import and engine data indexes from Elasticsearch.");
   }

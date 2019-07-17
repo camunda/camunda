@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.service.es.report.command.process.util;
 
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -25,11 +25,8 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable
-  .AbstractProcessInstanceDurationByVariableCommand.FILTERED_VARIABLES_AGGREGATION;
-import static org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable
-  .AbstractProcessInstanceDurationByVariableCommand.NESTED_AGGREGATION;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable.AbstractProcessInstanceDurationByVariableCommand.FILTERED_VARIABLES_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable.AbstractProcessInstanceDurationByVariableCommand.NESTED_AGGREGATION;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DATE_VARIABLES;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
@@ -45,7 +42,7 @@ public class GroupByDateVariableIntervalSelection {
 
 
   public static Stats getMinMaxStats(QueryBuilder query, String esType, String field,
-                                     RestHighLevelClient esClient,
+                                     OptimizeElasticsearchClient esClient,
                                      String nestedVariableNameFieldLabel, String variableName) {
 
     AggregationBuilder aggregationBuilder = nested(NESTED_AGGREGATION, DATE_VARIABLES).subAggregation(filter(
@@ -66,10 +63,9 @@ public class GroupByDateVariableIntervalSelection {
       .fetchSource(false)
       .aggregation(statsAgg)
       .size(0);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(esType))
-        .types(esType)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(esType)
+      .types(esType)
+      .source(searchSourceBuilder);
 
     SearchResponse response;
     try {
@@ -84,7 +80,8 @@ public class GroupByDateVariableIntervalSelection {
                                                                  String nestedVariableNameFieldLabel,
                                                                  String nestedVariableValueFieldLabel,
                                                                  IntervalAggregationService intervalAggregationService,
-                                                                 RestHighLevelClient esClient, QueryBuilder baseQuery) {
+                                                                 OptimizeElasticsearchClient esClient,
+                                                                 QueryBuilder baseQuery) {
     Stats minMaxStats = getMinMaxStats(
       baseQuery,
       PROC_INSTANCE_TYPE,

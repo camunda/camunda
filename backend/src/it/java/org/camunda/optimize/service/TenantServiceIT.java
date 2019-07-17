@@ -12,7 +12,6 @@ import org.camunda.optimize.service.util.configuration.DefaultTenant;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -25,6 +24,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_REVOKE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -267,7 +267,7 @@ public class TenantServiceIT {
   }
 
   private void addTenantToElasticsearch(final TenantDto engine) {
-    elasticSearchRule.addEntryToElasticsearch(ElasticsearchConstants.TENANT_TYPE, engine.getId(), engine);
+    elasticSearchRule.addEntryToElasticsearch(TENANT_TYPE, engine.getId(), engine);
   }
 
 }

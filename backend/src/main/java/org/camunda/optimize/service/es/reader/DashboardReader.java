@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetRequest;
@@ -17,7 +18,6 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -28,7 +28,6 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 
@@ -37,17 +36,13 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_
 @Slf4j
 public class DashboardReader {
 
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
   public DashboardDefinitionDto getDashboard(String dashboardId) {
     log.debug("Fetching dashboard with id [{}]", dashboardId);
-    GetRequest getRequest = new GetRequest(
-      getOptimizeIndexAliasForType(DASHBOARD_TYPE),
-      DASHBOARD_TYPE,
-      dashboardId
-    );
+    GetRequest getRequest = new GetRequest(DASHBOARD_TYPE, DASHBOARD_TYPE, dashboardId);
 
     GetResponse getResponse;
     try {
@@ -86,10 +81,9 @@ public class DashboardReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(getCombinedReportsBySimpleReportIdQuery);
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(DASHBOARD_TYPE))
-        .types(DASHBOARD_TYPE)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(DASHBOARD_TYPE)
+      .types(DASHBOARD_TYPE)
+      .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
@@ -108,11 +102,10 @@ public class DashboardReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(QueryBuilders.matchAllQuery())
       .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(DASHBOARD_TYPE))
-        .types(DASHBOARD_TYPE)
-        .source(searchSourceBuilder)
-        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+    SearchRequest searchRequest = new SearchRequest(DASHBOARD_TYPE)
+      .types(DASHBOARD_TYPE)
+      .source(searchSourceBuilder)
+      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
     SearchResponse scrollResp;
     try {

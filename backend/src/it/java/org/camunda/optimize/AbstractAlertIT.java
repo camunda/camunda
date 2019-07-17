@@ -52,8 +52,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public abstract class AbstractAlertIT {
 
-  protected static final String ALERT = "alert";
-
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();

@@ -44,7 +44,6 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE_WITH_PART;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -296,14 +295,14 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       "for (event in ctx._source.events) { event.startDate = null }",
       Collections.emptyMap()
     );
-    UpdateByQueryRequest request = new UpdateByQueryRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+    UpdateByQueryRequest request = new UpdateByQueryRequest(PROC_INSTANCE_TYPE)
       .setAbortOnVersionConflict(false)
       .setQuery(matchAllQuery())
       .setScript(setActivityStartDatesToNull)
       .setRefresh(true);
 
     try {
-      elasticSearchRule.getEsClient().updateByQuery(request, RequestOptions.DEFAULT);
+      elasticSearchRule.getOptimizeElasticClient().updateByQuery(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not set activity start dates to null.", e);
     }
@@ -500,8 +499,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     // when
     ProcessReportDataDto reportData =
       ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNoneWithProcessPart(
-      processKey, ReportConstants.ALL_VERSIONS, START_EVENT, END_EVENT
-    );
+        processKey, ReportConstants.ALL_VERSIONS, START_EVENT, END_EVENT
+      );
     reportData.setTenantIds(selectedTenants);
     ProcessDurationReportNumberResultDto result = evaluateDurationNumberReport(reportData).getResult();
 

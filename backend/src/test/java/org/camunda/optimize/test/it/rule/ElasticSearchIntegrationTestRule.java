@@ -14,7 +14,8 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.TypeMappingCreator;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -35,7 +36,6 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.ToXContent;
@@ -61,8 +61,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getVersionedOptimizeIndexNameForTypeMapping;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_ID;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
@@ -81,15 +79,22 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     Collections.singletonMap("flat_settings", "true")
   );
 
-  private static ObjectMapper objectMapper;
-  private static RestHighLevelClient esClient;
-  private static boolean haveToClean = true;
-  private static ConfigurationService configurationService;
+  private ObjectMapper objectMapper;
+  private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
+  private OptimizeIndexNameService indexNameService;
+  private boolean haveToClean = true;
+  private ConfigurationService configurationService;
 
+  private final String customIndexPrefix;
   // maps types to a list of document entry ids added to that type
   private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
 
   public ElasticSearchIntegrationTestRule() {
+    this(null);
+  }
+
+  public ElasticSearchIntegrationTestRule(final String customIndexPrefix) {
+    this.customIndexPrefix = customIndexPrefix;
   }
 
   @Override
@@ -112,7 +117,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   public void refreshAllOptimizeIndices() {
     try {
       RefreshRequest refreshAllIndicesRequest = new RefreshRequest();
-      getEsClient().indices().refresh(refreshAllIndicesRequest, RequestOptions.DEFAULT);
+      getOptimizeElasticClient().getHighLevelClient().indices().refresh(refreshAllIndicesRequest, RequestOptions.DEFAULT);
     } catch (Exception e) {
       throw new OptimizeIntegrationTestException("Could not refresh Optimize indices!", e);
     }
@@ -136,10 +141,10 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   public void addEntryToElasticsearch(String type, String id, Object entry) {
     try {
       String json = objectMapper.writeValueAsString(entry);
-      IndexRequest request = new IndexRequest(getOptimizeIndexAliasForType(type), type, id)
+      IndexRequest request = new IndexRequest(type, type, id)
         .source(json, XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE); // necessary because otherwise I can't search for the entry immediately
-      getEsClient().index(request, RequestOptions.DEFAULT);
+      getOptimizeElasticClient().index(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Unable to add an entry to elasticsearch", e);
     }
@@ -148,12 +153,12 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   public OffsetDateTime getLastProcessInstanceImportTimestamp() throws IOException {
     GetRequest getRequest = new GetRequest(
-      getOptimizeIndexAliasForType(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
+      TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
       TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
       EsHelper.constructKey(ElasticsearchConstants.PROC_INSTANCE_TYPE, "1")
     );
 
-    String content = esClient.get(getRequest, RequestOptions.DEFAULT).getSourceAsString();
+    String content = prefixAwareRestHighLevelClient.get(getRequest, RequestOptions.DEFAULT).getSourceAsString();
     TimestampBasedImportIndexDto timestampBasedImportIndexDto = objectMapper.readValue(
       content,
       TimestampBasedImportIndexDto.class
@@ -168,11 +173,12 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
         .put(settingKey, block)
         .build();
 
-    UpdateSettingsRequest request = new UpdateSettingsRequest(OptimizeIndexNameHelper.getOptimizeIndexAliasForType(
-      PROC_INSTANCE_TYPE));
+    UpdateSettingsRequest request = new UpdateSettingsRequest(
+      indexNameService.getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE)
+    );
     request.settings(settings);
 
-    esClient.indices().putSettings(request, RequestOptions.DEFAULT);
+    getOptimizeElasticClient().getHighLevelClient().indices().putSettings(request, RequestOptions.DEFAULT);
   }
 
   @SneakyThrows
@@ -182,11 +188,11 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(getOptimizeIndexAliasForType(elasticsearchType))
+      .indices(elasticsearchType)
       .types(elasticsearchType)
       .source(searchSourceBuilder);
 
-    return esClient.search(searchRequest, RequestOptions.DEFAULT);
+    return prefixAwareRestHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
   }
 
   public Integer getDocumentCountOf(final String elasticsearchType) {
@@ -200,13 +206,13 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       .size(0);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(getOptimizeIndexAliasForType(elasticsearchType))
+      .indices(elasticsearchType)
       .types(elasticsearchType)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
-      searchResponse = getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not query the import count!", e);
     }
@@ -231,13 +237,13 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       );
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+      .indices(PROC_INSTANCE_TYPE)
       .types(PROC_INSTANCE_TYPE)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
-      searchResponse = getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not query the activity count!", e);
     }
@@ -261,7 +267,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       .size(0);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+      .indices(PROC_INSTANCE_TYPE)
       .types(PROC_INSTANCE_TYPE)
       .source(searchSourceBuilder);
 
@@ -277,7 +283,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not query the variable instance count!", e);
     }
@@ -299,7 +305,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       .setRefresh(true);
 
     try {
-      getEsClient().deleteByQuery(request, RequestOptions.DEFAULT);
+      getOptimizeElasticClient().getHighLevelClient().deleteByQuery(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not delete all Optimize data", e);
     }
@@ -307,8 +313,8 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   public void deleteIndexOfType(final TypeMappingCreator type) {
     try {
-      getEsClient().indices().delete(
-        new DeleteIndexRequest(getVersionedOptimizeIndexNameForTypeMapping(type)),
+      getOptimizeElasticClient().getHighLevelClient().indices().delete(
+        new DeleteIndexRequest(indexNameService.getVersionedOptimizeIndexNameForTypeMapping(type)),
         RequestOptions.DEFAULT
       );
     } catch (IOException e) {
@@ -326,14 +332,23 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   private void initEsClient() {
-    if (esClient == null) {
-      esClient = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
+    if (indexNameService == null) {
+      indexNameService = new OptimizeIndexNameService(configurationService);
+    }
+    if (prefixAwareRestHighLevelClient == null) {
+      prefixAwareRestHighLevelClient = new OptimizeElasticsearchClient(
+        ElasticsearchHighLevelRestClientBuilder.build(configurationService),
+        indexNameService
+      );
     }
   }
 
   private void initConfigurationService() {
     if (configurationService == null) {
       configurationService = new ConfigurationService();
+      if (customIndexPrefix != null) {
+        configurationService.setEsIndexPrefix(customIndexPrefix);
+      }
     }
   }
 
@@ -373,7 +388,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       request.setJsonEntity(Strings.toString(
         clusterUpdateSettingsRequest.toXContent(builder, XCONTENT_PARAMS_FLAT_SETTINGS)
       ));
-      esClient.getLowLevelClient().performRequest(request);
+      prefixAwareRestHighLevelClient.getLowLevelClient().performRequest(request);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Could not update index settings!", e);
     }
@@ -406,9 +421,9 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
         .query(QueryBuilders.matchAllQuery());
       SearchRequest searchRequest = new SearchRequest();
-      searchRequest.indices(OptimizeIndexNameHelper.OPTIMIZE_INDEX_PREFIX + "*");
+      searchRequest.indices(indexNameService.getIndexPrefix() + "*");
       searchRequest.source(searchSourceBuilder);
-      SearchResponse searchResponse = getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+      SearchResponse searchResponse = getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
 
       Long hits = searchResponse.getHits().getTotalHits();
       assertThat("Elasticsearch should be clean after Test!", hits, is(0L));
@@ -417,7 +432,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     }
   }
 
-  public RestHighLevelClient getEsClient() {
-    return esClient;
+  public OptimizeElasticsearchClient getOptimizeElasticClient() {
+    return prefixAwareRestHighLevelClient;
   }
 }

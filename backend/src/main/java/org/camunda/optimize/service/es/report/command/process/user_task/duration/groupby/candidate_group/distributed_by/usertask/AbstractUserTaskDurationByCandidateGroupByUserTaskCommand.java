@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.report.command.util.FlowNodeExecutionStateAggregationUtil.addExecutionStateFilter;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ACTIVITY_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_CANDIDATE_GROUPS;
@@ -45,7 +44,8 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
-public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskCommand extends UserTaskDistributedByUserTaskCommand {
+public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskCommand
+  extends UserTaskDistributedByUserTaskCommand {
 
   private static final String USER_TASK_ID_TERMS_AGGREGATION = "tasks";
   private static final String USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION = "candidateGroups";
@@ -74,7 +74,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskCommand 
       .fetchSource(false)
       .aggregation(createAggregation(processReportData.getConfiguration().getFlowNodeExecutionState()))
       .size(0);
-    final SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+    final SearchRequest searchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
       .types(PROC_INSTANCE_TYPE)
       .source(searchSourceBuilder);
 
@@ -147,7 +147,8 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskCommand 
     final Aggregations aggregations = response.getAggregations();
     final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
-    final Terms byCandidateGroupAggregation = filteredUserTasks.getAggregations().get(USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION);
+    final Terms byCandidateGroupAggregation = filteredUserTasks.getAggregations()
+      .get(USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION);
 
     final List<HyperMapResultEntryDto<Long>> resultData = new ArrayList<>();
     for (Terms.Bucket candidateGroupBucket : byCandidateGroupAggregation.getBuckets()) {

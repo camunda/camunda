@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -44,18 +43,14 @@ public abstract class AbstractImportIT {
   public RuleChain chain = RuleChain
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
 
-  protected void allEntriesInElasticsearchHaveAllData(String elasticsearchType) throws IOException {
-    allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchType, 1L, Collections.emptySet());
-  }
-
   protected void allEntriesInElasticsearchHaveAllData(String elasticsearchType, final Set<String> excludedFields) throws
-                                                                                                                IOException {
+                                                                                                                  IOException {
     allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchType, 1L, excludedFields);
   }
 
 
   protected void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchType,
-                                                             final long count) throws IOException {
+                                                               final long count) throws IOException {
     allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchType, count, Collections.emptySet());
   }
 
@@ -93,11 +88,11 @@ public abstract class AbstractImportIT {
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(getOptimizeIndexAliasForType(elasticsearchType))
+      .indices(elasticsearchType)
       .types(elasticsearchType)
       .source(searchSourceBuilder);
 
-    return elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+    return elasticSearchRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTask() {

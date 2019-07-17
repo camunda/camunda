@@ -10,12 +10,12 @@ import com.google.common.collect.ImmutableSet;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.FLOW_NODE_NAMES;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_XML;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.USER_TASK_NAMES;
@@ -39,8 +38,8 @@ public class ProcessDefinitionXmlWriter {
     FLOW_NODE_NAMES, USER_TASK_NAMES, PROCESS_DEFINITION_XML
   );
 
-  private RestHighLevelClient esClient;
-  private ObjectMapper objectMapper;
+  private final OptimizeElasticsearchClient esClient;
+  private final ObjectMapper objectMapper;
 
   public void importProcessDefinitionXmls(List<ProcessDefinitionOptimizeDto> xmls) {
     log.debug("writing [{}] process definition XMLs to ES", xmls.size());
@@ -71,12 +70,11 @@ public class ProcessDefinitionXmlWriter {
 
   private void addImportProcessDefinitionXmlRequest(final BulkRequest bulkRequest,
                                                     final ProcessDefinitionOptimizeDto processDefinitionDto) {
-    final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(FIELDS_TO_UPDATE, processDefinitionDto);
-    final UpdateRequest updateRequest = new UpdateRequest(
-      getOptimizeIndexAliasForType(PROC_DEF_TYPE),
-      PROC_DEF_TYPE,
-      processDefinitionDto.getId()
-    )
+    final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(
+      FIELDS_TO_UPDATE,
+      processDefinitionDto
+    );
+    final UpdateRequest updateRequest = new UpdateRequest(PROC_DEF_TYPE, PROC_DEF_TYPE, processDefinitionDto.getId())
       .script(updateScript)
       .upsert(objectMapper.convertValue(processDefinitionDto, Map.class))
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

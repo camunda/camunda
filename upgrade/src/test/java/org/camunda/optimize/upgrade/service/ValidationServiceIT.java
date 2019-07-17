@@ -41,7 +41,7 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
   @Test
   public void versionValidationBreaksWithoutIndex() {
     try {
-      underTest.validateSchemaVersions(restClient, "2.0", "2.1");
+      underTest.validateSchemaVersions(prefixAwareClient, "2.0", "2.1");
     } catch (UpgradeRuntimeException e) {
       //expected
       return;
@@ -57,7 +57,7 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
 
     try {
       //when
-      underTest.validateSchemaVersions(restClient, "2.0", "2.1");
+      underTest.validateSchemaVersions(prefixAwareClient, "2.0", "2.1");
     } catch (UpgradeRuntimeException e) {
       //expected
       //then
@@ -73,7 +73,7 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
     setMetadataIndexVersion("2.0");
 
     //when
-    underTest.validateSchemaVersions(restClient, "2.0", "2.1");
+    underTest.validateSchemaVersions(prefixAwareClient, "2.0", "2.1");
 
     //then - no exception
   }
@@ -85,7 +85,7 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
 
     try {
       //when
-      underTest.validateSchemaVersions(restClient, "2.0", null);
+      underTest.validateSchemaVersions(prefixAwareClient, "2.0", null);
     } catch (UpgradeRuntimeException e) {
       //expected
       //then
@@ -102,7 +102,7 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
 
     try {
       //when
-      underTest.validateSchemaVersions(restClient, "2.0", "");
+      underTest.validateSchemaVersions(prefixAwareClient, "2.0", "");
     } catch (UpgradeRuntimeException e) {
       //expected
       //then

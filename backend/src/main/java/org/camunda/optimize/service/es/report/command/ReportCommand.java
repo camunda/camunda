@@ -11,11 +11,11 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.es.schema.type.DefinitionBasedType;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.slf4j.Logger;
@@ -39,7 +39,7 @@ public abstract class ReportCommand<R extends ReportEvaluationResult, RD extends
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
   protected RD reportDefinition;
-  protected RestHighLevelClient esClient;
+  protected OptimizeElasticsearchClient esClient;
   protected ConfigurationService configurationService;
   protected ObjectMapper objectMapper;
   protected Range<OffsetDateTime> dateIntervalRange;

@@ -11,6 +11,7 @@ import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.bpm.licensecheck.LicenseKey;
 import org.camunda.bpm.licensecheck.OptimizeLicenseKey;
 import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.metadata.Version;
@@ -20,7 +21,6 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.support.replication.ReplicationResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
@@ -32,7 +32,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.LicenseType.LICENSE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LICENSE_TYPE;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
@@ -46,7 +45,7 @@ public class LicenseManager {
   private static final String OPTIMIZE_LICENSE_FILE = "OptimizeLicense.txt";
   private final String licenseDocumentId = "license";
 
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
 
   private LicenseKey licenseKey = new OptimizeLicenseKey();
   private String optimizeLicense;
@@ -88,11 +87,7 @@ public class LicenseManager {
       throw new OptimizeException("Could not parse given license. Please check the encoding!");
     }
 
-    IndexRequest request = new IndexRequest(
-      getOptimizeIndexAliasForType(LICENSE_TYPE),
-      LICENSE_TYPE,
-      licenseDocumentId
-    )
+    IndexRequest request = new IndexRequest(LICENSE_TYPE, LICENSE_TYPE, licenseDocumentId)
       .source(builder)
       .setRefreshPolicy(IMMEDIATE);
 
@@ -141,8 +136,7 @@ public class LicenseManager {
 
   private String retrieveStoredOptimizeLicense() {
     log.debug("Retrieving stored optimize license!");
-    GetRequest getRequest =
-      new GetRequest(getOptimizeIndexAliasForType(LICENSE_TYPE), LICENSE_TYPE, licenseDocumentId);
+    GetRequest getRequest = new GetRequest(LICENSE_TYPE, LICENSE_TYPE, licenseDocumentId);
 
     GetResponse getResponse;
     try {

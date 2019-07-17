@@ -50,7 +50,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
@@ -83,12 +82,8 @@ public class SingleReportHandlingIT {
     String id = createNewReport();
 
     // when
-    GetRequest getRequest = new GetRequest(
-      getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
-      SINGLE_PROCESS_REPORT_TYPE,
-      id
-    );
-    GetResponse getResponse = elasticSearchRule.getEsClient().get(getRequest, RequestOptions.DEFAULT);
+    GetRequest getRequest = new GetRequest(SINGLE_PROCESS_REPORT_TYPE, SINGLE_PROCESS_REPORT_TYPE, id);
+    GetResponse getResponse = elasticSearchRule.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
 
     // then
     assertThat(getResponse.isExists(), is(true));

@@ -9,8 +9,9 @@ import com.jayway.jsonpath.JsonPath;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.TypeMappingCreator;
 import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventType;
@@ -28,7 +29,6 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.DeprecationHandler;
 import org.elasticsearch.common.xcontent.NamedXContentRegistry;
@@ -46,8 +46,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.DYNAMIC_SETTING_MAX_NGRAM_DIFF;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getVersionedOptimizeIndexNameForTypeMapping;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -59,7 +57,8 @@ public class SchemaInitializerIT {
   public static ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public static EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
-  private RestHighLevelClient esClient;
+  private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
+  private OptimizeIndexNameService indexNameService;
 
   @ClassRule
   public static RuleChain chain = RuleChain
@@ -69,7 +68,8 @@ public class SchemaInitializerIT {
   public void setUp() {
     // given
     elasticSearchRule.cleanAndVerify();
-    esClient = embeddedOptimizeRule.getElasticsearchClient();
+    prefixAwareRestHighLevelClient = embeddedOptimizeRule.getOptimizeElasticClient();
+    indexNameService = prefixAwareRestHighLevelClient.getIndexNameService();
   }
 
   @Test
@@ -89,7 +89,10 @@ public class SchemaInitializerIT {
     initializeSchema();
 
     // then
-    assertThat(embeddedOptimizeRule.getElasticSearchSchemaManager().schemaAlreadyExists(esClient), is(true));
+    assertThat(
+      embeddedOptimizeRule.getElasticSearchSchemaManager().schemaAlreadyExists(prefixAwareRestHighLevelClient),
+      is(true)
+    );
   }
 
   @Test
@@ -97,8 +100,8 @@ public class SchemaInitializerIT {
 
     // given
     initializeSchema();
-    embeddedOptimizeRule.getElasticsearchClient().indices().delete(
-      new DeleteIndexRequest(getVersionedOptimizeIndexNameForTypeMapping(new DecisionInstanceType())),
+    embeddedOptimizeRule.getOptimizeElasticClient().getHighLevelClient().indices().delete(
+      new DeleteIndexRequest(indexNameService.getVersionedOptimizeIndexNameForTypeMapping(new DecisionInstanceType())),
       RequestOptions.DEFAULT
     );
 
@@ -106,7 +109,10 @@ public class SchemaInitializerIT {
     initializeSchema();
 
     // then
-    assertThat(embeddedOptimizeRule.getElasticSearchSchemaManager().schemaAlreadyExists(esClient), is(true));
+    assertThat(
+      embeddedOptimizeRule.getElasticSearchSchemaManager().schemaAlreadyExists(prefixAwareRestHighLevelClient),
+      is(true)
+    );
   }
 
   @Test
@@ -130,12 +136,16 @@ public class SchemaInitializerIT {
     initializeSchema();
 
     // when there is a new mapping and I update the mapping
-    MyUpdatedEventType updatedEventType = new MyUpdatedEventType(embeddedOptimizeRule.getConfigurationService());
-    embeddedOptimizeRule.getElasticSearchSchemaManager().addMapping(updatedEventType);
-    initializeSchema();
+    MyUpdatedEventType updatedEventType = new MyUpdatedEventType();
+    try {
+      embeddedOptimizeRule.getElasticSearchSchemaManager().addMapping(updatedEventType);
+      initializeSchema();
 
-    // then the mapping contains the new fields
-    assertThatNewFieldExists();
+      // then the mapping contains the new fields
+      assertThatNewFieldExists();
+    } finally {
+      embeddedOptimizeRule.getElasticSearchSchemaManager().getMappings().remove(updatedEventType);
+    }
   }
 
   @Test
@@ -168,8 +178,8 @@ public class SchemaInitializerIT {
     modifyDynamicIndexSetting(mappings);
 
     // one index is missing so recreating of indexes is triggered
-    embeddedOptimizeRule.getElasticsearchClient().indices().delete(
-      new DeleteIndexRequest(getVersionedOptimizeIndexNameForTypeMapping(new DecisionInstanceType())),
+    embeddedOptimizeRule.getOptimizeElasticClient().getHighLevelClient().indices().delete(
+      new DeleteIndexRequest(indexNameService.getVersionedOptimizeIndexNameForTypeMapping(new DecisionInstanceType())),
       RequestOptions.DEFAULT
     );
 
@@ -220,7 +230,7 @@ public class SchemaInitializerIT {
     for (TypeMappingCreator mapping : mappings) {
       settings.names().forEach(settingName -> {
         final String ngramMaxValue = getSettingsResponse.getSetting(
-          getVersionedOptimizeIndexNameForTypeMapping(mapping),
+          indexNameService.getVersionedOptimizeIndexNameForTypeMapping(mapping),
           "index." + settingName
         );
         assertThat(ngramMaxValue, is(settings.get(settingName)));
@@ -230,20 +240,20 @@ public class SchemaInitializerIT {
 
   private void modifyDynamicIndexSetting(final List<TypeMappingCreator> mappings) throws IOException {
     for (TypeMappingCreator mapping : mappings) {
-      final String indexName = getVersionedOptimizeIndexNameForTypeMapping(mapping);
+      final String indexName = indexNameService.getVersionedOptimizeIndexNameForTypeMapping(mapping);
       final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest(indexName);
       updateSettingsRequest.settings(Settings.builder().put(DYNAMIC_SETTING_MAX_NGRAM_DIFF, "1").build());
-      embeddedOptimizeRule.getElasticsearchClient()
+      prefixAwareRestHighLevelClient.getHighLevelClient()
         .indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
     }
   }
 
   private GetSettingsResponse getIndexSettingsFor(final List<TypeMappingCreator> mappings) throws IOException {
     final String indices = mappings.stream()
-      .map(OptimizeIndexNameHelper::getVersionedOptimizeIndexNameForTypeMapping)
+      .map(indexNameService::getVersionedOptimizeIndexNameForTypeMapping)
       .collect(Collectors.joining(","));
 
-    Response response = embeddedOptimizeRule.getElasticsearchClient().getLowLevelClient().performRequest(
+    Response response = prefixAwareRestHighLevelClient.getLowLevelClient().performRequest(
       new Request(HttpGet.METHOD_NAME, "/" + indices + "/_settings")
     );
     return GetSettingsResponse.fromXContent(JsonXContent.jsonXContent.createParser(
@@ -254,9 +264,9 @@ public class SchemaInitializerIT {
   }
 
   private void assertTypeExists(String type) throws IOException {
-    final String optimizeIndexAliasForType = getOptimizeIndexAliasForType(type);
+    final String optimizeIndexAliasForType = indexNameService.getOptimizeIndexAliasForType(type);
 
-    RestClient esClient = elasticSearchRule.getEsClient().getLowLevelClient();
+    RestClient esClient = elasticSearchRule.getOptimizeElasticClient().getLowLevelClient();
     Request request = new Request(HttpGet.METHOD_NAME, "/" + optimizeIndexAliasForType + "/_mapping");
     Response response = esClient.performRequest(request);
 
@@ -277,19 +287,19 @@ public class SchemaInitializerIT {
 
   private void assertThatNewFieldExists() throws IOException {
     final String metaDataType = ElasticsearchConstants.METADATA_TYPE;
-    final String optimizeIndexAliasForType = getOptimizeIndexAliasForType(metaDataType);
+    final String optimizeIndexAliasForType = indexNameService.getOptimizeIndexAliasForType(metaDataType);
 
     GetFieldMappingsRequest request = new GetFieldMappingsRequest().indices(optimizeIndexAliasForType)
       .indices(optimizeIndexAliasForType)
       .types(metaDataType)
       .fields(MyUpdatedEventType.MY_NEW_FIELD);
     GetFieldMappingsResponse response =
-      esClient.indices().getFieldMapping(request, RequestOptions.DEFAULT);
+      prefixAwareRestHighLevelClient.getHighLevelClient().indices().getFieldMapping(request, RequestOptions.DEFAULT);
 
-    final MyUpdatedEventType updatedEventType = new MyUpdatedEventType(embeddedOptimizeRule.getConfigurationService());
+    final MyUpdatedEventType updatedEventType = new MyUpdatedEventType();
     final FieldMappingMetaData fieldEntry =
       response.fieldMappings(
-        getVersionedOptimizeIndexNameForTypeMapping(updatedEventType),
+        indexNameService.getVersionedOptimizeIndexNameForTypeMapping(updatedEventType),
         metaDataType,
         MyUpdatedEventType.MY_NEW_FIELD
       );
@@ -298,6 +308,6 @@ public class SchemaInitializerIT {
   }
 
   private void initializeSchema() {
-    embeddedOptimizeRule.getElasticSearchSchemaManager().initializeSchema(esClient);
+    embeddedOptimizeRule.getElasticSearchSchemaManager().initializeSchema(prefixAwareRestHighLevelClient);
   }
 }

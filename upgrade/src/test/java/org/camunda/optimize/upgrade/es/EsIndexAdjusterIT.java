@@ -11,6 +11,7 @@ import org.apache.http.ProtocolVersion;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.message.BasicStatusLine;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.elasticsearch.client.Response;
@@ -44,6 +45,8 @@ public class EsIndexAdjusterIT {
 
   @Mock
   private ConfigurationService configurationService;
+  @Mock
+  private OptimizeIndexNameService indexNameService;
 
   @Before
   public void init() {
@@ -53,7 +56,7 @@ public class EsIndexAdjusterIT {
   @Test
   public void testFailOnReindexError() throws IOException {
     // given
-    final ESIndexAdjuster underTest = new ESIndexAdjuster(restClient, configurationService);
+    final ESIndexAdjuster underTest = new ESIndexAdjuster(restClient, indexNameService, configurationService);
     final String index1 = "index1";
     final String index2 = "index2";
     final String taskId = "12345";

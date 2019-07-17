@@ -12,6 +12,7 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.type.DashboardType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -24,7 +25,6 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -38,7 +38,6 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.Collections;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
@@ -49,8 +48,8 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 public class DashboardWriter {
   private static final String DEFAULT_DASHBOARD_NAME = "New Dashboard";
 
-  private RestHighLevelClient esClient;
-  private ObjectMapper objectMapper;
+  private final OptimizeElasticsearchClient esClient;
+  private final ObjectMapper objectMapper;
 
   public IdDto createNewDashboardAndReturnId(String userId) {
     log.debug("Writing new dashboard to Elasticsearch");
@@ -65,7 +64,7 @@ public class DashboardWriter {
     dashboard.setId(id);
 
     try {
-      IndexRequest request = new IndexRequest(getOptimizeIndexAliasForType(DASHBOARD_TYPE), DASHBOARD_TYPE, id)
+      IndexRequest request = new IndexRequest(DASHBOARD_TYPE, DASHBOARD_TYPE, id)
         .source(objectMapper.writeValueAsString(dashboard), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -92,11 +91,10 @@ public class DashboardWriter {
   public void updateDashboard(DashboardDefinitionUpdateDto dashboard, String id) {
     log.debug("Updating dashboard with id [{}] in Elasticsearch", id);
     try {
-      UpdateRequest request =
-        new UpdateRequest(getOptimizeIndexAliasForType(DASHBOARD_TYPE), DASHBOARD_TYPE, id)
-          .doc(objectMapper.writeValueAsString(dashboard), XContentType.JSON)
-          .setRefreshPolicy(IMMEDIATE)
-          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      UpdateRequest request = new UpdateRequest(DASHBOARD_TYPE, DASHBOARD_TYPE, id)
+        .doc(objectMapper.writeValueAsString(dashboard), XContentType.JSON)
+        .setRefreshPolicy(IMMEDIATE)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
       UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
 
@@ -140,7 +138,7 @@ public class DashboardWriter {
       QueryBuilders.termQuery(DashboardType.REPORTS + "." + DashboardType.ID, reportId),
       ScoreMode.None
     );
-    UpdateByQueryRequest request = new UpdateByQueryRequest(getOptimizeIndexAliasForType(DASHBOARD_TYPE))
+    UpdateByQueryRequest request = new UpdateByQueryRequest(DASHBOARD_TYPE)
       .setAbortOnVersionConflict(false)
       .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
       .setQuery(query)
@@ -170,9 +168,8 @@ public class DashboardWriter {
 
   public void deleteDashboard(String dashboardId) {
     log.debug("Deleting dashboard with id [{}]", dashboardId);
-    DeleteRequest request =
-      new DeleteRequest(getOptimizeIndexAliasForType(DASHBOARD_TYPE), DASHBOARD_TYPE, dashboardId)
-        .setRefreshPolicy(IMMEDIATE);
+    DeleteRequest request = new DeleteRequest(DASHBOARD_TYPE, DASHBOARD_TYPE, dashboardId)
+      .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;
     try {

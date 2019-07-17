@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -171,7 +170,7 @@ public class ExportLimitsIT {
         processInstanceDto.setProcessInstanceId(UUID.randomUUID().toString());
 
         final IndexRequest indexRequest = new IndexRequest(
-          getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE),
+          PROC_INSTANCE_TYPE,
           PROC_INSTANCE_TYPE,
           processInstanceDto.getProcessInstanceId()
         ).source(elasticSearchRule.getObjectMapper().writeValueAsString(processInstanceDto), XContentType.JSON);
@@ -179,7 +178,7 @@ public class ExportLimitsIT {
         bulkInsert.add(indexRequest);
       }
 
-      elasticSearchRule.getEsClient().bulk(bulkInsert, RequestOptions.DEFAULT);
+      elasticSearchRule.getOptimizeElasticClient().bulk(bulkInsert, RequestOptions.DEFAULT);
     }
     elasticSearchRule.refreshAllOptimizeIndices();
   }

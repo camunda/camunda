@@ -47,7 +47,6 @@ import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterU
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.isResultComplete;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -96,10 +95,9 @@ public abstract class AbstractProcessInstanceDurationGroupByDateCommand
       .fetchSource(false)
       .aggregation(createAggregation(groupByDateUnit, query))
       .size(0);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
-        .types(PROC_INSTANCE_TYPE)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
+      .types(PROC_INSTANCE_TYPE)
+      .source(searchSourceBuilder);
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);

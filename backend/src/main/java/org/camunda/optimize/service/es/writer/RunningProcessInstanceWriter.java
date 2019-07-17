@@ -11,12 +11,12 @@ import com.google.common.collect.ImmutableSet;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
@@ -24,7 +24,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.BUSINESS_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ENGINE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_ID;
@@ -45,8 +44,8 @@ public class RunningProcessInstanceWriter {
     ENGINE, TENANT_ID
   );
 
-  private RestHighLevelClient esClient;
-  private ObjectMapper objectMapper;
+  private final OptimizeElasticsearchClient esClient;
+  private final ObjectMapper objectMapper;
 
   public void importProcessInstances(List<ProcessInstanceDto> processInstances) throws Exception {
     log.debug("Writing [{}] running process instances to elasticsearch", processInstances.size());
@@ -70,14 +69,16 @@ public class RunningProcessInstanceWriter {
     throws JsonProcessingException {
     final String processInstanceId = procInst.getProcessInstanceId();
 
-    final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(PRIMITIVE_UPDATABLE_FIELDS, procInst);
+    final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(
+      PRIMITIVE_UPDATABLE_FIELDS,
+      procInst
+    );
 
     final String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
 
-    final UpdateRequest request =
-      new UpdateRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE), PROC_INSTANCE_TYPE, processInstanceId)
-        .script(updateScript)
-        .upsert(newEntryIfAbsent, XContentType.JSON);
+    final UpdateRequest request = new UpdateRequest(PROC_INSTANCE_TYPE, PROC_INSTANCE_TYPE, processInstanceId)
+      .script(updateScript)
+      .upsert(newEntryIfAbsent, XContentType.JSON);
 
     bulkRequest.add(request);
   }

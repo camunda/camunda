@@ -9,7 +9,6 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.ScrollBasedImportIndexHandler;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
@@ -29,7 +28,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.ENGINE;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_XML;
@@ -76,8 +74,7 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
     RefreshRequest refreshAllRequest = new RefreshRequest();
 
     try {
-      RefreshResponse refreshResponse =
-        esClient.indices().refresh(refreshAllRequest, RequestOptions.DEFAULT);
+      esClient.getHighLevelClient().indices().refresh(refreshAllRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       logger.error("Could not refresh Optimize indexes!", e);
       throw new OptimizeRuntimeException("Could not refresh Optimize indexes!", e);
@@ -102,11 +99,10 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
       .fetchSource(false)
       .sort(SortBuilders.fieldSort(PROCESS_DEFINITION_ID).order(SortOrder.DESC))
       .size(configurationService.getEngineImportProcessDefinitionXmlMaxPageSize());
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(PROC_DEF_TYPE))
-        .types(PROC_DEF_TYPE)
-        .source(searchSourceBuilder)
-        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+    SearchRequest searchRequest = new SearchRequest(PROC_DEF_TYPE)
+      .types(PROC_DEF_TYPE)
+      .source(searchSourceBuilder)
+      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
     SearchResponse scrollResp;
     try {

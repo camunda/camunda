@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.type.DashboardShareType;
 import org.camunda.optimize.service.es.schema.type.ReportShareType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -19,7 +20,6 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -34,7 +34,6 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_SHARE_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REPORT_SHARE_TYPE;
@@ -44,7 +43,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REPORT_SHAR
 @Slf4j
 public class SharingReader {
 
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
@@ -54,10 +53,9 @@ public class SharingReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(REPORT_SHARE_TYPE))
-        .types(REPORT_SHARE_TYPE)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(REPORT_SHARE_TYPE)
+      .types(REPORT_SHARE_TYPE)
+      .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
@@ -86,11 +84,7 @@ public class SharingReader {
   public Optional<ReportShareDto> getReportShare(String shareId) {
     Optional<ReportShareDto> result = Optional.empty();
     log.debug("Fetching report share with id [{}]", shareId);
-    GetRequest getRequest = new GetRequest(
-      getOptimizeIndexAliasForType(REPORT_SHARE_TYPE),
-      REPORT_SHARE_TYPE,
-      shareId
-    );
+    GetRequest getRequest = new GetRequest(REPORT_SHARE_TYPE, REPORT_SHARE_TYPE, shareId);
 
     GetResponse getResponse;
     try {
@@ -116,11 +110,7 @@ public class SharingReader {
   public Optional<DashboardShareDto> findDashboardShare(String shareId) {
     Optional<DashboardShareDto> result = Optional.empty();
     log.debug("Fetching dashboard share with id [{}]", shareId);
-    GetRequest getRequest = new GetRequest(
-      getOptimizeIndexAliasForType(DASHBOARD_SHARE_TYPE),
-      DASHBOARD_SHARE_TYPE,
-      shareId
-    );
+    GetRequest getRequest = new GetRequest(DASHBOARD_SHARE_TYPE, DASHBOARD_SHARE_TYPE, shareId);
 
     GetResponse getResponse;
     try {
@@ -183,10 +173,9 @@ public class SharingReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(boolQueryBuilder);
     searchSourceBuilder.size(1);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(DASHBOARD_SHARE_TYPE))
-        .types(DASHBOARD_SHARE_TYPE)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(DASHBOARD_SHARE_TYPE)
+      .types(DASHBOARD_SHARE_TYPE)
+      .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
@@ -203,8 +192,7 @@ public class SharingReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(REPORT_SHARE_TYPE))
+    SearchRequest searchRequest = new SearchRequest(REPORT_SHARE_TYPE)
         .types(REPORT_SHARE_TYPE)
         .source(searchSourceBuilder)
         .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
@@ -249,8 +237,7 @@ public class SharingReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(DASHBOARD_SHARE_TYPE))
+    SearchRequest searchRequest = new SearchRequest(DASHBOARD_SHARE_TYPE)
         .types(DASHBOARD_SHARE_TYPE)
         .source(searchSourceBuilder)
         .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));

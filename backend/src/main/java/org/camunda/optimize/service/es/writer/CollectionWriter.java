@@ -10,9 +10,10 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.type.CollectionType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -27,7 +28,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -45,7 +45,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
@@ -61,7 +60,7 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 public class CollectionWriter {
   public static final String DEFAULT_COLLECTION_NAME = "New Collection";
 
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter formatter;
 
@@ -80,7 +79,7 @@ public class CollectionWriter {
     collection.setName(DEFAULT_COLLECTION_NAME);
 
     try {
-      IndexRequest request = new IndexRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE), COLLECTION_TYPE, id)
+      IndexRequest request = new IndexRequest(COLLECTION_TYPE, COLLECTION_TYPE, id)
         .source(objectMapper.writeValueAsString(collection), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -123,11 +122,8 @@ public class CollectionWriter {
         "}";
       final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScript(script, params);
 
-      UpdateRequest request = new UpdateRequest(
-        getOptimizeIndexAliasForType(COLLECTION_TYPE),
-        COLLECTION_TYPE,
-        collectionId
-      ).script(addEntityScript)
+      UpdateRequest request = new UpdateRequest(COLLECTION_TYPE, COLLECTION_TYPE, collectionId)
+        .script(addEntityScript)
         .setRefreshPolicy(IMMEDIATE)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
@@ -160,7 +156,7 @@ public class CollectionWriter {
     try {
 
       UpdateRequest request =
-        new UpdateRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE), COLLECTION_TYPE, id)
+        new UpdateRequest(COLLECTION_TYPE, COLLECTION_TYPE, id)
           .doc(objectMapper.writeValueAsString(collection), XContentType.JSON)
           .setRefreshPolicy(IMMEDIATE)
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -211,12 +207,7 @@ public class CollectionWriter {
       .size(0);
     SearchRequest searchRequest =
       new SearchRequest()
-        .indices(
-          getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
-          getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE),
-          getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE),
-          getOptimizeIndexAliasForType(DASHBOARD_TYPE)
-        )
+        .indices(SINGLE_PROCESS_REPORT_TYPE, SINGLE_DECISION_REPORT_TYPE, COMBINED_REPORT_TYPE, DASHBOARD_TYPE)
         .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -241,11 +232,7 @@ public class CollectionWriter {
 
     Script removeEntityFromCollectionScript = getRemoveEntityFromCollectionScript(entityId);
 
-    final UpdateRequest request = new UpdateRequest(
-      getOptimizeIndexAliasForType(COLLECTION_TYPE),
-      COLLECTION_TYPE,
-      collectionId
-    )
+    final UpdateRequest request = new UpdateRequest(COLLECTION_TYPE, COLLECTION_TYPE, collectionId)
       .script(removeEntityFromCollectionScript)
       .setRefreshPolicy(IMMEDIATE);
 
@@ -282,7 +269,7 @@ public class CollectionWriter {
         ScoreMode.None
       );
 
-    UpdateByQueryRequest request = new UpdateByQueryRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE))
+    UpdateByQueryRequest request = new UpdateByQueryRequest(COLLECTION_TYPE)
       .setAbortOnVersionConflict(false)
       .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
       .setQuery(query)
@@ -319,9 +306,8 @@ public class CollectionWriter {
 
   public void deleteCollection(String collectionId) {
     log.debug("Deleting collection with id [{}]", collectionId);
-    DeleteRequest request =
-      new DeleteRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE), COLLECTION_TYPE, collectionId)
-        .setRefreshPolicy(IMMEDIATE);
+    DeleteRequest request = new DeleteRequest(COLLECTION_TYPE, COLLECTION_TYPE, collectionId)
+      .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;
     try {

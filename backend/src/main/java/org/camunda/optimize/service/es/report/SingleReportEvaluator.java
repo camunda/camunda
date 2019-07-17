@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
@@ -69,7 +70,6 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -149,7 +149,7 @@ public class SingleReportEvaluator {
   protected final ObjectMapper objectMapper;
   protected final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
   protected final DecisionQueryFilterEnhancer decisionQueryFilterEnhancer;
-  protected final RestHighLevelClient esClient;
+  protected final OptimizeElasticsearchClient esClient;
   protected final IntervalAggregationService intervalAggregationService;
   protected final ProcessDefinitionReader processDefinitionReader;
 

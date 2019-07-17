@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.type.AlertType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -17,7 +18,6 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -28,7 +28,6 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 
@@ -37,7 +36,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_
 @Slf4j
 public class AlertReader {
 
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
@@ -47,11 +46,10 @@ public class AlertReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(QueryBuilders.matchAllQuery());
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(ALERT_TYPE))
-        .types(ALERT_TYPE)
-        .source(searchSourceBuilder)
-        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+    SearchRequest searchRequest = new SearchRequest(ALERT_TYPE)
+      .types(ALERT_TYPE)
+      .source(searchSourceBuilder)
+      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
 
     SearchResponse scrollResp;
@@ -73,10 +71,7 @@ public class AlertReader {
 
   public AlertDefinitionDto findAlert(String alertId) {
     log.debug("Fetching alert with id [{}]", alertId);
-    GetRequest getRequest = new GetRequest(
-        getOptimizeIndexAliasForType(ALERT_TYPE),
-        ALERT_TYPE,
-        alertId);
+    GetRequest getRequest = new GetRequest(ALERT_TYPE, ALERT_TYPE, alertId);
 
     GetResponse getResponse;
     try {
@@ -108,10 +103,7 @@ public class AlertReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(ALERT_TYPE))
-        .types(ALERT_TYPE)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(ALERT_TYPE).types(ALERT_TYPE).source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {

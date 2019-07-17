@@ -54,7 +54,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
@@ -103,12 +102,8 @@ public class CombinedReportHandlingIT {
     String id = createNewCombinedReport();
 
     // then
-    GetRequest getRequest = new GetRequest(
-      getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE),
-      COMBINED_REPORT_TYPE,
-      id
-    );
-    GetResponse getResponse = elasticSearchRule.getEsClient().get(getRequest, RequestOptions.DEFAULT);
+    GetRequest getRequest = new GetRequest(COMBINED_REPORT_TYPE, COMBINED_REPORT_TYPE, id);
+    GetResponse getResponse = elasticSearchRule.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
 
     assertThat(getResponse.isExists(), is(true));
     CombinedReportDefinitionDto definitionDto = elasticSearchRule.getObjectMapper()
@@ -836,9 +831,9 @@ public class CombinedReportHandlingIT {
     String combinedReportId = createNewCombinedReport();
     ProcessReportDataDto reportData =
       createUserTaskFrequencyMapGroupByAssigneeByUserTaskReport(
-      engineDto.getProcessDefinitionKey(),
-      engineDto.getProcessDefinitionVersion()
-    );
+        engineDto.getProcessDefinitionKey(),
+        engineDto.getProcessDefinitionVersion()
+      );
     String singleReportId = createNewSingleMapReport(reportData);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();

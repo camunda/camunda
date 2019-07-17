@@ -11,13 +11,13 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
@@ -30,7 +30,6 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.DECISION_DEFINITION_KEY;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -44,7 +43,7 @@ public class DecisionInstanceWriter {
 
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
-  private RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
 
   public void importDecisionInstances(List<DecisionInstanceDto> decisionInstanceDtos) throws Exception {
     log.debug("Writing [{}] decision instances to elasticsearch", decisionInstanceDtos.size());
@@ -74,11 +73,7 @@ public class DecisionInstanceWriter {
     final String decisionInstanceId = decisionInstanceDto.getDecisionInstanceId();
     final String source = objectMapper.writeValueAsString(decisionInstanceDto);
 
-    final IndexRequest request = new IndexRequest(
-      getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE),
-      DECISION_INSTANCE_TYPE,
-      decisionInstanceId
-    )
+    final IndexRequest request = new IndexRequest(DECISION_INSTANCE_TYPE, DECISION_INSTANCE_TYPE, decisionInstanceId)
       .source(source, XContentType.JSON);
 
     bulkRequest.add(request);
@@ -99,7 +94,7 @@ public class DecisionInstanceWriter {
       final BoolQueryBuilder filterQuery = boolQuery()
         .filter(termQuery(DECISION_DEFINITION_KEY, decisionDefinitionKey))
         .filter(rangeQuery(DecisionInstanceType.EVALUATION_DATE_TIME).lt(dateTimeFormatter.format(evaluationDate)));
-      DeleteByQueryRequest request = new DeleteByQueryRequest(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
+      DeleteByQueryRequest request = new DeleteByQueryRequest(DECISION_INSTANCE_TYPE)
         .setQuery(filterQuery)
         .setAbortOnVersionConflict(false)
         .setRefresh(true);

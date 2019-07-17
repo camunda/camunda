@@ -14,13 +14,13 @@ import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.groupingByConcurrent;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ASSIGNEE_OPERATION_TYPE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ASSIGNEE_OPERATION_USER_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.CANDIDATE_GROUP_OPERATION_GROUP_ID;
@@ -58,9 +57,9 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTAN
 @Slf4j
 public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
 
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
 
-  public IdentityLinkLogWriter(final RestHighLevelClient esClient,
+  public IdentityLinkLogWriter(final OptimizeElasticsearchClient esClient,
                                final ObjectMapper objectMapper) {
     super(objectMapper);
     this.esClient = esClient;
@@ -154,7 +153,7 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
             log.warn("Found unknown identity link operation type [{}]", logEntry.getOperationType());
         }
       });
-    Set set =  new HashSet();
+    Set set = new HashSet();
     return candidates;
   }
 
@@ -193,11 +192,10 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
       .setUserTasks(userTasks);
     String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
 
-    UpdateRequest request =
-      new UpdateRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE), PROC_INSTANCE_TYPE, processInstanceId)
-        .script(updateScript)
-        .upsert(newEntryIfAbsent, XContentType.JSON)
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+    UpdateRequest request = new UpdateRequest(PROC_INSTANCE_TYPE, PROC_INSTANCE_TYPE, processInstanceId)
+      .script(updateScript)
+      .upsert(newEntryIfAbsent, XContentType.JSON)
+      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
     bulkRequest.add(request);
   }

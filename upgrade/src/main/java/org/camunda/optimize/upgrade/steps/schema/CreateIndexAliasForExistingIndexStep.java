@@ -5,11 +5,9 @@
  */
 package org.camunda.optimize.upgrade.steps.schema;
 
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
-
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexNameForAliasAndVersion;
 
 public class CreateIndexAliasForExistingIndexStep implements UpgradeStep {
   private final String fromTypeName;
@@ -40,11 +38,16 @@ public class CreateIndexAliasForExistingIndexStep implements UpgradeStep {
 
   @Override
   public void execute(final ESIndexAdjuster esIndexAdjuster) {
-    final String sourceIndexAlias = getOptimizeIndexAliasForType(fromTypeName);
-    final String targetIndexAlias = getOptimizeIndexAliasForType(toTypeName);
+    final OptimizeIndexNameService indexNameService = esIndexAdjuster.getIndexNameService();
+    final String sourceIndexAlias = indexNameService.getOptimizeIndexAliasForType(fromTypeName);
+    final String targetIndexAlias = indexNameService.getOptimizeIndexAliasForType(toTypeName);
     // when aliases are created there is no source index version yet
-    final String sourceIndexName = getOptimizeIndexNameForAliasAndVersion(sourceIndexAlias, null);
-    final String targetIndexName = getOptimizeIndexNameForAliasAndVersion(targetIndexAlias, targetVersion);
+    final String sourceIndexName = indexNameService.getOptimizeIndexNameForAliasAndVersion(
+      sourceIndexAlias, null
+    );
+    final String targetIndexName = indexNameService.getOptimizeIndexNameForAliasAndVersion(
+      targetIndexAlias, targetVersion
+    );
 
     String indexMappings = esIndexAdjuster.getIndexMappings(sourceIndexName);
     indexMappings = customMapping != null ? customMapping : indexMappings;

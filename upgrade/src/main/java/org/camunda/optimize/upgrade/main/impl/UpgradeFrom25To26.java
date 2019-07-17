@@ -5,15 +5,11 @@
  */
 package org.camunda.optimize.upgrade.main.impl;
 
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.main.Upgrade;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class UpgradeFrom25To26 implements Upgrade {
 
@@ -21,9 +17,6 @@ public class UpgradeFrom25To26 implements Upgrade {
   private static final String TO_VERSION = "2.6.0";
 
   private Logger logger = LoggerFactory.getLogger(getClass());
-
-  private ConfigurationService configurationService = new ConfigurationService();
-  private RestHighLevelClient client = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
 
   @Override
   public String getInitialVersion() {

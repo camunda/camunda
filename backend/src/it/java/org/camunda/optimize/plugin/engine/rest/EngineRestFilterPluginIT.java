@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
@@ -130,11 +129,11 @@ public class EngineRestFilterPluginIT {
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(getOptimizeIndexAliasForType(elasticsearchType))
+      .indices(elasticsearchType)
       .types(elasticsearchType)
       .source(searchSourceBuilder);
 
-    return elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+    return elasticSearchRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
 }

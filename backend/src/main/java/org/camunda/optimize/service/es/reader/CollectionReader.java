@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetRequest;
@@ -20,7 +21,6 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -37,7 +37,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.CollectionType.DATA;
 import static org.camunda.optimize.service.es.schema.type.CollectionType.NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
@@ -51,17 +50,13 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROC
 @Component
 @Slf4j
 public class CollectionReader {
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
   public SimpleCollectionDefinitionDto getCollection(String collectionId) {
     log.debug("Fetching collection with id [{}]", collectionId);
-    GetRequest getRequest = new GetRequest(
-      getOptimizeIndexAliasForType(COLLECTION_TYPE),
-      COLLECTION_TYPE,
-      collectionId
-    );
+    GetRequest getRequest = new GetRequest(COLLECTION_TYPE, COLLECTION_TYPE, collectionId);
 
     GetResponse getResponse;
     try {
@@ -105,12 +100,7 @@ public class CollectionReader {
       .query(QueryBuilders.matchAllQuery())
       .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest =
-      new SearchRequest(
-        getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
-        getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE),
-        getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE),
-        getOptimizeIndexAliasForType(DASHBOARD_TYPE)
-      )
+      new SearchRequest(SINGLE_PROCESS_REPORT_TYPE, SINGLE_DECISION_REPORT_TYPE, COMBINED_REPORT_TYPE, DASHBOARD_TYPE)
         .source(searchSourceBuilder)
         .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
@@ -165,11 +155,10 @@ public class CollectionReader {
       .query(QueryBuilders.matchAllQuery())
       .sort(NAME, SortOrder.ASC)
       .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE))
-        .types(COLLECTION_TYPE)
-        .source(searchSourceBuilder)
-        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+    SearchRequest searchRequest = new SearchRequest(COLLECTION_TYPE)
+      .types(COLLECTION_TYPE)
+      .source(searchSourceBuilder)
+      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
     SearchResponse scrollResp;
     try {
@@ -200,10 +189,9 @@ public class CollectionReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(getCollectionByEntityIdQuery)
       .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE))
-        .types(COLLECTION_TYPE)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(COLLECTION_TYPE)
+      .types(COLLECTION_TYPE)
+      .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {

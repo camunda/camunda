@@ -21,7 +21,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
 public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
@@ -48,10 +47,9 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
       .size(0);
     addAggregation(searchSourceBuilder);
 
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
-        .types(PROC_INSTANCE_TYPE)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
+      .types(PROC_INSTANCE_TYPE)
+      .source(searchSourceBuilder);
 
     SearchResponse response;
     try {

@@ -20,6 +20,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionUpdateDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -30,7 +31,6 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.engine.DocumentMissingException;
 import org.elasticsearch.index.query.NestedQueryBuilder;
@@ -48,7 +48,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.report.CombinedReportType.DATA;
 import static org.camunda.optimize.service.es.schema.type.report.CombinedReportType.REPORTS;
 import static org.camunda.optimize.service.es.schema.type.report.CombinedReportType.REPORT_ITEM_ID;
@@ -68,7 +67,7 @@ public class ReportWriter {
   private static final String DEFAULT_REPORT_NAME = "New Report";
 
   private final ObjectMapper objectMapper;
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
 
   public IdDto createNewCombinedReport(final String userId) {
     log.debug("Writing new combined report to Elasticsearch");
@@ -84,11 +83,7 @@ public class ReportWriter {
     reportDefinitionDto.setData(new CombinedReportDataDto());
 
     try {
-      IndexRequest request = new IndexRequest(
-        getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE),
-        COMBINED_REPORT_TYPE,
-        id
-      )
+      IndexRequest request = new IndexRequest(COMBINED_REPORT_TYPE, COMBINED_REPORT_TYPE, id)
         .source(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -126,9 +121,7 @@ public class ReportWriter {
     reportDefinitionDto.setData(new ProcessReportDataDto());
 
     try {
-      IndexRequest request = new IndexRequest(
-        getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE), SINGLE_PROCESS_REPORT_TYPE, id
-      )
+      IndexRequest request = new IndexRequest(SINGLE_PROCESS_REPORT_TYPE, SINGLE_PROCESS_REPORT_TYPE, id)
         .source(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -165,9 +158,7 @@ public class ReportWriter {
     reportDefinitionDto.setName(DEFAULT_REPORT_NAME);
 
     try {
-      IndexRequest request = new IndexRequest(
-        getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE), SINGLE_DECISION_REPORT_TYPE, id
-      )
+      IndexRequest request = new IndexRequest(SINGLE_DECISION_REPORT_TYPE, SINGLE_DECISION_REPORT_TYPE, id)
         .source(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -206,11 +197,7 @@ public class ReportWriter {
     log.debug("Updating report with id [{}] in Elasticsearch", updatedReport.getId());
     try {
       final UpdateRequest request =
-        new UpdateRequest(
-          getOptimizeIndexAliasForType(elasticsearchType),
-          elasticsearchType,
-          updatedReport.getId()
-        )
+        new UpdateRequest(elasticsearchType, elasticsearchType, updatedReport.getId())
           .script(buildUpdateScript(updatedReport))
           .setRefreshPolicy(IMMEDIATE)
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -242,10 +229,7 @@ public class ReportWriter {
   public void deleteSingleReport(final String reportId) {
     log.debug("Deleting single report with id [{}]", reportId);
 
-    DeleteByQueryRequest request = new DeleteByQueryRequest(
-      getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
-      getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE)
-    )
+    DeleteByQueryRequest request = new DeleteByQueryRequest(SINGLE_PROCESS_REPORT_TYPE, SINGLE_DECISION_REPORT_TYPE)
       .setQuery(idsQuery().addIds(reportId))
       .setRefresh(true);
 
@@ -291,7 +275,7 @@ public class ReportWriter {
       ScoreMode.None
     );
 
-    UpdateByQueryRequest request = new UpdateByQueryRequest(getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE))
+    UpdateByQueryRequest request = new UpdateByQueryRequest(COMBINED_REPORT_TYPE)
       .setAbortOnVersionConflict(false)
       .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
       .setQuery(query)
@@ -322,9 +306,8 @@ public class ReportWriter {
   public void deleteCombinedReport(final String reportId) {
     log.debug("Deleting combined report with id [{}]", reportId);
 
-    DeleteRequest request =
-      new DeleteRequest(getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE), COMBINED_REPORT_TYPE, reportId)
-        .setRefreshPolicy(IMMEDIATE);
+    DeleteRequest request = new DeleteRequest(COMBINED_REPORT_TYPE, COMBINED_REPORT_TYPE, reportId)
+      .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;
     try {

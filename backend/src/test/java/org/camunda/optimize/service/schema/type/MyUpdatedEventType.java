@@ -5,28 +5,18 @@
  */
 package org.camunda.optimize.service.schema.type;
 
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.schema.TypeMappingCreator;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.MetadataType.SCHEMA_VERSION;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
-public class MyUpdatedEventType implements TypeMappingCreator{
-
-  private Logger logger = LoggerFactory.getLogger(MyUpdatedEventType.class);
-
-  private ConfigurationService configurationService;
-
-  public MyUpdatedEventType(ConfigurationService configurationService) {
-    this.configurationService = configurationService;
-  }
+@Slf4j
+public class MyUpdatedEventType implements TypeMappingCreator {
 
   public static final String MY_NEW_FIELD = "myAwesomeNewField";
 
@@ -44,6 +34,7 @@ public class MyUpdatedEventType implements TypeMappingCreator{
   public XContentBuilder getSource() {
     XContentBuilder source = null;
     try {
+      // @formatter:off
       XContentBuilder content = jsonBuilder()
         .startObject()
           .startObject("properties")
@@ -56,10 +47,10 @@ public class MyUpdatedEventType implements TypeMappingCreator{
           .endObject()
         .endObject();
       source = content;
+      // @formatter:on
     } catch (IOException e) {
-      String message = "Could not add mapping to the index '" + getOptimizeIndexAliasForType(getType()) +
-        "' , type '" + getType() + "'!";
-      logger.error(message, e);
+      String message = "Could not add mapping for type '" + getType() + "'!";
+      log.error(message, e);
     }
     return source;
   }

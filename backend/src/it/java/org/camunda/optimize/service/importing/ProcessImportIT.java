@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
@@ -520,11 +519,11 @@ public class ProcessImportIT extends AbstractImportIT {
       );
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+      .indices(PROC_INSTANCE_TYPE)
       .types(PROC_INSTANCE_TYPE)
       .source(searchSourceBuilder);
 
-    SearchResponse response = elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+    SearchResponse response = elasticSearchRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
 
     Nested nested = response.getAggregations()
       .get(EVENTS);

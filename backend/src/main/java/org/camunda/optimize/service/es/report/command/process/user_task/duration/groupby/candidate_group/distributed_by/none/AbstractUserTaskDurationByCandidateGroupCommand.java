@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.report.command.util.FlowNodeExecutionStateAggregationUtil.addExecutionStateFilter;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_CANDIDATE_GROUPS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_END_DATE;
@@ -43,7 +42,8 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
-public abstract class AbstractUserTaskDurationByCandidateGroupCommand extends ProcessReportCommand<SingleProcessMapDurationReportResult> {
+public abstract class AbstractUserTaskDurationByCandidateGroupCommand
+  extends ProcessReportCommand<SingleProcessMapDurationReportResult> {
 
   private static final String USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION = "candidateGroups";
   private static final String USER_TASKS_AGGREGATION = "userTasks";
@@ -60,7 +60,8 @@ public abstract class AbstractUserTaskDurationByCandidateGroupCommand extends Pr
   protected SingleProcessMapDurationReportResult evaluate() {
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
-      "Evaluating user task duration grouped by candidate group report for process definition key [{}] and version [{}]",
+      "Evaluating user task duration grouped by candidate group report for process definition key [{}] and version " +
+        "[{}]",
       processReportData.getProcessDefinitionKey(),
       processReportData.getProcessDefinitionVersion()
     );
@@ -71,7 +72,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupCommand extends Pr
       .fetchSource(false)
       .aggregation(createAggregation(processReportData.getConfiguration().getFlowNodeExecutionState()))
       .size(0);
-    final SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+    final SearchRequest searchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
       .types(PROC_INSTANCE_TYPE)
       .source(searchSourceBuilder);
 

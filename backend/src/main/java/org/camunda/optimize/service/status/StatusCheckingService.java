@@ -12,11 +12,11 @@ import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.springframework.stereotype.Component;
 
@@ -31,7 +31,7 @@ import java.util.Map;
 @Component
 public class StatusCheckingService {
 
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final EngineContextFactory engineContextFactory;
   private final EngineImportSchedulerFactory engineImportSchedulerFactory;
@@ -89,7 +89,8 @@ public class StatusCheckingService {
     boolean isConnected = false;
     try {
       ClusterHealthRequest request = new ClusterHealthRequest();
-      ClusterHealthResponse healthResponse = esClient.cluster().health(request, RequestOptions.DEFAULT);
+      ClusterHealthResponse healthResponse = esClient.getHighLevelClient().cluster()
+        .health(request, RequestOptions.DEFAULT);
 
       isConnected =
         healthResponse.status().getStatus() == 200 && healthResponse.getStatus() != ClusterHealthStatus.RED;

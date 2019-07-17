@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -17,14 +18,12 @@ import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_SHARE_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REPORT_SHARE_TYPE;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
@@ -34,19 +33,15 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 @Slf4j
 public class SharingWriter {
 
-  private RestHighLevelClient esClient;
-  private ObjectMapper objectMapper;
-  
+  private final OptimizeElasticsearchClient esClient;
+  private final ObjectMapper objectMapper;
+
   public ReportShareDto saveReportShare(ReportShareDto createSharingDto) {
     log.debug("Writing new report share to Elasticsearch");
     String id = IdGenerator.getNextId();
     createSharingDto.setId(id);
     try {
-      IndexRequest request = new IndexRequest(
-        getOptimizeIndexAliasForType(REPORT_SHARE_TYPE),
-        REPORT_SHARE_TYPE,
-        id
-      )
+      IndexRequest request = new IndexRequest(REPORT_SHARE_TYPE, REPORT_SHARE_TYPE, id)
         .source(objectMapper.writeValueAsString(createSharingDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -73,11 +68,7 @@ public class SharingWriter {
     String id = IdGenerator.getNextId();
     createSharingDto.setId(id);
     try {
-      IndexRequest request = new IndexRequest(
-        getOptimizeIndexAliasForType(DASHBOARD_SHARE_TYPE),
-        DASHBOARD_SHARE_TYPE,
-        id
-      )
+      IndexRequest request = new IndexRequest(DASHBOARD_SHARE_TYPE, DASHBOARD_SHARE_TYPE, id)
         .source(objectMapper.writeValueAsString(createSharingDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -106,11 +97,7 @@ public class SharingWriter {
   public void updateDashboardShare(DashboardShareDto updatedShare) {
     String id = updatedShare.getId();
     try {
-      IndexRequest request = new IndexRequest(
-        getOptimizeIndexAliasForType(DASHBOARD_SHARE_TYPE),
-        DASHBOARD_SHARE_TYPE,
-        id
-      )
+      IndexRequest request = new IndexRequest(DASHBOARD_SHARE_TYPE, DASHBOARD_SHARE_TYPE, id)
         .source(objectMapper.writeValueAsString(updatedShare), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -138,11 +125,7 @@ public class SharingWriter {
   public void deleteReportShare(String shareId) {
     log.debug("Deleting report share with id [{}]", shareId);
     DeleteRequest request =
-      new DeleteRequest(
-        getOptimizeIndexAliasForType(REPORT_SHARE_TYPE),
-        REPORT_SHARE_TYPE,
-        shareId
-      )
+      new DeleteRequest(REPORT_SHARE_TYPE, REPORT_SHARE_TYPE, shareId)
         .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;
@@ -166,13 +149,8 @@ public class SharingWriter {
 
   public void deleteDashboardShare(String shareId) {
     log.debug("Deleting dashboard share with id [{}]", shareId);
-    DeleteRequest request =
-      new DeleteRequest(
-        getOptimizeIndexAliasForType(DASHBOARD_SHARE_TYPE),
-        DASHBOARD_SHARE_TYPE,
-        shareId
-      )
-        .setRefreshPolicy(IMMEDIATE);
+    DeleteRequest request = new DeleteRequest(DASHBOARD_SHARE_TYPE, DASHBOARD_SHARE_TYPE, shareId)
+      .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;
     try {

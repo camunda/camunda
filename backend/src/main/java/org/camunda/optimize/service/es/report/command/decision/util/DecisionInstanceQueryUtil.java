@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service.es.report.command.decision.util;
 
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -22,25 +21,24 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.EVALUATION_DATE_TIME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
+@Slf4j
 public class DecisionInstanceQueryUtil {
-  private static final Logger logger = LoggerFactory.getLogger(DecisionInstanceQueryUtil.class);
 
-  public static Optional<OffsetDateTime> getLatestEvaluationDate(final QueryBuilder baseQuery, final RestHighLevelClient esClient) {
+  public static Optional<OffsetDateTime> getLatestEvaluationDate(final QueryBuilder baseQuery,
+                                                                 final OptimizeElasticsearchClient esClient) {
     final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(baseQuery)
       .sort(SortBuilders.fieldSort(EVALUATION_DATE_TIME).order(SortOrder.DESC))
       .fetchSource(false)
       .size(1);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
-        .types(DECISION_INSTANCE_TYPE)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_TYPE)
+      .types(DECISION_INSTANCE_TYPE)
+      .source(searchSourceBuilder);
 
     SearchResponse response;
     try {
@@ -53,7 +51,7 @@ public class DecisionInstanceQueryUtil {
         .map(dateTimeFormatter::parse)
         .map(OffsetDateTime::from);
     } catch (IOException e) {
-      logger.warn("Could retrieve evaluationDate of latest processInstance!");
+      log.warn("Could retrieve evaluationDate of latest processInstance!");
     }
 
     return Optional.empty();

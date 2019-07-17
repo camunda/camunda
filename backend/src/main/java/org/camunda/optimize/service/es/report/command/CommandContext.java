@@ -9,18 +9,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.client.RestHighLevelClient;
 
 import java.time.OffsetDateTime;
 
 @Data
 public class CommandContext<T extends ReportDefinitionDto> {
 
-  private RestHighLevelClient esClient;
+  private OptimizeElasticsearchClient esClient;
   private ConfigurationService configurationService;
   private ObjectMapper objectMapper;
   private QueryFilterEnhancer queryFilterEnhancer;

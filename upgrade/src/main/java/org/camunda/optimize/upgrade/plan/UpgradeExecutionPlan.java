@@ -7,8 +7,10 @@ package org.camunda.optimize.upgrade.plan;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.StrictTypeMappingCreator;
 import org.camunda.optimize.service.es.schema.TypeMappingCreator;
 import org.camunda.optimize.service.es.schema.type.MetadataType;
@@ -18,7 +20,6 @@ import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.service.ValidationService;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -33,9 +34,10 @@ import java.util.stream.Collectors;
 
 public class UpgradeExecutionPlan implements UpgradePlan {
 
+  private final OptimizeIndexNameService indexNameService;
   private Logger logger = LoggerFactory.getLogger(getClass());
 
-  private final RestHighLevelClient client;
+  private final OptimizeElasticsearchClient prefixAwareClient;
   private final List<UpgradeStep> upgradeSteps = new ArrayList<>();
 
   private ValidationService validationService;
@@ -53,22 +55,30 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     validationService = new ValidationService(configurationService, metadataService);
     validationService.validateConfiguration();
 
-    client = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
+    indexNameService = new OptimizeIndexNameService(configurationService);
+
+    prefixAwareClient = new OptimizeElasticsearchClient(
+      ElasticsearchHighLevelRestClientBuilder.build(configurationService),
+      indexNameService
+    );
 
     schemaManager = new ElasticSearchSchemaManager(
       metadataService,
       configurationService,
+      indexNameService,
       getMappings(),
       objectMapper
     );
-    esIndexAdjuster = new ESIndexAdjuster(client, configurationService);
+    esIndexAdjuster = new ESIndexAdjuster(
+      prefixAwareClient.getHighLevelClient(), indexNameService, configurationService
+    );
   }
 
   @Override
   public void execute() {
     validateVersions();
 
-    schemaManager.initializeSchema(client);
+    schemaManager.initializeSchema(prefixAwareClient);
 
     int currentStepCount = 1;
     for (UpgradeStep step : upgradeSteps) {
@@ -92,8 +102,8 @@ public class UpgradeExecutionPlan implements UpgradePlan {
   }
 
   private void validateVersions() {
-    validationService.validateSchemaVersions(client, fromVersion, toVersion);
-    validationService.validateESVersion(client, toVersion);
+    validationService.validateSchemaVersions(prefixAwareClient, fromVersion, toVersion);
+    validationService.validateESVersion(prefixAwareClient, toVersion);
   }
 
   public List<TypeMappingCreator> getMappings() {
@@ -120,7 +130,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
 
   private void updateOptimizeVersion() {
     logger.info("Updating Optimize Elasticsearch data structure version tag from {} to {}.", fromVersion, toVersion);
-    metadataService.writeMetadata(client, new MetadataDto(toVersion));
+    metadataService.writeMetadata(prefixAwareClient, new MetadataDto(toVersion));
   }
 
   public void setEsIndexAdjuster(final ESIndexAdjuster esIndexAdjuster) {

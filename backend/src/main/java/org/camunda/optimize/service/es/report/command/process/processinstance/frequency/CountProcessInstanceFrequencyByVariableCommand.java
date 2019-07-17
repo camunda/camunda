@@ -31,10 +31,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.report.command.process.util.GroupByDateVariableIntervalSelection
-  .createDateVariableAggregation;
+import static org.camunda.optimize.service.es.report.command.process.util.GroupByDateVariableIntervalSelection.createDateVariableAggregation;
 import static org.camunda.optimize.service.es.report.command.util.IntervalAggregationService.RANGE_AGGREGATION;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabelForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldLabelForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.variableTypeToFieldLabel;
@@ -69,10 +67,9 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
       .fetchSource(false)
       .aggregation(createAggregation(groupByVariable.getName(), groupByVariable.getType()))
       .size(0);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
-        .types(PROC_INSTANCE_TYPE)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
+      .types(PROC_INSTANCE_TYPE)
+      .source(searchSourceBuilder);
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);

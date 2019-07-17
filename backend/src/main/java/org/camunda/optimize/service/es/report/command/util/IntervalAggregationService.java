@@ -8,12 +8,12 @@ package org.camunda.optimize.service.es.report.command.util;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
@@ -49,7 +48,7 @@ public class IntervalAggregationService {
   private static final String STATS_AGGREGATION = "minMaxValueOfData";
   public static final String RANGE_AGGREGATION = "rangeAggregation";
 
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
   private final DateTimeFormatter dateTimeFormatter;
 
   public DateHistogramInterval getDateHistogramInterval(GroupByDateUnit interval) throws OptimizeException {
@@ -83,10 +82,9 @@ public class IntervalAggregationService {
       .fetchSource(false)
       .aggregation(statsAgg)
       .size(0);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(esType))
-        .types(esType)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(esType)
+      .types(esType)
+      .source(searchSourceBuilder);
 
     SearchResponse response;
     try {

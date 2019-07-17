@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableIdField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableStringValueField;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
@@ -70,10 +69,9 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
       .fetchSource(false)
       .aggregation(createAggregation(groupBy.getId()))
       .size(0);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
-        .types(DECISION_INSTANCE_TYPE)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_TYPE)
+      .types(DECISION_INSTANCE_TYPE)
+      .source(searchSourceBuilder);
 
     SearchResponse response;
     try {

@@ -108,6 +108,7 @@ public class ConfigurationService {
   private Integer esNumberOfReplicas;
   private Integer esNumberOfShards;
   private String esRefreshInterval;
+  private String esIndexPrefix;
 
   // elastic query settings
   private Integer esAggregationBucketLimit;
@@ -618,6 +619,13 @@ public class ConfigurationService {
       esNumberOfShards = configJsonContext.read(ConfigurationServiceConstants.ES_NUMBER_OF_SHARDS, Integer.class);
     }
     return esNumberOfShards;
+  }
+
+  public String getEsIndexPrefix() {
+    if (esIndexPrefix == null) {
+      esIndexPrefix = configJsonContext.read(ConfigurationServiceConstants.ES_INDEX_PREFIX, String.class);
+    }
+    return esIndexPrefix;
   }
 
   public int getEngineImportProcessDefinitionXmlMaxPageSize() {

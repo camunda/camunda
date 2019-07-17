@@ -9,7 +9,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
 import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.reindex.BulkByScrollTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +24,9 @@ public class EsBulkByScrollTaskActionProgressReporter {
   private final Logger logger;
   private final ScheduledExecutorService executorService;
   private final String action;
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
 
-  public EsBulkByScrollTaskActionProgressReporter(String loggerName, RestHighLevelClient esClient, String action) {
+  public EsBulkByScrollTaskActionProgressReporter(String loggerName, OptimizeElasticsearchClient esClient, String action) {
     this.logger = LoggerFactory.getLogger(loggerName);
     this.esClient = esClient;
     this.action = action;
@@ -45,7 +44,7 @@ public class EsBulkByScrollTaskActionProgressReporter {
           .setDetailed(true);
 
         try {
-          ListTasksResponse response = esClient.tasks().list(request, RequestOptions.DEFAULT);
+          ListTasksResponse response = esClient.getHighLevelClient().tasks().list(request, RequestOptions.DEFAULT);
           final List<BulkByScrollTask.Status> currentTasksStatus = response
             .getTasks()
             .stream()

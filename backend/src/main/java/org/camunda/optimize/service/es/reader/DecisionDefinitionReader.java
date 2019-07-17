@@ -10,13 +10,13 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_XML;
@@ -53,7 +52,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 public class DecisionDefinitionReader {
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
 
   public Optional<DecisionDefinitionOptimizeDto> getFullyImportedDecisionDefinition(
     final String decisionDefinitionKey,
@@ -79,9 +78,9 @@ public class DecisionDefinitionReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE))
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_TYPE)
+      .types(DECISION_DEFINITION_TYPE)
+      .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
@@ -119,7 +118,8 @@ public class DecisionDefinitionReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
-    SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE))
+    SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_TYPE)
+      .types(DECISION_DEFINITION_TYPE)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -155,11 +155,10 @@ public class DecisionDefinitionReader {
       .query(query)
       .size(LIST_FETCH_LIMIT)
       .fetchSource(null, fieldsToExclude);
-    final SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE))
-        .types(DECISION_DEFINITION_TYPE)
-        .source(searchSourceBuilder)
-        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+    final SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_TYPE)
+      .types(DECISION_DEFINITION_TYPE)
+      .source(searchSourceBuilder)
+      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
     final SearchResponse scrollResp;
     try {
@@ -210,10 +209,9 @@ public class DecisionDefinitionReader {
       .sort(SortBuilders.scriptSort(script, ScriptSortBuilder.ScriptSortType.NUMBER).order(SortOrder.DESC))
       .size(1);
 
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE))
-        .types(DECISION_DEFINITION_TYPE)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_TYPE)
+      .types(DECISION_DEFINITION_TYPE)
+      .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {

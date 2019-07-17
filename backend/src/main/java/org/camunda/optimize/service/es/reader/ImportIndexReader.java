@@ -9,16 +9,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_TYPE;
 
 @AllArgsConstructor
@@ -26,17 +25,13 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDE
 @Slf4j
 public class ImportIndexReader {
   
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
   public Optional<AllEntitiesBasedImportIndexDto> getImportIndex(String id) {
     log.debug("Fetching import index of type [{}]", id);
 
-    GetRequest getRequest = new GetRequest(
-      getOptimizeIndexAliasForType(IMPORT_INDEX_TYPE),
-      IMPORT_INDEX_TYPE,
-      id
-    );
+    GetRequest getRequest = new GetRequest(IMPORT_INDEX_TYPE, IMPORT_INDEX_TYPE, id);
 
     GetResponse getResponse = null;
     try {

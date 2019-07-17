@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STRING_VARIABLES;
@@ -35,6 +34,7 @@ import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedIm
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_OF_LAST_ENTITY;
 import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -56,7 +56,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshAllOptimizeIndices();
-    SearchResponse searchResponse = performProcessDefinitionSearchRequest(ElasticsearchConstants.PROC_DEF_TYPE);
+    SearchResponse searchResponse = performProcessDefinitionSearchRequest(PROC_DEF_TYPE);
 
     // then
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();
@@ -81,7 +81,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshAllOptimizeIndices();
-    SearchResponse searchResponse = performProcessDefinitionSearchRequest(ElasticsearchConstants.PROC_DEF_TYPE);
+    SearchResponse searchResponse = performProcessDefinitionSearchRequest(PROC_DEF_TYPE);
 
     // then
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();
@@ -230,12 +230,12 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(getOptimizeIndexAliasForType(procDefType))
+      .indices(procDefType)
       .types(procDefType)
       .source(searchSourceBuilder);
 
     try {
-      return elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+      return elasticSearchRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not query the import count!", e);
     }

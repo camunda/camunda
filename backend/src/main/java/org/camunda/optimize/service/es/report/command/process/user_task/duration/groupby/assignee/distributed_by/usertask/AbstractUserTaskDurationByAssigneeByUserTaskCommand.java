@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.report.command.util.FlowNodeExecutionStateAggregationUtil.addExecutionStateFilter;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ACTIVITY_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ASSIGNEE;
@@ -75,7 +74,7 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskCommand extend
       .fetchSource(false)
       .aggregation(createAggregation(processReportData.getConfiguration().getFlowNodeExecutionState()))
       .size(0);
-    final SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+    final SearchRequest searchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
       .types(PROC_INSTANCE_TYPE)
       .source(searchSourceBuilder);
 

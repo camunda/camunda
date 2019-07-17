@@ -76,6 +76,7 @@ public interface ConfigurationServiceConstants {
   String ES_REFRESH_INTERVAL = "$.es.settings.index.refresh_interval";
   String ES_NUMBER_OF_REPLICAS = "$.es.settings.index.number_of_replicas";
   String ES_NUMBER_OF_SHARDS = "$.es.settings.index.number_of_shards";
+  String ES_INDEX_PREFIX = "$.es.settings.index.prefix";
 
   String ENGINE_DATE_FORMAT = "$.serialization.engineDateFormat";
   String CONTAINER_HOST = "$.container.host";

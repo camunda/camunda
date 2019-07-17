@@ -10,7 +10,6 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -26,7 +25,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class AlertRestServiceIT extends AbstractAlertIT {
 
   private static final String TEST = "test";
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
 
   @Rule
   public RuleChain chain = RuleChain

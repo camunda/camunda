@@ -10,7 +10,6 @@ import org.camunda.optimize.service.engine.importing.index.handler.ScrollBasedIm
 import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
@@ -30,7 +29,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.ENGINE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
@@ -75,8 +73,7 @@ public class DecisionDefinitionXmlImportIndexHandler extends ScrollBasedImportIn
     RefreshRequest refreshAllRequest = new RefreshRequest();
 
     try {
-      RefreshResponse refreshResponse =
-        esClient.indices().refresh(refreshAllRequest, RequestOptions.DEFAULT);
+      esClient.getHighLevelClient().indices().refresh(refreshAllRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       logger.error("Could not refresh Optimize indexes!", e);
       throw new OptimizeRuntimeException("Could not refresh Optimize indexes!", e);
@@ -101,11 +98,10 @@ public class DecisionDefinitionXmlImportIndexHandler extends ScrollBasedImportIn
       .fetchSource(false)
       .sort(SortBuilders.fieldSort(DECISION_DEFINITION_ID).order(SortOrder.DESC))
       .size(configurationService.getEngineImportDecisionDefinitionXmlMaxPageSize());
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE))
-        .types(DECISION_DEFINITION_TYPE)
-        .source(searchSourceBuilder)
-        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+    SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_TYPE)
+      .types(DECISION_DEFINITION_TYPE)
+      .source(searchSourceBuilder)
+      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
     SearchResponse scrollResp;
     try {

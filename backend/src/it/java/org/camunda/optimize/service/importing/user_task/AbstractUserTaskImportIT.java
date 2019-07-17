@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 
@@ -61,7 +60,8 @@ public abstract class AbstractUserTaskImportIT {
     }
   }
 
-  protected void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto, final long idleDuration) {
+  protected void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto,
+                                            final long idleDuration) {
     engineRule.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(historicUserTaskInstanceDto -> {
         try {
@@ -76,7 +76,8 @@ public abstract class AbstractUserTaskImportIT {
       });
   }
 
-  protected void changeUserTaskWorkDuration(final ProcessInstanceEngineDto processInstanceDto, final long workDuration) {
+  protected void changeUserTaskWorkDuration(final ProcessInstanceEngineDto processInstanceDto,
+                                            final long workDuration) {
     engineRule.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(historicUserTaskInstanceDto -> {
         if (historicUserTaskInstanceDto.getEndTime() != null) {
@@ -118,11 +119,11 @@ public abstract class AbstractUserTaskImportIT {
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(getOptimizeIndexAliasForType(elasticsearchType))
+      .indices(elasticsearchType)
       .types(elasticsearchType)
       .source(searchSourceBuilder);
 
-    return elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+    return elasticSearchRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
 

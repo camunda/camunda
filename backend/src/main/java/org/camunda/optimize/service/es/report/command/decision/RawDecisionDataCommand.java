@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.INPUTS;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.OUTPUTS;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableIdField;
@@ -65,7 +64,7 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
 
     addSortingToQuery(reportData, searchSourceBuilder);
 
-    final SearchRequest scrollSearchRequest = new SearchRequest(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
+    final SearchRequest scrollSearchRequest = new SearchRequest(DECISION_INSTANCE_TYPE)
       .types(DECISION_INSTANCE_TYPE)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));

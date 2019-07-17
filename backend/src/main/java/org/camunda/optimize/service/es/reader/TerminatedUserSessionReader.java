@@ -7,14 +7,13 @@ package org.camunda.optimize.service.es.reader;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TERMINATED_USER_SESSION_TYPE;
 
 @RequiredArgsConstructor
@@ -22,15 +21,13 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TERMINATED_
 @Slf4j
 public class TerminatedUserSessionReader {
 
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
 
   public boolean exists(final String sessionId) {
     log.debug("Fetching terminated user session with id [{}]", sessionId);
     try {
       final GetRequest sessionByIdRequest = new GetRequest(
-        getOptimizeIndexAliasForType(TERMINATED_USER_SESSION_TYPE),
-        TERMINATED_USER_SESSION_TYPE,
-        sessionId
+        TERMINATED_USER_SESSION_TYPE, TERMINATED_USER_SESSION_TYPE, sessionId
       );
       sessionByIdRequest.fetchSourceContext(FetchSourceContext.DO_NOT_FETCH_SOURCE);
       return esClient.get(sessionByIdRequest, RequestOptions.DEFAULT).isExists();

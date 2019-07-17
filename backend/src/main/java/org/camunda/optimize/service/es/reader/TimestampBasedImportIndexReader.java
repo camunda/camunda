@@ -9,17 +9,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 
 @RequiredArgsConstructor
@@ -27,7 +26,7 @@ import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedIm
 @Slf4j
 public class TimestampBasedImportIndexReader {
 
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
   public Optional<TimestampBasedImportIndexDto> getImportIndex(String typeIndexComesFrom, String engineAlias) {
@@ -37,7 +36,7 @@ public class TimestampBasedImportIndexReader {
     TimestampBasedImportIndexDto dto;
     try {
       GetRequest getRequest = new GetRequest(
-        getOptimizeIndexAliasForType(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
+        TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
         TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
         EsHelper.constructKey(typeIndexComesFrom, engineAlias)
       );
@@ -55,9 +54,7 @@ public class TimestampBasedImportIndexReader {
       }
     } else {
       log.debug(
-        "Was not able to retrieve definition based import index from [{}] " +
-          "for type [{}] and engine [{}] from elasticsearch.",
-        getOptimizeIndexAliasForType(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
+        "Was not able to retrieve definition based import index for type [{}] and engine [{}] from elasticsearch.",
         typeIndexComesFrom,
         engineAlias
       );

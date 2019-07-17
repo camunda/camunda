@@ -8,10 +8,10 @@ package org.camunda.optimize.service.engine.importing.index.handler;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +31,7 @@ public abstract class ScrollBasedImportIndexHandler
   @Autowired
   private ImportIndexReader importIndexReader;
   @Autowired
-  protected RestHighLevelClient esClient;
+  protected OptimizeElasticsearchClient esClient;
   @Autowired
   protected ConfigurationService configurationService;
 

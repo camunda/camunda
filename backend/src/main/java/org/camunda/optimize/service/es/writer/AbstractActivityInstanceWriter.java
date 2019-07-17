@@ -10,12 +10,12 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
 import org.slf4j.Logger;
@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
@@ -39,7 +38,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTAN
 public abstract class AbstractActivityInstanceWriter {
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
   public void importActivityInstances(List<FlowNodeEventDto> events) throws Exception {
@@ -90,11 +89,10 @@ public abstract class AbstractActivityInstanceWriter {
       .setEvents(simpleEvents);
     final String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
 
-    final UpdateRequest request =
-      new UpdateRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE), PROC_INSTANCE_TYPE, processInstanceId)
-        .script(updateScript)
-        .upsert(newEntryIfAbsent, XContentType.JSON)
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+    final UpdateRequest request = new UpdateRequest(PROC_INSTANCE_TYPE, PROC_INSTANCE_TYPE, processInstanceId)
+      .script(updateScript)
+      .upsert(newEntryIfAbsent, XContentType.JSON)
+      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
     addEventToProcessInstanceBulkRequest.add(request);
   }

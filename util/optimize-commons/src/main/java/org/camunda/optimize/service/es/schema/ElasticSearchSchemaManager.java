@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.EntityUtils;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
@@ -32,9 +33,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.OPTIMIZE_INDEX_PREFIX;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getVersionedOptimizeIndexNameForTypeMapping;
 
 
 @RequiredArgsConstructor
@@ -45,21 +43,23 @@ public class ElasticSearchSchemaManager {
 
   private final ElasticsearchMetadataService metadataService;
   private final ConfigurationService configurationService;
+  private final OptimizeIndexNameService indexNameService;
+
   private final List<TypeMappingCreator> mappings;
   private final ObjectMapper objectMapper;
 
-  public void validateExistingSchemaVersion(final RestHighLevelClient esClient) {
+  public void validateExistingSchemaVersion(final OptimizeElasticsearchClient esClient) {
     metadataService.validateSchemaVersionCompatibility(esClient);
   }
 
-  public void initializeSchema(final RestHighLevelClient esClient) {
-    unblockIndices(esClient);
+  public void initializeSchema(final OptimizeElasticsearchClient esClient) {
+    unblockIndices(esClient.getHighLevelClient());
     if (!schemaAlreadyExists(esClient)) {
       log.info("Initializing Optimize schema...");
-      createOptimizeIndices(esClient);
+      createOptimizeIndices(esClient.getHighLevelClient());
       log.info("Optimize schema initialized successfully.");
     } else {
-      updateAllMappingsAndDynamicSettings(esClient);
+      updateAllMappingsAndDynamicSettings(esClient.getHighLevelClient());
     }
     metadataService.initMetadataVersionIfMissing(esClient);
   }
@@ -72,23 +72,23 @@ public class ElasticSearchSchemaManager {
     return mappings;
   }
 
-  public boolean schemaAlreadyExists(RestHighLevelClient esClient) {
-    String[] optimizeIndex = new String[mappings.size()];
+  public boolean schemaAlreadyExists(OptimizeElasticsearchClient esClient) {
+    String[] types = new String[mappings.size()];
     int i = 0;
     for (TypeMappingCreator creator : mappings) {
-      optimizeIndex[i] = getOptimizeIndexAliasForType(creator.getType());
+      types[i] = creator.getType();
       i = ++i;
     }
 
     GetIndexRequest request = new GetIndexRequest();
-    request.indices(optimizeIndex);
+    request.indices(types);
 
     try {
-      return esClient.indices().exists(request, RequestOptions.DEFAULT);
+      return esClient.exists(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String message = String.format(
         "Could not check if [%s] index(es) already exist.",
-        String.join(",", optimizeIndex)
+        String.join(",", types)
       );
       throw new OptimizeRuntimeException(message, e);
     }
@@ -101,8 +101,8 @@ public class ElasticSearchSchemaManager {
    */
   public void createOptimizeIndices(RestHighLevelClient esClient) {
     for (TypeMappingCreator mapping : mappings) {
-      final String aliasName = getOptimizeIndexAliasForType(mapping.getType());
-      final String indexName = getVersionedOptimizeIndexNameForTypeMapping(mapping);
+      final String aliasName = indexNameService.getOptimizeIndexAliasForType(mapping.getType());
+      final String indexName = indexNameService.getVersionedOptimizeIndexNameForTypeMapping(mapping);
       final Settings indexSettings = createIndexSettings();
       try {
         try {
@@ -163,7 +163,7 @@ public class ElasticSearchSchemaManager {
       Map<String, Map> settingsMap = (Map) entry.getValue().get("settings");
       Map<String, String> indexSettingsMap = settingsMap.get("index");
       if (Boolean.parseBoolean(indexSettingsMap.get(INDEX_READ_ONLY_SETTING))
-        && entry.getKey().contains(OPTIMIZE_INDEX_PREFIX)) {
+        && entry.getKey().contains(indexNameService.getIndexPrefix())) {
         indexBlocked = true;
         log.info("Found blocked Optimize Elasticsearch indices");
         break;
@@ -172,7 +172,7 @@ public class ElasticSearchSchemaManager {
 
     if (indexBlocked) {
       log.info("Unblocking Elasticsearch indices...");
-      UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest(OPTIMIZE_INDEX_PREFIX + "*");
+      UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest(indexNameService.getIndexPrefix() + "*");
       updateSettingsRequest.settings(Settings.builder().put(INDEX_READ_ONLY_SETTING, false));
       try {
         esClient.indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
@@ -183,7 +183,7 @@ public class ElasticSearchSchemaManager {
   }
 
   private void updateIndexDynamicSettingsAndMappings(RestHighLevelClient esClient, TypeMappingCreator typeMapping) {
-    final String indexName = getVersionedOptimizeIndexNameForTypeMapping(typeMapping);
+    final String indexName = indexNameService.getVersionedOptimizeIndexNameForTypeMapping(typeMapping);
     try {
       final Settings indexSettings = buildDynamicSettings(configurationService);
       final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest();

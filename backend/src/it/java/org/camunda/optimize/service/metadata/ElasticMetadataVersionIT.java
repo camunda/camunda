@@ -38,7 +38,7 @@ public class ElasticMetadataVersionIT {
     embeddedOptimizeRule.stopOptimize();
     embeddedOptimizeRule.startOptimize();
     String version = embeddedOptimizeRule.getApplicationContext().getBean(ElasticsearchMetadataService.class)
-      .readMetadata(embeddedOptimizeRule.getElasticsearchClient()).get().getSchemaVersion();
+      .readMetadata(embeddedOptimizeRule.getOptimizeElasticClient()).get().getSchemaVersion();
     String expected = embeddedOptimizeRule.getApplicationContext().getBean(OptimizeVersionService.class).getVersion();
     assertThat(version, is(expected));
   }

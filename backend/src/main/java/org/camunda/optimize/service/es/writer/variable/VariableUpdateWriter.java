@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableDto;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
@@ -21,7 +21,7 @@ import java.util.Map;
 @Component
 public class VariableUpdateWriter extends VariableWriter {
 
-  public VariableUpdateWriter(final RestHighLevelClient esClient,
+  public VariableUpdateWriter(final OptimizeElasticsearchClient esClient,
                               final ObjectMapper objectMapper,
                               final DateTimeFormatter dateTimeFormatter) {
     super(esClient, objectMapper, dateTimeFormatter);

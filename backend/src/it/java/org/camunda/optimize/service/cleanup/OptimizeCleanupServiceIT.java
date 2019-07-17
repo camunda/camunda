@@ -39,7 +39,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.DECISION_INSTANCE_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_INSTANCE_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
@@ -309,11 +308,11 @@ public class OptimizeCleanupServiceIT {
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+      .indices(PROC_INSTANCE_TYPE)
       .types(PROC_INSTANCE_TYPE)
       .source(searchSourceBuilder);
 
-    return elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+    return elasticSearchRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
   private void assertProcessInstanceDataCompleteInEs(List<String> processIds) throws IOException {
@@ -337,11 +336,11 @@ public class OptimizeCleanupServiceIT {
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
+      .indices(DECISION_INSTANCE_TYPE)
       .types(DECISION_INSTANCE_TYPE)
       .source(searchSourceBuilder);
 
-    return elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+    return elasticSearchRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
   private void assertDecisionInstancesExistInEs(List<String> decisionInstanceIds) throws IOException {

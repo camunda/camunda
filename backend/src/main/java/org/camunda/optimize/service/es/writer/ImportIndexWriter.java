@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.type.index.ImportIndexType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EsHelper;
@@ -19,7 +20,6 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -30,7 +30,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_TYPE;
 
@@ -39,9 +38,9 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDE
 @Slf4j
 public class ImportIndexWriter {
 
-  private RestHighLevelClient esClient;
-  private ObjectMapper objectMapper;
-  private DateTimeFormatter dateTimeFormatter;
+  private final OptimizeElasticsearchClient esClient;
+  private final ObjectMapper objectMapper;
+  private final DateTimeFormatter dateTimeFormatter;
 
   public void importIndexes(List<ImportIndexDto> importIndexDtos) {
     log.debug("Writing import index to Elasticsearch");
@@ -92,11 +91,7 @@ public class ImportIndexWriter {
       currentTimeStamp, importIndex.getEsTypeIndexRefersTo()
     );
     try {
-      return new IndexRequest(
-        getOptimizeIndexAliasForType(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
-        TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
-        getId(importIndex)
-      )
+      return new IndexRequest(TIMESTAMP_BASED_IMPORT_INDEX_TYPE, TIMESTAMP_BASED_IMPORT_INDEX_TYPE, getId(importIndex))
         .source(objectMapper.writeValueAsString(importIndex), XContentType.JSON);
     } catch (JsonProcessingException e) {
       log.error("Was not able to write definition based import index of type [{}] to Elasticsearch. Reason: {}",
@@ -126,9 +121,8 @@ public class ImportIndexWriter {
         .field(ImportIndexType.ENGINE, importIndex.getEngine())
         .field(ImportIndexType.IMPORT_INDEX, importIndex.getImportIndex())
         .endObject();
-      return
-        new IndexRequest(getOptimizeIndexAliasForType(IMPORT_INDEX_TYPE), IMPORT_INDEX_TYPE, getId(importIndex))
-          .source(sourceToAdjust);
+      return new IndexRequest(IMPORT_INDEX_TYPE, IMPORT_INDEX_TYPE, getId(importIndex))
+        .source(sourceToAdjust);
     } catch (IOException e) {
       log.error(
         "Was not able to write all entities based import index of type [{}] to Elasticsearch. Reason: {}",

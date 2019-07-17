@@ -25,7 +25,6 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.ES_TYPE_INDEX_REFERS_TO;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
@@ -192,7 +191,8 @@ public class DecisionImportIT extends AbstractImportIT {
     final String defaultTenantId = "reallyAwesomeTenantId";
     final String expectedTenantId = "evenMoreAwesomeTenantId";
     embeddedOptimizeRule.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinitionWithTenant(expectedTenantId);
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinitionWithTenant(
+      expectedTenantId);
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
 
     //when
@@ -275,11 +275,11 @@ public class DecisionImportIT extends AbstractImportIT {
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(getOptimizeIndexAliasForType(IMPORT_INDEX_TYPE))
+      .indices(IMPORT_INDEX_TYPE)
       .types(IMPORT_INDEX_TYPE)
       .source(searchSourceBuilder);
 
-    return elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+    return elasticSearchRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
   private SearchResponse getDecisionInstanceIndexResponse() throws IOException {
@@ -288,11 +288,11 @@ public class DecisionImportIT extends AbstractImportIT {
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(getOptimizeIndexAliasForType(TIMESTAMP_BASED_IMPORT_INDEX_TYPE))
+      .indices(TIMESTAMP_BASED_IMPORT_INDEX_TYPE)
       .types(TIMESTAMP_BASED_IMPORT_INDEX_TYPE)
       .source(searchSourceBuilder);
 
-    return elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+    return elasticSearchRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
 
@@ -311,8 +311,8 @@ public class DecisionImportIT extends AbstractImportIT {
   }
 
   private void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchType,
-                                                               final long count,
-                                                               final boolean expectTenant) throws IOException {
+                                                             final long count,
+                                                             final boolean expectTenant) throws IOException {
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticsearchType);
 
     assertThat(idsResp.getHits().getTotalHits(), is(count));

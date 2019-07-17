@@ -18,7 +18,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
 
 public class CountDecisionFrequencyGroupByNoneCommand extends DecisionReportCommand<SingleDecisionNumberReportResult> {
@@ -40,10 +39,9 @@ public class CountDecisionFrequencyGroupByNoneCommand extends DecisionReportComm
       .query(query)
       .fetchSource(false)
       .size(0);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
-        .types(DECISION_INSTANCE_TYPE)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_TYPE)
+      .types(DECISION_INSTANCE_TYPE)
+      .source(searchSourceBuilder);
 
     SearchResponse response;
     try {

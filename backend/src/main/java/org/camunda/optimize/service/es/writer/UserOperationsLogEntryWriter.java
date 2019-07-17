@@ -8,21 +8,20 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationLogEntryDto;
 import org.camunda.optimize.dto.optimize.importing.UserTaskInstanceDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -31,18 +30,16 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
 @Component
+@Slf4j
 public class UserOperationsLogEntryWriter extends AbstractUserTaskWriter {
-  private static final Logger logger = LoggerFactory.getLogger(UserOperationsLogEntryWriter.class);
+  private final OptimizeElasticsearchClient esClient;
 
-  private final RestHighLevelClient esClient;
-
-  public UserOperationsLogEntryWriter(final RestHighLevelClient esClient,
+  public UserOperationsLogEntryWriter(final OptimizeElasticsearchClient esClient,
                                       final ObjectMapper objectMapper) {
     super(objectMapper);
     this.esClient = esClient;
@@ -50,7 +47,7 @@ public class UserOperationsLogEntryWriter extends AbstractUserTaskWriter {
 
   public void importUserOperationLogEntries(final List<UserOperationLogEntryDto> userOperationLogEntries) throws
                                                                                                           Exception {
-    logger.debug("Writing [{}] user operation log entries to elasticsearch", userOperationLogEntries.size());
+    log.debug("Writing [{}] user operation log entries to elasticsearch", userOperationLogEntries.size());
 
     final BulkRequest userOperationsBulkRequest = new BulkRequest();
     userOperationsBulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
@@ -103,7 +100,7 @@ public class UserOperationsLogEntryWriter extends AbstractUserTaskWriter {
     final String newProcessInstanceIfAbsent = objectMapper.writeValueAsString(procInst);
     final Script updateScript = createUpdateUserOperationsScript(userTasks);
     final UpdateRequest request =
-      new UpdateRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE), PROC_INSTANCE_TYPE, processInstanceId)
+      new UpdateRequest(PROC_INSTANCE_TYPE, PROC_INSTANCE_TYPE, processInstanceId)
         .script(updateScript)
         .upsert(newProcessInstanceIfAbsent, XContentType.JSON)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

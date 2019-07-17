@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.service.ProcessDefinitionService;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
@@ -25,7 +26,6 @@ import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.TENANT_ID;
@@ -57,7 +56,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Slf4j
 public class BranchAnalysisReader {
 
-  private RestHighLevelClient esClient;
+  private OptimizeElasticsearchClient esClient;
   private ProcessDefinitionService definitionService;
   private TenantAuthorizationService tenantAuthorizationService;
   private ProcessQueryFilterEnhancer queryFilterEnhancer;
@@ -177,10 +176,9 @@ public class BranchAnalysisReader {
       .query(query)
       .size(0)
       .fetchSource(false);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
-        .types(PROC_INSTANCE_TYPE)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
+      .types(PROC_INSTANCE_TYPE)
+      .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {

@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.upgrade.service;
 
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +35,8 @@ public class ValidationService {
     configurationService.validateNoDeprecatedConfigKeysUsed();
   }
 
-  public void validateSchemaVersions(final RestHighLevelClient restClient, final String fromVersion,
+  public void validateSchemaVersions(final OptimizeElasticsearchClient restClient,
+                                     final String fromVersion,
                                      final String toVersion) {
 
     final String schemaVersion = metadataService.readMetadata(restClient)
@@ -53,9 +54,9 @@ public class ValidationService {
     }
   }
 
-  public void validateESVersion(final RestHighLevelClient restClient, final String toVersion) {
+  public void validateESVersion(final OptimizeElasticsearchClient restClient, final String toVersion) {
     try {
-      checkESVersionSupport(restClient);
+      checkESVersionSupport(restClient.getHighLevelClient());
     } catch (Exception e) {
       String errorMessage =
         "It was not possible to upgrade Optimize to version " + toVersion + ".\n" +

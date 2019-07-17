@@ -22,8 +22,6 @@ import org.elasticsearch.client.RequestOptions;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexNameForAliasAndVersion;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -31,7 +29,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class UpgradeVersionIT extends AbstractUpgradeIT {
 
   private static final String TEST_TYPE = "users";
-  private static final String TEST_INDEX = "optimize-users";
 
   private static final String FROM_VERSION = "2.0.0";
   private static final String TO_VERSION = "2.1.0";
@@ -60,15 +57,18 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
 
     // then
     assertThat(
-      restClient.indices().exists(
-        new GetIndexRequest().indices(TEST_INDEX).features(GetIndexRequest.Feature.ALIASES),
+      prefixAwareClient.exists(
+        new GetIndexRequest().indices(TEST_TYPE).features(GetIndexRequest.Feature.ALIASES),
         RequestOptions.DEFAULT
       ),
       is(true)
     );
-    final String versionedIndexName = getOptimizeIndexNameForAliasAndVersion(TEST_INDEX, TO_VERSION);
+    final String versionedIndexName = indexNameService.getOptimizeIndexNameForAliasAndVersion(
+      indexNameService.getOptimizeIndexAliasForType(TEST_TYPE),
+      TO_VERSION
+    );
     assertThat(
-      restClient.indices().exists(
+      prefixAwareClient.getHighLevelClient().indices().exists(
         new GetIndexRequest().indices(versionedIndexName).features(GetIndexRequest.Feature.MAPPINGS),
         RequestOptions.DEFAULT
       ),
@@ -91,8 +91,8 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
 
     // then
     assertThat(
-      restClient.indices().exists(
-        new GetIndexRequest().indices(TEST_INDEX).features(GetIndexRequest.Feature.MAPPINGS),
+      prefixAwareClient.exists(
+        new GetIndexRequest().indices(TEST_TYPE).features(GetIndexRequest.Feature.MAPPINGS),
         RequestOptions.DEFAULT
       ),
       is(true)
@@ -115,15 +115,18 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
 
     // then
     assertThat(
-      restClient.indices().exists(
-        new GetIndexRequest().indices(TEST_INDEX).features(GetIndexRequest.Feature.ALIASES),
+      prefixAwareClient.exists(
+        new GetIndexRequest().indices(TEST_TYPE).features(GetIndexRequest.Feature.ALIASES),
         RequestOptions.DEFAULT
       ),
       is(true)
     );
-    final String versionedIndexName = getOptimizeIndexNameForAliasAndVersion(TEST_INDEX, TO_VERSION);
+    final String versionedIndexName = indexNameService.getOptimizeIndexNameForAliasAndVersion(
+      indexNameService.getOptimizeIndexAliasForType(TEST_TYPE),
+      TO_VERSION
+    );
     assertThat(
-      restClient.indices().exists(
+      prefixAwareClient.getHighLevelClient().indices().exists(
         new GetIndexRequest().indices(versionedIndexName).features(GetIndexRequest.Feature.MAPPINGS),
         RequestOptions.DEFAULT
       ),
@@ -146,7 +149,10 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    final SearchResponse searchResponse = restClient.search(new SearchRequest(TEST_INDEX), RequestOptions.DEFAULT);
+    final SearchResponse searchResponse = prefixAwareClient.search(
+      new SearchRequest(TEST_TYPE),
+      RequestOptions.DEFAULT
+    );
     assertThat(searchResponse.getHits().getHits().length, is(1));
     assertThat(searchResponse.getHits().getHits()[0].getSourceAsMap().get("username"), is("admin"));
     assertThat(searchResponse.getHits().getHits()[0].getSourceAsMap().get("password"), is("admin"));
@@ -168,7 +174,10 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    final SearchResponse searchResponse = restClient.search(new SearchRequest(TEST_INDEX), RequestOptions.DEFAULT);
+    final SearchResponse searchResponse = prefixAwareClient.search(
+      new SearchRequest(TEST_TYPE),
+      RequestOptions.DEFAULT
+    );
     assertThat(searchResponse.getHits().getHits().length, is(1));
     assertThat(searchResponse.getHits().getHits()[0].getSourceAsMap().get("username"), is("admin"));
     assertThat(searchResponse.getHits().getHits()[0].getSourceAsMap().get("password"), is("admin1"));
@@ -190,7 +199,7 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
 
     // then
     assertThat(
-      restClient.indices().exists(new GetIndexRequest().indices(TEST_INDEX), RequestOptions.DEFAULT),
+      prefixAwareClient.exists(new GetIndexRequest().indices(TEST_TYPE), RequestOptions.DEFAULT),
       is(false)
     );
   }
@@ -209,8 +218,8 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    final SearchResponse searchResponse = restClient.search(
-      new SearchRequest(getOptimizeIndexAliasForType(METADATA_TYPE.getType())),
+    final SearchResponse searchResponse = prefixAwareClient.search(
+      new SearchRequest(METADATA_TYPE.getType()),
       RequestOptions.DEFAULT
     );
     assertThat(searchResponse.getHits().getHits().length, is(1));

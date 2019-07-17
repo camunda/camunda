@@ -10,13 +10,12 @@ import com.google.common.collect.ImmutableSet;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.ENGINE;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_NAME;
@@ -33,6 +31,7 @@ import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_VERSION_TAG;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.TENANT_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
 
 @AllArgsConstructor
 @Component
@@ -47,8 +46,8 @@ public class ProcessDefinitionWriter {
     TENANT_ID
   );
 
-  private RestHighLevelClient esClient;
-  private ObjectMapper objectMapper;
+  private final OptimizeElasticsearchClient esClient;
+  private final ObjectMapper objectMapper;
 
   public void importProcessDefinitions(List<ProcessDefinitionOptimizeDto> procDefs) {
     log.debug("Writing [{}] process definitions to elasticsearch", procDefs.size());
@@ -83,14 +82,10 @@ public class ProcessDefinitionWriter {
     for (ProcessDefinitionOptimizeDto procDef : procDefs) {
       final String id = procDef.getId();
       final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(FIELDS_TO_UPDATE, procDef);
-      final UpdateRequest request = new UpdateRequest(
-        getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_DEF_TYPE),
-        ElasticsearchConstants.PROC_DEF_TYPE,
-        id
-      )
-        .script(updateScript)
-        .upsert(objectMapper.convertValue(procDef, Map.class))
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      final UpdateRequest request = new UpdateRequest(PROC_DEF_TYPE, PROC_DEF_TYPE, id)
+          .script(updateScript)
+          .upsert(objectMapper.convertValue(procDef, Map.class))
+          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
       bulkRequest.add(request);
     }

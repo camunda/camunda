@@ -5,11 +5,9 @@
  */
 package org.camunda.optimize.upgrade.steps.schema;
 
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
-
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexNameForAliasAndVersion;
 
 
 public class CreateIndexStep implements UpgradeStep {
@@ -26,10 +24,11 @@ public class CreateIndexStep implements UpgradeStep {
   }
 
   @Override
-  public void execute(final ESIndexAdjuster ESIndexAdjuster) {
-    final String indexAlias = getOptimizeIndexAliasForType(typeName);
-    ESIndexAdjuster.createIndex(
-      getOptimizeIndexNameForAliasAndVersion(indexAlias, targetVersion),
+  public void execute(final ESIndexAdjuster esIndexAdjuster) {
+    final OptimizeIndexNameService indexNameService = esIndexAdjuster.getIndexNameService();
+    final String indexAlias = indexNameService.getOptimizeIndexAliasForType(typeName);
+    esIndexAdjuster.createIndex(
+      indexNameService.getOptimizeIndexNameForAliasAndVersion(indexAlias, targetVersion),
       targetVersion != null ? indexAlias : null,
       mapping
     );

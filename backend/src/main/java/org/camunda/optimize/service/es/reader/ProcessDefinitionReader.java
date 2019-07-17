@@ -10,13 +10,13 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.ENGINE;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_VERSION;
@@ -50,7 +49,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Slf4j
 public class ProcessDefinitionReader {
 
-  private RestHighLevelClient esClient;
+  private OptimizeElasticsearchClient esClient;
   private ConfigurationService configurationService;
   private ObjectMapper objectMapper;
 
@@ -78,9 +77,9 @@ public class ProcessDefinitionReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(PROC_DEF_TYPE))
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(PROC_DEF_TYPE)
+      .types(PROC_DEF_TYPE)
+      .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
@@ -129,7 +128,8 @@ public class ProcessDefinitionReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
-    SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(PROC_DEF_TYPE))
+    SearchRequest searchRequest = new SearchRequest(PROC_DEF_TYPE)
+      .types(PROC_DEF_TYPE)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -163,7 +163,7 @@ public class ProcessDefinitionReader {
       .size(LIST_FETCH_LIMIT)
       .fetchSource(null, fieldsToExclude);
     final SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(PROC_DEF_TYPE))
+      new SearchRequest(PROC_DEF_TYPE)
         .types(PROC_DEF_TYPE)
         .source(searchSourceBuilder)
         .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
@@ -205,10 +205,9 @@ public class ProcessDefinitionReader {
       .sort(SortBuilders.scriptSort(script, ScriptSortBuilder.ScriptSortType.NUMBER).order(SortOrder.DESC))
       .size(1);
 
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(PROC_DEF_TYPE))
-        .types(PROC_DEF_TYPE)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(PROC_DEF_TYPE)
+      .types(PROC_DEF_TYPE)
+      .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {

@@ -10,12 +10,12 @@ import com.google.common.collect.ImmutableSet;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_NAME;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_VERSION;
@@ -49,7 +48,7 @@ public class DecisionDefinitionWriter {
   );
 
   private final ObjectMapper objectMapper;
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
 
   public void importProcessDefinitions(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
     log.debug("Writing [{}] decision definitions to elasticsearch", decisionDefinitionOptimizeDtos.size());
@@ -61,10 +60,11 @@ public class DecisionDefinitionWriter {
     for (DecisionDefinitionOptimizeDto decisionDefinition : decisionDefinitionOptimizeDtos) {
       final String id = decisionDefinition.getId();
 
-      final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(FIELDS_TO_UPDATE, decisionDefinition);
-      final UpdateRequest request = new UpdateRequest(
-        getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE), DECISION_DEFINITION_TYPE, id
-      )
+      final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(
+        FIELDS_TO_UPDATE,
+        decisionDefinition
+      );
+      final UpdateRequest request = new UpdateRequest(DECISION_DEFINITION_TYPE, DECISION_DEFINITION_TYPE, id)
         .script(updateScript)
         .upsert(objectMapper.convertValue(decisionDefinition, Map.class))
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

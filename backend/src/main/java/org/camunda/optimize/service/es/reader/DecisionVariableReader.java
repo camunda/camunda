@@ -9,12 +9,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.DECISION_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.DECISION_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.INPUTS;
@@ -59,7 +58,7 @@ public class DecisionVariableReader {
   private static final String VARIABLE_VALUE_NGRAM = "nGramField";
   private static final String VARIABLE_VALUE_LOWERCASE = "lowercaseField";
 
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
 
   public List<String> getInputVariableValues(final String decisionDefinitionKey,
                                              final String decisionDefinitionVersion,
@@ -106,7 +105,7 @@ public class DecisionVariableReader {
       .aggregation(getVariableValueAggregation(variableId, variablesPath, variableType, valueFilter))
       .size(0);
 
-    final SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
+    final SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_TYPE)
       .types(DECISION_INSTANCE_TYPE)
       .source(searchSourceBuilder);
 

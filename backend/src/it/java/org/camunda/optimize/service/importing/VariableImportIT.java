@@ -62,7 +62,7 @@ public class VariableImportIT extends AbstractImportIT {
     List<VariableRetrievalDto> variablesResponseDtos = getVariables(instanceDto);
 
     //then
-    assertThat(variablesResponseDtos.size(),is(variables.size()));
+    assertThat(variablesResponseDtos.size(), is(variables.size()));
   }
 
   @Test
@@ -86,9 +86,8 @@ public class VariableImportIT extends AbstractImportIT {
     List<VariableRetrievalDto> variablesResponseDtos = getVariables(instanceDto);
 
     //then
-    assertThat(variablesResponseDtos.size(),is(0));
+    assertThat(variablesResponseDtos.size(), is(0));
   }
-
 
 
   @Test
@@ -115,14 +114,15 @@ public class VariableImportIT extends AbstractImportIT {
 
   private List<VariableRetrievalDto> getVariables(ProcessInstanceEngineDto instanceDto) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetVariablesRequest(instanceDto.getProcessDefinitionKey(), instanceDto.getProcessDefinitionVersion())
-            .executeAndReturnList(VariableRetrievalDto.class, 200);
+      .getRequestExecutor()
+      .buildGetVariablesRequest(instanceDto.getProcessDefinitionKey(), instanceDto.getProcessDefinitionVersion())
+      .executeAndReturnList(VariableRetrievalDto.class, 200);
   }
 
   @Test
   public void variableUpdatesOnSameVariableDoNotCreateSeveralVariables() {
     //given
+    // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
       .serviceTask()
@@ -131,6 +131,7 @@ public class VariableImportIT extends AbstractImportIT {
       .userTask()
       .endEvent()
       .done();
+    // @formatter:on
 
     Map<String, Object> variables = new HashMap<>();
     variables.put("stringVar", "aStringValue");
@@ -149,6 +150,7 @@ public class VariableImportIT extends AbstractImportIT {
   @Test
   public void onlyTheLatestVariableValueUpdateIsImported() {
     //given
+    // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
       .serviceTask()
@@ -162,6 +164,7 @@ public class VariableImportIT extends AbstractImportIT {
         .camundaOutputParameter("stringVar", "bar")
       .endEvent()
       .done();
+    // @formatter:on
 
     Map<String, Object> variables = new HashMap<>();
     variables.put("stringVar", "aStringValue");
@@ -172,14 +175,14 @@ public class VariableImportIT extends AbstractImportIT {
 
     //when
     List<String> variableValues =
-            embeddedOptimizeRule
-                    .getRequestExecutor()
-                    .addSingleQueryParam("name", "stringVar")
-                    .addSingleQueryParam("type", "String")
-                    .addSingleQueryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
-                    .addSingleQueryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
-                    .buildGetVariableValuesRequest()
-                    .executeAndReturnList(String.class, 200);
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .addSingleQueryParam("name", "stringVar")
+        .addSingleQueryParam("type", "String")
+        .addSingleQueryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
+        .addSingleQueryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
+        .buildGetVariableValuesRequest()
+        .executeAndReturnList(String.class, 200);
 
     //then
     assertThat(variableValues.size(), is(1));
@@ -189,6 +192,7 @@ public class VariableImportIT extends AbstractImportIT {
   @Test
   public void variablesForCompletedProcessInstancesAreFinalResult() {
     //given
+    // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
       .serviceTask()
@@ -201,6 +205,7 @@ public class VariableImportIT extends AbstractImportIT {
         .camundaOutputParameter("anotherVar", "2")
       .endEvent()
       .done();
+    // @formatter:on
 
     ProcessInstanceEngineDto instanceDto = engineRule.deployAndStartProcess(processModel);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -208,14 +213,14 @@ public class VariableImportIT extends AbstractImportIT {
 
     //when
     List<String> variableValues =
-            embeddedOptimizeRule
-                    .getRequestExecutor()
-                    .addSingleQueryParam("name", "stringVar")
-                    .addSingleQueryParam("type", "String")
-                    .addSingleQueryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
-                    .addSingleQueryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
-                    .buildGetVariableValuesRequest()
-                    .executeAndReturnList(String.class, 200);
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .addSingleQueryParam("name", "stringVar")
+        .addSingleQueryParam("type", "String")
+        .addSingleQueryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
+        .addSingleQueryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
+        .buildGetVariableValuesRequest()
+        .executeAndReturnList(String.class, 200);
 
     //then
     assertThat(variableValues.size(), is(1));
@@ -223,14 +228,14 @@ public class VariableImportIT extends AbstractImportIT {
 
     // when
     variableValues =
-            embeddedOptimizeRule
-                    .getRequestExecutor()
-                    .addSingleQueryParam("name", "anotherVar")
-                    .addSingleQueryParam("type", "String")
-                    .addSingleQueryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
-                    .addSingleQueryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
-                    .buildGetVariableValuesRequest()
-                    .executeAndReturnList(String.class, 200);
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .addSingleQueryParam("name", "anotherVar")
+        .addSingleQueryParam("type", "String")
+        .addSingleQueryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
+        .addSingleQueryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
+        .buildGetVariableValuesRequest()
+        .executeAndReturnList(String.class, 200);
 
     //then
     assertThat(variableValues.size(), is(1));
@@ -241,6 +246,7 @@ public class VariableImportIT extends AbstractImportIT {
   @Test
   public void oldVariableUpdatesAreOverwritten() {
     //given
+    // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
         .userTask()
@@ -250,6 +256,7 @@ public class VariableImportIT extends AbstractImportIT {
         .userTask()
       .endEvent()
       .done();
+    // @formatter:on
 
     Map<String, Object> variables = new HashMap<>();
     variables.put("stringVar", "aStringValue");
@@ -264,14 +271,14 @@ public class VariableImportIT extends AbstractImportIT {
 
     //when
     List<String> variableValues =
-            embeddedOptimizeRule
-                    .getRequestExecutor()
-                    .addSingleQueryParam("name", "stringVar")
-                    .addSingleQueryParam("type", "String")
-                    .addSingleQueryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
-                    .addSingleQueryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
-                    .buildGetVariableValuesRequest()
-                    .executeAndReturnList(String.class, 200);
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .addSingleQueryParam("name", "stringVar")
+        .addSingleQueryParam("type", "String")
+        .addSingleQueryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
+        .addSingleQueryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
+        .buildGetVariableValuesRequest()
+        .executeAndReturnList(String.class, 200);
 
     //then
     assertThat(variableValues.size(), is(1));
@@ -297,14 +304,14 @@ public class VariableImportIT extends AbstractImportIT {
 
     //when
     List<String> variableValues =
-            embeddedOptimizeRule
-                    .getRequestExecutor()
-                    .addSingleQueryParam("name", "stringVar")
-                    .addSingleQueryParam("type", "String")
-                    .addSingleQueryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
-                    .addSingleQueryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
-                    .buildGetVariableValuesRequest()
-                    .executeAndReturnList(String.class, 200);
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .addSingleQueryParam("name", "stringVar")
+        .addSingleQueryParam("type", "String")
+        .addSingleQueryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
+        .addSingleQueryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
+        .buildGetVariableValuesRequest()
+        .executeAndReturnList(String.class, 200);
 
     //then
     assertThat(variableValues.size(), is(0));
@@ -314,9 +321,13 @@ public class VariableImportIT extends AbstractImportIT {
     return createImportAndDeleteTwoProcessInstancesWithVariables(new HashMap<>());
   }
 
-  private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstancesWithVariables(Map<String, Object> variables) throws IOException {
+  private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstancesWithVariables(Map<String, Object> variables) throws
+                                                                                                                        IOException {
     ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTaskWithVariables(variables);
-    ProcessInstanceEngineDto secondProcInst = engineRule.startProcessInstance(firstProcInst.getDefinitionId(), variables);
+    ProcessInstanceEngineDto secondProcInst = engineRule.startProcessInstance(
+      firstProcInst.getDefinitionId(),
+      variables
+    );
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
     engineRule.deleteHistoricProcessInstance(firstProcInst.getId());

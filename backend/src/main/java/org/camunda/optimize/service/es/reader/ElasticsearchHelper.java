@@ -8,11 +8,11 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -28,7 +28,7 @@ public class ElasticsearchHelper {
   public static <T> List<T> retrieveAllScrollResults(final SearchResponse initialScrollResponse,
                                                      final Class<T> itemClass,
                                                      final ObjectMapper objectMapper,
-                                                     final RestHighLevelClient esclient,
+                                                     final OptimizeElasticsearchClient esclient,
                                                      final Integer scrollingTimeout) {
     return retrieveScrollResultsTillLimit(
       initialScrollResponse, itemClass, objectMapper, esclient, scrollingTimeout, Integer.MAX_VALUE
@@ -38,7 +38,7 @@ public class ElasticsearchHelper {
   public static <T> List<T> retrieveScrollResultsTillLimit(final SearchResponse initialScrollResponse,
                                                            final Class<T> itemClass,
                                                            final ObjectMapper objectMapper,
-                                                           final RestHighLevelClient esclient,
+                                                           final OptimizeElasticsearchClient esclient,
                                                            final Integer scrollingTimeout,
                                                            final Integer limit) {
     final List<T> results = new ArrayList<>();

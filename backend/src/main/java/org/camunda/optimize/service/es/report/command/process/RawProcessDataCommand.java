@@ -28,7 +28,6 @@ import org.elasticsearch.search.sort.SortOrder;
 import java.io.IOException;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_NAME;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_VALUE;
@@ -67,7 +66,7 @@ public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRaw
 
     addSorting(sortByField, sortOrder, searchSourceBuilder);
 
-    final SearchRequest scrollSearchRequest = new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+    final SearchRequest scrollSearchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
       .types(PROC_INSTANCE_TYPE)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));

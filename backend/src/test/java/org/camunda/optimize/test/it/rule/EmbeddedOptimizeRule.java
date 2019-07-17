@@ -26,6 +26,7 @@ import org.camunda.optimize.service.engine.importing.service.RunningActivityInst
 import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndexesEngineImportMediator;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.security.AuthCookieService;
@@ -33,7 +34,6 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.camunda.optimize.test.util.SynchronizationElasticsearchImportJob;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
@@ -426,8 +426,8 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return getApplicationContext().getBean(ElasticSearchSchemaManager.class);
   }
 
-  public RestHighLevelClient getElasticsearchClient() {
-    return getApplicationContext().getBean(RestHighLevelClient.class);
+  public OptimizeElasticsearchClient getOptimizeElasticClient() {
+    return getApplicationContext().getBean(OptimizeElasticsearchClient.class);
   }
 
   public String format(OffsetDateTime offsetDateTime) {

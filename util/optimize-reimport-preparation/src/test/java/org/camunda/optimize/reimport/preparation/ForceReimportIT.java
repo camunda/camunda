@@ -17,12 +17,10 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
@@ -45,11 +43,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LICENSE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -112,36 +111,28 @@ public class ForceReimportIT {
   private boolean hasEngineData() throws IOException {
     List<String> types = new ArrayList<>();
     types.add(TIMESTAMP_BASED_IMPORT_INDEX_TYPE);
-    types.add(
-      ElasticsearchConstants.IMPORT_INDEX_TYPE);
-    types.add(
-      ElasticsearchConstants.PROC_DEF_TYPE);
-    types.add(
-      ElasticsearchConstants.PROC_INSTANCE_TYPE);
-
-    List<String> indexNames = types
-      .stream()
-      .map(OptimizeIndexNameHelper::getOptimizeIndexAliasForType)
-      .collect(Collectors.toList());
+    types.add(IMPORT_INDEX_TYPE);
+    types.add(PROC_DEF_TYPE);
+    types.add(PROC_INSTANCE_TYPE);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(QueryBuilders.matchAllQuery())
       .size(0);
     SearchRequest searchRequest = new SearchRequest()
-      .indices(indexNames.toArray(new String[0]))
+      .indices(types.toArray(new String[0]))
       .types(types.toArray(new String[0]))
       .source(searchSourceBuilder);
 
-    SearchResponse response = elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+    SearchResponse response = elasticSearchRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
 
     return response.getHits().getTotalHits() > 0L;
   }
 
   private boolean licenseExists() {
-    GetRequest getRequest = new GetRequest(getOptimizeIndexAliasForType(LICENSE_TYPE), LICENSE_TYPE, LICENSE_TYPE);
+    GetRequest getRequest = new GetRequest(LICENSE_TYPE, LICENSE_TYPE, LICENSE_TYPE);
     GetResponse getResponse;
     try {
-      getResponse = elasticSearchRule.getEsClient().get(getRequest, RequestOptions.DEFAULT);
+      getResponse = elasticSearchRule.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not retrieve license!", e);
     }

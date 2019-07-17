@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetRequest;
@@ -25,7 +26,6 @@ import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.report.AbstractReportType.DATA;
 import static org.camunda.optimize.service.es.schema.type.report.CombinedReportType.REPORTS;
 import static org.camunda.optimize.service.es.schema.type.report.CombinedReportType.REPORT_ITEM_ID;
@@ -64,7 +63,7 @@ public class ReportReader {
   );
   private static final String[] REPORT_LIST_EXCLUDES = {REPORT_DATA_XML_PROPERTY};
 
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
@@ -100,21 +99,9 @@ public class ReportReader {
 
   private MultiGetResponse performGetReportRequest(String reportId) {
     MultiGetRequest request = new MultiGetRequest();
-    request.add(new MultiGetRequest.Item(
-      getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
-      SINGLE_PROCESS_REPORT_TYPE,
-      reportId
-    ));
-    request.add(new MultiGetRequest.Item(
-      getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE),
-      SINGLE_DECISION_REPORT_TYPE,
-      reportId
-    ));
-    request.add(new MultiGetRequest.Item(
-      getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE),
-      COMBINED_REPORT_TYPE,
-      reportId
-    ));
+    request.add(new MultiGetRequest.Item(SINGLE_PROCESS_REPORT_TYPE, SINGLE_PROCESS_REPORT_TYPE, reportId));
+    request.add(new MultiGetRequest.Item(SINGLE_DECISION_REPORT_TYPE, SINGLE_DECISION_REPORT_TYPE, reportId));
+    request.add(new MultiGetRequest.Item(COMBINED_REPORT_TYPE, COMBINED_REPORT_TYPE, reportId));
 
     MultiGetResponse multiGetItemResponses;
     try {
@@ -129,11 +116,7 @@ public class ReportReader {
 
   public SingleProcessReportDefinitionDto getSingleProcessReport(String reportId) {
     log.debug("Fetching single process report with id [{}]", reportId);
-    GetRequest getRequest = new GetRequest(
-      getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
-      SINGLE_PROCESS_REPORT_TYPE,
-      reportId
-    );
+    GetRequest getRequest = new GetRequest(SINGLE_PROCESS_REPORT_TYPE, SINGLE_PROCESS_REPORT_TYPE, reportId);
 
     GetResponse getResponse;
     try {
@@ -160,11 +143,7 @@ public class ReportReader {
 
   public SingleDecisionReportDefinitionDto getSingleDecisionReport(String reportId) {
     log.debug("Fetching single decision report with id [{}]", reportId);
-    GetRequest getRequest = new GetRequest(
-      getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE),
-      SINGLE_DECISION_REPORT_TYPE,
-      reportId
-    );
+    GetRequest getRequest = new GetRequest(SINGLE_DECISION_REPORT_TYPE, SINGLE_DECISION_REPORT_TYPE, reportId);
 
     GetResponse getResponse;
     try {
@@ -197,11 +176,7 @@ public class ReportReader {
       .size(LIST_FETCH_LIMIT)
       .fetchSource(null, REPORT_LIST_EXCLUDES);
     SearchRequest searchRequest =
-      new SearchRequest(
-        getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
-        getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE),
-        getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE)
-      )
+      new SearchRequest(SINGLE_PROCESS_REPORT_TYPE, SINGLE_DECISION_REPORT_TYPE, COMBINED_REPORT_TYPE)
         .source(searchSourceBuilder)
         .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
@@ -276,7 +251,7 @@ public class ReportReader {
     searchSourceBuilder.size(reportIdsAsArray.length);
     searchSourceBuilder.fetchSource(null, REPORT_LIST_EXCLUDES);
 
-    final SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE))
+    final SearchRequest searchRequest = new SearchRequest(SINGLE_PROCESS_REPORT_TYPE)
       .types(SINGLE_PROCESS_REPORT_TYPE)
       .source(searchSourceBuilder);
 
@@ -304,10 +279,9 @@ public class ReportReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(getCombinedReportsBySimpleReportIdQuery);
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE))
-        .types(COMBINED_REPORT_TYPE)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(COMBINED_REPORT_TYPE)
+      .types(COMBINED_REPORT_TYPE)
+      .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {

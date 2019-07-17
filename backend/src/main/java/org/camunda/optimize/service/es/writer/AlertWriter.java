@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.type.AlertType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -19,7 +20,6 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.engine.DocumentMissingException;
@@ -32,7 +32,6 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
@@ -44,7 +43,7 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 @Slf4j
 public class AlertWriter {
 
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
   public AlertDefinitionDto createAlert(AlertDefinitionDto alertDefinitionDto) {
@@ -53,7 +52,7 @@ public class AlertWriter {
     String id = IdGenerator.getNextId();
     alertDefinitionDto.setId(id);
     try {
-      IndexRequest request = new IndexRequest(getOptimizeIndexAliasForType(ALERT_TYPE), ALERT_TYPE, id)
+      IndexRequest request = new IndexRequest(ALERT_TYPE, ALERT_TYPE, id)
         .source(objectMapper.writeValueAsString(alertDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -79,7 +78,7 @@ public class AlertWriter {
     log.debug("Updating alert with id [{}] in Elasticsearch", alertUpdate.getId());
     try {
       UpdateRequest request =
-        new UpdateRequest(getOptimizeIndexAliasForType(ALERT_TYPE), ALERT_TYPE, alertUpdate.getId())
+        new UpdateRequest(ALERT_TYPE, ALERT_TYPE, alertUpdate.getId())
         .doc(objectMapper.writeValueAsString(alertUpdate), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -115,7 +114,7 @@ public class AlertWriter {
   public void deleteAlert(String alertId) {
     log.debug("Deleting alert with id [{}]", alertId);
     DeleteRequest request =
-      new DeleteRequest(getOptimizeIndexAliasForType(ALERT_TYPE), ALERT_TYPE, alertId)
+      new DeleteRequest(ALERT_TYPE, ALERT_TYPE, alertId)
       .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;
@@ -147,7 +146,7 @@ public class AlertWriter {
           .field(AlertType.TRIGGERED, alertStatus)
           .endObject();
       UpdateRequest request =
-        new UpdateRequest(getOptimizeIndexAliasForType(ALERT_TYPE), ALERT_TYPE, alertId)
+        new UpdateRequest(ALERT_TYPE, ALERT_TYPE, alertId)
           .doc(docFieldToUpdate)
           .setRefreshPolicy(IMMEDIATE)
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -165,7 +164,7 @@ public class AlertWriter {
     log.debug("Deleting all alerts for report with id [{}]", reportId);
 
     TermQueryBuilder query = QueryBuilders.termQuery(AlertType.REPORT_ID, reportId);
-    DeleteByQueryRequest request = new DeleteByQueryRequest(getOptimizeIndexAliasForType(ALERT_TYPE))
+    DeleteByQueryRequest request = new DeleteByQueryRequest(ALERT_TYPE)
       .setQuery(query)
       .setRefresh(true);
 

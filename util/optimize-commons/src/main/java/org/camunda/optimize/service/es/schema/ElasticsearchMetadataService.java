@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.metadata.Version;
 import org.elasticsearch.ElasticsearchException;
@@ -17,7 +18,6 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -26,7 +26,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_TYPE;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
@@ -42,14 +41,14 @@ public class ElasticsearchMetadataService {
 
   private final ObjectMapper objectMapper;
 
-  public void initMetadataVersionIfMissing(final RestHighLevelClient esClient) {
+  public void initMetadataVersionIfMissing(final OptimizeElasticsearchClient esClient) {
     readMetadata(esClient).orElseGet(() -> {
       writeMetadata(esClient, new MetadataDto(CURRENT_OPTIMIZE_VERSION));
       return null;
     });
   }
 
-  public void validateSchemaVersionCompatibility(final RestHighLevelClient esClient) {
+  public void validateSchemaVersionCompatibility(final OptimizeElasticsearchClient esClient) {
     readMetadata(esClient).ifPresent((metadataDto) -> {
       if (!CURRENT_OPTIMIZE_VERSION.equals(metadataDto.getSchemaVersion())) {
         final String errorMessage = String.format(
@@ -63,13 +62,12 @@ public class ElasticsearchMetadataService {
     });
   }
 
-  public Optional<MetadataDto> readMetadata(final RestHighLevelClient esClient) {
+  public Optional<MetadataDto> readMetadata(final OptimizeElasticsearchClient esClient) {
     Optional<MetadataDto> result = Optional.empty();
 
-    final SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(METADATA_TYPE));
+    final SearchRequest searchRequest = new SearchRequest(METADATA_TYPE);
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(QueryBuilders.matchAllQuery());
-    searchRequest.types(METADATA_TYPE);
     searchRequest.source(searchSourceBuilder);
 
     final SearchResponse searchResponse;
@@ -100,13 +98,14 @@ public class ElasticsearchMetadataService {
     return result;
   }
 
-  public void writeMetadata(final RestHighLevelClient esClient, final MetadataDto metadataDto) {
+  public void writeMetadata(final OptimizeElasticsearchClient esClient, final MetadataDto metadataDto) {
     try {
       final String source = objectMapper.writeValueAsString(metadataDto);
 
-      final IndexRequest request = new IndexRequest(getOptimizeIndexAliasForType(METADATA_TYPE), METADATA_TYPE, ID)
-        .source(source, XContentType.JSON)
-        .setRefreshPolicy(IMMEDIATE);
+      final IndexRequest request =
+        new IndexRequest(METADATA_TYPE, METADATA_TYPE, ID)
+          .source(source, XContentType.JSON)
+          .setRefreshPolicy(IMMEDIATE);
 
       final IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
 

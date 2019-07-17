@@ -5,11 +5,9 @@
  */
 package org.camunda.optimize.upgrade.steps.schema;
 
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
-
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexNameForAliasAndVersion;
 
 
 public class DeleteIndexStep implements UpgradeStep {
@@ -23,8 +21,9 @@ public class DeleteIndexStep implements UpgradeStep {
   }
 
   @Override
-  public void execute(final ESIndexAdjuster ESIndexAdjuster) {
-    final String indexAlias = getOptimizeIndexAliasForType(typeName);
-    ESIndexAdjuster.deleteIndex(getOptimizeIndexNameForAliasAndVersion(indexAlias, indexVersion));
+  public void execute(final ESIndexAdjuster esIndexAdjuster) {
+    final OptimizeIndexNameService indexNameService = esIndexAdjuster.getIndexNameService();
+    final String indexAlias = indexNameService.getOptimizeIndexAliasForType(typeName);
+    esIndexAdjuster.deleteIndex(indexNameService.getOptimizeIndexNameForAliasAndVersion(indexAlias, indexVersion));
   }
 }

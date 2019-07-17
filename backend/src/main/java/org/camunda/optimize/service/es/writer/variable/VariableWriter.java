@@ -20,6 +20,7 @@ import org.camunda.optimize.dto.optimize.query.variable.value.ShortVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.StringVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.VariableInstanceDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
@@ -27,7 +28,6 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
@@ -48,7 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.isVariableTypeSupported;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.variableTypeToFieldLabel;
@@ -64,7 +63,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 public abstract class VariableWriter {
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private final RestHighLevelClient esClient;
+  private final OptimizeElasticsearchClient esClient;
   protected final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
 
@@ -112,7 +111,7 @@ public abstract class VariableWriter {
 
       addAtLeastOneVariableArrayNotEmptyNestedFilters(filterQuery);
 
-      UpdateByQueryRequest request = new UpdateByQueryRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+      UpdateByQueryRequest request = new UpdateByQueryRequest(PROC_INSTANCE_TYPE)
         .setQuery(filterQuery)
         .setAbortOnVersionConflict(false)
         .setScript(createVariableClearScript(ProcessVariableHelper.getAllVariableTypeFieldLabels()))
@@ -185,15 +184,10 @@ public abstract class VariableWriter {
     String newEntryIfAbsent = getNewProcessInstanceRecordString(processInstanceId, typeMappedVars);
 
     if (newEntryIfAbsent != null) {
-      UpdateRequest request =
-        new UpdateRequest(
-          getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE),
-          PROC_INSTANCE_TYPE,
-          processInstanceId
-        )
-          .script(updateScript)
-          .upsert(newEntryIfAbsent, XContentType.JSON)
-          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      UpdateRequest request = new UpdateRequest(PROC_INSTANCE_TYPE, PROC_INSTANCE_TYPE, processInstanceId)
+        .script(updateScript)
+        .upsert(newEntryIfAbsent, XContentType.JSON)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
       addVariablesToProcessInstanceBulkRequest.add(request);
     }

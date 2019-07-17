@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service.es.report.command.process.util;
 
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -22,23 +21,21 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
+@Slf4j
 public class ProcessInstanceQueryUtil {
-  private static final Logger logger = LoggerFactory.getLogger(ProcessInstanceQueryUtil.class);
 
   public static Optional<OffsetDateTime> getLatestDate(final QueryBuilder baseQuery,
                                                        final String dateField,
-                                                       final RestHighLevelClient esClient) {
+                                                       final OptimizeElasticsearchClient esClient) {
     final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(baseQuery)
       .sort(SortBuilders.fieldSort(dateField).order(SortOrder.DESC))
       .size(1);
-    final SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+    final SearchRequest searchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
       .types(PROC_INSTANCE_TYPE)
       .source(searchSourceBuilder);
 
@@ -51,7 +48,7 @@ public class ProcessInstanceQueryUtil {
         .map(dateTimeFormatter::parse)
         .map(OffsetDateTime::from);
     } catch (IOException e) {
-      logger.warn("Could retrieve startDate of latest processInstance!");
+      log.warn("Could retrieve startDate of latest processInstance!");
     }
 
     return Optional.empty();

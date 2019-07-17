@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
+import lombok.Getter;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -16,6 +17,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.wrapper.DestinationWrapper;
@@ -46,8 +48,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-
 public class ESIndexAdjuster {
 
   private static final Logger logger = LoggerFactory.getLogger(ESIndexAdjuster.class);
@@ -58,11 +58,16 @@ public class ESIndexAdjuster {
   private static final int ONE_SECOND = 1000;
 
   private final RestHighLevelClient restClient;
+  @Getter
+  private final OptimizeIndexNameService indexNameService;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   private final ConfigurationService configurationService;
 
-  public ESIndexAdjuster(final RestHighLevelClient restClient, final ConfigurationService configurationService) {
+  public ESIndexAdjuster(final RestHighLevelClient restClient,
+                         final OptimizeIndexNameService indexNameService,
+                         final ConfigurationService configurationService) {
+    this.indexNameService = indexNameService;
     this.configurationService = configurationService;
     this.restClient = restClient;
   }
@@ -295,7 +300,7 @@ public class ESIndexAdjuster {
   }
 
   public void insertDataByTypeName(final String typeName, final String data) {
-    String aliasName = getOptimizeIndexAliasForType(typeName);
+    String aliasName = indexNameService.getOptimizeIndexAliasForType(typeName);
     logger.debug("Inserting data to indexAlias [{}]. Data payload is [{}]", aliasName, data);
     try {
       final IndexRequest indexRequest = new IndexRequest(aliasName, typeName);
@@ -312,7 +317,7 @@ public class ESIndexAdjuster {
                                    final QueryBuilder query,
                                    final String updateScript,
                                    final Map<String, Object> parameters) {
-    String aliasName = getOptimizeIndexAliasForType(typeName);
+    String aliasName = indexNameService.getOptimizeIndexAliasForType(typeName);
     logger.debug(
       "Updating data for indexAlias [{}] using script [{}] and query [{}].", aliasName, updateScript, query.toString()
     );
