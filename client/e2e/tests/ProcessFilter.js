@@ -87,10 +87,11 @@ test('pick a start date from the predefined buttons', async t => {
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Start Date'));
 
-  const previousStartDate = await Filter.dateFilterStartInput.value;
   await t.click(Filter.yearFilterButton);
-  const currentStartDate = await Filter.dateFilterStartInput.value;
-  await t.expect(previousStartDate).notEql(currentStartDate);
+  const filterStart = await Filter.dateFilterStartInput.value;
+  const filterEnd = await Filter.dateFilterEndInput.value;
+  await t.expect(filterStart).eql(`${new Date().getFullYear()}-01-01`);
+  await t.expect(filterEnd).eql(`${new Date().getFullYear()}-12-31`);
 
   await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();

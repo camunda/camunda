@@ -15,7 +15,7 @@ export async function login(t) {
 }
 
 export async function createNewReport(t) {
-  await t.click(Selector('button').withText('Create Process Report'));
+  await t.click(Selector('a').withText('Create Process Report'));
 }
 
 export async function selectDefinition(t, name, version) {
@@ -64,7 +64,7 @@ export async function gotoOverview(t) {
 }
 
 export async function createNewDashboard(t) {
-  await t.click(Selector('button').withText('Create Dashboard'));
+  await t.click(Selector('a').withText('Create Dashboard'));
 }
 
 export async function addReportToDashboard(t, name) {

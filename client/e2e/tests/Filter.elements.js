@@ -12,7 +12,10 @@ export const variableFilterTypeaheadOption = text =>
 export const variableFilterOperatorButton = text =>
   Selector('.Modal .VariableFilter__buttonRow .Button').withText(text);
 export const variableFilterValueInput = Selector('.Modal .VariableFilter__valueFields input');
-export const dateFilterStartInput = Selector('.DateFields input:first-child');
+export const dateFilterStartInput = Selector(
+  '.DateFields .DateInput__input-group:first-child input'
+);
+export const dateFilterEndInput = Selector('.DateFields .DateInput__input-group:last-child input');
 export const pickerDate = number =>
   Selector('.DateFields .rdr-Calendar:first-child .rdr-Day').withText(number);
 export const yearFilterButton = Selector('.Button').withText('This Year');
