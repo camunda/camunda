@@ -7,6 +7,7 @@
  */
 package io.zeebe.gateway.configuration;
 
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CERTIFICATE_PATH;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_HOST;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_MEMBER_ID;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_NAME;
@@ -18,7 +19,9 @@ import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEW
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MONITORING_HOST;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MONITORING_PORT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_PORT;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_PRIVATE_KEY_PATH;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_REQUEST_TIMEOUT;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_SECURITY_ENABLED;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_TRANSPORT_BUFFER;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -100,6 +103,19 @@ public class GatewayCfgTest {
     setEnv(ENV_GATEWAY_MONITORING_ENABLED, "true");
     setEnv(ENV_GATEWAY_MONITORING_HOST, "monitorHost");
     setEnv(ENV_GATEWAY_MONITORING_PORT, "231");
+    setEnv(ENV_GATEWAY_SECURITY_ENABLED, String.valueOf(true));
+    setEnv(
+        ENV_GATEWAY_PRIVATE_KEY_PATH,
+        GatewayCfgTest.class
+            .getClassLoader()
+            .getResource("security/test-server.key.pem")
+            .getPath());
+    setEnv(
+        ENV_GATEWAY_CERTIFICATE_PATH,
+        GatewayCfgTest.class
+            .getClassLoader()
+            .getResource("security/test-chain.cert.pem")
+            .getPath());
 
     final GatewayCfg expected = new GatewayCfg();
     expected.getNetwork().setHost("zeebe").setPort(5432);
@@ -114,6 +130,13 @@ public class GatewayCfgTest {
         .setPort(12345);
     expected.getThreads().setManagementThreads(32);
     expected.getMonitoring().setEnabled(true).setHost("monitorHost").setPort(231);
+    expected
+        .getSecurity()
+        .setEnabled(true)
+        .setPrivateKeyPath(
+            this.getClass().getClassLoader().getResource("security/test-server.key.pem").getPath())
+        .setCertificateChainPath(
+            this.getClass().getClassLoader().getResource("security/test-chain.cert.pem").getPath());
 
     // when
     final GatewayCfg gatewayCfg = readCustomConfig();
