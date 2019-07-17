@@ -18,6 +18,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -29,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -108,9 +109,19 @@ public class MixedFilterIT {
 
   private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition, List<ProcessFilterDto> filter) {
     ProcessReportDataDto reportData =
-      createProcessReportDataViewRawAsTable(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+      createReport(processDefinition);
     reportData.setFilter(filter);
     return evaluateReport(reportData).getResult();
+  }
+
+  private ProcessReportDataDto createReport(ProcessDefinitionEngineDto processDefinition) {
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinition.getKey())
+      .setProcessDefinitionVersion(processDefinition.getVersionAsString())
+      .setReportDataType(RAW_DATA)
+      .setFilter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
+      .build();
   }
 
   private ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReport(final ProcessReportDataDto reportData) {

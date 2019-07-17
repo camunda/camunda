@@ -22,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByAssignee;
@@ -40,11 +41,11 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createProcessReportDataViewRawAsTable(
     String processDefinitionKey,
-    String processDefinitionVersion
+    List<String> processDefinitionVersions
   ) {
     return createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       new ProcessViewDto(ProcessViewProperty.RAW_DATA),
       createGroupByNone()
@@ -53,26 +54,26 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createProcessInstanceDurationGroupByStartDateReport(
     String processDefinitionKey,
-    String processDefinitionVersion,
+    List<String> processDefinitionVersions,
     GroupByDateUnit dateInterval
   ) {
     return createProcessInstanceDurationGroupByDateReport(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       createGroupByStartDateDto(dateInterval)
     );
   }
 
   public static ProcessReportDataDto createProcessInstanceDurationGroupByStartDateWithProcessPartReport(
     String processDefinitionKey,
-    String processDefinitionVersion,
+    List<String> processDefinitionVersions,
     GroupByDateUnit dateInterval,
     String startFlowNodeId,
     String endFlowNodeId
   ) {
     return createProcessInstanceDurationGroupByDateWithProcessPartReport(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       createGroupByStartDateDto(dateInterval),
       startFlowNodeId,
       endFlowNodeId
@@ -81,38 +82,38 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createCountProcessInstanceFrequencyGroupByStartDate(
     String processDefinitionKey,
-    String processDefinitionVersion,
+    List<String> processDefinitionVersions,
     GroupByDateUnit dateInterval
   ) {
     return createCountProcessInstanceFrequencyGroupByDate(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       createGroupByStartDateDto(dateInterval)
     );
   }
 
   public static ProcessReportDataDto createProcessInstanceDurationGroupByEndDateReport(
     String processDefinitionKey,
-    String processDefinitionVersion,
+    List<String> processDefinitionVersions,
     GroupByDateUnit dateInterval
   ) {
     return createProcessInstanceDurationGroupByDateReport(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       createGroupByEndDateDto(dateInterval)
     );
   }
 
   public static ProcessReportDataDto createProcessInstanceDurationGroupByEndDateWithProcessPartReport(
     String processDefinitionKey,
-    String processDefinitionVersion,
+    List<String> processDefinitionVersions,
     GroupByDateUnit dateInterval,
     String startFlowNodeId,
     String endFlowNodeId
   ) {
     return createProcessInstanceDurationGroupByDateWithProcessPartReport(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       createGroupByEndDateDto(dateInterval),
       startFlowNodeId,
       endFlowNodeId
@@ -121,26 +122,26 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createCountProcessInstanceFrequencyGroupByEndDate(
     String processDefinitionKey,
-    String processDefinitionVersion,
+    List<String> processDefinitionVersions,
     GroupByDateUnit dateInterval
   ) {
     return createCountProcessInstanceFrequencyGroupByDate(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       createGroupByEndDateDto(dateInterval)
     );
   }
 
   private static ProcessReportDataDto createProcessInstanceDurationGroupByDateReport(
     String processDefinitionKey,
-    String processDefinitionVersion,
+    List<String> processDefinitionVersions,
     ProcessGroupByDto groupByDto
   ) {
     ProcessViewDto view = ProcessViewDtoCreator.createProcessInstanceDurationView();
 
     return createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -149,7 +150,7 @@ public class ProcessReportDataBuilderHelper {
 
   private static ProcessReportDataDto createProcessInstanceDurationGroupByDateWithProcessPartReport(
     String processDefinitionKey,
-    String processDefinitionVersion,
+    List<String> processDefinitionVersions,
     ProcessGroupByDto groupByDto,
     String startFlowNodeId,
     String endFlowNodeId
@@ -159,7 +160,7 @@ public class ProcessReportDataBuilderHelper {
 
     return createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto,
@@ -169,7 +170,7 @@ public class ProcessReportDataBuilderHelper {
 
   private static ProcessReportDataDto createCountProcessInstanceFrequencyGroupByDate(
     String processDefinitionKey,
-    String processDefinitionVersion,
+    List<String> processDefinitionVersions,
     ProcessGroupByDto groupByDto
   ) {
 
@@ -177,7 +178,7 @@ public class ProcessReportDataBuilderHelper {
 
     ProcessReportDataDto reportData = createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -189,14 +190,14 @@ public class ProcessReportDataBuilderHelper {
 
   private static ProcessReportDataDto createReportDataViewRaw(
     String processDefinitionKey,
-    String processDefinitionVersion,
+    List<String> processDefinitionVersions,
     ProcessVisualization visualization,
     ProcessViewDto viewDto,
     ProcessGroupByDto groupByDto
   ) {
     return createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       visualization,
       viewDto,
       groupByDto,
@@ -206,7 +207,7 @@ public class ProcessReportDataBuilderHelper {
 
   private static ProcessReportDataDto createReportDataViewRaw(
     String processDefinitionKey,
-    String processDefinitionVersion,
+    List<String> processDefinitionVersions,
     ProcessVisualization visualization,
     ProcessViewDto viewDto,
     ProcessGroupByDto groupByDto,
@@ -214,7 +215,7 @@ public class ProcessReportDataBuilderHelper {
   ) {
     ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setProcessDefinitionKey(processDefinitionKey);
-    reportData.setProcessDefinitionVersion(processDefinitionVersion);
+    reportData.setProcessDefinitionVersions(processDefinitionVersions);
     reportData.setVisualization(visualization);
     reportData.setView(viewDto);
     reportData.setGroupBy(groupByDto);
@@ -224,7 +225,7 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createCountFlowNodeFrequencyGroupByFlowNode(
     String processDefinitionKey,
-    String processDefinitionVersion
+    List<String> processDefinitionVersions
   ) {
 
     ProcessViewDto view = new ProcessViewDto();
@@ -236,7 +237,7 @@ public class ProcessReportDataBuilderHelper {
 
     return createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.HEAT,
       view,
       groupByDto
@@ -245,7 +246,7 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createCountProcessInstanceFrequencyGroupByVariable(
     String processDefinitionKey,
-    String processDefinitionVersion,
+    List<String> processDefinitionVersions,
     String variableName,
     VariableType variableType
   ) {
@@ -255,7 +256,7 @@ public class ProcessReportDataBuilderHelper {
 
     return createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.HEAT,
       view,
       groupByDto
@@ -264,7 +265,7 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createProcessInstanceDurationGroupByVariable(
     String processDefinitionKey,
-    String processDefinitionVersion,
+    List<String> processDefinitionVersions,
     String variableName,
     VariableType variableType
   ) {
@@ -274,7 +275,7 @@ public class ProcessReportDataBuilderHelper {
 
     return createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.HEAT,
       view,
       groupByDto
@@ -283,7 +284,7 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createProcessInstanceDurationGroupByVariableWithProcessPart(
     String processDefinitionKey,
-    String processDefinitionVersion,
+    List<String> processDefinitionVersions,
     String variableName,
     VariableType variableType,
     String startFlowNodeId,
@@ -292,7 +293,7 @@ public class ProcessReportDataBuilderHelper {
     ProcessReportDataDto reportData =
       createProcessInstanceDurationGroupByVariable(
         processDefinitionKey,
-        processDefinitionVersion,
+        processDefinitionVersions,
         variableName,
         variableType
       );
@@ -300,30 +301,9 @@ public class ProcessReportDataBuilderHelper {
     return reportData;
   }
 
-  public static ProcessReportDataDto createCountFlowNodeFrequencyGroupByFlowNodeNumber(
-    String processDefinitionKey,
-    String processDefinitionVersion
-  ) {
-
-    ProcessViewDto view = new ProcessViewDto();
-    view.setEntity(ProcessViewEntity.FLOW_NODE);
-    view.setProperty(ProcessViewProperty.FREQUENCY);
-
-
-    ProcessGroupByDto groupByDto = createGroupByNone();
-
-    return createReportDataViewRaw(
-      processDefinitionKey,
-      processDefinitionVersion,
-      ProcessVisualization.NUMBER,
-      view,
-      groupByDto
-    );
-  }
-
   public static ProcessReportDataDto createFlowNodeDurationGroupByFlowNodeTableReport(
     String processDefinitionKey,
-    String processDefinitionVersion
+    List<String> processDefinitionVersions
   ) {
     ProcessViewDto view = ProcessViewDtoCreator.createFlowNodeDurationView();
 
@@ -331,7 +311,7 @@ public class ProcessReportDataBuilderHelper {
 
     return createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -340,7 +320,7 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createFlowNodeDurationGroupByFlowNodeHeatmapReport(
     String processDefinitionKey,
-    String processDefinitionVersion
+    List<String> processDefinitionVersions
   ) {
     ProcessViewDto view = ProcessViewDtoCreator.createFlowNodeDurationView();
 
@@ -348,7 +328,7 @@ public class ProcessReportDataBuilderHelper {
 
     return createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.HEAT,
       view,
       groupByDto
@@ -357,14 +337,14 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskTotalDurationMapGroupByUserTaskReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion
+    final List<String> processDefinitionVersions
   ) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByFlowNode();
 
     ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -376,14 +356,14 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskFrequencyMapGroupByUserTaskReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion
+    final List<String> processDefinitionVersions
   ) {
     final ProcessViewDto view = createUserTaskFrequencyView();
     final ProcessGroupByDto groupByDto = createGroupByFlowNode();
 
     return createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -392,14 +372,14 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskFrequencyMapGroupByAssigneeReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion
+    final List<String> processDefinitionVersions
   ) {
     final ProcessViewDto view = createUserTaskFrequencyView();
     final ProcessGroupByDto groupByDto = createGroupByAssignee();
 
     return createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -408,14 +388,14 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskFrequencyMapGroupByAssigneeByUserTaskReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion
+    final List<String> processDefinitionVersions
   ) {
     final ProcessViewDto view = createUserTaskFrequencyView();
     final ProcessGroupByDto groupByDto = createGroupByAssignee();
 
     ProcessReportDataDto report = createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -426,14 +406,14 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskFrequencyMapGroupByCandidateGroupByUserTaskReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion
+    final List<String> processDefinitionVersions
   ) {
     final ProcessViewDto view = createUserTaskFrequencyView();
     final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
 
     ProcessReportDataDto report = createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -444,14 +424,14 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskFrequencyMapGroupByCandidateGroupReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion
+    final List<String> processDefinitionVersions
   ) {
     final ProcessViewDto view = createUserTaskFrequencyView();
     final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
 
     return createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -460,14 +440,14 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskIdleDurationMapGroupByUserTaskReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion
+    final List<String> processDefinitionVersions
   ) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByFlowNode();
 
     ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -479,13 +459,13 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskWorkDurationMapGroupByUserTaskReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion) {
+    final List<String> processDefinitionVersions) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByFlowNode();
 
     ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -497,14 +477,14 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskTotalDurationMapGroupByAssigneeReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion
+    final List<String> processDefinitionVersions
   ) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByAssignee();
 
     ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -516,14 +496,14 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskTotalDurationMapGroupByAssigneeByUserTaskReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion
+    final List<String> processDefinitionVersions
   ) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByAssignee();
 
     ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -536,14 +516,14 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskIdleDurationMapGroupByAssigneeReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion
+    final List<String> processDefinitionVersions
   ) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByAssignee();
 
     ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -555,14 +535,14 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskIdleDurationMapGroupByAssigneeByUserTaskReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion
+    final List<String> processDefinitionVersions
   ) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByAssignee();
 
     ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -575,14 +555,14 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskIdleDurationMapGroupByCandidateGroupByUserTaskReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion
+    final List<String> processDefinitionVersions
   ) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
 
     ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -595,13 +575,13 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskWorkDurationMapGroupByAssigneeReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion) {
+    final List<String> processDefinitionVersions) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByAssignee();
 
     ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -613,13 +593,13 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskWorkDurationMapGroupByAssigneeByUserTaskReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion) {
+    final List<String> processDefinitionVersions) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByAssignee();
 
     ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -632,13 +612,13 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskWorkDurationMapGroupByCandidateGroupByUserTaskReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion) {
+    final List<String> processDefinitionVersions) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
 
     ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -651,14 +631,14 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskTotalDurationMapGroupByCandidateGroupReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion
+    final List<String> processDefinitionVersions
   ) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
 
     ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -670,14 +650,14 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskTotalDurationMapGroupByCandidateGroupByUserTaskReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion
+    final List<String> processDefinitionVersions
   ) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
 
     ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -690,14 +670,14 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskIdleDurationMapGroupByCandidateGroupReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion
+    final List<String> processDefinitionVersions
   ) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
 
     ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -709,13 +689,13 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createUserTaskWorkDurationMapGroupByCandidateGroupReport(
     final String processDefinitionKey,
-    final String processDefinitionVersion) {
+    final List<String> processDefinitionVersions) {
     final ProcessViewDto view = createUserTaskDurationView();
     final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
 
     ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.TABLE,
       view,
       groupByDto
@@ -727,7 +707,7 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createProcessInstanceDurationGroupByNone(
     String processDefinitionKey,
-    String processDefinitionVersion
+    List<String> processDefinitionVersions
   ) {
 
     ProcessViewDto view = ProcessViewDtoCreator.createProcessInstanceDurationView();
@@ -735,7 +715,7 @@ public class ProcessReportDataBuilderHelper {
 
     return createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.NUMBER,
       view,
       groupByDto
@@ -744,7 +724,7 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createProcessInstanceDurationGroupByNoneWithProcessPart(
     String processDefinitionKey,
-    String processDefinitionVersion,
+    List<String> processDefinitionVersions,
     String startFlowNodeId,
     String endFlowNodeId
   ) {
@@ -755,7 +735,7 @@ public class ProcessReportDataBuilderHelper {
 
     return createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.HEAT,
       view,
       groupByDto,
@@ -765,14 +745,14 @@ public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createPiFrequencyCountGroupedByNone(
     String processDefinitionKey,
-    String processDefinitionVersion
+    List<String> processDefinitionVersions
   ) {
     ProcessViewDto view = createCountProcessInstanceFrequencyView();
     ProcessGroupByDto groupByDto = createGroupByNone();
 
     return createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       ProcessVisualization.NUMBER,
       view,
       groupByDto
@@ -780,14 +760,14 @@ public class ProcessReportDataBuilderHelper {
   }
 
   public static ProcessReportDataDto createPiFrequencyCountGroupedByNoneAsNumber(String processDefinitionKey,
-                                                                                 String processDefinitionVersion) {
+                                                                                 List<String> processDefinitionVersions) {
     ProcessViewDto view = createCountProcessInstanceFrequencyView();
 
     ProcessGroupByDto groupByDto = createGroupByNone();
 
     return createReportDataViewRaw(
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       //does not really affect backend, since command object is instantiated based on
       //group by criterion
       ProcessVisualization.NUMBER,

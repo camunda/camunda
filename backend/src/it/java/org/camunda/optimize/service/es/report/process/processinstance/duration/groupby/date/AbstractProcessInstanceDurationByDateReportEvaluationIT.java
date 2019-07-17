@@ -93,7 +93,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(
-      resultReportDataDto.getProcessDefinitionVersion(),
+      resultReportDataDto.getFirstProcessDefinitionVersion(),
       is(processInstanceDto.getProcessDefinitionVersion())
     );
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
@@ -139,7 +139,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(
-      resultReportDataDto.getProcessDefinitionVersion(),
+      resultReportDataDto.getFirstProcessDefinitionVersion(),
       is(processInstanceDto.getProcessDefinitionVersion())
     );
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
@@ -619,35 +619,6 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     // then
     assertThat(result.getData(), is(notNullValue()));
     assertDateResultMap(result.getData(), 8, now, ChronoUnit.YEARS);
-  }
-
-  @Test
-  public void reportAcrossAllVersions() {
-    //given
-    OffsetDateTime referenceDate = OffsetDateTime.now().minusDays(2);
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    adjustProcessInstanceDates(processInstanceDto.getId(), referenceDate, 0L, 1L);
-    processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    adjustProcessInstanceDates(processInstanceDto.getId(), referenceDate, 0L, 2L);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.DAY)
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .setReportDataType(getTestReportDataType())
-      .build();
-
-    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
-
-    // then
-    final List<MapResultEntryDto<Long>> resultMap = result.getData();
-    ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
-    assertThat(resultMap.size(), is(1));
-    assertThat(resultMap.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultMap.get(0).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000L, 2000L)));
   }
 
   @Test

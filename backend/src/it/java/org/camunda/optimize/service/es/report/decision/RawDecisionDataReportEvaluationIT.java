@@ -20,6 +20,7 @@ import org.camunda.optimize.dto.optimize.rest.report.DecisionReportEvaluationRes
 import org.camunda.optimize.service.es.report.command.decision.RawDecisionDataCommand;
 import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.DecisionReportDataType;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -38,13 +39,13 @@ import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitionIT {
-  public static final String OUTPUT_BEVERAGES = "OuputClause_99999";
+  private static final String OUTPUT_BEVERAGES = "OuputClause_99999";
 
   @Test
   public void reportEvaluation() {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition();
-    final String decisionDefinitionVersion = String.valueOf(decisionDefinitionDto.getVersion());
+    final String decisionDefinitionVersion = decisionDefinitionDto.getVersionAsString();
 
     final HashMap<String, InputVariableEntry> inputs = createInputs(200.0, "Misc");
     final HashMap<String, OutputVariableEntry> expectedOutputs = createOutputs(
@@ -56,9 +57,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), decisionDefinitionVersion
-    );
+    DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), decisionDefinitionVersion);
     final DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
       evaluateRawReport(reportData);
 
@@ -83,7 +82,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     final DecisionReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
     assertThat(resultDataDto.getDecisionDefinitionKey(), is(decisionDefinitionDto.getKey()));
-    assertThat(resultDataDto.getDecisionDefinitionVersion(), is(decisionDefinitionVersion));
+    assertThat(resultDataDto.getDecisionDefinitionVersions(), is(Lists.newArrayList(decisionDefinitionVersion)));
     assertThat(resultDataDto.getView(), is(notNullValue()));
     assertThat(resultDataDto.getView().getProperty(), is(DecisionViewProperty.RAW_DATA));
   }
@@ -100,9 +99,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     final DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
       evaluateRawReport(reportData);
 
@@ -112,7 +109,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
 
-    assertThat(evaluationResult.getReportDefinition().getData().getDecisionDefinitionVersion(), is(ALL_VERSIONS));
+    assertThat(evaluationResult.getReportDefinition().getData().getFirstDecisionDefinitionVersion(), is(ALL_VERSIONS));
   }
 
   @Test
@@ -149,9 +146,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionKey, ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReport(decisionDefinitionKey, ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
@@ -183,9 +178,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     final DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
       evaluateRawReport(reportData);
 
@@ -216,9 +209,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     final DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
       evaluateRawReport(reportData);
 
@@ -253,9 +244,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     reportData.getParameters().setSorting(new SortingDto(DecisionInstanceType.DECISION_INSTANCE_ID, SortOrder.ASC));
     final DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
       evaluateRawReport(reportData);
@@ -290,9 +279,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     reportData.getParameters().setSorting(new SortingDto(DecisionInstanceType.EVALUATION_DATE_TIME, SortOrder.ASC));
     final DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
       evaluateRawReport(reportData);
@@ -328,9 +315,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     reportData.getParameters().setSorting(
       new SortingDto(RawDecisionDataCommand.INPUT_VARIABLE_PREFIX + INPUT_AMOUNT_ID, SortOrder.ASC)
     );
@@ -379,9 +364,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     reportData.getParameters().setSorting(
       new SortingDto(RawDecisionDataCommand.OUTPUT_VARIABLE_PREFIX + OUTPUT_AUDIT_ID, SortOrder.ASC)
     );
@@ -477,6 +460,16 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
         new OutputVariableEntry(OUTPUT_CLASSIFICATION_ID, "Classification", VariableType.STRING, classificationValue)
       );
     }};
+  }
+
+  private DecisionReportDataDto createReport(String decisionDefinitionKey,
+                                             String decisionDefinitionVersion) {
+    return DecisionReportDataBuilder
+      .create()
+      .setDecisionDefinitionKey(decisionDefinitionKey)
+      .setDecisionDefinitionVersion(decisionDefinitionVersion)
+      .setReportDataType(DecisionReportDataType.RAW_DATA)
+      .build();
   }
 
 }

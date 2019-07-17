@@ -13,13 +13,17 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
-import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.DecisionReportDataType;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -162,26 +166,36 @@ public class ExportRestServiceIT {
 
   private String createAndStoreDefaultValidRawProcessReportDefinition(String processDefinitionKey,
                                                                       String processDefinitionVersion) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper
-      .createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
-
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
     return createAndStoreDefaultProcessReportDefinition(reportData);
   }
 
   private String createAndStoreDefaultValidRawDecisionReportDefinition(String decisionDefinitionKey,
                                                                        String decisionDefinitionVersion) {
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionKey, decisionDefinitionVersion
-    );
-
+    DecisionReportDataDto reportData = DecisionReportDataBuilder
+      .create()
+      .setDecisionDefinitionKey(decisionDefinitionKey)
+      .setDecisionDefinitionVersion(decisionDefinitionVersion)
+      .setReportDataType(DecisionReportDataType.RAW_DATA)
+      .build();
     return createAndStoreDefaultDecisionReportDefinition(reportData);
   }
 
   private String createAndStoreDefaultInvalidReportDefinition(String processDefinitionKey,
                                                               String processDefinitionVersion) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper
-      .createCountFlowNodeFrequencyGroupByFlowNodeNumber(processDefinitionKey, processDefinitionVersion);
-
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .build();
+    reportData.setGroupBy(new NoneGroupByDto());
+    reportData.setVisualization(ProcessVisualization.NUMBER);
     return createAndStoreDefaultProcessReportDefinition(reportData);
   }
 

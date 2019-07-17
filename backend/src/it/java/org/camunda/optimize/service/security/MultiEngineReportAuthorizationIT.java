@@ -15,6 +15,7 @@ import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.util.configuration.DefaultTenant;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.DecisionReportDataType;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Test;
@@ -38,8 +39,8 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     return new Object[]{RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION};
   }
 
-  public AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(defaultEngineRule);
-  public AuthorizationClient secondAuthorizationClient = new AuthorizationClient(secondEngineRule);
+  private AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(defaultEngineRule);
+  private AuthorizationClient secondAuthorizationClient = new AuthorizationClient(secondEngineRule);
 
   @Test
   @Parameters(method = "definitionType")
@@ -462,9 +463,12 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
         processReportDataDto.setTenantIds(tenantIds);
         return processReportDataDto;
       case RESOURCE_TYPE_DECISION_DEFINITION:
-        DecisionReportDataDto decisionReportDataDto = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-          key, "1"
-        );
+        DecisionReportDataDto decisionReportDataDto = DecisionReportDataBuilder
+          .create()
+          .setDecisionDefinitionKey(key)
+          .setDecisionDefinitionVersion("1")
+          .setReportDataType(DecisionReportDataType.RAW_DATA)
+          .build();
         decisionReportDataDto.setTenantIds(tenantIds);
         return decisionReportDataDto;
     }

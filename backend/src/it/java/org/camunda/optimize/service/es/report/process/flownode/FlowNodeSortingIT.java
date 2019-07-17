@@ -15,6 +15,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Test;
 
 import java.util.Comparator;
@@ -25,8 +27,6 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeHeatmapReport;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
@@ -48,9 +48,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
-      processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
-    );
+    final ProcessReportDataDto reportData = createReport(processInstanceDto);
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
     final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
@@ -68,6 +66,15 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     );
   }
 
+  private ProcessReportDataDto createReport(ProcessInstanceEngineDto processInstanceDto) {
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .build();
+  }
+
   @Test
   public void customOrderOnResultLabelForDurationReports() {
     // given
@@ -77,7 +84,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeReport(processDefinition);
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
     ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
@@ -119,9 +126,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
-      processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
-    );
+    final ProcessReportDataDto reportData = createReport(processInstanceDto);
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
     final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
@@ -163,9 +168,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
-      processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
-    );
+    final ProcessReportDataDto reportData = createReport(processInstanceDto);
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
     final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
@@ -203,9 +206,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
-      processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
-    );
+    final ProcessReportDataDto reportData = createReport(processInstanceDto);
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
     final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
@@ -241,7 +242,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeReport(processDefinition);
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, sortOrder));
     ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
@@ -297,11 +298,13 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     return engineRule.deployAndStartProcess(modelInstance);
   }
 
-  private ProcessReportDataDto getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(ProcessInstanceEngineDto processDefinition) {
-    return createFlowNodeDurationGroupByFlowNodeHeatmapReport(
-      processDefinition.getProcessDefinitionKey(),
-      String.valueOf(processDefinition.getProcessDefinitionVersion())
-    );
+  private ProcessReportDataDto getAverageFlowNodeDurationGroupByFlowNodeReport(ProcessInstanceEngineDto processDefinition) {
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinition.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processDefinition.getProcessDefinitionVersion())
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+      .build();
   }
 
   private long getExecutedFlowNodeCount(ProcessCountReportMapResultDto resultList) {

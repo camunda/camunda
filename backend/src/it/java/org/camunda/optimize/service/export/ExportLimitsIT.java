@@ -18,7 +18,8 @@ import org.camunda.optimize.service.es.report.SingleReportEvaluator;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -186,10 +187,12 @@ public class ExportLimitsIT {
   private String createAndStoreRawReportDefinition(String processDefinitionKey,
                                                    String processDefinitionVersion) {
     String id = createNewReportHelper();
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
-      processDefinitionKey,
-      processDefinitionVersion
-    );
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");

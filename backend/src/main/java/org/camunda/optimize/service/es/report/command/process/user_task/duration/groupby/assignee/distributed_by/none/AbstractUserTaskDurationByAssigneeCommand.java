@@ -60,9 +60,9 @@ public abstract class AbstractUserTaskDurationByAssigneeCommand
   protected SingleProcessMapDurationReportResult evaluate() {
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
-      "Evaluating user task duration grouped by assignee report for process definition key [{}] and version [{}]",
+      "Evaluating user task duration grouped by assignee report for process definition key [{}] and versions [{}]",
       processReportData.getProcessDefinitionKey(),
-      processReportData.getProcessDefinitionVersion()
+      processReportData.getProcessDefinitionVersions()
     );
 
     final BoolQueryBuilder query = setupBaseQuery(processReportData);
@@ -82,9 +82,9 @@ public abstract class AbstractUserTaskDurationByAssigneeCommand
     } catch (IOException e) {
       final String reason = String.format(
         "Could not evaluate user task duration grouped by assignee report " +
-          "for process definition key [%s] and version [%s]",
+          "for process definition key [%s] and versions [%s]",
         processReportData.getProcessDefinitionKey(),
-        processReportData.getProcessDefinitionVersion()
+        processReportData.getProcessDefinitionVersions()
       );
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);

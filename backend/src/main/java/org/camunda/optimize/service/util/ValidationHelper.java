@@ -8,6 +8,7 @@ package org.camunda.optimize.service.util;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
@@ -38,12 +39,18 @@ public class ValidationHelper {
     ensureNotEmpty("end activity id", dto.getEnd());
     ensureNotEmpty("query dto", dto);
     ValidationHelper.ensureNotEmpty("ProcessDefinitionKey", dto.getProcessDefinitionKey());
-    ValidationHelper.ensureNotEmpty("ProcessDefinitionVersion", dto.getProcessDefinitionVersion());
+    ValidationHelper.ensureListNotEmpty("ProcessDefinitionVersion", dto.getProcessDefinitionVersions());
     validateProcessFilters(dto.getFilter());
   }
 
   public static void ensureNotEmpty(String fieldName, Object target) {
     if (target == null || target.toString().isEmpty()) {
+      throw new OptimizeValidationException(fieldName + " is not allowed to be empty or null");
+    }
+  }
+
+  private static void ensureListNotEmpty(String fieldName, List target) {
+    if (target == null || target.isEmpty()) {
       throw new OptimizeValidationException(fieldName + " is not allowed to be empty or null");
     }
   }
@@ -62,22 +69,10 @@ public class ValidationHelper {
 
   private static void validateDefinitionData(ReportDataDto data) {
 
-    if (data instanceof ProcessReportDataDto) {
-      ProcessReportDataDto singleReportData = (ProcessReportDataDto) data;
-      boolean versionAndKeySet = singleReportData.getProcessDefinitionVersion() != null &&
-        singleReportData.getProcessDefinitionKey() != null;
-
-      if (!versionAndKeySet) {
-        throw new OptimizeValidationException("process definition key and version have to be provided");
-      }
-    } else if (data instanceof DecisionReportDataDto) {
-      DecisionReportDataDto singleReportData = (DecisionReportDataDto) data;
-      boolean versionAndKeySet = singleReportData.getDecisionDefinitionKey() != null &&
-        singleReportData.getDecisionDefinitionVersion() != null;
-
-      if (!versionAndKeySet) {
-        throw new OptimizeValidationException("decision definition key and version have to be provided");
-      }
+    if (data instanceof SingleReportDataDto) {
+      SingleReportDataDto singleReportData = (SingleReportDataDto) data;
+      ensureListNotEmpty("definitionVersions", singleReportData.getDefinitionVersions());
+      ensureNotNull("definitionKey", singleReportData.getDefinitionKey());
     } else if (data == null) {
       throw new OptimizeValidationException("Report data is not allowed to be null!");
     }

@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.Lists;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
@@ -23,7 +24,9 @@ import java.util.Objects;
 public class DecisionReportDataDto extends SingleReportDataDto implements Combinable {
 
   protected String decisionDefinitionKey;
-  protected String decisionDefinitionVersion;
+  protected List<String> decisionDefinitionVersions = new ArrayList<>();
+  @JsonIgnore
+  protected String mostRecentDefinitionVersionFromGiven;
   protected String decisionDefinitionName;
   protected List<String> tenantIds = new ArrayList<>(Collections.singletonList(null));
   protected List<DecisionFilterDto> filter = new ArrayList<>();
@@ -40,14 +43,24 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
 
   @JsonIgnore
   @Override
-  public String getDefinitionVersion() {
-    return decisionDefinitionVersion;
+  public List<String> getDefinitionVersions() {
+    return decisionDefinitionVersions;
   }
 
   @JsonIgnore
   @Override
   public String getDefinitionName() {
     return decisionDefinitionName;
+  }
+
+  @JsonIgnore
+  public void setDecisionDefinitionVersion(String definitionVersion) {
+    this.decisionDefinitionVersions = Lists.newArrayList(definitionVersion);
+  }
+
+  @JsonIgnore
+  public String getFirstDecisionDefinitionVersion() {
+    return decisionDefinitionVersions.stream().findFirst().orElse(null);
   }
 
   @JsonIgnore

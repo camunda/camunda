@@ -9,7 +9,6 @@ import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -90,7 +89,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
@@ -141,7 +140,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
@@ -183,7 +182,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(processDefinitionDto.getKey())
-      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
+      .setProcessDefinitionVersion(ALL_VERSIONS)
       .setVariableName("foo")
       .setVariableType(VariableType.STRING)
       .build();
@@ -224,7 +223,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
         .createReportData()
         .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
         .setProcessDefinitionKey(processDefinitionDto.getKey())
-        .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
+        .setProcessDefinitionVersion(ALL_VERSIONS)
         .setVariableName("foo")
         .setVariableType(VariableType.STRING)
         .build();
@@ -243,52 +242,6 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
         contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
       );
     });
-  }
-
-  @Test
-  public void reportAcrossAllVersions() throws SQLException {
-    // given
-    OffsetDateTime startDate = OffsetDateTime.now();
-    OffsetDateTime endDate = startDate.plusSeconds(1);
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("foo", "bar");
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
-    variables.put("foo", "bar2");
-    processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .setVariableName("foo")
-      .setVariableType(VariableType.STRING)
-      .build();
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
-      reportData);
-
-    // then
-    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(ALL_VERSIONS));
-
-    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(
-      result.getDataEntryForKey("bar").get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L))
-    );
-    assertThat(
-      result.getDataEntryForKey("bar2").get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L))
-    );
   }
 
   @Test
@@ -323,7 +276,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
 
     final List<MapResultEntryDto<Long>> resultData = evaluationResponse.getResult().getData();
     assertThat(resultData, is(notNullValue()));
@@ -347,7 +300,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByVariable(
-      processKey, ReportConstants.ALL_VERSIONS, DEFAULT_VARIABLE_NAME, VariableType.STRING
+      processKey, Lists.newArrayList(ALL_VERSIONS), DEFAULT_VARIABLE_NAME, VariableType.STRING
     );
     reportData.setTenantIds(selectedTenants);
     ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
@@ -387,7 +340,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinitionDto.getKey()));
     assertThat(
-      resultReportDataDto.getProcessDefinitionVersion(),
+      resultReportDataDto.getFirstProcessDefinitionVersion(),
       is(String.valueOf(processDefinitionDto.getVersion()))
     );
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
@@ -505,7 +458,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
 
     final List<MapResultEntryDto<Long>> resultData = evaluationResponse.getResult().getData();
     assertThat(resultData, is(notNullValue()));
@@ -547,7 +500,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
 
     final List<MapResultEntryDto<Long>> resultData = evaluationResponse.getResult().getData();
     assertThat(resultData, is(notNullValue()));

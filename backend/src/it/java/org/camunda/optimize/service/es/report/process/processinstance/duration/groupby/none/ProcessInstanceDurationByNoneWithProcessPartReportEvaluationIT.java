@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es.report.process.processinstance.duration.
 import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -23,7 +22,6 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
-import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
@@ -78,14 +76,13 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE_WITH_PART)
-      .build();
+    ProcessReportDataDto reportData =
+      createReport(
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+        START_EVENT,
+        END_EVENT
+      );
 
     ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluationResponse =
       evaluateDurationNumberReport(reportData);
@@ -93,7 +90,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
@@ -123,14 +120,13 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE_WITH_PART)
-      .build();
+    ProcessReportDataDto reportData =
+      createReport(
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+        START_EVENT,
+        END_EVENT
+      );
 
     ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluationResponse =
       evaluateDurationNumberReport(reportData);
@@ -138,7 +134,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
@@ -163,14 +159,13 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     engineDatabaseRule.changeActivityInstanceEndDateForProcessDefinition(processInstanceDto.getDefinitionId(), endDate);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
-    ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE_WITH_PART)
-      .build();
+    ProcessReportDataDto reportDataDto =
+      createReport(
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+        START_EVENT,
+        END_EVENT
+      );
 
     String reportId = createAndStoreDefaultReportDefinition(reportDataDto);
 
@@ -181,7 +176,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
@@ -215,14 +210,13 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE_WITH_PART)
-      .build();
+    ProcessReportDataDto reportData =
+      createReport(
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+        START_EVENT,
+        END_EVENT
+      );
 
     final Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> results =
       evaluateDurationMapReportForAllAggTypes(reportData);
@@ -242,14 +236,13 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setStartFlowNodeId(START_LOOP)
-      .setEndFlowNodeId(END_LOOP)
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE_WITH_PART)
-      .build();
+    ProcessReportDataDto reportData =
+      createReport(
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+        START_LOOP,
+        END_LOOP
+      );
 
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
@@ -272,14 +265,13 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     setActivityStartDatesToNull();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE_WITH_PART)
-      .build();
+    ProcessReportDataDto reportData =
+      createReport(
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+        START_EVENT,
+        END_EVENT
+      );
 
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
@@ -320,14 +312,13 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE_WITH_PART)
-      .build();
+    ProcessReportDataDto reportData =
+      createReport(
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+        START_EVENT,
+        END_EVENT
+      );
 
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
@@ -348,14 +339,13 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setStartFlowNodeId("FOoO")
-      .setEndFlowNodeId(END_EVENT)
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE_WITH_PART)
-      .build();
+    ProcessReportDataDto reportData =
+      createReport(
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+        "FOoO",
+        END_EVENT
+      );
 
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
@@ -376,14 +366,13 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId("FOO")
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE_WITH_PART)
-      .build();
+    ProcessReportDataDto reportData =
+      createReport(
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+        START_EVENT,
+        "FOO"
+      );
 
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
@@ -395,54 +384,19 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
   @Test
   public void noAvailableProcessInstancesReturnsZero() {
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey("FOOPROCDEF")
-      .setProcessDefinitionVersion("1")
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE_WITH_PART)
-      .build();
+    ProcessReportDataDto reportData =
+      createReport(
+        "FOOPROCDEF",
+        "1",
+        START_EVENT,
+        END_EVENT
+      );
 
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
     // then
     long calculatedResult = resultDto.getData();
     assertThat(calculatedResult, is(0L));
-  }
-
-  @Test
-  public void reportAcrossAllVersions() throws Exception {
-    //given
-    OffsetDateTime startDate = OffsetDateTime.now();
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-
-    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
-    processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(9));
-    processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(2));
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(ALL_VERSIONS)
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE_WITH_PART)
-      .build();
-
-    final Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> results =
-      evaluateDurationMapReportForAllAggTypes(reportData);
-
-    // then
-    assertAggregationResults(results);
   }
 
   @Test
@@ -467,14 +421,13 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE_WITH_PART)
-      .build();
+    ProcessReportDataDto reportData =
+      createReport(
+        processDefinitionKey,
+        processDefinitionVersion,
+        START_EVENT,
+        END_EVENT
+      );
 
     final Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> results =
       evaluateDurationMapReportForAllAggTypes(reportData);
@@ -498,9 +451,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
 
     // when
     ProcessReportDataDto reportData =
-      ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNoneWithProcessPart(
-        processKey, ReportConstants.ALL_VERSIONS, START_EVENT, END_EVENT
-      );
+      createReport(processKey, ALL_VERSIONS, START_EVENT, END_EVENT);
     reportData.setTenantIds(selectedTenants);
     ProcessDurationReportNumberResultDto result = evaluateDurationNumberReport(reportData).getResult();
 
@@ -523,15 +474,13 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE_WITH_PART)
-      .build();
-
+    ProcessReportDataDto reportData =
+      createReport(
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+        START_EVENT,
+        END_EVENT
+      );
     reportData.setFilter(createVariableFilter("true"));
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
@@ -633,6 +582,17 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(results.get(MAX).getResult().getData(), is(9000L));
     assertThat(results.get(MEDIAN).getResult().getData(), is(notNullValue()));
     assertThat(results.get(MEDIAN).getResult().getData(), is(2000L));
+  }
+
+  private ProcessReportDataDto createReport(String definitionKey, String definitionVersion, String start, String end) {
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(definitionKey)
+      .setProcessDefinitionVersion(definitionVersion)
+      .setStartFlowNodeId(start)
+      .setEndFlowNodeId(end)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE_WITH_PART)
+      .build();
   }
 
 }

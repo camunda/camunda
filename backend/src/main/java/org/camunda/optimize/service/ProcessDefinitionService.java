@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToValidDefinitionVersion;
+
 @Component
 @Slf4j
 public class ProcessDefinitionService extends AbstractDefinitionService {
@@ -34,14 +36,32 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
 
   public Optional<String> getProcessDefinitionXml(final String userId,
                                                   final String definitionKey,
+                                                  final List<String> definitionVersions) {
+    return getProcessDefinitionXml(userId, definitionKey, definitionVersions, null);
+  }
+
+  public Optional<String> getProcessDefinitionXml(final String userId,
+                                                  final String definitionKey,
                                                   final String definitionVersion) {
     return getProcessDefinitionXml(userId, definitionKey, definitionVersion, null);
   }
 
   public Optional<String> getProcessDefinitionXml(final String userId,
                                                   final String definitionKey,
-                                                  final String definitionVersion,
+                                                  final List<String> definitionVersions,
                                                   final String tenantId) {
+    String mostRecentValidVersion = convertToValidDefinitionVersion(
+      definitionKey,
+      definitionVersions,
+      processDefinitionReader::getLatestVersionToKey
+    );
+    return getProcessDefinitionXml(userId, definitionKey, mostRecentValidVersion, tenantId);
+  }
+
+  public Optional<String> getProcessDefinitionXml(final String userId,
+                                                   final String definitionKey,
+                                                   final String definitionVersion,
+                                                   final String tenantId) {
     return getProcessDefinitionXmlAsService(definitionKey, definitionVersion, tenantId)
       .map(processDefinitionOptimizeDto -> {
         if (isAuthorizedToReadProcessDefinition(userId, processDefinitionOptimizeDto)) {

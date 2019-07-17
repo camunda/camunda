@@ -99,7 +99,7 @@ public abstract class AbstractProcessInstanceDurationByDateWithProcessPartReport
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
@@ -147,7 +147,7 @@ public abstract class AbstractProcessInstanceDurationByDateWithProcessPartReport
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
 
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
@@ -407,48 +407,6 @@ public abstract class AbstractProcessInstanceDurationByDateWithProcessPartReport
     // then
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().isEmpty(), is(true));
-  }
-
-  @Test
-  public void reportAcrossAllVersions() throws Exception {
-    //given
-    OffsetDateTime procInstRefDate = OffsetDateTime.now();
-    OffsetDateTime activityStartDate = OffsetDateTime.now();
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-
-    adjustProcessInstanceDates(processInstanceDto.getId(), procInstRefDate, 0L);
-    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), activityStartDate);
-    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), activityStartDate.plusSeconds(1));
-    processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
-    adjustProcessInstanceDates(processInstanceDto.getId(), procInstRefDate, 0L);
-    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), activityStartDate);
-    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), activityStartDate.plusSeconds(9));
-    processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    adjustProcessInstanceDates(processInstanceDto.getId(), procInstRefDate, 0L);
-    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), activityStartDate);
-    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), activityStartDate.plusSeconds(2));
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .setReportDataType(getTestReportDataType())
-      .setDateInterval(GroupByDateUnit.DAY)
-      .build();
-
-    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData(), is(notNullValue()));
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
-    ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000L, 9000L, 2000L)));
   }
 
   @Test

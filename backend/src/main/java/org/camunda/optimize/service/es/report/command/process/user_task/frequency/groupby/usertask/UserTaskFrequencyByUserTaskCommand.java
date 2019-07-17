@@ -48,9 +48,9 @@ public class UserTaskFrequencyByUserTaskCommand extends UserTaskFrequencyGroupin
   protected SingleProcessMapReportResult evaluate() {
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
-      "Evaluating user task frequency by user task report for process definition key [{}] and version [{}]",
+      "Evaluating user task frequency by user task report for process definition key [{}] and versions [{}]",
       processReportData.getProcessDefinitionKey(),
-      processReportData.getProcessDefinitionVersion()
+      processReportData.getProcessDefinitionVersions()
     );
 
     final BoolQueryBuilder query = setupBaseQuery(processReportData);
@@ -69,9 +69,9 @@ public class UserTaskFrequencyByUserTaskCommand extends UserTaskFrequencyGroupin
       return new SingleProcessMapReportResult(resultDto, reportDefinition);
     } catch (IOException e) {
       final String reason = String.format(
-        "Could not evaluate user task frequency by user task for process definition key [%s] and version [%s]",
+        "Could not evaluate user task frequency by user task for process definition key [%s] and versions [%s]",
         processReportData.getProcessDefinitionKey(),
-        processReportData.getProcessDefinitionVersion()
+        processReportData.getProcessDefinitionVersions()
       );
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);

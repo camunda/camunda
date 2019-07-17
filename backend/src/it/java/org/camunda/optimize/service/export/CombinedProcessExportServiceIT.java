@@ -9,7 +9,6 @@ import org.apache.commons.io.IOUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -18,6 +17,8 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -33,10 +34,6 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeTableReport;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNone;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.isEmptyString;
@@ -290,16 +287,22 @@ public class CombinedProcessExportServiceIT {
   }
 
   private String createNewSingleMapReport(ProcessInstanceEngineDto engineDto) {
-    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = createCountFlowNodeFrequencyGroupByFlowNode(
-      engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
-    );
+    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
+      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .build();
     return createNewSingleMapReport(countFlowNodeFrequencyGroupByFlowNode);
   }
 
   private String createNewSingleDurationMapReport(ProcessInstanceEngineDto engineDto) {
-    ProcessReportDataDto processInstanceDurationGroupByNone = createFlowNodeDurationGroupByFlowNodeTableReport(
-      engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
-    );
+    ProcessReportDataDto processInstanceDurationGroupByNone = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+      .build();
     return createNewSingleMapReport(processInstanceDurationGroupByNone);
   }
 
@@ -314,9 +317,12 @@ public class CombinedProcessExportServiceIT {
 
   private String createNewSingleNumberReport(ProcessInstanceEngineDto engineDto) {
     String singleReportId = createNewSingleReport();
-    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = createPiFrequencyCountGroupedByNone(
-      engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
-    );
+    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
+      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+      .build();
     SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
     definitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateSingleProcessReport(singleReportId, definitionDto);
@@ -325,9 +331,12 @@ public class CombinedProcessExportServiceIT {
 
   private String createNewSingleDurationNumberReport(ProcessInstanceEngineDto engineDto) {
     String singleReportId = createNewSingleReport();
-    ProcessReportDataDto processInstanceDurationGroupByNone = createProcessInstanceDurationGroupByNone(
-      engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
-    );
+    ProcessReportDataDto processInstanceDurationGroupByNone = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
+      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
+      .build();
     SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
     definitionDto.setData(processInstanceDurationGroupByNone);
     updateSingleProcessReport(singleReportId, definitionDto);

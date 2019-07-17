@@ -50,9 +50,9 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
   public SingleDecisionRawDataReportResult evaluate() {
     final DecisionReportDataDto reportData = getReportData();
     logger.debug(
-      "Evaluating raw data report for decision definition key [{}] and version [{}]",
+      "Evaluating raw data report for decision definition key [{}] and versions [{}]",
       reportData.getDecisionDefinitionKey(),
-      reportData.getDecisionDefinitionVersion()
+      reportData.getDecisionDefinitionVersions()
     );
 
     final BoolQueryBuilder query = setupBaseQuery(reportData);
@@ -87,9 +87,9 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
     } catch (IOException e) {
       String reason =
         String.format(
-          "Could not evaluate raw data report for decision definition key [%s] and version [%s]",
+          "Could not evaluate raw data report for decision definition key [%s] and versions [%s]",
           reportData.getDecisionDefinitionKey(),
-          reportData.getDecisionDefinitionVersion()
+          reportData.getDecisionDefinitionVersions()
         );
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);

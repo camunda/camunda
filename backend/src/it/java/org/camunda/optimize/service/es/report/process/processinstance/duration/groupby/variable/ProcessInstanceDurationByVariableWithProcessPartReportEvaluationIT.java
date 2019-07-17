@@ -9,7 +9,6 @@ import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -93,7 +92,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
@@ -142,7 +141,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
@@ -495,52 +494,6 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   }
 
   @Test
-  public void reportAcrossAllVersions() throws Exception {
-    //given
-    OffsetDateTime startDate = OffsetDateTime.now();
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-
-    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
-    processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(9));
-    processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(2));
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART)
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(ALL_VERSIONS)
-      .setVariableName(DEFAULT_VARIABLE_NAME)
-      .setVariableType(DEFAULT_VARIABLE_TYPE)
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .build();
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
-      reportData);
-
-    // then
-    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(ALL_VERSIONS));
-
-
-    final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getData().size(), is(1));
-    assertThat(
-      resultDto.getDataEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L, 9000L, 2000L))
-    );
-  }
-
-  @Test
   public void otherProcessDefinitionsDoNoAffectResult() throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
@@ -591,7 +544,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     // when
     ProcessReportDataDto reportData =
       ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByVariableWithProcessPart(
-        processKey, ReportConstants.ALL_VERSIONS, DEFAULT_VARIABLE_NAME, VariableType.STRING, START_EVENT, END_EVENT
+        processKey, Lists.newArrayList(ALL_VERSIONS), DEFAULT_VARIABLE_NAME, VariableType.STRING, START_EVENT, END_EVENT
       );
     reportData.setTenantIds(selectedTenants);
     ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
@@ -689,7 +642,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
 
     final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getData(), is(notNullValue()));
@@ -736,7 +689,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
 
     final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getData(), is(notNullValue()));

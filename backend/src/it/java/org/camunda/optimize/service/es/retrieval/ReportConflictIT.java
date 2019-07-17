@@ -32,7 +32,8 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.DecisionReportDataType;
-import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -66,12 +67,10 @@ public class ReportConflictIT {
   @Parameters(source = ForceParameterProvider.class)
   public void updateSingleReportFailsWithConflictIfUsedInCombinedReportAndNotCombinableAnymoreWhenForceSet(Boolean force) {
     // given
-    String firstSingleReportId = createAndStoreDefaultProcessReportDefinition(
-      ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
-    );
-    String secondSingleReportId = createAndStoreDefaultProcessReportDefinition(
-      ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
-    );
+    String firstSingleReportId =
+      createAndStoreDefaultProcessReportDefinition(createRandomRawDataReport());
+    String secondSingleReportId =
+      createAndStoreDefaultProcessReportDefinition(createRandomRawDataReport());
     String combinedReportId = createNewCombinedReport(firstSingleReportId, secondSingleReportId);
     String[] expectedReportIds = new String[]{firstSingleReportId, secondSingleReportId, combinedReportId};
     String[] expectedConflictedItemIds = new String[]{combinedReportId};
@@ -80,11 +79,14 @@ public class ReportConflictIT {
     final SingleProcessReportDefinitionDto firstSingleReport =
       (SingleProcessReportDefinitionDto) getReport(firstSingleReportId);
     final SingleProcessReportDefinitionDto reportUpdate = new SingleProcessReportDefinitionDto();
-    reportUpdate.setData(ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByStartDateReport(
-      firstSingleReport.getData().getProcessDefinitionKey(),
-      firstSingleReport.getData().getProcessDefinitionVersion(),
-      GroupByDateUnit.DAY
-    ));
+    ProcessReportDataDto groupByStartDateReport = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(firstSingleReport.getData().getProcessDefinitionKey())
+      .setProcessDefinitionVersions(firstSingleReport.getData().getDefinitionVersions())
+      .setDateInterval(GroupByDateUnit.DAY)
+      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
+      .build();
+    reportUpdate.setData(groupByStartDateReport);
     ConflictResponseDto conflictResponseDto = updateReportFailWithConflict(
       firstSingleReportId,
       reportUpdate,
@@ -101,8 +103,14 @@ public class ReportConflictIT {
   @Parameters(source = ForceParameterProvider.class)
   public void updateSingleProcessReportFailsWithConflictIfUsedInAlertAndSuitableForAlertAnymoreWhenForceSet(Boolean force) {
     // given
+    ProcessReportDataDto numberReport = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(RANDOM_KEY)
+      .setProcessDefinitionVersion(RANDOM_VERSION)
+      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+      .build();
     String reportId = createAndStoreDefaultProcessReportDefinition(
-      ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNoneAsNumber(RANDOM_KEY, RANDOM_VERSION)
+      numberReport
     );
     String alertForReport = createNewAlertForReport(reportId);
     String[] expectedReportIds = new String[]{reportId};
@@ -112,11 +120,14 @@ public class ReportConflictIT {
     final SingleProcessReportDefinitionDto singleReport =
       (SingleProcessReportDefinitionDto) getReport(reportId);
     final SingleProcessReportDefinitionDto reportUpdate = new SingleProcessReportDefinitionDto();
-    reportUpdate.setData(ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByStartDateReport(
-      singleReport.getData().getProcessDefinitionKey(),
-      singleReport.getData().getProcessDefinitionVersion(),
-      GroupByDateUnit.DAY
-    ));
+    ProcessReportDataDto groupByStartDateReport = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(singleReport.getData().getProcessDefinitionKey())
+      .setProcessDefinitionVersions(singleReport.getData().getDefinitionVersions())
+      .setDateInterval(GroupByDateUnit.DAY)
+      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
+      .build();
+    reportUpdate.setData(groupByStartDateReport);
     ConflictResponseDto conflictResponseDto = updateReportFailWithConflict(reportId, reportUpdate, force);
 
     // then
@@ -597,5 +608,14 @@ public class ReportConflictIT {
         new Object[]{false},
       };
     }
+  }
+
+  private ProcessReportDataDto createRandomRawDataReport() {
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(ReportConflictIT.RANDOM_KEY)
+      .setProcessDefinitionVersion(ReportConflictIT.RANDOM_VERSION)
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
   }
 }

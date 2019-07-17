@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Re
 import org.camunda.optimize.service.es.filter.FilterOperatorConstants;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.DecisionReportDataType;
 import org.junit.Test;
 
 import java.time.OffsetDateTime;
@@ -57,9 +58,11 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
+      .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
+      .setDecisionDefinitionVersion(ALL_VERSIONS)
+      .setReportDataType(DecisionReportDataType.RAW_DATA)
+      .build();
 
     final InputVariableFilterDto fixedDateInputVariableFilter = createFixedDateInputVariableFilter(
       INPUT_INVOICE_DATE_ID, dateTimeInputFilterStart, null

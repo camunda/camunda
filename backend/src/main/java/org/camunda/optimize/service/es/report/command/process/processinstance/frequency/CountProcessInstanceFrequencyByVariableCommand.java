@@ -45,7 +45,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 public class CountProcessInstanceFrequencyByVariableCommand extends ProcessReportCommand<SingleProcessMapReportResult> {
 
   private static final String NESTED_AGGREGATION = "nested";
-  public static final String VARIABLES_AGGREGATION = "variables";
+  private static final String VARIABLES_AGGREGATION = "variables";
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
 
   @Override
@@ -53,9 +53,9 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating count process instance frequency grouped by variable report " +
-        "for process definition key [{}] and version [{}]",
+        "for process definition key [{}] and versions [{}]",
       processReportData.getProcessDefinitionKey(),
-      processReportData.getProcessDefinitionVersion()
+      processReportData.getProcessDefinitionVersions()
     );
 
     BoolQueryBuilder query = setupBaseQuery(processReportData);
@@ -79,9 +79,9 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
       String reason =
         String.format(
           "Could not evaluate count process instance frequency grouped by variable report " +
-            "for process definition key [%s] and version [%s]",
+            "for process definition key [%s] and versions [%s]",
           processReportData.getProcessDefinitionKey(),
-          processReportData.getProcessDefinitionVersion()
+          processReportData.getProcessDefinitionVersions()
         );
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);

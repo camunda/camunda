@@ -19,7 +19,8 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -64,8 +65,7 @@ public class NonCanceledInstancesOnlyFilterIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData =
-      ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
+    ProcessReportDataDto reportData = createReport(userTaskProcess);
     reportData.setFilter(ProcessFilterBuilder.filter().nonCanceledInstancesOnly().add().buildList());
     RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
 
@@ -77,6 +77,15 @@ public class NonCanceledInstancesOnlyFilterIT {
       .collect(Collectors.toList());
 
     assertThat(resultProcDefIds, hasItem(secondProcInst.getId()));
+  }
+
+  private ProcessReportDataDto createReport(ProcessDefinitionEngineDto userTaskProcess) {
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(userTaskProcess.getKey())
+      .setProcessDefinitionVersion(userTaskProcess.getVersionAsString())
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
   }
 
   private RawDataProcessReportResultDto evaluateReportAndReturnResult(final ProcessReportDataDto reportData) {

@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.DecisionReportDataType;
 import org.junit.Test;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
@@ -43,9 +44,12 @@ public class DecisionBooleanVariableFilterIT extends AbstractDecisionDefinitionI
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = DecisionReportDataBuilder
+      .create()
+      .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
+      .setDecisionDefinitionVersion(ALL_VERSIONS)
+      .setReportDataType(DecisionReportDataType.RAW_DATA)
+      .build();
     reportData.setFilter(Lists.newArrayList(createBooleanOutputVariableFilter(
       outputVariableIdToFilterOn, outputAuditValueToFilterFor
     )));

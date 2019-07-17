@@ -18,6 +18,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -27,17 +28,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 
 public class ExecutedFlowNodeQueryFilterIT {
 
-  private static final String TEST_DEFINITION = "TestDefinition";
+  private static final String TEST_DEFINITION = "TestDefinition"
+    ;
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+
   @Rule
   public RuleChain chain = RuleChain
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
@@ -49,9 +52,18 @@ public class ExecutedFlowNodeQueryFilterIT {
   private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition,
                                                                  List<ProcessFilterDto> filter) {
     ProcessReportDataDto reportData =
-      createProcessReportDataViewRawAsTable(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+      createReport(processDefinition.getKey(), processDefinition.getVersionAsString());
     reportData.setFilter(filter);
     return evaluateReportAndReturnResult(reportData);
+  }
+
+  private ProcessReportDataDto createReport(String key, String versionAsString) {
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(key)
+      .setProcessDefinitionVersion(versionAsString)
+      .setReportDataType(RAW_DATA)
+      .build();
   }
 
   private RawDataProcessReportResultDto evaluateReportAndReturnResult(final ProcessReportDataDto reportData) {
@@ -65,10 +77,7 @@ public class ExecutedFlowNodeQueryFilterIT {
   }
 
   private Response evaluateReportAndReturnResponse(List<ProcessFilterDto> filterDto) {
-    ProcessReportDataDto reportData = createProcessReportDataViewRawAsTable(
-      ExecutedFlowNodeQueryFilterIT.TEST_DEFINITION,
-      "1"
-    );
+    ProcessReportDataDto reportData = createReport(ExecutedFlowNodeQueryFilterIT.TEST_DEFINITION, "1");
     reportData.setFilter(filterDto);
     return evaluateReportAndReturnResponse(reportData);
   }

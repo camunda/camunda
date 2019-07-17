@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.command.process.util;
 
 import com.google.common.collect.Sets;
-import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -27,6 +26,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToValidDefinitionVersion;
+
 public class GroupByFlowNodeCommandUtil {
 
   private GroupByFlowNodeCommandUtil() {
@@ -38,7 +39,7 @@ public class GroupByFlowNodeCommandUtil {
 
     final ProcessReportDataDto reportData = commandContext.getReportDefinition().getData();
     // if version is set to all, filter for only latest flow nodes
-    if (ReportConstants.ALL_VERSIONS.equalsIgnoreCase(reportData.getProcessDefinitionVersion())) {
+    if (reportData.isDefinitionVersionSetToAll() || reportData.hasMultipleVersionsSet()) {
       getProcessDefinitionIfAvailable(commandContext, reportData)
         .ifPresent(processDefinition -> {
           final Map<String, String> flowNodeNames = processDefinition.getFlowNodeNames();
@@ -60,7 +61,7 @@ public class GroupByFlowNodeCommandUtil {
 
     final ProcessReportDataDto reportData = commandContext.getReportDefinition().getData();
     // if version is set to all, filter for only latest flow nodes
-    if (ReportConstants.ALL_VERSIONS.equalsIgnoreCase(reportData.getProcessDefinitionVersion())) {
+    if (reportData.isDefinitionVersionSetToAll() || reportData.hasMultipleVersionsSet()) {
       getProcessDefinitionIfAvailable(commandContext, reportData)
         .ifPresent(processDefinition -> {
           final Map<String, String> userTaskNames = processDefinition.getUserTaskNames();
@@ -142,11 +143,16 @@ public class GroupByFlowNodeCommandUtil {
     final CommandContext<SingleProcessReportDefinitionDto> commandContext,
     final ProcessReportDataDto reportData) {
 
+    String mostRecentValidVersion = convertToValidDefinitionVersion(
+      reportData.getDefinitionKey(),
+      reportData.getDefinitionVersions(),
+      commandContext.getProcessDefinitionReader()::getLatestVersionToKey
+    );
     return commandContext
       .getProcessDefinitionReader()
       .getFullyImportedProcessDefinition(
         reportData.getProcessDefinitionKey(),
-        reportData.getProcessDefinitionVersion(),
+        mostRecentValidVersion,
         reportData.getTenantIds().stream()
           // to get a null value if the first element is either absent or null
           .map(Optional::ofNullable).findFirst().flatMap(Function.identity())

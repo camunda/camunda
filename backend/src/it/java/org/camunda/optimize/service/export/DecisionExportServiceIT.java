@@ -49,10 +49,12 @@ public class DecisionExportServiceIT {
   public static Collection<Object[]> data() {
     return Arrays.asList(new Object[][]{
       {
-        DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-          FAKE,
-          FAKE
-        ),
+        DecisionReportDataBuilder
+          .create()
+          .setDecisionDefinitionKey(FAKE)
+          .setDecisionDefinitionVersion(FAKE)
+          .setReportDataType(DecisionReportDataType.RAW_DATA)
+          .build(),
         "/csv/decision/raw_decision_data_grouped_by_none.csv",
         "Raw Data Grouped By None"
       },

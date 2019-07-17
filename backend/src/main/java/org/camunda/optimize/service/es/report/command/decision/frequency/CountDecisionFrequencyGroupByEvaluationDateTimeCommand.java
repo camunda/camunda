@@ -64,9 +64,9 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
     final DecisionReportDataDto reportData = getReportData();
     logger.debug(
       "Evaluating count decision instance frequency grouped by evaluation date report " +
-        "for decision definition key [{}] and version [{}]",
+        "for decision definition key [{}] and versions [{}]",
       reportData.getDecisionDefinitionKey(),
-      reportData.getDecisionDefinitionVersion()
+      reportData.getDecisionDefinitionVersions()
     );
 
     final BoolQueryBuilder query = setupBaseQuery(reportData);
@@ -92,9 +92,9 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
       String reason =
         String.format(
           "Could not evaluate count decision instance frequency grouped by evaluation date report " +
-            "for decision definition with key [%s] and version [%s]",
+            "for decision definition with key [%s] and versions [%s]",
           reportData.getDecisionDefinitionKey(),
-          reportData.getDecisionDefinitionVersion()
+          reportData.getDecisionDefinitionVersions()
         );
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);

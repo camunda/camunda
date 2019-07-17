@@ -5,8 +5,11 @@
  */
 package org.camunda.optimize.test.util;
 
+import com.google.common.collect.Lists;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
@@ -29,18 +32,30 @@ import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.crea
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByVariable;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByVariableWithProcessPart;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskFrequencyMapGroupByAssigneeByUserTaskReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskFrequencyMapGroupByAssigneeReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskFrequencyMapGroupByCandidateGroupByUserTaskReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskFrequencyMapGroupByCandidateGroupReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskFrequencyMapGroupByUserTaskReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskIdleDurationMapGroupByAssigneeByUserTaskReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskIdleDurationMapGroupByAssigneeReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskIdleDurationMapGroupByCandidateGroupByUserTaskReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskIdleDurationMapGroupByCandidateGroupReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskIdleDurationMapGroupByUserTaskReport;
 
 public class ProcessReportDataBuilder {
 
   private ProcessReportDataType reportDataType;
 
   private String processDefinitionKey;
-  private String processDefinitionVersion;
+  private List<String> processDefinitionVersions;
   private String variableName;
   private VariableType variableType;
   private GroupByDateUnit dateInterval;
   private String startFlowNodeId;
   private String endFlowNodeId;
+  private UserTaskDurationTime userTaskDurationTime;
+  private ProcessVisualization visualization;
 
   private List<ProcessFilterDto> filter = new ArrayList<>();
 
@@ -52,18 +67,18 @@ public class ProcessReportDataBuilder {
     ProcessReportDataDto reportData = new ProcessReportDataDto();
     switch (reportDataType) {
       case RAW_DATA:
-        reportData = createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+        reportData = createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersions);
         break;
       case PROC_INST_DUR_GROUP_BY_NONE:
         reportData = createProcessInstanceDurationGroupByNone(
           processDefinitionKey,
-          processDefinitionVersion
+          processDefinitionVersions
         );
         break;
       case PROC_INST_DUR_GROUP_BY_NONE_WITH_PART:
         reportData = createProcessInstanceDurationGroupByNoneWithProcessPart(
           processDefinitionKey,
-          processDefinitionVersion,
+          processDefinitionVersions,
           startFlowNodeId,
           endFlowNodeId
         );
@@ -71,14 +86,14 @@ public class ProcessReportDataBuilder {
       case PROC_INST_DUR_GROUP_BY_START_DATE:
         reportData = createProcessInstanceDurationGroupByStartDateReport(
           processDefinitionKey,
-          processDefinitionVersion,
+          processDefinitionVersions,
           dateInterval
         );
         break;
       case PROC_INST_DUR_GROUP_BY_START_DATE_WITH_PART:
         reportData = createProcessInstanceDurationGroupByStartDateWithProcessPartReport(
           processDefinitionKey,
-          processDefinitionVersion,
+          processDefinitionVersions,
           dateInterval,
           startFlowNodeId,
           endFlowNodeId
@@ -87,14 +102,14 @@ public class ProcessReportDataBuilder {
       case PROC_INST_DUR_GROUP_BY_END_DATE:
         reportData = createProcessInstanceDurationGroupByEndDateReport(
           processDefinitionKey,
-          processDefinitionVersion,
+          processDefinitionVersions,
           dateInterval
         );
         break;
       case PROC_INST_DUR_GROUP_BY_END_DATE_WITH_PART:
         reportData = createProcessInstanceDurationGroupByEndDateWithProcessPartReport(
           processDefinitionKey,
-          processDefinitionVersion,
+          processDefinitionVersions,
           dateInterval,
           startFlowNodeId,
           endFlowNodeId
@@ -103,7 +118,7 @@ public class ProcessReportDataBuilder {
       case PROC_INST_DUR_GROUP_BY_VARIABLE:
         reportData = createProcessInstanceDurationGroupByVariable(
           processDefinitionKey,
-          processDefinitionVersion,
+          processDefinitionVersions,
           variableName,
           variableType
         );
@@ -111,7 +126,7 @@ public class ProcessReportDataBuilder {
       case PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART:
         reportData = createProcessInstanceDurationGroupByVariableWithProcessPart(
           processDefinitionKey,
-          processDefinitionVersion,
+          processDefinitionVersions,
           variableName,
           variableType,
           startFlowNodeId,
@@ -121,33 +136,33 @@ public class ProcessReportDataBuilder {
       case COUNT_PROC_INST_FREQ_GROUP_BY_NONE:
         reportData = createPiFrequencyCountGroupedByNone(
           processDefinitionKey,
-          processDefinitionVersion
+          processDefinitionVersions
         );
         break;
       case COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE:
         reportData = createCountProcessInstanceFrequencyGroupByStartDate(
           processDefinitionKey,
-          processDefinitionVersion,
+          processDefinitionVersions,
           dateInterval
         );
         break;
       case COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE:
         reportData = createCountProcessInstanceFrequencyGroupByEndDate(
           processDefinitionKey,
-          processDefinitionVersion,
+          processDefinitionVersions,
           dateInterval
         );
         break;
       case COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE:
         reportData = createCountFlowNodeFrequencyGroupByFlowNode(
           processDefinitionKey,
-          processDefinitionVersion
+          processDefinitionVersions
         );
         break;
       case COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE:
         reportData = createCountProcessInstanceFrequencyGroupByVariable(
           processDefinitionKey,
-          processDefinitionVersion,
+          processDefinitionVersions,
           variableName,
           variableType
         );
@@ -155,11 +170,77 @@ public class ProcessReportDataBuilder {
       case FLOW_NODE_DUR_GROUP_BY_FLOW_NODE:
         reportData = createFlowNodeDurationGroupByFlowNodeHeatmapReport(
           processDefinitionKey,
-          processDefinitionVersion
+          processDefinitionVersions
         );
+        break;
+      case USER_TASK_FREQUENCY_GROUP_BY_FLOW_NODE:
+        reportData = createUserTaskFrequencyMapGroupByUserTaskReport(
+          processDefinitionKey,
+          processDefinitionVersions
+        );
+        break;
+      case USER_TASK_FREQUENCY_GROUP_BY_ASSIGNEE:
+        reportData = createUserTaskFrequencyMapGroupByAssigneeReport(
+          processDefinitionKey,
+          processDefinitionVersions
+        );
+        break;
+      case USER_TASK_FREQUENCY_GROUP_BY_ASSIGNEE_BY_USER_TASK:
+        reportData = createUserTaskFrequencyMapGroupByAssigneeByUserTaskReport(
+          processDefinitionKey,
+          processDefinitionVersions
+        );
+        break;
+      case USER_TASK_FREQUENCY_GROUP_BY_CANDIDATE:
+        reportData = createUserTaskFrequencyMapGroupByCandidateGroupReport(
+          processDefinitionKey,
+          processDefinitionVersions
+        );
+        break;
+      case USER_TASK_FREQUENCY_GROUP_BY_CANDIDATE_BY_USER_TASK:
+        reportData = createUserTaskFrequencyMapGroupByCandidateGroupByUserTaskReport(
+          processDefinitionKey,
+          processDefinitionVersions
+        );
+        break;
+      case USER_TASK_DURATION_GROUP_BY_FLOW_NODE:
+        reportData = createUserTaskIdleDurationMapGroupByUserTaskReport(
+          processDefinitionKey,
+          processDefinitionVersions
+        );
+        reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
+        break;
+      case USER_TASK_DURATION_GROUP_BY_ASSIGNEE:
+        reportData = createUserTaskIdleDurationMapGroupByAssigneeReport(
+          processDefinitionKey,
+          processDefinitionVersions
+        );
+        reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
+        break;
+      case USER_TASK_DURATION_GROUP_BY_ASSIGNEE_BY_USER_TASK:
+        reportData = createUserTaskIdleDurationMapGroupByAssigneeByUserTaskReport(
+          processDefinitionKey,
+          processDefinitionVersions
+        );
+        reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
+        break;
+      case USER_TASK_DURATION_GROUP_BY_CANDIDATE:
+        reportData = createUserTaskIdleDurationMapGroupByCandidateGroupReport(
+          processDefinitionKey,
+          processDefinitionVersions
+        );
+        reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
+        break;
+      case USER_TASK_DURATION_GROUP_BY_CANDIDATE_BY_USER_TASK:
+        reportData = createUserTaskIdleDurationMapGroupByCandidateGroupByUserTaskReport(
+          processDefinitionKey,
+          processDefinitionVersions
+        );
+        reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
         break;
     }
     reportData.setFilter(this.filter);
+    reportData.setVisualization(visualization == null? reportData.getVisualization() : visualization);
     return reportData;
   }
 
@@ -174,7 +255,12 @@ public class ProcessReportDataBuilder {
   }
 
   public ProcessReportDataBuilder setProcessDefinitionVersion(String processDefinitionVersion) {
-    this.processDefinitionVersion = processDefinitionVersion;
+    this.processDefinitionVersions = Lists.newArrayList(processDefinitionVersion);
+    return this;
+  }
+
+  public ProcessReportDataBuilder setProcessDefinitionVersions(List<String> processDefinitionVersions) {
+    this.processDefinitionVersions = processDefinitionVersions;
     return this;
   }
 
@@ -210,6 +296,16 @@ public class ProcessReportDataBuilder {
 
   public ProcessReportDataBuilder setFilter(List<ProcessFilterDto> newFilter) {
     this.filter = newFilter;
+    return this;
+  }
+
+  public ProcessReportDataBuilder setUserTaskDurationTime(UserTaskDurationTime userTaskDurationTime) {
+    this.userTaskDurationTime = userTaskDurationTime;
+    return this;
+  }
+
+  public ProcessReportDataBuilder setVisualization(ProcessVisualization visualization) {
+    this.visualization = visualization;
     return this;
   }
 }

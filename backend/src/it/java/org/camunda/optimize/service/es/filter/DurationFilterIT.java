@@ -11,12 +11,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.List;
 
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 
 public class DurationFilterIT extends AbstractDurationFilterIT {
@@ -30,8 +31,12 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
 
     // when
-    ProcessReportDataDto reportData =
-      createProcessReportDataViewRawAsTable(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
     List<ProcessFilterDto> gte = ProcessFilterBuilder
       .filter()
       .duration()
@@ -57,14 +62,18 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
   }
 
   @Test
-  public void testValidationExceptionOnNullFilterField() throws Exception {
+  public void testValidationExceptionOnNullFilterField() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
-    ProcessReportDataDto reportData =
-      createProcessReportDataViewRawAsTable(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
     reportData.setFilter(ProcessFilterBuilder
                            .filter()
                            .duration()

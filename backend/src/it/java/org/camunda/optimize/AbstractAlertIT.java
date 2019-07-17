@@ -28,7 +28,8 @@ import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.DecisionReportDataType;
-import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.quartz.JobKey;
 import org.quartz.SchedulerException;
 
@@ -45,7 +46,6 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.util.DmnHelper.createSimpleDmnModel;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNone;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -243,9 +243,12 @@ public abstract class AbstractAlertIT {
 
   protected SingleProcessReportDefinitionDto getReportDefinitionDto(String processDefinitionKey,
                                                                     String processDefinitionVersion) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNoneAsNumber(
-      processDefinitionKey, processDefinitionVersion
-    );
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+      .build();
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");
@@ -258,7 +261,7 @@ public abstract class AbstractAlertIT {
     return report;
   }
 
-  protected void updateSingleDecisionReport(String id, SingleDecisionReportDefinitionDto updatedReport) {
+  private void updateSingleDecisionReport(String id, SingleDecisionReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .buildUpdateSingleDecisionReportRequest(id, updatedReport, true)
@@ -306,9 +309,12 @@ public abstract class AbstractAlertIT {
 
   private SingleProcessReportDefinitionDto getDurationReportDefinitionDto(String processDefinitionKey,
                                                                           String processDefinitionVersion) {
-    ProcessReportDataDto reportData = createProcessInstanceDurationGroupByNone(
-      processDefinitionKey, processDefinitionVersion
-    );
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
+      .build();
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");

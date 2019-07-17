@@ -24,7 +24,8 @@ import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationExcept
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
@@ -62,11 +63,12 @@ public abstract class AbstractSharingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     String reportId = this.createNewReport();
-    ProcessReportDataDto reportData =
-      ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
-        processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion()
-      );
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     updateReport(reportId, report);

@@ -49,9 +49,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(OffsetDateTime.now(), null)));
 
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
@@ -60,6 +58,14 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     assertThat(result.getDecisionInstanceCount(), is(0L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(0));
+  }
+
+  private DecisionReportDataDto createReportWithAllVersion(DecisionDefinitionEngineDto decisionDefinitionDto) {
+    return DecisionReportDataBuilder.create()
+      .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
+      .setDecisionDefinitionVersion(ALL_VERSIONS)
+      .setReportDataType(DecisionReportDataType.RAW_DATA)
+      .build();
   }
 
   @Test
@@ -76,9 +82,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(null, OffsetDateTime.now())));
 
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
@@ -111,9 +115,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(
       evaluationTimeAfterFirstRun,
       OffsetDateTime.now()
@@ -137,9 +139,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(1L, RelativeDateFilterUnit.DAYS)));
 
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
@@ -160,9 +160,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(1L, RelativeDateFilterUnit.DAYS)));
 
     LocalDateUtil.setCurrentTime(OffsetDateTime.now().plusDays(2L));

@@ -10,7 +10,6 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
-import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -44,7 +43,7 @@ public class AnalysisAuthorizationIT {
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public AuthorizationClient authorizationClient = new AuthorizationClient(engineRule);
+  private AuthorizationClient authorizationClient = new AuthorizationClient(engineRule);
 
   @Rule
   public RuleChain chain = RuleChain
@@ -223,9 +222,9 @@ public class AnalysisAuthorizationIT {
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
   }
 
-  private ProcessInstanceEngineDto startSimpleGatewayProcessAndTakeTask1(ProcessDefinitionEngineDto processDefinition) {
+  private void startSimpleGatewayProcessAndTakeTask1(ProcessDefinitionEngineDto processDefinition) {
     Map<String, Object> variables = new HashMap<>();
     variables.put("goToTask1", true);
-    return engineRule.startProcessInstance(processDefinition.getId(), variables);
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
   }
 }

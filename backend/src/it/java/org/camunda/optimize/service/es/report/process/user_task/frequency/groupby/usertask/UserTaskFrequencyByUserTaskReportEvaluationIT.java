@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.user_task.frequency.groupby.usertask;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
@@ -29,6 +30,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -44,7 +47,6 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskFrequencyMapGroupByUserTaskReport;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
@@ -79,7 +81,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
@@ -282,6 +284,44 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
   }
 
   @Test
+  public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
+    //given
+    final ProcessDefinitionEngineDto firstDefinition = deployOneUserTasksDefinition();
+    deployOneUserTasksDefinition();
+    final ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
+    assertThat(latestDefinition.getVersion(), is(3));
+
+    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(firstDefinition.getId());
+    finishAllUserTasks(processInstanceDto1);
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(latestDefinition.getId());
+    finishAllUserTasks(processInstanceDto2);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    //when
+    final ProcessReportDataDto reportData =
+      createReport(
+        latestDefinition.getKey(),
+        ImmutableList.of(firstDefinition.getVersionAsString(), latestDefinition.getVersionAsString())
+      );
+    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+
+    //then
+    assertThat(result.getData().size(), is(2));
+    assertThat(getExecutedFlowNodeCount(result), is(2L));
+    assertThat(
+      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
+      is(2L)
+    );
+    assertThat(
+      result.getDataEntryForKey(USER_TASK_2).get().getValue(),
+      is(1L)
+    );
+  }
+
+  @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
     //given
     final ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
@@ -311,22 +351,28 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
   }
 
   @Test
-  public void reportAcrossAllVersions() {
+  public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
     //given
-    final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
-    final ProcessDefinitionEngineDto processDefinition2 = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition1.getId());
+    final ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
+    deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
+    assertThat(latestDefinition.getVersion(), is(3));
+
+    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(firstDefinition.getId());
     finishAllUserTasks(processInstanceDto1);
-    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition2.getId());
+
+    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(latestDefinition.getId());
     finishAllUserTasks(processInstanceDto2);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
-    final ProcessReportDataDto reportData = createReport(
-      processDefinition1.getKey(), ReportConstants.ALL_VERSIONS
-    );
+    final ProcessReportDataDto reportData =
+      createReport(
+        latestDefinition.getKey(),
+        ImmutableList.of(firstDefinition.getVersionAsString(), latestDefinition.getVersionAsString())
+      );
     final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     //then
@@ -637,7 +683,16 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
   }
 
   protected ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
-    return createUserTaskFrequencyMapGroupByUserTaskReport(processDefinitionKey, version);
+    return createReport(processDefinitionKey, ImmutableList.of(version));
+  }
+
+  protected ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions) {
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersions(versions)
+      .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_FLOW_NODE)
+      .build();
   }
 
   private ProcessReportDataDto createReport(final ProcessDefinitionEngineDto processDefinition) {

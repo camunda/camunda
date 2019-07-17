@@ -62,9 +62,9 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating flow node duration grouped by flow node report " +
-        "for process definition key [{}] and version [{}]",
+        "for process definition key [{}] and versions [{}]",
       processReportData.getProcessDefinitionKey(),
-      processReportData.getProcessDefinitionVersion()
+      processReportData.getProcessDefinitionVersions()
     );
 
     BoolQueryBuilder query = setupBaseQuery(processReportData);
@@ -86,9 +86,9 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
       String reason =
         String.format(
           "Could not evaluate flow node duration grouped by " +
-            "flow node report for process definition key [%s] and version [%s]",
+            "flow node report for process definition key [%s] and versions [%s]",
           processReportData.getProcessDefinitionKey(),
-          processReportData.getProcessDefinitionVersion()
+          processReportData.getProcessDefinitionVersions()
         );
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);

@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
@@ -39,6 +38,7 @@ import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_XML;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.TENANT_ID;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
+import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToValidVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -62,7 +62,8 @@ public class ProcessDefinitionReader {
       return Optional.empty();
     }
 
-    final String validVersion = convertToValidVersion(processDefinitionKey, processDefinitionVersion);
+    final String validVersion =
+      convertToValidVersion(processDefinitionKey, processDefinitionVersion, this::getLatestVersionToKey);
     final BoolQueryBuilder query = QueryBuilders.boolQuery()
       .must(termQuery(PROCESS_DEFINITION_KEY, processDefinitionKey))
       .must(termQuery(PROCESS_DEFINITION_VERSION, validVersion))
@@ -88,7 +89,7 @@ public class ProcessDefinitionReader {
       String reason = String.format(
         "Was not able to fetch process definition with key [%s], version [%s] and tenantId [%s]",
         processDefinitionKey,
-        processDefinitionVersion,
+        validVersion,
         tenantId
       );
       log.error(reason, e);
@@ -107,7 +108,7 @@ public class ProcessDefinitionReader {
       log.debug(
         "Could not find process definition xml with key [{}], version [{}] and tenantId [{}]",
         processDefinitionKey,
-        processDefinitionVersion,
+        validVersion,
         tenantId
       );
     }
@@ -185,15 +186,7 @@ public class ProcessDefinitionReader {
     );
   }
 
-  private String convertToValidVersion(String processDefinitionKey, String processDefinitionVersion) {
-    if (ReportConstants.ALL_VERSIONS.equals(processDefinitionVersion)) {
-      return getLatestVersionToKey(processDefinitionKey);
-    } else {
-      return processDefinitionVersion;
-    }
-  }
-
-  private String getLatestVersionToKey(String key) {
+  public String getLatestVersionToKey(String key) {
     log.debug("Fetching latest process definition for key [{}]", key);
 
     Script script = createDefaultScript(

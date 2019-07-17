@@ -79,10 +79,10 @@ public abstract class AbstractProcessInstanceDurationGroupByDateCommand
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating process instance duration grouped by [{}] report " +
-        "for process definition key [{}] and version [{}]",
+        "for process definition key [{}] and versions [{}]",
       processReportData.getGroupBy().getType().toString(),
       processReportData.getProcessDefinitionKey(),
-      processReportData.getProcessDefinitionVersion()
+      processReportData.getProcessDefinitionVersions()
     );
 
     BoolQueryBuilder query = setupBaseQuery(processReportData);
@@ -107,10 +107,10 @@ public abstract class AbstractProcessInstanceDurationGroupByDateCommand
       String reason =
         String.format(
           "Could not evaluate process instance duration grouped by [%s] date report " +
-            "for process definition key [%s] and version [%s]",
+            "for process definition key [%s] and versions [%s]",
           processReportData.getGroupBy().getType().toString(),
           processReportData.getProcessDefinitionKey(),
-          processReportData.getProcessDefinitionVersion()
+          processReportData.getProcessDefinitionVersions()
         );
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
@@ -118,7 +118,7 @@ public abstract class AbstractProcessInstanceDurationGroupByDateCommand
 
   }
 
-  protected GroupByDateUnit getGroupByDateUnit(final ProcessReportDataDto processReportData) {
+  private GroupByDateUnit getGroupByDateUnit(final ProcessReportDataDto processReportData) {
     return ((DateGroupByValueDto) processReportData.getGroupBy().getValue()).getUnit();
   }
 

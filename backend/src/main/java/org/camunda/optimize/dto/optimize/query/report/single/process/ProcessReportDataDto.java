@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.Lists;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
@@ -26,7 +27,9 @@ import java.util.Optional;
 public class ProcessReportDataDto extends SingleReportDataDto implements Combinable {
 
   protected String processDefinitionKey;
-  protected String processDefinitionVersion;
+  protected List<String> processDefinitionVersions = new ArrayList<>();
+  @JsonIgnore
+  protected String mostRecentDefinitionVersionFromGiven;
   protected String processDefinitionName;
   protected List<String> tenantIds = Collections.singletonList(null);
   protected List<ProcessFilterDto> filter = new ArrayList<>();
@@ -43,8 +46,8 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
 
   @JsonIgnore
   @Override
-  public String getDefinitionVersion() {
-    return processDefinitionVersion;
+  public List<String> getDefinitionVersions() {
+    return processDefinitionVersions;
   }
 
   @JsonIgnore
@@ -52,6 +55,18 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   public String getDefinitionName() {
     return processDefinitionName;
   }
+
+  @JsonIgnore
+  public void setProcessDefinitionVersion(String processDefinitionVersion) {
+    this.processDefinitionVersions = Lists.newArrayList(processDefinitionVersion);
+  }
+
+  @JsonIgnore
+  public String getFirstProcessDefinitionVersion() {
+    return this.processDefinitionVersions.stream().findFirst().orElse(null);
+  }
+
+
 
   @JsonIgnore
   @Override

@@ -17,13 +17,18 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.DecisionReportDataType;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -350,14 +355,22 @@ public class ReportRestServiceIT {
     final String id;
     switch (reportType) {
       case PROCESS:
-        id = createAndStoreDefaultProcessReportDefinition(
-          ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
-        );
+        ProcessReportDataDto reportData = ProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(RANDOM_KEY)
+          .setProcessDefinitionVersion(RANDOM_VERSION)
+          .setReportDataType(ProcessReportDataType.RAW_DATA)
+          .build();
+        id = createAndStoreDefaultProcessReportDefinition(reportData);
         break;
       case DECISION:
-        id = createAndStoreDefaultDecisionReportDefinition(
-          DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
-        );
+        DecisionReportDataDto decisionReportData = DecisionReportDataBuilder
+          .create()
+          .setDecisionDefinitionKey(RANDOM_KEY)
+          .setDecisionDefinitionVersion(RANDOM_VERSION)
+          .setReportDataType(DecisionReportDataType.RAW_DATA)
+          .build();
+        id = createAndStoreDefaultDecisionReportDefinition(decisionReportData);
         break;
       default:
         throw new IllegalStateException("Uncovered type: " + reportType);
@@ -376,9 +389,15 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateInvalidReportById() {
     //given
-    String id = createAndStoreDefaultProcessReportDefinition(
-      ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNodeNumber(RANDOM_KEY, RANDOM_VERSION)
-    );
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(RANDOM_KEY)
+      .setProcessDefinitionVersion(RANDOM_VERSION)
+      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .build();
+    reportData.setGroupBy(new NoneGroupByDto());
+    reportData.setVisualization(ProcessVisualization.NUMBER);
+    String id = createAndStoreDefaultProcessReportDefinition(reportData);
 
     // then
     ReportEvaluationException response = embeddedOptimizeRule
@@ -410,13 +429,20 @@ public class ReportRestServiceIT {
     final SingleReportDataDto reportDataDto;
     switch (reportType) {
       case PROCESS:
-        reportDataDto = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
-          RANDOM_KEY,
-          RANDOM_VERSION
-        );
+        reportDataDto = ProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(RANDOM_KEY)
+          .setProcessDefinitionVersion(RANDOM_VERSION)
+          .setReportDataType(ProcessReportDataType.RAW_DATA)
+          .build();
         break;
       case DECISION:
-        reportDataDto = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION);
+        reportDataDto = DecisionReportDataBuilder
+          .create()
+          .setDecisionDefinitionKey(RANDOM_KEY)
+          .setDecisionDefinitionVersion(RANDOM_VERSION)
+          .setReportDataType(DecisionReportDataType.RAW_DATA)
+          .build();
         break;
       default:
         throw new IllegalStateException("Uncovered type: " + reportType);
@@ -480,14 +506,22 @@ public class ReportRestServiceIT {
     String id;
     switch (reportType) {
       case PROCESS:
-        ProcessReportDataDto processReportDataDto =
-          ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNodeNumber(RANDOM_KEY, RANDOM_VERSION);
+        ProcessReportDataDto processReportDataDto = ProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(RANDOM_KEY)
+          .setProcessDefinitionVersion(RANDOM_VERSION)
+          .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+          .build();
         processReportDataDto.setView(null);
         id = createAndStoreDefaultProcessReportDefinition(processReportDataDto);
         break;
       case DECISION:
         DecisionReportDataDto decisionReportDataDto = DecisionReportDataBuilder
-          .createDecisionReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION);
+          .create()
+          .setDecisionDefinitionKey(RANDOM_KEY)
+          .setDecisionDefinitionVersion(RANDOM_VERSION)
+          .setReportDataType(DecisionReportDataType.RAW_DATA)
+          .build();
         decisionReportDataDto.setView(null);
         id = createAndStoreDefaultDecisionReportDefinition(decisionReportDataDto);
         break;

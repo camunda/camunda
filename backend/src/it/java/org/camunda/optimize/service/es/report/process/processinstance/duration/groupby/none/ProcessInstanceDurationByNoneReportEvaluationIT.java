@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es.report.process.processinstance.duration.
 import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -21,7 +20,6 @@ import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResu
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
-import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.Test;
 
 import javax.ws.rs.core.Response;
@@ -31,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
@@ -61,12 +60,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
-      .build();
+    ProcessReportDataDto reportData =
+      createReport(processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
 
     ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluationResponse =
       evaluateDurationNumberReport(reportData);
@@ -74,7 +69,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
@@ -96,12 +91,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
-    ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
-      .build();
+    ProcessReportDataDto reportDataDto =
+      createReport(processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
 
     String reportId = createAndStoreDefaultReportDefinition(reportDataDto);
 
@@ -112,7 +103,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
@@ -145,12 +136,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
-      .build();
+    ProcessReportDataDto reportDataDto =
+      createReport(processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportDataDto).getResult();
 
     // then
@@ -183,12 +170,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
-      .build();
+    ProcessReportDataDto reportDataDto =
+      createReport(processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
 
     final Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> results =
       evaluateDurationMapReportForAllAggTypes(reportDataDto);
@@ -201,50 +184,12 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
   @Test
   public void noAvailableProcessInstancesReturnsNull() {
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey("fooProcDef")
-      .setProcessDefinitionVersion("1")
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
-      .build();
+    ProcessReportDataDto reportData = createReport("fooProcDef", "1");
 
     ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getData(), is(nullValue()));
-  }
-
-  @Test
-  public void reportAcrossAllVersions() throws Exception {
-    //given
-    OffsetDateTime startDate = OffsetDateTime.now();
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
-    processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(9));
-    processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(2));
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-
-    // when
-    ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
-      .build();
-
-    final Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> results =
-      evaluateDurationMapReportForAllAggTypes(reportDataDto);
-
-    // then
-    assertAggregationResults(results);
   }
 
   @Test
@@ -269,12 +214,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
-      .build();
+    ProcessReportDataDto reportDataDto = createReport(processDefinitionKey, processDefinitionVersion);
 
     final Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> results =
       evaluateDurationMapReportForAllAggTypes(reportDataDto);
@@ -297,9 +237,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNone(
-      processKey, ReportConstants.ALL_VERSIONS
-    );
+    ProcessReportDataDto reportData = createReport(processKey, ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
     ProcessDurationReportNumberResultDto result = evaluateDurationNumberReport(reportData).getResult();
 
@@ -322,12 +260,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
-      .build();
+    ProcessReportDataDto reportData =
+      createReport(processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
 
     reportData.setFilter(ProcessFilterBuilder
                            .filter()
@@ -360,12 +294,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
-    ProcessReportDataDto dataDto = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
-      .setProcessDefinitionVersion("1")
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
-      .build();
+    ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
 
     dataDto.getView().setProperty(null);
 
@@ -379,12 +308,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
-    ProcessReportDataDto dataDto = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
-      .setProcessDefinitionVersion("1")
-      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
-      .build();
+    ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
 
     dataDto.getGroupBy().setType(null);
 
@@ -444,5 +368,14 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     assertThat(results.get(MAX).getResult().getData(), is(9000L));
     assertThat(results.get(MEDIAN).getResult().getData(), is(notNullValue()));
     assertThat(results.get(MEDIAN).getResult().getData(), is(2000L));
+  }
+
+  private ProcessReportDataDto createReport(String processKey, String definitionVersion) {
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processKey)
+      .setProcessDefinitionVersion(definitionVersion)
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+      .build();
   }
 }

@@ -35,16 +35,16 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
 
   public Optional<String> getDecisionDefinitionXml(final String userId,
                                                    final String definitionKey,
-                                                   final String definitionVersion,
+                                                   final List<String> definitionVersions,
                                                    final String tenantId) {
     // first try to load tenant specific definition
     Optional<DecisionDefinitionOptimizeDto> fullyImportedDefinition =
-      decisionDefinitionReader.getFullyImportedDecisionDefinition(definitionKey, definitionVersion, tenantId);
+      decisionDefinitionReader.getFullyImportedDecisionDefinition(definitionKey, definitionVersions, tenantId);
 
     // if not available try to get shared definition
     if (!fullyImportedDefinition.isPresent()) {
       fullyImportedDefinition =
-        decisionDefinitionReader.getFullyImportedDecisionDefinition(definitionKey, definitionVersion, null);
+        decisionDefinitionReader.getFullyImportedDecisionDefinition(definitionKey, definitionVersions, null);
     }
 
     return fullyImportedDefinition

@@ -15,6 +15,8 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.VariableTestUtil;
 import org.junit.Test;
 
@@ -24,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -336,9 +337,12 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   private void assertThatEveryFlowNodeWasExecuted4Times(String processDefinitionKey) {
-    ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
-      processDefinitionKey, ALL_VERSIONS
-    );
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(ALL_VERSIONS)
+      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .build();
     ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
     assertThat(result.getData(), is(notNullValue()));
     List<MapResultEntryDto<Long>> flowNodeIdToExecutionFrequency = result.getData();
@@ -347,7 +351,7 @@ public class VariableImportIT extends AbstractImportIT {
     }
   }
 
-  protected ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluateReport(ProcessReportDataDto reportData) {
+  private ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluateReport(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)

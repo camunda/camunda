@@ -47,7 +47,6 @@ import java.util.stream.IntStream;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -81,7 +80,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
@@ -116,7 +115,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
@@ -563,29 +562,6 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
   }
 
   @Test
-  public void reportAcrossAllVersions() {
-    // given
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.DAY)
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .setReportDataType(getTestReportDataType())
-      .build();
-    ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
-
-    // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
-    assertThat(resultData, is(notNullValue()));
-    assertStartDateResultMap(resultData, 1, OffsetDateTime.now(), ChronoUnit.DAYS, 2L);
-  }
-
-  @Test
   public void otherProcessDefinitionsDoNoAffectResult() {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -673,7 +649,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
     ProcessReportDataDto dataDto =
-      createCountProcessInstanceFrequencyGroupByStartDate("123", "1", GroupByDateUnit.DAY);
+      createGroupByStartDateReport("123", "1", GroupByDateUnit.DAY);
     dataDto.getGroupBy().setType(null);
 
     //when
@@ -686,7 +662,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
   @Test
   public void optimizeExceptionOnGroupByUnitIsNull() {
     // given
-    ProcessReportDataDto dataDto = createCountProcessInstanceFrequencyGroupByStartDate("123", "1", GroupByDateUnit.DAY);
+    ProcessReportDataDto dataDto = createGroupByStartDateReport("123", "1", GroupByDateUnit.DAY);
     StartDateGroupByDto groupByDto = (StartDateGroupByDto) dataDto.getGroupBy();
     groupByDto.getValue().setUnit(null);
 
@@ -739,6 +715,18 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     report.setOwner("something");
     updateReport(id, report);
     return id;
+  }
+
+  private ProcessReportDataDto createGroupByStartDateReport(String processDefinitionKey,
+                                                            String processDefinitionVersion,
+                                                            GroupByDateUnit groupByDateUnit) {
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setDateInterval(groupByDateUnit)
+      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .build();
   }
 
   protected String localDateTimeToString(ZonedDateTime time) {

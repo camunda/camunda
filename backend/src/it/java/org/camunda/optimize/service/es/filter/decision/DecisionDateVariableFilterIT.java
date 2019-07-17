@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.DecisionReportDataType;
 import org.junit.Test;
 
 import java.time.OffsetDateTime;
@@ -46,9 +47,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createFixedDateInputVariableFilter(
       inputVariableIdToFilterOn, dateTimeInputFilterStart, null
     )));
@@ -63,6 +62,15 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
       (String) result.getData().get(0).getInputVariables().get(inputVariableIdToFilterOn).getValue(),
       startsWith("2019-06-06T00:00:00")
     );
+  }
+
+  private DecisionReportDataDto createReportWithAllVersion(DecisionDefinitionEngineDto decisionDefinitionDto) {
+    return DecisionReportDataBuilder
+      .create()
+      .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
+      .setDecisionDefinitionVersion(ALL_VERSIONS)
+      .setReportDataType(DecisionReportDataType.RAW_DATA)
+      .build();
   }
 
   @Test
@@ -87,9 +95,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createFixedDateInputVariableFilter(
       inputVariableIdToFilterOn, null, dateTimeInputFilterEnd
     )));
@@ -133,9 +139,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createFixedDateInputVariableFilter(
       inputVariableIdToFilterOn, dateTimeInputFilterStart, dateTimeInputFilterEnd
     )));

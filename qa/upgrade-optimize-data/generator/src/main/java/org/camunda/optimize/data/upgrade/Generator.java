@@ -34,6 +34,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import javax.ws.rs.client.Client;
@@ -44,7 +46,6 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -54,14 +55,6 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.service.security.AuthCookieService.createOptimizeAuthCookieValue;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper
-  .createFlowNodeDurationGroupByFlowNodeHeatmapReport;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNone;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper
-  .createProcessInstanceDurationGroupByStartDateReport;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper
-  .createProcessInstanceDurationGroupByVariableWithProcessPart;
 
 public class Generator {
   private static Client client;
@@ -89,11 +82,13 @@ public class Generator {
     client.close();
   }
 
-  private static void generateAlerts() throws Exception {
-    ProcessReportDataDto reportData = createPiFrequencyCountGroupedByNone(
-      processDefinitionKey,
-      processDefinitionVersion
-    );
+  private static void generateAlerts() {
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+      .build();
     reportData.setVisualization(ProcessVisualization.NUMBER);
 
     WebTarget target = client.target("http://localhost:8090/api/report/process/single");
@@ -187,7 +182,7 @@ public class Generator {
     return dashboard;
   }
 
-  private static void validateAndStoreLicense() throws IOException, URISyntaxException {
+  private static void validateAndStoreLicense() throws IOException {
     String license = readFileToString();
 
     client.target("http://localhost:8090/api/license/validate-and-store")
@@ -205,7 +200,7 @@ public class Generator {
     authCookie = createOptimizeAuthCookieValue(response.readEntity(String.class));
   }
 
-  private static String readFileToString() throws IOException, URISyntaxException {
+  private static String readFileToString() throws IOException {
     return IOUtils.toString(Generator.class.getResourceAsStream("/ValidTestLicense.txt"), Charset.forName("UTF-8"));
   }
 
@@ -322,49 +317,60 @@ public class Generator {
 
 
     reportDefinitions.add(
-      createProcessInstanceDurationGroupByNone(
-        processDefinitionKey, processDefinitionVersion
-      )
+      ProcessReportDataBuilder
+        .createReportData()
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessDefinitionVersion(processDefinitionVersion)
+        .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
+        .build()
     );
     reportDefinitions.add(
-      createFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        processDefinitionKey, processDefinitionVersion
-      )
+      ProcessReportDataBuilder
+        .createReportData()
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessDefinitionVersion(processDefinitionVersion)
+        .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+        .build()
     );
-    final ProcessReportDataDto maxFlowNodeDurationGroupByFlowNodeHeatmapReport =
-      createFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        processDefinitionKey,
-        processDefinitionVersion
-      );
+    final ProcessReportDataDto maxFlowNodeDurationGroupByFlowNodeHeatmapReport = ProcessReportDataBuilder
+        .createReportData()
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessDefinitionVersion(processDefinitionVersion)
+        .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+        .build();
     maxFlowNodeDurationGroupByFlowNodeHeatmapReport.getConfiguration().setAggregationType(AggregationType.MAX);
     reportDefinitions.add(maxFlowNodeDurationGroupByFlowNodeHeatmapReport);
 
-    ProcessReportDataDto reportDataDto =
-      createProcessInstanceDurationGroupByStartDateReport(
-        processDefinitionKey,
-        processDefinitionVersion,
-        GroupByDateUnit.DAY
-      );
+    ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
+        .createReportData()
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessDefinitionVersion(processDefinitionVersion)
+        .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
+        .setDateInterval(GroupByDateUnit.DAY)
+        .build();
     reportDataDto.setVisualization(ProcessVisualization.BAR);
     reportDefinitions.add(reportDataDto);
 
-    reportDataDto =
-      createProcessInstanceDurationGroupByStartDateReport(
-        processDefinitionKey,
-        processDefinitionVersion,
-        GroupByDateUnit.DAY
-      );
+    reportDataDto = ProcessReportDataBuilder
+        .createReportData()
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessDefinitionVersion(processDefinitionVersion)
+        .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
+        .setDateInterval(GroupByDateUnit.DAY)
+      .build();
     reportDataDto.setVisualization(ProcessVisualization.BAR);
     reportDefinitions.add(reportDataDto);
 
-    reportDataDto = createProcessInstanceDurationGroupByVariableWithProcessPart(
-      processDefinitionKey,
-      processDefinitionVersion,
-      "var",
-      VariableType.STRING,
-      "startNode",
-      "endNode"
-    );
+    reportDataDto = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART)
+      .setVariableType(VariableType.STRING)
+      .setVariableName("var")
+      .setStartFlowNodeId("startNode")
+      .setEndFlowNodeId("endNode")
+      .build();
     reportDataDto.setVisualization(ProcessVisualization.BAR);
     reportDefinitions.add(reportDataDto);
 
@@ -383,7 +389,7 @@ public class Generator {
   updateReport(String id, ReportDefinitionDto report) {
     WebTarget target = client.target("http://localhost:8090/api/report/process/" +
                                        (report instanceof SingleProcessReportDefinitionDto
-                                       ? "single" : "combined") + "/" + id);
+                                         ? "single" : "combined") + "/" + id);
     target.request()
       .cookie(OPTIMIZE_AUTHORIZATION, authCookie)
       .put(Entity.json(report));

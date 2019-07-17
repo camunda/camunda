@@ -10,6 +10,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -17,6 +18,8 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,8 +37,6 @@ import java.time.temporal.ChronoUnit;
 
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskFrequencyMapGroupByAssigneeByUserTaskReport;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskIdleDurationMapGroupByAssigneeByUserTaskReport;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -152,7 +153,12 @@ public class ProcessHyperMapExportServiceIT {
   }
 
   private ProcessReportDataDto createFrequencyReport(final String processDefinitionKey, final String version) {
-    return createUserTaskFrequencyMapGroupByAssigneeByUserTaskReport(processDefinitionKey, version);
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(version)
+      .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_ASSIGNEE_BY_USER_TASK)
+      .build();
   }
 
   private ProcessReportDataDto createFrequencyReport(final ProcessDefinitionEngineDto processDefinition) {
@@ -160,7 +166,13 @@ public class ProcessHyperMapExportServiceIT {
   }
 
   private ProcessReportDataDto createDurationReport(final String processDefinitionKey, final String version) {
-    return createUserTaskIdleDurationMapGroupByAssigneeByUserTaskReport(processDefinitionKey, version);
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(version)
+      .setUserTaskDurationTime(UserTaskDurationTime.IDLE)
+      .setReportDataType(ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_ASSIGNEE_BY_USER_TASK)
+      .build();
   }
 
   private ProcessReportDataDto createDurationReport(final ProcessDefinitionEngineDto processDefinition) {

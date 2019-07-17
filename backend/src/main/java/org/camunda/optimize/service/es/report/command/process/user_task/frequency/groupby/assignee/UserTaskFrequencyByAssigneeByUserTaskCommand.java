@@ -52,9 +52,9 @@ public class UserTaskFrequencyByAssigneeByUserTaskCommand extends UserTaskDistri
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating user task frequency grouped by assignee distributed by user task report " +
-        "for process definition key [{}] and version [{}]",
+        "for process definition key [{}] and versions [{}]",
       processReportData.getProcessDefinitionKey(),
-      processReportData.getProcessDefinitionVersion()
+      processReportData.getProcessDefinitionVersions()
     );
 
     final BoolQueryBuilder query = setupBaseQuery(processReportData);
@@ -74,9 +74,9 @@ public class UserTaskFrequencyByAssigneeByUserTaskCommand extends UserTaskDistri
     } catch (IOException e) {
       final String reason = String.format(
         "Could not evaluate user task frequency grouped by assignee distributed by user task report " +
-          "for process definition key [%s] and version [%s]",
+          "for process definition key [%s] and versions [%s]",
         processReportData.getProcessDefinitionKey(),
-        processReportData.getProcessDefinitionVersion()
+        processReportData.getProcessDefinitionVersions()
       );
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);

@@ -8,21 +8,27 @@ package org.camunda.optimize.service.es.report;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.util.Map;
 
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate;
-
 
 public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT
   extends AbstractAutomaticIntervalSelectionGroupByDateReportEvaluationIT {
 
   @Override
-  protected ProcessReportDataDto getReportData(String key, String version) {
-    return createCountProcessInstanceFrequencyGroupByStartDate(key, version, GroupByDateUnit.AUTOMATIC);
+  protected ProcessReportDataDto getGroupByStartDateReportData(String key, String version) {
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(key)
+      .setProcessDefinitionVersion(version)
+      .setDateInterval(GroupByDateUnit.AUTOMATIC)
+      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .build();
   }
 
   @Override

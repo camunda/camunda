@@ -60,9 +60,9 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating average process instance duration grouped by variable report " +
-        "for process definition key [{}] and version [{}]",
+        "for process definition key [{}] and versions [{}]",
       processReportData.getProcessDefinitionKey(),
-      processReportData.getProcessDefinitionVersion()
+      processReportData.getProcessDefinitionVersions()
     );
 
     BoolQueryBuilder query = setupBaseQuery(processReportData);
@@ -86,9 +86,9 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
       String reason =
         String.format(
           "Could not evaluate average process instance duration grouped by variable report " +
-            "for process definition key [%s] and version [%s]",
+            "for process definition key [%s] and versions [%s]",
           processReportData.getProcessDefinitionKey(),
-          processReportData.getProcessDefinitionVersion()
+          processReportData.getProcessDefinitionVersions()
         );
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);

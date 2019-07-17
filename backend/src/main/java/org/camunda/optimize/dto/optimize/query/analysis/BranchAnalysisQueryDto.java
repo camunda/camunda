@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.dto.optimize.query.analysis;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.Lists;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 
@@ -17,8 +19,13 @@ public class BranchAnalysisQueryDto {
   private String end;
   private String gateway;
   private String processDefinitionKey;
-  private String processDefinitionVersion;
+  private List<String> processDefinitionVersions;
   private List<String> tenantIds = Collections.singletonList(null);
 
   private List<ProcessFilterDto> filter = new ArrayList<>();
+
+  @JsonIgnore
+  public void setProcessDefinitionVersion(String definitionVersion) {
+    this.processDefinitionVersions = Lists.newArrayList(definitionVersion);
+  }
 }

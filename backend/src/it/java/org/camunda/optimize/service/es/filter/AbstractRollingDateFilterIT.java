@@ -20,7 +20,7 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -72,7 +73,7 @@ public abstract class AbstractRollingDateFilterIT {
     int expectedPiCount) {
 
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
-    assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultDataDto.getFirstProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
     final List<RawDataProcessInstanceDto> resultData = evaluationResult.getResult().getData();
@@ -91,10 +92,12 @@ public abstract class AbstractRollingDateFilterIT {
     RelativeDateFilterUnit unit,
     boolean newToken
   ) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
-      processDefinitionKey,
-      processDefinitionVersion
-    );
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(RAW_DATA)
+      .build();
     List<ProcessFilterDto> rollingDateFilter = ProcessFilterBuilder
       .filter()
       .relativeStartDate()
@@ -112,10 +115,12 @@ public abstract class AbstractRollingDateFilterIT {
     RelativeDateFilterUnit unit,
     boolean newToken
   ) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
-      processDefinitionKey,
-      processDefinitionVersion
-    );
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(RAW_DATA)
+      .build();
     List<ProcessFilterDto> rollingDateFilter = ProcessFilterBuilder
       .filter()
       .relativeEndDate()

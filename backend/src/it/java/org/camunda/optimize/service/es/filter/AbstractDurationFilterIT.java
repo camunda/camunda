@@ -104,7 +104,7 @@ public class AbstractDurationFilterIT {
   protected void assertResult(ProcessInstanceEngineDto processInstance, ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult) {
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
-    assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultDataDto.getFirstProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
     final List<RawDataProcessInstanceDto> resultData = evaluationResult.getResult().getData();
     assertThat(resultData, is(notNullValue()));

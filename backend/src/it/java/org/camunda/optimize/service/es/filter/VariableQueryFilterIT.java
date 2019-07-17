@@ -18,6 +18,8 @@ import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResu
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -37,7 +39,6 @@ import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN_EQUALS;
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.NOT_IN;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -63,8 +64,14 @@ public class VariableQueryFilterIT {
       .getResult();
   }
 
-  private Response evaluateReportWithFilterAndGetResponse(String processDefinitionKey, List<ProcessFilterDto> filterList) {
-    ProcessReportDataDto reportData = createProcessReportDataViewRawAsTable(processDefinitionKey, "1");
+  private Response evaluateReportWithFilterAndGetResponse(String processDefinitionKey,
+                                                          List<ProcessFilterDto> filterList) {
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion("1")
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
     reportData.setFilter(filterList);
     return evaluateReportAndReturnResponse(reportData);
   }
@@ -88,9 +95,13 @@ public class VariableQueryFilterIT {
   private RawDataProcessReportResultDto evaluateReportWithFilter(String processDefinitionKey,
                                                                  String processDefinitionVersion,
                                                                  List<ProcessFilterDto> filter) {
-    ProcessReportDataDto reportData =
-      createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
-    reportData.setFilter(filter);
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .setFilter(filter)
+      .build();
     return evaluateReportAndReturnResult(reportData);
   }
 

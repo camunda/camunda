@@ -29,7 +29,8 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.DecisionReportDataType;
-import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -51,7 +52,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -181,7 +181,7 @@ public class SingleReportHandlingIT {
     assertThat(reports.size(), is(1));
     SingleProcessReportDefinitionDto newReport = (SingleProcessReportDefinitionDto) reports.get(0);
     assertThat(newReport.getData().getProcessDefinitionKey(), is("procdef"));
-    assertThat(newReport.getData().getProcessDefinitionVersion(), is("123"));
+    assertThat(newReport.getData().getFirstProcessDefinitionVersion(), is("123"));
     assertThat(newReport.getData().getConfiguration().getYLabel(), is("fooYLabel"));
     assertThat(newReport.getData().getParameters().getProcessPart().getStart(), is("start123"));
     assertThat(newReport.getData().getParameters().getProcessPart().getEnd(), is("end123"));
@@ -380,8 +380,12 @@ public class SingleReportHandlingIT {
   public void reportEvaluationReturnsMetaData() {
     // given
     String reportId = createNewReport();
-    ProcessReportDataDto reportData =
-      createProcessReportDataViewRawAsTable(FOO_PROCESS_DEFINITION_KEY, FOO_PROCESS_DEFINITION_VERSION);
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(FOO_PROCESS_DEFINITION_KEY)
+      .setProcessDefinitionVersion(FOO_PROCESS_DEFINITION_VERSION)
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     report.setName("name");
@@ -405,8 +409,12 @@ public class SingleReportHandlingIT {
   @Test
   public void evaluateReportWithoutVisualization() {
     // given
-    ProcessReportDataDto reportData =
-      ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone("foo", "1");
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey("foo")
+      .setProcessDefinitionVersion("1")
+      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
+      .build();
     reportData.setVisualization(null);
 
     // when

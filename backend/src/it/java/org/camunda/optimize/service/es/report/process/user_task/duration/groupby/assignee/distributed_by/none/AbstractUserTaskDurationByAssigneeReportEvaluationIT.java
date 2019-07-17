@@ -102,7 +102,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
@@ -356,7 +356,6 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     );
   }
 
-
   @Test
   public void testCustomOrderOnResultValueIsApplied() {
     // given
@@ -386,104 +385,6 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       assertThat(result.getData().size(), is(2));
       assertCorrectValueOrdering(result);
     });
-  }
-
-  @Test
-  public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
-    //given
-    final ProcessDefinitionEngineDto firstDefinition = deployOneUserTasksDefinition();
-    final ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
-    assertThat(latestDefinition.getVersion(), is(2));
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(firstDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
-    changeDuration(processInstanceDto1, 20L);
-
-    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(latestDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
-    changeDuration(processInstanceDto2, 40L);
-
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    //when
-    final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
-    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
-
-    //then
-    assertThat(result.getData().size(), is(2));
-    assertThat(
-      result.getDataEntryForKey(DEFAULT_USERNAME).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(20L, 40L))
-    );
-    assertThat(
-      result.getDataEntryForKey(SECOND_USER).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(40L))
-    );
-
-  }
-
-  @Test
-  public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
-    //given
-    final ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
-    final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
-    assertThat(latestDefinition.getVersion(), is(2));
-
-    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(firstDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
-    changeDuration(processInstanceDto1, 20L);
-
-    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(latestDefinition.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
-    changeDuration(processInstanceDto2, 40L);
-
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    //when
-    final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
-    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
-
-    //then
-    assertThat(result.getData().size(), is(2));
-    assertThat(
-      result.getDataEntryForKey(DEFAULT_USERNAME).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(20L, 40L))
-    );
-    assertThat(
-      result.getDataEntryForKey(SECOND_USER).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(20L))
-    );
-  }
-
-  @Test
-  public void reportAcrossAllVersions() {
-    //given
-    final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
-    final ProcessDefinitionEngineDto processDefinition2 = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition1.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
-    changeDuration(processInstanceDto1, 40L);
-    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition2.getId());
-    finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
-    changeDuration(processInstanceDto2, 20L);
-
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    //when
-    final ProcessReportDataDto reportData = createReport(
-      processDefinition1.getKey(), ReportConstants.ALL_VERSIONS
-    );
-    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
-
-    //then
-    assertThat(result.getData().size(), is(1));
-    assertThat(
-      result.getDataEntryForKey(DEFAULT_USERNAME).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(20L, 40L))
-    );
   }
 
   @Test
@@ -869,7 +770,11 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration);
 
-  protected abstract ProcessReportDataDto createReport(final String processDefinitionKey, final String version);
+  protected abstract ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions);
+
+  private ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
+    return createReport(processDefinitionKey, Lists.newArrayList(version));
+  }
 
   private ProcessReportDataDto createReport(final ProcessDefinitionEngineDto processDefinition) {
     return createReport(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));

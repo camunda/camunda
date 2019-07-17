@@ -29,9 +29,9 @@ public class CountProcessInstanceFrequencyGroupByNoneCommand
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating count process instance frequency grouped by none report " +
-        "for process definition key [{}] and version [{}]",
+        "for process definition key [{}] and versions [{}]",
       processReportData.getProcessDefinitionKey(),
-      processReportData.getProcessDefinitionVersion()
+      processReportData.getProcessDefinitionVersions()
     );
 
     BoolQueryBuilder query = setupBaseQuery(processReportData);
@@ -51,9 +51,9 @@ public class CountProcessInstanceFrequencyGroupByNoneCommand
       String reason =
         String.format(
           "Could not evaluate count process instance frequency grouped by none report " +
-            "for process definition with key [%s] and version [%s]",
+            "for process definition with key [%s] and versions [%s]",
           processReportData.getProcessDefinitionKey(),
-          processReportData.getProcessDefinitionVersion()
+          processReportData.getProcessDefinitionVersions()
         );
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);

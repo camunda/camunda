@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.service.es.report.process.flownode.duration;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -23,11 +22,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEnt
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
@@ -43,11 +42,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeHeatmapReport;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
@@ -56,7 +55,7 @@ import static org.hamcrest.core.IsNull.nullValue;
 
 public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
-  public static final String PROCESS_DEFINITION_KEY = "123";
+  private static final String PROCESS_DEFINITION_KEY = "123";
   private static final String START_EVENT = "startEvent";
   private static final String END_EVENT = "endEvent";
   private static final String SERVICE_TASK_ID = "aSimpleServiceTask";
@@ -85,7 +84,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(result.getProcessInstanceCount(), is(1L));
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.FLOW_NODE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
@@ -312,7 +311,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       final List<MapResultEntryDto<Long>> resultData = evaluationResponse.getResult().getData();
       assertThat(resultData.size(), is(4));
       final List<Long> bucketValues = resultData.stream()
-        .map(entry -> entry.getValue())
+        .map(MapResultEntryDto::getValue)
         .collect(Collectors.toList());
       assertThat(
         bucketValues,
@@ -343,8 +342,52 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
-    ProcessReportDataDto reportData = createFlowNodeDurationGroupByFlowNodeHeatmapReport(
-      latestDefinition.getKey(), ReportConstants.ALL_VERSIONS
+    ProcessReportDataDto reportData = createReport(
+      latestDefinition.getKey(),
+      ALL_VERSIONS
+    );
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+      reportData);
+
+    //then
+    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData().size(), is(4));
+    assertThat(
+      result.getDataEntryForKey(SERVICE_TASK_ID).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(20L, 30L, 50L, 120L, 100L))
+    );
+    assertThat(
+      result.getDataEntryForKey(SERVICE_TASK_ID_2).get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(50L, 120L, 100L))
+    );
+  }
+
+  @Test
+  public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() throws Exception {
+    //given
+    ProcessDefinitionEngineDto firstDefinition = deploySimpleServiceTaskProcessDefinition();
+    deploySimpleServiceTaskProcessDefinition();
+    ProcessDefinitionEngineDto latestDefinition = deployProcessWithTwoTasks();
+    assertThat(latestDefinition.getVersion(), is(3));
+
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(firstDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 20L);
+    processInstanceDto = engineRule.startProcessInstance(firstDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 30L);
+    processInstanceDto = engineRule.startProcessInstance(latestDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 50L);
+    processInstanceDto = engineRule.startProcessInstance(latestDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 120L);
+    processInstanceDto = engineRule.startProcessInstance(latestDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 100L);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    //when
+    ProcessReportDataDto reportData = createReport(
+      latestDefinition.getKey(),
+      ImmutableList.of(firstDefinition.getVersionAsString(), latestDefinition.getVersionAsString())
     );
     ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
       reportData);
@@ -384,9 +427,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
-    ProcessReportDataDto reportData = createFlowNodeDurationGroupByFlowNodeHeatmapReport(
-      latestDefinition.getKey(), ReportConstants.ALL_VERSIONS
-    );
+    ProcessReportDataDto reportData = createReport(latestDefinition.getKey(),
+                                                   ALL_VERSIONS);
     ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
       reportData);
 
@@ -400,24 +442,33 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   @Test
-  public void reportAcrossAllVersions() throws Exception {
+  public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() throws Exception {
     //given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
-    ProcessDefinitionEngineDto processDefinition2 = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 10L);
-    processInstanceDto = engineRule.startProcessInstance(processDefinition2.getId());
+    ProcessDefinitionEngineDto firstDefinition = deployProcessWithTwoTasks();
+    deployProcessWithTwoTasks();
+    ProcessDefinitionEngineDto latestDefinition = deploySimpleServiceTaskProcessDefinition();
+    assertThat(latestDefinition.getVersion(), is(3));
+
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(firstDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 20L);
-    processInstanceDto = engineRule.startProcessInstance(processDefinition2.getId());
-    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 90L);
+    processInstanceDto = engineRule.startProcessInstance(firstDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 30L);
+    processInstanceDto = engineRule.startProcessInstance(firstDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 50L);
+    processInstanceDto = engineRule.startProcessInstance(latestDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 120L);
+    processInstanceDto = engineRule.startProcessInstance(latestDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 100L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
-    ProcessReportDataDto reportData = createFlowNodeDurationGroupByFlowNodeHeatmapReport(
-      processDefinition.getKey(), ReportConstants.ALL_VERSIONS
-    );
+    ProcessReportDataDto reportData =
+      createReport(
+        latestDefinition.getKey(),
+        ImmutableList.of(firstDefinition.getVersionAsString(), latestDefinition.getVersionAsString())
+      );
     ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
       reportData);
 
@@ -426,7 +477,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     assertThat(result.getData().size(), is(3));
     assertThat(
       result.getDataEntryForKey(SERVICE_TASK_ID).get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(10L, 20L, 90L))
+      is(calculateExpectedValueGivenDurationsDefaultAggr(20L, 30L, 50L, 120L, 100L))
     );
   }
 
@@ -444,9 +495,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeHeatmapReport(
-      processKey, ReportConstants.ALL_VERSIONS
-    );
+    ProcessReportDataDto reportData = createReport(processKey, ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
     ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
@@ -525,7 +574,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // when
     ProcessReportDataDto reportData =
-      createFlowNodeDurationGroupByFlowNodeHeatmapReport("nonExistingProcessDefinitionId", "1");
+      createReport("nonExistingProcessDefinitionId", "1");
     ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
       reportData);
 
@@ -553,10 +602,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // when
     ProcessReportDataDto reportData =
-      createFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        processDefinition.getKey(),
-        processDefinition.getVersionAsString()
-      );
+      createReport(processDefinition.getKey(),
+                   processDefinition.getVersionAsString());
     reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.RUNNING);
     ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
       reportData);
@@ -595,10 +642,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // when
     ProcessReportDataDto reportData =
-      createFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        processDefinition.getKey(),
-        processDefinition.getVersionAsString()
-      );
+      createReport(processDefinition.getKey(),
+                   processDefinition.getVersionAsString());
     reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.COMPLETED);
     ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
       reportData);
@@ -637,10 +682,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // when
     ProcessReportDataDto reportData =
-      createFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        processDefinition.getKey(),
-        processDefinition.getVersionAsString()
-      );
+      createReport(processDefinition.getKey(),
+                   processDefinition.getVersionAsString());
     reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.ALL);
     ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
       reportData);
@@ -691,10 +734,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // when
     ProcessReportDataDto reportData =
-      createFlowNodeDurationGroupByFlowNodeHeatmapReport(
-        subProcessDefinition.getKey(),
-        String.valueOf(subProcessDefinition.getVersion())
-      );
+      createReport(subProcessDefinition.getKey(), subProcessDefinition.getVersionAsString());
     ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
       reportData);
 
@@ -751,9 +791,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = createFlowNodeDurationGroupByFlowNodeHeatmapReport(
-      engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
-    );
+    ProcessReportDataDto reportData = createReport(engineDto.getProcessDefinitionKey(),
+                                                   engineDto.getProcessDefinitionVersion());
     ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
@@ -810,7 +849,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   public void optimizeExceptionOnViewEntityIsNull() {
     // given
     ProcessReportDataDto dataDto =
-      createFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
+      createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setEntity(null);
 
     //when
@@ -824,7 +863,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
     ProcessReportDataDto dataDto =
-      createFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
+      createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setProperty(null);
 
     //when
@@ -838,7 +877,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
     ProcessReportDataDto dataDto =
-      createFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
+      createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getGroupBy().setType(null);
 
     //when
@@ -868,10 +907,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   private ProcessReportDataDto getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(ProcessDefinitionEngineDto processDefinition) {
-    return createFlowNodeDurationGroupByFlowNodeHeatmapReport(
-      processDefinition.getKey(),
-      String.valueOf(processDefinition.getVersion())
-    );
+    return createReport(processDefinition.getKey(), processDefinition.getVersionAsString());
   }
 
 
@@ -906,5 +942,18 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       resultsMap.put(aggType, evaluateDurationMapReport(reportData).getResult());
     });
     return resultsMap;
+  }
+
+  private ProcessReportDataDto createReport(String definitionKey, String definitionVersion) {
+    return createReport(definitionKey, ImmutableList.of(definitionVersion));
+  }
+
+  private ProcessReportDataDto createReport(String definitionKey, List<String> definitionVersions) {
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(definitionKey)
+      .setProcessDefinitionVersions(definitionVersions)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+      .build();
   }
 }

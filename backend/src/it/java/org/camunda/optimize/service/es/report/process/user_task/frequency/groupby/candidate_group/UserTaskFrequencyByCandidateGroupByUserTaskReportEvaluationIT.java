@@ -29,6 +29,8 @@ import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResu
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,7 +44,6 @@ import java.util.Objects;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskFrequencyMapGroupByCandidateGroupByUserTaskReport;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -88,7 +89,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
@@ -363,37 +364,6 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
   }
 
   @Test
-  public void reportAcrossAllVersions() {
-    //given
-    final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
-    final ProcessDefinitionEngineDto processDefinition2 = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition1.getId());
-    engineRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
-    engineRule.finishAllRunningUserTasks(processInstanceDto1.getId());
-    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition2.getId());
-    engineRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
-    engineRule.finishAllRunningUserTasks(processInstanceDto2.getId());
-
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    //when
-    final ProcessReportDataDto reportData = createReport(
-      processDefinition1.getKey(), ReportConstants.ALL_VERSIONS
-    );
-    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    // @formatter:off
-    HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
-      .groupByContains(FIRST_CANDIDATE_GROUP)
-        .distributedByContains(USER_TASK_1, 2L)
-      .doAssert(actualResult);
-    // @formatter:on
-  }
-
-  @Test
   public void otherProcessDefinitionsDoNotInfluenceResult() {
     // given
     final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
@@ -659,7 +629,12 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
   }
 
   protected ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
-    return createUserTaskFrequencyMapGroupByCandidateGroupByUserTaskReport(processDefinitionKey, version);
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(version)
+      .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_CANDIDATE_BY_USER_TASK)
+      .build();
   }
 
   private ProcessReportDataDto createReport(final ProcessDefinitionEngineDto processDefinition) {

@@ -28,9 +28,9 @@ import static org.junit.Assert.assertThat;
 
 
 public class FlowNodeMappingIT {
-  public static final String A_START = "aStart";
-  public static final String A_TASK = "aTask";
-  public static final String AN_END = "anEnd";
+  private static final String A_START = "aStart";
+  private static final String A_TASK = "aTask";
+  private static final String AN_END = "anEnd";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -43,7 +43,7 @@ public class FlowNodeMappingIT {
 
 
   @Test
-  public void mapFlowNodeIdsToNames() throws Exception {
+  public void mapFlowNodeIdsToNames() {
     // given
     BpmnModelInstance modelInstance = getNamedBpmnModelInstance();
     ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(modelInstance);
@@ -73,6 +73,7 @@ public class FlowNodeMappingIT {
 
   private BpmnModelInstance getNamedBpmnModelInstance() {
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
+    // @formatter:off
     return Bpmn.createExecutableProcess(processId)
         .startEvent()
         .name(A_START)
@@ -82,10 +83,11 @@ public class FlowNodeMappingIT {
         .endEvent()
           .name(AN_END)
         .done();
+    // @formatter:on
   }
 
   @Test
-  public void mapFilteredFlowNodeIdsToNames() throws Exception {
+  public void mapFilteredFlowNodeIdsToNames() {
     // given
     BpmnModelInstance modelInstance = getNamedBpmnModelInstance();
     ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(modelInstance);

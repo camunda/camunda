@@ -59,9 +59,9 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
   protected SingleProcessMapDurationReportResult evaluate() {
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
-      "Evaluating user task total duration report for process definition key [{}] and version [{}]",
+      "Evaluating user task total duration report for process definition key [{}] and versions [{}]",
       processReportData.getProcessDefinitionKey(),
-      processReportData.getProcessDefinitionVersion()
+      processReportData.getProcessDefinitionVersions()
     );
 
     final BoolQueryBuilder query = setupBaseQuery(processReportData);
@@ -80,9 +80,9 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
       return new SingleProcessMapDurationReportResult(resultDto, reportDefinition);
     } catch (IOException e) {
       final String reason = String.format(
-        "Could not evaluate user task total duration for process definition key [%s] and version [%s]",
+        "Could not evaluate user task total duration for process definition key [%s] and versions [%s]",
         processReportData.getProcessDefinitionKey(),
-        processReportData.getProcessDefinitionVersion()
+        processReportData.getProcessDefinitionVersions()
       );
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);

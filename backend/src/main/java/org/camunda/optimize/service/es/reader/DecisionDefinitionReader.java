@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
@@ -40,6 +39,7 @@ import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.ENGINE;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.TENANT_ID;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
+import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToValidDefinitionVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -56,14 +56,18 @@ public class DecisionDefinitionReader {
 
   public Optional<DecisionDefinitionOptimizeDto> getFullyImportedDecisionDefinition(
     final String decisionDefinitionKey,
-    final String decisionDefinitionVersion,
+    final List<String> decisionDefinitionVersions,
     final String tenantId) {
 
-    if (decisionDefinitionKey == null || decisionDefinitionVersion == null) {
+    if (decisionDefinitionKey == null || decisionDefinitionVersions == null || decisionDefinitionVersions.isEmpty()) {
       return Optional.empty();
     }
 
-    final String validVersion = convertToValidVersion(decisionDefinitionKey, decisionDefinitionVersion);
+    final String validVersion = convertToValidDefinitionVersion(
+      decisionDefinitionKey,
+      decisionDefinitionVersions,
+      this::getLatestVersionToKey
+    );
     final BoolQueryBuilder query = QueryBuilders.boolQuery()
       .must(termQuery(DECISION_DEFINITION_KEY, decisionDefinitionKey))
       .must(termQuery(DECISION_DEFINITION_VERSION, validVersion))
@@ -89,7 +93,7 @@ public class DecisionDefinitionReader {
       String reason = String.format(
         "Was not able to fetch decision definition with key [%s], version [%s] and tenantId [%s]",
         decisionDefinitionKey,
-        decisionDefinitionVersion,
+        validVersion,
         tenantId
       );
       log.error(reason, e);
@@ -100,6 +104,13 @@ public class DecisionDefinitionReader {
     if (searchResponse.getHits().getTotalHits() > 0L) {
       String responseAsString = searchResponse.getHits().getAt(0).getSourceAsString();
       definitionOptimizeDto = parseDecisionDefinition(responseAsString);
+    } else {
+      log.debug(
+        "Could not find decision definition xml with key [{}], version [{}] and tenantId [{}]",
+        decisionDefinitionKey,
+        validVersion,
+        tenantId
+      );
     }
     return Optional.ofNullable(definitionOptimizeDto);
   }
@@ -186,14 +197,6 @@ public class DecisionDefinitionReader {
       throw new OptimizeRuntimeException("Failure reading decision definition", e);
     }
     return definitionOptimizeDto;
-  }
-
-  private String convertToValidVersion(String decisionDefinitionKey, String decisionDefinitionVersion) {
-    if (ReportConstants.ALL_VERSIONS.equals(decisionDefinitionVersion)) {
-      return getLatestVersionToKey(decisionDefinitionKey);
-    } else {
-      return decisionDefinitionVersion;
-    }
   }
 
   private String getLatestVersionToKey(String key) {

@@ -49,6 +49,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTAN
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 
 @AllArgsConstructor
@@ -68,14 +69,14 @@ public class BranchAnalysisReader {
     }
 
     log.debug(
-      "Performing branch analysis on process definition with key [{}] and version [{}]",
+      "Performing branch analysis on process definition with key [{}] and versions [{}]",
       request.getProcessDefinitionKey(),
-      request.getProcessDefinitionVersion()
+      request.getProcessDefinitionVersions()
     );
 
     final BranchAnalysisDto result = new BranchAnalysisDto();
     getBpmnModelInstance(
-      userId, request.getProcessDefinitionKey(), request.getProcessDefinitionVersion(), request.getTenantIds()
+      userId, request.getProcessDefinitionKey(), request.getProcessDefinitionVersions(), request.getTenantIds()
     ).ifPresent(bpmnModelInstance -> {
       final List<FlowNode> gatewayOutcomes = fetchGatewayOutcomes(bpmnModelInstance, request.getGateway());
       final Set<String> activityIdsWithMultipleIncomingSequenceFlows =
@@ -149,7 +150,7 @@ public class BranchAnalysisReader {
     final BoolQueryBuilder query = boolQuery()
       .must(ReportCommand.createTenantIdQuery(TENANT_ID, request.getTenantIds()))
       .must(termQuery(PROCESS_DEFINITION_KEY, request.getProcessDefinitionKey()))
-      .must(termQuery(PROCESS_DEFINITION_VERSION, request.getProcessDefinitionVersion()));
+      .must(termsQuery(PROCESS_DEFINITION_VERSION, request.getProcessDefinitionVersions()));
     excludeActivities(activitiesToExclude, query);
     return query;
   }
@@ -185,9 +186,9 @@ public class BranchAnalysisReader {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format(
-        "Was not able to perform branch analysis on process definition with key [%s] and version [%s}]",
+        "Was not able to perform branch analysis on process definition with key [%s] and versions [%s}]",
         request.getProcessDefinitionKey(),
-        request.getProcessDefinitionVersion()
+        request.getProcessDefinitionVersions()
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
@@ -208,13 +209,13 @@ public class BranchAnalysisReader {
 
   private Optional<BpmnModelInstance> getBpmnModelInstance(final String userId,
                                                            final String definitionKey,
-                                                           final String definitionVersion,
+                                                           final List<String> definitionVersions,
                                                            final List<String> tenantIds) {
     final Optional<String> processDefinitionXml = tenantIds.stream()
-      .map(tenantId -> definitionService.getProcessDefinitionXml(userId, definitionKey, definitionVersion, tenantId))
+      .map(tenantId -> definitionService.getProcessDefinitionXml(userId, definitionKey, definitionVersions, tenantId))
       .filter(Optional::isPresent)
       .findFirst()
-      .orElse(definitionService.getProcessDefinitionXml(userId, definitionKey, definitionVersion));
+      .orElse(definitionService.getProcessDefinitionXml(userId, definitionKey, definitionVersions));
 
     return processDefinitionXml
       .map(xml -> Bpmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes())));

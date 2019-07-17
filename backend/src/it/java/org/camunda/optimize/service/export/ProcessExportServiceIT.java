@@ -19,7 +19,8 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -55,60 +56,63 @@ public class ProcessExportServiceIT {
   public static Collection<Object[]> data() {
     return Arrays.asList(new Object[][]{
       {
-        ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
-          FAKE,
-          FAKE
-        ),
-        "/csv/process/single/raw_process_data_grouped_by_none.csv",
-        "Raw Data Grouped By None"
+        ProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(FAKE)
+          .setProcessDefinitionVersion(FAKE)
+          .setReportDataType(ProcessReportDataType.RAW_DATA)
+          .build(),
+    "/csv/process/single/raw_process_data_grouped_by_none.csv",
+      "Raw Data Grouped By None"
       },
       {
-        ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate(
-          FAKE,
-          FAKE,
-          GroupByDateUnit.DAY
-        ),
+        ProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(FAKE)
+          .setProcessDefinitionVersion(FAKE)
+          .setDateInterval(GroupByDateUnit.DAY)
+          .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+          .build(),
         "/csv/process/single/pi_frequency_group_by_start_date.csv",
         "Process Instance Frequency Grouped By Start Date"
       },
       {
-        ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
-          FAKE,
-          FAKE
-        ),
+        ProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(FAKE)
+          .setProcessDefinitionVersion(FAKE)
+          .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+          .build(),
         "/csv/process/single/pi_frequency_group_by_none.csv",
         "Process Instance Frequency Grouped By None"
       },
       {
-        ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode(
-          FAKE,
-          FAKE
-        ),
+        ProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(FAKE)
+          .setProcessDefinitionVersion(FAKE)
+          .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+          .build(),
         "/csv/process/single/flownode_frequency_group_by_flownodes.csv",
         "Flow Node Frequency Grouped By Flow Node"
       },
       {
-        ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByStartDateReport(
-          FAKE,
-          FAKE,
-          GroupByDateUnit.DAY
-        ),
-        "/csv/process/single/pi_duration_group_by_start_date.csv",
-        "Process Instance Duration Grouped By PI Start Date"
-      },
-      {
-        ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByNone(
-          FAKE,
-          FAKE
-        ),
+        ProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(FAKE)
+          .setProcessDefinitionVersion(FAKE)
+          .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
+          .build(),
         "/csv/process/single/pi_duration_group_by_none.csv",
         "Process Instance Duration Grouped By None"
       },
       {
-        ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeHeatmapReport(
-          FAKE,
-          FAKE
-        ),
+        ProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(FAKE)
+          .setProcessDefinitionVersion(FAKE)
+          .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+          .build(),
         "/csv/process/single/flownode_duration_group_by_flownodes.csv",
         "Flow Node Duration Grouped By Flow Node"
       },
@@ -244,10 +248,12 @@ public class ProcessExportServiceIT {
 
   private static ProcessReportDataDto createRunningFlowNodeDurationGroupByFlowNodeTableReport() {
     final ProcessReportDataDto reportDataDto =
-      ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeTableReport(
-        FAKE,
-        FAKE
-      );
+      ProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(FAKE)
+          .setProcessDefinitionVersion(FAKE)
+          .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+          .build();
     reportDataDto.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.RUNNING);
     return reportDataDto;
   }

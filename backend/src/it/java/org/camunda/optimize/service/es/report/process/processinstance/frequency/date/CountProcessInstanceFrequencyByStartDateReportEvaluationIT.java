@@ -23,14 +23,12 @@ import org.junit.Test;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
-import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -73,11 +71,13 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByStartDate(
-      processInstanceDto.getProcessDefinitionKey(),
-      processInstanceDto.getProcessDefinitionVersion(),
-      GroupByDateUnit.DAY
-    );
+    final ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setDateInterval(GroupByDateUnit.DAY)
+      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .build();
 
     final RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto();
     dateFilterDataDto.setStart(new RelativeDateFilterStartDto(

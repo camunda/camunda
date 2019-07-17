@@ -17,11 +17,12 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -36,7 +37,7 @@ public class RunningInstancesOnlyFilterIT {
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
-  public void filterByRunningInstancesOnly() throws Exception {
+  public void filterByRunningInstancesOnly() {
     // given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
     ProcessInstanceEngineDto firstProcInst = engineRule.startProcessInstance(userTaskProcess.getId());
@@ -49,8 +50,12 @@ public class RunningInstancesOnlyFilterIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData =
-      createProcessReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(userTaskProcess.getKey())
+      .setProcessDefinitionVersion(userTaskProcess.getVersionAsString())
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
     reportData.setFilter(ProcessFilterBuilder.filter().runningInstancesOnly().add().buildList());
     RawDataProcessReportResultDto result = evaluateReportAndReturnResult(reportData);
 

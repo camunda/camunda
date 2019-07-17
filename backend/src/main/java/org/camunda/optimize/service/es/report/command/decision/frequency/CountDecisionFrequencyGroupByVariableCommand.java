@@ -53,10 +53,10 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
     final DecisionReportDataDto reportData = getReportData();
     logger.debug(
       "Evaluating count decision instance frequency grouped by {} report " +
-        "for decision definition with key [{}] and version [{}]",
+        "for decision definition with key [{}] and versions [{}]",
       variablePath,
       reportData.getDecisionDefinitionKey(),
-      reportData.getDecisionDefinitionVersion()
+      reportData.getDecisionDefinitionVersions()
     );
 
     final BoolQueryBuilder query = setupBaseQuery(reportData);
@@ -80,9 +80,9 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
       String reason =
         String.format(
           "Could not evaluate count decision instance frequency grouped by {} report " +
-            "for decision definition with key [%s] and version [%s]",
+            "for decision definition with key [%s] and versions [%s]",
           reportData.getDecisionDefinitionKey(),
-          reportData.getDecisionDefinitionVersion()
+          reportData.getDecisionDefinitionVersions()
         );
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);

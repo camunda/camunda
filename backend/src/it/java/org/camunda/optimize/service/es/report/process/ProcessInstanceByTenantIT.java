@@ -6,14 +6,15 @@
 package org.camunda.optimize.service.es.report.process;
 
 import com.google.common.collect.Lists;
-import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Test;
 
 import java.util.List;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.isOneOf;
@@ -78,9 +79,12 @@ public class ProcessInstanceByTenantIT extends AbstractProcessDefinitionIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
-      processKey, ReportConstants.ALL_VERSIONS
-    );
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processKey)
+      .setProcessDefinitionVersion(ALL_VERSIONS)
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
     reportData.setTenantIds(selectedTenants);
     RawDataProcessReportResultDto result = evaluateRawReport(reportData).getResult();
 

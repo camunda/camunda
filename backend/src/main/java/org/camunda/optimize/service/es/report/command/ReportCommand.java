@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.report.command;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.Range;
-import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
@@ -88,17 +87,16 @@ public abstract class ReportCommand<R extends ReportEvaluationResult, RD extends
 
   protected BoolQueryBuilder setupBaseQuery(final SingleReportDataDto reportData, final DefinitionBasedType type) {
     final String definitionKey = reportData.getDefinitionKey();
-    final String definitionVersion = reportData.getDefinitionVersion();
     final BoolQueryBuilder query = boolQuery();
     query.must(createTenantIdQuery(reportData, type.getTenantIdFieldName()));
     query.must(termQuery(type.getDefinitionKeyFieldName(), definitionKey));
-    if (!ReportConstants.ALL_VERSIONS.equalsIgnoreCase(definitionVersion)) {
-      query.must(termQuery(type.getDefinitionVersionFieldName(), definitionVersion));
+    if (!reportData.isDefinitionVersionSetToAll()) {
+      query.must(termsQuery(type.getDefinitionVersionFieldName(), reportData.getDefinitionVersions()));
     }
     return query;
   }
 
-  public static QueryBuilder createTenantIdQuery(final SingleReportDataDto reportData, final String tenantField) {
+  private static QueryBuilder createTenantIdQuery(final SingleReportDataDto reportData, final String tenantField) {
     final List<String> tenantIds = reportData.getTenantIds();
     return createTenantIdQuery(tenantField, tenantIds);
   }

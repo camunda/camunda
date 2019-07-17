@@ -28,6 +28,8 @@ import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResu
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -44,7 +46,6 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskFrequencyMapGroupByCandidateGroupReport;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
@@ -87,7 +88,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
@@ -292,34 +293,6 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     assertThat(result.getData().size(), is(2));
     assertThat(getExecutedFlowNodeCount(result), is(2L));
     assertCorrectValueOrdering(result);
-  }
-
-  @Test
-  public void reportAcrossAllVersions() {
-    //given
-    final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
-    final ProcessDefinitionEngineDto processDefinition2 = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition1.getId());
-    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
-    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition2.getId());
-    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
-
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    //when
-    final ProcessReportDataDto reportData = createReport(
-      processDefinition1.getKey(), ReportConstants.ALL_VERSIONS
-    );
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
-
-    //then
-    assertThat(result.getData().size(), is(1));
-    assertThat(getExecutedFlowNodeCount(result), is(1L));
-    assertThat(
-      result.getDataEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(2L)
-    );
   }
 
   @Test
@@ -601,7 +574,12 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
   }
 
   protected ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
-    return createUserTaskFrequencyMapGroupByCandidateGroupReport(processDefinitionKey, version);
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(version)
+      .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_CANDIDATE)
+      .build();
   }
 
   private ProcessReportDataDto createReport(final ProcessDefinitionEngineDto processDefinition) {

@@ -25,7 +25,6 @@ import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
-import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,6 +37,7 @@ import java.util.List;
 
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -59,22 +59,15 @@ public class DateQueryFilterIT {
     .around(embeddedOptimizeRule)
     .around(engineDatabaseRule);
 
-
-  private OffsetDateTime start;
-  private OffsetDateTime end;
-  private String processDefinitionKey;
-  private String processDefinitionVersion;
-
   @Test
   public void testGetHeatMapWithGteStartDateCriteria() {
     //given
-    startAndImportSimpleProcess();
+    ProcessInstanceEngineDto engineDto = startAndImportSimpleProcess();
+    HistoricProcessInstanceDto processInstance = engineRule.getHistoricProcessInstance(engineDto.getId());
+    OffsetDateTime start = processInstance.getStartTime();
 
     //when
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
-      processDefinitionKey,
-      processDefinitionVersion
-    );
+    ProcessReportDataDto reportData = createReport(engineDto);
 
     List<ProcessFilterDto> fixedStartDateFilter =
       ProcessFilterBuilder.filter()
@@ -110,11 +103,12 @@ public class DateQueryFilterIT {
   @Test
   public void testGetHeatMapWithLteStartDateCriteria() {
     //given
-    startAndImportSimpleProcess();
+    ProcessInstanceEngineDto engineDto = startAndImportSimpleProcess();
+    HistoricProcessInstanceDto processInstance = engineRule.getHistoricProcessInstance(engineDto.getId());
+    OffsetDateTime start = processInstance.getStartTime();
 
     //when
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable
-      (processDefinitionKey, processDefinitionVersion);
+    ProcessReportDataDto reportData = createReport(engineDto);
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedStartDate()
                            .start(null)
@@ -147,13 +141,12 @@ public class DateQueryFilterIT {
   @Test
   public void testGetHeatMapWithGteEndDateCriteria() {
     //given
-    startAndImportSimpleProcess();
+    ProcessInstanceEngineDto engineDto = startAndImportSimpleProcess();
+    HistoricProcessInstanceDto processInstance = engineRule.getHistoricProcessInstance(engineDto.getId());
+    OffsetDateTime end = processInstance.getEndTime();
 
     //when
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
-      processDefinitionKey,
-      processDefinitionVersion
-    );
+    ProcessReportDataDto reportData = createReport(engineDto);
 
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedEndDate()
@@ -192,13 +185,12 @@ public class DateQueryFilterIT {
   @Test
   public void testGetHeatMapWithLteEndDateCriteria() {
     //given
-    startAndImportSimpleProcess();
+    ProcessInstanceEngineDto engineDto = startAndImportSimpleProcess();
+    HistoricProcessInstanceDto processInstance = engineRule.getHistoricProcessInstance(engineDto.getId());
+    OffsetDateTime end = processInstance.getEndTime();
 
     //when
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
-      processDefinitionKey,
-      processDefinitionVersion
-    );
+    ProcessReportDataDto reportData = createReport(engineDto);
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedEndDate()
                            .start(end.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS))
@@ -225,10 +217,12 @@ public class DateQueryFilterIT {
   @Test
   public void testGetHeatMapWithMixedDateCriteria() {
     //given
-    startAndImportSimpleProcess();
+    ProcessInstanceEngineDto engineDto = startAndImportSimpleProcess();
+    HistoricProcessInstanceDto processInstance = engineRule.getHistoricProcessInstance(engineDto.getId());
+    OffsetDateTime start = processInstance.getStartTime();
+    OffsetDateTime end = processInstance.getEndTime();
 
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable
-      (processDefinitionKey, processDefinitionVersion);
+    ProcessReportDataDto reportData = createReport(engineDto);
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedStartDate()
                            .start(start.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS))
@@ -506,15 +500,11 @@ public class DateQueryFilterIT {
     MatcherAssert.assertThat(resultData.get(1).getValue(), is(2L));
   }
 
-  private void startAndImportSimpleProcess() {
+  private ProcessInstanceEngineDto startAndImportSimpleProcess() {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    HistoricProcessInstanceDto processInstance = engineRule.getHistoricProcessInstance(processInstanceDto.getId());
-    start = processInstance.getStartTime();
-    end = processInstance.getEndTime();
-    processDefinitionKey = processInstanceDto.getProcessDefinitionKey();
-    processDefinitionVersion = processInstanceDto.getProcessDefinitionVersion();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
+    return processInstanceDto;
   }
 
   private void adjustProcessInstanceDates(String processInstanceId,
@@ -577,5 +567,14 @@ public class DateQueryFilterIT {
       .endEvent()
       .done();
     return engineRule.deployAndStartProcess(processModel);
+  }
+
+   private ProcessReportDataDto createReport(ProcessInstanceEngineDto processInstanceEngineDto) {
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
+      .setReportDataType(RAW_DATA)
+      .build();
   }
 }

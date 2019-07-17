@@ -20,7 +20,8 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
@@ -123,7 +124,8 @@ public class ForceReimportIT {
       .types(types.toArray(new String[0]))
       .source(searchSourceBuilder);
 
-    SearchResponse response = elasticSearchRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
+    SearchResponse response = elasticSearchRule.getOptimizeElasticClient()
+      .search(searchRequest, RequestOptions.DEFAULT);
 
     return response.getHits().getTotalHits() > 0L;
   }
@@ -201,10 +203,12 @@ public class ForceReimportIT {
   private SingleProcessReportDefinitionDto getReportDefinitionDto(String processDefinitionKey,
                                                                   String processDefinitionVersion) {
     ProcessReportDataDto reportData =
-      ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNoneAsNumber(
-        processDefinitionKey,
-        processDefinitionVersion
-      );
+      ProcessReportDataBuilder
+        .createReportData()
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessDefinitionVersion(processDefinitionVersion)
+        .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+        .build();
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");
@@ -246,7 +250,7 @@ public class ForceReimportIT {
   }
 
 
-  private void forceReimportOfEngineData() throws IOException {
+  private void forceReimportOfEngineData() {
     ReimportPreparation.main(new String[]{});
   }
 

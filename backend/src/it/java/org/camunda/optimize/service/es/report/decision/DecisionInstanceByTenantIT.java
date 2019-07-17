@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.DecisionReportDataType;
 import org.junit.Test;
 
 import java.util.List;
@@ -78,9 +79,12 @@ public class DecisionInstanceByTenantIT extends AbstractDecisionDefinitionIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionKey, ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = DecisionReportDataBuilder
+      .create()
+      .setDecisionDefinitionKey(decisionDefinitionKey)
+      .setDecisionDefinitionVersion(ALL_VERSIONS)
+      .setReportDataType(DecisionReportDataType.RAW_DATA)
+      .build();
     reportData.setTenantIds(selectedTenants);
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 

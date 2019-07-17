@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
@@ -80,7 +81,7 @@ public class DecisionDefinitionRestService {
                                          @QueryParam("tenantId") String tenantId) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return decisionDefinitionService.getDecisionDefinitionXml(
-      userId, decisionDefinitionKey, decisionDefinitionVersion, tenantId
+      userId, decisionDefinitionKey, Lists.newArrayList(decisionDefinitionVersion), tenantId
     ).orElseThrow(() -> {
       String notFoundErrorMessage = "Could not find xml for decision definition with key [" + decisionDefinitionKey +
         "] and version [" + decisionDefinitionVersion + "]. It is possible that is hasn't been imported yet.";

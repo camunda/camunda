@@ -31,13 +31,15 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.DecisionReportDataType;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -48,8 +50,6 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.util.DmnHelper.createSimpleDmnModel;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -57,8 +57,8 @@ import static org.junit.Assert.assertThat;
 @RunWith(JUnitParamsRunner.class)
 public class ReportAuthorizationIT {
 
-  public static final String PROCESS_KEY = "aprocess";
-  public static final String DECISION_KEY = "aDecision";
+  private static final String PROCESS_KEY = "aprocess";
+  private static final String DECISION_KEY = "aDecision";
 
   private static final Object[] definitionType() {
     return new Object[]{RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION};
@@ -67,7 +67,7 @@ public class ReportAuthorizationIT {
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public AuthorizationClient authorizationClient = new AuthorizationClient(engineRule);
+  private AuthorizationClient authorizationClient = new AuthorizationClient(engineRule);
 
   @Rule
   public RuleChain chain = RuleChain
@@ -76,7 +76,7 @@ public class ReportAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void evaluateUnauthorizedStoredReport(int definitionResourceType) throws Exception {
+  public void evaluateUnauthorizedStoredReport(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
@@ -96,7 +96,7 @@ public class ReportAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void evaluateUnauthorizedTenantsStoredReport(int definitionResourceType) throws Exception {
+  public void evaluateUnauthorizedTenantsStoredReport(int definitionResourceType) {
     // given
     final String tenantId = "tenant1";
     engineRule.createTenant(tenantId);
@@ -120,7 +120,7 @@ public class ReportAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void evaluatePartiallyUnauthorizedTenantsStoredReport(int definitionResourceType) throws Exception {
+  public void evaluatePartiallyUnauthorizedTenantsStoredReport(int definitionResourceType) {
     // given
     final String tenantId1 = "tenant1";
     engineRule.createTenant(tenantId1);
@@ -147,7 +147,7 @@ public class ReportAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void evaluateAllTenantsAuthorizedStoredReport(int definitionResourceType) throws Exception {
+  public void evaluateAllTenantsAuthorizedStoredReport(int definitionResourceType) {
     // given
     final String tenantId1 = "tenant1";
     engineRule.createTenant(tenantId1);
@@ -178,7 +178,7 @@ public class ReportAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void deleteUnauthorizedStoredReport(int definitionResourceType) throws Exception {
+  public void deleteUnauthorizedStoredReport(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
@@ -198,7 +198,7 @@ public class ReportAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void evaluateUnauthorizedOnTheFlyReport(int definitionResourceType) throws Exception {
+  public void evaluateUnauthorizedOnTheFlyReport(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
@@ -217,7 +217,7 @@ public class ReportAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void updateUnauthorizedReport(int definitionResourceType) throws Exception {
+  public void updateUnauthorizedReport(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
@@ -239,7 +239,7 @@ public class ReportAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void getUnauthorizedReport(int definitionResourceType) throws Exception {
+  public void getUnauthorizedReport(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
@@ -259,7 +259,7 @@ public class ReportAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void shareUnauthorizedReport(int definitionResourceType) throws Exception {
+  public void shareUnauthorizedReport(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
@@ -281,7 +281,7 @@ public class ReportAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void newReportCanBeAccessedByEveryone(int definitionResourceType) throws Exception {
+  public void newReportCanBeAccessedByEveryone(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
@@ -348,15 +348,19 @@ public class ReportAuthorizationIT {
 
   private String createNewSingleMapReport(String processDefinitionKey) {
     String singleReportId = createNewReport(RESOURCE_TYPE_PROCESS_DEFINITION);
-    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode =
-      createCountFlowNodeFrequencyGroupByFlowNode(processDefinitionKey, "1");
+    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = ProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(processDefinitionKey)
+          .setProcessDefinitionVersion("1")
+          .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+          .build();
     SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
     definitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReport(singleReportId, definitionDto);
     return singleReportId;
   }
 
-  private void deployStartAndImportDefinition(int definitionResourceType) throws IOException {
+  private void deployStartAndImportDefinition(int definitionResourceType) {
     switch (definitionResourceType) {
       case RESOURCE_TYPE_PROCESS_DEFINITION:
         deployAndStartSimpleProcessDefinition(PROCESS_KEY);
@@ -452,18 +456,22 @@ public class ReportAuthorizationIT {
       default:
       case RESOURCE_TYPE_PROCESS_DEFINITION:
         SingleProcessReportDefinitionDto processReportDefinitionDto = new SingleProcessReportDefinitionDto();
-        ProcessReportDataDto processReportDataDto = createProcessReportDataViewRawAsTable(
-          getDefinitionKey(resourceType),
-          "1"
-        );
+        ProcessReportDataDto processReportDataDto = ProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(getDefinitionKey(resourceType))
+          .setProcessDefinitionVersion("1")
+          .setReportDataType(ProcessReportDataType.RAW_DATA)
+          .build();
         processReportDataDto.setTenantIds(tenantIds);
         processReportDefinitionDto.setData(processReportDataDto);
         return processReportDefinitionDto;
       case RESOURCE_TYPE_DECISION_DEFINITION:
         SingleDecisionReportDefinitionDto decisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
-        DecisionReportDataDto decisionReportDataDto = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-          getDefinitionKey(resourceType), "1"
-        );
+        DecisionReportDataDto decisionReportDataDto = DecisionReportDataBuilder.create()
+          .setDecisionDefinitionKey(getDefinitionKey(resourceType))
+          .setDecisionDefinitionVersion("1")
+          .setReportDataType(DecisionReportDataType.RAW_DATA)
+          .build();
         decisionReportDataDto.setTenantIds(tenantIds);
         decisionReportDefinitionDto.setData(decisionReportDataDto);
         return decisionReportDefinitionDto;

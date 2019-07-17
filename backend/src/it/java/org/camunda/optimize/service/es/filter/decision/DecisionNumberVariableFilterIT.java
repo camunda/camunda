@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.service.es.filter.FilterOperatorConstants;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.DecisionReportDataType;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.toList;
@@ -44,9 +45,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createDoubleInputVariableFilter(
       inputVariableIdToFilterOn, FilterOperatorConstants.IN, categoryInputValueToFilterFor
     )));
@@ -89,9 +88,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createDoubleInputVariableFilter(
       inputVariableIdToFilterOn, FilterOperatorConstants.IN,
       firstCategoryInputValueToFilterFor, secondCategoryInputValueToFilterFor
@@ -131,9 +128,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createDoubleInputVariableFilter(
       inputVariableIdToFilterOn, FilterOperatorConstants.NOT_IN, categoryInputValueToExclude
     )));
@@ -154,7 +149,6 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
   public void resultFilterByLessOrEqualNumberInputVariable() {
     // given
     final String categoryInputValueToFilterFor = "200.0";
-    final String inputVariableIdToFilterOn = INPUT_AMOUNT_ID;
 
     final DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
@@ -170,11 +164,9 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createDoubleInputVariableFilter(
-      inputVariableIdToFilterOn, FilterOperatorConstants.LESS_THAN_EQUALS, categoryInputValueToFilterFor
+      INPUT_AMOUNT_ID, FilterOperatorConstants.LESS_THAN_EQUALS, categoryInputValueToFilterFor
     )));
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
@@ -204,9 +196,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createDoubleInputVariableFilter(
       inputVariableIdToFilterOn, FilterOperatorConstants.GREATER_THAN, categoryInputValueToFilter
     )));
@@ -221,6 +211,15 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       result.getData().get(0).getInputVariables().get(inputVariableIdToFilterOn).getValue(),
       is("200.0")
     );
+  }
+
+  private DecisionReportDataDto createReportWithAllVersionSet(DecisionDefinitionEngineDto decisionDefinitionDto) {
+    return DecisionReportDataBuilder
+      .create()
+      .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
+      .setDecisionDefinitionVersion(ALL_VERSIONS)
+      .setReportDataType(DecisionReportDataType.RAW_DATA)
+      .build();
   }
 
 }

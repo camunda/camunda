@@ -11,11 +11,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.dura
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 
 import java.sql.SQLException;
+import java.util.List;
 
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskTotalDurationMapGroupByAssigneeReport;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_ASSIGNEE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
@@ -48,8 +50,14 @@ public class UserTaskTotalDurationByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
-    return createUserTaskTotalDurationMapGroupByAssigneeReport(processDefinitionKey, version);
+  protected ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions) {
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersions(versions)
+      .setUserTaskDurationTime(UserTaskDurationTime.TOTAL)
+      .setReportDataType(USER_TASK_DURATION_GROUP_BY_ASSIGNEE)
+      .build();
   }
 
   @Override

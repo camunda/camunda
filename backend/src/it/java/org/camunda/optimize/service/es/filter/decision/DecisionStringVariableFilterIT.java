@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.service.es.filter.FilterOperatorConstants;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.DecisionReportDataType;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.toList;
@@ -44,9 +45,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createStringInputVariableFilter(
       inputVariableIdToFilterOn, FilterOperatorConstants.IN, categoryInputValueToFilterFor
     )));
@@ -62,6 +61,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       is(categoryInputValueToFilterFor)
     );
   }
+
 
   @Test
   public void resultFilterByEqualStringInputVariableMultipleValues() {
@@ -88,9 +88,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createStringInputVariableFilter(
       inputVariableIdToFilterOn, FilterOperatorConstants.IN,
       firstCategoryInputValueToFilterFor, secondCategoryInputValueToFilterFor
@@ -130,9 +128,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
-      decisionDefinitionDto.getKey(), ALL_VERSIONS
-    );
+    DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createStringInputVariableFilter(
       inputVariableIdToFilterOn, FilterOperatorConstants.NOT_IN, categoryInputValueToExclude
     )));
@@ -147,6 +143,15 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       result.getData().get(0).getInputVariables().get(inputVariableIdToFilterOn).getValue(),
       is(expectedCategoryInputValue)
     );
+  }
+
+  private DecisionReportDataDto createReportWithAllVersionSet(DecisionDefinitionEngineDto decisionDefinitionDto) {
+    return DecisionReportDataBuilder
+      .create()
+      .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
+      .setDecisionDefinitionVersion(ALL_VERSIONS)
+      .setReportDataType(DecisionReportDataType.RAW_DATA)
+      .build();
   }
 
 }

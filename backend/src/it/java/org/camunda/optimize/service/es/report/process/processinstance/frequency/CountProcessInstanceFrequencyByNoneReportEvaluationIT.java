@@ -20,7 +20,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
-import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.junit.Test;
 
 import javax.ws.rs.core.Response;
@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -46,15 +47,16 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
-      processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
+    ProcessReportDataDto reportData = createReport(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion()
     );
     ProcessReportEvaluationResultDto<ProcessReportNumberResultDto> evaluationResponse = evaluateNumberReport(reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getFirstProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
@@ -76,28 +78,8 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
-      engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
-    );
-    ProcessReportNumberResultDto result = evaluateNumberReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData(), is(3L));
-  }
-
-  @Test
-  public void reportAcrossAllVersions() {
-    // given
-    ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
-    engineRule.startProcessInstance(engineDto.getDefinitionId());
-    deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
-      engineDto.getProcessDefinitionKey(), ReportConstants.ALL_VERSIONS
-    );
+    ProcessReportDataDto reportData =
+      createReport(engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion());
     ProcessReportNumberResultDto result = evaluateNumberReport(reportData).getResult();
 
     // then
@@ -114,9 +96,8 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
-      engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
-    );
+    ProcessReportDataDto reportData = createReport(engineDto.getProcessDefinitionKey(),
+                                                   engineDto.getProcessDefinitionVersion());
     ProcessReportNumberResultDto result = evaluateNumberReport(reportData).getResult();
 
     // then
@@ -137,9 +118,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
-      processKey, ReportConstants.ALL_VERSIONS
-    );
+    ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
     ProcessReportNumberResultDto result = evaluateNumberReport(reportData).getResult();
 
@@ -156,9 +135,8 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
-      processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion()
-    );
+    ProcessReportDataDto reportData = createReport(processInstance.getProcessDefinitionKey(),
+                                                   processInstance.getProcessDefinitionVersion());
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedStartDate()
                            .start(null)
@@ -172,9 +150,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     assertThat(result.getData(), is(0L));
 
     // when
-    reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
-      processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion()
-    );
+    reportData = createReport(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
     reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(past).end(null).add().buildList());
     result = evaluateNumberReport(reportData).getResult();
 
@@ -196,9 +172,8 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
-      processDefinition.getKey(), String.valueOf(processDefinition.getVersion())
-    );
+    ProcessReportDataDto reportData =
+      createReport(processDefinition.getKey(), processDefinition.getVersionAsString());
     List<ProcessFilterDto> flowNodeFilter = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
@@ -217,7 +192,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
     ProcessReportDataDto dataDto =
-      ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(PROCESS_DEFINITION_KEY, "1");
+      createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setProperty(null);
 
     //when
@@ -231,7 +206,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
     ProcessReportDataDto dataDto =
-      ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(PROCESS_DEFINITION_KEY, "1");
+      createReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getGroupBy().setType(null);
 
     //when
@@ -250,9 +225,8 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
-      processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
-    );
+    ProcessReportDataDto reportData = createReport(processInstanceDto.getProcessDefinitionKey(),
+                                                   processInstanceDto.getProcessDefinitionVersion());
     reportData.getConfiguration().setAggregationType(AggregationType.MAX);
     reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
     ProcessReportEvaluationResultDto<ProcessReportNumberResultDto> evaluationResponse =
@@ -264,6 +238,15 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     assertThat(resultDto.getProcessInstanceCount(), is(1L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData(), is(1L));
+  }
+
+  private ProcessReportDataDto createReport(String processDefinitionKey, String processDefinitionVersion) {
+    return ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+      .build();
   }
 
 }
