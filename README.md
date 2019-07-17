@@ -1,42 +1,48 @@
-# Zeebe.io - Microservice Orchestration Engine
+# Zeebe.io - Workflow Engine for Microservices Orchestration 
 
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.zeebe/zeebe-distribution/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.zeebe/zeebe-distribution)
 
-Zeebe scales orchestration of workers and microservices using visual workflows. Zeebe is horizontally scalable and fault tolerant so that you can reliably process all your transactions as they happen.
+Zeebe provides visibility into and control over business processes that span multiple microservices. 
 
-**Features**
+**Why Zeebe?**
 
-* Visual Workflows
-* Audit Logs and History
-* Horizontal Scalability
-* Durability & Fault Tolerance
-* Fully Message-Driven
-* Easy to operate
-* Language agnostic
+* Define workflows visually in BPMN 2.0
+* Choose your programming language 
+* Deploy with Docker and Kubernetes
+* Build workflows that react to messages from Kafka and other message queues
+* Scale horizontally to handle very high throughput
+* Fault tolerance (no relational database required)
+* Export workflow data for monitoring and analysis
+* Engage with an active community 
 
-[Learn more](https://docs.zeebe.io/basics/README.html)
+[Learn more at zeebe.io](https://zeebe.io)
 
-## DISCLAIMER
+## Status
 
-Zeebe is currently a tech preview and not meant for production use - See [Roadmap](https://zeebe.io/roadmap).
+Starting with Zeebe 0.20.0, the "developer preview" label was removed from Zeebe and the first production-ready version was released  . 
 
-## Links
+To learn more about what we're currently working on, please visit the [roadmap](https://zeebe.io/roadmap).
 
-* [Web Site](https://zeebe.io)
-* [Documentation](https://docs.zeebe.io)
+## Helpful Links
+
+* [Blog](https://zeebe.io/blog)
+* [Documentation Home](https://docs.zeebe.io)
 * [Issue Tracker](https://github.com/zeebe-io/zeebe/issues)
-* [Slack Channel](https://zeebe-slack-invite.herokuapp.com/)
 * [User Forum](https://forum.zeebe.io)
+* [Slack Channel](https://zeebe-slack-invite.herokuapp.com/)
 * [Contribution Guidelines](/CONTRIBUTING.md)
 
-## Documentation
+## Recommended Docs Entries for New Users
 
-* [Introduction](https://docs.zeebe.io/introduction/README.html)
-* [Basics](https://docs.zeebe.io/basics/README.html)
+* [What is Zeebe?](https://docs.zeebe.io/introduction/what-is-zeebe.html)
+* [Core Concepts](https://docs.zeebe.io/basics/README.html)
+* [Getting Started Tutorial](https://docs.zeebe.io/getting-started/README.html)
+* [BPMN Workflows](https://docs.zeebe.io/bpmn-workflows/README.html)
 * [Configuration](https://docs.zeebe.io/operations/the-zeebecfgtoml-file.html)
 * [Java Client](https://docs.zeebe.io/java-client/README.html)
-* [BPMN Workflows](https://docs.zeebe.io/bpmn-workflows/README.html)
+* [Go Client](https://docs.zeebe.io/go-client/get-started.html)
+
 
 ## Contributing
 
