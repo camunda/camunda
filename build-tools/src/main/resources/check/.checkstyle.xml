@@ -111,5 +111,6 @@
         </module>
 
         <module name="DefaultComesLast" />
+        <module name="InterfaceIsType" />
     </module>
 </module>
