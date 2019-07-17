@@ -76,17 +76,6 @@ it('should load data', () => {
   expect(loadEntities).toHaveBeenCalledWith('collection', 'created');
 });
 
-it('should redirect to new report edit page when creating new report', async () => {
-  createEntity.mockReturnValueOnce('newReport');
-  const node = shallow(<OverviewStore {...props} />);
-  await node.instance().componentDidMount();
-
-  await node.instance().createProcessReport();
-
-  expect(node.find('Redirect')).toExist();
-  expect(node.find('Redirect').prop('to')).toBe('/report/newReport/edit?new');
-});
-
 it('should reload the list after duplication', async () => {
   createEntity.mockReturnValueOnce('newReport');
   const node = shallow(<OverviewStore {...props} />);
@@ -130,16 +119,6 @@ it('should reload the reports after deleting a report', async () => {
   expect(loadEntities).toHaveBeenCalledWith('report', 'lastModified');
 });
 
-it('should redirect to new dashboard edit page', async () => {
-  createEntity.mockReturnValueOnce('newDashboard');
-  const node = shallow(<OverviewStore {...props} />);
-  await node.instance().componentDidMount();
-  await node.instance().createDashboard();
-
-  expect(node.find('Redirect')).toExist();
-  expect(node.find('Redirect').prop('to')).toBe('/dashboard/newDashboard/edit?new');
-});
-
 it('should duplicate dashboards', () => {
   createEntity.mockClear();
 
@@ -162,7 +141,8 @@ it('should display an error notification if request goes wrong', async () => {
     />
   );
 
-  await node.instance().createDashboard();
+  node.instance().setCollectionToUpdate({});
+  await node.instance().updateOrCreateCollection('Collection');
 
   expect(addNotification).toHaveBeenCalledWith({type: 'error', text: 'Something went wrong'});
 });
@@ -173,12 +153,14 @@ it('should handle different error formats', async () => {
   );
 
   addNotification.mockClear();
-  await node.instance().createDashboard();
+  node.instance().setCollectionToUpdate({});
+  await node.instance().updateOrCreateCollection('Collection');
+
   expect(addNotification).toHaveBeenCalledWith({type: 'error', text: 'Something went wrong'});
 
   node.setProps({mightFail: (promise, cb, fail) => fail({message: 'Something went wrong'})});
 
   addNotification.mockClear();
-  await node.instance().createDashboard();
+  await node.instance().updateOrCreateCollection('Collection');
   expect(addNotification).toHaveBeenCalledWith({type: 'error', text: 'Something went wrong'});
 });

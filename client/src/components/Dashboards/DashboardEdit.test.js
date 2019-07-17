@@ -34,8 +34,8 @@ it('should hide the AddButton based on the state', () => {
   expect(node.find('AddButton').prop('visible')).toBe(false);
 });
 
-it('should select the name input field if dashboard is just created', () => {
+it('should pass the isNew prop to the EntityNameForm', () => {
   const node = shallow(<DashboardEdit isNew />);
 
-  expect(node.find('EntityNameForm').prop('autofocus')).toBe(true);
+  expect(node.find('EntityNameForm').prop('isNew')).toBe(true);
 });

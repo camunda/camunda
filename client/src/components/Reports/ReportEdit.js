@@ -17,7 +17,7 @@ import {
   EntityNameForm
 } from 'components';
 
-import {incompatibleFilters, updateEntity, evaluateReport} from 'services';
+import {incompatibleFilters, updateEntity, createEntity, evaluateReport} from 'services';
 import {addNotification} from 'notifications';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import DecisionControlPanel from './controlPanels/DecisionControlPanel';
@@ -35,19 +35,22 @@ export default withErrorHandling(
       saveLoading: false
     };
 
-    save = async (evt, updatedName) => {
-      const {id, data, reportType, combined} = this.state.report;
-      const name = updatedName || this.state.report.name;
-      this.setState({saveLoading: true});
-      await this.props.mightFail(
-        updateEntity(
-          `report/${reportType}/${combined ? 'combined' : 'single'}`,
-          id,
-          {name, data},
-          {query: {force: this.state.conflict !== null}}
-        ),
+    showSaveError = name => {
+      this.setState({
+        saveLoading: false,
+        confirmModalVisible: false,
+        conflict: null
+      });
+      addNotification({text: `Report "${name}" could not be saved.`, type: 'error'});
+    };
+
+    saveUpdatedReport = ({endpoint, id, name, data}) => {
+      this.props.mightFail(
+        updateEntity(endpoint, id, {name, data}, {query: {force: this.state.conflict !== null}}),
         () => {
-          this.props.updateOverview(update(this.state.report, {name: {$set: name}}));
+          this.props.updateOverview(
+            update(this.state.report, {name: {$set: name}, id: {$set: id}})
+          );
           this.setState({redirect: `/report/${id}`});
         },
         async error => {
@@ -63,18 +66,30 @@ export default withErrorHandling(
               }
             });
           } else {
-            this.setState({
-              saveLoading: false,
-              confirmModalVisible: false,
-              conflict: null
-            });
-            addNotification({text: `Report "${updatedName}" could not be saved.`, type: 'error'});
+            this.showSaveError(name);
           }
         }
       );
     };
 
-    cancel = async () => {
+    save = (evt, updatedName) => {
+      this.setState({saveLoading: true});
+      const {id, data, reportType, combined} = this.state.report;
+      const name = updatedName || this.state.report.name;
+      const endpoint = `report/${reportType}/${combined ? 'combined' : 'single'}`;
+
+      if (this.props.isNew) {
+        this.props.mightFail(
+          createEntity(endpoint),
+          id => this.saveUpdatedReport({endpoint, id, name, data}),
+          () => this.showSaveError(name)
+        );
+      } else {
+        this.saveUpdatedReport({endpoint, id, name, data});
+      }
+    };
+
+    cancel = () => {
       this.setState({
         report: this.state.originalData
       });
@@ -170,7 +185,7 @@ export default withErrorHandling(
                 id={id}
                 initialName={name}
                 entity="Report"
-                autofocus={this.props.isNew}
+                isNew={this.props.isNew}
                 onSave={this.save}
                 onCancel={this.cancel}
                 disabledButtons={saveLoading}

@@ -58,7 +58,7 @@ it('should invoke cancel', async () => {
 });
 
 it('should select the name input field if Report is just created', async () => {
-  const node = await shallow(<EntityNameForm entity="" autofocus={true} />);
+  const node = await shallow(<EntityNameForm entity="" isNew />);
 
   const input = {focus: jest.fn(), select: jest.fn()};
   node.instance().inputRef(input);

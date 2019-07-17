@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import moment from 'moment';
 
 import {withErrorHandling} from 'HOC';
 import {ErrorPage, LoadingIndicator} from 'components';
@@ -13,15 +14,14 @@ import {evaluateReport} from 'services';
 import ReportEdit from './ReportEdit';
 import ReportView from './ReportView';
 
+import newReport from './newReport.json';
+
 import './Report.scss';
 
 export default withErrorHandling(
   class Report extends React.Component {
     constructor(props) {
       super(props);
-
-      this.id = props.match.params.id;
-      this.isNew = props.location.search === '?new';
 
       this.state = {
         report: undefined,
@@ -31,9 +31,25 @@ export default withErrorHandling(
       };
     }
 
-    componentDidMount = async () => {
-      await this.props.mightFail(
-        evaluateReport(this.id),
+    getId = () => this.props.match.params.id;
+    isNew = () => ['new', 'new-combined', 'new-decision'].includes(this.getId());
+
+    componentDidMount = () => {
+      if (this.isNew()) {
+        this.createReport();
+      } else {
+        this.loadReport();
+      }
+    };
+
+    createReport = () => {
+      const now = moment().format('Y-MM-DDTHH:mm:ss.SSSZZ');
+      this.setState({report: {...newReport[this.getId()], lastModified: now, created: now}});
+    };
+
+    loadReport = () => {
+      this.props.mightFail(
+        evaluateReport(this.getId()),
         async response => {
           this.setState({
             report: response
@@ -53,12 +69,6 @@ export default withErrorHandling(
       );
     };
 
-    componentDidUpdate() {
-      if (this.isNew) {
-        this.isNew = false;
-      }
-    }
-
     render() {
       const {report, serverError} = this.state;
 
@@ -76,7 +86,7 @@ export default withErrorHandling(
         <div className="Report-container">
           {viewMode === 'edit' ? (
             <ReportEdit
-              isNew={this.isNew}
+              isNew={this.isNew()}
               updateOverview={report => this.setState({report})}
               report={report}
             />

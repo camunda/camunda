@@ -66,7 +66,6 @@ const props = {
     searchQuery: ''
   },
   duplicateEntity: jest.fn(),
-  createProcessReport: jest.fn(),
   showDeleteModalFor: jest.fn(),
   entitiesCollections: {reportID: [collection]},
   renderCollectionsDropdown: jest.fn()

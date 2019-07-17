@@ -64,6 +64,13 @@ it('should initially evaluate the report', () => {
   expect(evaluateReport).toHaveBeenCalled();
 });
 
+it('should not evaluate the report if it is new', () => {
+  evaluateReport.mockClear();
+  shallow(<Report {...props} match={{params: {id: 'new'}}} />);
+
+  expect(evaluateReport).not.toHaveBeenCalled();
+});
+
 it('should render ReportEdit component if viewMode is edit', async () => {
   props.match.params.viewMode = 'edit';
 

@@ -40,17 +40,13 @@ function Overview({store: {loading, deleting, conflicts, deleteLoading, searchQu
               <Dropdown.Option onClick={() => props.setCollectionToUpdate({})}>
                 New Collection
               </Dropdown.Option>
-              <Dropdown.Option onClick={props.createDashboard}>New Dashboard</Dropdown.Option>
+              <Dropdown.Option link="/dashboard/new/edit">New Dashboard</Dropdown.Option>
               <Dropdown.Submenu label="New Report">
-                <Dropdown.Option onClick={props.createProcessReport}>
-                  Process Report
-                </Dropdown.Option>
-                <Dropdown.Option onClick={props.createCombinedReport}>
+                <Dropdown.Option link="/report/new/edit">Process Report</Dropdown.Option>
+                <Dropdown.Option link="/report/new-combined/edit">
                   Combined Process Report
                 </Dropdown.Option>
-                <Dropdown.Option onClick={props.createDecisionReport}>
-                  Decision Report
-                </Dropdown.Option>
+                <Dropdown.Option link="/report/new-decision/edit">Decision Report</Dropdown.Option>
               </Dropdown.Submenu>
             </Dropdown>
           </div>
@@ -58,21 +54,21 @@ function Overview({store: {loading, deleting, conflicts, deleteLoading, searchQu
       </div>
       <Collections />
       <div className="createDashboard">
-        <Button onClick={props.createDashboard}>Create Dashboard</Button>
+        <Button tag="a" to="/dashboard/new/edit">
+          Create Dashboard
+        </Button>
       </div>
       <Dashboards />
       <div className="createReport">
-        <Button onClick={props.createProcessReport}>Create Process Report</Button>
+        <Button tag="a" to="/report/new/edit">
+          Create Process Report
+        </Button>
         <Dropdown label={<Icon type="down" />}>
-          <Dropdown.Option onClick={props.createProcessReport}>
-            Create Process Report
-          </Dropdown.Option>
-          <Dropdown.Option onClick={props.createCombinedReport}>
+          <Dropdown.Option link="/report/new/edit">Create Process Report</Dropdown.Option>
+          <Dropdown.Option link="/report/new-combined/edit">
             Create Combined Process Report
           </Dropdown.Option>
-          <Dropdown.Option onClick={props.createDecisionReport}>
-            Create Decision Report
-          </Dropdown.Option>
+          <Dropdown.Option link="/report/new-decision/edit">Create Decision Report</Dropdown.Option>
         </Dropdown>
       </div>
       <Reports />

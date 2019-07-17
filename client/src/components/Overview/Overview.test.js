@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 import OverviewWithProvider from './Overview';
-import {Dropdown, Button} from 'components';
+import {Dropdown} from 'components';
 
 const wrapper = shallow(<OverviewWithProvider />);
 const Overview = wrapper.props().children.type.WrappedComponent;
@@ -16,7 +16,6 @@ const props = {
   store: {
     loading: false
   },
-  createProcessReport: jest.fn(),
   filter: jest.fn()
 };
 
@@ -37,16 +36,6 @@ it('should have a Dropdown with more creation options', async () => {
 
   expect(node.find('.createReport').find(Dropdown)).toExist();
   expect(node.find('.createReport').find(Dropdown)).toMatchSnapshot();
-});
-
-it('should invoke createProcessReport when clicking create button', async () => {
-  props.createProcessReport.mockReturnValueOnce('newReport');
-  const node = shallow(<Overview {...props} />);
-
-  await node
-    .find('.createReport')
-    .find(Button)
-    .simulate('click');
 });
 
 it('Should invoke filter function on search input change', () => {

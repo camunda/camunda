@@ -8,7 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import DashboardWithErrorHandling from './Dashboard';
-import {loadEntity, deleteEntity} from 'services';
+import {loadEntity, deleteEntity, createEntity} from 'services';
 
 const {WrappedComponent: Dashboard} = DashboardWithErrorHandling;
 
@@ -24,7 +24,8 @@ jest.mock('services', () => {
   return {
     ...rest,
     loadEntity: jest.fn().mockReturnValue({}),
-    deleteEntity: jest.fn()
+    deleteEntity: jest.fn(),
+    createEntity: jest.fn().mockReturnValue('id')
   };
 });
 
@@ -58,6 +59,20 @@ it('should initially load data', async () => {
   await shallow(<Dashboard {...props} />);
 
   expect(loadEntity).toHaveBeenCalledWith('dashboard', '1');
+});
+
+it('should not load data when it is a new dashboard', async () => {
+  await shallow(<Dashboard {...props} match={{params: {id: 'new'}}} />);
+
+  expect(loadEntity).not.toHaveBeenCalledWith('dashboard', 'new');
+});
+
+it('should create a new dashboard when saving a new one', async () => {
+  const node = await shallow(<Dashboard {...props} match={{params: {id: 'new'}}} />);
+
+  node.instance().saveChanges();
+
+  expect(createEntity).toHaveBeenCalledWith('dashboard');
 });
 
 it('should remove a dashboard on dashboard deletion', () => {

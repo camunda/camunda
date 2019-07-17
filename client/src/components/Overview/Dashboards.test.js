@@ -27,8 +27,7 @@ const props = {
   store: {
     dashboards: [dashboard],
     searchQuery: ''
-  },
-  createDashboard: jest.fn()
+  }
 };
 
 it('should show no data indicator', () => {

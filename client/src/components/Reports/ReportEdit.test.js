@@ -8,7 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import ReportEdit from './ReportEdit';
-import {incompatibleFilters, updateEntity, evaluateReport} from 'services';
+import {incompatibleFilters, updateEntity, createEntity, evaluateReport} from 'services';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -16,6 +16,7 @@ jest.mock('services', () => {
     ...rest,
     evaluateReport: jest.fn(),
     updateEntity: jest.fn(),
+    createEntity: jest.fn(),
     incompatibleFilters: jest.fn()
   };
 });
@@ -92,7 +93,7 @@ it('should reset the report data to its original state after canceling', async (
   const dataBefore = node.state().report;
 
   await node.instance().updateReport({visualization: {$set: 'customTestVis'}});
-  await node.instance().cancel();
+  node.instance().cancel();
 
   expect(node.state().report).toEqual(dataBefore);
 });
@@ -100,7 +101,7 @@ it('should reset the report data to its original state after canceling', async (
 it('should save a changed report', async () => {
   const node = shallow(<ReportEdit report={report} />).dive();
 
-  await node.instance().save({}, 'new Name');
+  node.instance().save({}, 'new Name');
 
   expect(updateEntity).toHaveBeenCalled();
 });
@@ -110,7 +111,7 @@ it('should reset name on cancel', async () => {
 
   node.setState({report: {...report, name: 'new Name'}});
 
-  await node.instance().cancel();
+  node.instance().cancel();
 
   expect(node.state().report.name).toBe('name');
 });
@@ -129,7 +130,7 @@ it('should use original data as result data if report cant be evaluated on cance
   });
 
   evaluateReport.mockReturnValueOnce(null);
-  await node.instance().cancel();
+  node.instance().cancel();
 
   expect(node.state().report.data.processDefinitionKey).toEqual('123');
 });
@@ -172,21 +173,35 @@ it('should show a warning message when there are incompatible filter ', async ()
 
 it('should set conflict state when conflict happens on save button click', async () => {
   const conflictedItems = [{id: '1', name: 'alert', type: 'Alert'}];
-  updateEntity.mockImplementation(async () => {
-    const error = {statusText: 'Conflict', json: async () => ({conflictedItems})};
-    throw error;
-  });
 
-  const node = shallow(<ReportEdit report={report} />).dive();
+  const mightFail = (promise, cb, err) =>
+    err({statusText: 'Conflict', json: () => ({conflictedItems})});
 
-  await node.instance().save({});
+  const node = shallow(<ReportEdit.WrappedComponent report={report} mightFail={mightFail} />);
+
+  node.instance().save({});
   await node.update();
 
   expect(node.state().conflict.type).toEqual('Save');
   expect(node.state().conflict.items).toEqual(conflictedItems);
 });
 
-it('should invok updateOverview when saving the report', async () => {
+it('should create a new report if the report is new', () => {
+  const node = shallow(
+    <ReportEdit.WrappedComponent
+      report={report}
+      mightFail={(promise, cb) => cb(promise)}
+      updateOverview={jest.fn()}
+      isNew
+    />
+  );
+
+  node.instance().save();
+
+  expect(createEntity).toHaveBeenCalledWith('report/process/single');
+});
+
+it('should invoke updateOverview when saving the report', async () => {
   updateEntity.mockClear();
   updateEntity.mockReturnValue({});
   const spy = jest.fn();

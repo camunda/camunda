@@ -16,17 +16,6 @@ export default class EditCollectionModal extends Component {
     };
   }
 
-  inputRef = input => {
-    this.nameInput = input;
-  };
-
-  componentDidMount() {
-    if (this.nameInput) {
-      this.nameInput.focus();
-      this.nameInput.select();
-    }
-  }
-
   onConfirm = () => {
     this.setState({loading: true});
     this.props.onConfirm(this.state.name);
@@ -53,7 +42,6 @@ export default class EditCollectionModal extends Component {
               <LabeledInput
                 type="text"
                 label="Add Name"
-                ref={this.inputRef}
                 style={{width: '100%'}}
                 value={this.state.name}
                 onChange={({target: {value}}) => this.setState({name: value})}

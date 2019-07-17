@@ -77,7 +77,7 @@ export default class DashboardEdit extends React.Component {
             initialName={name}
             lastModified={lastModified}
             lastModifier={lastModifier}
-            autofocus={isNew}
+            isNew={isNew}
             entity="Dashboard"
             onSave={(evt, newName) => this.props.saveChanges(newName, reports)}
           />

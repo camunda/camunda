@@ -40,11 +40,16 @@
     font-size: 0.875em;
   }
 
+  &:visited {
+    color: #333;
+  }
+
   &:hover {
     background-color: $blue;
     color: #fff;
     border: none;
     transition: none;
+    text-decoration: none;
   }
 
   &:focus {
@@ -53,6 +58,7 @@
     border: none;
     transition: none;
     outline: none;
+    box-shadow: none;
   }
 
   &[disabled],

@@ -9,14 +9,18 @@ exports[`should have a Dropdown with more creation options 1`] = `
   }
 >
   <ForwardRef(DropdownOption)
-    onClick={[MockFunction]}
+    link="/report/new/edit"
   >
     Create Process Report
   </ForwardRef(DropdownOption)>
-  <ForwardRef(DropdownOption)>
+  <ForwardRef(DropdownOption)
+    link="/report/new-combined/edit"
+  >
     Create Combined Process Report
   </ForwardRef(DropdownOption)>
-  <ForwardRef(DropdownOption)>
+  <ForwardRef(DropdownOption)
+    link="/report/new-decision/edit"
+  >
     Create Decision Report
   </ForwardRef(DropdownOption)>
 </Dropdown>

@@ -6,7 +6,6 @@
 
 import React, {Component} from 'react';
 
-import {Redirect} from 'react-router-dom';
 import {
   loadEntities,
   deleteEntity,
@@ -25,7 +24,6 @@ const OverviewContext = React.createContext();
 class OverviewStore extends Component {
   state = {
     loading: true,
-    redirect: false,
     deleting: false,
     collections: [],
     reports: [],
@@ -70,24 +68,6 @@ class OverviewStore extends Component {
   filter = searchQuery => {
     this.setState({searchQuery});
   };
-
-  createReport = (type, subType) => () =>
-    this.props.mightFail(
-      createEntity(`report/${type}/${subType}`),
-      id => this.setState({redirect: '/report/' + id}),
-      this.showError
-    );
-
-  createCombinedReport = this.createReport('process', 'combined');
-  createProcessReport = this.createReport('process', 'single');
-  createDecisionReport = this.createReport('decision', 'single');
-
-  createDashboard = () =>
-    this.props.mightFail(
-      createEntity('dashboard'),
-      id => this.setState({redirect: '/dashboard/' + id}),
-      this.showError
-    );
 
   finishCollectionUpdate = () => {
     this.setState({updating: null});
@@ -178,18 +158,9 @@ class OverviewStore extends Component {
   hideDeleteModal = () => this.setState({deleting: false, conflicts: []});
 
   render() {
-    const {redirect} = this.state;
     const entitiesCollections = getEntitiesCollections(this.state.collections);
 
-    if (redirect) {
-      return <Redirect to={`${redirect}/edit?new`} />;
-    }
-
     const {
-      createCombinedReport,
-      createProcessReport,
-      createDecisionReport,
-      createDashboard,
       updateOrCreateCollection,
       deleteEntity,
       duplicateEntity,
@@ -201,10 +172,6 @@ class OverviewStore extends Component {
     } = this;
 
     const contextValue = {
-      createCombinedReport,
-      createProcessReport,
-      createDecisionReport,
-      createDashboard,
       updateOrCreateCollection,
       duplicateEntity,
       deleteEntity,

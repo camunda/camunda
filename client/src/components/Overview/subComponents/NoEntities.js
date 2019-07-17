@@ -5,17 +5,27 @@
  */
 
 import React from 'react';
+import {Link} from 'react-router-dom';
+
 import {Button} from 'components';
 
 import './NoEntities.scss';
 
-export default function NoEntities({label, createFunction}) {
+export default function NoEntities({label, createFunction, link}) {
+  const createLink = link ? (
+    <Link to={link} className="createLink">
+      Create a new {label}…
+    </Link>
+  ) : (
+    <Button variant="link" className="createLink" onClick={createFunction}>
+      Create a new {label}…
+    </Button>
+  );
+
   return (
     <li className="NoEntities">
       There are no {label}s configured.
-      <Button variant="link" className="createLink" onClick={createFunction}>
-        Create a new {label}…
-      </Button>
+      {createLink}
     </li>
   );
 }

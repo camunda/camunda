@@ -66,18 +66,6 @@ it('should invoke onClose on cancel', async () => {
   expect(props.onClose).toHaveBeenCalled();
 });
 
-it('should select the name input field when the component is mounted', async () => {
-  const node = await shallow(<EditCollectionModal {...props} />);
-
-  const input = {focus: jest.fn(), select: jest.fn()};
-  node.instance().inputRef(input);
-
-  await node.instance().componentDidMount();
-
-  expect(input.focus).toHaveBeenCalled();
-  expect(input.select).toHaveBeenCalled();
-});
-
 it('should show a loading indicator after creating or saving a collection', async () => {
   const node = await shallow(<EditCollectionModal {...props} />);
   node.find('.confirm').simulate('click');

@@ -25,9 +25,7 @@ class Reports extends React.Component {
 
   render() {
     const {reports, searchQuery} = this.props.store;
-    const empty = reports.length === 0 && (
-      <NoEntities label="Report" createFunction={this.props.createProcessReport} />
-    );
+    const empty = reports.length === 0 && <NoEntities label="Report" link="report/new/edit" />;
 
     const ToggleButton = ({children}) =>
       !empty ? (

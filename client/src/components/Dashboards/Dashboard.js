@@ -6,8 +6,10 @@
 
 import React from 'react';
 import {Redirect} from 'react-router-dom';
+import moment from 'moment';
+
 import {withErrorHandling} from 'HOC';
-import {loadEntity, deleteEntity, updateEntity} from 'services';
+import {loadEntity, deleteEntity, updateEntity, createEntity} from 'services';
 
 import {ErrorPage, LoadingIndicator} from 'components';
 
@@ -25,9 +27,6 @@ export default withErrorHandling(
     constructor(props) {
       super(props);
 
-      this.id = props.match.params.id;
-      this.isNew = this.props.location.search === '?new';
-
       this.state = {
         name: null,
         lastModified: null,
@@ -41,14 +40,33 @@ export default withErrorHandling(
       };
     }
 
+    getId = () => this.props.match.params.id;
+    isNew = () => this.getId() === 'new';
+
     componentDidMount = async () => {
-      const sharingEnabled = await isSharingEnabled();
-      await this.loadDashboard(sharingEnabled);
+      this.setState({sharingEnabled: await isSharingEnabled()});
+
+      if (this.isNew()) {
+        this.createDashboard();
+      } else {
+        this.loadDashboard();
+      }
     };
 
-    loadDashboard = async sharingEnabled => {
-      await this.props.mightFail(
-        loadEntity('dashboard', this.id),
+    createDashboard = () => {
+      this.setState({
+        loaded: true,
+        name: 'New Dashboard',
+        lastModified: moment().format('Y-MM-DDTHH:mm:ss.SSSZZ'),
+        lastModifier: 'You',
+        reports: [],
+        isAuthorizedToShare: true
+      });
+    };
+
+    loadDashboard = () => {
+      this.props.mightFail(
+        loadEntity('dashboard', this.getId()),
         async response => {
           const {name, lastModifier, lastModified, reports} = response;
 
@@ -58,8 +76,7 @@ export default withErrorHandling(
             loaded: true,
             name,
             reports: reports || [],
-            isAuthorizedToShare: await isAuthorizedToShareDashboard(this.id),
-            ...(sharingEnabled !== 'undefined' ? {sharingEnabled} : {})
+            isAuthorizedToShare: await isAuthorizedToShareDashboard(this.getId())
           });
         },
         ({status}) => {
@@ -71,16 +88,16 @@ export default withErrorHandling(
     };
 
     deleteDashboard = async evt => {
-      await deleteEntity('dashboard', this.id);
+      await deleteEntity('dashboard', this.getId());
 
       this.setState({
         redirect: '/'
       });
     };
 
-    saveChanges = (name, reports) => {
+    updateDashboard = (id, name, reports) => {
       this.props.mightFail(
-        updateEntity('dashboard', this.id, {
+        updateEntity('dashboard', id, {
           name,
           reports
         }),
@@ -88,8 +105,8 @@ export default withErrorHandling(
           this.setState({
             name,
             reports,
-            redirect: `/dashboard/${this.id}`,
-            isAuthorizedToShare: await isAuthorizedToShareDashboard(this.id)
+            redirect: '/dashboard/' + id,
+            isAuthorizedToShare: await isAuthorizedToShareDashboard(id)
           });
         },
         () => {
@@ -98,12 +115,23 @@ export default withErrorHandling(
       );
     };
 
+    saveChanges = (name, reports) => {
+      if (this.isNew()) {
+        this.props.mightFail(
+          createEntity('dashboard'),
+          id => this.updateDashboard(id, name, reports),
+          () => {
+            addNotification({text: `Dashboard "${name}" could not be saved.`, type: 'error'});
+          }
+        );
+      } else {
+        this.updateDashboard(this.getId(), name, reports);
+      }
+    };
+
     componentDidUpdate() {
       if (this.state.redirect) {
         this.setState({redirect: ''});
-      }
-      if (this.isNew) {
-        this.isNew = false;
       }
     }
 
@@ -138,7 +166,7 @@ export default withErrorHandling(
         name,
         lastModified,
         lastModifier,
-        id: this.id
+        id: this.getId()
       };
 
       return (
@@ -146,7 +174,7 @@ export default withErrorHandling(
           {viewMode === 'edit' ? (
             <DashboardEdit
               {...commonProps}
-              isNew={this.isNew}
+              isNew={this.isNew()}
               saveChanges={this.saveChanges}
               initialReports={this.state.reports}
             />

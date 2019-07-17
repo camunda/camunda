@@ -21,7 +21,7 @@ export default class EntityNameForm extends Component {
   };
 
   componentDidMount() {
-    if (this.nameInput && this.props.autofocus) {
+    if (this.nameInput && this.props.isNew) {
       this.nameInput.focus();
       this.nameInput.select();
     }
@@ -34,7 +34,7 @@ export default class EntityNameForm extends Component {
   };
 
   render() {
-    const {id, entity} = this.props;
+    const {id, entity, isNew} = this.props;
     const {name} = this.state;
     return (
       <div className="EntityNameForm head">
@@ -62,7 +62,7 @@ export default class EntityNameForm extends Component {
           <Link
             disabled={this.props.disabledButtons}
             className="Button tool-button cancel-button"
-            to={`/${entity.toLowerCase()}/${id}`}
+            to={isNew ? '/' : `/${entity.toLowerCase()}/${id}`}
             onClick={this.props.onCancel}
           >
             <Icon type="stop" />

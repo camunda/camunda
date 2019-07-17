@@ -26,7 +26,7 @@ class Dashboards extends React.Component {
   render() {
     const {dashboards, searchQuery} = this.props.store;
     const empty = dashboards.length === 0 && (
-      <NoEntities label="Dashboard" createFunction={this.props.createDashboard} />
+      <NoEntities label="Dashboard" link="dashboard/new/edit" />
     );
 
     const ToggleButton = ({children}) =>
