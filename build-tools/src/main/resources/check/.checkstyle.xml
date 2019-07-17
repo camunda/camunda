@@ -121,5 +121,7 @@
         </module>
 
         <module name="InnerAssignment" />
+
+        <module name="EqualsAvoidNull" />
     </module>
 </module>
