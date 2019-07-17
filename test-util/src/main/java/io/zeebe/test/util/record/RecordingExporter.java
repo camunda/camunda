@@ -233,6 +233,7 @@ public class RecordingExporter implements Exporter {
           try {
             IS_EMPTY.await(waitTime, TimeUnit.MILLISECONDS);
           } catch (final InterruptedException ignored) {
+            // ignored
           }
           now = System.currentTimeMillis();
         }
