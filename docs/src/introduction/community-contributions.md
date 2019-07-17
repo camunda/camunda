@@ -1,6 +1,6 @@
 # Community Contributions
 
-As an open-source project, Zeebe welcomes extensions and contributions from the community.
+Zeebe welcomes extensions and contributions from the community.
 
 We use [Awesome Zeebe](https://awesome.zeebe.io/) as a place to keep track of Zeebe ecosystem contributions, such as...
 

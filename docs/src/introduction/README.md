@@ -12,6 +12,6 @@ This section will help you understand what Zeebe is, how to get started with Zee
 
     * As a Go user, you should look into the Go client library. The [Get Started Go tutorial](go-client/get-started.html) guides you through the first steps.
 
-* [**Community Contributions**](introduction/community-contributions.html): See a list of contributions from the Zeebe open-source community and learn how to contribute.
+* [**Community Contributions**](introduction/community-contributions.html): Find a list of contributions from the Zeebe community and learn how to contribute.
 
 * [**Get Help & Get Involved**](introduction/get-help-get-involved.html): Ask a question via one of Zeebe's public support channels or report an issue.
