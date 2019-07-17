@@ -87,4 +87,5 @@ export const redColor = Selector('div[color="#DB3E00"]');
 export const axisInputs = label => Selector(`input[placeholder="${label}"]`);
 export const chartGoalInput = Selector('input[placeholder="Goal value"]');
 export const warningMessage = Selector('.Report .Message--warning');
-export const filterRemoveButton = Selector('.ActionItem .Button');
+export const controlPanelFilter = Selector('.ActionItem');
+export const filterRemoveButton = controlPanelFilter.find('.Button');
