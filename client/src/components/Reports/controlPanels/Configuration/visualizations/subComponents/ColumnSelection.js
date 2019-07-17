@@ -37,14 +37,11 @@ export default function ColumnSelection({report, onChange}) {
       return [...prev, ...Object.keys(value).map(key => `${curr.substring(0, 3)}__${key}`)];
     }
   }, []);
-  const excludedColumnsCount = excludedColumns.length;
 
   return (
     <fieldset className="ColumnSelection">
       <legend>Table columns to include</legend>
       <AllColumnsButtons
-        allEnabled={!excludedColumnsCount}
-        allDisabled={excludedColumnsCount === allColumns.length}
         enableAll={() => onChange({excludedColumns: {$set: []}})}
         disableAll={() => onChange({excludedColumns: {$set: allColumns}})}
       />

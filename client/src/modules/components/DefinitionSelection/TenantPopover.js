@@ -31,12 +31,8 @@ export default function TenantPopover({tenants, selected, onChange}) {
         <fieldset>
           <legend>Include data from</legend>
           <ButtonGroup>
-            <Button active={allSelected} onClick={() => onChange(tenants.map(({id}) => id))}>
-              Enable All
-            </Button>
-            <Button active={noneSelected} onClick={() => onChange([])}>
-              Disable All
-            </Button>
+            <Button onClick={() => onChange(tenants.map(({id}) => id))}>Enable All</Button>
+            <Button onClick={() => onChange([])}>Disable All</Button>
           </ButtonGroup>
           {tenants.map(tenant => (
             <div key={tenant.id}>

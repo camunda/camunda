@@ -9,15 +9,11 @@ import React from 'react';
 import {ButtonGroup, Button} from 'components';
 import './AllColumnsButtons.scss';
 
-export default function AllColumnsButtons({allEnabled, allDisabled, enableAll, disableAll}) {
+export default function AllColumnsButtons({enableAll, disableAll}) {
   return (
     <ButtonGroup className="AllColumnsButtons">
-      <Button active={allEnabled} onClick={enableAll}>
-        Enable All
-      </Button>
-      <Button active={allDisabled} onClick={disableAll}>
-        Disable All
-      </Button>
+      <Button onClick={enableAll}>Enable All</Button>
+      <Button onClick={disableAll}>Disable All</Button>
     </ButtonGroup>
   );
 }

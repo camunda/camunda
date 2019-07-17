@@ -8,8 +8,6 @@ exports[`should provde a sane interface for decision tables 1`] = `
     Table columns to include
   </legend>
   <AllColumnsButtons
-    allDisabled={false}
-    allEnabled={true}
     disableAll={[Function]}
     enableAll={[Function]}
   />
