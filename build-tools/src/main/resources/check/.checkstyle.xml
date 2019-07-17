@@ -112,5 +112,6 @@
 
         <module name="DefaultComesLast" />
         <module name="InterfaceIsType" />
+        <module name="MutableException" />
     </module>
 </module>
