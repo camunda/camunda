@@ -218,17 +218,17 @@ void integrationTestSteps() {
   }
 }
 
-void integrationTestStepsAWS(String host, int port) {
+void integrationTestStepsAWS() {
   gitCheckoutOptimize()
 
   container('maven') {
     sh("""    
-      curl -s 'https://vpc-optimize-es-test1-mniyd6oio2w5hhzrkncykqg36e.eu-central-1.es.amazonaws.com/_cat/indices?v'
+      curl -s "https://$OPTIMIZE_ELASTICSEARCH_HOST/_cat/indices?v"
       
       #cleanup before starting the integration tests to assure starting from scratch
-      curl -XDELETE https://vpc-optimize-es-test1-mniyd6oio2w5hhzrkncykqg36e.eu-central-1.es.amazonaws.com/_all
+      curl -XDELETE "https://$OPTIMIZE_ELASTICSEARCH_HOST/_all"
       """)
-    runMaven("verify -Dskip.docker -Pproduction,it,engine-latest -pl backend,upgrade -am -T\$LIMITS_CPU -Delasticsearch.host=${host} -Delasticsearch.httpPort=${port}")
+    runMaven("verify -Dskip.docker -Pproduction,it,engine-latest -pl backend,upgrade -am -T\$LIMITS_CPU")
   }
 }
 
@@ -368,11 +368,14 @@ pipeline {
               yaml mavenElasticsearchAWSIntegrationTestAgent("${params.CAMBPM_VERSION}")
             }
           }
+
+          environment {
+            OPTIMIZE_ELASTICSEARCH_HOST = "vpc-optimize-es-test1-mniyd6oio2w5hhzrkncykqg36e.eu-central-1.es.amazonaws.com"
+            OPTIMIZE_ELASTICSEARCH_HTTP_PORT = 80
+          }
+
           steps {
-            integrationTestStepsAWS(
-                    "vpc-optimize-es-test1-mniyd6oio2w5hhzrkncykqg36e.eu-central-1.es.amazonaws.com",
-                    80
-            )
+            integrationTestStepsAWS()
           }
           post {
             always {

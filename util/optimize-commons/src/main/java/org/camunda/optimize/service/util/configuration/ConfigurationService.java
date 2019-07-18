@@ -67,7 +67,9 @@ public class ConfigurationService {
   private static final String[] DEFAULT_CONFIG_LOCATIONS = {"service-config.yaml", "environment-config.yaml"};
   private static final String[] DEFAULT_DEPRECATED_CONFIG_LOCATIONS = {"deprecated-config.yaml"};
   private static final String ERROR_NO_ENGINE_WITH_ALIAS = "No Engine configured with alias ";
-  private static final Pattern VARIABLE_PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{([a-zA-Z_]+[a-zA-Z0-9_]*)\\}");
+  private static final Pattern VARIABLE_PLACEHOLDER_PATTERN = Pattern.compile(
+    "\\$\\{([a-zA-Z_]+[a-zA-Z0-9_]*)(:(.*))?\\}"
+  );
   // @formatter:off
   private static final TypeRef<HashMap<String, EngineConfiguration>> ENGINES_MAP_TYPEREF =
     new TypeRef<HashMap<String, EngineConfiguration>>() {};
@@ -152,10 +154,11 @@ public class ConfigurationService {
   @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
   private Optional<String> containerAccessUrl;
 
-  // we use optional field here in order to allow restoring defaults with BeanUtils.copyProperties
-  // if only the getter is of type Optional the value won't get reset properly
-  // we also distinguish between null and Optional.empty here, null results in the value getting read from the config json
-  // Optional.empty is an actual value that does not trigger read from configuration json on access
+  // We use optional field here in order to allow restoring defaults with BeanUtils.copyProperties
+  // if only the getter is of type Optional the value won't get reset properly.
+  // We also distinguish between null and Optional.empty here,
+  // null results in the value getting read from the config json.
+  // Optional.empty is an actual value that does not trigger read from configuration json on access.
   @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
   private Optional<Integer> containerHttpPort;
 
@@ -340,12 +343,17 @@ public class ConfigurationService {
     final Matcher matcher = VARIABLE_PLACEHOLDER_PATTERN.matcher(value);
     while (matcher.find()) {
       final String envVariableName = matcher.group(1);
-      final String envVariableValue = Optional.ofNullable(System.getProperty(envVariableName, null))
+      String envVariableValue = Optional.ofNullable(System.getProperty(envVariableName, null))
         .orElseGet(() -> System.getenv(envVariableName));
       if (envVariableValue == null) {
-        throw new OptimizeConfigurationException(
-          "Could not resolve system/environment variable used in configuration " + envVariableName
-        );
+        final String envVariableDefaultValue = matcher.group(3);
+        if (envVariableDefaultValue == null) {
+          throw new OptimizeConfigurationException(String.format(
+            "Could not resolve system/environment variable [%s] used in configuration and no default value supplied",
+            envVariableName
+          ));
+        }
+        envVariableValue = envVariableDefaultValue;
       }
       resolvedValue = value.replace(matcher.group(), envVariableValue);
     }
@@ -770,7 +778,8 @@ public class ConfigurationService {
 
   public Optional<String> getContainerAccessUrl() {
     if (containerAccessUrl == null) {
-      containerAccessUrl = Optional.ofNullable(configJsonContext.read(ConfigurationServiceConstants.CONTAINER_ACCESSURL));
+      containerAccessUrl =
+        Optional.ofNullable(configJsonContext.read(ConfigurationServiceConstants.CONTAINER_ACCESSURL));
     }
     return containerAccessUrl;
   }

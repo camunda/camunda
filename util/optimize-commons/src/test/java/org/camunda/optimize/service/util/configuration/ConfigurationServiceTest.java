@@ -23,20 +23,28 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 
 public class ConfigurationServiceTest {
 
+  private static final int DEFAULT_AUTH_TOKEN_LIFEMIN = 5;
   private static final int CUSTOM_AUTH_TOKEN_LIFEMIN = 6;
+  private static final Boolean DEFAULT_FIRST_ENGINE_IMPORT_ENABLED = false;
   private static final Boolean CUSTOM_FIRST_ENGINE_IMPORT_ENABLED = true;
+  private static final Boolean DEFAULT_SECOND_ENGINE_IMPORT_ENABLED = true;
   private static final Boolean CUSTOM_SECOND_ENGINE_IMPORT_ENABLED = false;
+  private static final String DEFAULT_FIRST_ES_HOST = "default1";
   private static final String CUSTOM_FIRST_ES_HOST = "localhost";
+  private static final int DEFAULT_FIRST_ES_PORT = 9200;
   private static final int CUSTOM_FIRST_ES_PORT = 9201;
+  private static final String DEFAULT_SECOND_ES_HOST = "default2";
   private static final String CUSTOM_SECOND_ES_HOST = "otherHost";
+  private static final int DEFAULT_SECOND_ES_PORT = 9200;
   private static final int CUSTOM_SECOND_ES_PORT = 9202;
-  private static final String CUSTOM_AUTH_AUTHORITY_2 = "auth2";
-  private static final String CUSTOM_AUTH_AUTHORITY_3 = "auth3";
+  // note: these are not valid package names but just serve the purpose of special character handling on parsing
+  private static final String DEFAULT_PACKAGE_2 = "package:2";
+  private static final String CUSTOM_PACKAGE_2 = "pack2";
+  private static final String DEFAULT_PACKAGE_3 = "";
+  private static final String CUSTOM_PACKAGE_3 = "pack_3";
 
   @Rule
   public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
@@ -129,12 +137,12 @@ public class ConfigurationServiceTest {
     environmentVariables.set("ES_PORT_1", String.valueOf(CUSTOM_FIRST_ES_PORT));
     environmentVariables.set("ES_HOST_2", CUSTOM_SECOND_ES_HOST);
     environmentVariables.set("ES_PORT_2", String.valueOf(CUSTOM_SECOND_ES_PORT));
-    environmentVariables.set("CERT_AUTHORITY_2", CUSTOM_AUTH_AUTHORITY_2);
-    environmentVariables.set("CERT_AUTHORITY_3", CUSTOM_AUTH_AUTHORITY_3);
+    environmentVariables.set("PACKAGE_2", CUSTOM_PACKAGE_2);
+    environmentVariables.set("PACKAGE_3", CUSTOM_PACKAGE_3);
     final ConfigurationService underTest = new ConfigurationService(locations);
 
     // then
-    assertThatVariablePlaceHoldersAreResolvedCorrectly(underTest);
+    assertThatVariablePlaceHoldersAreResolved(underTest);
   }
 
   @Test
@@ -148,12 +156,12 @@ public class ConfigurationServiceTest {
     System.setProperty("ES_PORT_1", String.valueOf(CUSTOM_FIRST_ES_PORT));
     System.setProperty("ES_HOST_2", CUSTOM_SECOND_ES_HOST);
     System.setProperty("ES_PORT_2", String.valueOf(CUSTOM_SECOND_ES_PORT));
-    System.setProperty("CERT_AUTHORITY_2", CUSTOM_AUTH_AUTHORITY_2);
-    System.setProperty("CERT_AUTHORITY_3", CUSTOM_AUTH_AUTHORITY_3);
+    System.setProperty("PACKAGE_2", CUSTOM_PACKAGE_2);
+    System.setProperty("PACKAGE_3", CUSTOM_PACKAGE_3);
     final ConfigurationService underTest = new ConfigurationService(locations);
 
     // then
-    assertThatVariablePlaceHoldersAreResolvedCorrectly(underTest);
+    assertThatVariablePlaceHoldersAreResolved(underTest);
   }
 
   @Test
@@ -167,8 +175,8 @@ public class ConfigurationServiceTest {
     environmentVariables.set("ES_PORT_1", "wrong");
     environmentVariables.set("ES_HOST_2", "wrong");
     environmentVariables.set("ES_PORT_2", "wrong");
-    environmentVariables.set("CERT_AUTHORITY_2", "wrong");
-    environmentVariables.set("CERT_AUTHORITY_3", "wrong");
+    environmentVariables.set("PACKAGE_2", "wrong");
+    environmentVariables.set("PACKAGE_3", "wrong");
     System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFEMIN));
     System.setProperty("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
     System.setProperty("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
@@ -176,16 +184,45 @@ public class ConfigurationServiceTest {
     System.setProperty("ES_PORT_1", String.valueOf(CUSTOM_FIRST_ES_PORT));
     System.setProperty("ES_HOST_2", CUSTOM_SECOND_ES_HOST);
     System.setProperty("ES_PORT_2", String.valueOf(CUSTOM_SECOND_ES_PORT));
-    System.setProperty("CERT_AUTHORITY_2", CUSTOM_AUTH_AUTHORITY_2);
-    System.setProperty("CERT_AUTHORITY_3", CUSTOM_AUTH_AUTHORITY_3);
+    System.setProperty("PACKAGE_2", CUSTOM_PACKAGE_2);
+    System.setProperty("PACKAGE_3", CUSTOM_PACKAGE_3);
     final ConfigurationService underTest = new ConfigurationService(locations);
 
     // then
-    assertThatVariablePlaceHoldersAreResolvedCorrectly(underTest);
+    assertThatVariablePlaceHoldersAreResolved(underTest);
   }
 
   @Test
-  public void failOnMissingSystemOrEnvironmentVariable() {
+  public void resolvePlaceholderDefaultValues() {
+    //when
+    final String[] locations = {"service-config.yaml", "environment-variable-default-value-test-config.yaml"};
+    final ConfigurationService underTest = new ConfigurationService(locations);
+
+    // then
+    assertThatPlaceholderDefaultValuesAreResolved(underTest);
+  }
+
+  @Test
+  public void resolveSetPropertiesWinOverDefaultValue() {
+    //when
+    final String[] locations = {"service-config.yaml", "environment-variable-default-value-test-config.yaml"};
+    System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFEMIN));
+    System.setProperty("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
+    System.setProperty("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
+    System.setProperty("ES_HOST_1", CUSTOM_FIRST_ES_HOST);
+    System.setProperty("ES_PORT_1", String.valueOf(CUSTOM_FIRST_ES_PORT));
+    System.setProperty("ES_HOST_2", CUSTOM_SECOND_ES_HOST);
+    System.setProperty("ES_PORT_2", String.valueOf(CUSTOM_SECOND_ES_PORT));
+    System.setProperty("PACKAGE_2", CUSTOM_PACKAGE_2);
+    System.setProperty("PACKAGE_3", CUSTOM_PACKAGE_3);
+    final ConfigurationService underTest = new ConfigurationService(locations);
+
+    // then
+    assertThatVariablePlaceHoldersAreResolved(underTest);
+  }
+
+  @Test
+  public void failOnMissingSystemOrEnvironmentVariableAndNoDefaultValue() {
     //when
     final String[] locations = {"service-config.yaml", "environment-variable-test-config.yaml"};
     OptimizeConfigurationException configurationException = null;
@@ -357,7 +394,33 @@ public class ConfigurationServiceTest {
     assertThat(deprecations.isPresent(), is(false));
   }
 
-  private void assertThatVariablePlaceHoldersAreResolvedCorrectly(final ConfigurationService underTest) {
+  private void assertThatPlaceholderDefaultValuesAreResolved(final ConfigurationService underTest) {
+    assertThat(underTest.getTokenLifeTimeMinutes(), is(DEFAULT_AUTH_TOKEN_LIFEMIN));
+    assertThat(
+      underTest.getConfiguredEngines().values().stream().map(EngineConfiguration::isImportEnabled).collect(toList()),
+      contains(DEFAULT_FIRST_ENGINE_IMPORT_ENABLED, DEFAULT_SECOND_ENGINE_IMPORT_ENABLED)
+    );
+    assertThat(
+      underTest.getElasticsearchConnectionNodes()
+        .stream()
+        .map(ElasticsearchConnectionNodeConfiguration::getHost)
+        .collect(toList()),
+      contains(DEFAULT_FIRST_ES_HOST, DEFAULT_SECOND_ES_HOST)
+    );
+    assertThat(
+      underTest.getElasticsearchConnectionNodes()
+        .stream()
+        .map(ElasticsearchConnectionNodeConfiguration::getHttpPort)
+        .collect(toList()),
+      contains(DEFAULT_FIRST_ES_PORT, DEFAULT_SECOND_ES_PORT)
+    );
+    assertThat(
+      underTest.getVariableImportPluginBasePackages(),
+      contains("1", DEFAULT_PACKAGE_2, DEFAULT_PACKAGE_3)
+    );
+  }
+
+  private void assertThatVariablePlaceHoldersAreResolved(final ConfigurationService underTest) {
     assertThat(underTest.getTokenLifeTimeMinutes(), is(CUSTOM_AUTH_TOKEN_LIFEMIN));
     assertThat(
       underTest.getConfiguredEngines().values().stream().map(EngineConfiguration::isImportEnabled).collect(toList()),
@@ -376,6 +439,10 @@ public class ConfigurationServiceTest {
         .map(ElasticsearchConnectionNodeConfiguration::getHttpPort)
         .collect(toList()),
       contains(CUSTOM_FIRST_ES_PORT, CUSTOM_SECOND_ES_PORT)
+    );
+    assertThat(
+      underTest.getVariableImportPluginBasePackages(),
+      contains("1", CUSTOM_PACKAGE_2, CUSTOM_PACKAGE_3)
     );
   }
 

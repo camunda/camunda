@@ -1,13 +1,13 @@
 ---
 auth:
   token:
-    lifeMin: ${AUTH_TOKEN_LIFEMIN}
+    lifeMin: ${AUTH_TOKEN_LIFEMIN:5}
 
 engines:
   'camunda-bpm-1':
     name: default
     rest: 'http://localhost:8080/engine-rest'
-    importEnabled: '${IMPORT_ENABLED_1}'
+    importEnabled: '${IMPORT_ENABLED_1:false}'
     authentication:
       enabled: false
       password: ''
@@ -18,7 +18,7 @@ engines:
   'camunda-bpm-2':
     name: default
     rest: 'http://localhost:8080/engine-rest'
-    importEnabled: ${IMPORT_ENABLED_2}
+    importEnabled: ${IMPORT_ENABLED_2:true}
     authentication:
       enabled: false
       password: ''
@@ -31,11 +31,11 @@ engines:
 es:
   connection:
     nodes:
-      - host: '${ES_HOST_1}'
-        httpPort: '${ES_PORT_1}'
-      - host: ${ES_HOST_2}
-        httpPort: ${ES_PORT_2}
+      - host: '${ES_HOST_1:default1}'
+        httpPort: '${ES_PORT_1:9200}'
+      - host: ${ES_HOST_2:default2}
+        httpPort: ${ES_PORT_2:9200}
 
 plugin:
   variableImport:
-    basePackages: ['1', '${PACKAGE_2}', '${PACKAGE_3}']
+    basePackages: ['1', '${PACKAGE_2:package:2}', '${PACKAGE_3:}']
