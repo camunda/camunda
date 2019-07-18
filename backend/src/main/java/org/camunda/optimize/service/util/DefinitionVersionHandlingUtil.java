@@ -21,10 +21,13 @@ public class DefinitionVersionHandlingUtil {
   public static String convertToValidDefinitionVersion(String processDefinitionKey,
                                                        @NonNull List<String> processDefinitionVersions,
                                                        Function<String, String> getLatestVersionToKey) {
-    Optional<String> isDefinitionVersionSetToAll = processDefinitionVersions.stream()
-      .filter(ReportConstants.ALL_VERSIONS::equalsIgnoreCase)
+    Optional<String> isDefinitionVersionSetToAllOrLatest = processDefinitionVersions.stream()
+      .filter(
+        version -> ReportConstants.ALL_VERSIONS.equalsIgnoreCase(version) ||
+          ReportConstants.LATEST_VERSION.equalsIgnoreCase(version)
+      )
       .findFirst();
-    if (isDefinitionVersionSetToAll.isPresent()) {
+    if (isDefinitionVersionSetToAllOrLatest.isPresent()) {
       return getLatestVersionToKey.apply(processDefinitionKey);
     } else {
       return processDefinitionVersions.stream()

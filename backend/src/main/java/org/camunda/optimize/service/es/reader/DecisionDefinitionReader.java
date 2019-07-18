@@ -199,7 +199,7 @@ public class DecisionDefinitionReader {
     return definitionOptimizeDto;
   }
 
-  private String getLatestVersionToKey(String key) {
+  public String getLatestVersionToKey(String key) {
     log.debug("Fetching latest decision definition for key [{}]", key);
 
     Script script = createDefaultScript(

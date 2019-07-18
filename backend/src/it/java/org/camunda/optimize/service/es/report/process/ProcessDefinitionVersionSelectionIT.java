@@ -31,8 +31,10 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -60,11 +62,8 @@ public class ProcessDefinitionVersionSelectionIT {
   @Test
   public void processReportAcrossAllVersions() {
     // given
-    ProcessDefinitionEngineDto definition1 = deploySimpleServiceTaskProcess();
-    engineRule.startProcessInstance(definition1.getId(), ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE));
-    engineRule.startProcessInstance(definition1.getId(), ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE));
-    ProcessDefinitionEngineDto definition2 = deploySimpleServiceTaskProcess();
-    engineRule.startProcessInstance(definition2.getId(), ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE));
+    ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstances(2);
+    deployProcessAndStartInstances(1);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
@@ -84,15 +83,9 @@ public class ProcessDefinitionVersionSelectionIT {
   @Test
   public void processReportAcrossMultipleVersions() {
     // given
-    ProcessDefinitionEngineDto definition1 = deploySimpleServiceTaskProcess();
-    engineRule.startProcessInstance(definition1.getId(), ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE));
-    engineRule.startProcessInstance(definition1.getId(), ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE));
-    ProcessDefinitionEngineDto definition2 = deploySimpleServiceTaskProcess();
-    engineRule.startProcessInstance(definition2.getId(), ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE));
-    ProcessDefinitionEngineDto definition3 = deploySimpleServiceTaskProcess();
-    engineRule.startProcessInstance(definition3.getId(), ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE));
-    engineRule.startProcessInstance(definition3.getId(), ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE));
-    engineRule.startProcessInstance(definition3.getId(), ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE));
+    ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstances(2);
+    deployProcessAndStartInstances(1);
+    ProcessDefinitionEngineDto definition3 = deployProcessAndStartInstances(3);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -111,13 +104,45 @@ public class ProcessDefinitionVersionSelectionIT {
   }
 
   @Test
+  public void processReportsWithLatestVersion() {
+    // given
+    ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstances(2);
+    deployProcessAndStartInstances(1);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    List<ProcessReportDataDto> allPossibleReports = createAllPossibleProcessReports(
+      definition1.getKey(),
+      ImmutableList.of(LATEST_VERSION)
+    );
+    for (ProcessReportDataDto report : allPossibleReports) {
+      // when
+      EvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(report);
+
+      // then
+      assertThat(result.getResult().getProcessInstanceCount(), is(1L));
+    }
+
+    // when
+    deployProcessAndStartInstances(4);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    for (ProcessReportDataDto report : allPossibleReports) {
+      // when
+      EvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(report);
+
+      // then
+      assertThat(result.getResult().getProcessInstanceCount(), is(4L));
+    }
+  }
+
+  @Test
   public void missingDefinitionVersionResultsIn500() {
     // given
-    ProcessDefinitionEngineDto definition1 = deploySimpleServiceTaskProcess();
-    engineRule.startProcessInstance(definition1.getId(), ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE));
-    engineRule.startProcessInstance(definition1.getId(), ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE));
-    ProcessDefinitionEngineDto definition2 = deploySimpleServiceTaskProcess();
-    engineRule.startProcessInstance(definition2.getId(), ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE));
+    ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstances(1);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -168,6 +193,14 @@ public class ProcessDefinitionVersionSelectionIT {
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       .execute();
+  }
+
+  private ProcessDefinitionEngineDto deployProcessAndStartInstances(int nInstancesToStart) {
+    ProcessDefinitionEngineDto definition = deploySimpleServiceTaskProcess();
+    IntStream.range(0, nInstancesToStart).forEach(
+      i -> engineRule.startProcessInstance(definition.getId(), ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE))
+    );
+    return definition;
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {

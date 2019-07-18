@@ -36,6 +36,14 @@ public abstract class SingleReportDataDto implements ReportDataDto, Combinable {
   }
 
   @JsonIgnore
+  public boolean isDefinitionVersionSetToLatest() {
+    Optional<String> allVersionSelected = getDefinitionVersions().stream()
+      .filter(ReportConstants.LATEST_VERSION::equalsIgnoreCase)
+      .findFirst();
+    return allVersionSelected.isPresent();
+  }
+
+  @JsonIgnore
   public boolean hasMultipleVersionsSet() {
     return getDefinitionVersions().size() > 1;
   }

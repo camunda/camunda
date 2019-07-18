@@ -28,8 +28,6 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
 
   protected String processDefinitionKey;
   protected List<String> processDefinitionVersions = new ArrayList<>();
-  @JsonIgnore
-  protected String mostRecentDefinitionVersionFromGiven;
   protected String processDefinitionName;
   protected List<String> tenantIds = Collections.singletonList(null);
   protected List<ProcessFilterDto> filter = new ArrayList<>();

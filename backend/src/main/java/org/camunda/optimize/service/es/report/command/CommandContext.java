@@ -11,6 +11,7 @@ import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
+import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -28,6 +29,7 @@ public class CommandContext<T extends ReportDefinitionDto> {
   private Range<OffsetDateTime> dateIntervalRange;
   private IntervalAggregationService intervalAggregationService;
   private ProcessDefinitionReader processDefinitionReader;
+  private DecisionDefinitionReader decisionDefinitionReader;
   private Integer recordLimit;
 
 }

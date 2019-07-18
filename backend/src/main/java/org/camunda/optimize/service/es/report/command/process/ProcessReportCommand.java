@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.command.process;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
+import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
@@ -20,11 +21,18 @@ public abstract class ProcessReportCommand<T extends ReportEvaluationResult>
 
   protected ProcessQueryFilterEnhancer queryFilterEnhancer;
   protected IntervalAggregationService intervalAggregationService;
+  private ProcessDefinitionReader processDefinitionReader;
 
   @Override
   public void beforeEvaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
     intervalAggregationService = commandContext.getIntervalAggregationService();
     queryFilterEnhancer = (ProcessQueryFilterEnhancer) commandContext.getQueryFilterEnhancer();
+    processDefinitionReader = commandContext.getProcessDefinitionReader();
+  }
+
+  @Override
+  protected String getLatestDefinitionVersionToKey(String definitionKey) {
+    return processDefinitionReader.getLatestVersionToKey(definitionKey);
   }
 
   protected BoolQueryBuilder setupBaseQuery(final ProcessReportDataDto reportData) {

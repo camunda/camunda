@@ -7,7 +7,6 @@ package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionOptimizeDto;
@@ -106,15 +105,6 @@ abstract class AbstractDefinitionService {
           .stream()
           .sorted(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())))
           .collect(Collectors.toList());
-
-        final DefinitionVersions latestVersionDefinitionVersion = new DefinitionVersions(
-          byKeyEntry.getKey(), definitionName, ReportConstants.LATEST_VERSION, null
-        );
-        versions.add(latestVersionDefinitionVersion);
-        final DefinitionVersions allVersionDefinitionVersions = new DefinitionVersions(
-          byKeyEntry.getKey(), definitionName, ReportConstants.ALL_VERSIONS, null
-        );
-        versions.add(allVersionDefinitionVersions);
 
         final DefinitionAvailableVersionsWithTenants definitionVersionsWithTenants =
           new DefinitionAvailableVersionsWithTenants(byKeyEntry.getKey(), definitionName, versions, tenants);

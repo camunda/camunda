@@ -25,8 +25,6 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
 
   protected String decisionDefinitionKey;
   protected List<String> decisionDefinitionVersions = new ArrayList<>();
-  @JsonIgnore
-  protected String mostRecentDefinitionVersionFromGiven;
   protected String decisionDefinitionName;
   protected List<String> tenantIds = new ArrayList<>(Collections.singletonList(null));
   protected List<DecisionFilterDto> filter = new ArrayList<>();

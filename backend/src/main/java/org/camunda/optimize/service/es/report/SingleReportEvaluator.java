@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
+import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
@@ -152,6 +153,7 @@ public class SingleReportEvaluator {
   protected final OptimizeElasticsearchClient esClient;
   protected final IntervalAggregationService intervalAggregationService;
   protected final ProcessDefinitionReader processDefinitionReader;
+  protected final DecisionDefinitionReader decisionDefinitionReader;
 
   private static void addCountProcessInstanceFrequencyReports() {
     commandSuppliers.put(
@@ -440,6 +442,7 @@ public class SingleReportEvaluator {
       commandContext.setQueryFilterEnhancer(decisionQueryFilterEnhancer);
     }
     commandContext.setProcessDefinitionReader(processDefinitionReader);
+    commandContext.setDecisionDefinitionReader(decisionDefinitionReader);
     commandContext.setReportDefinition(reportDefinition);
     commandContext.setRecordLimit(Optional.ofNullable(customRecordLimit).orElse(DEFAULT_RECORD_LIMIT));
     return commandContext;

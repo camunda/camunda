@@ -68,6 +68,8 @@ public abstract class ReportCommand<R extends ReportEvaluationResult, RD extends
 
   protected abstract void sortResultData(R evaluationResult);
 
+  protected abstract String getLatestDefinitionVersionToKey(String definitionKey);
+
   protected R filterResultData(final CommandContext<RD> commandContext, R evaluationResult) {
     return evaluationResult;
   }
@@ -90,7 +92,9 @@ public abstract class ReportCommand<R extends ReportEvaluationResult, RD extends
     final BoolQueryBuilder query = boolQuery();
     query.must(createTenantIdQuery(reportData, type.getTenantIdFieldName()));
     query.must(termQuery(type.getDefinitionKeyFieldName(), definitionKey));
-    if (!reportData.isDefinitionVersionSetToAll()) {
+    if (reportData.isDefinitionVersionSetToLatest()) {
+      query.must(termsQuery(type.getDefinitionVersionFieldName(), getLatestDefinitionVersionToKey(definitionKey)));
+    } else if (!reportData.isDefinitionVersionSetToAll()) {
       query.must(termsQuery(type.getDefinitionVersionFieldName(), reportData.getDefinitionVersions()));
     }
     return query;

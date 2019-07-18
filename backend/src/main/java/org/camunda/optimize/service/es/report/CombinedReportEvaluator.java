@@ -106,7 +106,8 @@ public class CombinedReportEvaluator {
         evaluator.decisionQueryFilterEnhancer,
         evaluator.esClient,
         evaluator.intervalAggregationService,
-        evaluator.processDefinitionReader
+        evaluator.processDefinitionReader,
+        evaluator.decisionDefinitionReader
       );
     }
 

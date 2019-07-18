@@ -36,4 +36,10 @@ public class NotSupportedCommand extends ReportCommand {
   protected void beforeEvaluate(final CommandContext commandContext) {
     // noop
   }
+
+  @Override
+  protected String getLatestDefinitionVersionToKey(String definitionKey) {
+    // not needed
+    return null;
+  }
 }

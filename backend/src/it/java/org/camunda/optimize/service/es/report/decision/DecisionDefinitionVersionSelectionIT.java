@@ -26,8 +26,10 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -52,14 +54,9 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
   @Test
   public void decisionReportAcrossAllVersions() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineRule.deployDecisionDefinition();
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = deployDecisionAndStartInstances(1);
     // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineRule.deployDecisionDefinition();
-    engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
-
+    deployDecisionAndStartInstances(2);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -80,17 +77,9 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
   @Test
   public void decisionReportAcrossMultipleVersions() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineRule.deployDecisionDefinition();
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineRule.deployDecisionDefinition();
-    engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
-
-    DecisionDefinitionEngineDto decisionDefinitionDto3 = engineRule.deployDecisionDefinition();
-    engineRule.startDecisionInstance(decisionDefinitionDto3.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto3.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto3.getId());
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = deployDecisionAndStartInstances(2);
+    deployDecisionAndStartInstances(1);
+    DecisionDefinitionEngineDto decisionDefinitionDto3 = deployDecisionAndStartInstances(3);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -109,15 +98,42 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
   }
 
   @Test
+  public void decisionReportsWithLatestVersion() {
+    // given
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = deployDecisionAndStartInstances(2);
+    deployDecisionAndStartInstances(1);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    List<DecisionReportDataDto> allPossibleReports =
+      createAllPossibleDecisionReports(decisionDefinitionDto1.getKey(), ImmutableList.of(LATEST_VERSION));
+    for (DecisionReportDataDto report : allPossibleReports) {
+      // when
+      EvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(report);
+
+      // then
+      assertThat(result.getResult().getDecisionInstanceCount(), is(1L));
+    }
+
+    deployDecisionAndStartInstances(4);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    for (DecisionReportDataDto report : allPossibleReports) {
+      // when
+      EvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(report);
+
+      // then
+      assertThat(result.getResult().getDecisionInstanceCount(), is(4L));
+    }
+  }
+
+  @Test
   public void missingDefinitionVersionResultsIn500() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineRule.deployDecisionDefinition();
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-
-    // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineRule.deployDecisionDefinition();
-    engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = deployDecisionAndStartInstances(1);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -133,6 +149,14 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
       // then
       assertThat(response.getStatus(), is(500));
     }
+  }
+
+  private DecisionDefinitionEngineDto deployDecisionAndStartInstances(int nInstancesToStart) {
+    DecisionDefinitionEngineDto definition = engineRule.deployDecisionDefinition();
+    IntStream.range(0, nInstancesToStart).forEach(
+      i -> engineRule.startDecisionInstance(definition.getId())
+    );
+    return definition;
   }
 
   private EvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> evaluateReport(DecisionReportDataDto reportData) {
