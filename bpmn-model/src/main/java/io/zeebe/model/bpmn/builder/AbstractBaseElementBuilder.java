@@ -343,27 +343,8 @@ public abstract class AbstractBaseElementBuilder<
       x = sourceX + sourceWidth + SPACE;
 
       if (element instanceof FlowNode) {
-
         final FlowNode flowNode = (FlowNode) element;
-        final Collection<SequenceFlow> outgoing = flowNode.getOutgoing();
-
-        if (outgoing.size() == 0) {
-          final double sourceY = sourceBounds.getY();
-          final double sourceHeight = sourceBounds.getHeight();
-          final double targetHeight = shapeBounds.getHeight();
-          y = sourceY + sourceHeight / 2 - targetHeight / 2;
-        } else {
-          final SequenceFlow[] sequenceFlows = outgoing.toArray(new SequenceFlow[outgoing.size()]);
-          final SequenceFlow last = sequenceFlows[outgoing.size() - 1];
-
-          final BpmnShape targetShape = findBpmnShape(last.getTarget());
-          if (targetShape != null) {
-            final Bounds targetBounds = targetShape.getBounds();
-            final double lastY = targetBounds.getY();
-            final double lastHeight = targetBounds.getHeight();
-            y = lastY + lastHeight + SPACE;
-          }
-        }
+        y = getFlowNodeYCoordinate(flowNode, shapeBounds, sourceBounds);
       }
     }
 
@@ -542,5 +523,31 @@ public abstract class AbstractBaseElementBuilder<
         break;
       }
     }
+  }
+
+  private double getFlowNodeYCoordinate(
+      FlowNode flowNode, Bounds shapeBounds, Bounds sourceBounds) {
+    final Collection<SequenceFlow> outgoing = flowNode.getOutgoing();
+    double y = 0;
+
+    if (outgoing.size() == 0) {
+      final double sourceY = sourceBounds.getY();
+      final double sourceHeight = sourceBounds.getHeight();
+      final double targetHeight = shapeBounds.getHeight();
+      y = sourceY + sourceHeight / 2 - targetHeight / 2;
+    } else {
+      final SequenceFlow[] sequenceFlows = outgoing.toArray(new SequenceFlow[outgoing.size()]);
+      final SequenceFlow last = sequenceFlows[outgoing.size() - 1];
+      final BpmnShape targetShape = findBpmnShape(last.getTarget());
+
+      if (targetShape != null) {
+        final Bounds targetBounds = targetShape.getBounds();
+        final double lastY = targetBounds.getY();
+        final double lastHeight = targetBounds.getHeight();
+        y = lastY + lastHeight + SPACE;
+      }
+    }
+
+    return y;
   }
 }
