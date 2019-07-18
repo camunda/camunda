@@ -1,50 +1,43 @@
-.NodeFilter__diagram-container {
-  flex-grow: 1;
-  display: flex;
-}
+.NodeFilter {
+  .modalContent {
+    display: flex;
+    flex-direction: column;
 
-.NodeFilter__modal-content {
-  display: flex;
-  flex-direction: column;
-}
+    .diagramContainer {
+      margin-top: 25px;
+      flex-grow: 1;
+      display: flex;
+    }
 
-.NodeFilter__preview {
-  margin-bottom: 10px;
-  border: 1px solid #ccc;
-  background-color: white;
-  border-radius: 3px;
-  flex-shrink: 0;
+    .preview {
+      margin-bottom: 24px;
 
-  &:first-child {
-    margin-left: 0;
+      .parameterName {
+        font-style: italic;
+        font-weight: bold;
+      }
+
+      .previewList {
+        display: inline;
+        padding: 0px;
+        line-height: 30px;
+
+        .previewItem {
+          list-style-type: none;
+          display: inline-block;
+
+          .previewItemOperator {
+            white-space: pre-wrap;
+          }
+
+          .previewItemValue {
+            background-color: #7fa8c5;
+            padding: 1px 8px 2px;
+            border-radius: 10px;
+            color: #fff;
+          }
+        }
+      }
+    }
   }
-
-  &:last-child {
-    margin-right: 20px;
-  }
-
-  &:empty {
-    border: 0px solid #ccc;
-  }
-}
-
-.NodeFilter__preview-item {
-  list-style-type: none;
-  display: inline-block;
-}
-
-.NodeFilter__parameter-name {
-  font-style: italic;
-  font-weight: bold;
-}
-
-.NodeFilter__preview-item-value {
-  background-color: #7fa8c5;
-  padding: 1px 8px 2px;
-  border-radius: 10px;
-  color: #fff;
-}
-
-.NodeFilter__preview-item-operator {
-  white-space: pre-wrap;
 }

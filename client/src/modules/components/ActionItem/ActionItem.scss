@@ -4,20 +4,20 @@
   background-color: white;
   border-radius: 3px;
   background: #fbfbfb;
-}
 
-.ActionItem__button,
-.ActionItem__button:hover,
-.ActionItem__button:active {
-  border: 1px solid transparent;
-  border-radius: 0;
-  border-right: 1px solid #ccc;
-}
+  .Button,
+  .Button:hover,
+  .Button:active {
+    border: 1px solid transparent;
+    border-radius: 0;
+    border-right: 1px solid #ccc;
+  }
 
-.ActionItem__content {
-  padding: 0 4px;
-  font-size: 0.875em;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
+  .content {
+    padding: 0 4px;
+    font-size: 0.875em;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+  }
 }

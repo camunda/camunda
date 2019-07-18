@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {Modal, Button, Input, Select, ErrorMessage, Message, Labeled} from 'components';
+import {Modal, Button, Input, Select, ErrorMessage, Message, Form} from 'components';
 import {numberParser} from 'services';
 
 import './DurationFilter.scss';
@@ -40,48 +40,38 @@ export default class DurationFilter extends React.Component {
         open={true}
         onClose={this.props.close}
         onConfirm={isValidInput ? this.createFilter : undefined}
-        className="DurationFilter__modal"
+        className="DurationFilter"
       >
         <Modal.Header>Add Duration Filter</Modal.Header>
         <Modal.Content>
           <Message type="warning">
             Reports with an active Duration Filter will only show completed instances.
           </Message>
-          <div className="DurationFilter__inputs">
-            <Labeled label="Only include process instances that ran for">
-              {' '}
-              <Select
-                value={operator}
-                onChange={this.setOperator}
-                className="DurationFilter__operator-select"
-              >
-                <Select.Option value=">">more</Select.Option>
-                <Select.Option value="<">less</Select.Option>
-              </Select>{' '}
-              than
-            </Labeled>
-            <Input
-              isInvalid={!isValidInput}
-              value={value}
-              onChange={this.setValue}
-              className="DurationFilter__input"
-            />
-            <Select value={unit} onChange={this.setUnit}>
-              <Select.Option value="millis">Milliseconds</Select.Option>
-              <Select.Option value="seconds">Seconds</Select.Option>
-              <Select.Option value="minutes">Minutes</Select.Option>
-              <Select.Option value="hours">Hours</Select.Option>
-              <Select.Option value="days">Days</Select.Option>
-              <Select.Option value="weeks">Weeks</Select.Option>
-              <Select.Option value="months">Months</Select.Option>
-              <Select.Option value="years">Years</Select.Option>
-            </Select>
-            {!isValidInput && (
-              <ErrorMessage className="DurationFilter__warning">
-                Please enter a positive numeric value
-              </ErrorMessage>
-            )}
-          </div>
+          <p className="description">Only include process instances that ran for... </p>
+          <Form horizontal>
+            <Form.Group noSpacing>
+              <label>
+                <Select value={operator} onChange={this.setOperator}>
+                  <Select.Option value=">">more than</Select.Option>
+                  <Select.Option value="<">less than</Select.Option>
+                </Select>
+              </label>
+              <Form.InputGroup>
+                <Input isInvalid={!isValidInput} value={value} onChange={this.setValue} />
+                <Select value={unit} onChange={this.setUnit}>
+                  <Select.Option value="millis">Milliseconds</Select.Option>
+                  <Select.Option value="seconds">Seconds</Select.Option>
+                  <Select.Option value="minutes">Minutes</Select.Option>
+                  <Select.Option value="hours">Hours</Select.Option>
+                  <Select.Option value="days">Days</Select.Option>
+                  <Select.Option value="weeks">Weeks</Select.Option>
+                  <Select.Option value="months">Months</Select.Option>
+                  <Select.Option value="years">Years</Select.Option>
+                </Select>
+              </Form.InputGroup>
+              {!isValidInput && <ErrorMessage>Please enter a positive numeric value</ErrorMessage>}
+            </Form.Group>
+          </Form>
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.props.close}>Cancel</Button>

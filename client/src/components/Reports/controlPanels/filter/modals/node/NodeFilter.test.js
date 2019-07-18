@@ -21,7 +21,7 @@ it('should display a diagram', () => {
 
   expect(
     node
-      .find('.NodeFilter__diagram-container')
+      .find('.diagramContainer')
       .childAt(0)
       .props().xml
   ).toBe('fooXml');
@@ -102,7 +102,7 @@ it('should create preview of selected node', () => {
 
   node.instance().toggleNode(flowNode);
 
-  expect(node.find('.NodeFilter__preview-item-value')).toIncludeText(flowNode.name);
+  expect(node.find('.previewItemValue')).toIncludeText(flowNode.name);
 });
 
 it('should show the id of the flow node if the name is null', () => {
@@ -115,7 +115,7 @@ it('should show the id of the flow node if the name is null', () => {
 
   node.instance().toggleNode(flowNode);
 
-  expect(node.find('.NodeFilter__preview-item-value')).toIncludeText(flowNode.id);
+  expect(node.find('.previewItemValue')).toIncludeText(flowNode.id);
 });
 
 it('should create preview of selected nodes linked by or', () => {
@@ -134,7 +134,7 @@ it('should create preview of selected nodes linked by or', () => {
   node.instance().toggleNode(flowNode1);
   node.instance().toggleNode(flowNode2);
 
-  const content = node.find('.NodeFilter__preview');
+  const content = node.find('.preview');
   expect(content).toIncludeText(flowNode1.name);
   expect(content).toIncludeText('or');
   expect(content).toIncludeText(flowNode2.name);

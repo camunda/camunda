@@ -48,7 +48,7 @@ export default class NodeFilter extends React.Component {
   };
 
   createOperator = name => {
-    return <span className="NodeFilter__preview-item-operator"> {name} </span>;
+    return <span className="previewItemOperator"> {name} </span>;
   };
 
   createPreviewList = () => {
@@ -56,12 +56,10 @@ export default class NodeFilter extends React.Component {
 
     this.state.selectedNodes.forEach((selectedNode, idx) => {
       previewList.push(
-        <li key={idx} className="NodeFilter__preview-item">
+        <li key={idx} className="previewItem">
           <span key={idx}>
             {' '}
-            <span className="NodeFilter__preview-item-value">
-              {selectedNode.name || selectedNode.id}
-            </span>{' '}
+            <span className="previewItemValue">{selectedNode.name || selectedNode.id}</span>{' '}
             {idx < this.state.selectedNodes.length - 1 &&
               this.createOperator(this.state.operator === 'in' ? 'or' : 'nor')}
           </span>
@@ -69,11 +67,9 @@ export default class NodeFilter extends React.Component {
       );
     });
     return (
-      <ul className="NodeFilter__preview">
-        <span className="NodeFilter__preview-introduction">
-          This is the filter you are about to create:{' '}
-        </span>{' '}
-        <span className="NodeFilter__parameter-name">Executed Flow Node</span>
+      <div className="preview">
+        <span>This is the filter you are about to create: </span>{' '}
+        <span className="parameterName">Executed Flow Node</span>
         {this.createOperator(
           this.state.operator === 'in'
             ? 'is'
@@ -81,8 +77,8 @@ export default class NodeFilter extends React.Component {
             ? 'is neither'
             : 'is not'
         )}
-        {previewList}
-      </ul>
+        <ul className="previewList">{previewList}</ul>
+      </div>
     );
   };
 
@@ -98,30 +94,28 @@ export default class NodeFilter extends React.Component {
         open={true}
         onClose={this.props.close}
         onConfirm={this.isNodeSelected() ? this.createFilter : undefined}
-        className="NodeFilter__modal"
+        className="NodeFilter"
         size="max"
       >
         <Modal.Header>Add Flow Node Filter</Modal.Header>
-        <Modal.Content className="NodeFilter__modal-content">
+        <Modal.Content className="modalContent">
           {this.createPreviewList()}
-          <div className="VariableFilter__buttonRow">
-            <ButtonGroup>
-              <Button
-                active={this.state.operator === 'in'}
-                onClick={() => this.setState({operator: 'in'})}
-              >
-                was executed
-              </Button>
-              <Button
-                active={this.state.operator === 'not in'}
-                onClick={() => this.setState({operator: 'not in'})}
-              >
-                was not executed
-              </Button>
-            </ButtonGroup>
-          </div>
+          <ButtonGroup>
+            <Button
+              active={this.state.operator === 'in'}
+              onClick={() => this.setState({operator: 'in'})}
+            >
+              was executed
+            </Button>
+            <Button
+              active={this.state.operator === 'not in'}
+              onClick={() => this.setState({operator: 'not in'})}
+            >
+              was not executed
+            </Button>
+          </ButtonGroup>
           {this.props.xml && (
-            <div className="NodeFilter__diagram-container">
+            <div className="diagramContainer">
               <BPMNDiagram xml={this.props.xml}>
                 <ClickBehavior
                   setSelectedNodes={this.setSelectedNodes}

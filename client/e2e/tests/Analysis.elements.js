@@ -11,7 +11,5 @@ export const flowNode = id => Selector(`[data-element-id="${id}"]`);
 export const statisticsDiagram = Selector('.Statistics canvas');
 export const endEventOverlay = Selector('.DiagramBehavior__end-event-statistics');
 export const gatewayCancelButton = Selector('[name="AnalysisControlPanel__gateway"] button');
-export const gatewayInput = Selector('[name="AnalysisControlPanel__gateway"] .ActionItem__content');
-export const endEventInput = Selector(
-  '[name="AnalysisControlPanel__endEvent"] .ActionItem__content'
-);
+export const gatewayInput = Selector('[name="AnalysisControlPanel__gateway"] .content');
+export const endEventInput = Selector('[name="AnalysisControlPanel__endEvent"] .content');

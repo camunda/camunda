@@ -25,6 +25,6 @@ const relativeDateInputs = Selector('.label')
   .nextSibling();
 export const relativeDateInput = relativeDateInputs.find('input');
 export const relativeDateDropdown = relativeDateInputs.find('.Select');
-export const durationFilterOperator = Selector('.DurationFilter__inputs .Select');
-export const durationFilterInput = Selector('.DurationFilter__inputs input[type="text"]');
+export const durationFilterOperator = Selector('.DurationFilter .Select');
+export const durationFilterInput = Selector('.DurationFilter input[type="text"]');
 export const modalCancel = Selector('.Modal .Button').withText('Cancel');
