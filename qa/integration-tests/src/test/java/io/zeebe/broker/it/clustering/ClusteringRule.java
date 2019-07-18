@@ -25,6 +25,7 @@ import io.atomix.utils.net.Address;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.response.BrokerInfo;
 import io.zeebe.client.api.response.PartitionInfo;
 import io.zeebe.client.api.response.Topology;
@@ -78,7 +79,9 @@ public class ClusteringRule extends ExternalResource {
   private final int partitionCount;
   private final int replicationFactor;
   private final int clusterSize;
-  private final Consumer<BrokerCfg> configurator;
+  private final Consumer<BrokerCfg> brokerConfigurator;
+  private final Consumer<GatewayCfg> gatewayConfigurator;
+  private final Consumer<ZeebeClientBuilder> clientConfigurator;
   private final Map<Integer, Broker> brokers;
   private final Map<Integer, BrokerCfg> brokerCfgs;
   private final Map<Integer, File> brokerBases;
@@ -99,19 +102,43 @@ public class ClusteringRule extends ExternalResource {
   }
 
   public ClusteringRule(
+      final int partitionCount,
+      final int replicationFactor,
+      final int clusterSize,
+      final Consumer<BrokerCfg> configurator) {
+    this(
+        partitionCount,
+        replicationFactor,
+        clusterSize,
+        configurator,
+        gatewayCfg -> {},
+        clientCfg -> {});
+  }
+
+  public ClusteringRule(
       final int partitionCount, final int replicationFactor, final int clusterSize) {
-    this(partitionCount, replicationFactor, clusterSize, cfg -> {});
+    this(
+        partitionCount,
+        replicationFactor,
+        clusterSize,
+        cfg -> {},
+        gatewayCfg -> {},
+        clientCfg -> {});
   }
 
   public ClusteringRule(
       final int partitionCount,
       final int replicationFactor,
       final int clusterSize,
-      final Consumer<BrokerCfg> configurator) {
+      final Consumer<BrokerCfg> brokerConfigurator,
+      final Consumer<GatewayCfg> gatewayConfigurator,
+      final Consumer<ZeebeClientBuilder> clientConfigurator) {
     this.partitionCount = partitionCount;
     this.replicationFactor = replicationFactor;
     this.clusterSize = clusterSize;
-    this.configurator = configurator;
+    this.brokerConfigurator = brokerConfigurator;
+    this.gatewayConfigurator = gatewayConfigurator;
+    this.clientConfigurator = clientConfigurator;
 
     brokers = new HashMap<>();
     brokerCfgs = new HashMap<>();
@@ -228,7 +255,7 @@ public class ClusteringRule extends ExternalResource {
     }
 
     // custom configurators
-    configurator.accept(brokerCfg);
+    brokerConfigurator.accept(brokerCfg);
 
     // set random port numbers
     assignSocketAddresses(brokerCfg);
@@ -256,6 +283,8 @@ public class ClusteringRule extends ExternalResource {
     gatewayCfg.getCluster().setPort(SocketUtil.getNextAddress().port());
     gatewayCfg.init();
 
+    gatewayConfigurator.accept(gatewayCfg);
+
     final ClusterCfg clusterCfg = gatewayCfg.getCluster();
 
     // copied from StandaloneGateway
@@ -280,8 +309,12 @@ public class ClusteringRule extends ExternalResource {
 
   private ZeebeClient createClient() {
     final String contactPoint = gateway.getGatewayCfg().getNetwork().toSocketAddress().toString();
-    final ZeebeClient client =
-        ZeebeClient.newClientBuilder().brokerContactPoint(contactPoint).build();
+    final ZeebeClientBuilder zeebeClientBuilder =
+        ZeebeClient.newClientBuilder().brokerContactPoint(contactPoint);
+
+    clientConfigurator.accept(zeebeClientBuilder);
+
+    final ZeebeClient client = zeebeClientBuilder.build();
     closeables.manage(client);
     return client;
   }
@@ -316,6 +349,7 @@ public class ClusteringRule extends ExternalResource {
               try {
                 return client.newTopologyRequest().send().join();
               } catch (Exception e) {
+                LOG.trace("Topology request failed: ", e);
                 return null;
               }
             })

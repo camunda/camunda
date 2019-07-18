@@ -342,6 +342,12 @@
       </dependency>
 
       <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-handler</artifactId>
+        <version>${version.netty}</version>
+      </dependency>
+
+      <dependency>
         <groupId>one.util</groupId>
         <artifactId>streamex</artifactId>
         <version>${version.streamex}</version>

@@ -15,6 +15,7 @@
  */
 package io.zeebe.client;
 
+import io.netty.handler.ssl.SslContext;
 import io.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import java.time.Duration;
 import java.util.Properties;
@@ -67,6 +68,14 @@ public interface ZeebeClientBuilder {
 
   /** The request timeout used if not overridden by the command. Default is 20 seconds. */
   ZeebeClientBuilder defaultRequestTimeout(Duration requestTimeout);
+
+  /** Use a secure connection between the client and the gateway. */
+  ZeebeClientBuilder useSecureConnection();
+
+  /**
+   * SSL/TLS context provided by {@link * GrpcSslContexts} to be used instead of the system default.
+   */
+  ZeebeClientBuilder sslContext(SslContext sslContext);
 
   /** @return a new {@link ZeebeClient} with the provided configuration options. */
   ZeebeClient build();

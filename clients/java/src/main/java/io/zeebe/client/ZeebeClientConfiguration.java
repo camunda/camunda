@@ -15,6 +15,7 @@
  */
 package io.zeebe.client;
 
+import io.netty.handler.ssl.SslContext;
 import java.time.Duration;
 
 public interface ZeebeClientConfiguration {
@@ -41,4 +42,10 @@ public interface ZeebeClientConfiguration {
 
   /** @see ZeebeClientBuilder#defaultRequestTimeout(Duration) */
   Duration getDefaultRequestTimeout();
+
+  /** @see ZeebeClientBuilder#useSecureConnection() */
+  boolean isSecureConnectionEnabled();
+
+  /** @see ZeebeClientBuilder#sslContext(SslContext) */
+  SslContext getSslContext();
 }
