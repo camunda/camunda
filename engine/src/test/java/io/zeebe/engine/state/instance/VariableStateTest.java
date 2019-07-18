@@ -320,6 +320,23 @@ public class VariableStateTest {
   }
 
   @Test
+  public void shouldSetLocalVariable() {
+    // given
+    declareScope(parent);
+
+    // when
+    setVariableLocal(parent, wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    setVariableLocal(parent, wrapString("b"), MsgPackUtil.asMsgPack("2"));
+
+    // then
+    final DirectBuffer varA = variablesState.getVariableLocal(parent, wrapString("a"));
+    MsgPackUtil.assertEquality(varA, "1");
+
+    final DirectBuffer varB = variablesState.getVariableLocal(parent, wrapString("b"));
+    MsgPackUtil.assertEquality(varB, "2");
+  }
+
+  @Test
   public void shouldGetNullForNonExistingVariable() {
     // given
     declareScope(parent);

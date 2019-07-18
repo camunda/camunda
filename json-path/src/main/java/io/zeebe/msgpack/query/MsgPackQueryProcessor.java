@@ -11,6 +11,7 @@ import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackToken;
 import io.zeebe.msgpack.spec.MsgPackType;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -69,7 +70,7 @@ public class MsgPackQueryProcessor {
 
   public class QueryResult {
 
-    private final UnsafeBuffer longResultBuffer = new UnsafeBuffer();
+    private final UnsafeBuffer resultBuffer = new UnsafeBuffer();
 
     private MsgPackToken token;
 
@@ -85,23 +86,52 @@ public class MsgPackQueryProcessor {
       return token.getType() == MsgPackType.INTEGER;
     }
 
+    public boolean isArray() {
+      return token.getType() == MsgPackType.ARRAY;
+    }
+
     public DirectBuffer getString() {
       if (!isString()) {
         throw new RuntimeException(
-            String.format("expected String but found '%s'", token.getType()));
+            String.format("expected STRING but found '%s'", token.getType()));
       }
       return token.getValueBuffer();
     }
 
     public DirectBuffer getLongAsString() {
       if (!isLong()) {
-        throw new RuntimeException(String.format("expected Long but found '%s'", token.getType()));
+        throw new RuntimeException(String.format("expected LONG but found '%s'", token.getType()));
       }
 
       final long key = token.getIntegerValue();
       final String converted = String.valueOf(key);
-      longResultBuffer.wrap(converted.getBytes());
-      return longResultBuffer;
+      resultBuffer.wrap(converted.getBytes());
+      return resultBuffer;
+    }
+
+    public int readArray(Consumer<DirectBuffer> elementConsumer) {
+      if (!isArray()) {
+        throw new RuntimeException(String.format("expected ARRAY but found '%s'", token.getType()));
+      }
+
+      final int size = token.getSize();
+
+      for (int i = 0; i < size; i++) {
+
+        final int offset = reader.getOffset();
+        reader.skipValue();
+        final int length = reader.getOffset() - offset;
+
+        resultBuffer.wrap(reader.getBuffer(), offset, length);
+
+        elementConsumer.accept(resultBuffer);
+      }
+
+      return size;
+    }
+
+    public String getType() {
+      return token.getType().name();
     }
   }
 }
