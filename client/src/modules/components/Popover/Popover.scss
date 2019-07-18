@@ -23,6 +23,7 @@
 
 .Popover__dialog {
   position: absolute;
+  width: max-content;
   background-color: white;
   border: 1px solid lightgray;
   border-radius: 8px;

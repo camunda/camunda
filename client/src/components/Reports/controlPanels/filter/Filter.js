@@ -53,11 +53,14 @@ export default class Filter extends React.Component {
     if (type === 'variable') {
       return {
         getVariables: async () =>
-          await loadVariables(this.props.processDefinitionKey, this.props.processDefinitionVersion),
+          await loadVariables(
+            this.props.processDefinitionKey,
+            this.props.processDefinitionVersions
+          ),
         getValues: async (name, type, numResults, valueFilter) =>
           await loadValues(
             this.props.processDefinitionKey,
-            this.props.processDefinitionVersion,
+            this.props.processDefinitionVersions,
             name,
             type,
             0,
@@ -103,7 +106,7 @@ export default class Filter extends React.Component {
   definitionConfig = () => {
     return {
       processDefinitionKey: this.props.processDefinitionKey,
-      processDefinitionVersion: this.props.processDefinitionVersion
+      processDefinitionVersions: this.props.processDefinitionVersions
     };
   };
 
@@ -111,8 +114,8 @@ export default class Filter extends React.Component {
     return (
       !this.props.processDefinitionKey ||
       this.props.processDefinitionKey === '' ||
-      !this.props.processDefinitionVersion ||
-      this.props.processDefinitionVersion === ''
+      !this.props.processDefinitionVersions ||
+      this.props.processDefinitionVersions.length === 0
     );
   };
 

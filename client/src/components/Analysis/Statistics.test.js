@@ -58,7 +58,7 @@ const initialProps = {
     filter: [],
     processDefinitionKey: null,
     tenantIds: [],
-    processDefinitionVersion: null
+    processDefinitionVersions: null
   },
   gateway: null,
   endEvent: null
@@ -69,7 +69,7 @@ const props = {
     filter: [],
     processDefinitionKey: 'a',
     tenantIds: [null],
-    processDefinitionVersion: 1
+    processDefinitionVersions: ['1']
   },
   gateway: {
     id: 'g',

@@ -5,6 +5,8 @@
  */
 
 import React from 'react';
+import equal from 'deep-equal';
+
 import {DefinitionSelection} from 'components';
 
 import ReportSelect from './ReportSelect';
@@ -40,22 +42,25 @@ export default class ReportControlPanel extends React.Component {
 
   loadFlowNodeNames = async () => {
     const {
-      data: {processDefinitionKey, processDefinitionVersion, tenantIds}
+      data: {processDefinitionKey, processDefinitionVersions, tenantIds}
     } = this.props.report;
-    this.setState({
-      flowNodeNames: await getFlowNodeNames(
-        processDefinitionKey,
-        processDefinitionVersion,
-        tenantIds[0]
-      )
-    });
+
+    if (processDefinitionKey && processDefinitionVersions && tenantIds) {
+      this.setState({
+        flowNodeNames: await getFlowNodeNames(
+          processDefinitionKey,
+          processDefinitionVersions[0],
+          tenantIds[0]
+        )
+      });
+    }
   };
 
   loadVariables = async () => {
-    const {processDefinitionKey, processDefinitionVersion} = this.props.report.data;
-    if (processDefinitionKey && processDefinitionVersion) {
+    const {processDefinitionKey, processDefinitionVersions, tenantIds} = this.props.report.data;
+    if (processDefinitionKey && processDefinitionVersions && tenantIds) {
       this.setState({
-        variables: await loadVariables(processDefinitionKey, processDefinitionVersion)
+        variables: await loadVariables(processDefinitionKey, processDefinitionVersions, tenantIds)
       });
     }
   };
@@ -66,19 +71,20 @@ export default class ReportControlPanel extends React.Component {
 
     if (
       data.processDefinitionKey !== prevData.processDefinitionKey ||
-      data.processDefinitionVersion !== prevData.processDefinitionVersion
+      !equal(data.processDefinitionVersions, prevData.processDefinitionVersions) ||
+      !equal(data.tenantIds, prevData.tenantIds)
     ) {
       this.loadVariables();
       this.loadFlowNodeNames();
     }
   }
 
-  changeDefinition = async (key, version, tenants) => {
+  changeDefinition = async (key, versions, tenants) => {
     const {groupBy, filter} = this.props.report.data;
 
     const change = {
       processDefinitionKey: {$set: key},
-      processDefinitionVersion: {$set: version},
+      processDefinitionVersions: {$set: versions},
       tenantIds: {$set: tenants},
       parameters: {$set: {}},
       configuration: {
@@ -98,7 +104,10 @@ export default class ReportControlPanel extends React.Component {
           }
         },
         xml: {
-          $set: key && version ? await loadProcessDefinitionXml(key, version, tenants[0]) : null
+          $set:
+            key && versions && versions[0]
+              ? await loadProcessDefinitionXml(key, versions[0], tenants[0])
+              : null
         }
       },
       filter: {$set: filter.filter(({type}) => type !== 'executedFlowNodes' && type !== 'variable')}
@@ -126,12 +135,11 @@ export default class ReportControlPanel extends React.Component {
             <DefinitionSelection
               type="process"
               definitionKey={data.processDefinitionKey}
-              definitionVersion={data.processDefinitionVersion}
+              versions={data.processDefinitionVersions}
               tenants={data.tenantIds}
               xml={data.configuration.xml}
               onChange={this.changeDefinition}
               renderDiagram
-              enableAllVersionSelection
             />
           </li>
           {['view', 'groupBy', 'visualization'].map((field, idx, fields) => {
@@ -149,11 +157,7 @@ export default class ReportControlPanel extends React.Component {
                   report={this.props.report}
                   variables={{variable: this.state.variables}}
                   previous={previous}
-                  disabled={
-                    !data.processDefinitionKey ||
-                    !data.processDefinitionVersion ||
-                    previous.some(entry => !entry)
-                  }
+                  disabled={!data.processDefinitionKey || previous.some(entry => !entry)}
                   onChange={newValue => this.updateReport(field, newValue)}
                 />
               </li>
@@ -165,7 +169,7 @@ export default class ReportControlPanel extends React.Component {
               data={data.filter}
               onChange={this.props.updateReport}
               processDefinitionKey={data.processDefinitionKey}
-              processDefinitionVersion={data.processDefinitionVersion}
+              processDefinitionVersions={data.processDefinitionVersions}
               xml={data.configuration.xml}
               instanceCount={
                 this.props.report.result && this.props.report.result.processInstanceCount

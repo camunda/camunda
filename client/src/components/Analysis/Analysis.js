@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import equal from 'deep-equal';
 
 import AnalysisControlPanel from './AnalysisControlPanel';
 import {BPMNDiagram, Message} from 'components';
@@ -23,7 +24,7 @@ export default class Analysis extends React.Component {
     this.state = {
       config: {
         processDefinitionKey: '',
-        processDefinitionVersion: '',
+        processDefinitionVersions: [],
         tenantIds: [],
         filter: []
       },
@@ -83,15 +84,15 @@ export default class Analysis extends React.Component {
   async componentDidUpdate(_, prevState) {
     const {config} = this.state;
     const {config: prevConfig} = prevState;
-    const procDefConfigured = config.processDefinitionKey && config.processDefinitionVersion;
+    const procDefConfigured = config.processDefinitionKey && config.processDefinitionVersions;
     const procDefChanged =
       prevConfig.processDefinitionKey !== config.processDefinitionKey ||
-      prevConfig.processDefinitionVersion !== config.processDefinitionVersion;
+      !equal(prevConfig.processDefinitionVersions, config.processDefinitionVersions);
     if (procDefConfigured && (procDefChanged || prevConfig.filter !== config.filter)) {
       this.setState({
         data: await loadFrequencyData(
           config.processDefinitionKey,
-          config.processDefinitionVersion,
+          config.processDefinitionVersions,
           config.tenantIds,
           config.filter
         )
@@ -122,17 +123,17 @@ export default class Analysis extends React.Component {
       config: newConfig
     };
 
-    if (updates.processDefinitionKey && updates.processDefinitionVersion && updates.tenantIds) {
+    if (updates.processDefinitionKey && updates.processDefinitionVersions && updates.tenantIds) {
       changes.xml = await loadProcessDefinitionXml(
         updates.processDefinitionKey,
-        updates.processDefinitionVersion,
+        updates.processDefinitionVersions[0],
         updates.tenantIds[0]
       );
       changes.gateway = null;
       changes.endEvent = null;
     } else if (
       !newConfig.processDefinitionKey ||
-      !newConfig.processDefinitionVersion ||
+      !newConfig.processDefinitionVersions ||
       !newConfig.tenantIds
     ) {
       changes.xml = null;

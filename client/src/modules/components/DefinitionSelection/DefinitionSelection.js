@@ -7,19 +7,12 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {
-  InfoMessage,
-  BPMNDiagram,
-  LoadingIndicator,
-  Popover,
-  Select,
-  Typeahead,
-  Labeled
-} from 'components';
+import {InfoMessage, BPMNDiagram, LoadingIndicator, Popover, Typeahead, Labeled} from 'components';
 
 import {loadDefinitions, capitalize} from 'services';
 
 import TenantPopover from './TenantPopover';
+import VersionPopover from './VersionPopover';
 
 import './DefinitionSelection.scss';
 
@@ -43,70 +36,69 @@ export default class DefinitionSelection extends React.Component {
     });
   };
 
-  changeKey = payload => {
-    const key = payload.key;
-    const selectedDefinition = this.getLatestDefinition(key);
-    const version = selectedDefinition.version;
-    const tenants = selectedDefinition.tenants.map(({id}) => id);
+  hasDefinition = () => this.props.definitionKey;
 
-    this.props.onChange(key, version, tenants);
-  };
+  changeDefinition = ({key}) =>
+    this.props.onChange(key, ['latest'], this.getDefinitionObject(key).tenants.map(({id}) => id));
 
-  changeVersion = (version, tenants) => {
-    this.props.onChange(this.props.definitionKey, version, tenants.map(({id}) => id));
-  };
+  getDefinitionObject = key => this.state.availableDefinitions.find(def => def.key === key);
+  canRenderDiagram = () => this.props.renderDiagram && this.props.xml;
 
-  getLatestDefinition = key => {
-    const selectedKeyGroup = this.findSelectedKeyGroup(key);
-    return selectedKeyGroup.versions[1];
-  };
-
-  findSelectedKeyGroup = key => this.state.availableDefinitions.find(def => def.key === key);
-
-  getVersion = () => (this.props.definitionVersion ? this.props.definitionVersion : '');
-
-  getNameForKey = key => {
-    const definition = this.getLatestDefinition(key);
-    return definition.name ? definition.name : key;
-  };
-
-  canRenderDiagram = () =>
-    this.props.renderDiagram && this.props.definitionKey && this.props.definitionVersion;
-
-  getAvailableTenants = (definitionKey, definitionVersion) => {
-    const definition = this.findSelectedKeyGroup(definitionKey);
+  getAvailableTenants = key => {
+    const definition = this.getDefinitionObject(key);
     if (definition) {
-      const version = definition.versions.find(({version}) => version === definitionVersion);
-      if (version) {
-        return version.tenants;
-      }
+      return definition.tenants;
     }
-
     return [];
   };
 
   hasTenants = () => {
-    const definition = this.findSelectedKeyGroup(this.props.definitionKey);
+    const definition = this.getDefinitionObject(this.props.definitionKey);
     if (definition) {
-      return definition.versions.find(({tenants}) => tenants.length >= 2);
+      return definition.tenants.length >= 2;
     }
   };
 
   getSelectedTenants = () => this.props.tenants;
 
   changeTenants = tenantSelection => {
-    this.props.onChange(this.props.definitionKey, this.props.definitionVersion, tenantSelection);
+    this.props.onChange(this.props.definitionKey, this.props.versions, tenantSelection);
+  };
+
+  getAvailableVersions = key => {
+    const definition = this.getDefinitionObject(key);
+    if (definition) {
+      return definition.versions;
+    }
+    return [];
+  };
+
+  getSelectedVersions = () => this.props.versions || [];
+
+  changeVersions = versions => {
+    this.props.onChange(this.props.definitionKey, versions, this.props.tenants);
   };
 
   createTitle = () => {
-    const {definitionKey, definitionVersion, type} = this.props;
+    const {definitionKey, versions, type} = this.props;
 
-    if (definitionKey && definitionVersion) {
-      const availableTenants = this.getAvailableTenants(definitionKey, definitionVersion);
+    if (definitionKey && versions) {
+      const availableTenants = this.getAvailableTenants(definitionKey);
       const selectedTenants = this.getSelectedTenants();
 
-      const definition = this.findSelectedKeyGroup(definitionKey).name;
-      const version = definitionVersion.toLowerCase();
+      const definition = this.getDefinitionObject(definitionKey).name;
+
+      let versionString = 'None';
+      if (versions.length === 1 && versions[0] === 'all') {
+        versionString = 'All';
+      } else if (versions.length === 1 && versions[0] === 'latest') {
+        versionString = 'Latest';
+      } else if (versions.length === 1) {
+        versionString = versions[0];
+      } else if (versions.length > 1) {
+        versionString = 'Multiple';
+      }
+
       let tenant = 'Multiple';
       if (selectedTenants.length === 0) {
         tenant = '-';
@@ -119,9 +111,9 @@ export default class DefinitionSelection extends React.Component {
       }
 
       if (tenant) {
-        return `${definition} : ${version} : ${tenant}`;
+        return `${definition} : ${versionString} : ${tenant}`;
       } else {
-        return `${definition} : ${version}`;
+        return `${definition} : ${versionString}`;
       }
     } else {
       return `Select ${capitalize(type)}`;
@@ -132,7 +124,8 @@ export default class DefinitionSelection extends React.Component {
     const {loaded, availableDefinitions} = this.state;
     const noDefinitions = !availableDefinitions || availableDefinitions.length === 0;
     const selectedKey = this.props.definitionKey;
-    const version = this.props.definitionVersion;
+    const versions = this.getSelectedVersions();
+    const displayVersionWarning = versions.length > 1 || versions[0] === 'all';
 
     if (!loaded) {
       return (
@@ -155,37 +148,34 @@ export default class DefinitionSelection extends React.Component {
               <Labeled className="entry" label="Name">
                 <Typeahead
                   className="name"
-                  initialValue={this.findSelectedKeyGroup(selectedKey)}
+                  initialValue={this.getDefinitionObject(selectedKey)}
                   disabled={noDefinitions}
                   placeholder="Select..."
                   values={availableDefinitions}
-                  onSelect={this.changeKey}
+                  onSelect={this.changeDefinition}
                   formatter={({name, key}) => name || key}
                   noValuesMessage="No defintions found"
                 />
               </Labeled>
-              <Labeled label="Version" className="entry">
-                <Select
-                  className="version"
-                  disabled={!selectedKey}
-                  onChange={version =>
-                    this.changeVersion(version, this.getAvailableTenants(selectedKey, version))
-                  }
-                  value={this.getVersion()}
-                >
-                  {this.renderAllVersions(selectedKey)}
-                </Select>
-              </Labeled>
+              <div className="version entry">
+                <Labeled label="Version" />
+                <VersionPopover
+                  disabled={!this.hasDefinition()}
+                  versions={this.getAvailableVersions(selectedKey)}
+                  selected={this.getSelectedVersions()}
+                  onChange={this.changeVersions}
+                />
+              </div>
               <div className="tenant entry">
                 <Labeled label="Tenant" />
                 <TenantPopover
-                  tenants={this.getAvailableTenants(selectedKey, version)}
+                  tenants={this.getAvailableTenants(selectedKey)}
                   selected={this.getSelectedTenants()}
                   onChange={this.changeTenants}
                 />
               </div>
             </div>
-            {version === 'ALL' ? (
+            {displayVersionWarning ? (
               <InfoMessage>
                 Note: data from the older versions can deviate, therefore the report data can be
                 inconsistent
@@ -204,14 +194,4 @@ export default class DefinitionSelection extends React.Component {
       </Popover>
     );
   }
-
-  renderAllVersions = key =>
-    key &&
-    this.findSelectedKeyGroup(key)
-      .versions.filter(({version}) => this.props.enableAllVersionSelection || version !== 'ALL')
-      .map(({version}) => (
-        <Select.Option key={version} value={version}>
-          {version.toLowerCase()}
-        </Select.Option>
-      ));
 }

@@ -52,7 +52,7 @@ const flushPromises = () => new Promise(resolve => setImmediate(resolve));
 
 const data = {
   processDefinitionKey: 'aKey',
-  processDefinitionVersion: 'aVersion',
+  processDefinitionVersions: ['aVersion'],
   tenantIds: [],
   filter: null,
   xml: 'aFooXml'
@@ -60,7 +60,7 @@ const data = {
 
 const emptyData = {
   processDefinitionKey: '',
-  processDefinitionVersion: '',
+  processDefinitionVersions: [],
   tenantIds: [],
   filter: null,
   xml: null
@@ -134,7 +134,7 @@ it('should load the flownode names and hand them to the filter if process defini
   const node = mount(<AnalysisControlPanel {...data} />);
   node.setProps({
     processDefinitionKey: 'fooKey',
-    processDefinitionVersion: 'fooVersion'
+    processDefinitionVersions: ['fooVersion']
   });
 
   await flushPromises();

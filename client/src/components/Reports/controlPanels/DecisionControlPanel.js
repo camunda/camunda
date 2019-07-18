@@ -55,12 +55,12 @@ export default class DecisionControlPanel extends React.Component {
     return null;
   }
 
-  changeDefinition = async (key, version, tenants) => {
+  changeDefinition = async (key, versions, tenants) => {
     const {groupBy, filter} = this.props.report.data;
 
     const change = {
       decisionDefinitionKey: {$set: key},
-      decisionDefinitionVersion: {$set: version},
+      decisionDefinitionVersions: {$set: versions},
       tenantIds: {$set: tenants},
       configuration: {
         excludedColumns: {$set: []},
@@ -73,7 +73,10 @@ export default class DecisionControlPanel extends React.Component {
           }
         },
         xml: {
-          $set: key && version ? await loadDecisionDefinitionXml(key, version, tenants[0]) : null
+          $set:
+            key && versions && versions[0]
+              ? await loadDecisionDefinitionXml(key, versions[0], tenants[0])
+              : null
         }
       },
       filter: {
@@ -97,7 +100,7 @@ export default class DecisionControlPanel extends React.Component {
     const {data, result} = this.props.report;
     const {
       decisionDefinitionKey,
-      decisionDefinitionVersion,
+      decisionDefinitionVersions,
       filter,
       visualization,
       configuration: {xml}
@@ -111,11 +114,10 @@ export default class DecisionControlPanel extends React.Component {
             <DefinitionSelection
               type="decision"
               definitionKey={decisionDefinitionKey}
-              definitionVersion={decisionDefinitionVersion}
+              versions={decisionDefinitionVersions}
               tenants={data.tenantIds}
               xml={xml}
               onChange={this.changeDefinition}
-              enableAllVersionSelection
             />
           </li>
           {['view', 'groupBy', 'visualization'].map((field, idx, fields) => {
@@ -132,11 +134,7 @@ export default class DecisionControlPanel extends React.Component {
                   value={data[field]}
                   variables={this.state.variables}
                   previous={previous}
-                  disabled={
-                    !decisionDefinitionKey ||
-                    !decisionDefinitionVersion ||
-                    previous.some(entry => !entry)
-                  }
+                  disabled={!decisionDefinitionKey || previous.some(entry => !entry)}
                   onChange={newValue => this.updateReport(field, newValue)}
                 />
               </li>
@@ -148,7 +146,7 @@ export default class DecisionControlPanel extends React.Component {
               onChange={this.props.updateReport}
               instanceCount={result && result.decisionInstanceCount}
               decisionDefinitionKey={decisionDefinitionKey}
-              decisionDefinitionVersion={decisionDefinitionVersion}
+              decisionDefinitionVersions={decisionDefinitionVersions}
               variables={this.state.variables}
             />
           </li>

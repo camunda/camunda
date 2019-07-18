@@ -7,6 +7,7 @@
 import classnames from 'classnames';
 import update from 'immutability-helper';
 import React from 'react';
+import equal from 'deep-equal';
 import {ActionItem, DefinitionSelection} from 'components';
 
 import {getFlowNodeNames} from 'services';
@@ -32,16 +33,16 @@ export default class AnalysisControlPanel extends React.Component {
     this.setState({
       flowNodeNames: await getFlowNodeNames(
         this.props.processDefinitionKey,
-        this.props.processDefinitionVersion,
+        this.props.processDefinitionVersions[0],
         this.props.tenantIds[0]
       )
     });
   };
 
-  componentDidUpdate({processDefinitionKey, processDefinitionVersion}) {
+  componentDidUpdate({processDefinitionKey, processDefinitionVersions}) {
     if (
       this.props.processDefinitionKey !== processDefinitionKey ||
-      this.props.processDefinitionVersion !== processDefinitionVersion
+      !equal(this.props.processDefinitionVersions, processDefinitionVersions)
     ) {
       this.loadFlowNodeNames();
     }
@@ -50,7 +51,7 @@ export default class AnalysisControlPanel extends React.Component {
   getDefinitionConfig = () => {
     return {
       processDefinitionKey: this.props.processDefinitionKey,
-      processDefinitionVersion: this.props.processDefinitionVersion
+      processDefinitionVersions: this.props.processDefinitionVersions
     };
   };
 
@@ -59,7 +60,7 @@ export default class AnalysisControlPanel extends React.Component {
   };
 
   isProcDefSelected = () => {
-    return this.props.processDefinitionKey && this.props.processDefinitionVersion;
+    return this.props.processDefinitionKey && this.props.processDefinitionVersions;
   };
 
   renderInput = ({type, label, bpmnKey}) => {
@@ -96,13 +97,13 @@ export default class AnalysisControlPanel extends React.Component {
             <DefinitionSelection
               type="process"
               definitionKey={this.props.processDefinitionKey}
-              definitionVersion={this.props.processDefinitionVersion}
+              versions={this.props.processDefinitionVersions}
               tenants={this.props.tenantIds}
               xml={this.props.xml}
-              onChange={(key, version, tenantIds) =>
+              onChange={(key, versions, tenantIds) =>
                 this.props.onChange({
                   processDefinitionKey: key,
-                  processDefinitionVersion: version,
+                  processDefinitionVersions: versions,
                   tenantIds,
                   filter: this.props.filter.filter(
                     ({type}) => type !== 'executedFlowNodes' && type !== 'variable'

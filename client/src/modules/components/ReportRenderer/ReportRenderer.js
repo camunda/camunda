@@ -96,6 +96,9 @@ export default function ReportRenderer(props) {
 }
 
 function containsData(report) {
+  if (!report.result) {
+    return false;
+  }
   if (report.combined) {
     return report.data.reports.length > 0 && Object.values(report.result.data).some(containsData);
   } else {
@@ -119,7 +122,7 @@ function checkCombined(data) {
 }
 
 function checkDecisionReport(data) {
-  if (isEmpty(data.decisionDefinitionKey) || isEmpty(data.decisionDefinitionVersion)) {
+  if (isEmpty(data.decisionDefinitionKey) || isEmpty(data.decisionDefinitionVersions)) {
     return (
       <p>
         Select a <b>Decision Definition</b> above.
@@ -131,7 +134,7 @@ function checkDecisionReport(data) {
 }
 
 function checkProcessReport(data) {
-  if (isEmpty(data.processDefinitionKey) || isEmpty(data.processDefinitionVersion)) {
+  if (isEmpty(data.processDefinitionKey) || isEmpty(data.processDefinitionVersions)) {
     return (
       <p>
         Select a <b>Process Definition</b> above.

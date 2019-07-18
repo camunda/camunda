@@ -51,7 +51,7 @@ service.loadVariables = jest.fn().mockReturnValue([]);
 const report = {
   data: {
     processDefinitionKey: 'aKey',
-    processDefinitionVersion: 'aVersion',
+    processDefinitionVersions: ['aVersion'],
     tenantIds: [],
     view: {entity: 'processInstance', property: 'frequency'},
     groupBy: {type: 'none', unit: null},
@@ -96,11 +96,11 @@ it('should load the variables of the process', () => {
   node.setProps({
     report: {
       ...report,
-      data: {...report.data, processDefinitionKey: 'bar', processDefinitionVersion: 'ALL'}
+      data: {...report.data, processDefinitionKey: 'bar', processDefinitionVersions: ['ALL']}
     }
   });
 
-  expect(service.loadVariables).toHaveBeenCalledWith('bar', 'ALL');
+  expect(service.loadVariables).toHaveBeenCalledWith('bar', ['ALL'], []);
 });
 
 it('should include variables in the groupby options', () => {
@@ -189,9 +189,9 @@ it('should load the process definition xml when a new definition is selected', a
 
   loadProcessDefinitionXml.mockClear();
 
-  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1, ['a', 'b']);
+  await node.find(DefinitionSelection).prop('onChange')('newDefinition', ['1'], ['a', 'b']);
 
-  expect(loadProcessDefinitionXml).toHaveBeenCalledWith('newDefinition', 1, 'a');
+  expect(loadProcessDefinitionXml).toHaveBeenCalledWith('newDefinition', '1', 'a');
 });
 
 it('should remove incompatible filters when changing the process definition', async () => {

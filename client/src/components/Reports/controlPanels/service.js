@@ -22,7 +22,7 @@ export function isDurationHeatmap({
   view,
   visualization,
   processDefinitionKey,
-  processDefinitionVersion
+  processDefinitionVersions
 }) {
   return (
     view &&
@@ -30,7 +30,8 @@ export function isDurationHeatmap({
     view.property === 'duration' &&
     visualization === 'heat' &&
     processDefinitionKey &&
-    processDefinitionVersion
+    processDefinitionVersions &&
+    processDefinitionVersions.length > 0
   );
 }
 

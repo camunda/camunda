@@ -12,7 +12,7 @@ it('Should correctly check for duration heatmap', () => {
       view: {entity: 'flowNode', property: 'duration'},
       visualization: 'heat',
       processDefinitionKey: 'test',
-      processDefinitionVersion: 'test'
+      processDefinitionVersions: ['test']
     })
   ).toBeTruthy();
 });
@@ -23,7 +23,7 @@ it('should work for user task reports', () => {
       view: {entity: 'userTask', property: 'duration'},
       visualization: 'heat',
       processDefinitionKey: 'test',
-      processDefinitionVersion: 'test'
+      processDefinitionVersions: ['test']
     })
   ).toBeTruthy();
 
@@ -32,7 +32,7 @@ it('should work for user task reports', () => {
       view: {entity: 'userTask', property: 'frequency'},
       visualization: 'heat',
       processDefinitionKey: 'test',
-      processDefinitionVersion: 'test'
+      processDefinitionVersions: ['test']
     })
   ).toBeFalsy();
 });

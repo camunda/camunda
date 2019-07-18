@@ -62,7 +62,7 @@
         "xlabel": ""
       },
       "processDefinitionKey": null,
-      "processDefinitionVersion": null,
+      "processDefinitionVersions": null,
       "processDefinitionName": null,
       "tenantIds": [null],
       "filter": [],
@@ -177,7 +177,7 @@
         "xlabel": ""
       },
       "decisionDefinitionKey": null,
-      "decisionDefinitionVersion": null,
+      "decisionDefinitionVersions": null,
       "decisionDefinitionName": null,
       "tenantIds": [null],
       "filter": [],

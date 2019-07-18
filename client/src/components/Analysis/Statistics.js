@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import equal from 'deep-equal';
 import ChartRenderer from 'chart.js';
 
 import {loadCorrelationData} from './service';
@@ -30,7 +31,7 @@ export default class Statistics extends React.Component {
         {
           flowNodeNames: await getFlowNodeNames(
             this.props.config.processDefinitionKey,
-            this.props.config.processDefinitionVersion,
+            this.props.config.processDefinitionVersions[0],
             this.props.config.tenantIds[0]
           )
         },
@@ -113,7 +114,10 @@ export default class Statistics extends React.Component {
   async componentDidUpdate(prevProps) {
     const procDefChanged =
       prevProps.config.processDefinitionKey !== this.props.config.processDefinitionKey ||
-      prevProps.config.processDefinitionVersion !== this.props.config.processDefinitionVersion;
+      !equal(
+        prevProps.config.processDefinitionVersions,
+        this.props.config.processDefinitionVersions
+      );
 
     if (procDefChanged) {
       await this.loadFlowNodeNames();
@@ -165,7 +169,7 @@ export default class Statistics extends React.Component {
             {
               data: await loadCorrelationData(
                 this.props.config.processDefinitionKey,
-                this.props.config.processDefinitionVersion,
+                this.props.config.processDefinitionVersions,
                 this.props.config.tenantIds,
                 this.props.config.filter,
                 this.props.gateway.id,

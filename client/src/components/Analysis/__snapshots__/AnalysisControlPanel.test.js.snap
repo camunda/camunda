@@ -4,7 +4,7 @@ exports[`should display a sentence to describe what the user can do on this page
 <AnalysisControlPanel
   filter={null}
   processDefinitionKey=""
-  processDefinitionVersion=""
+  processDefinitionVersions={Array []}
   tenantIds={Array []}
   xml={null}
 >
@@ -20,10 +20,10 @@ exports[`should display a sentence to describe what the user can do on this page
         For
         <DefinitionSelection
           definitionKey=""
-          definitionVersion=""
           onChange={[Function]}
           tenants={Array []}
           type="process"
+          versions={Array []}
           xml={null}
         >
           <div>
@@ -79,7 +79,7 @@ exports[`should display a sentence to describe what the user can do on this page
           flowNodeNames={null}
           onChange={[Function]}
           processDefinitionKey=""
-          processDefinitionVersion=""
+          processDefinitionVersions={Array []}
           xml={null}
         >
           Filter

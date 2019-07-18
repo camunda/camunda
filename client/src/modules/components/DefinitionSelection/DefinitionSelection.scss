@@ -11,8 +11,13 @@
     flex-direction: column;
 
     &.withTenants {
-      .selectionPanel .dropdowns .tenant.entry {
-        display: inline-block;
+      .selectionPanel {
+        .dropdowns .tenant.entry {
+          display: inline-block;
+        }
+        .InfoMessage {
+          width: 100%;
+        }
       }
     }
 
@@ -33,6 +38,7 @@
         font-size: 12px;
         margin-top: 10px;
         margin-bottom: -25px;
+        width: 400px;
       }
 
       .dropdowns {
@@ -54,7 +60,7 @@
             width: 120px;
           }
 
-          .version {
+          &.version {
             width: 120px;
           }
         }

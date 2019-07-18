@@ -8,13 +8,18 @@ import {post} from 'request';
 
 export async function loadFrequencyData(
   processDefinitionKey,
-  processDefinitionVersion,
+  processDefinitionVersions,
   tenantIds,
   filter
 ) {
   const response = await post(
     'api/report/evaluate',
-    createFlowNodeFrequencyReport(processDefinitionKey, processDefinitionVersion, tenantIds, filter)
+    createFlowNodeFrequencyReport(
+      processDefinitionKey,
+      processDefinitionVersions,
+      tenantIds,
+      filter
+    )
   );
 
   return await response.json();
@@ -22,7 +27,7 @@ export async function loadFrequencyData(
 
 function createFlowNodeFrequencyReport(
   processDefinitionKey,
-  processDefinitionVersion,
+  processDefinitionVersions,
   tenantIds,
   filter
 ) {
@@ -31,7 +36,7 @@ function createFlowNodeFrequencyReport(
     reportType: 'process',
     data: {
       processDefinitionKey,
-      processDefinitionVersion,
+      processDefinitionVersions,
       tenantIds,
       filter,
       view: {
@@ -49,7 +54,7 @@ function createFlowNodeFrequencyReport(
 
 export async function loadCorrelationData(
   processDefinitionKey,
-  processDefinitionVersion,
+  processDefinitionVersions,
   tenantIds,
   filter,
   gateway,
@@ -57,7 +62,7 @@ export async function loadCorrelationData(
 ) {
   const response = await post('api/analysis/correlation', {
     processDefinitionKey,
-    processDefinitionVersion,
+    processDefinitionVersions,
     tenantIds,
     filter,
     gateway,

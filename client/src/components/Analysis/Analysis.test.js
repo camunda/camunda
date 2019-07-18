@@ -51,7 +51,7 @@ it('should load the process definition xml when the process definition id is upd
   loadProcessDefinitionXml.mockClear();
   node.instance().updateConfig({
     processDefinitionKey: 'someKey',
-    processDefinitionVersion: 'someVersion',
+    processDefinitionVersions: ['someVersion'],
     tenantIds: ['a', 'b']
   });
 
@@ -63,7 +63,7 @@ it('should load frequency data when the process definition key changes', async (
 
   node
     .instance()
-    .updateConfig({processDefinitionKey: 'someKey', processDefinitionVersion: 'someVersion'});
+    .updateConfig({processDefinitionKey: 'someKey', processDefinitionVersions: ['someVersion']});
   loadFrequencyData.mockClear();
   await node.instance().updateConfig({processDefinitionKey: 'anotherKey'});
 
@@ -75,11 +75,11 @@ it('should load frequency data when the process definition version changes', asy
 
   await node
     .instance()
-    .updateConfig({processDefinitionKey: 'someKey', processDefinitionVersion: 'someVersion'});
+    .updateConfig({processDefinitionKey: 'someKey', processDefinitionVersions: ['someVersion']});
   loadFrequencyData.mockClear();
-  await node.instance().updateConfig({processDefinitionVersion: 'anotherVersion'});
+  await node.instance().updateConfig({processDefinitionVersions: ['anotherVersion']});
 
-  expect(loadFrequencyData.mock.calls[0][1]).toBe('anotherVersion');
+  expect(loadFrequencyData.mock.calls[0][1]).toEqual(['anotherVersion']);
 });
 
 it('should load updated frequency data when the filter changed', async () => {
@@ -87,7 +87,7 @@ it('should load updated frequency data when the filter changed', async () => {
 
   await node.instance().updateConfig({
     processDefinitionKey: 'someKey',
-    processDefinitionVersion: 'someVersion',
+    processDefinitionVersions: ['someVersion'],
     tenantIds: [null]
   });
   loadFrequencyData.mockClear();
@@ -116,11 +116,15 @@ it('should contain a statistics section if gateway and endEvent is selected', ()
   expect(node).toIncludeText('Statistics');
 });
 
-it('should clear the selection when another process definition is selected', async () => {
+it.only('should clear the selection when another process definition is selected', async () => {
   const node = mount(<Analysis />);
 
   await node.instance().setState({gateway: 'g', endEvent: 'e'});
-  await node.instance().updateConfig({processDefinitionKey: 'newKey'});
+  await node.instance().updateConfig({
+    processDefinitionKey: 'newKey',
+    processDefinitionVersions: ['latest'],
+    tenantIds: []
+  });
 
   expect(node).toHaveState('gateway', null);
   expect(node).toHaveState('endEvent', null);
@@ -139,7 +143,7 @@ it('should not reset the xml when adding a filter', async () => {
 
   await node.instance().updateConfig({
     processDefinitionKey: 'someKey',
-    processDefinitionVersion: 'someVersion',
+    processDefinitionVersions: ['someVersion'],
     tenantIds: ['a', 'b']
   });
   await node.instance().updateConfig({

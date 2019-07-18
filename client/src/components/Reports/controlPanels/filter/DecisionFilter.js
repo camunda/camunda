@@ -67,7 +67,7 @@ export default class DecisionFilter extends React.Component {
           await loadDecisionValues(
             type,
             this.props.decisionDefinitionKey,
-            this.props.decisionDefinitionVersion,
+            this.props.decisionDefinitionVersions,
             id,
             varType,
             0,
@@ -113,8 +113,8 @@ export default class DecisionFilter extends React.Component {
     return (
       !this.props.decisionDefinitionKey ||
       this.props.decisionDefinitionKey === '' ||
-      !this.props.decisionDefinitionVersion ||
-      this.props.decisionDefinitionVersion === ''
+      !this.props.decisionDefinitionVersions ||
+      this.props.decisionDefinitionVersions.length === 0
     );
   };
 
