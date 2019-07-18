@@ -44,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -195,7 +196,7 @@ public class ListViewZeebeRecordProcessor {
     entity.setActivityId(recordValue.getElementId());
     entity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
-      entity.setErrorMessage(recordValue.getErrorMessage());
+      entity.setErrorMessage(StringUtils.trimWhitespace(recordValue.getErrorMessage()));
       entity.setIncidentKey(record.getKey());
       entity.setIncidentJobKey(recordValue.getJobKey());
     } else if (intentStr.equals(IncidentIntent.CREATED.name())) {

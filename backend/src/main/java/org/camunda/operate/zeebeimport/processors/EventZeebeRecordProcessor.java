@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 @Component
 public class EventZeebeRecordProcessor {
@@ -202,7 +203,7 @@ public class EventZeebeRecordProcessor {
     }
 
     EventMetadataEntity eventMetadata = new EventMetadataEntity();
-    eventMetadata.setIncidentErrorMessage(recordValue.getErrorMessage());
+    eventMetadata.setIncidentErrorMessage(StringUtils.trimWhitespace(recordValue.getErrorMessage()));
     eventMetadata.setIncidentErrorType(recordValue.getErrorType());
     if (recordValue.getJobKey() > 0) {
       eventMetadata.setJobKey(recordValue.getJobKey());

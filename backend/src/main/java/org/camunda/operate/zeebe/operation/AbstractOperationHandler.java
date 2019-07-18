@@ -14,6 +14,7 @@ import org.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 
 public abstract class AbstractOperationHandler implements OperationHandler {
 
@@ -45,7 +46,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
       operation.setLockExpirationTime(null);
       operation.setLockOwner(null);
       operation.setEndDate(OffsetDateTime.now());
-      operation.setErrorMessage(errorMsg);
+      operation.setErrorMessage(StringUtils.trimWhitespace(errorMsg));
       batchOperationWriter.updateOperation(operation);
       logger.debug("Operation {} failed with message: {} ", operation.getId(), operation.getErrorMessage());
     }

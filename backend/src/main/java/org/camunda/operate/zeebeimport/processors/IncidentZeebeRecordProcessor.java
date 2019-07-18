@@ -26,6 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.Record;
 
@@ -79,7 +81,7 @@ public class IncidentZeebeRecordProcessor {
       if (recordValue.getWorkflowKey() > 0) {
         incident.setWorkflowKey(recordValue.getWorkflowKey());
       }
-      incident.setErrorMessage(recordValue.getErrorMessage());
+      incident.setErrorMessage(StringUtils.trimWhitespace(recordValue.getErrorMessage()));
       incident.setErrorType(recordValue.getErrorType());
       incident.setFlowNodeId(recordValue.getElementId());
       if (recordValue.getElementInstanceKey() > 0) {
