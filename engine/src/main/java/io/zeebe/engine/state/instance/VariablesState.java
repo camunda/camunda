@@ -202,12 +202,15 @@ public class VariablesState {
   public void setVariablesFromDocument(long scopeKey, long workflowKey, DirectBuffer document) {
     // 1. index entries in the document
     indexedDocument.index(document);
+    if (!indexedDocument.hasEntries()) {
+      return;
+    }
 
     long currentScope = scopeKey;
     long parentScope;
 
     // 2. overwrite any variables in the scope hierarchy
-    while (indexedDocument.hasEntries() && (parentScope = getParent(currentScope)) > 0) {
+    while ((parentScope = getParent(currentScope)) > 0) {
       final DocumentEntryIterator entryIterator = indexedDocument.iterator();
 
       while (entryIterator.hasNext()) {
@@ -238,22 +241,20 @@ public class VariablesState {
     }
 
     // 3. set remaining variables on top scope
-    if (indexedDocument.hasEntries()) {
-      final DocumentEntryIterator entryIterator = indexedDocument.iterator();
+    final DocumentEntryIterator entryIterator = indexedDocument.iterator();
 
-      while (entryIterator.hasNext()) {
-        entryIterator.next();
+    while (entryIterator.hasNext()) {
+      entryIterator.next();
 
-        setVariableLocal(
-            currentScope,
-            workflowKey,
-            document,
-            entryIterator.getNameOffset(),
-            entryIterator.getNameLength(),
-            document,
-            entryIterator.getValueOffset(),
-            entryIterator.getValueLength());
-      }
+      setVariableLocal(
+          currentScope,
+          workflowKey,
+          document,
+          entryIterator.getNameOffset(),
+          entryIterator.getNameLength(),
+          document,
+          entryIterator.getValueOffset(),
+          entryIterator.getValueLength());
     }
   }
 

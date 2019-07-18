@@ -119,5 +119,7 @@
         <module name="EmptyCatchBlock">
           <property name="commentFormat" value="^.+$" />
         </module>
+
+        <module name="InnerAssignment" />
     </module>
 </module>

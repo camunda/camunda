@@ -29,19 +29,23 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P> {
     this.capacity = findNextPositivePowerOfTwo(capacity);
     this.mask = this.capacity - 1;
 
-    head = tail = 0;
+    head = 0;
+    tail = 0;
 
     array = new Object[this.capacity];
   }
 
+  @Override
   public void clear() {
-    head = tail = 0;
+    head = 0;
+    tail = 0;
     for (int i = 0; i < array.length; i++) {
       array[i] = null;
     }
     iterator.reset();
   }
 
+  @Override
   public boolean offer(P object) {
     final int remainingSpace = capacity - size();
 
@@ -58,6 +62,7 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P> {
     }
   }
 
+  @Override
   @SuppressWarnings("unchecked")
   public P poll() {
     final int size = size();
@@ -76,6 +81,7 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P> {
     return (P) object;
   }
 
+  @Override
   @SuppressWarnings("unchecked")
   public P peek() {
     final int size = size();
@@ -91,6 +97,7 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P> {
     return (P) object;
   }
 
+  @Override
   public int size() {
     return (int) (tail - head);
   }
