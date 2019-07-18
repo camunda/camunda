@@ -89,7 +89,7 @@
     &.horizontal {
       width: 90%;
 
-      .FormTitle,
+      .formTitle,
       .formDescription {
         margin-left: 30%;
       }
@@ -150,7 +150,7 @@
   }
 
   &.compact {
-    .FormTitle {
+    .formTitle {
       font-weight: bold;
     }
 
@@ -159,7 +159,8 @@
       font-size: 0.875em;
     }
 
-    > fieldset:first-child legend {
+    > fieldset:first-child legend,
+    > div:first-child > fieldset:first-child legend {
       border: none;
       padding: 0;
     }
@@ -179,8 +180,11 @@
 
     .FormGroup {
       &:not(.noSpacing) {
-        border-top: 1px solid #d3d3d3;
-        padding: 14px 0 20px 0;
+        padding: 5px 0 20px 0;
+        &:not(:first-child) {
+          border-top: 1px solid #d3d3d3;
+          padding-top: 14px;
+        }
       }
 
       &.noSpacing > label:only-child {
@@ -189,6 +193,7 @@
 
       > label {
         display: block;
+        white-space: nowrap;
 
         &:not(:first-child) {
           margin-top: 10px;
