@@ -85,7 +85,8 @@ public class DistributedLogRule extends ExternalResource {
     this.otherNodes = otherNodes;
     try {
       rootDirectory = Files.createTempDirectory("dl-test-" + nodeId + "-");
-    } catch (Exception e) {
+    } catch (Exception ignored) {
+      // ignored
     }
     config =
         new StorageConfigurationManager(
