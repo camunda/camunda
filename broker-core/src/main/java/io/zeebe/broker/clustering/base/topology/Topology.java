@@ -154,6 +154,10 @@ public class Topology {
           member.removeLeader(partitionId);
           member.addFollower(partitionId);
           break;
+
+        default:
+          LOG.warn("Unexpected raft state {}", state);
+          break;
       }
     }
   }

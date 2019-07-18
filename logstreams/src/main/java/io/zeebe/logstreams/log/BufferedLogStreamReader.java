@@ -179,6 +179,8 @@ public class BufferedLogStreamReader implements LogStreamReader {
   @Override
   public boolean hasNext() {
     switch (state) {
+      case EVENT_AVAILABLE:
+        return true;
       case EMPTY_LOG_STREAM:
         seekToFirstEvent();
         break;
@@ -190,6 +192,8 @@ public class BufferedLogStreamReader implements LogStreamReader {
         break;
       case WRAP_NOT_CALLED:
         throw new IllegalStateException("Iterator not initialized");
+      default:
+        throw new IllegalStateException("Unknown reader state " + state.name());
     }
 
     return state == IteratorState.EVENT_AVAILABLE;

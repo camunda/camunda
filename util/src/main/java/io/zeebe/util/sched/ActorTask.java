@@ -250,6 +250,10 @@ public class ActorTask {
           onClosed();
           resubmit = false;
           break;
+
+        default:
+          throw new IllegalStateException(
+              "Unexpected actor lifecycle phase " + lifecyclePhase.name());
       }
     } else {
       if (lifecyclePhase != ActorLifecyclePhase.CLOSED) {

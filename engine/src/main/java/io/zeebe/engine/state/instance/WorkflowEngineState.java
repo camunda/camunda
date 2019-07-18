@@ -101,6 +101,8 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
       case ELEMENT_TERMINATED:
         metrics.elementInstanceTerminated(value.getBpmnElementType());
         break;
+      default:
+        break;
     }
   }
 

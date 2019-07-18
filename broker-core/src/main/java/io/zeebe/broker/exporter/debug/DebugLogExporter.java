@@ -16,26 +16,47 @@ import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.protocol.record.Record;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
 import org.slf4j.Logger;
 
 public class DebugLogExporter implements Exporter {
+  private static final Map<LogLevel, LogFunctionSupplier> LOGGERS = new EnumMap<>(LogLevel.class);
 
-  private Logger log;
-  private LogLevel logLevel;
+  static {
+    LOGGERS.put(LogLevel.TRACE, logger -> logger::trace);
+    LOGGERS.put(LogLevel.DEBUG, logger -> logger::debug);
+    LOGGERS.put(LogLevel.INFO, logger -> logger::info);
+    LOGGERS.put(LogLevel.WARN, logger -> logger::warn);
+    LOGGERS.put(LogLevel.ERROR, logger -> logger::error);
+  }
+
   private DebugExporterConfiguration configuration;
   private ObjectMapper objectMapper;
+  private LogFunction logger;
 
   @Override
   public void configure(Context context) {
-    log = context.getLogger();
     configuration = context.getConfiguration().instantiate(DebugExporterConfiguration.class);
-    logLevel = configuration.getLogLevel();
+    final LogLevel logLevel = configuration.getLogLevel();
+    final LogFunctionSupplier supplier = LOGGERS.get(logLevel);
+
+    if (supplier == null) {
+      final LogLevel[] expectedLogLevels = LOGGERS.keySet().toArray(new LogLevel[0]);
+      throw new IllegalStateException(
+          String.format(
+              "Expected log level to be one of %s, but instead got %s",
+              Arrays.toString(expectedLogLevels), logLevel));
+    }
+
+    logger = supplier.supply(context.getLogger());
   }
 
   @Override
   public void open(Controller controller) {
-    log("Debug exporter opened");
+    logger.log("Debug exporter opened");
     objectMapper = new ObjectMapper();
     objectMapper.registerModule(new JavaTimeModule());
     objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -46,15 +67,15 @@ public class DebugLogExporter implements Exporter {
 
   @Override
   public void close() {
-    log("Debug exporter closed");
+    logger.log("Debug exporter closed");
   }
 
   @Override
   public void export(Record record) {
     try {
-      log("{}", objectMapper.writeValueAsString(record));
+      logger.log("{}", objectMapper.writeValueAsString(record));
     } catch (JsonProcessingException e) {
-      log("Failed to serialize object '{}' to JSON", record, e);
+      logger.log("Failed to serialize object '{}' to JSON", record, e);
     }
   }
 
@@ -66,40 +87,28 @@ public class DebugLogExporter implements Exporter {
     return exporterCfg;
   }
 
-  public void log(String message, Object... args) {
-    switch (logLevel) {
-      case TRACE:
-        log.trace(message, args);
-        break;
-      case DEBUG:
-        log.debug(message, args);
-        break;
-      case INFO:
-        log.info(message, args);
-        break;
-      case WARN:
-        log.warn(message, args);
-        break;
-      case ERROR:
-        log.error(message, args);
-        break;
-    }
-  }
-
   public static class DebugExporterConfiguration {
-    public String logLevel = "debug";
-    public boolean prettyPrint = false;
+    String logLevel = "debug";
+    boolean prettyPrint = false;
 
     LogLevel getLogLevel() {
       return LogLevel.valueOf(logLevel.trim().toUpperCase());
     }
   }
 
-  enum LogLevel {
+  private enum LogLevel {
     TRACE,
     DEBUG,
     INFO,
     WARN,
     ERROR,
+  }
+
+  private interface LogFunctionSupplier {
+    LogFunction supply(Logger logger);
+  }
+
+  private interface LogFunction {
+    void log(String message, Object... args);
   }
 }

@@ -328,6 +328,7 @@ public class MsgPackReader {
         break;
       case EXTENSION:
       case NEVER_USED:
+      default:
         throw new MsgpackReaderException(
             String.format("Unknown token format '%s'", format.getType().name()));
     }
@@ -451,6 +452,7 @@ public class MsgPackReader {
           offset += 4;
           break;
         case NEVER_USED:
+        default:
           throw new MsgpackReaderException("Encountered 0xC1 \"NEVER_USED\" byte");
       }
 
