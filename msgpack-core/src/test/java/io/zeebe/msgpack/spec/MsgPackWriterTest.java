@@ -31,6 +31,19 @@ public class MsgPackWriterTest {
   protected static final long LONG_NEG_5_BIT = -longOfLength(5);
   protected static final DirectBuffer BYTE_5 = toBuffer("foooo");
   protected static final DirectBuffer BYTE_32 = toBuffer("aaaa_aaaa_aaaa_aaaa_aaaa_aaaa_aa");
+  protected static final int BUFFER_CAPACITY = 1024;
+  protected static final int WRITE_OFFSET = 123;
+
+  @Parameter(0)
+  public String name;
+
+  @Parameter(1)
+  public CheckedConsumer<MsgPackWriter> actualValueWriter;
+
+  @Parameter(2)
+  public CheckedConsumer<ByteArrayBuilder> expectedValueWriter;
+
+  protected MutableDirectBuffer actualValueBuffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
 
   @Parameters(name = "{0}")
   public static Iterable<Object[]> data() {
@@ -152,20 +165,6 @@ public class MsgPackWriterTest {
           },
         });
   }
-
-  @Parameter(0)
-  public String name;
-
-  @Parameter(1)
-  public CheckedConsumer<MsgPackWriter> actualValueWriter;
-
-  @Parameter(2)
-  public CheckedConsumer<ByteArrayBuilder> expectedValueWriter;
-
-  protected static final int BUFFER_CAPACITY = 1024;
-  protected static final int WRITE_OFFSET = 123;
-
-  protected MutableDirectBuffer actualValueBuffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
 
   @Before
   public void setUp() {

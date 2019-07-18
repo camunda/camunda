@@ -23,12 +23,10 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
 public class ExporterJarRepositoryTest {
+  private final ExporterJarRepository jarRepository = new ExporterJarRepository();
   private TemporaryFolder temporaryFolder = new TemporaryFolder();
   private JarCreatorRule jarCreator = new JarCreatorRule(temporaryFolder);
-
   @Rule public RuleChain chain = RuleChain.outerRule(temporaryFolder).around(jarCreator);
-
-  private final ExporterJarRepository jarRepository = new ExporterJarRepository();
 
   @Test
   public void shouldThrowExceptionOnLoadIfNotAJar() throws IOException {

@@ -47,37 +47,8 @@ public class SbeLogReplicationRequest
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
-    super.wrap(buffer, offset, length);
-    delegate.setFromPosition(decoder.fromPosition());
-    delegate.setToPosition(decoder.toPosition());
-    delegate.setIncludeFromPosition(decoder.includeFromPosition() == BooleanType.TRUE);
-  }
-
-  @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
-    super.write(buffer, offset);
-    encoder
-        .fromPosition(delegate.getFromPosition())
-        .toPosition(delegate.getToPosition())
-        .includeFromPosition(delegate.includeFromPosition() ? BooleanType.TRUE : BooleanType.FALSE);
-  }
-
-  @Override
-  public void reset() {
-    super.reset();
-    delegate.setFromPosition(fromPositionNullValue());
-    delegate.setToPosition(toPositionNullValue());
-    delegate.setIncludeFromPosition(false);
-  }
-
-  @Override
   public boolean includeFromPosition() {
     return delegate.includeFromPosition();
-  }
-
-  public void setIncludeFromPosition(boolean includeFromPosition) {
-    delegate.setIncludeFromPosition(includeFromPosition);
   }
 
   @Override
@@ -98,6 +69,10 @@ public class SbeLogReplicationRequest
     delegate.setToPosition(toPosition);
   }
 
+  public void setIncludeFromPosition(boolean includeFromPosition) {
+    delegate.setIncludeFromPosition(includeFromPosition);
+  }
+
   public static byte[] serialize(LogReplicationRequest request) {
     return new SbeLogReplicationRequest(request).toBytes();
   }
@@ -115,5 +90,30 @@ public class SbeLogReplicationRequest
   @Override
   protected LogReplicationRequestDecoder getBodyDecoder() {
     return decoder;
+  }
+
+  @Override
+  public void reset() {
+    super.reset();
+    delegate.setFromPosition(fromPositionNullValue());
+    delegate.setToPosition(toPositionNullValue());
+    delegate.setIncludeFromPosition(false);
+  }
+
+  @Override
+  public void write(MutableDirectBuffer buffer, int offset) {
+    super.write(buffer, offset);
+    encoder
+        .fromPosition(delegate.getFromPosition())
+        .toPosition(delegate.getToPosition())
+        .includeFromPosition(delegate.includeFromPosition() ? BooleanType.TRUE : BooleanType.FALSE);
+  }
+
+  @Override
+  public void wrap(DirectBuffer buffer, int offset, int length) {
+    super.wrap(buffer, offset, length);
+    delegate.setFromPosition(decoder.fromPosition());
+    delegate.setToPosition(decoder.toPosition());
+    delegate.setIncludeFromPosition(decoder.includeFromPosition() == BooleanType.TRUE);
   }
 }

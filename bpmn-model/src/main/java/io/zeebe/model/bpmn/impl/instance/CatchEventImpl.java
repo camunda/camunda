@@ -51,6 +51,10 @@ public abstract class CatchEventImpl extends EventImpl implements CatchEvent {
   protected static ElementReferenceCollection<EventDefinition, EventDefinitionRef>
       eventDefinitionRefCollection;
 
+  public CatchEventImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -80,10 +84,6 @@ public abstract class CatchEventImpl extends EventImpl implements CatchEvent {
             .build();
 
     typeBuilder.build();
-  }
-
-  public CatchEventImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

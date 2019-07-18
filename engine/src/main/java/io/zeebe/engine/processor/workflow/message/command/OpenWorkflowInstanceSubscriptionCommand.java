@@ -20,13 +20,11 @@ public class OpenWorkflowInstanceSubscriptionCommand
       new OpenWorkflowInstanceSubscriptionEncoder();
   private final OpenWorkflowInstanceSubscriptionDecoder decoder =
       new OpenWorkflowInstanceSubscriptionDecoder();
-
+  private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
   private int subscriptionPartitionId;
   private long workflowInstanceKey;
   private long elementInstanceKey;
   private boolean closeOnCorrelate;
-
-  private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
 
   @Override
   protected OpenWorkflowInstanceSubscriptionEncoder getBodyEncoder() {
@@ -36,6 +34,15 @@ public class OpenWorkflowInstanceSubscriptionCommand
   @Override
   protected OpenWorkflowInstanceSubscriptionDecoder getBodyDecoder() {
     return decoder;
+  }
+
+  @Override
+  public void reset() {
+    subscriptionPartitionId =
+        OpenWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue();
+    workflowInstanceKey = OpenWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue();
+    elementInstanceKey = OpenWorkflowInstanceSubscriptionDecoder.elementInstanceKeyNullValue();
+    messageName.wrap(0, 0);
   }
 
   @Override
@@ -71,15 +78,6 @@ public class OpenWorkflowInstanceSubscriptionCommand
     offset += OpenWorkflowInstanceSubscriptionDecoder.messageNameHeaderLength();
     final int messageNameLength = decoder.messageNameLength();
     messageName.wrap(buffer, offset, messageNameLength);
-  }
-
-  @Override
-  public void reset() {
-    subscriptionPartitionId =
-        OpenWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue();
-    workflowInstanceKey = OpenWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue();
-    elementInstanceKey = OpenWorkflowInstanceSubscriptionDecoder.elementInstanceKeyNullValue();
-    messageName.wrap(0, 0);
   }
 
   public int getSubscriptionPartitionId() {

@@ -57,6 +57,10 @@ public class BpmnShapeImpl extends LabeledShapeImpl implements BpmnShape {
   protected static AttributeReference<BpmnShape> choreographyActivityShapeAttribute;
   protected static ChildElement<BpmnLabel> bpmnLabelChild;
 
+  public BpmnShapeImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -103,10 +107,6 @@ public class BpmnShapeImpl extends LabeledShapeImpl implements BpmnShape {
     bpmnLabelChild = sequenceBuilder.element(BpmnLabel.class).build();
 
     typeBuilder.build();
-  }
-
-  public BpmnShapeImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

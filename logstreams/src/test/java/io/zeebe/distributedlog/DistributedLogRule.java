@@ -45,28 +45,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DistributedLogRule extends ExternalResource {
-  private ServiceContainer serviceContainer;
+  public static final Logger LOG = LoggerFactory.getLogger("io.zeebe.distributedlog.test");
+  public static final ServiceName<Atomix> ATOMIX_SERVICE_NAME =
+      ServiceName.newServiceName("cluster.base.atomix", Atomix.class);
   private final int nodeId;
   private final SocketAddress socketAddress;
   private final List<Node> otherNodes;
   private final ActorSchedulerRule actorSchedulerRule;
   private final ServiceContainerRule serviceContainerRule;
-  private Atomix atomix;
   private final int numPartitions;
   private final int replicationFactor;
   private final List<String> members;
-
-  private CompletableFuture<Void> nodeStarted;
-  public static final Logger LOG = LoggerFactory.getLogger("io.zeebe.distributedlog.test");
-
   private final Map<Integer, DistributedLogPartitionRule> partitions = new HashMap<>();
-
-  private Path rootDirectory;
-
-  public static final ServiceName<Atomix> ATOMIX_SERVICE_NAME =
-      ServiceName.newServiceName("cluster.base.atomix", Atomix.class);
-  private ActorFuture<Void> configFuture;
   private final StorageConfigurationManager config;
+  private ServiceContainer serviceContainer;
+  private Atomix atomix;
+  private CompletableFuture<Void> nodeStarted;
+  private Path rootDirectory;
+  private ActorFuture<Void> configFuture;
 
   public DistributedLogRule(
       ServiceContainerRule serviceContainerRule,
@@ -110,6 +106,16 @@ public class DistributedLogRule extends ExternalResource {
     startNode();
   }
 
+  @Override
+  protected void after() {
+    stopNode();
+    try {
+      FileUtil.deleteFolder(rootDirectory.toAbsolutePath().toString());
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
   public void startNode() throws IOException {
     nodeStarted =
         createAtomixNode()
@@ -121,16 +127,6 @@ public class DistributedLogRule extends ExternalResource {
                     e.printStackTrace();
                   }
                 });
-  }
-
-  @Override
-  protected void after() {
-    stopNode();
-    try {
-      FileUtil.deleteFolder(rootDirectory.toAbsolutePath().toString());
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
   }
 
   public void stopNode() {

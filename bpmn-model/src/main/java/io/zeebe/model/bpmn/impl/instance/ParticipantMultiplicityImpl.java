@@ -40,6 +40,10 @@ public class ParticipantMultiplicityImpl extends BaseElementImpl
   protected static Attribute<Integer> minimumAttribute;
   protected static Attribute<Integer> maximumAttribute;
 
+  public ParticipantMultiplicityImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -60,10 +64,6 @@ public class ParticipantMultiplicityImpl extends BaseElementImpl
     maximumAttribute = typeBuilder.integerAttribute(BPMN_ATTRIBUTE_MAXIMUM).defaultValue(1).build();
 
     typeBuilder.build();
-  }
-
-  public ParticipantMultiplicityImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

@@ -56,6 +56,11 @@ public class BooleanValue extends BaseValue {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(val);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -67,10 +72,5 @@ public class BooleanValue extends BaseValue {
 
     final BooleanValue that = (BooleanValue) o;
     return val == that.val;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(val);
   }
 }

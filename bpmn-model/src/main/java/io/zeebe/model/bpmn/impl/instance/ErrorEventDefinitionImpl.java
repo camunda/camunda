@@ -38,6 +38,10 @@ public class ErrorEventDefinitionImpl extends EventDefinitionImpl implements Err
 
   protected static AttributeReference<Error> errorRefAttribute;
 
+  public ErrorEventDefinitionImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -60,10 +64,6 @@ public class ErrorEventDefinitionImpl extends EventDefinitionImpl implements Err
             .build();
 
     typeBuilder.build();
-  }
-
-  public ErrorEventDefinitionImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

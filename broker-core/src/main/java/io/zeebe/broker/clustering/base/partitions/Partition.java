@@ -36,24 +36,16 @@ import org.slf4j.Logger;
 
 /** Service representing a partition. */
 public class Partition implements Service<Partition> {
-  private static final String PARTITION_NAME_FORMAT = "raft-atomix-partition-%d";
   public static final String GROUP_NAME = "raft-atomix";
-
   public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
-
-  public static String getPartitionName(final int partitionId) {
-    return String.format(PARTITION_NAME_FORMAT, partitionId);
-  }
-
+  private static final String PARTITION_NAME_FORMAT = "raft-atomix-partition-%d";
   private final Injector<LogStream> logStreamInjector = new Injector<>();
-
   private final ClusterEventService clusterEventService;
   private final int partitionId;
   private final RaftState state;
   private final StorageConfiguration configuration;
   private final BrokerCfg brokerCfg;
   private final BrokerRestoreServer restoreServer;
-
   private StateSnapshotController snapshotController;
   private SnapshotReplication stateReplication;
   private LogStream logStream;
@@ -72,6 +64,10 @@ public class Partition implements Service<Partition> {
     this.partitionId = partitionId;
     this.state = state;
     this.restoreServer = restoreServer;
+  }
+
+  public static String getPartitionName(final int partitionId) {
+    return String.format(PARTITION_NAME_FORMAT, partitionId);
   }
 
   @Override
@@ -121,6 +117,26 @@ public class Partition implements Service<Partition> {
     startContext.async(startedFuture, true);
   }
 
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    stateReplication.close();
+    restoreServer.close();
+
+    try {
+      snapshotController.close();
+    } catch (Exception e) {
+      LOG.error(
+          "Unexpected error occurred while closing the state snapshot controller for partition {}.",
+          partitionId,
+          e);
+    }
+  }
+
+  @Override
+  public Partition get() {
+    return this;
+  }
+
   private void startRestoreServer(CompletableActorFuture<Void> startedFuture) {
     restoreServer
         .start(logStream, snapshotController)
@@ -158,26 +174,6 @@ public class Partition implements Service<Partition> {
 
   private boolean shouldReplicateSnapshots() {
     return brokerCfg.getCluster().getReplicationFactor() > 1;
-  }
-
-  @Override
-  public void stop(ServiceStopContext stopContext) {
-    stateReplication.close();
-    restoreServer.close();
-
-    try {
-      snapshotController.close();
-    } catch (Exception e) {
-      LOG.error(
-          "Unexpected error occurred while closing the state snapshot controller for partition {}.",
-          partitionId,
-          e);
-    }
-  }
-
-  @Override
-  public Partition get() {
-    return this;
   }
 
   public int getPartitionId() {

@@ -37,6 +37,11 @@ public class ServerInputSubscriptionImpl implements ServerInputSubscription {
   }
 
   @Override
+  public int poll(int maxCount) {
+    return subscription.poll(fragmentHandler, maxCount);
+  }
+
+  @Override
   public boolean hasAvailable() {
     return subscription.hasAvailable();
   }
@@ -49,10 +54,5 @@ public class ServerInputSubscriptionImpl implements ServerInputSubscription {
   @Override
   public void removeConsumer(ActorCondition onDataAvailable) {
     subscription.removeConsumer(onDataAvailable);
-  }
-
-  @Override
-  public int poll(int maxCount) {
-    return subscription.poll(fragmentHandler, maxCount);
   }
 }

@@ -41,6 +41,10 @@ public abstract class DiagramElementImpl extends BpmnModelElementInstanceImpl
   protected static Attribute<String> idAttribute;
   protected static ChildElement<Extension> extensionChild;
 
+  public DiagramElementImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -55,10 +59,6 @@ public abstract class DiagramElementImpl extends BpmnModelElementInstanceImpl
     extensionChild = sequenceBuilder.element(Extension.class).build();
 
     typeBuilder.build();
-  }
-
-  public DiagramElementImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

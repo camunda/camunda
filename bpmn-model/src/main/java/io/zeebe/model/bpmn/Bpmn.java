@@ -251,6 +251,13 @@ public class Bpmn {
   /** The {@link Model} */
   private Model bpmnModel;
 
+  /** Register known types of the BPMN model */
+  protected Bpmn() {
+    bpmnModelBuilder = ModelBuilder.createInstance("BPMN Model");
+    doRegisterTypes(bpmnModelBuilder);
+    bpmnModel = bpmnModelBuilder.build();
+  }
+
   /**
    * Allows reading a {@link BpmnModelInstance} from a File.
    *
@@ -357,13 +364,6 @@ public class Bpmn {
 
   public static ProcessBuilder createExecutableProcess(String processId) {
     return createProcess(processId).executable();
-  }
-
-  /** Register known types of the BPMN model */
-  protected Bpmn() {
-    bpmnModelBuilder = ModelBuilder.createInstance("BPMN Model");
-    doRegisterTypes(bpmnModelBuilder);
-    bpmnModel = bpmnModelBuilder.build();
   }
 
   protected BpmnModelInstance doReadModelFromFile(File file) {
@@ -632,12 +632,12 @@ public class Bpmn {
     return bpmnModel;
   }
 
-  public ModelBuilder getBpmnModelBuilder() {
-    return bpmnModelBuilder;
-  }
-
   /** @param bpmnModel the bpmnModel to set */
   public void setBpmnModel(Model bpmnModel) {
     this.bpmnModel = bpmnModel;
+  }
+
+  public ModelBuilder getBpmnModelBuilder() {
+    return bpmnModelBuilder;
   }
 }

@@ -23,6 +23,15 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class MsgPackReadingTest {
 
+  @Parameter(0)
+  public String name;
+
+  @Parameter(1)
+  public Consumer<ByteArrayBuilder> given;
+
+  @Parameter(2)
+  public Consumer<MsgPackReader> assertion;
+
   @Parameters(name = "{0}")
   public static Iterable<Object[]> data() {
     return Arrays.asList(
@@ -188,15 +197,6 @@ public class MsgPackReadingTest {
           },
         });
   }
-
-  @Parameter(0)
-  public String name;
-
-  @Parameter(1)
-  public Consumer<ByteArrayBuilder> given;
-
-  @Parameter(2)
-  public Consumer<MsgPackReader> assertion;
 
   @Test
   public void shouldReadMsgPack() {

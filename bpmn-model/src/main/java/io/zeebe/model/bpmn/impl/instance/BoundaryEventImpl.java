@@ -43,6 +43,10 @@ public class BoundaryEventImpl extends CatchEventImpl implements BoundaryEvent {
   protected static Attribute<Boolean> cancelActivityAttribute;
   protected static AttributeReference<Activity> attachedToRefAttribute;
 
+  public BoundaryEventImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -68,10 +72,6 @@ public class BoundaryEventImpl extends CatchEventImpl implements BoundaryEvent {
             .build();
 
     typeBuilder.build();
-  }
-
-  public BoundaryEventImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

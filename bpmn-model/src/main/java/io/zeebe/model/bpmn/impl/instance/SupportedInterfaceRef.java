@@ -31,6 +31,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class SupportedInterfaceRef extends BpmnModelElementInstanceImpl {
 
+  public SupportedInterfaceRef(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -46,9 +50,5 @@ public class SupportedInterfaceRef extends BpmnModelElementInstanceImpl {
                 });
 
     typeBuilder.build();
-  }
-
-  public SupportedInterfaceRef(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 }

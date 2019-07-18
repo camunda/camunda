@@ -58,10 +58,6 @@ class TransactionalColumnFamily<
     return get(context, key);
   }
 
-  public ValueType get(DbContext context, KeyType key) {
-    return get(context, key, valueInstance);
-  }
-
   @Override
   public ValueType get(DbContext context, KeyType key, ValueType value) {
     final DirectBuffer valueBuffer = transactionDb.get(handle, context, key);
@@ -78,26 +74,14 @@ class TransactionalColumnFamily<
     forEach(context, consumer);
   }
 
-  public void forEach(DbContext context, Consumer<ValueType> consumer) {
-    transactionDb.foreach(handle, context, valueInstance, consumer);
-  }
-
   @Override
   public void forEach(BiConsumer<KeyType, ValueType> consumer) {
     forEach(context, consumer);
   }
 
-  public void forEach(DbContext context, BiConsumer<KeyType, ValueType> consumer) {
-    transactionDb.foreach(handle, context, keyInstance, valueInstance, consumer);
-  }
-
   @Override
   public void whileTrue(KeyValuePairVisitor<KeyType, ValueType> visitor) {
     whileTrue(context, visitor);
-  }
-
-  public void whileTrue(DbContext context, KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    whileTrue(context, visitor, keyInstance, valueInstance);
   }
 
   @Override
@@ -114,19 +98,9 @@ class TransactionalColumnFamily<
     whileEqualPrefix(context, keyPrefix, visitor);
   }
 
-  public void whileEqualPrefix(
-      DbContext context, DbKey keyPrefix, BiConsumer<KeyType, ValueType> visitor) {
-    transactionDb.whileEqualPrefix(handle, context, keyPrefix, keyInstance, valueInstance, visitor);
-  }
-
   @Override
   public void whileEqualPrefix(DbKey keyPrefix, KeyValuePairVisitor<KeyType, ValueType> visitor) {
     whileEqualPrefix(context, keyPrefix, visitor);
-  }
-
-  public void whileEqualPrefix(
-      DbContext context, DbKey keyPrefix, KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    transactionDb.whileEqualPrefix(handle, context, keyPrefix, keyInstance, valueInstance, visitor);
   }
 
   @Override
@@ -144,10 +118,6 @@ class TransactionalColumnFamily<
     return exists(context, key);
   }
 
-  public boolean exists(DbContext context, KeyType key) {
-    return transactionDb.exists(handle, context, key);
-  }
-
   @Override
   public boolean existsPrefix(DbKey keyPrefix) {
     return transactionDb.existsPrefix(handle, context, keyPrefix, keyInstance, valueInstance);
@@ -161,5 +131,35 @@ class TransactionalColumnFamily<
   @Override
   public boolean isEmpty(DbContext context) {
     return transactionDb.isEmpty(handle, context);
+  }
+
+  public ValueType get(DbContext context, KeyType key) {
+    return get(context, key, valueInstance);
+  }
+
+  public void forEach(DbContext context, Consumer<ValueType> consumer) {
+    transactionDb.foreach(handle, context, valueInstance, consumer);
+  }
+
+  public void forEach(DbContext context, BiConsumer<KeyType, ValueType> consumer) {
+    transactionDb.foreach(handle, context, keyInstance, valueInstance, consumer);
+  }
+
+  public void whileTrue(DbContext context, KeyValuePairVisitor<KeyType, ValueType> visitor) {
+    whileTrue(context, visitor, keyInstance, valueInstance);
+  }
+
+  public void whileEqualPrefix(
+      DbContext context, DbKey keyPrefix, BiConsumer<KeyType, ValueType> visitor) {
+    transactionDb.whileEqualPrefix(handle, context, keyPrefix, keyInstance, valueInstance, visitor);
+  }
+
+  public void whileEqualPrefix(
+      DbContext context, DbKey keyPrefix, KeyValuePairVisitor<KeyType, ValueType> visitor) {
+    transactionDb.whileEqualPrefix(handle, context, keyPrefix, keyInstance, valueInstance, visitor);
+  }
+
+  public boolean exists(DbContext context, KeyType key) {
+    return transactionDb.exists(handle, context, key);
   }
 }

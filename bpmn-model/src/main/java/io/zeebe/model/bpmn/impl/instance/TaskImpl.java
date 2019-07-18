@@ -40,6 +40,10 @@ public class TaskImpl extends ActivityImpl implements Task {
   /** camunda extensions */
   protected static Attribute<Boolean> camundaAsyncAttribute;
 
+  public TaskImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -55,10 +59,6 @@ public class TaskImpl extends ActivityImpl implements Task {
                 });
 
     typeBuilder.build();
-  }
-
-  public TaskImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

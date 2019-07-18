@@ -49,6 +49,10 @@ public class OutputSetImpl extends BaseElementImpl implements OutputSet {
   protected static ElementReferenceCollection<InputSet, InputSetRefs>
       inputSetInputSetRefsCollection;
 
+  public OutputSetImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -92,10 +96,6 @@ public class OutputSetImpl extends BaseElementImpl implements OutputSet {
             .build();
 
     typeBuilder.build();
-  }
-
-  public OutputSetImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

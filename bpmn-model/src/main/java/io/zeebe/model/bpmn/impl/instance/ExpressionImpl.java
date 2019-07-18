@@ -33,6 +33,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class ExpressionImpl extends BaseElementImpl implements Expression {
 
+  public ExpressionImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -48,9 +52,5 @@ public class ExpressionImpl extends BaseElementImpl implements Expression {
                 });
 
     typeBuilder.build();
-  }
-
-  public ExpressionImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 }

@@ -21,10 +21,9 @@ public class PushDeploymentRequest
 
   private final PushDeploymentRequestEncoder bodyEncoder = new PushDeploymentRequestEncoder();
   private final PushDeploymentRequestDecoder bodyDecoder = new PushDeploymentRequestDecoder();
-
+  private final DirectBuffer deployment = new UnsafeBuffer(0, 0);
   private int partitionId = PushDeploymentRequestEncoder.partitionIdNullValue();
   private long deploymentKey = PushDeploymentRequestEncoder.deploymentKeyNullValue();
-  private final DirectBuffer deployment = new UnsafeBuffer(0, 0);
 
   public PushDeploymentRequest partitionId(final int partitionId) {
     this.partitionId = partitionId;
@@ -63,15 +62,12 @@ public class PushDeploymentRequest
     return bodyDecoder;
   }
 
-  @Override
-  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    super.wrap(buffer, offset, length);
+  public void reset() {
+    super.reset();
 
-    partitionId = bodyDecoder.partitionId();
-    deploymentKey = bodyDecoder.deploymentKey();
-
-    deployment.wrap(
-        buffer, bodyDecoder.limit() + deploymentHeaderLength(), bodyDecoder.deploymentLength());
+    partitionId = PushDeploymentRequestEncoder.partitionIdNullValue();
+    deploymentKey = PushDeploymentRequestEncoder.deploymentKeyNullValue();
+    deployment.wrap(0, 0);
   }
 
   @Override
@@ -91,11 +87,14 @@ public class PushDeploymentRequest
         .putDeployment(deployment, 0, deployment.capacity());
   }
 
-  public void reset() {
-    super.reset();
+  @Override
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    super.wrap(buffer, offset, length);
 
-    partitionId = PushDeploymentRequestEncoder.partitionIdNullValue();
-    deploymentKey = PushDeploymentRequestEncoder.deploymentKeyNullValue();
-    deployment.wrap(0, 0);
+    partitionId = bodyDecoder.partitionId();
+    deploymentKey = bodyDecoder.deploymentKey();
+
+    deployment.wrap(
+        buffer, bodyDecoder.limit() + deploymentHeaderLength(), bodyDecoder.deploymentLength());
   }
 }

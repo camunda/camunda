@@ -30,12 +30,11 @@ public class ExecuteCommandRequest implements BufferReader, BufferWriter {
 
   private final ExecuteCommandRequestEncoder bodyEncoder = new ExecuteCommandRequestEncoder();
   private final ExecuteCommandRequestDecoder bodyDecoder = new ExecuteCommandRequestDecoder();
-
+  private final DirectBuffer value = new UnsafeBuffer(0, 0);
   private int partitionId;
   private long key;
   private ValueType valueType;
   private Intent intent;
-  private final DirectBuffer value = new UnsafeBuffer(0, 0);
 
   public ExecuteCommandRequest() {
     reset();

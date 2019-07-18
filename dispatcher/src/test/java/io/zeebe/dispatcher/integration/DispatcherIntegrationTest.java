@@ -35,8 +35,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class DispatcherIntegrationTest {
-  @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(1);
-
   public static final FragmentHandler CONSUME =
       new FragmentHandler() {
         @Override
@@ -45,24 +43,7 @@ public class DispatcherIntegrationTest {
           return FragmentHandler.CONSUME_FRAGMENT_RESULT;
         }
       };
-
-  class Consumer implements FragmentHandler {
-    final ArrayList<Integer> counters = new ArrayList<>();
-    final AtomicInteger counter = new AtomicInteger(0);
-
-    @Override
-    public int onFragment(
-        final DirectBuffer buffer,
-        final int offset,
-        final int length,
-        final int streamId,
-        boolean isMarkedFailed) {
-      final int newCounter = buffer.getInt(offset);
-      counters.add(newCounter);
-      this.counter.lazySet(newCounter);
-      return FragmentHandler.CONSUME_FRAGMENT_RESULT;
-    }
-  }
+  @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(1);
 
   @Test
   public void testOffer() throws Exception {
@@ -516,17 +497,6 @@ public class DispatcherIntegrationTest {
     assertThat(claimedOffset).isGreaterThanOrEqualTo(0);
   }
 
-  protected static class LoggingFragmentHandler implements FragmentHandler {
-    protected List<Integer> handledFragmentLengths = new ArrayList<>();
-
-    @Override
-    public int onFragment(
-        DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed) {
-      handledFragmentLengths.add(length);
-      return FragmentHandler.CONSUME_FRAGMENT_RESULT;
-    }
-  }
-
   protected void offerMessage(
       final Dispatcher dispatcher, final UnsafeBuffer msg, final int totalWork) {
     for (int i = 1; i <= totalWork; i++) {
@@ -564,6 +534,35 @@ public class DispatcherIntegrationTest {
           claimedFragment.commit();
         }
       }.start();
+    }
+  }
+
+  protected static class LoggingFragmentHandler implements FragmentHandler {
+    protected List<Integer> handledFragmentLengths = new ArrayList<>();
+
+    @Override
+    public int onFragment(
+        DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed) {
+      handledFragmentLengths.add(length);
+      return FragmentHandler.CONSUME_FRAGMENT_RESULT;
+    }
+  }
+
+  class Consumer implements FragmentHandler {
+    final ArrayList<Integer> counters = new ArrayList<>();
+    final AtomicInteger counter = new AtomicInteger(0);
+
+    @Override
+    public int onFragment(
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final int streamId,
+        boolean isMarkedFailed) {
+      final int newCounter = buffer.getInt(offset);
+      counters.add(newCounter);
+      this.counter.lazySet(newCounter);
+      return FragmentHandler.CONSUME_FRAGMENT_RESULT;
     }
   }
 }

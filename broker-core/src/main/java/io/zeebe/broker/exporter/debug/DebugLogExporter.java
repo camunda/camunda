@@ -96,19 +96,19 @@ public class DebugLogExporter implements Exporter {
     }
   }
 
-  private enum LogLevel {
-    TRACE,
-    DEBUG,
-    INFO,
-    WARN,
-    ERROR,
-  }
-
   private interface LogFunctionSupplier {
     LogFunction supply(Logger logger);
   }
 
   private interface LogFunction {
     void log(String message, Object... args);
+  }
+
+  private enum LogLevel {
+    TRACE,
+    DEBUG,
+    INFO,
+    WARN,
+    ERROR,
   }
 }

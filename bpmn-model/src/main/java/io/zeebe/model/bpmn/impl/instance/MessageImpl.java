@@ -40,6 +40,10 @@ public class MessageImpl extends RootElementImpl implements Message {
   protected static Attribute<String> nameAttribute;
   protected static AttributeReference<ItemDefinition> itemRefAttribute;
 
+  public MessageImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -63,10 +67,6 @@ public class MessageImpl extends RootElementImpl implements Message {
             .build();
 
     typeBuilder.build();
-  }
-
-  public MessageImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

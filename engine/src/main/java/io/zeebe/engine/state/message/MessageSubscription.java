@@ -44,10 +44,6 @@ public class MessageSubscription implements DbValue {
     this.closeOnCorrelate = closeOnCorrelate;
   }
 
-  public void setElementInstanceKey(long elementInstanceKey) {
-    this.elementInstanceKey = elementInstanceKey;
-  }
-
   public DirectBuffer getMessageName() {
     return messageName;
   }
@@ -70,6 +66,10 @@ public class MessageSubscription implements DbValue {
 
   public long getElementInstanceKey() {
     return elementInstanceKey;
+  }
+
+  public void setElementInstanceKey(long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   public long getMessageKey() {

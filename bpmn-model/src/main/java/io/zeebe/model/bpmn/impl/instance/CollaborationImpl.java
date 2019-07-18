@@ -62,6 +62,10 @@ public class CollaborationImpl extends RootElementImpl implements Collaboration 
   /** TODO: choreographyRef */
   protected static ChildElementCollection<ConversationLink> conversationLinkCollection;
 
+  public CollaborationImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -105,10 +109,6 @@ public class CollaborationImpl extends RootElementImpl implements Collaboration 
     conversationLinkCollection = sequenceBuilder.elementCollection(ConversationLink.class).build();
 
     typeBuilder.build();
-  }
-
-  public CollaborationImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

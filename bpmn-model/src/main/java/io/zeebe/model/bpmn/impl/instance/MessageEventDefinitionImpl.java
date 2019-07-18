@@ -38,6 +38,10 @@ public class MessageEventDefinitionImpl extends EventDefinitionImpl
   protected static AttributeReference<Message> messageRefAttribute;
   protected static ElementReference<Operation, OperationRef> operationRefChild;
 
+  public MessageEventDefinitionImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -65,10 +69,6 @@ public class MessageEventDefinitionImpl extends EventDefinitionImpl
         sequenceBuilder.element(OperationRef.class).qNameElementReference(Operation.class).build();
 
     typeBuilder.build();
-  }
-
-  public MessageEventDefinitionImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

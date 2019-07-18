@@ -30,22 +30,17 @@ import org.agrona.concurrent.status.AtomicLongPosition;
 
 public class LogStreamBuilder {
   protected final int partitionId;
-
+  protected final AtomicLongPosition commitPosition = new AtomicLongPosition();
+  protected final ActorConditions onCommitPositionUpdatedConditions = new ActorConditions();
   protected ServiceContainer serviceContainer;
-
   protected String logName;
   protected String logRootPath;
   protected String logDirectory;
-
   protected int initialLogSegmentId = 0;
   protected boolean deleteOnClose;
-
   protected int maxAppendBlockSize = 1024 * 1024;
   protected int writeBufferSize = 1024 * 1024 * 8;
   protected int logSegmentSize = 1024 * 1024 * 128;
-
-  protected final AtomicLongPosition commitPosition = new AtomicLongPosition();
-  protected final ActorConditions onCommitPositionUpdatedConditions = new ActorConditions();
   protected Function<FsLogStorage, FsLogStorage> logStorageStubber = Function.identity();
 
   public LogStreamBuilder(final int partitionId) {

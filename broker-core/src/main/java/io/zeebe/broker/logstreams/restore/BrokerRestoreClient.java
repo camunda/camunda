@@ -52,6 +52,18 @@ public class BrokerRestoreClient implements RestoreClient {
   }
 
   @Override
+  public CompletableFuture<SnapshotRestoreResponse> requestSnapshotChunk(
+      MemberId server, SnapshotRestoreRequest request) {
+    return communicationService.send(
+        snapshotRequestTopic,
+        request,
+        SbeSnapshotRestoreRequest::serialize,
+        SbeSnapshotRestoreResponse::new,
+        server,
+        DEFAULT_REQUEST_TIMEOUT);
+  }
+
+  @Override
   public CompletableFuture<LogReplicationResponse> requestLogReplication(
       MemberId server, LogReplicationRequest request) {
     logger.trace(
@@ -78,18 +90,6 @@ public class BrokerRestoreClient implements RestoreClient {
         request,
         SbeRestoreInfoRequest::serialize,
         SbeRestoreInfoResponse::new,
-        server,
-        DEFAULT_REQUEST_TIMEOUT);
-  }
-
-  @Override
-  public CompletableFuture<SnapshotRestoreResponse> requestSnapshotChunk(
-      MemberId server, SnapshotRestoreRequest request) {
-    return communicationService.send(
-        snapshotRequestTopic,
-        request,
-        SbeSnapshotRestoreRequest::serialize,
-        SbeSnapshotRestoreResponse::new,
         server,
         DEFAULT_REQUEST_TIMEOUT);
   }

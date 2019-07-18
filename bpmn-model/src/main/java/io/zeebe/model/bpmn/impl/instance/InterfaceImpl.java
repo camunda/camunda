@@ -44,6 +44,10 @@ public class InterfaceImpl extends RootElementImpl implements Interface {
   protected static Attribute<String> implementationRefAttribute;
   protected static ChildElementCollection<Operation> operationCollection;
 
+  public InterfaceImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -68,10 +72,6 @@ public class InterfaceImpl extends RootElementImpl implements Interface {
     operationCollection = sequenceBuilder.elementCollection(Operation.class).required().build();
 
     typeBuilder.build();
-  }
-
-  public InterfaceImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

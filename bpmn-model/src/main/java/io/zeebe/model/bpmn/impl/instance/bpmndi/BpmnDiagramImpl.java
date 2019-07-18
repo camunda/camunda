@@ -43,6 +43,10 @@ public class BpmnDiagramImpl extends DiagramImpl implements BpmnDiagram {
   protected static ChildElement<BpmnPlane> bpmnPlaneChild;
   protected static ChildElementCollection<BpmnLabelStyle> bpmnLabelStyleCollection;
 
+  public BpmnDiagramImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -64,10 +68,6 @@ public class BpmnDiagramImpl extends DiagramImpl implements BpmnDiagram {
     bpmnLabelStyleCollection = sequenceBuilder.elementCollection(BpmnLabelStyle.class).build();
 
     typeBuilder.build();
-  }
-
-  public BpmnDiagramImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

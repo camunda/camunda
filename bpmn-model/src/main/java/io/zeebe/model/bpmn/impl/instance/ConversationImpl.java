@@ -33,6 +33,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class ConversationImpl extends ConversationNodeImpl implements Conversation {
 
+  public ConversationImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -48,9 +52,5 @@ public class ConversationImpl extends ConversationNodeImpl implements Conversati
                 });
 
     typeBuilder.build();
-  }
-
-  public ConversationImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 }

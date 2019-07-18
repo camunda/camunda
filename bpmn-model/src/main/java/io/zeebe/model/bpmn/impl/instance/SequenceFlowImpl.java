@@ -50,6 +50,10 @@ public class SequenceFlowImpl extends FlowElementImpl implements SequenceFlow {
   protected static Attribute<Boolean> isImmediateAttribute;
   protected static ChildElement<ConditionExpression> conditionExpressionCollection;
 
+  public SequenceFlowImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -85,10 +89,6 @@ public class SequenceFlowImpl extends FlowElementImpl implements SequenceFlow {
     conditionExpressionCollection = sequenceBuilder.element(ConditionExpression.class).build();
 
     typeBuilder.build();
-  }
-
-  public SequenceFlowImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

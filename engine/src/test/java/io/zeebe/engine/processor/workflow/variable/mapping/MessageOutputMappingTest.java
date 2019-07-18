@@ -40,11 +40,10 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class MessageOutputMappingTest {
 
+  @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
   private static final String MESSAGE_NAME = "message";
   private static final String CORRELATION_VARIABLE = "key";
-
-  @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -61,6 +60,8 @@ public class MessageOutputMappingTest {
 
   @Parameter(3)
   public List<Tuple> expectedScopeVariables;
+
+  private String correlationKey;
 
   @Parameters(name = "from {0} to activity: {2} and scope: {3}")
   public static Object[][] parameters() {
@@ -119,8 +120,6 @@ public class MessageOutputMappingTest {
       },
     };
   }
-
-  private String correlationKey;
 
   @Before
   public void init() {

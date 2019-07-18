@@ -21,13 +21,13 @@ public class MockRecordValueWithVariables extends MockRecordValue
     this.variables = variables;
   }
 
-  public MockRecordValueWithVariables setVariables(Map<String, Object> variables) {
-    this.variables = variables;
-    return this;
-  }
-
   @Override
   public Map<String, Object> getVariables() {
     return variables;
+  }
+
+  public MockRecordValueWithVariables setVariables(Map<String, Object> variables) {
+    this.variables = variables;
+    return this;
   }
 }

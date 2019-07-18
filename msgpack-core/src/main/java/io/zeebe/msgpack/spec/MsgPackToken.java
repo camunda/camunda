@@ -49,6 +49,10 @@ public class MsgPackToken {
     return type;
   }
 
+  public void setType(MsgPackType type) {
+    this.type = type;
+  }
+
   public DirectBuffer getValueBuffer() {
     return valueBuffer;
   }
@@ -85,10 +89,6 @@ public class MsgPackToken {
 
   public void setArrayHeader(int size) {
     this.size = size;
-  }
-
-  public void setType(MsgPackType type) {
-    this.type = type;
   }
 
   public boolean getBooleanValue() {

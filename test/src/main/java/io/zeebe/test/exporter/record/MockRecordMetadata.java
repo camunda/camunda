@@ -95,6 +95,17 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        getIntent(),
+        getPartitionId(),
+        getRecordType(),
+        getRejectionType(),
+        getRejectionReason(),
+        getValueType());
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -113,14 +124,12 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(
-        getIntent(),
-        getPartitionId(),
-        getRecordType(),
-        getRejectionType(),
-        getRejectionReason(),
-        getValueType());
+  public Object clone() {
+    try {
+      return super.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
@@ -140,14 +149,5 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
         + ", valueType="
         + valueType
         + '}';
-  }
-
-  @Override
-  public Object clone() {
-    try {
-      return super.clone();
-    } catch (CloneNotSupportedException e) {
-      throw new RuntimeException(e);
-    }
   }
 }

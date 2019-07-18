@@ -39,6 +39,10 @@ public class ParticipantAssociationImpl extends BaseElementImpl implements Parti
   protected static ElementReference<Participant, InnerParticipantRef> innerParticipantRefChild;
   protected static ElementReference<Participant, OuterParticipantRef> outerParticipantRefChild;
 
+  public ParticipantAssociationImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -71,10 +75,6 @@ public class ParticipantAssociationImpl extends BaseElementImpl implements Parti
             .build();
 
     typeBuilder.build();
-  }
-
-  public ParticipantAssociationImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

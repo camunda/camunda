@@ -20,12 +20,12 @@ public class IntTuple<R> {
     return left;
   }
 
-  public R getRight() {
-    return right;
-  }
-
   public void setInt(int left) {
     this.left = left;
+  }
+
+  public R getRight() {
+    return right;
   }
 
   public void setRight(R right) {

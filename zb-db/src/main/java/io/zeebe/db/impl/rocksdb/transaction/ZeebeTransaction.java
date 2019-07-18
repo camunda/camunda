@@ -76,11 +76,6 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     }
   }
 
-  void commitInternal() throws RocksDBException {
-    inCurrentTransaction = false;
-    transaction.commit();
-  }
-
   @Override
   public void commit() throws RocksDBException {
     try {
@@ -94,11 +89,6 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     }
   }
 
-  void rollbackInternal() throws RocksDBException {
-    inCurrentTransaction = false;
-    transaction.rollback();
-  }
-
   @Override
   public void rollback() throws RocksDBException {
     try {
@@ -110,6 +100,16 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
       }
       throw rdbex;
     }
+  }
+
+  void commitInternal() throws RocksDBException {
+    inCurrentTransaction = false;
+    transaction.commit();
+  }
+
+  void rollbackInternal() throws RocksDBException {
+    inCurrentTransaction = false;
+    transaction.rollback();
   }
 
   public void close() {

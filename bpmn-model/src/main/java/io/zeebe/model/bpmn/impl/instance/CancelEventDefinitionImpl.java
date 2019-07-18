@@ -34,6 +34,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
 public class CancelEventDefinitionImpl extends EventDefinitionImpl
     implements CancelEventDefinition {
 
+  public CancelEventDefinitionImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -50,9 +54,5 @@ public class CancelEventDefinitionImpl extends EventDefinitionImpl
                 });
 
     typeBuilder.build();
-  }
-
-  public CancelEventDefinitionImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 }

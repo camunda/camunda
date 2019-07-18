@@ -43,12 +43,10 @@ public class ErrorResponseWriter implements BufferWriter {
 
   protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
   protected final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
-
-  protected ErrorCode errorCode;
-  protected byte[] errorMessage;
-
   protected final ServerOutput output;
   protected final ServerResponse response = new ServerResponse();
+  protected ErrorCode errorCode;
+  protected byte[] errorMessage;
 
   public ErrorResponseWriter() {
     this(null);
@@ -133,25 +131,6 @@ public class ErrorResponseWriter implements BufferWriter {
     return errorMessage;
   }
 
-  @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
-    // protocol header
-    messageHeaderEncoder.wrap(buffer, offset);
-
-    messageHeaderEncoder
-        .blockLength(errorResponseEncoder.sbeBlockLength())
-        .templateId(errorResponseEncoder.sbeTemplateId())
-        .schemaId(errorResponseEncoder.sbeSchemaId())
-        .version(errorResponseEncoder.sbeSchemaVersion());
-
-    offset += messageHeaderEncoder.encodedLength();
-
-    // error message
-    errorResponseEncoder.wrap(buffer, offset);
-
-    errorResponseEncoder.errorCode(errorCode).putErrorData(errorMessage, 0, errorMessage.length);
-  }
-
   public boolean tryWriteResponseOrLogFailure(ServerOutput output, int streamId, long requestId) {
     final boolean isWritten = tryWriteResponse(output, streamId, requestId);
 
@@ -192,6 +171,25 @@ public class ErrorResponseWriter implements BufferWriter {
         + ErrorResponseEncoder.BLOCK_LENGTH
         + ErrorResponseEncoder.errorDataHeaderLength()
         + errorMessage.length;
+  }
+
+  @Override
+  public void write(MutableDirectBuffer buffer, int offset) {
+    // protocol header
+    messageHeaderEncoder.wrap(buffer, offset);
+
+    messageHeaderEncoder
+        .blockLength(errorResponseEncoder.sbeBlockLength())
+        .templateId(errorResponseEncoder.sbeTemplateId())
+        .schemaId(errorResponseEncoder.sbeSchemaId())
+        .version(errorResponseEncoder.sbeSchemaVersion());
+
+    offset += messageHeaderEncoder.encodedLength();
+
+    // error message
+    errorResponseEncoder.wrap(buffer, offset);
+
+    errorResponseEncoder.errorCode(errorCode).putErrorData(errorMessage, 0, errorMessage.length);
   }
 
   public void reset() {

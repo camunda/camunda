@@ -50,10 +50,6 @@ public class ElasticsearchExporter implements Exporter {
     log.info("Exporter opened");
   }
 
-  protected ElasticsearchClient createClient() {
-    return new ElasticsearchClient(configuration, log);
-  }
-
   @Override
   public void close() {
     flush();
@@ -78,6 +74,10 @@ public class ElasticsearchExporter implements Exporter {
     if (client.shouldFlush()) {
       flush();
     }
+  }
+
+  protected ElasticsearchClient createClient() {
+    return new ElasticsearchClient(configuration, log);
   }
 
   private void flushAndReschedule() {

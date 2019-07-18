@@ -35,22 +35,18 @@ public class ClientTransportBuilder {
 
   protected static final long DEFAULT_CHANNEL_CONNECT_TIMEOUT = 500;
   private final String name;
-
-  private int messageMaxLength = 1024 * 512;
   protected Duration keepAlivePeriod = DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD;
-
   protected Dispatcher receiveBuffer;
-  private ActorScheduler scheduler;
   protected List<ClientInputListener> listeners;
   protected TransportChannelFactory channelFactory;
-
+  protected Duration defaultRequestRetryTimeout = Duration.ofSeconds(15);
+  protected Duration defaultMessageRetryTimeout = Duration.ofSeconds(1);
+  private int messageMaxLength = 1024 * 512;
+  private ActorScheduler scheduler;
   private TransportMemoryPool requestMemoryPool =
       new NonBlockingMemoryPool(ByteValue.ofMegabytes(4));
   private TransportMemoryPool messageMemoryPool =
       new NonBlockingMemoryPool(ByteValue.ofMegabytes(4));
-
-  protected Duration defaultRequestRetryTimeout = Duration.ofSeconds(15);
-  protected Duration defaultMessageRetryTimeout = Duration.ofSeconds(1);
 
   public ClientTransportBuilder(final String name) {
     this.name = name;

@@ -42,11 +42,13 @@ public class MessageCatchElementTest {
 
   private static final int PARTITION_COUNT = 3;
 
+  @ClassRule
+  public static final EngineRule ENGINE_RULE = EngineRule.multiplePartition(PARTITION_COUNT);
+
   private static final String ELEMENT_ID = "receive-message";
   private static final String CORRELATION_VARIABLE = "orderId";
   private static final String MESSAGE_NAME = "order canceled";
   private static final String SEQUENCE_FLOW_ID = "to-end";
-
   private static final String CATCH_EVENT_WORKFLOW_PROCESS_ID = "catchEventWorkflow";
   private static final BpmnModelInstance CATCH_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(CATCH_EVENT_WORKFLOW_PROCESS_ID)
@@ -56,7 +58,6 @@ public class MessageCatchElementTest {
           .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();
-
   private static final String RECEIVE_TASK_WORKFLOW_PROCESS_ID = "receiveTaskWorkflow";
   private static final BpmnModelInstance RECEIVE_TASK_WORKFLOW =
       Bpmn.createExecutableProcess(RECEIVE_TASK_WORKFLOW_PROCESS_ID)
@@ -66,7 +67,6 @@ public class MessageCatchElementTest {
           .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();
-
   private static final String BOUNDARY_EVENT_WORKFLOW_PROCESS_ID = "boundaryEventWorkflow";
   private static final BpmnModelInstance BOUNDARY_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(BOUNDARY_EVENT_WORKFLOW_PROCESS_ID)
@@ -77,7 +77,6 @@ public class MessageCatchElementTest {
           .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();
-
   private static final String NON_INT_BOUNDARY_EVENT_WORKFLOW_PROCESS_ID =
       "nonIntBoundaryEventWorkflow";
   private static final BpmnModelInstance NON_INT_BOUNDARY_EVENT_WORKFLOW =
@@ -90,9 +89,6 @@ public class MessageCatchElementTest {
           .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();
-
-  @ClassRule
-  public static final EngineRule ENGINE_RULE = EngineRule.multiplePartition(PARTITION_COUNT);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -111,6 +107,9 @@ public class MessageCatchElementTest {
 
   @Parameter(4)
   public String continuedElementId;
+
+  private String correlationKey;
+  private long workflowInstanceKey;
 
   @Parameters(name = "{0}")
   public static Object[][] parameters() {
@@ -145,9 +144,6 @@ public class MessageCatchElementTest {
       }
     };
   }
-
-  private String correlationKey;
-  private long workflowInstanceKey;
 
   @BeforeClass
   public static void awaitCluster() {

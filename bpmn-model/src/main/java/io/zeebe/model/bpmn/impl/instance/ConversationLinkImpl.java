@@ -43,6 +43,10 @@ public class ConversationLinkImpl extends BaseElementImpl implements Conversatio
   protected static AttributeReference<InteractionNode> sourceRefAttribute;
   protected static AttributeReference<InteractionNode> targetRefAttribute;
 
+  public ConversationLinkImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -74,10 +78,6 @@ public class ConversationLinkImpl extends BaseElementImpl implements Conversatio
             .build();
 
     typeBuilder.build();
-  }
-
-  public ConversationLinkImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

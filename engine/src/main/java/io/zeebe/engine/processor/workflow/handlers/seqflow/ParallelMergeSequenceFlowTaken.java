@@ -25,11 +25,6 @@ public class ParallelMergeSequenceFlowTaken<T extends ExecutableSequenceFlow>
   }
 
   @Override
-  protected boolean shouldHandleState(BpmnStepContext<T> context) {
-    return super.shouldHandleState(context) && isElementActive(context.getFlowScopeInstance());
-  }
-
-  @Override
   protected boolean handleState(BpmnStepContext<T> context) {
     final ElementInstance scopeInstance = context.getFlowScopeInstance();
     final EventOutput eventOutput = context.getOutput();
@@ -57,6 +52,11 @@ public class ParallelMergeSequenceFlowTaken<T extends ExecutableSequenceFlow>
     }
 
     return true;
+  }
+
+  @Override
+  protected boolean shouldHandleState(BpmnStepContext<T> context) {
+    return super.shouldHandleState(context) && isElementActive(context.getFlowScopeInstance());
   }
 
   /** @return the records that can be merged */

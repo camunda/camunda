@@ -40,6 +40,10 @@ public class DataStoreReferenceImpl extends FlowElementImpl implements DataStore
   protected static AttributeReference<DataStore> dataStoreRefAttribute;
   protected static ChildElement<DataState> dataStateChild;
 
+  public DataStoreReferenceImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -71,10 +75,6 @@ public class DataStoreReferenceImpl extends FlowElementImpl implements DataStore
     dataStateChild = sequenceBuilder.element(DataState.class).build();
 
     typeBuilder.build();
-  }
-
-  public DataStoreReferenceImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

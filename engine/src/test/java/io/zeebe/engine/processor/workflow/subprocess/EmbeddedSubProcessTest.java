@@ -34,6 +34,7 @@ import org.junit.Test;
 
 public class EmbeddedSubProcessTest {
 
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final BpmnModelInstance ONE_TASK_SUBPROCESS =
       Bpmn.createExecutableProcess("ONE_TASK_SUBPROCESS")
           .startEvent("start")
@@ -49,8 +50,6 @@ public class EmbeddedSubProcessTest {
           .sequenceFlowId("flow2")
           .endEvent("end")
           .done();
-
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

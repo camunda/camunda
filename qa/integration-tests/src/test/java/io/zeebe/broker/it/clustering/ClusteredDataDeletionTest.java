@@ -35,6 +35,10 @@ import org.junit.runners.Parameterized.Parameters;
 public class ClusteredDataDeletionTest {
   private static final int SNAPSHOT_PERIOD_SECONDS = 30;
   private static final int MAX_SNAPSHOTS = 1;
+  @Parameter public Consumer<BrokerCfg> configurator;
+
+  @Parameter(1)
+  public String name;
 
   private ClusteringRule clusteringRule;
 
@@ -49,11 +53,6 @@ public class ClusteredDataDeletionTest {
       }
     };
   }
-
-  @Parameter public Consumer<BrokerCfg> configurator;
-
-  @Parameter(1)
-  public String name;
 
   @Before
   public void setup() throws IOException {

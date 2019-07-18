@@ -71,28 +71,23 @@ import org.slf4j.Logger;
  */
 public final class ReProcessingStateMachine {
 
+  public static final Consumer NOOP_SIDE_EFFECT_CONSUMER = (sideEffect) -> {};
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
-
   private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
       "Expected to find event processor for event '{}', but caught an exception. Skip this event.";
   private static final String ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT =
       "Expected to find last source event position '%d', but last position was '%d'. Failed to reprocess on processor";
   private static final String ERROR_MESSAGE_REPROCESSING_NO_NEXT_EVENT =
       "Expected to find last source event position '%d', but found no next event. Failed to reprocess on processor";
-
   private static final String LOG_STMT_REPROCESSING_FINISHED =
       "Processor finished reprocessing at event position {}";
   private static final String LOG_STMT_FAILED_ON_PROCESSING =
       "Event {} failed on processing last time, will call #onError to update workflow instance blacklist.";
-
   private static final Consumer<Long> NOOP_LONG_CONSUMER = (instanceKey) -> {};
-  public static final Consumer NOOP_SIDE_EFFECT_CONSUMER = (sideEffect) -> {};
-
+  protected final RecordMetadata metadata = new RecordMetadata();
   private final ZeebeState zeebeState;
-
   private final ActorControl actor;
   private final ErrorRecord errorRecord = new ErrorRecord();
-  protected final RecordMetadata metadata = new RecordMetadata();
   private final TypedEventImpl typedEvent = new TypedEventImpl();
 
   private final Map<ValueType, UnifiedRecordValue> eventCache;
@@ -109,6 +104,12 @@ public final class ReProcessingStateMachine {
 
   private final BooleanSupplier abortCondition;
   private final Set<Long> failedEventPositions = new HashSet<>();
+  // current iteration
+  private long lastSourceEventPosition;
+  private ActorFuture<Void> recoveryFuture;
+  private LoggedEvent currentEvent;
+  private TypedRecordProcessor eventProcessor;
+  private ZeebeDbTransaction zeebeDbTransaction;
 
   public ReProcessingStateMachine(ProcessingContext context) {
     this.actor = context.getActor();
@@ -123,13 +124,6 @@ public final class ReProcessingStateMachine {
     this.updateStateRetryStrategy = new EndlessRetryStrategy(actor);
     this.processRetryStrategy = new EndlessRetryStrategy(actor);
   }
-
-  // current iteration
-  private long lastSourceEventPosition;
-  private ActorFuture<Void> recoveryFuture;
-  private LoggedEvent currentEvent;
-  private TypedRecordProcessor eventProcessor;
-  private ZeebeDbTransaction zeebeDbTransaction;
 
   ActorFuture<Void> startRecover(final long snapshotPosition) {
     recoveryFuture = new CompletableActorFuture<>();
@@ -350,6 +344,9 @@ public final class ReProcessingStateMachine {
         long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata) {}
 
     @Override
+    public void configureSourceContext(long sourceRecordPosition) {}
+
+    @Override
     public void appendNewCommand(Intent intent, UnpackedObject value) {}
 
     @Override
@@ -361,9 +358,6 @@ public final class ReProcessingStateMachine {
 
     @Override
     public void reset() {}
-
-    @Override
-    public void configureSourceContext(long sourceRecordPosition) {}
 
     @Override
     public long flush() {

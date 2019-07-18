@@ -39,6 +39,10 @@ public class EscalationEventDefinitionImpl extends EventDefinitionImpl
 
   protected static AttributeReference<Escalation> escalationRefAttribute;
 
+  public EscalationEventDefinitionImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -61,10 +65,6 @@ public class EscalationEventDefinitionImpl extends EventDefinitionImpl
             .build();
 
     typeBuilder.build();
-  }
-
-  public EscalationEventDefinitionImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

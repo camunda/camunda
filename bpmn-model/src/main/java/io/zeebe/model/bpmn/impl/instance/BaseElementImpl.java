@@ -51,6 +51,10 @@ public abstract class BaseElementImpl extends BpmnModelElementInstanceImpl imple
   protected static ChildElementCollection<Documentation> documentationCollection;
   protected static ChildElement<ExtensionElements> extensionElementsChild;
 
+  public BaseElementImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder bpmnModelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         bpmnModelBuilder
@@ -67,10 +71,6 @@ public abstract class BaseElementImpl extends BpmnModelElementInstanceImpl imple
     extensionElementsChild = sequenceBuilder.element(ExtensionElements.class).build();
 
     typeBuilder.build();
-  }
-
-  public BaseElementImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override
@@ -94,6 +94,11 @@ public abstract class BaseElementImpl extends BpmnModelElementInstanceImpl imple
   }
 
   @Override
+  public void setExtensionElements(ExtensionElements extensionElements) {
+    extensionElementsChild.setChild(this, extensionElements);
+  }
+
+  @Override
   public <T extends BpmnModelElementInstance> T getSingleExtensionElement(Class<T> type) {
     final ExtensionElements extensionElements = getExtensionElements();
     if (extensionElements != null) {
@@ -107,11 +112,6 @@ public abstract class BaseElementImpl extends BpmnModelElementInstanceImpl imple
     } else {
       return null;
     }
-  }
-
-  @Override
-  public void setExtensionElements(ExtensionElements extensionElements) {
-    extensionElementsChild.setChild(this, extensionElements);
   }
 
   @Override

@@ -58,9 +58,8 @@ public class TypedStreamProcessorTest {
           .around(serviceContainerRule)
           .around(closeables);
 
-  private TestStreams streams;
   protected LogStream stream;
-
+  private TestStreams streams;
   private KeyGenerator keyGenerator;
   private CommandResponseWriter mockCommandResponseWriter;
 

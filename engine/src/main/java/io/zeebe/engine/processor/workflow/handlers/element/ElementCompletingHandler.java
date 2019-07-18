@@ -38,13 +38,6 @@ public class ElementCompletingHandler<T extends ExecutableFlowNode> extends Abst
   }
 
   @Override
-  protected boolean shouldHandleState(BpmnStepContext<T> context) {
-    return super.shouldHandleState(context)
-        && isStateSameAsElementState(context)
-        && (isRootScope(context) || isElementActive(context.getFlowScopeInstance()));
-  }
-
-  @Override
   protected boolean handleState(BpmnStepContext<T> context) {
     try {
       ioMappingHelper.applyOutputMappings(context);
@@ -54,5 +47,12 @@ public class ElementCompletingHandler<T extends ExecutableFlowNode> extends Abst
     }
 
     return false;
+  }
+
+  @Override
+  protected boolean shouldHandleState(BpmnStepContext<T> context) {
+    return super.shouldHandleState(context)
+        && isStateSameAsElementState(context)
+        && (isRootScope(context) || isElementActive(context.getFlowScopeInstance()));
   }
 }

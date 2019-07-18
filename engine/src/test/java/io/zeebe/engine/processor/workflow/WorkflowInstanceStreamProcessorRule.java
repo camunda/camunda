@@ -66,10 +66,8 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
   public static final int VERSION = 1;
   public static final int WORKFLOW_KEY = 123;
   public static final int DEPLOYMENT_KEY = 1;
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
   private final StreamProcessorRule environmentRule;
-
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
   private SubscriptionCommandSender mockSubscriptionCommandSender;
 
   private WorkflowState workflowState;

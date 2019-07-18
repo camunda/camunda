@@ -17,14 +17,12 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 public class ServerResponse implements BufferWriter {
-  private final RequestResponseHeaderDescriptor requestResponseHeaderDescriptor =
-      new RequestResponseHeaderDescriptor();
-
   protected final TransportHeaderDescriptor transportHeaderDescriptor =
       new TransportHeaderDescriptor();
   protected final ClaimedFragment claimedFragment = new ClaimedFragment();
   protected final DirectBufferWriter writerAdapter = new DirectBufferWriter();
-
+  private final RequestResponseHeaderDescriptor requestResponseHeaderDescriptor =
+      new RequestResponseHeaderDescriptor();
   protected BufferWriter writer;
   protected int remoteStreamId;
   private long requestId;

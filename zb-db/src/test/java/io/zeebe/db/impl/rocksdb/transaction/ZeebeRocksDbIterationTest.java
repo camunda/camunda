@@ -27,11 +27,9 @@ import org.rocksdb.RocksIterator;
 
 public class ZeebeRocksDbIterationTest {
 
-  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
   private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
       DefaultZeebeDbFactory.getDefaultFactory(DefaultColumnFamily.class);
-
+  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private ZeebeTransactionDb<DefaultColumnFamily> zeebeDb;
   private ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> columnFamily;
   private DbLong firstKey;

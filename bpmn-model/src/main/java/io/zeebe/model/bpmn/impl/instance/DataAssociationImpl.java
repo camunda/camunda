@@ -48,6 +48,10 @@ public class DataAssociationImpl extends BaseElementImpl implements DataAssociat
   protected static ChildElement<Transformation> transformationChild;
   protected static ChildElementCollection<Assignment> assignmentCollection;
 
+  public DataAssociationImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -82,10 +86,6 @@ public class DataAssociationImpl extends BaseElementImpl implements DataAssociat
     assignmentCollection = sequenceBuilder.elementCollection(Assignment.class).build();
 
     typeBuilder.build();
-  }
-
-  public DataAssociationImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

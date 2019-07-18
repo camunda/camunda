@@ -39,9 +39,9 @@ import org.slf4j.Logger;
 public class BrokerClientImpl implements BrokerClient {
   public static final Logger LOG = Loggers.GATEWAY_LOGGER;
   protected final ActorScheduler actorScheduler;
-  private final boolean ownsActorScheduler;
   protected final ClientTransport transport;
   protected final BrokerTopologyManagerImpl topologyManager;
+  private final boolean ownsActorScheduler;
   private final Dispatcher dataFrameReceiveBuffer;
   private final BrokerRequestManager requestManager;
   protected boolean isClosed;
@@ -159,14 +159,6 @@ public class BrokerClientImpl implements BrokerClient {
     LOG.debug("Gateway broker client closed.");
   }
 
-  protected void doAndLogException(final Runnable r) {
-    try {
-      r.run();
-    } catch (final Exception e) {
-      LOG.error("Exception when closing client. Ignoring", e);
-    }
-  }
-
   /* (non-Javadoc)
    * @see io.zeebe.gateway.impl.broker.BrokerClient#sendRequest(io.zeebe.gateway.impl.broker.request.BrokerRequest)
    */
@@ -186,6 +178,14 @@ public class BrokerClientImpl implements BrokerClient {
   @Override
   public BrokerTopologyManager getTopologyManager() {
     return topologyManager;
+  }
+
+  protected void doAndLogException(final Runnable r) {
+    try {
+      r.run();
+    } catch (final Exception e) {
+      LOG.error("Exception when closing client. Ignoring", e);
+    }
   }
 
   public ClientTransport getTransport() {

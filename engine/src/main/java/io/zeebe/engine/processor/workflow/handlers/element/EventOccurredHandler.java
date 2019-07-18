@@ -32,14 +32,14 @@ public class EventOccurredHandler<T extends ExecutableFlowElement> extends Abstr
   }
 
   @Override
-  protected boolean shouldHandleState(BpmnStepContext<T> context) {
-    return super.shouldHandleState(context)
-        && (!hasWorkflowInstance(context) || isElementActive(context.getElementInstance()));
+  protected boolean handleState(BpmnStepContext<T> context) {
+    return true;
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
-    return true;
+  protected boolean shouldHandleState(BpmnStepContext<T> context) {
+    return super.shouldHandleState(context)
+        && (!hasWorkflowInstance(context) || isElementActive(context.getElementInstance()));
   }
 
   /**

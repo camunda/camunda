@@ -31,17 +31,23 @@ public class CompletableActorFuture<V> implements ActorFuture<V> {
   private static final int COMPLETED_EXCEPTIONALLY = 4;
   private static final int CLOSED = 5;
 
+  static {
+    try {
+      STATE_OFFSET =
+          UNSAFE.objectFieldOffset(CompletableActorFuture.class.getDeclaredField("state"));
+    } catch (final Exception ex) {
+      throw new RuntimeException(ex);
+    }
+  }
+
   private final ManyToOneConcurrentLinkedQueue<ActorTask> blockedTasks =
       new ManyToOneConcurrentLinkedQueue<>();
-
-  private volatile int state = CLOSED;
-
   private final ReentrantLock completionLock = new ReentrantLock();
-  private Condition isDoneCondition;
-
   protected V value;
   protected String failure;
   protected Throwable failureCause;
+  private volatile int state = CLOSED;
+  private Condition isDoneCondition;
 
   public CompletableActorFuture() {
     setAwaitingResult();
@@ -95,20 +101,6 @@ public class CompletableActorFuture<V> implements ActorFuture<V> {
   }
 
   @Override
-  public boolean isCompletedExceptionally() {
-    return state == COMPLETED_EXCEPTIONALLY;
-  }
-
-  public boolean isAwaitingResult() {
-    return state == AWAITING_RESULT;
-  }
-
-  @Override
-  public void block(ActorTask onCompletion) {
-    blockedTasks.add(onCompletion);
-  }
-
-  @Override
   public V get() throws ExecutionException, InterruptedException {
     try {
       return get(Integer.MAX_VALUE, TimeUnit.MILLISECONDS);
@@ -148,6 +140,10 @@ public class CompletableActorFuture<V> implements ActorFuture<V> {
     } else {
       return value;
     }
+  }
+
+  public boolean isAwaitingResult() {
+    return state == AWAITING_RESULT;
   }
 
   @Override
@@ -193,6 +189,31 @@ public class CompletableActorFuture<V> implements ActorFuture<V> {
     completeExceptionally(throwable.getMessage(), throwable);
   }
 
+  @Override
+  public V join() {
+    return FutureUtil.join(this);
+  }
+
+  @Override
+  public void block(ActorTask onCompletion) {
+    blockedTasks.add(onCompletion);
+  }
+
+  @Override
+  public boolean isCompletedExceptionally() {
+    return state == COMPLETED_EXCEPTIONALLY;
+  }
+
+  @Override
+  public Throwable getException() {
+    if (!isCompletedExceptionally()) {
+      throw new IllegalStateException(
+          "Cannot call getException(); future is not completed exceptionally.");
+    }
+
+    return failureCause;
+  }
+
   private void notifyBlockedTasks() {
     notifyAllInQueue(blockedTasks);
 
@@ -214,11 +235,6 @@ public class CompletableActorFuture<V> implements ActorFuture<V> {
     }
   }
 
-  @Override
-  public V join() {
-    return FutureUtil.join(this);
-  }
-
   /** future is reusable after close */
   public boolean close() {
     final int prevState = UNSAFE.getAndSetInt(this, STATE_OFFSET, CLOSED);
@@ -235,25 +251,6 @@ public class CompletableActorFuture<V> implements ActorFuture<V> {
 
   public boolean isClosed() {
     return state == CLOSED;
-  }
-
-  @Override
-  public Throwable getException() {
-    if (!isCompletedExceptionally()) {
-      throw new IllegalStateException(
-          "Cannot call getException(); future is not completed exceptionally.");
-    }
-
-    return failureCause;
-  }
-
-  static {
-    try {
-      STATE_OFFSET =
-          UNSAFE.objectFieldOffset(CompletableActorFuture.class.getDeclaredField("state"));
-    } catch (final Exception ex) {
-      throw new RuntimeException(ex);
-    }
   }
 
   public void completeWith(CompletableActorFuture<V> otherFuture) {

@@ -56,6 +56,17 @@ public class PartitionLeaderElection extends Actor
   }
 
   @Override
+  public void stop(ServiceStopContext stopContext) {
+    partition.removeRoleChangeListener(this);
+    actor.close();
+  }
+
+  @Override
+  public PartitionLeaderElection get() {
+    return this;
+  }
+
+  @Override
   protected void onActorStarted() {
     partition.addRoleChangeListener(this);
     onRoleChange(partition.getRole());
@@ -97,17 +108,6 @@ public class PartitionLeaderElection extends Actor
   private void transitionToLeader(long term) {
     leaderTerm = term;
     leaderElectionListeners.forEach(l -> l.onTransitionToLeader(partitionId, term));
-  }
-
-  @Override
-  public void stop(ServiceStopContext stopContext) {
-    partition.removeRoleChangeListener(this);
-    actor.close();
-  }
-
-  @Override
-  public PartitionLeaderElection get() {
-    return this;
   }
 
   public int getPartitionId() {

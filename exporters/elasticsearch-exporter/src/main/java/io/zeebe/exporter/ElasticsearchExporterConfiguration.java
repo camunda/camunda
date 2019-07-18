@@ -35,6 +35,55 @@ public class ElasticsearchExporterConfiguration {
         + '}';
   }
 
+  public boolean shouldIndexRecord(Record<?> record) {
+    return shouldIndexRecordType(record.getRecordType())
+        && shouldIndexValueType(record.getValueType());
+  }
+
+  public boolean shouldIndexValueType(ValueType valueType) {
+    switch (valueType) {
+      case DEPLOYMENT:
+        return index.deployment;
+      case ERROR:
+        return index.error;
+      case INCIDENT:
+        return index.incident;
+      case JOB:
+        return index.job;
+      case JOB_BATCH:
+        return index.jobBatch;
+      case MESSAGE:
+        return index.message;
+      case MESSAGE_SUBSCRIPTION:
+        return index.messageSubscription;
+      case VARIABLE:
+        return index.variable;
+      case VARIABLE_DOCUMENT:
+        return index.variableDocument;
+      case WORKFLOW_INSTANCE:
+        return index.workflowInstance;
+      case WORKFLOW_INSTANCE_CREATION:
+        return index.workflowInstanceCreation;
+      case WORKFLOW_INSTANCE_SUBSCRIPTION:
+        return index.workflowInstanceSubscription;
+      default:
+        return false;
+    }
+  }
+
+  public boolean shouldIndexRecordType(RecordType recordType) {
+    switch (recordType) {
+      case EVENT:
+        return index.event;
+      case COMMAND:
+        return index.command;
+      case COMMAND_REJECTION:
+        return index.rejection;
+      default:
+        return false;
+    }
+  }
+
   public static class IndexConfiguration {
     // prefix for index and templates
     public String prefix = "zeebe-record";
@@ -124,55 +173,6 @@ public class ElasticsearchExporterConfiguration {
     @Override
     public String toString() {
       return "AuthenticationConfiguration{" + "username='" + username + '\'' + '}';
-    }
-  }
-
-  public boolean shouldIndexRecord(Record<?> record) {
-    return shouldIndexRecordType(record.getRecordType())
-        && shouldIndexValueType(record.getValueType());
-  }
-
-  public boolean shouldIndexValueType(ValueType valueType) {
-    switch (valueType) {
-      case DEPLOYMENT:
-        return index.deployment;
-      case ERROR:
-        return index.error;
-      case INCIDENT:
-        return index.incident;
-      case JOB:
-        return index.job;
-      case JOB_BATCH:
-        return index.jobBatch;
-      case MESSAGE:
-        return index.message;
-      case MESSAGE_SUBSCRIPTION:
-        return index.messageSubscription;
-      case VARIABLE:
-        return index.variable;
-      case VARIABLE_DOCUMENT:
-        return index.variableDocument;
-      case WORKFLOW_INSTANCE:
-        return index.workflowInstance;
-      case WORKFLOW_INSTANCE_CREATION:
-        return index.workflowInstanceCreation;
-      case WORKFLOW_INSTANCE_SUBSCRIPTION:
-        return index.workflowInstanceSubscription;
-      default:
-        return false;
-    }
-  }
-
-  public boolean shouldIndexRecordType(RecordType recordType) {
-    switch (recordType) {
-      case EVENT:
-        return index.event;
-      case COMMAND:
-        return index.command;
-      case COMMAND_REJECTION:
-        return index.rejection;
-      default:
-        return false;
     }
   }
 }

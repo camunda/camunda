@@ -39,6 +39,10 @@ public class BpmnPlaneImpl extends PlaneImpl implements BpmnPlane {
 
   protected static AttributeReference<BaseElement> bpmnElementAttribute;
 
+  public BpmnPlaneImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -60,10 +64,6 @@ public class BpmnPlaneImpl extends PlaneImpl implements BpmnPlane {
             .build();
 
     typeBuilder.build();
-  }
-
-  public BpmnPlaneImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

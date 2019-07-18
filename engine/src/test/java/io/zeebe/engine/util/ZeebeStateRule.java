@@ -19,9 +19,9 @@ import org.junit.rules.TemporaryFolder;
 public class ZeebeStateRule extends ExternalResource {
 
   private final TemporaryFolder tempFolder = new TemporaryFolder();
+  private final int partition;
   private ZeebeDb<ZbColumnFamilies> db;
   private ZeebeState zeebeState;
-  private final int partition;
 
   public ZeebeStateRule() {
     this(Protocol.DEPLOYMENT_PARTITION);

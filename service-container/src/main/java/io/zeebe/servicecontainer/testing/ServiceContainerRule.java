@@ -18,9 +18,8 @@ import java.util.concurrent.TimeoutException;
 import org.junit.rules.ExternalResource;
 
 public class ServiceContainerRule extends ExternalResource {
-  private ServiceContainerImpl serviceContainer;
   private final boolean shouldStop;
-
+  private ServiceContainerImpl serviceContainer;
   private ActorSchedulerRule actorSchedulerRule;
   private ControlledActorSchedulerRule controlledActorSchedulerRule;
 

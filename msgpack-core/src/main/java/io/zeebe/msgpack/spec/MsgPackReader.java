@@ -42,8 +42,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class MsgPackReader {
   public DirectBuffer buffer = new UnsafeBuffer(0, 0);
-  private int offset;
   protected MsgPackToken token = new MsgPackToken();
+  private int offset;
 
   public MsgPackReader wrap(DirectBuffer buffer, int offset, int length) {
     this.buffer.wrap(buffer, offset, length);

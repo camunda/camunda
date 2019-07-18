@@ -32,21 +32,21 @@ public abstract class AbstractFlowElement implements ExecutableFlowElement {
     return id;
   }
 
-  public void bindLifecycleState(WorkflowInstanceIntent state, BpmnStep step) {
-    this.bpmnSteps.put(state, step);
-  }
-
   @Override
   public BpmnStep getStep(WorkflowInstanceIntent state) {
     return bpmnSteps.get(state);
+  }
+
+  @Override
+  public BpmnElementType getElementType() {
+    return elementType;
   }
 
   public void setElementType(BpmnElementType elementType) {
     this.elementType = elementType;
   }
 
-  @Override
-  public BpmnElementType getElementType() {
-    return elementType;
+  public void bindLifecycleState(WorkflowInstanceIntent state, BpmnStep step) {
+    this.bpmnSteps.put(state, step);
   }
 }

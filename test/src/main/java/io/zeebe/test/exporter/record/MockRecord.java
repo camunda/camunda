@@ -105,6 +105,16 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
     return metadata.getValueType();
   }
 
+  @Override
+  public MockRecordValueWithVariables getValue() {
+    return value;
+  }
+
+  public MockRecord setValue(MockRecordValueWithVariables value) {
+    this.value = value;
+    return this;
+  }
+
   public MockRecord setTimestamp(long timestamp) {
     this.timestamp = timestamp;
     return this;
@@ -120,31 +130,14 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
   }
 
   @Override
-  public MockRecordValueWithVariables getValue() {
-    return value;
-  }
-
-  public MockRecord setValue(MockRecordValueWithVariables value) {
-    this.value = value;
-    return this;
-  }
-
-  @Override
-  public String toString() {
-    return "MockRecord{"
-        + "position="
-        + position
-        + ", sourceRecordPosition="
-        + sourceRecordPosition
-        + ", key="
-        + key
-        + ", timestamp="
-        + timestamp
-        + ", metadata="
-        + metadata
-        + ", value="
-        + value
-        + '}';
+  public int hashCode() {
+    return Objects.hash(
+        getPosition(),
+        getSourceRecordPosition(),
+        getKey(),
+        getTimestamp(),
+        getMetadata(),
+        getValue());
   }
 
   @Override
@@ -166,17 +159,6 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(
-        getPosition(),
-        getSourceRecordPosition(),
-        getKey(),
-        getTimestamp(),
-        getMetadata(),
-        getValue());
-  }
-
-  @Override
   public Object clone() {
     try {
       final MockRecord cloned = (MockRecord) super.clone();
@@ -185,5 +167,23 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
     } catch (CloneNotSupportedException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public String toString() {
+    return "MockRecord{"
+        + "position="
+        + position
+        + ", sourceRecordPosition="
+        + sourceRecordPosition
+        + ", key="
+        + key
+        + ", timestamp="
+        + timestamp
+        + ", metadata="
+        + metadata
+        + ", value="
+        + value
+        + '}';
   }
 }

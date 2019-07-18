@@ -41,6 +41,10 @@ public class TextAnnotationImpl extends ArtifactImpl implements TextAnnotation {
   protected static Attribute<String> textFormatAttribute;
   protected static ChildElement<Text> textChild;
 
+  public TextAnnotationImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -63,10 +67,6 @@ public class TextAnnotationImpl extends ArtifactImpl implements TextAnnotation {
     textChild = sequenceBuilder.element(Text.class).build();
 
     typeBuilder.build();
-  }
-
-  public TextAnnotationImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

@@ -42,6 +42,14 @@ public class BlockingPollSubscription implements ActorSubscription, Runnable {
   }
 
   @Override
+  public void onJobCompleted() {
+    if (isRecurring) {
+      // re-submit
+      submit();
+    }
+  }
+
+  @Override
   public void run() {
     try {
       blockingAction.run();
@@ -56,14 +64,6 @@ public class BlockingPollSubscription implements ActorSubscription, Runnable {
   private void onBlockingActionCompleted() {
     isDone = true;
     subscriptionJob.getTask().tryWakeup();
-  }
-
-  @Override
-  public void onJobCompleted() {
-    if (isRecurring) {
-      // re-submit
-      submit();
-    }
   }
 
   public void submit() {

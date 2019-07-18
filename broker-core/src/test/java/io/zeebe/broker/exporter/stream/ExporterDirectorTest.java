@@ -55,12 +55,9 @@ public class ExporterDirectorTest {
   private static final String EXPORTER_ID_2 = "exporter-2";
 
   private static final VerificationWithTimeout TIMEOUT = timeout(5_000);
-
-  @Rule public ExporterRule rule = new ExporterRule(PARTITION_ID);
-
   private final List<ControlledTestExporter> exporters = new ArrayList<>();
   private final List<ExporterDescriptor> exporterDescriptors = new ArrayList<>();
-
+  @Rule public ExporterRule rule = new ExporterRule(PARTITION_ID);
   private ExportersState state;
 
   @Before

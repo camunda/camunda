@@ -32,6 +32,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public class HumanPerformerImpl extends PerformerImpl implements HumanPerformer {
 
+  public HumanPerformerImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -46,9 +50,5 @@ public class HumanPerformerImpl extends PerformerImpl implements HumanPerformer 
                   }
                 });
     typeBuilder.build();
-  }
-
-  public HumanPerformerImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 }

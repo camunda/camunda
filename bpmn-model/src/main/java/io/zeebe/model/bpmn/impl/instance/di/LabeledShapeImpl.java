@@ -32,6 +32,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public abstract class LabeledShapeImpl extends ShapeImpl implements LabeledShape {
 
+  public LabeledShapeImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -41,9 +45,5 @@ public abstract class LabeledShapeImpl extends ShapeImpl implements LabeledShape
             .abstractType();
 
     typeBuilder.build();
-  }
-
-  public LabeledShapeImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 }

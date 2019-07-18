@@ -102,12 +102,8 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
   }
 
   @Override
-  public String toString() {
-    final StringBuilder builder = new StringBuilder();
-    builder.append(key.toString());
-    builder.append(" => ");
-    builder.append(value.toString());
-    return builder.toString();
+  public int hashCode() {
+    return Objects.hash(getKey(), value, defaultValue, isSet);
   }
 
   @Override
@@ -126,7 +122,11 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(getKey(), value, defaultValue, isSet);
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append(key.toString());
+    builder.append(" => ");
+    builder.append(value.toString());
+    return builder.toString();
   }
 }

@@ -13,11 +13,10 @@ import java.util.Objects;
 import java.util.Set;
 
 public class TopologyBroker {
-  private Set<BrokerPartitionState> partitions = new LinkedHashSet<>();
-
   protected final int nodeId;
   protected final String host;
   protected final int port;
+  private Set<BrokerPartitionState> partitions = new LinkedHashSet<>();
   private SocketAddress address;
 
   public TopologyBroker(final int nodeId, final String host, final int port) {
@@ -53,6 +52,11 @@ public class TopologyBroker {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(nodeId);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -62,11 +66,6 @@ public class TopologyBroker {
     }
     final TopologyBroker that = (TopologyBroker) o;
     return nodeId == that.nodeId;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(nodeId);
   }
 
   @Override

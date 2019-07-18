@@ -32,6 +32,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class DataPath extends FormalExpressionImpl {
 
+  public DataPath(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -47,9 +51,5 @@ public class DataPath extends FormalExpressionImpl {
                 });
 
     typeBuilder.build();
-  }
-
-  public DataPath(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 }

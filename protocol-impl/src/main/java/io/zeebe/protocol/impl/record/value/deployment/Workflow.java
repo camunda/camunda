@@ -48,14 +48,44 @@ public class Workflow extends UnpackedObject implements DeployedWorkflow {
     return getKey();
   }
 
+  @Override
+  public String getResourceName() {
+    return BufferUtil.bufferAsString(resourceNameProp.getValue());
+  }
+
+  public Workflow setResourceName(String resourceName) {
+    this.resourceNameProp.setValue(resourceName);
+    return this;
+  }
+
+  public Workflow setResourceName(DirectBuffer resourceName) {
+    this.resourceNameProp.setValue(resourceName);
+    return this;
+  }
+
+  public Workflow setVersion(int version) {
+    this.versionProp.setValue(version);
+    return this;
+  }
+
+  public Workflow setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
+  public Workflow setBpmnProcessId(DirectBuffer bpmnProcessId) {
+    this.bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
   @JsonIgnore
   public long getKey() {
     return keyProp.getValue();
   }
 
-  @Override
-  public String getResourceName() {
-    return BufferUtil.bufferAsString(resourceNameProp.getValue());
+  public Workflow setKey(long key) {
+    this.keyProp.setValue(key);
+    return this;
   }
 
   @JsonIgnore
@@ -82,36 +112,6 @@ public class Workflow extends UnpackedObject implements DeployedWorkflow {
 
   public Workflow setBpmnProcessId(DirectBuffer bpmnProcessId, int offset, int length) {
     this.bpmnProcessIdProp.setValue(bpmnProcessId, offset, length);
-    return this;
-  }
-
-  public Workflow setBpmnProcessId(String bpmnProcessId) {
-    this.bpmnProcessIdProp.setValue(bpmnProcessId);
-    return this;
-  }
-
-  public Workflow setBpmnProcessId(DirectBuffer bpmnProcessId) {
-    this.bpmnProcessIdProp.setValue(bpmnProcessId);
-    return this;
-  }
-
-  public Workflow setKey(long key) {
-    this.keyProp.setValue(key);
-    return this;
-  }
-
-  public Workflow setResourceName(String resourceName) {
-    this.resourceNameProp.setValue(resourceName);
-    return this;
-  }
-
-  public Workflow setResourceName(DirectBuffer resourceName) {
-    this.resourceNameProp.setValue(resourceName);
-    return this;
-  }
-
-  public Workflow setVersion(int version) {
-    this.versionProp.setValue(version);
     return this;
   }
 }

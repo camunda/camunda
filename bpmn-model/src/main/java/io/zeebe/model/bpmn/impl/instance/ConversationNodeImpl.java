@@ -46,6 +46,10 @@ public abstract class ConversationNodeImpl extends BaseElementImpl implements Co
   protected static ElementReferenceCollection<MessageFlow, MessageFlowRef> messageFlowRefCollection;
   protected static ChildElementCollection<CorrelationKey> correlationKeyCollection;
 
+  public ConversationNodeImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -73,10 +77,6 @@ public abstract class ConversationNodeImpl extends BaseElementImpl implements Co
     correlationKeyCollection = sequenceBuilder.elementCollection(CorrelationKey.class).build();
 
     typeBuilder.build();
-  }
-
-  public ConversationNodeImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

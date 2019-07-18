@@ -18,17 +18,13 @@ public class ActorJob {
 
   Actor actor;
   ActorTask task;
-
+  ActorThread actorThread;
   private Callable<?> callable;
   private Runnable runnable;
   private Object invocationResult;
   private boolean isAutoCompleting;
   private boolean isDoneCalled;
-
   private ActorFuture resultFuture;
-
-  ActorThread actorThread;
-
   private ActorSubscription subscription;
 
   public void onJobAddedToTask(ActorTask task) {
@@ -144,13 +140,13 @@ public class ActorJob {
     return subscription != null;
   }
 
+  public ActorSubscription getSubscription() {
+    return subscription;
+  }
+
   public void setSubscription(ActorSubscription subscription) {
     this.subscription = subscription;
     task.addSubscription(subscription);
-  }
-
-  public ActorSubscription getSubscription() {
-    return subscription;
   }
 
   public ActorTask getTask() {

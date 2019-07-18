@@ -39,6 +39,10 @@ public class ResourceAssignmentExpressionImpl extends BaseElementImpl
 
   protected static ChildElement<Expression> expressionChild;
 
+  public ResourceAssignmentExpressionImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -60,10 +64,6 @@ public class ResourceAssignmentExpressionImpl extends BaseElementImpl
     expressionChild = sequenceBuilder.element(Expression.class).required().build();
 
     typeBuilder.build();
-  }
-
-  public ResourceAssignmentExpressionImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

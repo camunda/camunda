@@ -46,6 +46,8 @@ public class ServiceDependencyResolver {
   /** map of service groups */
   private final Map<ServiceName<?>, ServiceGroup> groups = new HashMap<>();
 
+  private final List<ServiceController> rootServices = new ArrayList<>();
+
   public void onServiceEvent(ServiceEvent event) {
     switch (event.getType()) {
       case SERVICE_INSTALLED:
@@ -224,8 +226,6 @@ public class ServiceDependencyResolver {
     this.dependentServices.put(controller, dependents);
     checkDependenciesAvailable(controller);
   }
-
-  private final List<ServiceController> rootServices = new ArrayList<>();
 
   public List<ServiceController> getRootServices() {
     return rootServices;

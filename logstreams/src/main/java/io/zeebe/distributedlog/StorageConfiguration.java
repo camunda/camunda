@@ -36,22 +36,22 @@ public class StorageConfiguration {
     return partitionId;
   }
 
-  public File getLogDirectory() {
-    return logDirectory;
-  }
-
   public StorageConfiguration setPartitionId(final int partitionId) {
     this.partitionId = partitionId;
     return this;
   }
 
-  public StorageConfiguration setLogSegmentSize(final long value) {
-    logSegmentSize = value;
-    return this;
+  public File getLogDirectory() {
+    return logDirectory;
   }
 
   public long getLogSegmentSize() {
     return logSegmentSize;
+  }
+
+  public StorageConfiguration setLogSegmentSize(final long value) {
+    logSegmentSize = value;
+    return this;
   }
 
   public File getStatesDirectory() {

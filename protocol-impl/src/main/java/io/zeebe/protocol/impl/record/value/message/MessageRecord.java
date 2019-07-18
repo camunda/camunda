@@ -68,28 +68,8 @@ public class MessageRecord extends UnifiedRecordValue implements MessageRecordVa
     return timeToLiveProp.getValue();
   }
 
-  @JsonIgnore
-  public DirectBuffer getNameBuffer() {
-    return nameProp.getValue();
-  }
-
-  @Override
-  public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProp.getValue());
-  }
-
-  @JsonIgnore
-  public DirectBuffer getVariablesBuffer() {
-    return variablesProp.getValue();
-  }
-
-  public MessageRecord setCorrelationKey(String correlationKey) {
-    correlationKeyProp.setValue(correlationKey);
-    return this;
-  }
-
-  public MessageRecord setCorrelationKey(DirectBuffer correlationKey) {
-    correlationKeyProp.setValue(correlationKey);
+  public MessageRecord setTimeToLive(long timeToLive) {
+    timeToLiveProp.setValue(timeToLive);
     return this;
   }
 
@@ -103,6 +83,16 @@ public class MessageRecord extends UnifiedRecordValue implements MessageRecordVa
     return this;
   }
 
+  public MessageRecord setCorrelationKey(String correlationKey) {
+    correlationKeyProp.setValue(correlationKey);
+    return this;
+  }
+
+  public MessageRecord setCorrelationKey(DirectBuffer correlationKey) {
+    correlationKeyProp.setValue(correlationKey);
+    return this;
+  }
+
   public MessageRecord setName(String name) {
     nameProp.setValue(name);
     return this;
@@ -113,13 +103,23 @@ public class MessageRecord extends UnifiedRecordValue implements MessageRecordVa
     return this;
   }
 
-  public MessageRecord setTimeToLive(long timeToLive) {
-    timeToLiveProp.setValue(timeToLive);
-    return this;
+  @JsonIgnore
+  public DirectBuffer getNameBuffer() {
+    return nameProp.getValue();
+  }
+
+  @Override
+  public Map<String, Object> getVariables() {
+    return MsgPackConverter.convertToMap(variablesProp.getValue());
   }
 
   public MessageRecord setVariables(DirectBuffer variables) {
     variablesProp.setValue(variables);
     return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getVariablesBuffer() {
+    return variablesProp.getValue();
   }
 }

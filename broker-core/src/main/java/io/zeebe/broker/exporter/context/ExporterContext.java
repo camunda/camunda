@@ -38,14 +38,14 @@ public class ExporterContext implements Context {
     return configuration;
   }
 
+  public RecordFilter getFilter() {
+    return filter;
+  }
+
   @Override
   public void setFilter(RecordFilter filter) {
     EnsureUtil.ensureNotNull("filter", filter);
     this.filter = filter;
-  }
-
-  public RecordFilter getFilter() {
-    return filter;
   }
 
   private static class AcceptAllRecordsFilter implements RecordFilter {

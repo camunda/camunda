@@ -32,13 +32,10 @@ public class ClientChannelKeepAliveTest {
   protected static final SocketAddress ADDRESS = SocketUtil.getNextAddress();
   protected static final int NODE_ID2 = 2;
   protected static final SocketAddress ADDRESS2 = SocketUtil.getNextAddress();
-
-  private ControlledActorClock clock = new ControlledActorClock();
-  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);
   public AutoCloseableRule closeables = new AutoCloseableRule();
-
+  public ControlledActorClock clock = new ControlledActorClock();
+  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
-
   protected ControlMessageRecorder serverRecorder;
 
   @Before

@@ -37,6 +37,10 @@ public class CategoryValueImpl extends BaseElementImpl implements CategoryValue 
 
   protected static Attribute<String> valueAttribute;
 
+  public CategoryValueImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -54,10 +58,6 @@ public class CategoryValueImpl extends BaseElementImpl implements CategoryValue 
     valueAttribute = typeBuilder.stringAttribute(BPMN_ATTRIBUTE_VALUE).build();
 
     typeBuilder.build();
-  }
-
-  public CategoryValueImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

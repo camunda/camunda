@@ -59,17 +59,17 @@ public class TopologyManagerImpl extends Actor
   }
 
   @Override
+  public String getName() {
+    return "topology";
+  }
+
+  @Override
   protected void onActorStarted() {
     atomix.getMembershipService().addListener(this);
     atomix
         .getMembershipService()
         .getMembers()
         .forEach(m -> event(new ClusterMembershipEvent(Type.MEMBER_ADDED, m)));
-  }
-
-  @Override
-  public String getName() {
-    return "topology";
   }
 
   public void updateRole(RaftState state, int partitionId) {
@@ -213,6 +213,11 @@ public class TopologyManagerImpl extends Actor
   }
 
   @Override
+  public void removeTopologyMemberListener(TopologyMemberListener listener) {
+    actor.run(() -> topologyMemberListeners.remove(listener));
+  }
+
+  @Override
   public void addTopologyMemberListener(TopologyMemberListener listener) {
     actor.run(
         () -> {
@@ -226,8 +231,8 @@ public class TopologyManagerImpl extends Actor
   }
 
   @Override
-  public void removeTopologyMemberListener(TopologyMemberListener listener) {
-    actor.run(() -> topologyMemberListeners.remove(listener));
+  public void removeTopologyPartitionListener(TopologyPartitionListener listener) {
+    actor.run(() -> topologyPartitionListeners.remove(listener));
   }
 
   @Override
@@ -256,11 +261,6 @@ public class TopologyManagerImpl extends Actor
                             }
                           }));
         });
-  }
-
-  @Override
-  public void removeTopologyPartitionListener(TopologyPartitionListener listener) {
-    actor.run(() -> topologyPartitionListeners.remove(listener));
   }
 
   private void notifyMemberAdded(NodeInfo memberInfo) {

@@ -46,9 +46,8 @@ import org.junit.rules.TemporaryFolder;
 
 public class IncidentStreamProcessorRule extends ExternalResource {
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
   private final StreamProcessorRule environmentRule;
-
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
   private SubscriptionCommandSender mockSubscriptionCommandSender;
   private DueDateTimerChecker mockTimerEventScheduler;
 

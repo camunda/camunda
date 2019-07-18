@@ -48,6 +48,10 @@ public abstract class FlowElementImpl extends BaseElementImpl implements FlowEle
   protected static ElementReferenceCollection<CategoryValue, CategoryValueRef>
       categoryValueRefCollection;
 
+  public FlowElementImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
 
     final ModelElementTypeBuilder typeBuilder =
@@ -72,10 +76,6 @@ public abstract class FlowElementImpl extends BaseElementImpl implements FlowEle
             .build();
 
     typeBuilder.build();
-  }
-
-  public FlowElementImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

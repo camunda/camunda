@@ -42,6 +42,10 @@ public abstract class DiagramImpl extends BpmnModelElementInstanceImpl implement
   protected static Attribute<Double> resolutionAttribute;
   protected static Attribute<String> idAttribute;
 
+  public DiagramImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -58,10 +62,6 @@ public abstract class DiagramImpl extends BpmnModelElementInstanceImpl implement
     idAttribute = typeBuilder.stringAttribute(DI_ATTRIBUTE_ID).idAttribute().build();
 
     typeBuilder.build();
-  }
-
-  public DiagramImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

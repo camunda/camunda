@@ -39,6 +39,10 @@ public class SignalEventDefinitionImpl extends EventDefinitionImpl
 
   protected static AttributeReference<Signal> signalRefAttribute;
 
+  public SignalEventDefinitionImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -61,10 +65,6 @@ public class SignalEventDefinitionImpl extends EventDefinitionImpl
             .build();
 
     typeBuilder.build();
-  }
-
-  public SignalEventDefinitionImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

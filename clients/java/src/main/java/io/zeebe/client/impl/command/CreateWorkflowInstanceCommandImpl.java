@@ -82,6 +82,12 @@ public class CreateWorkflowInstanceCommandImpl
   }
 
   @Override
+  public CreateWorkflowInstanceCommandStep3 workflowKey(final long workflowKey) {
+    builder.setWorkflowKey(workflowKey);
+    return this;
+  }
+
+  @Override
   public CreateWorkflowInstanceCommandStep3 version(final int version) {
     builder.setVersion(version);
     return this;
@@ -90,12 +96,6 @@ public class CreateWorkflowInstanceCommandImpl
   @Override
   public CreateWorkflowInstanceCommandStep3 latestVersion() {
     return version(LATEST_VERSION);
-  }
-
-  @Override
-  public CreateWorkflowInstanceCommandStep3 workflowKey(final long workflowKey) {
-    builder.setWorkflowKey(workflowKey);
-    return this;
   }
 
   @Override

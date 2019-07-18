@@ -189,6 +189,22 @@ public class DefaultDistributedLogstreamService
   }
 
   @Override
+  public boolean claimLeaderShip(String nodeId, long term) {
+    logger.debug(
+        "Node {} claiming leadership for LogStream partition {} at term {}.",
+        nodeId,
+        logStream.getPartitionId(),
+        term);
+
+    if (currentLeaderTerm < term) {
+      this.currentLeader = nodeId;
+      this.currentLeaderTerm = term;
+      return true;
+    }
+    return false;
+  }
+
+  @Override
   public long append(long commitPosition, byte[] blockBuffer) {
     if (commitPosition <= lastPosition) {
       // This case can happen due to raft-replay or when appender retries due to timeout or other
@@ -235,22 +251,6 @@ public class DefaultDistributedLogstreamService
     }
 
     return appendResult;
-  }
-
-  @Override
-  public boolean claimLeaderShip(String nodeId, long term) {
-    logger.debug(
-        "Node {} claiming leadership for LogStream partition {} at term {}.",
-        nodeId,
-        logStream.getPartitionId(),
-        term);
-
-    if (currentLeaderTerm < term) {
-      this.currentLeader = nodeId;
-      this.currentLeaderTerm = term;
-      return true;
-    }
-    return false;
   }
 
   @Override
@@ -301,6 +301,12 @@ public class DefaultDistributedLogstreamService
     currentLeaderTerm = backupInput.readLong();
   }
 
+  @Override
+  public void close() {
+    super.close();
+    logger.info("Closing {}", getServiceName());
+  }
+
   private RestoreController createRestoreController(ThreadContext restoreThreadContext) {
     final RestoreFactory restoreFactory = LogstreamConfig.getRestoreFactory(localMemberId);
     final RestoreClient restoreClient = restoreFactory.createClient(partitionId);
@@ -328,11 +334,5 @@ public class DefaultDistributedLogstreamService
   private void updateCommitPosition(long commitPosition) {
     logStream.setCommitPosition(commitPosition);
     lastPosition = commitPosition;
-  }
-
-  @Override
-  public void close() {
-    super.close();
-    logger.info("Closing {}", getServiceName());
   }
 }

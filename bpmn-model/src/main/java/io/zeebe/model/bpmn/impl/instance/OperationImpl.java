@@ -48,6 +48,10 @@ public class OperationImpl extends BaseElementImpl implements Operation {
   protected static ElementReference<Message, OutMessageRef> outMessageRefChild;
   protected static ElementReferenceCollection<Error, ErrorRef> errorRefCollection;
 
+  public OperationImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -86,10 +90,6 @@ public class OperationImpl extends BaseElementImpl implements Operation {
             .build();
 
     typeBuilder.build();
-  }
-
-  public OperationImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

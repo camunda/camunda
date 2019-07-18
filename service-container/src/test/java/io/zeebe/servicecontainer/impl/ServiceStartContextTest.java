@@ -30,13 +30,10 @@ import org.junit.rules.ExpectedException;
 @SuppressWarnings("unchecked")
 public class ServiceStartContextTest {
   @Rule public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
-
+  @Rule public ExpectedException thrown = ExpectedException.none();
   private ServiceContainer serviceContainer;
-
   private ServiceName<Object> service1;
   private ServiceName<Object> service2;
-
-  @Rule public ExpectedException thrown = ExpectedException.none();
 
   @Before
   public void setup() {

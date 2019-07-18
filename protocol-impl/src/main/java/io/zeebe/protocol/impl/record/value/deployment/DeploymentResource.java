@@ -65,6 +65,29 @@ public class DeploymentResource extends UnpackedObject
     return BufferUtil.bufferAsString(resourceNameProp.getValue());
   }
 
+  public DeploymentResource setResourceName(String resourceName) {
+    this.resourceNameProp.setValue(resourceName);
+    return this;
+  }
+
+  public DeploymentResource setResourceName(DirectBuffer resourceName) {
+    this.resourceNameProp.setValue(resourceName);
+    return this;
+  }
+
+  public DeploymentResource setResourceType(ResourceType resourceType) {
+    this.resourceTypeProp.setValue(resourceType);
+    return this;
+  }
+
+  public DeploymentResource setResource(byte[] resource) {
+    return setResource(wrapArray(resource));
+  }
+
+  public DeploymentResource setResource(DirectBuffer resource) {
+    return setResource(resource, 0, resource.capacity());
+  }
+
   @JsonIgnore
   public DirectBuffer getResourceBuffer() {
     return resourceProp.getValue();
@@ -87,31 +110,8 @@ public class DeploymentResource extends UnpackedObject
     return super.getEncodedLength();
   }
 
-  public DeploymentResource setResource(byte[] resource) {
-    return setResource(wrapArray(resource));
-  }
-
-  public DeploymentResource setResource(DirectBuffer resource) {
-    return setResource(resource, 0, resource.capacity());
-  }
-
   public DeploymentResource setResource(DirectBuffer resource, int offset, int length) {
     this.resourceProp.setValue(resource, offset, length);
-    return this;
-  }
-
-  public DeploymentResource setResourceName(String resourceName) {
-    this.resourceNameProp.setValue(resourceName);
-    return this;
-  }
-
-  public DeploymentResource setResourceName(DirectBuffer resourceName) {
-    this.resourceNameProp.setValue(resourceName);
-    return this;
-  }
-
-  public DeploymentResource setResourceType(ResourceType resourceType) {
-    this.resourceTypeProp.setValue(resourceType);
     return this;
   }
 }

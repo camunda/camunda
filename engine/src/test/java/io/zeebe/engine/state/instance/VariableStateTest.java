@@ -46,6 +46,9 @@ public class VariableStateTest {
   private static ElementInstanceState elementInstanceState;
   private static VariablesState variablesState;
   private static RecordingVariableListener listener;
+  private long parent;
+  private long child;
+  private long child2;
 
   @BeforeClass
   public static void setUp() {
@@ -56,10 +59,6 @@ public class VariableStateTest {
     listener = new RecordingVariableListener();
     variablesState.setListener(listener);
   }
-
-  private long parent;
-  private long child;
-  private long child2;
 
   @Before
   public void beforeTest() {
@@ -679,24 +678,20 @@ public class VariableStateTest {
     return workflowInstanceRecord;
   }
 
+  private void setVariablesFromDocument(long scope, DirectBuffer document) {
+    variablesState.setVariablesFromDocument(scope, WORKFLOW_KEY, document);
+  }
+
+  private void setVariablesLocalFromDocument(long scope, DirectBuffer document) {
+    variablesState.setVariablesLocalFromDocument(scope, WORKFLOW_KEY, document);
+  }
+
+  public void setVariableLocal(long scopeKey, DirectBuffer name, DirectBuffer value) {
+    variablesState.setVariableLocal(
+        scopeKey, WORKFLOW_KEY, name, 0, name.capacity(), value, 0, value.capacity());
+  }
+
   private static class RecordingVariableListener implements VariableListener {
-
-    private class VariableChange {
-      private final long key;
-      private final String name;
-      private final byte[] value;
-      private final long variableScopeKey;
-      private final long rootScopeKey;
-
-      VariableChange(
-          long key, String name, byte[] value, long variableScopeKey, long rootScopeKey) {
-        this.key = key;
-        this.name = name;
-        this.value = value;
-        this.variableScopeKey = variableScopeKey;
-        this.rootScopeKey = rootScopeKey;
-      }
-    }
 
     private final List<VariableChange> created = new ArrayList<>();
     private final List<VariableChange> updated = new ArrayList<>();
@@ -741,18 +736,22 @@ public class VariableStateTest {
       updated.clear();
       created.clear();
     }
-  }
 
-  private void setVariablesFromDocument(long scope, DirectBuffer document) {
-    variablesState.setVariablesFromDocument(scope, WORKFLOW_KEY, document);
-  }
+    private class VariableChange {
+      private final long key;
+      private final String name;
+      private final byte[] value;
+      private final long variableScopeKey;
+      private final long rootScopeKey;
 
-  private void setVariablesLocalFromDocument(long scope, DirectBuffer document) {
-    variablesState.setVariablesLocalFromDocument(scope, WORKFLOW_KEY, document);
-  }
-
-  public void setVariableLocal(long scopeKey, DirectBuffer name, DirectBuffer value) {
-    variablesState.setVariableLocal(
-        scopeKey, WORKFLOW_KEY, name, 0, name.capacity(), value, 0, value.capacity());
+      VariableChange(
+          long key, String name, byte[] value, long variableScopeKey, long rootScopeKey) {
+        this.key = key;
+        this.name = name;
+        this.value = value;
+        this.variableScopeKey = variableScopeKey;
+        this.rootScopeKey = rootScopeKey;
+      }
+    }
   }
 }

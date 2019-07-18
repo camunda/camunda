@@ -33,6 +33,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class LoopCardinalityImpl extends ExpressionImpl implements LoopCardinality {
 
+  public LoopCardinalityImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -48,9 +52,5 @@ public class LoopCardinalityImpl extends ExpressionImpl implements LoopCardinali
                 });
 
     typeBuilder.build();
-  }
-
-  public LoopCardinalityImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 }

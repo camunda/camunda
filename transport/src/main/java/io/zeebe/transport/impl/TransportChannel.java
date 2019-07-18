@@ -37,17 +37,15 @@ public class TransportChannel {
   private static final int CLOSED = 1;
   private static final int CONNECTING = 2;
   private static final int CONNECTED = 3;
-
-  @SuppressWarnings("unused") // used through STATE_FIELD
-  private volatile int state = CLOSED;
-
   private final RemoteAddressImpl remoteAddress;
   private final AllocatedBuffer allocatedBuffer;
   private final ByteBuffer channelReadBuffer;
   private final UnsafeBuffer channelReadBufferView;
-
   private final ChannelLifecycleListener listener;
   private final FragmentHandler readHandler;
+
+  @SuppressWarnings("unused") // used through STATE_FIELD
+  private volatile int state = CLOSED;
 
   private SocketChannel media;
 
@@ -268,12 +266,6 @@ public class TransportChannel {
     doClose();
   }
 
-  public interface ChannelLifecycleListener {
-    void onChannelConnected(TransportChannel transportChannelImpl);
-
-    void onChannelClosed(TransportChannel transportChannelImpl, boolean wasConnected);
-  }
-
   public void close() {
     doClose();
   }
@@ -289,5 +281,11 @@ public class TransportChannel {
   @Override
   public String toString() {
     return media != null ? media.toString() : "unconnected channel to remote " + remoteAddress;
+  }
+
+  public interface ChannelLifecycleListener {
+    void onChannelConnected(TransportChannel transportChannelImpl);
+
+    void onChannelClosed(TransportChannel transportChannelImpl, boolean wasConnected);
   }
 }

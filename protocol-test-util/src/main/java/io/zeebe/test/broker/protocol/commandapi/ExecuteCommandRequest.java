@@ -38,10 +38,9 @@ public class ExecuteCommandRequest implements BufferWriter {
   protected int partitionId = partitionIdNullValue();
   protected long key = keyNullValue();
   protected ValueType valueType = ValueType.NULL_VAL;
-  private Intent intent = null;
   protected byte[] encodedCmd;
-
   protected ActorFuture<ClientResponse> responseFuture;
+  private Intent intent = null;
 
   public ExecuteCommandRequest(ClientOutput output, int target, final MsgPackHelper msgPackHelper) {
     this.output = output;

@@ -98,6 +98,11 @@ public class Interval implements TemporalAmount {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(getPeriod(), getDuration());
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -110,11 +115,6 @@ public class Interval implements TemporalAmount {
     final Interval interval = (Interval) o;
     return Objects.equals(getPeriod(), interval.getPeriod())
         && Objects.equals(getDuration(), interval.getDuration());
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(getPeriod(), getDuration());
   }
 
   @Override

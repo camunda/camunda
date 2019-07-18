@@ -27,6 +27,11 @@ public class MessageCorrelationKeyContext {
     return variablesScopeKey;
   }
 
+  public MessageCorrelationKeyContext setVariablesScopeKey(long variablesScopeKey) {
+    this.variablesScopeKey = variablesScopeKey;
+    return this;
+  }
+
   public MessageCorrelationKeyContext reset() {
     variablesSupplier = null;
     variablesScopeKey = -1;
@@ -38,11 +43,6 @@ public class MessageCorrelationKeyContext {
   public MessageCorrelationKeyContext setVariablesSupplier(
       VariablesDocumentSupplier variablesSupplier) {
     this.variablesSupplier = variablesSupplier;
-    return this;
-  }
-
-  public MessageCorrelationKeyContext setVariablesScopeKey(long variablesScopeKey) {
-    this.variablesScopeKey = variablesScopeKey;
     return this;
   }
 

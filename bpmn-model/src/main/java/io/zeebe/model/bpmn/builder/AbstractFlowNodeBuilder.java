@@ -54,10 +54,9 @@ public abstract class AbstractFlowNodeBuilder<
         B extends AbstractFlowNodeBuilder<B, E>, E extends FlowNode>
     extends AbstractFlowElementBuilder<B, E> {
 
-  private SequenceFlowBuilder currentSequenceFlowBuilder;
-
   protected boolean compensationStarted;
   protected BoundaryEvent compensateBoundaryEvent;
+  private SequenceFlowBuilder currentSequenceFlowBuilder;
 
   protected AbstractFlowNodeBuilder(BpmnModelInstance modelInstance, E element, Class<?> selfType) {
     super(modelInstance, element, selfType);

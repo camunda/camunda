@@ -34,6 +34,16 @@ public class TimeDateTimer implements Timer {
     return new TimeDateTimer(interval);
   }
 
+  @Override
+  public Interval getInterval() {
+    return interval;
+  }
+
+  @Override
+  public int getRepetitions() {
+    return 1;
+  }
+
   /**
    * Returns the instant represented by this timeDate in milliseconds.
    *
@@ -44,15 +54,5 @@ public class TimeDateTimer implements Timer {
   @Override
   public long getDueDate(long fromEpochMillis) {
     return getInterval().toEpochMilli(0);
-  }
-
-  @Override
-  public Interval getInterval() {
-    return interval;
-  }
-
-  @Override
-  public int getRepetitions() {
-    return 1;
   }
 }

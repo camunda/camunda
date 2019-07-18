@@ -45,6 +45,10 @@ public class RelationshipImpl extends BaseElementImpl implements Relationship {
   protected static ChildElementCollection<Source> sourceCollection;
   protected static ChildElementCollection<Target> targetCollection;
 
+  public RelationshipImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -71,10 +75,6 @@ public class RelationshipImpl extends BaseElementImpl implements Relationship {
     targetCollection = sequenceBuilder.elementCollection(Target.class).minOccurs(1).build();
 
     typeBuilder.build();
-  }
-
-  public RelationshipImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

@@ -8,6 +8,37 @@
 package io.zeebe.servicecontainer.impl;
 
 public class ServiceEvent {
+  private final ServiceEventType type;
+  private final ServiceController controller;
+  private final Object payload;
+
+  public ServiceEvent(ServiceEventType type, ServiceController controller, Object payload) {
+    this.type = type;
+    this.controller = controller;
+    this.payload = payload;
+  }
+
+  public ServiceEvent(ServiceEventType type, ServiceController controller) {
+    this(type, controller, null);
+  }
+
+  public ServiceEventType getType() {
+    return type;
+  }
+
+  public ServiceController getController() {
+    return controller;
+  }
+
+  public Object getPayload() {
+    return payload;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("%s - %s", controller, type);
+  }
+
   public enum ServiceEventType {
     /** fired by the service when it is installed into the container */
     SERVICE_INSTALLED,
@@ -39,38 +70,5 @@ public class ServiceEvent {
 
     /** FIRED by the container when a service's dependencies have stopped */
     DEPENDENTS_STOPPED
-  }
-
-  private final ServiceEventType type;
-
-  private final ServiceController controller;
-
-  private final Object payload;
-
-  public ServiceEvent(ServiceEventType type, ServiceController controller, Object payload) {
-    this.type = type;
-    this.controller = controller;
-    this.payload = payload;
-  }
-
-  public ServiceEvent(ServiceEventType type, ServiceController controller) {
-    this(type, controller, null);
-  }
-
-  public ServiceEventType getType() {
-    return type;
-  }
-
-  public ServiceController getController() {
-    return controller;
-  }
-
-  public Object getPayload() {
-    return payload;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s - %s", controller, type);
   }
 }

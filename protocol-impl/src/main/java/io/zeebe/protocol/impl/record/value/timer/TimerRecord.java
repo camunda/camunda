@@ -45,6 +45,11 @@ public class TimerRecord extends UnifiedRecordValue
     return workflowInstanceKeyProp.getValue();
   }
 
+  public TimerRecord setWorkflowInstanceKey(long workflowInstanceKey) {
+    this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
+    return this;
+  }
+
   @Override
   public long getWorkflowKey() {
     return workflowKeyProp.getValue();
@@ -70,13 +75,8 @@ public class TimerRecord extends UnifiedRecordValue
     return repetitionsProp.getValue();
   }
 
-  public TimerRecord setDueDate(long dueDate) {
-    this.dueDateProp.setValue(dueDate);
-    return this;
-  }
-
-  public TimerRecord setElementInstanceKey(long key) {
-    elementInstanceKeyProp.setValue(key);
+  public TimerRecord setRepetitions(int repetitions) {
+    this.repetitionsProp.setValue(repetitions);
     return this;
   }
 
@@ -85,13 +85,13 @@ public class TimerRecord extends UnifiedRecordValue
     return this;
   }
 
-  public TimerRecord setRepetitions(int repetitions) {
-    this.repetitionsProp.setValue(repetitions);
+  public TimerRecord setDueDate(long dueDate) {
+    this.dueDateProp.setValue(dueDate);
     return this;
   }
 
-  public TimerRecord setWorkflowInstanceKey(long workflowInstanceKey) {
-    this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
+  public TimerRecord setElementInstanceKey(long key) {
+    elementInstanceKeyProp.setValue(key);
     return this;
   }
 

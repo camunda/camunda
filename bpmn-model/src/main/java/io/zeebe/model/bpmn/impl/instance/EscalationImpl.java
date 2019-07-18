@@ -43,6 +43,10 @@ public class EscalationImpl extends RootElementImpl implements Escalation {
   protected static Attribute<String> escalationCodeAttribute;
   protected static AttributeReference<ItemDefinition> structureRefAttribute;
 
+  public EscalationImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -68,10 +72,6 @@ public class EscalationImpl extends RootElementImpl implements Escalation {
             .build();
 
     typeBuilder.build();
-  }
-
-  public EscalationImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

@@ -28,6 +28,14 @@ public class MsgPackReadingExceptionTest {
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
+  @Parameter(0)
+  public String expectedExceptionMessage;
+
+  @Parameter(1)
+  public Consumer<MsgPackReader> codeUnderTest;
+
+  protected MsgPackReader reader;
+
   @Parameters(name = "{0}")
   public static Iterable<Object[]> data() {
     final String template = "Unable to determine %s type, found unknown header byte 0xc1";
@@ -43,14 +51,6 @@ public class MsgPackReadingExceptionTest {
           {"Unknown token format 'NEVER_USED'", codeUnderTest(MsgPackReader::readToken)}
         });
   }
-
-  @Parameter(0)
-  public String expectedExceptionMessage;
-
-  @Parameter(1)
-  public Consumer<MsgPackReader> codeUnderTest;
-
-  protected MsgPackReader reader;
 
   @Before
   public void setUp() {

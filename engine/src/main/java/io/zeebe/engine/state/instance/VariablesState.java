@@ -70,6 +70,7 @@ public class VariablesState {
   private final KeyGenerator keyGenerator;
 
   private VariableListener listener;
+  private int variableCount = 0;
 
   public VariablesState(
       ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext, KeyGenerator keyGenerator) {
@@ -319,8 +320,6 @@ public class VariablesState {
     return resultView;
   }
 
-  private int variableCount = 0;
-
   public DirectBuffer getVariablesLocalAsDocument(long scopeKey) {
 
     writer.wrap(documentResultBuffer, 0);
@@ -466,6 +465,24 @@ public class VariablesState {
     return rootScopeKey;
   }
 
+  public interface VariableListener {
+    void onCreate(
+        long key,
+        long workflowKey,
+        DirectBuffer name,
+        DirectBuffer value,
+        long variableScopeKey,
+        long rootScopeKey);
+
+    void onUpdate(
+        long key,
+        long workflowKey,
+        DirectBuffer name,
+        DirectBuffer value,
+        long variableScopeKey,
+        long rootScopeKey);
+  }
+
   private class IndexedDocument implements Iterable<Void> {
     // variable name offset -> variable value offset
     private final Int2IntHashMap entries = new Int2IntHashMap(-1);
@@ -518,30 +535,6 @@ public class VariablesState {
       return iterator.hasNext();
     }
 
-    public void wrap(DirectBuffer document, EntryIterator iterator) {
-      this.iterator = iterator;
-      this.document = document;
-      this.documentLength = document.capacity();
-    }
-
-    /** excluding string header */
-    public int getNameOffset() {
-      return nameOffset;
-    }
-
-    public int getNameLength() {
-      return nameLength;
-    }
-
-    /** including header */
-    public int getValueOffset() {
-      return valueOffset;
-    }
-
-    public int getValueLength() {
-      return valueLength;
-    }
-
     @Override
     public Void next() {
       iterator.next();
@@ -565,23 +558,29 @@ public class VariablesState {
     public void remove() {
       iterator.remove();
     }
-  }
 
-  public interface VariableListener {
-    void onCreate(
-        long key,
-        long workflowKey,
-        DirectBuffer name,
-        DirectBuffer value,
-        long variableScopeKey,
-        long rootScopeKey);
+    public void wrap(DirectBuffer document, EntryIterator iterator) {
+      this.iterator = iterator;
+      this.document = document;
+      this.documentLength = document.capacity();
+    }
 
-    void onUpdate(
-        long key,
-        long workflowKey,
-        DirectBuffer name,
-        DirectBuffer value,
-        long variableScopeKey,
-        long rootScopeKey);
+    /** excluding string header */
+    public int getNameOffset() {
+      return nameOffset;
+    }
+
+    public int getNameLength() {
+      return nameLength;
+    }
+
+    /** including header */
+    public int getValueOffset() {
+      return valueOffset;
+    }
+
+    public int getValueLength() {
+      return valueLength;
+    }
   }
 }

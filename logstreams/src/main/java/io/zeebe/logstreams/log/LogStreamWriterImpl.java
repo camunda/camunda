@@ -32,16 +32,11 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
   protected final DirectBufferWriter metadataWriterInstance = new DirectBufferWriter();
   protected final DirectBufferWriter bufferWriterInstance = new DirectBufferWriter();
   protected final ClaimedFragment claimedFragment = new ClaimedFragment();
-
-  private LogStream logStream;
-
   protected long key;
-
   protected long sourceRecordPosition = -1L;
-
   protected BufferWriter metadataWriter;
-
   protected BufferWriter valueWriter;
+  private LogStream logStream;
 
   public LogStreamWriterImpl() {}
 

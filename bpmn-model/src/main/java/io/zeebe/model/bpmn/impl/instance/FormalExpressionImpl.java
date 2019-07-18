@@ -41,6 +41,10 @@ public class FormalExpressionImpl extends ExpressionImpl implements FormalExpres
   protected static Attribute<String> languageAttribute;
   protected static AttributeReference<ItemDefinition> evaluatesToTypeRefAttribute;
 
+  public FormalExpressionImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -64,10 +68,6 @@ public class FormalExpressionImpl extends ExpressionImpl implements FormalExpres
             .build();
 
     typeBuilder.build();
-  }
-
-  public FormalExpressionImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

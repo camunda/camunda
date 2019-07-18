@@ -29,16 +29,14 @@ import java.util.Objects;
 
 public class ServerTransportBuilder {
   public static final int DEFAULT_MAX_MESSAGE_LENGTH = 1024 * 512;
+  protected FragmentHandler receiveHandler;
+  protected RemoteAddressListImpl remoteAddressList;
+  protected ServerControlMessageListener controlMessageListener;
   private int messageMaxLength = DEFAULT_MAX_MESSAGE_LENGTH;
-
   private String name = "server";
   private ServerOutput output;
   private ActorScheduler scheduler;
   private InetSocketAddress bindAddress;
-  protected FragmentHandler receiveHandler;
-  protected RemoteAddressListImpl remoteAddressList;
-  protected ServerControlMessageListener controlMessageListener;
-
   private TransportMemoryPool messageMemoryPool =
       new NonBlockingMemoryPool(ByteValue.ofMegabytes(4));
 

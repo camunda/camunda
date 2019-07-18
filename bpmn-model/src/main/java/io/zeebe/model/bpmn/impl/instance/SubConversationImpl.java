@@ -38,6 +38,10 @@ public class SubConversationImpl extends ConversationNodeImpl implements SubConv
 
   protected static ChildElementCollection<ConversationNode> conversationNodeCollection;
 
+  public SubConversationImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -57,10 +61,6 @@ public class SubConversationImpl extends ConversationNodeImpl implements SubConv
     conversationNodeCollection = sequenceBuilder.elementCollection(ConversationNode.class).build();
 
     typeBuilder.build();
-  }
-
-  public SubConversationImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

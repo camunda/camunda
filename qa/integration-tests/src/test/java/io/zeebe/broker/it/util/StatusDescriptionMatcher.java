@@ -42,15 +42,15 @@ public class StatusDescriptionMatcher extends TypeSafeMatcher<ClientStatusExcept
   }
 
   @Override
-  public void describeTo(Description description) {
-    description.appendText("status description to be ");
-    expectedDescriptionMatcher.describeTo(description);
-  }
-
-  @Override
   protected void describeMismatchSafely(
       ClientStatusException item, Description mismatchDescription) {
     expectedDescriptionMatcher.describeMismatch(
         item.getStatus().getDescription(), mismatchDescription);
+  }
+
+  @Override
+  public void describeTo(Description description) {
+    description.appendText("status description to be ");
+    expectedDescriptionMatcher.describeTo(description);
   }
 }

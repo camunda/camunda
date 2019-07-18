@@ -36,11 +36,6 @@ public class ExportersState {
     setPosition(position);
   }
 
-  private void setPosition(long position) {
-    this.position.wrapLong(position);
-    exporterPositionColumnFamily.put(this.exporterId, this.position);
-  }
-
   public void setPositionIfGreater(final String exporterId, final long position) {
     this.exporterId.wrapString(exporterId);
 
@@ -71,6 +66,11 @@ public class ExportersState {
   private long getPosition() {
     final DbLong zbLong = exporterPositionColumnFamily.get(exporterId);
     return zbLong == null ? VALUE_NOT_FOUND : zbLong.getValue();
+  }
+
+  private void setPosition(long position) {
+    this.position.wrapLong(position);
+    exporterPositionColumnFamily.put(this.exporterId, this.position);
   }
 
   public void visitPositions(BiConsumer<String, Long> consumer) {

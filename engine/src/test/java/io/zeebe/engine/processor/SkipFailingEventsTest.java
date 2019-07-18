@@ -435,6 +435,12 @@ public class SkipFailingEventsTest {
     assertThat(processedInstances).containsExactly((long) TimerInstance.NO_ELEMENT_INSTANCE);
   }
 
+  private void waitForRecordWhichSatisfies(Predicate<LoggedEvent> filter) {
+    TestUtil.doRepeatedly(() -> streams.events(STREAM_NAME).filter(filter).findFirst())
+        .until(o -> o.isPresent())
+        .get();
+  }
+
   protected static class ErrorProneProcessor
       implements TypedRecordProcessor<WorkflowInstanceRecord> {
 
@@ -466,11 +472,5 @@ public class SkipFailingEventsTest {
       streamWriter.appendFollowUpEvent(
           record.getKey(), WorkflowInstanceIntent.ELEMENT_COMPLETED, record.getValue());
     }
-  }
-
-  private void waitForRecordWhichSatisfies(Predicate<LoggedEvent> filter) {
-    TestUtil.doRepeatedly(() -> streams.events(STREAM_NAME).filter(filter).findFirst())
-        .until(o -> o.isPresent())
-        .get();
   }
 }

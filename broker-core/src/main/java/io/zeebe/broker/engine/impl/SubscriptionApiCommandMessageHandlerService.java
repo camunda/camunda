@@ -24,21 +24,24 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
     implements Service<SubscriptionCommandMessageHandler> {
 
   private final Injector<Atomix> atomixInjector = new Injector<>();
-
+  private final Int2ObjectHashMap<LogStream> leaderPartitions = new Int2ObjectHashMap<>();
   private final ServiceGroupReference<Partition> leaderPartitionsGroupReference =
       ServiceGroupReference.<Partition>create()
           .onAdd(this::addPartition)
           .onRemove(this::removePartition)
           .build();
-
-  private final Int2ObjectHashMap<LogStream> leaderPartitions = new Int2ObjectHashMap<>();
-
   private SubscriptionCommandMessageHandler messageHandler;
   private Atomix atomix;
 
   @Override
   public String getName() {
     return "subscription-api";
+  }
+
+  @Override
+  protected void onActorStarting() {
+    messageHandler = new SubscriptionCommandMessageHandler(actor::call, leaderPartitions::get);
+    atomix.getCommunicationService().subscribe("subscription", messageHandler);
   }
 
   @Override
@@ -53,9 +56,8 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
   }
 
   @Override
-  protected void onActorStarting() {
-    messageHandler = new SubscriptionCommandMessageHandler(actor::call, leaderPartitions::get);
-    atomix.getCommunicationService().subscribe("subscription", messageHandler);
+  public SubscriptionCommandMessageHandler get() {
+    return messageHandler;
   }
 
   private void addPartition(final ServiceName<Partition> sericeName, final Partition partition) {
@@ -64,11 +66,6 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
 
   private void removePartition(final ServiceName<Partition> sericeName, final Partition partition) {
     actor.submit(() -> leaderPartitions.remove(partition.getPartitionId()));
-  }
-
-  @Override
-  public SubscriptionCommandMessageHandler get() {
-    return messageHandler;
   }
 
   public ServiceGroupReference<Partition> getLeaderParitionsGroupReference() {

@@ -12,10 +12,9 @@ import io.zeebe.dispatcher.FragmentHandler;
 import org.agrona.DirectBuffer;
 
 public class ReceiveBufferHandler implements FragmentHandler {
+  protected final Dispatcher receiveBuffer;
   private final TransportHeaderDescriptor transportHeaderDescriptor =
       new TransportHeaderDescriptor();
-
-  protected final Dispatcher receiveBuffer;
 
   public ReceiveBufferHandler(Dispatcher receiveBuffer) {
     this.receiveBuffer = receiveBuffer;

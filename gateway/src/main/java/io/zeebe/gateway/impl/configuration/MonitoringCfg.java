@@ -66,6 +66,11 @@ public class MonitoringCfg {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(enabled, host, port);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -75,11 +80,6 @@ public class MonitoringCfg {
     }
     final MonitoringCfg that = (MonitoringCfg) o;
     return enabled == that.enabled && port == that.port && Objects.equals(host, that.host);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(enabled, host, port);
   }
 
   @Override

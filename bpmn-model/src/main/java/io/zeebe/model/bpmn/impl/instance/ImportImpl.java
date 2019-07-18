@@ -41,6 +41,10 @@ public class ImportImpl extends BpmnModelElementInstanceImpl implements Import {
   protected static Attribute<String> locationAttribute;
   protected static Attribute<String> importTypeAttribute;
 
+  public ImportImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder bpmnModelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         bpmnModelBuilder
@@ -62,10 +66,6 @@ public class ImportImpl extends BpmnModelElementInstanceImpl implements Import {
         typeBuilder.stringAttribute(BPMN_ATTRIBUTE_IMPORT_TYPE).required().build();
 
     typeBuilder.build();
-  }
-
-  public ImportImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

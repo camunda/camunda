@@ -43,6 +43,10 @@ public class ExtensionImpl extends BpmnModelElementInstanceImpl implements Exten
   protected static Attribute<Boolean> mustUnderstandAttribute;
   protected static ChildElementCollection<Documentation> documentationCollection;
 
+  public ExtensionImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -67,10 +71,6 @@ public class ExtensionImpl extends BpmnModelElementInstanceImpl implements Exten
     documentationCollection = sequenceBuilder.elementCollection(Documentation.class).build();
 
     typeBuilder.build();
-  }
-
-  public ExtensionImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

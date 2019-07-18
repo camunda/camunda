@@ -36,15 +36,6 @@ public class Protocol {
    * START_PARTITION_ID + partitionCount)
    */
   public static final int START_PARTITION_ID = 1;
-
-  public static final long encodePartitionId(int partitionId, long key) {
-    return ((long) partitionId << KEY_BITS) + key;
-  }
-
-  public static final int decodePartitionId(long key) {
-    return (int) (key >> KEY_BITS);
-  }
-
   /**
    * The partition space is derived from the keyspace and the maximum bytes of long.
    *
@@ -53,7 +44,6 @@ public class Protocol {
   public static final int PARTITION_BITS = 13;
 
   public static final long MAXIMUM_PARTITIONS = 1L << PARTITION_BITS;
-
   /**
    * Keyspace is defined for each partition. To define the keyspace size, the maximum events, which
    * can be written to the dispatcher implementation, has to be calculated.
@@ -71,4 +61,12 @@ public class Protocol {
    * This means we need a keyspace of 2^51 to have more keys then possible writable events.
    */
   public static final int KEY_BITS = 51;
+
+  public static final long encodePartitionId(int partitionId, long key) {
+    return ((long) partitionId << KEY_BITS) + key;
+  }
+
+  public static final int decodePartitionId(long key) {
+    return (int) (key >> KEY_BITS);
+  }
 }

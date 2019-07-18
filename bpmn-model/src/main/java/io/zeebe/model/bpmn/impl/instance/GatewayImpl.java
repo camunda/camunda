@@ -39,6 +39,10 @@ public abstract class GatewayImpl extends FlowNodeImpl implements Gateway {
 
   protected static Attribute<GatewayDirection> gatewayDirectionAttribute;
 
+  public GatewayImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -54,10 +58,6 @@ public abstract class GatewayImpl extends FlowNodeImpl implements Gateway {
             .build();
 
     typeBuilder.build();
-  }
-
-  public GatewayImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

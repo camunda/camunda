@@ -85,6 +85,11 @@ public class BinaryValue extends BaseValue {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(data, length);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -96,10 +101,5 @@ public class BinaryValue extends BaseValue {
 
     final BinaryValue that = (BinaryValue) o;
     return length == that.length && Objects.equals(data, that.data);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(data, length);
   }
 }

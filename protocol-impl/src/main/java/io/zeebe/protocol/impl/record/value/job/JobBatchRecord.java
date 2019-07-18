@@ -73,11 +73,6 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
     return variablesProp;
   }
 
-  @Override
-  public long getTimeout() {
-    return timeoutProp.getValue();
-  }
-
   public boolean getTruncated() {
     return truncatedProp.getValue();
   }
@@ -90,6 +85,11 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
   @Override
   public String getWorker() {
     return BufferUtil.bufferAsString(workerProp.getValue());
+  }
+
+  @Override
+  public long getTimeout() {
+    return timeoutProp.getValue();
   }
 
   public int getMaxJobsToActivate() {
@@ -125,14 +125,9 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
     return truncatedProp.getValue();
   }
 
-  @JsonIgnore
-  public DirectBuffer getTypeBuffer() {
-    return typeProp.getValue();
-  }
-
-  @JsonIgnore
-  public DirectBuffer getWorkerBuffer() {
-    return workerProp.getValue();
+  public JobBatchRecord setTruncated(boolean truncated) {
+    truncatedProp.setValue(truncated);
+    return this;
   }
 
   public JobBatchRecord setMaxJobsToActivate(int maxJobsToActivate) {
@@ -145,8 +140,13 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
     return this;
   }
 
-  public JobBatchRecord setTruncated(boolean truncated) {
-    truncatedProp.setValue(truncated);
+  public JobBatchRecord setWorker(DirectBuffer worker) {
+    this.workerProp.setValue(worker);
+    return this;
+  }
+
+  public JobBatchRecord setWorker(String worker) {
+    this.workerProp.setValue(worker);
     return this;
   }
 
@@ -160,13 +160,13 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
     return this;
   }
 
-  public JobBatchRecord setWorker(DirectBuffer worker) {
-    this.workerProp.setValue(worker);
-    return this;
+  @JsonIgnore
+  public DirectBuffer getTypeBuffer() {
+    return typeProp.getValue();
   }
 
-  public JobBatchRecord setWorker(String worker) {
-    this.workerProp.setValue(worker);
-    return this;
+  @JsonIgnore
+  public DirectBuffer getWorkerBuffer() {
+    return workerProp.getValue();
   }
 }

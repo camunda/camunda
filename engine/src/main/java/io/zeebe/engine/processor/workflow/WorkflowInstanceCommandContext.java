@@ -17,8 +17,8 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public class WorkflowInstanceCommandContext {
 
-  private TypedRecord<WorkflowInstanceRecord> record;
   private final EventOutput eventOutput;
+  private TypedRecord<WorkflowInstanceRecord> record;
   private ElementInstance elementInstance;
   private TypedResponseWriter responseWriter;
   private TypedStreamWriter streamWriter;

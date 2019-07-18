@@ -36,6 +36,10 @@ public class PropertyImpl extends ItemAwareElementImpl implements Property {
 
   protected static Attribute<String> nameAttribute;
 
+  public PropertyImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -53,10 +57,6 @@ public class PropertyImpl extends ItemAwareElementImpl implements Property {
     nameAttribute = typeBuilder.stringAttribute(BPMN_ATTRIBUTE_NAME).build();
 
     typeBuilder.build();
-  }
-
-  public PropertyImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

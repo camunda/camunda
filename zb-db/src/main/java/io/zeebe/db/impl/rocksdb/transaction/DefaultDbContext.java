@@ -55,13 +55,13 @@ public class DefaultDbContext implements DbContext {
   }
 
   @Override
-  public void writeValue(DbValue value) {
-    value.write(valueBuffer, 0);
+  public byte[] getKeyBufferArray() {
+    return keyBuffer.byteArray();
   }
 
   @Override
-  public byte[] getKeyBufferArray() {
-    return keyBuffer.byteArray();
+  public void writeValue(DbValue value) {
+    value.write(valueBuffer, 0);
   }
 
   @Override

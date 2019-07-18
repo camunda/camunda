@@ -29,27 +29,14 @@ import org.slf4j.Logger;
 
 public class ServiceContainerImpl extends Actor implements ServiceContainer {
   public static final Logger LOG = Loggers.SERVICE_CONTAINER_LOGGER;
-
-  enum ContainerState {
-    NEW,
-    OPEN,
-    CLOSING,
-    CLOSED; // container is not reusable
-  }
-
   private static final String NAME = "service-container-main";
-
   protected final ServiceDependencyResolver dependencyResolver = new ServiceDependencyResolver();
   protected final ConcurrentQueueChannel<ServiceEvent> channel =
       new ConcurrentQueueChannel<>(new ManyToOneConcurrentLinkedQueue<>());
-
   protected final ActorScheduler actorScheduler;
-
-  protected ContainerState state = ContainerState.NEW;
-
   protected final AtomicBoolean isOpenend = new AtomicBoolean(false);
-
   private final CompletableActorFuture<Void> containerCloseFuture = new CompletableActorFuture<>();
+  protected ContainerState state = ContainerState.NEW;
 
   public ServiceContainerImpl(ActorScheduler scheduler) {
     actorScheduler = scheduler;
@@ -67,32 +54,8 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer {
   }
 
   @Override
-  public String getName() {
-    return NAME;
-  }
-
-  @Override
-  protected void onActorStarted() {
-    actor.consume(channel, this::onServiceEvent);
-  }
-
-  protected void onServiceEvent() {
-    final ServiceEvent serviceEvent = channel.poll();
-    if (serviceEvent != null) {
-      LOG.trace("{}", serviceEvent);
-      dependencyResolver.onServiceEvent(serviceEvent);
-    } else {
-      actor.yield();
-    }
-  }
-
-  @Override
   public ActorFuture<Boolean> hasService(ServiceName<?> name) {
     return actor.call(() -> hasServiceInternal(name));
-  }
-
-  private boolean hasServiceInternal(ServiceName<?> name) {
-    return dependencyResolver.getService(name) != null;
   }
 
   @Override
@@ -103,51 +66,6 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer {
   @Override
   public CompositeServiceBuilder createComposite(ServiceName<Void> name) {
     return new CompositeServiceBuilder(name, this);
-  }
-
-  public <S> ActorFuture<S> onServiceBuilt(ServiceBuilder<S> serviceBuilder) {
-    final CompletableActorFuture<S> future = new CompletableActorFuture<>();
-
-    actor.run(
-        () -> {
-          final ServiceName<?> serviceName = serviceBuilder.getName();
-          if (state == ContainerState.OPEN) {
-            final ServiceController serviceController =
-                new ServiceController(serviceBuilder, this, future);
-
-            if (!hasServiceInternal(serviceController.getServiceName())) {
-              actorScheduler.submitActor(serviceController);
-            } else {
-              final String errorMessage =
-                  String.format(
-                      "Cannot install service with name '%s'. Service with same name already exists",
-                      serviceName);
-              future.completeExceptionally(new IllegalStateException(errorMessage));
-            }
-          } else {
-            final String errorMessage =
-                String.format(
-                    "Cannot install new service %s into the container, state is '%s'",
-                    serviceName, state);
-            future.completeExceptionally(new IllegalStateException(errorMessage));
-          }
-
-          actor.runOnCompletion(
-              future,
-              (r, t) -> {
-                if (t != null) {
-                  if (t instanceof ServiceInterruptedException) {
-                    LOG.debug(
-                        String.format(
-                            "Service %s interrupted while building", serviceName.getName()));
-                  } else {
-                    LOG.error("Failed to build service", t);
-                  }
-                }
-              });
-        });
-
-    return future;
   }
 
   @Override
@@ -258,6 +176,75 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer {
     return containerCloseFuture;
   }
 
+  @Override
+  public String getName() {
+    return NAME;
+  }
+
+  @Override
+  protected void onActorStarted() {
+    actor.consume(channel, this::onServiceEvent);
+  }
+
+  protected void onServiceEvent() {
+    final ServiceEvent serviceEvent = channel.poll();
+    if (serviceEvent != null) {
+      LOG.trace("{}", serviceEvent);
+      dependencyResolver.onServiceEvent(serviceEvent);
+    } else {
+      actor.yield();
+    }
+  }
+
+  private boolean hasServiceInternal(ServiceName<?> name) {
+    return dependencyResolver.getService(name) != null;
+  }
+
+  public <S> ActorFuture<S> onServiceBuilt(ServiceBuilder<S> serviceBuilder) {
+    final CompletableActorFuture<S> future = new CompletableActorFuture<>();
+
+    actor.run(
+        () -> {
+          final ServiceName<?> serviceName = serviceBuilder.getName();
+          if (state == ContainerState.OPEN) {
+            final ServiceController serviceController =
+                new ServiceController(serviceBuilder, this, future);
+
+            if (!hasServiceInternal(serviceController.getServiceName())) {
+              actorScheduler.submitActor(serviceController);
+            } else {
+              final String errorMessage =
+                  String.format(
+                      "Cannot install service with name '%s'. Service with same name already exists",
+                      serviceName);
+              future.completeExceptionally(new IllegalStateException(errorMessage));
+            }
+          } else {
+            final String errorMessage =
+                String.format(
+                    "Cannot install new service %s into the container, state is '%s'",
+                    serviceName, state);
+            future.completeExceptionally(new IllegalStateException(errorMessage));
+          }
+
+          actor.runOnCompletion(
+              future,
+              (r, t) -> {
+                if (t != null) {
+                  if (t instanceof ServiceInterruptedException) {
+                    LOG.debug(
+                        String.format(
+                            "Service %s interrupted while building", serviceName.getName()));
+                  } else {
+                    LOG.error("Failed to build service", t);
+                  }
+                }
+              });
+        });
+
+    return future;
+  }
+
   private void onClosed() {
     state = ContainerState.CLOSED;
   }
@@ -268,5 +255,12 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer {
 
   public ActorScheduler getActorScheduler() {
     return actorScheduler;
+  }
+
+  enum ContainerState {
+    NEW,
+    OPEN,
+    CLOSING,
+    CLOSED; // container is not reusable
   }
 }

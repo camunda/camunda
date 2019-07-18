@@ -32,6 +32,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public class PerformerImpl extends ResourceRoleImpl implements Performer {
 
+  public PerformerImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -46,9 +50,5 @@ public class PerformerImpl extends ResourceRoleImpl implements Performer {
                   }
                 });
     typeBuilder.build();
-  }
-
-  public PerformerImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 }

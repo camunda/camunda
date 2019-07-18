@@ -41,6 +41,10 @@ public class SignalImpl extends BaseElementImpl implements Signal {
   protected static Attribute<String> nameAttribute;
   protected static AttributeReference<ItemDefinition> structureRefAttribute;
 
+  public SignalImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -64,10 +68,6 @@ public class SignalImpl extends BaseElementImpl implements Signal {
             .build();
 
     typeBuilder.build();
-  }
-
-  public SignalImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

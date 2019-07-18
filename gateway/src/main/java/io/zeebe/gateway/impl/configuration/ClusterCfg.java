@@ -115,6 +115,11 @@ public class ClusterCfg {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(contactPoint, transportBuffer, requestTimeout, clusterName);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -127,11 +132,6 @@ public class ClusterCfg {
         && Objects.equals(transportBuffer, that.transportBuffer)
         && Objects.equals(requestTimeout, that.requestTimeout)
         && Objects.equals(clusterName, that.clusterName);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(contactPoint, transportBuffer, requestTimeout, clusterName);
   }
 
   @Override

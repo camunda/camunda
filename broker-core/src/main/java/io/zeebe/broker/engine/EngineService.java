@@ -77,6 +77,11 @@ public class EngineService implements Service<EngineService> {
     this.atomix = atomixInjector.getValue();
   }
 
+  @Override
+  public EngineService get() {
+    return this;
+  }
+
   public void startEngineForPartition(
       final ServiceName<Partition> partitionServiceName, final Partition partition) {
 
@@ -150,11 +155,6 @@ public class EngineService implements Service<EngineService> {
         deploymentDistributor,
         deploymentRequestHandler,
         jobsAvailableNotification::onJobsAvailable);
-  }
-
-  @Override
-  public EngineService get() {
-    return this;
   }
 
   public Injector<ServerTransport> getCommandApiTransportInjector() {

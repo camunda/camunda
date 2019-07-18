@@ -24,9 +24,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class ActorControl {
-  private final Actor actor;
-
   final ActorTask task;
+  private final Actor actor;
 
   public ActorControl(Actor actor) {
     this.actor = actor;

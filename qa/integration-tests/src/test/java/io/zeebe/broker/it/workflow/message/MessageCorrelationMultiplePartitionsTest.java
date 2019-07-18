@@ -37,12 +37,6 @@ public class MessageCorrelationMultiplePartitionsTest {
   private static final String CORRELATION_KEY_PARTITION_2 = "item-0";
 
   private static final String PROCESS_ID = "process";
-
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
-  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
-
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
-
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
@@ -50,6 +44,9 @@ public class MessageCorrelationMultiplePartitionsTest {
           .message(m -> m.name("message").zeebeCorrelationKey("key"))
           .endEvent("end")
           .done();
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
+  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Before
   public void init() {

@@ -57,6 +57,12 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class MsgPackSkippingTest {
 
+  @Parameter(0)
+  public String name;
+
+  @Parameter(1)
+  public Consumer<ByteArrayBuilder> given;
+
   @Parameters(name = "{0}")
   public static Iterable<Object[]> data() {
     return Arrays.asList(
@@ -219,12 +225,6 @@ public class MsgPackSkippingTest {
           {"negative fixint", given((b) -> b.add(NEGFIXINT_PREFIX))}
         });
   }
-
-  @Parameter(0)
-  public String name;
-
-  @Parameter(1)
-  public Consumer<ByteArrayBuilder> given;
 
   protected static Consumer<ByteArrayBuilder> given(Consumer<ByteArrayBuilder> arg) {
     return arg;

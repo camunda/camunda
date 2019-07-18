@@ -27,11 +27,6 @@ public interface ServiceName<S> {
     }
 
     @Override
-    public String toString() {
-      return getName();
-    }
-
-    @Override
     public int hashCode() {
       final int prime = 31;
       int result = 1;
@@ -59,6 +54,11 @@ public interface ServiceName<S> {
         return false;
       }
       return true;
+    }
+
+    @Override
+    public String toString() {
+      return getName();
     }
   }
 }

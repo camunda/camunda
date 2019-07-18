@@ -36,17 +36,13 @@ import org.junit.Test;
 
 public class CreateDeploymentMultiplePartitionsTest {
   public static final String PROCESS_ID = "process";
-
-  private static final BpmnModelInstance WORKFLOW =
-      Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
-
-  private static final BpmnModelInstance WORKFLOW_2 =
-      Bpmn.createExecutableProcess("process2").startEvent().endEvent().done();
-
   public static final int PARTITION_ID = DEPLOYMENT_PARTITION;
   public static final int PARTITION_COUNT = 3;
-
   @ClassRule public static final EngineRule ENGINE = EngineRule.multiplePartition(PARTITION_COUNT);
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
+  private static final BpmnModelInstance WORKFLOW_2 =
+      Bpmn.createExecutableProcess("process2").startEvent().endEvent().done();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

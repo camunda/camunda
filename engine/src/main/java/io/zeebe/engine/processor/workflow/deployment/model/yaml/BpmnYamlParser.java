@@ -25,10 +25,9 @@ import java.util.Map.Entry;
 public class BpmnYamlParser {
 
   private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-
-  private YamlDefinitionImpl definition;
   private final Map<String, YamlTask> tasksById = new HashMap<>();
   private final List<String> createdTasks = new ArrayList<>();
+  private YamlDefinitionImpl definition;
 
   public BpmnModelInstance readFromStream(InputStream inputStream) {
     final YamlDefinitionImpl definition;

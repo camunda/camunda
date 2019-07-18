@@ -64,6 +64,10 @@ public class DefinitionsImpl extends BpmnModelElementInstanceImpl implements Def
   protected static ChildElementCollection<BpmnDiagram> bpmnDiagramCollection;
   protected static ChildElementCollection<Relationship> relationshipCollection;
 
+  public DefinitionsImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder bpmnModelBuilder) {
 
     final ModelElementTypeBuilder typeBuilder =
@@ -114,10 +118,6 @@ public class DefinitionsImpl extends BpmnModelElementInstanceImpl implements Def
     relationshipCollection = sequenceBuilder.elementCollection(Relationship.class).build();
 
     typeBuilder.build();
-  }
-
-  public DefinitionsImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

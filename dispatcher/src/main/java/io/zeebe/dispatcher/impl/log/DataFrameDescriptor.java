@@ -59,6 +59,9 @@ public class DataFrameDescriptor {
   public static final short TYPE_PADDING = 1;
 
   public static final int HEADER_LENGTH;
+  public static final int FLAG_BATCH_BEGIN_BITMASK = 0b1000_0000;
+  public static final int FLAG_BATCH_END_BITMASK = 0b0100_0000;
+  public static final int FLAG_FAILED_BITMASK = 0b0010_0000;
 
   static {
     // init offsets
@@ -82,10 +85,6 @@ public class DataFrameDescriptor {
 
     HEADER_LENGTH = offset;
   }
-
-  public static final int FLAG_BATCH_BEGIN_BITMASK = 0b1000_0000;
-  public static final int FLAG_BATCH_END_BITMASK = 0b0100_0000;
-  public static final int FLAG_FAILED_BITMASK = 0b0010_0000;
 
   public static int lengthOffset(int offset) {
     return offset + FRAME_LENGTH_OFFSET;

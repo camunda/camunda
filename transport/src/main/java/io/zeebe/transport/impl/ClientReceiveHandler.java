@@ -16,14 +16,13 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class ClientReceiveHandler implements FragmentHandler {
+  protected final Sender requestPool;
+  protected final Dispatcher receiveBuffer;
+  protected final List<ClientInputListener> listeners;
   private final TransportHeaderDescriptor transportHeaderDescriptor =
       new TransportHeaderDescriptor();
   private final RequestResponseHeaderDescriptor requestResponseHeaderDescriptor =
       new RequestResponseHeaderDescriptor();
-
-  protected final Sender requestPool;
-  protected final Dispatcher receiveBuffer;
-  protected final List<ClientInputListener> listeners;
 
   public ClientReceiveHandler(
       Sender requestPool, Dispatcher receiveBuffer, List<ClientInputListener> listeners) {

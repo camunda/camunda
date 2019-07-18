@@ -19,13 +19,6 @@ public class ChannelConsumerCondition
     implements ActorCondition, ActorSubscription, ChannelSubscription {
   private static final long TRIGGER_COUNT_OFFSET;
 
-  private volatile long triggerCount = 0;
-  private long processedTiggersCount = 0;
-
-  private final ConsumableChannel channel;
-  private final ActorJob job;
-  private final ActorTask task;
-
   static {
     try {
       TRIGGER_COUNT_OFFSET =
@@ -34,6 +27,12 @@ public class ChannelConsumerCondition
       throw new RuntimeException(e);
     }
   }
+
+  private final ConsumableChannel channel;
+  private final ActorJob job;
+  private final ActorTask task;
+  private volatile long triggerCount = 0;
+  private long processedTiggersCount = 0;
 
   public ChannelConsumerCondition(ActorJob job, ConsumableChannel channel) {
     this.job = job;
@@ -49,9 +48,13 @@ public class ChannelConsumerCondition
   }
 
   @Override
-  public void signal() {
-    UNSAFE.getAndAddLong(this, TRIGGER_COUNT_OFFSET, 1);
-    task.tryWakeup();
+  public ActorJob getJob() {
+    return job;
+  }
+
+  @Override
+  public boolean isRecurring() {
+    return true;
   }
 
   @Override
@@ -60,13 +63,9 @@ public class ChannelConsumerCondition
   }
 
   @Override
-  public ActorJob getJob() {
-    return job;
-  }
-
-  @Override
-  public boolean isRecurring() {
-    return true;
+  public void signal() {
+    UNSAFE.getAndAddLong(this, TRIGGER_COUNT_OFFSET, 1);
+    task.tryWakeup();
   }
 
   @Override

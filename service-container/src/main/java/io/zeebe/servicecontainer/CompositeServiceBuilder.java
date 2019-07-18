@@ -66,6 +66,41 @@ public class CompositeServiceBuilder {
     return new ComposedServiceBuilder<>(name, service, container);
   }
 
+  public static ServiceName<Void> compositeServiceName(String name) {
+    return ServiceName.newServiceName(String.format("%s.install", name), Void.class);
+  }
+
+  class ComposedServiceBuilder<S> extends ServiceBuilder<S> {
+    private ServiceName<S> serviceName;
+
+    ComposedServiceBuilder(
+        ServiceName<S> name, Service<S> service, ServiceContainerImpl serviceContainer) {
+      super(name, service, serviceContainer);
+      serviceName = name;
+      dependency(compositeServiceName);
+    }
+
+    @Override
+    public ActorFuture<S> install() {
+      final ActorFuture<S> installFuture = super.install();
+      installFutures.put(serviceName, (ActorFuture) installFuture);
+      return (ActorFuture) installFuture;
+    }
+  }
+
+  class CompositeService implements Service<Void> {
+    @Override
+    public void start(ServiceStartContext startContext) {}
+
+    @Override
+    public void stop(ServiceStopContext stopContext) {}
+
+    @Override
+    public Void get() {
+      return null;
+    }
+  }
+
   private final class CompositeInstallCompletion<S> extends Actor {
     private final CompletableActorFuture<S> future;
     private final ServiceName<S> returnedServiceName;
@@ -106,40 +141,5 @@ public class CompositeServiceBuilder {
             });
       }
     }
-  }
-
-  class ComposedServiceBuilder<S> extends ServiceBuilder<S> {
-    private ServiceName<S> serviceName;
-
-    ComposedServiceBuilder(
-        ServiceName<S> name, Service<S> service, ServiceContainerImpl serviceContainer) {
-      super(name, service, serviceContainer);
-      serviceName = name;
-      dependency(compositeServiceName);
-    }
-
-    @Override
-    public ActorFuture<S> install() {
-      final ActorFuture<S> installFuture = super.install();
-      installFutures.put(serviceName, (ActorFuture) installFuture);
-      return (ActorFuture) installFuture;
-    }
-  }
-
-  class CompositeService implements Service<Void> {
-    @Override
-    public void start(ServiceStartContext startContext) {}
-
-    @Override
-    public void stop(ServiceStopContext stopContext) {}
-
-    @Override
-    public Void get() {
-      return null;
-    }
-  }
-
-  public static ServiceName<Void> compositeServiceName(String name) {
-    return ServiceName.newServiceName(String.format("%s.install", name), Void.class);
   }
 }

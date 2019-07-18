@@ -22,11 +22,9 @@ import org.junit.rules.TemporaryFolder;
 
 public class ColumnFamilyTest {
 
-  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
   private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
       DefaultZeebeDbFactory.getDefaultFactory(DefaultColumnFamily.class);
-
+  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
   private ColumnFamily<DbLong, DbLong> columnFamily;
   private DbLong key;

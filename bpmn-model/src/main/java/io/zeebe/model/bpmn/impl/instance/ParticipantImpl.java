@@ -51,6 +51,10 @@ public class ParticipantImpl extends BaseElementImpl implements Participant {
   protected static ElementReferenceCollection<EndPoint, EndPointRef> endPointRefCollection;
   protected static ChildElement<ParticipantMultiplicity> participantMultiplicityChild;
 
+  public ParticipantImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -90,10 +94,6 @@ public class ParticipantImpl extends BaseElementImpl implements Participant {
     participantMultiplicityChild = sequenceBuilder.element(ParticipantMultiplicity.class).build();
 
     typeBuilder.build();
-  }
-
-  public ParticipantImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

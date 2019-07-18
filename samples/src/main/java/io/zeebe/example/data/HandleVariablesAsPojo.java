@@ -39,17 +39,14 @@ public class HandleVariablesAsPojo {
     }
   }
 
-  private static class DemoJobHandler implements JobHandler {
-    @Override
-    public void handle(final JobClient client, final ActivatedJob job) {
-      // read the variables of the job
-      final Order order = job.getVariablesAsType(Order.class);
-      System.out.println("new job with orderId: " + order.getOrderId());
-
-      // update the variables and complete the job
-      order.setTotalPrice(46.50);
-
-      client.newCompleteCommand(job.getKey()).variables(order).send();
+  private static void waitUntilSystemInput(final String exitCode) {
+    try (Scanner scanner = new Scanner(System.in)) {
+      while (scanner.hasNextLine()) {
+        final String nextLine = scanner.nextLine();
+        if (nextLine.contains(exitCode)) {
+          return;
+        }
+      }
     }
   }
 
@@ -74,14 +71,17 @@ public class HandleVariablesAsPojo {
     }
   }
 
-  private static void waitUntilSystemInput(final String exitCode) {
-    try (Scanner scanner = new Scanner(System.in)) {
-      while (scanner.hasNextLine()) {
-        final String nextLine = scanner.nextLine();
-        if (nextLine.contains(exitCode)) {
-          return;
-        }
-      }
+  private static class DemoJobHandler implements JobHandler {
+    @Override
+    public void handle(final JobClient client, final ActivatedJob job) {
+      // read the variables of the job
+      final Order order = job.getVariablesAsType(Order.class);
+      System.out.println("new job with orderId: " + order.getOrderId());
+
+      // update the variables and complete the job
+      order.setTotalPrice(46.50);
+
+      client.newCompleteCommand(job.getKey()).variables(order).send();
     }
   }
 }

@@ -20,12 +20,12 @@ public class PojoConfigurationExporter implements Exporter {
     configuration = context.getConfiguration().instantiate(PojoExporterConfiguration.class);
   }
 
+  @Override
+  public void export(Record record) {}
+
   public PojoExporterConfiguration getConfiguration() {
     return configuration;
   }
-
-  @Override
-  public void export(Record record) {}
 
   public class PojoExporterConfiguration {
 

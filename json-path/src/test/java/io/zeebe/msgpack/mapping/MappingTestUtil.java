@@ -29,6 +29,7 @@ import org.assertj.core.api.AbstractObjectAssert;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class MappingTestUtil {
+  public static final ObjectMapper JSON_MAPPER = new ObjectMapper();
   protected static final String NODE_JSON_OBJECT_KEY = "jsonObject";
   protected static final String NODE_TEST_ATTR_KEY = "testAttr";
   protected static final String NODE_STRING_KEY = "string";
@@ -37,7 +38,6 @@ public class MappingTestUtil {
   protected static final String NODE_LONG_KEY = "long";
   protected static final String NODE_DOUBLE_KEY = "double";
   protected static final String NODE_ARRAY_KEY = "array";
-
   protected static final String NODE_STRING_VALUE = "value";
   protected static final boolean NODE_BOOLEAN_VALUE = false;
   protected static final int NODE_INTEGER_VALUE = 1024;
@@ -45,12 +45,9 @@ public class MappingTestUtil {
   protected static final double NODE_DOUBLE_VALUE = 0.3;
   protected static final String NODE_TEST_ATTR_VALUE = "test";
   protected static final Integer[] NODE_ARRAY_VALUE = {0, 1, 2, 3};
-
   protected static final String NODE_JSON_OBJECT_PATH = "jsonObject";
-
   protected static final Map<String, Object> JSON_PAYLOAD = new HashMap<>();
   protected static final ObjectMapper MSGPACK_MAPPER = new ObjectMapper(new MessagePackFactory());
-  public static final ObjectMapper JSON_MAPPER = new ObjectMapper();
   protected static final byte[] MSG_PACK_BYTES;
 
   private static final MutableDirectBuffer WRITE_BUFFER = new UnsafeBuffer(new byte[256]);

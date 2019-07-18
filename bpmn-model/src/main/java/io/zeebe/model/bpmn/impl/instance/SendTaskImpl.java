@@ -46,6 +46,10 @@ public class SendTaskImpl extends TaskImpl implements SendTask {
   protected static AttributeReference<Message> messageRefAttribute;
   protected static AttributeReference<Operation> operationRefAttribute;
 
+  public SendTaskImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -79,10 +83,6 @@ public class SendTaskImpl extends TaskImpl implements SendTask {
             .build();
 
     typeBuilder.build();
-  }
-
-  public SendTaskImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

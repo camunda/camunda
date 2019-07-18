@@ -40,6 +40,10 @@ public class MessageFlowAssociationImpl extends BaseElementImpl implements Messa
   protected static AttributeReference<MessageFlow> innerMessageFlowRefAttribute;
   protected static AttributeReference<MessageFlow> outerMessageFlowRefAttribute;
 
+  public MessageFlowAssociationImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -70,10 +74,6 @@ public class MessageFlowAssociationImpl extends BaseElementImpl implements Messa
             .build();
 
     typeBuilder.build();
-  }
-
-  public MessageFlowAssociationImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

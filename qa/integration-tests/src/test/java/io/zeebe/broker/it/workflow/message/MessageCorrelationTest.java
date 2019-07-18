@@ -37,12 +37,6 @@ import org.junit.rules.RuleChain;
 public class MessageCorrelationTest {
 
   private static final String PROCESS_ID = "process";
-
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
-
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
-
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
@@ -50,6 +44,9 @@ public class MessageCorrelationTest {
           .message(c -> c.name("order canceled").zeebeCorrelationKey("orderId"))
           .endEvent()
           .done();
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Before
   public void init() {

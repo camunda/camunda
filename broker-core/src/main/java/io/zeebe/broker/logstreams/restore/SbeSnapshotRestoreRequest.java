@@ -46,28 +46,8 @@ public class SbeSnapshotRestoreRequest
   }
 
   @Override
-  public void reset() {
-    super.reset();
-    setSnapshotId(snapshotIdNullValue());
-    setChunkIdx(chunkIdxNullValue());
-  }
-
-  @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
-    super.wrap(buffer, offset, length);
-    setSnapshotId(decoder.snapshotId());
-    setChunkIdx(decoder.chunkIdx());
-  }
-
-  @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
-    super.write(buffer, offset);
-    encoder.snapshotId(getSnapshotId());
-    encoder.chunkIdx(getChunkIdx());
-  }
-
-  private void setChunkIdx(int chunkIdx) {
-    delegate.setChunkIdx(chunkIdx);
+  public long getSnapshotId() {
+    return delegate.getSnapshotId();
   }
 
   private void setSnapshotId(long snaphshotId) {
@@ -75,13 +55,12 @@ public class SbeSnapshotRestoreRequest
   }
 
   @Override
-  public long getSnapshotId() {
-    return delegate.getSnapshotId();
-  }
-
-  @Override
   public int getChunkIdx() {
     return delegate.getChunkIdx();
+  }
+
+  private void setChunkIdx(int chunkIdx) {
+    delegate.setChunkIdx(chunkIdx);
   }
 
   @Override
@@ -97,6 +76,27 @@ public class SbeSnapshotRestoreRequest
   @Override
   protected SnapshotRestoreRequestDecoder getBodyDecoder() {
     return decoder;
+  }
+
+  @Override
+  public void reset() {
+    super.reset();
+    setSnapshotId(snapshotIdNullValue());
+    setChunkIdx(chunkIdxNullValue());
+  }
+
+  @Override
+  public void write(MutableDirectBuffer buffer, int offset) {
+    super.write(buffer, offset);
+    encoder.snapshotId(getSnapshotId());
+    encoder.chunkIdx(getChunkIdx());
+  }
+
+  @Override
+  public void wrap(DirectBuffer buffer, int offset, int length) {
+    super.wrap(buffer, offset, length);
+    setSnapshotId(decoder.snapshotId());
+    setChunkIdx(decoder.chunkIdx());
   }
 
   public static byte[] serialize(SnapshotRestoreRequest request) {

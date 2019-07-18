@@ -51,6 +51,10 @@ public class CallableElementImpl extends RootElementImpl implements CallableElem
   protected static ChildElement<IoSpecification> ioSpecificationChild;
   protected static ChildElementCollection<IoBinding> ioBindingCollection;
 
+  public CallableElementImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder bpmnModelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         bpmnModelBuilder
@@ -81,10 +85,6 @@ public class CallableElementImpl extends RootElementImpl implements CallableElem
     ioBindingCollection = sequenceBuilder.elementCollection(IoBinding.class).build();
 
     typeBuilder.build();
-  }
-
-  public CallableElementImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

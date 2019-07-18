@@ -28,10 +28,6 @@ public class EventOutput {
     this.keyGenerator = keyGenerator;
   }
 
-  public void setStreamWriter(final TypedStreamWriter streamWriter) {
-    this.streamWriter = streamWriter;
-  }
-
   public long appendNewEvent(
       final WorkflowInstanceIntent state, final WorkflowInstanceRecord value) {
     return appendNewEvent(state, value, null);
@@ -98,6 +94,10 @@ public class EventOutput {
 
   public TypedStreamWriter getStreamWriter() {
     return streamWriter;
+  }
+
+  public void setStreamWriter(final TypedStreamWriter streamWriter) {
+    this.streamWriter = streamWriter;
   }
 
   public void storeFailedRecord(

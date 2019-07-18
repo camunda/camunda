@@ -37,52 +37,52 @@ public class POJO extends UnpackedObject {
         .declareProperty(objectProp);
   }
 
-  public void setEnum(POJOEnum val) {
-    this.enumProp.setValue(val);
-  }
-
   public POJOEnum getEnum() {
     return this.enumProp.getValue();
   }
 
-  public void setLong(long val) {
-    this.longProp.setValue(val);
+  public void setEnum(POJOEnum val) {
+    this.enumProp.setValue(val);
   }
 
   public long getLong() {
     return longProp.getValue();
   }
 
-  public void setInt(int val) {
-    this.intProp.setValue(val);
+  public void setLong(long val) {
+    this.longProp.setValue(val);
   }
 
   public int getInt() {
     return intProp.getValue();
   }
 
-  public void setString(DirectBuffer buffer) {
-    this.stringProp.setValue(buffer);
+  public void setInt(int val) {
+    this.intProp.setValue(val);
   }
 
   public DirectBuffer getString() {
     return stringProp.getValue();
   }
 
-  public void setPacked(DirectBuffer buffer) {
-    this.packedProp.setValue(buffer, 0, buffer.capacity());
+  public void setString(DirectBuffer buffer) {
+    this.stringProp.setValue(buffer);
   }
 
   public DirectBuffer getPacked() {
     return packedProp.getValue();
   }
 
-  public void setBinary(DirectBuffer buffer) {
-    this.binaryProp.setValue(buffer, 0, buffer.capacity());
+  public void setPacked(DirectBuffer buffer) {
+    this.packedProp.setValue(buffer, 0, buffer.capacity());
   }
 
   public DirectBuffer getBinary() {
     return binaryProp.getValue();
+  }
+
+  public void setBinary(DirectBuffer buffer) {
+    this.binaryProp.setValue(buffer, 0, buffer.capacity());
   }
 
   public POJONested nestedObject() {

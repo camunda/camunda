@@ -45,8 +45,8 @@ import org.junit.Test;
 
 public class ActivateJobsTest {
 
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String LONG_CUSTOM_HEADER_VALUE = RandomString.make(128);
-
   private static final String PROCESS_ID = "process";
   private static final Function<String, BpmnModelInstance> MODEL_SUPPLIER =
       (type) ->
@@ -56,13 +56,11 @@ public class ActivateJobsTest {
               .endEvent("end")
               .done();
 
-  private String taskType;
-
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  private String taskType;
 
   @Before
   public void setup() {

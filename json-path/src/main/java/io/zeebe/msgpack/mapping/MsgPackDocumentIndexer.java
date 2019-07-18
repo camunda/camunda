@@ -211,16 +211,6 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor {
     msgPackTree.clear();
   }
 
-  enum ParsingMode {
-    MAP_ENTRY,
-    ARRAY_ENTRY
-  }
-
-  enum MapEntryParsingMode {
-    KEY,
-    VALUE
-  }
-
   static class MapEntryParseContext {
     private MapEntryParsingMode parsingMode;
     private String currentKey;
@@ -243,5 +233,15 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor {
     void consumeRepetition() {
       remainingRepetitions--;
     }
+  }
+
+  enum ParsingMode {
+    MAP_ENTRY,
+    ARRAY_ENTRY
+  }
+
+  enum MapEntryParsingMode {
+    KEY,
+    VALUE
   }
 }

@@ -35,20 +35,18 @@ public class AsyncSnapshotDirector extends Actor {
       "Unexpected exception occurred on creating snapshot, was enforced to do so.";
 
   private static final int INITIAL_POSITION = -1;
-
-  private final Runnable prepareTakingSnapshot = this::prepareTakingSnapshot;
   private final SnapshotController snapshotController;
   private final LogStream logStream;
   private final String name;
   private final Duration snapshotRate;
   private final String processorName;
   private final StreamProcessor streamProcessor;
-
   private ActorCondition commitCondition;
   private long lastWrittenEventPosition = INITIAL_POSITION;
   private boolean pendingSnapshot;
   private long lowerBoundSnapshotPosition;
   private long lastValidSnapshotPosition;
+  private final Runnable prepareTakingSnapshot = this::prepareTakingSnapshot;
 
   public AsyncSnapshotDirector(
       StreamProcessor streamProcessor,
@@ -61,6 +59,11 @@ public class AsyncSnapshotDirector extends Actor {
     this.processorName = streamProcessor.getName();
     this.name = processorName + "-snapshot-director";
     this.snapshotRate = snapshotRate;
+  }
+
+  @Override
+  public String getName() {
+    return name;
   }
 
   @Override
@@ -78,8 +81,8 @@ public class AsyncSnapshotDirector extends Actor {
   }
 
   @Override
-  public String getName() {
-    return name;
+  protected void onActorCloseRequested() {
+    logStream.removeOnCommitPositionUpdatedCondition(commitCondition);
   }
 
   private String getConditionNameForPosition() {
@@ -176,11 +179,6 @@ public class AsyncSnapshotDirector extends Actor {
         LOG.error(ERROR_MSG_ENFORCED_SNAPSHOT, ex);
       }
     }
-  }
-
-  @Override
-  protected void onActorCloseRequested() {
-    logStream.removeOnCommitPositionUpdatedCondition(commitCondition);
   }
 
   public ActorFuture<Void> closeAsync() {

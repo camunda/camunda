@@ -34,12 +34,10 @@ import org.junit.rules.ExpectedException;
 
 public class ArrayValueTest {
 
+  @Rule public final ExpectedException exception = ExpectedException.none();
   private final MsgPackWriter writer = new MsgPackWriter();
   private final MsgPackReader reader = new MsgPackReader();
-
   private final ArrayValue<IntegerValue> array = new ArrayValue<>(new IntegerValue());
-
-  @Rule public final ExpectedException exception = ExpectedException.none();
 
   @Test
   public void shouldAppendValues() {

@@ -26,10 +26,9 @@ import org.msgpack.core.MessagePacker;
 
 public class MsgPackConverterTest {
 
-  @Rule public ExpectedException exception = ExpectedException.none();
-
   protected static final String JSON = "{\"key1\":1,\"key2\":2}";
   protected static final byte[] MSG_PACK = createMsgPack();
+  @Rule public ExpectedException exception = ExpectedException.none();
 
   @Test
   public void shouldConvertFromJsonStringToMsgPack() {

@@ -120,26 +120,8 @@ public class RecordingGatewayService extends GatewayImplBase {
   }
 
   @Override
-  public void topology(TopologyRequest request, StreamObserver<TopologyResponse> responseObserver) {
-    handle(request, responseObserver);
-  }
-
-  @Override
-  public void deployWorkflow(
-      DeployWorkflowRequest request, StreamObserver<DeployWorkflowResponse> responseObserver) {
-    handle(request, responseObserver);
-  }
-
-  @Override
-  public void publishMessage(
-      PublishMessageRequest request, StreamObserver<PublishMessageResponse> responseObserver) {
-    handle(request, responseObserver);
-  }
-
-  @Override
-  public void createWorkflowInstance(
-      CreateWorkflowInstanceRequest request,
-      StreamObserver<CreateWorkflowInstanceResponse> responseObserver) {
+  public void activateJobs(
+      ActivateJobsRequest request, StreamObserver<ActivateJobsResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
@@ -151,14 +133,21 @@ public class RecordingGatewayService extends GatewayImplBase {
   }
 
   @Override
-  public void setVariables(
-      SetVariablesRequest request, StreamObserver<SetVariablesResponse> responseObserver) {
+  public void completeJob(
+      CompleteJobRequest request, StreamObserver<CompleteJobResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
   @Override
-  public void updateJobRetries(
-      UpdateJobRetriesRequest request, StreamObserver<UpdateJobRetriesResponse> responseObserver) {
+  public void createWorkflowInstance(
+      CreateWorkflowInstanceRequest request,
+      StreamObserver<CreateWorkflowInstanceResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void deployWorkflow(
+      DeployWorkflowRequest request, StreamObserver<DeployWorkflowResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
@@ -168,20 +157,31 @@ public class RecordingGatewayService extends GatewayImplBase {
   }
 
   @Override
-  public void completeJob(
-      CompleteJobRequest request, StreamObserver<CompleteJobResponse> responseObserver) {
-    handle(request, responseObserver);
-  }
-
-  @Override
-  public void activateJobs(
-      ActivateJobsRequest request, StreamObserver<ActivateJobsResponse> responseObserver) {
+  public void publishMessage(
+      PublishMessageRequest request, StreamObserver<PublishMessageResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
   @Override
   public void resolveIncident(
       ResolveIncidentRequest request, StreamObserver<ResolveIncidentResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void setVariables(
+      SetVariablesRequest request, StreamObserver<SetVariablesResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void topology(TopologyRequest request, StreamObserver<TopologyResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void updateJobRetries(
+      UpdateJobRetriesRequest request, StreamObserver<UpdateJobRetriesResponse> responseObserver) {
     handle(request, responseObserver);
   }
 

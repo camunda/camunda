@@ -39,13 +39,13 @@ public abstract class Actor {
   public static Actor wrap(Consumer<ActorControl> r) {
     return new Actor() {
       @Override
-      protected void onActorStarted() {
-        r.accept(actor);
+      public String getName() {
+        return r.toString();
       }
 
       @Override
-      public String getName() {
-        return r.toString();
+      protected void onActorStarted() {
+        r.accept(actor);
       }
     };
   }

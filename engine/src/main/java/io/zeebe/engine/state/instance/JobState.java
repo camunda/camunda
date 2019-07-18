@@ -279,32 +279,6 @@ public class JobState {
     }
   }
 
-  public enum State {
-    ACTIVATABLE((byte) 0),
-    ACTIVATED((byte) 1),
-    FAILED((byte) 2),
-    NOT_FOUND((byte) 3);
-
-    byte value;
-
-    State(byte value) {
-      this.value = value;
-    }
-
-    static State forValue(byte value) {
-      switch (value) {
-        case 0:
-          return ACTIVATABLE;
-        case 1:
-          return ACTIVATED;
-        case 2:
-          return FAILED;
-        default:
-          return NOT_FOUND;
-      }
-    }
-  }
-
   private void resetVariablesAndUpdateJobRecord(long key, JobRecord updatedValue) {
     jobKey.wrapLong(key);
     // do not persist variables in job state
@@ -341,5 +315,31 @@ public class JobState {
   private void removeJobDeadline(long deadline) {
     deadlineKey.wrapLong(deadline);
     deadlinesColumnFamily.delete(deadlineJobKey);
+  }
+
+  public enum State {
+    ACTIVATABLE((byte) 0),
+    ACTIVATED((byte) 1),
+    FAILED((byte) 2),
+    NOT_FOUND((byte) 3);
+
+    byte value;
+
+    State(byte value) {
+      this.value = value;
+    }
+
+    static State forValue(byte value) {
+      switch (value) {
+        case 0:
+          return ACTIVATABLE;
+        case 1:
+          return ACTIVATED;
+        case 2:
+          return FAILED;
+        default:
+          return NOT_FOUND;
+      }
+    }
   }
 }

@@ -27,14 +27,12 @@ import java.util.Objects;
 
 public class StreamProcessorBuilder {
 
-  private TypedRecordProcessorFactory typedRecordProcessorFactory;
   private final ProcessingContext processingContext;
-
-  private ActorScheduler actorScheduler;
-  private ServiceContainer serviceContainer;
   private final List<ServiceName<?>> additionalDependencies = new ArrayList<>();
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
-
+  private TypedRecordProcessorFactory typedRecordProcessorFactory;
+  private ActorScheduler actorScheduler;
+  private ServiceContainer serviceContainer;
   private ZeebeDb zeebeDb;
 
   public StreamProcessorBuilder() {

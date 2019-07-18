@@ -58,6 +58,16 @@ public class ActivatedJobImpl implements ActivatedJob {
   }
 
   @Override
+  public long getKey() {
+    return key;
+  }
+
+  @Override
+  public String getType() {
+    return type;
+  }
+
+  @Override
   public long getWorkflowInstanceKey() {
     return workflowInstanceKey;
   }
@@ -85,16 +95,6 @@ public class ActivatedJobImpl implements ActivatedJob {
   @Override
   public long getElementInstanceKey() {
     return elementInstanceKey;
-  }
-
-  @Override
-  public long getKey() {
-    return key;
-  }
-
-  @Override
-  public String getType() {
-    return type;
   }
 
   @Override

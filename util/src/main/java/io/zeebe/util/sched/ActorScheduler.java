@@ -102,13 +102,11 @@ public class ActorScheduler {
   }
 
   public static class ActorSchedulerBuilder {
+    private final double[] priorityQuotas = new double[] {0.60, 0.30, 0.10};
     private String schedulerName = "";
     private ActorClock actorClock;
-
     private int cpuBoundThreadsCount = Math.max(1, Runtime.getRuntime().availableProcessors() - 2);
     private ActorThreadGroup cpuBoundActorGroup;
-    private final double[] priorityQuotas = new double[] {0.60, 0.30, 0.10};
-
     private int ioBoundThreadsCount = 2;
     private ActorThreadGroup ioBoundActorGroup;
 
@@ -119,34 +117,8 @@ public class ActorScheduler {
 
     private ActorTimerQueue actorTimerQueue;
 
-    public ActorSchedulerBuilder setActorTimerQueue(ActorTimerQueue actorTimerQueue) {
-      this.actorTimerQueue = actorTimerQueue;
-      return this;
-    }
-
-    public ActorSchedulerBuilder setActorClock(ActorClock actorClock) {
-      this.actorClock = actorClock;
-      return this;
-    }
-
-    public ActorSchedulerBuilder setCpuBoundActorThreadCount(int actorThreadCount) {
-      this.cpuBoundThreadsCount = actorThreadCount;
-      return this;
-    }
-
-    public ActorSchedulerBuilder setIoBoundActorThreadCount(int ioBoundActorsThreadCount) {
-      this.ioBoundThreadsCount = ioBoundActorsThreadCount;
-      return this;
-    }
-
-    public ActorSchedulerBuilder setActorThreadFactory(ActorThreadFactory actorThreadFactory) {
-      this.actorThreadFactory = actorThreadFactory;
-      return this;
-    }
-
-    public ActorSchedulerBuilder setBlockingTasksShutdownTime(Duration blockingTasksShutdownTime) {
-      this.blockingTasksShutdownTime = blockingTasksShutdownTime;
-      return this;
+    public String getSchedulerName() {
+      return schedulerName;
     }
 
     public ActorSchedulerBuilder setSchedulerName(String schedulerName) {
@@ -154,24 +126,40 @@ public class ActorScheduler {
       return this;
     }
 
-    public String getSchedulerName() {
-      return schedulerName;
-    }
-
     public ActorClock getActorClock() {
       return actorClock;
+    }
+
+    public ActorSchedulerBuilder setActorClock(ActorClock actorClock) {
+      this.actorClock = actorClock;
+      return this;
     }
 
     public ActorTimerQueue getActorTimerQueue() {
       return actorTimerQueue;
     }
 
+    public ActorSchedulerBuilder setActorTimerQueue(ActorTimerQueue actorTimerQueue) {
+      this.actorTimerQueue = actorTimerQueue;
+      return this;
+    }
+
     public int getCpuBoundActorThreadCount() {
       return cpuBoundThreadsCount;
     }
 
+    public ActorSchedulerBuilder setCpuBoundActorThreadCount(int actorThreadCount) {
+      this.cpuBoundThreadsCount = actorThreadCount;
+      return this;
+    }
+
     public int getIoBoundActorThreadCount() {
       return ioBoundThreadsCount;
+    }
+
+    public ActorSchedulerBuilder setIoBoundActorThreadCount(int ioBoundActorsThreadCount) {
+      this.ioBoundThreadsCount = ioBoundActorsThreadCount;
+      return this;
     }
 
     public double[] getPriorityQuotas() {
@@ -182,12 +170,22 @@ public class ActorScheduler {
       return actorThreadFactory;
     }
 
+    public ActorSchedulerBuilder setActorThreadFactory(ActorThreadFactory actorThreadFactory) {
+      this.actorThreadFactory = actorThreadFactory;
+      return this;
+    }
+
     public ThreadPoolExecutor getBlockingTasksRunner() {
       return blockingTasksRunner;
     }
 
     public Duration getBlockingTasksShutdownTime() {
       return blockingTasksShutdownTime;
+    }
+
+    public ActorSchedulerBuilder setBlockingTasksShutdownTime(Duration blockingTasksShutdownTime) {
+      this.blockingTasksShutdownTime = blockingTasksShutdownTime;
+      return this;
     }
 
     public ActorExecutor getActorExecutor() {
@@ -249,16 +247,6 @@ public class ActorScheduler {
     }
   }
 
-  public interface ActorThreadFactory {
-    ActorThread newThread(
-        String name,
-        int id,
-        ActorThreadGroup threadGroup,
-        TaskScheduler taskScheduler,
-        ActorClock clock,
-        ActorTimerQueue timerQueue);
-  }
-
   public static class DefaultActorThreadFactory implements ActorThreadFactory {
     @Override
     public ActorThread newThread(
@@ -287,6 +275,16 @@ public class ActorScheduler {
           "zb-blocking-task-runner-" + idGenerator.incrementAndGet() + "-" + schedulerName);
       return thread;
     }
+  }
+
+  public interface ActorThreadFactory {
+    ActorThread newThread(
+        String name,
+        int id,
+        ActorThreadGroup threadGroup,
+        TaskScheduler taskScheduler,
+        ActorClock clock,
+        ActorTimerQueue timerQueue);
   }
 
   private enum SchedulerState {

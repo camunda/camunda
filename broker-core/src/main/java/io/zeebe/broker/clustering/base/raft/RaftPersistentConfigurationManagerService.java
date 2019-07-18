@@ -20,8 +20,8 @@ import java.nio.file.Files;
 
 public class RaftPersistentConfigurationManagerService
     implements Service<StorageConfigurationManager> {
-  private StorageConfigurationManager service;
   private final BrokerCfg configuration;
+  private StorageConfigurationManager service;
 
   public RaftPersistentConfigurationManagerService(BrokerCfg configuration) {
     this.configuration = configuration;

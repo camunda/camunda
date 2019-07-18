@@ -29,6 +29,16 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class MappingExtractParameterizedTest {
 
+  @Parameter public String sourceVariables;
+
+  @Parameter(1)
+  public Mapping[] mappings;
+
+  @Parameter(2)
+  public String expectedVariables;
+
+  private MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
+
   @Parameters(name = "Test {index}: {0} to {2}")
   public static Iterable<Object[]> parameters() throws Exception {
     return Arrays.asList(
@@ -159,16 +169,6 @@ public class MappingExtractParameterizedTest {
           },
         });
   }
-
-  @Parameter public String sourceVariables;
-
-  @Parameter(1)
-  public Mapping[] mappings;
-
-  @Parameter(2)
-  public String expectedVariables;
-
-  private MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
 
   @Test
   public void shouldExtract() throws Throwable {

@@ -16,12 +16,12 @@ public class POJONested extends UnpackedObject {
     this.declareProperty(longProp);
   }
 
+  public long getLong() {
+    return this.longProp.getValue();
+  }
+
   public POJONested setLong(long value) {
     this.longProp.setValue(value);
     return this;
-  }
-
-  public long getLong() {
-    return this.longProp.getValue();
   }
 }
