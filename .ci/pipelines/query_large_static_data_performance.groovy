@@ -128,8 +128,8 @@ spec:
             -XX:+UseCGroupMemoryLimitForHeap
         - name: camunda.operate.operationExecutor.executorEnabled
           value: false
-        - name: JAVA_OPTIONS
-          value: "-Dcamunda.operate.batchOperationMaxSize=null"
+        - name: camunda.operate.batchOperationMaxSize
+          value: 1000000
       resources:
         limits:
           cpu: 2
