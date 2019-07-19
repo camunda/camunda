@@ -18,10 +18,10 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.service.ProcessDefinitionService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
-import org.camunda.optimize.service.es.report.command.ReportCommand;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.TenantAuthorizationService;
+import org.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -42,14 +42,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_KEY;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_VERSION;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.TENANT_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 
 @AllArgsConstructor
@@ -61,6 +56,7 @@ public class BranchAnalysisReader {
   private ProcessDefinitionService definitionService;
   private TenantAuthorizationService tenantAuthorizationService;
   private ProcessQueryFilterEnhancer queryFilterEnhancer;
+  private ProcessDefinitionReader processDefinitionReader;
 
   public BranchAnalysisDto branchAnalysis(final String userId, final BranchAnalysisQueryDto request) {
     ValidationHelper.validate(request);
@@ -147,10 +143,13 @@ public class BranchAnalysisReader {
   }
 
   private BoolQueryBuilder buildBaseQuery(final BranchAnalysisQueryDto request, final Set<String> activitiesToExclude) {
-    final BoolQueryBuilder query = boolQuery()
-      .must(ReportCommand.createTenantIdQuery(TENANT_ID, request.getTenantIds()))
-      .must(termQuery(PROCESS_DEFINITION_KEY, request.getProcessDefinitionKey()))
-      .must(termsQuery(PROCESS_DEFINITION_VERSION, request.getProcessDefinitionVersions()));
+    final BoolQueryBuilder query = DefinitionVersionHandlingUtil.createDefinitionQuery(
+      request.getProcessDefinitionKey(),
+      request.getProcessDefinitionVersions(),
+      request.getTenantIds(),
+      new ProcessInstanceType(),
+      processDefinitionReader::getLatestVersionToKey
+    );
     excludeActivities(activitiesToExclude, query);
     return query;
   }

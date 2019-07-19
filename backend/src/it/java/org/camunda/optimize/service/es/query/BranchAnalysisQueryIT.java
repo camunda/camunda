@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.query;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -26,11 +27,14 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
@@ -71,7 +75,8 @@ public class BranchAnalysisQueryIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
-    BranchAnalysisDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
+    BranchAnalysisDto result =
+      performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersionAsString());
 
     //then
     assertThat(result, is(notNullValue()));
@@ -91,6 +96,123 @@ public class BranchAnalysisQueryIT {
   }
 
   @Test
+  public void branchAnalysis_acrossAllVersions() {
+    //given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
+    startSimpleGatewayProcessAndTakeTask1(processDefinition);
+    deploySimpleGatewayProcessDefinition();
+    startSimpleGatewayProcessAndTakeTask1(processDefinition);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    //when
+    BranchAnalysisDto result = performBranchAnalysis(processDefinition.getKey(), ALL_VERSIONS);
+
+    //then
+    assertThat(result, is(notNullValue()));
+    assertThat(result.getEndEvent(), is(END_EVENT_ID));
+    assertThat(result.getTotal(), is(2L));
+    assertThat(result.getFollowingNodes().size(), is(2));
+
+    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
+    assertThat(task1.getActivityId(), is(TASK_ID_1));
+    assertThat(task1.getActivitiesReached(), is(2L));
+    assertThat(task1.getActivityCount(), is(2L));
+
+    BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
+    assertThat(task2.getActivityId(), is(TASK_ID_2));
+    assertThat(task2.getActivitiesReached(), is(0L));
+    assertThat(task2.getActivityCount(), is(0L));
+  }
+
+  @Test
+  public void branchAnalysis_acrossMultipleVersions() {
+    //given
+    ProcessDefinitionEngineDto processDefinition1 = deploySimpleGatewayProcessDefinition();
+    startSimpleGatewayProcessAndTakeTask1(processDefinition1);
+    ProcessDefinitionEngineDto processDefinition2 = deploySimpleGatewayProcessDefinition();
+    startSimpleGatewayProcessAndTakeTask1(processDefinition2);
+    ProcessDefinitionEngineDto processDefinition3 = deploySimpleGatewayProcessDefinition();
+    startSimpleGatewayProcessAndTakeTask1(processDefinition3);
+    startSimpleGatewayProcessAndTakeTask1(processDefinition3);
+    startSimpleGatewayProcessAndTakeTask1(processDefinition3);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    //when
+    ArrayList<String> versions = Lists.newArrayList(
+      processDefinition1.getVersionAsString(),
+      processDefinition3.getVersionAsString()
+    );
+    BranchAnalysisDto result = performBranchAnalysis(processDefinition1.getKey(), versions);
+
+    //then
+    assertThat(result, is(notNullValue()));
+    assertThat(result.getEndEvent(), is(END_EVENT_ID));
+    assertThat(result.getTotal(), is(4L));
+    assertThat(result.getFollowingNodes().size(), is(2));
+
+    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
+    assertThat(task1.getActivityId(), is(TASK_ID_1));
+    assertThat(task1.getActivitiesReached(), is(4L));
+    assertThat(task1.getActivityCount(), is(4L));
+
+    BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
+    assertThat(task2.getActivityId(), is(TASK_ID_2));
+    assertThat(task2.getActivitiesReached(), is(0L));
+    assertThat(task2.getActivityCount(), is(0L));
+  }
+
+  @Test
+  public void branchAnalysis_latestVersionOnly() {
+    //given
+    ProcessDefinitionEngineDto processDefinition1 = deploySimpleGatewayProcessDefinition();
+    startSimpleGatewayProcessAndTakeTask1(processDefinition1);
+    ProcessDefinitionEngineDto processDefinition2 = deploySimpleGatewayProcessDefinition();
+    startSimpleGatewayProcessAndTakeTask1(processDefinition2);
+    startSimpleGatewayProcessAndTakeTask1(processDefinition2);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    //when
+    BranchAnalysisDto result = performBranchAnalysis(processDefinition1.getKey(), LATEST_VERSION);
+
+    //then
+    assertThat(result, is(notNullValue()));
+    assertThat(result.getEndEvent(), is(END_EVENT_ID));
+    assertThat(result.getTotal(), is(2L));
+    assertThat(result.getFollowingNodes().size(), is(2));
+
+    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
+    assertThat(task1.getActivityId(), is(TASK_ID_1));
+    assertThat(task1.getActivitiesReached(), is(2L));
+    assertThat(task1.getActivityCount(), is(2L));
+
+    // when
+    ProcessDefinitionEngineDto processDefinition3 = deploySimpleGatewayProcessDefinition();
+    startSimpleGatewayProcessAndTakeTask1(processDefinition3);
+    startSimpleGatewayProcessAndTakeTask1(processDefinition3);
+    startSimpleGatewayProcessAndTakeTask1(processDefinition3);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    result = performBranchAnalysis(processDefinition1.getKey(), LATEST_VERSION);
+
+    //then
+    assertThat(result, is(notNullValue()));
+    assertThat(result.getEndEvent(), is(END_EVENT_ID));
+    assertThat(result.getTotal(), is(3L));
+    assertThat(result.getFollowingNodes().size(), is(2));
+
+    task1 = result.getFollowingNodes().get(TASK_ID_1);
+    assertThat(task1.getActivityId(), is(TASK_ID_1));
+    assertThat(task1.getActivitiesReached(), is(3L));
+    assertThat(task1.getActivityCount(), is(3L));
+  }
+
+  @Test
   public void branchAnalysis_noneTenantId() {
     //given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
@@ -100,7 +222,9 @@ public class BranchAnalysisQueryIT {
 
     //when
     BranchAnalysisDto result = performBranchAnalysis(
-      processDefinition.getKey(), processDefinition.getVersion(), Collections.singletonList(null)
+      processDefinition.getKey(),
+      ImmutableList.of(processDefinition.getVersionAsString()),
+      Collections.singletonList(null)
     );
 
     //then
@@ -135,7 +259,9 @@ public class BranchAnalysisQueryIT {
 
     //when
     BranchAnalysisDto result = performBranchAnalysis(
-      processDefinition1.getKey(), processDefinition1.getVersion(), Lists.newArrayList(tenantId2, tenantId1)
+      processDefinition1.getKey(),
+      ImmutableList.of(processDefinition1.getVersionAsString()),
+      Lists.newArrayList(tenantId2, tenantId1)
     );
 
     //then
@@ -170,7 +296,9 @@ public class BranchAnalysisQueryIT {
 
     //when
     BranchAnalysisDto result = performBranchAnalysis(
-      processDefinition1.getKey(), processDefinition1.getVersion(), Lists.newArrayList(tenantId2)
+      processDefinition1.getKey(),
+      ImmutableList.of(processDefinition1.getVersionAsString()),
+      Lists.newArrayList(tenantId2)
     );
 
     //then
@@ -772,15 +900,25 @@ public class BranchAnalysisQueryIT {
 
   private BranchAnalysisDto performBranchAnalysis(final String processDefinitionKey,
                                                   final Integer processDefinitionVersion) {
-    return performBranchAnalysis(processDefinitionKey, processDefinitionVersion, Collections.singletonList(null));
+    return performBranchAnalysis(processDefinitionKey, ImmutableList.of(processDefinitionVersion.toString()));
   }
 
   private BranchAnalysisDto performBranchAnalysis(final String processDefinitionKey,
-                                                  final Integer processDefinitionVersion,
+                                                  final String processDefinitionVersion) {
+    return performBranchAnalysis(processDefinitionKey, ImmutableList.of(processDefinitionVersion));
+  }
+
+  private BranchAnalysisDto performBranchAnalysis(final String processDefinitionKey,
+                                                  final List<String> processDefinitionVersions) {
+    return performBranchAnalysis(processDefinitionKey, processDefinitionVersions, Collections.singletonList(null));
+  }
+
+  private BranchAnalysisDto performBranchAnalysis(final String processDefinitionKey,
+                                                  final List<String> processDefinitionVersions,
                                                   final List<String> tenantIds) {
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
     dto.setProcessDefinitionKey(processDefinitionKey);
-    dto.setProcessDefinitionVersion(processDefinitionVersion.toString());
+    dto.setProcessDefinitionVersions(processDefinitionVersions);
     dto.setTenantIds(tenantIds);
     dto.setGateway(SPLITTING_GATEWAY_ID);
     dto.setEnd(END_EVENT_ID);

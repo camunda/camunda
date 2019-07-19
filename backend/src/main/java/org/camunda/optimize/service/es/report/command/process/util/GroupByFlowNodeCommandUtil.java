@@ -27,6 +27,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToValidDefinitionVersion;
+import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.hasMultipleVersionsSet;
+import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll;
 
 public class GroupByFlowNodeCommandUtil {
 
@@ -39,7 +41,8 @@ public class GroupByFlowNodeCommandUtil {
 
     final ProcessReportDataDto reportData = commandContext.getReportDefinition().getData();
     // if version is set to all, filter for only latest flow nodes
-    if (reportData.isDefinitionVersionSetToAll() || reportData.hasMultipleVersionsSet()) {
+    List<String> versions = reportData.getDefinitionVersions();
+    if (isDefinitionVersionSetToAll(versions) || hasMultipleVersionsSet(versions)) {
       getProcessDefinitionIfAvailable(commandContext, reportData)
         .ifPresent(processDefinition -> {
           final Map<String, String> flowNodeNames = processDefinition.getFlowNodeNames();
@@ -61,7 +64,8 @@ public class GroupByFlowNodeCommandUtil {
 
     final ProcessReportDataDto reportData = commandContext.getReportDefinition().getData();
     // if version is set to all, filter for only latest flow nodes
-    if (reportData.isDefinitionVersionSetToAll() || reportData.hasMultipleVersionsSet()) {
+    List<String> versions = reportData.getDefinitionVersions();
+    if (isDefinitionVersionSetToAll(versions) || hasMultipleVersionsSet(versions)) {
       getProcessDefinitionIfAvailable(commandContext, reportData)
         .ifPresent(processDefinition -> {
           final Map<String, String> userTaskNames = processDefinition.getUserTaskNames();

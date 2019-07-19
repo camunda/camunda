@@ -5,17 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
-import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 
 import java.util.List;
-import java.util.Optional;
 
 @FieldNameConstants(asEnum = true)
 public abstract class SingleReportDataDto implements ReportDataDto, Combinable {
@@ -27,24 +24,4 @@ public abstract class SingleReportDataDto implements ReportDataDto, Combinable {
   public abstract String getDefinitionName();
   public abstract List<String> getTenantIds();
 
-  @JsonIgnore
-  public boolean isDefinitionVersionSetToAll() {
-    Optional<String> allVersionSelected = getDefinitionVersions().stream()
-      .filter(ReportConstants.ALL_VERSIONS::equalsIgnoreCase)
-      .findFirst();
-    return allVersionSelected.isPresent();
-  }
-
-  @JsonIgnore
-  public boolean isDefinitionVersionSetToLatest() {
-    Optional<String> allVersionSelected = getDefinitionVersions().stream()
-      .filter(ReportConstants.LATEST_VERSION::equalsIgnoreCase)
-      .findFirst();
-    return allVersionSelected.isPresent();
-  }
-
-  @JsonIgnore
-  public boolean hasMultipleVersionsSet() {
-    return getDefinitionVersions().size() > 1;
-  }
 }
