@@ -203,9 +203,10 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements Iterat
       case Insert:
       case Modify:
         return innerValue.getEncodedLength();
+      case Uninitialized:
+      default:
+        return 0;
     }
-
-    return 0;
   }
 
   private void readInnerValue() {
@@ -223,6 +224,9 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements Iterat
         break;
       case Modify:
         updateInnerValue();
+        break;
+      case Uninitialized:
+      default:
         break;
     }
 

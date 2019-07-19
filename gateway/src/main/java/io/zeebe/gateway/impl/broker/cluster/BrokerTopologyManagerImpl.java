@@ -73,6 +73,10 @@ public class BrokerTopologyManagerImpl extends Actor
               case MEMBER_REMOVED:
                 newTopology.removeBroker(brokerInfo.getNodeId());
                 break;
+
+              case REACHABILITY_CHANGED:
+              default:
+                break;
             }
 
             topology.set(newTopology);

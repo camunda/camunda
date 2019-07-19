@@ -114,6 +114,10 @@ public class TopologyManagerImpl extends Actor
               case MEMBER_REMOVED:
                 onMemberRemoved(brokerInfo);
                 break;
+
+              case REACHABILITY_CHANGED:
+              default:
+                break;
             }
           });
     }

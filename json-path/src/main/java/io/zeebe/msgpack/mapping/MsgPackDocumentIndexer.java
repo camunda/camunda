@@ -139,6 +139,9 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor {
             mapEntryContext.currentKey = "";
             mapEntryContext.parsingMode = MapEntryParsingMode.KEY;
             break;
+          default:
+            throw new IllegalStateException(
+                "Unexpected map entry parsing mode " + mapEntryContext.parsingMode.name());
         }
         break;
       case ARRAY_ENTRY:
@@ -148,6 +151,9 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor {
         parseValue(tokenContext, key, position, currentValue);
 
         break;
+      default:
+        throw new IllegalStateException(
+            "Unknown token parsing mode " + tokenContext.parsingMode.name());
     }
   }
 
