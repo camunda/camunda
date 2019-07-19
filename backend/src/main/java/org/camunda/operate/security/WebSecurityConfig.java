@@ -68,8 +68,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     "/swagger-resources/**",
     "/swagger-ui.html",
     "/documentation",
-    "/webjars/**",
-    ACTUATOR_ENDPOINTS
+    "/webjars/**"
+    ,ACTUATOR_ENDPOINTS
   };  
 
   @Bean
@@ -100,8 +100,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         .antMatchers(ACTUATOR_ENDPOINTS).hasAuthority("ROLE_ACTRADMIN")
       .and()
         // Prometheus needs to access the ACTUATOR_ENDPOINTS
-        .httpBasic()
-        .and()
+        //.httpBasic()
+        //.and()
         // Frontend authorisation access
         .formLogin()
           .loginProcessingUrl(LOGIN_RESOURCE)
