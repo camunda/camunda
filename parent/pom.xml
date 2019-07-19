@@ -97,7 +97,7 @@
     <plugin.version.versions>2.7</plugin.version.versions>
     <plugin.version.enforcer>3.0.0-M2</plugin.version.enforcer>
     <plugin.version.dependency>3.1.1</plugin.version.dependency>
-    <plugin.version.spotbugs>3.1.12</plugin.version.spotbugs>
+    <plugin.version.spotbugs>3.1.12.1</plugin.version.spotbugs>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.6.2</extension.version.os-maven-plugin>
