@@ -14,14 +14,14 @@ import org.camunda.operate.util.OperateIntegrationTest;
 import org.junit.Test;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+
 public class MetricServiceTest extends OperateIntegrationTest{
   
   @Test
-  public void testEndpointIsAccessible() throws Exception {
+  public void testThatEndpointIsAccessible() throws Exception {
     MockHttpServletRequestBuilder request = get("/actuator/prometheus");
     mockMvc.perform(request)
         .andExpect(status().isOk())
         .andExpect(content().string(containsString("# TYPE system_cpu_usage gauge")));
   }
-
 }

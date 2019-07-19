@@ -7,7 +7,11 @@ package org.camunda.operate.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.rest.AuthenticationRestService.AUTHENTICATION_URL;
-import static org.camunda.operate.security.WebSecurityConfig.*;
+import static org.camunda.operate.security.WebSecurityConfig.COOKIE_JSESSIONID;
+import static org.camunda.operate.security.WebSecurityConfig.LOGIN_RESOURCE;
+import static org.camunda.operate.security.WebSecurityConfig.LOGOUT_RESOURCE;
+import static org.camunda.operate.security.WebSecurityConfig.X_CSRF_HEADER;
+import static org.camunda.operate.security.WebSecurityConfig.X_CSRF_TOKEN;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -34,6 +38,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.support.BasicAuthenticationInterceptor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -50,12 +55,19 @@ import org.springframework.util.MultiValueMap;
 @ActiveProfiles("auth")
 public class AuthenticationTest {
 
+ 
+
   private static final String SET_COOKIE_HEADER = "Set-Cookie";
 
   public static final String CURRENT_USER_URL = AUTHENTICATION_URL + "/user";
 
   public static final String USERNAME = "demo";
   public static final String PASSWORD = "demo";
+
+  private static final String USER_ROLE = "USER";
+  private static final String METRICS_ROLE = "ACTRADMIN";
+  private static final String METRICS_USER = "act";
+  private static final String METRICS_PASSWORD = "act";
 
   @Autowired
   OperateProperties operateProperties;
@@ -68,11 +80,16 @@ public class AuthenticationTest {
   
   @Before
   public void setUp() {
-    given(userStorage.getByName(USERNAME))
+    addWebUser(USERNAME, PASSWORD, USER_ROLE);
+    addWebUser(METRICS_USER, METRICS_PASSWORD, METRICS_ROLE);
+  }
+  
+  protected void addWebUser(String name,String password, String roles) {
+    given(userStorage.getByName(name))
     .willReturn(new UserEntity()
-    .setUsername(USERNAME)
+    .setUsername(name)
     .setPassword(
-        new BCryptPasswordEncoder().encode(PASSWORD)).setRoles("USER"));
+        new BCryptPasswordEncoder().encode(password)).setRoles(roles));
   }
 
   @Test
@@ -148,6 +165,18 @@ public class AuthenticationTest {
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     assertThat(responseEntity.getHeaders().containsKey(SET_COOKIE_HEADER)).isFalse();
     assertThat(responseEntity.getHeaders().containsKey(X_CSRF_TOKEN)).isFalse();
+  }
+  
+  @Test
+  public void testMetricsUserCanAccessMetricsEndpoint() {
+    testRestTemplate.getRestTemplate().getInterceptors().add(new BasicAuthenticationInterceptor(METRICS_USER, METRICS_USER));
+    ResponseEntity<String> response = testRestTemplate.getForEntity("/actuator",String.class);
+    assertThat(response.getStatusCodeValue()).isEqualTo(200);
+    assertThat(response.getBody()).contains("actuator/info");
+    
+    ResponseEntity<String> prometheusResponse = testRestTemplate.getForEntity("/actuator/prometheus",String.class);
+    assertThat(prometheusResponse.getStatusCodeValue()).isEqualTo(200);
+    assertThat(prometheusResponse.getBody()).contains("# TYPE system_cpu_usage gauge");
   }
   
   protected HttpHeaders getHeaderWithCSRF(HttpHeaders responseHeaders) {

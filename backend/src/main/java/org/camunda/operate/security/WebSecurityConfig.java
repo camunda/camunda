@@ -69,7 +69,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     "/swagger-ui.html",
     "/documentation",
     "/webjars/**",
-    "/actuator/prometheus" // TODO: OPE-637
+    ACTUATOR_ENDPOINTS
   };  
 
   @Bean
@@ -99,6 +99,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         .antMatchers("/api/**").authenticated()
         .antMatchers(ACTUATOR_ENDPOINTS).hasAuthority("ROLE_ACTRADMIN")
       .and()
+        // Prometheus needs to access the ACTUATOR_ENDPOINTS
+        .httpBasic()
+        .and()
+        // Frontend authorisation access
         .formLogin()
           .loginProcessingUrl(LOGIN_RESOURCE)
           .successHandler(this::successHandler)
@@ -176,7 +180,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     return new OncePerRequestFilter() {
       @Override
       protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-          filterChain.doFilter(request, addCSRFTokenWhenAvailable(request, response));
+        filterChain.doFilter(request, addCSRFTokenWhenAvailable(request, response));
       }
     };
   }
