@@ -55,8 +55,6 @@ import org.springframework.util.MultiValueMap;
 @ActiveProfiles("auth")
 public class AuthenticationTest {
 
- 
-
   private static final String SET_COOKIE_HEADER = "Set-Cookie";
 
   public static final String CURRENT_USER_URL = AUTHENTICATION_URL + "/user";

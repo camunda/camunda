@@ -8,6 +8,8 @@ package org.camunda.operate.zeebeimport;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.camunda.operate.Metrics;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.processors.ActivityInstanceZeebeRecordProcessor;
@@ -27,8 +29,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
 import io.zeebe.protocol.record.Record;
 
 @Component
@@ -61,10 +61,10 @@ public class ElasticsearchBulkProcessor {
   private SequenceFlowZeebeRecordProcessor sequenceFlowZeebeRecordProcessor;
   
   @Autowired
-  MeterRegistry meterRegistry;
+  Metrics metrics;
 
   public void persistZeebeRecords(List<Record> zeebeRecords, ImportValueType importValueType) throws PersistenceException {
-    meterRegistry.counter("operate.zeebe.records", Tags.empty()).increment(zeebeRecords.size());
+    metrics.recordCounts("events.processed",zeebeRecords.size(),"type",importValueType.getValueType().name());
     logger.debug("Writing [{}] Zeebe records to Elasticsearch", zeebeRecords.size());
 
       BulkRequest bulkRequest = new BulkRequest();

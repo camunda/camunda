@@ -29,6 +29,11 @@ public class OperateProperties {
    */
   private boolean csrfPreventionEnabled = true;
   
+  /**
+   * Indicates whether metrics should be collected.
+   */
+  private boolean metricsEnabled = true;
+  
   /** 
    * Standard user data
    */
@@ -131,6 +136,14 @@ public class OperateProperties {
 
   public void setImportProperties(ImportProperties importProperties) {
     this.importProperties = importProperties;
+  }
+
+  public boolean metricsEnabled() {
+    return metricsEnabled;
+  }
+  
+  public void setMetricsEnabled(boolean metricsEnabled) {
+     this.metricsEnabled = metricsEnabled;
   }
   
 }

@@ -7,6 +7,8 @@ package org.camunda.operate.rest;
 
 import java.util.Collection;
 import java.util.List;
+
+import org.camunda.operate.Metrics;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.es.reader.ActivityStatisticsReader;
@@ -161,7 +163,7 @@ public class WorkflowInstanceRestService {
   
   @ApiOperation("Get workflow instance core statistics (aggregations)")
   @GetMapping(path = "/core-statistics")
-  @Timed(value = "operate.core-statistics.timer",description = "How long does it take to retrieve the core statistics.")
+  @Timed(value = Metrics.OPERATE_NAMESPACE+"query",extraTags = {"name","corestatistics"},description = "How long does it take to retrieve the core statistics.")
   public WorkflowInstanceCoreStatisticsDto getCoreStatistics() {
     return workflowInstanceReader.getCoreStatistics(); 
   }

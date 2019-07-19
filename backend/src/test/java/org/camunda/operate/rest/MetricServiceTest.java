@@ -10,18 +10,25 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.camunda.operate.Metrics;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 
 public class MetricServiceTest extends OperateIntegrationTest{
   
+  @Autowired
+  Metrics metrics;
+  
   @Test
   public void testThatEndpointIsAccessible() throws Exception {
+    metrics.recordCounts("test", 1, "name","testThatEndpointIsAccessible");
+    String expectedResponseSubstring = metrics.isEnabled()?"testThatEndpointIsAccessible":"";
     MockHttpServletRequestBuilder request = get("/actuator/prometheus");
     mockMvc.perform(request)
         .andExpect(status().isOk())
-        .andExpect(content().string(containsString("# TYPE system_cpu_usage gauge")));
+        .andExpect(content().string(containsString(expectedResponseSubstring)));
   }
 }
