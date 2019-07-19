@@ -97,10 +97,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
       .authorizeRequests()
         .antMatchers(AUTH_WHITELIST).permitAll()
         .antMatchers("/api/**").authenticated()
-        .antMatchers(ACTUATOR_ENDPOINTS).hasAuthority("ROLE_ACTRADMIN")
+        //.antMatchers(ACTUATOR_ENDPOINTS).hasAuthority("ROLE_ACTRADMIN")
       .and()
         // Prometheus needs to access the ACTUATOR_ENDPOINTS
-        //.httpBasic()
+        //.httpBasic().
         //.and()
         // Frontend authorisation access
         .formLogin()
