@@ -375,6 +375,30 @@ public class DbCompositeKeyColumnFamilyTest {
     assertThat(secondKeyParts).containsExactly(34L, 37426L, 923113L, 255L);
   }
 
+  @Test
+  public void shouldExistsPrefixTrue() {
+    // given
+    firstKey.wrapString("foo");
+    assertThat(columnFamily.existsPrefix(firstKey)).isFalse();
+
+    // then
+    putKeyValuePair("foo", 12, "baring");
+
+    // then
+    assertThat(columnFamily.existsPrefix(firstKey)).isTrue();
+  }
+
+  @Test
+  public void shouldExistsPrefixFalseWhenDelete() {
+    // given
+    firstKey.wrapString("foo");
+    putKeyValuePair("foo", 12, "baring");
+    columnFamily.delete(compositeKey);
+
+    // then
+    assertThat(columnFamily.existsPrefix(firstKey)).isFalse();
+  }
+
   private void putKeyValuePair(String firstKey, long secondKey, String value) {
     this.firstKey.wrapString(firstKey);
     this.secondKey.wrapLong(secondKey);

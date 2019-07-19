@@ -110,7 +110,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
               new CatchEventBehavior(zeebeState, mockSubscriptionCommandSender, 1),
               new DueDateTimerChecker(workflowState));
 
-          JobEventProcessors.addJobProcessors(typedRecordProcessors, zeebeState);
+          JobEventProcessors.addJobProcessors(typedRecordProcessors, zeebeState, type -> {});
           typedRecordProcessors.withListener(this);
           return typedRecordProcessors;
         });

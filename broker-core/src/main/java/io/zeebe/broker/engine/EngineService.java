@@ -12,6 +12,7 @@ import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
 import io.zeebe.broker.engine.impl.DeploymentDistributorImpl;
+import io.zeebe.broker.engine.impl.LongPollingJobNotification;
 import io.zeebe.broker.engine.impl.PartitionCommandSenderImpl;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
@@ -139,12 +140,16 @@ public class EngineService implements Service<EngineService> {
     final PushDeploymentRequestHandler deploymentRequestHandler =
         leaderManagementRequestHandlerInjector.getValue().getPushDeploymentRequestHandler();
 
+    final LongPollingJobNotification jobsAvailableNotification =
+        new LongPollingJobNotification(atomix.getEventService());
+
     return EngineProcessors.createEngineProcessors(
         processingContext,
         clusterCfg.getPartitionsCount(),
         subscriptionCommandSender,
         deploymentDistributor,
-        deploymentRequestHandler);
+        deploymentRequestHandler,
+        jobsAvailableNotification::onJobsAvailable);
   }
 
   @Override

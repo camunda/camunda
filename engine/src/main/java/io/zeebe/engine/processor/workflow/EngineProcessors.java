@@ -25,6 +25,7 @@ import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
+import java.util.function.Consumer;
 
 public class EngineProcessors {
 
@@ -33,7 +34,8 @@ public class EngineProcessors {
       int partitionsCount,
       SubscriptionCommandSender subscriptionCommandSender,
       DeploymentDistributor deploymentDistributor,
-      DeploymentResponder deploymentResponder) {
+      DeploymentResponder deploymentResponder,
+      Consumer<String> onJobsAvailableCallback) {
 
     final TypedRecordProcessors typedRecordProcessors = TypedRecordProcessors.processors();
     final LogStream stream = processingContext.getLogStream();
@@ -54,7 +56,7 @@ public class EngineProcessors {
         addWorkflowProcessors(
             zeebeState, typedRecordProcessors, subscriptionCommandSender, catchEventBehavior);
     addIncidentProcessors(zeebeState, stepProcessor, typedRecordProcessors);
-    addJobProcessors(zeebeState, typedRecordProcessors);
+    addJobProcessors(zeebeState, typedRecordProcessors, onJobsAvailableCallback);
 
     return typedRecordProcessors;
   }
@@ -119,8 +121,10 @@ public class EngineProcessors {
   }
 
   private static void addJobProcessors(
-      ZeebeState zeebeState, TypedRecordProcessors typedRecordProcessors) {
-    JobEventProcessors.addJobProcessors(typedRecordProcessors, zeebeState);
+      ZeebeState zeebeState,
+      TypedRecordProcessors typedRecordProcessors,
+      Consumer<String> onJobsAvailableCallback) {
+    JobEventProcessors.addJobProcessors(typedRecordProcessors, zeebeState, onJobsAvailableCallback);
   }
 
   private static void addMessageProcessors(
