@@ -1,0 +1,203 @@
+package org.camunda.operate.es.reader;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import org.camunda.operate.entities.ActivityState;
+import org.camunda.operate.entities.ActivityType;
+import org.camunda.operate.es.schema.templates.ListViewTemplate;
+import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.rest.dto.ActivityStatisticsDto;
+import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
+import org.camunda.operate.util.ElasticsearchUtil;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.join.aggregations.Children;
+import org.elasticsearch.join.aggregations.ChildrenAggregationBuilder;
+import org.elasticsearch.join.aggregations.Parent;
+import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITY_ID;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITY_STATE;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITY_TYPE;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.INCIDENT_KEY;
+import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.join.aggregations.JoinAggregationBuilders.children;
+import static org.elasticsearch.join.aggregations.JoinAggregationBuilders.parent;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
+
+@Component
+public class ActivityStatisticsReader {
+
+  private static final Logger logger = LoggerFactory.getLogger(ActivityStatisticsReader.class);
+
+  public static final String AGG_ACTIVITIES = "activities";
+  public static final String AGG_UNIQUE_ACTIVITIES = "unique_activities";
+  public static final String AGG_ACTIVITY_TO_WORKFLOW = "activity_to_workflow";
+  public static final String AGG_ACTIVE_ACTIVITIES = "active_activities";
+  public static final String AGG_INCIDENT_ACTIVITIES = "incident_activities";
+  public static final String AGG_TERMINATED_ACTIVITIES = "terminated_activities";
+  public static final String AGG_FINISHED_ACTIVITIES = "finished_activities";
+
+  @Autowired
+  private RestHighLevelClient esClient;
+
+  @Autowired
+  private ListViewReader listViewReader;
+
+  @Autowired
+  private ListViewTemplate listViewTemplate;
+
+  public Collection<ActivityStatisticsDto> getActivityStatistics(ListViewQueryDto query) {
+
+    Map<String, ActivityStatisticsDto> statisticsMap = new HashMap<>();
+
+    final QueryBuilder q = constantScoreQuery(listViewReader.createQueryFragment(query));
+
+    ChildrenAggregationBuilder agg =
+        children(AGG_ACTIVITIES, ListViewTemplate.ACTIVITIES_JOIN_RELATION);
+
+    if (query.isActive()) {
+      agg = agg.subAggregation(getActiveActivitiesAgg());
+    }
+    if (query.isCanceled()) {
+      agg = agg.subAggregation(getTerminatedActivitiesAgg());
+    }
+    if (query.isIncidents()) {
+      agg = agg.subAggregation(getIncidentActivitiesAgg());
+    }
+    agg = agg.subAggregation(getFinishedActivitiesAgg());
+
+    logger.debug("Activities statistics request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
+
+    SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
+    searchRequest.source(new SearchSourceBuilder()
+        .query(q)
+        .size(0)
+        .aggregation(agg));
+
+    try {
+      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+      Children activities = searchResponse.getAggregations().get(AGG_ACTIVITIES);
+
+      collectActiveStat(statisticsMap, activities);
+      collectIncidentStat(statisticsMap, activities);
+      collectCancelledStat(statisticsMap, activities);
+      collectCompletedStat(statisticsMap, activities);
+
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining statistics for activities: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
+
+    return statisticsMap.values();
+  }
+
+  private void collectCompletedStat(Map<String, ActivityStatisticsDto> statisticsMap, Children activities) {
+    Filter finishedActivitiesAgg = activities.getAggregations().get(AGG_FINISHED_ACTIVITIES);
+    if (finishedActivitiesAgg != null) {
+      ((Terms) finishedActivitiesAgg.getAggregations().get(AGG_UNIQUE_ACTIVITIES)).getBuckets().stream().forEach(b -> {
+        String activityId = b.getKeyAsString();
+        final Parent aggregation = b.getAggregations().get(AGG_ACTIVITY_TO_WORKFLOW);
+        final long docCount = aggregation.getDocCount();  //number of workflow instances
+        addToMap(statisticsMap, activityId, docCount, ActivityStatisticsDto::setCompleted);
+      });
+    }
+  }
+
+  private void collectIncidentStat(Map<String, ActivityStatisticsDto> statisticsMap, Children activities) {
+    Filter incidentActivitiesAgg = activities.getAggregations().get(AGG_INCIDENT_ACTIVITIES);
+    if (incidentActivitiesAgg != null) {
+      ((Terms) incidentActivitiesAgg.getAggregations().get(AGG_UNIQUE_ACTIVITIES)).getBuckets().stream().forEach(b -> {
+        String activityId = b.getKeyAsString();
+        final Parent aggregation = b.getAggregations().get(AGG_ACTIVITY_TO_WORKFLOW);
+        final long docCount = aggregation.getDocCount();  //number of workflow instances
+        addToMap(statisticsMap, activityId, docCount, ActivityStatisticsDto::setIncidents);
+      });
+    }
+  }
+
+  private void collectActiveStat(Map<String, ActivityStatisticsDto> statisticsMap, Children activities) {
+    Filter activeActivitiesAgg = activities.getAggregations().get(AGG_ACTIVE_ACTIVITIES);
+    if (activeActivitiesAgg != null) {
+      ((Terms) activeActivitiesAgg.getAggregations().get(AGG_UNIQUE_ACTIVITIES)).getBuckets().stream().forEach(b -> {
+        String activityId = b.getKeyAsString();
+        final Parent aggregation = b.getAggregations().get(AGG_ACTIVITY_TO_WORKFLOW);
+        final long docCount = aggregation.getDocCount();  //number of workflow instances
+        addToMap(statisticsMap, activityId, docCount, ActivityStatisticsDto::setActive);
+      });
+    }
+  }
+
+  private void collectCancelledStat(Map<String, ActivityStatisticsDto> statisticsMap, Children activities) {
+    Filter cancelledActivitiesAgg = activities.getAggregations().get(AGG_TERMINATED_ACTIVITIES);
+    if (cancelledActivitiesAgg != null) {
+      ((Terms) cancelledActivitiesAgg.getAggregations().get(AGG_UNIQUE_ACTIVITIES)).getBuckets().stream().forEach(b -> {
+        String activityId = b.getKeyAsString();
+        final Parent aggregation = b.getAggregations().get(AGG_ACTIVITY_TO_WORKFLOW);
+        final long docCount = aggregation.getDocCount();  //number of workflow instances
+        addToMap(statisticsMap, activityId, docCount, ActivityStatisticsDto::setCanceled);
+      });
+    }
+  }
+
+  private FilterAggregationBuilder getTerminatedActivitiesAgg() {
+    return filter(AGG_TERMINATED_ACTIVITIES, termQuery(ACTIVITY_STATE, ActivityState.TERMINATED)).subAggregation(
+          terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
+              .subAggregation(parent(AGG_ACTIVITY_TO_WORKFLOW, ACTIVITIES_JOIN_RELATION))
+          //we need this to count workflow instances, not the activity instances
+      );
+  }
+
+  private FilterAggregationBuilder getActiveActivitiesAgg() {
+    return filter(AGG_ACTIVE_ACTIVITIES,
+          boolQuery().mustNot(existsQuery(INCIDENT_KEY)).must(termQuery(ACTIVITY_STATE, ActivityState.ACTIVE.toString()))).subAggregation(
+          terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
+              .subAggregation(parent(AGG_ACTIVITY_TO_WORKFLOW, ACTIVITIES_JOIN_RELATION))
+          //we need this to count workflow instances, not the activity instances
+      );
+  }
+
+  private FilterAggregationBuilder getIncidentActivitiesAgg() {
+    return filter(AGG_INCIDENT_ACTIVITIES, existsQuery(INCIDENT_KEY)).subAggregation(
+          terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
+              .subAggregation(parent(AGG_ACTIVITY_TO_WORKFLOW, ACTIVITIES_JOIN_RELATION))
+          //we need this to count workflow instances, not the activity instances
+      );
+  }
+
+  private FilterAggregationBuilder getFinishedActivitiesAgg() {
+    final QueryBuilder completedEndEventsQ = joinWithAnd(termQuery(ACTIVITY_TYPE, ActivityType.END_EVENT.toString()), termQuery(ACTIVITY_STATE, ActivityState.COMPLETED.toString()));
+    return filter(AGG_FINISHED_ACTIVITIES, completedEndEventsQ).subAggregation(
+        terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
+            .subAggregation(parent(AGG_ACTIVITY_TO_WORKFLOW, ACTIVITIES_JOIN_RELATION))
+        //we need this to count workflow instances, not the activity instances
+    );
+  }
+
+  private void addToMap(Map<String, ActivityStatisticsDto> statisticsMap, String activityId, Long docCount, ListViewReader.StatisticsMapEntryUpdater entryUpdater) {
+    if (statisticsMap.get(activityId) == null) {
+      statisticsMap.put(activityId, new ActivityStatisticsDto(activityId));
+    }
+    entryUpdater.updateMapEntry(statisticsMap.get(activityId), docCount);
+  }
+
+}

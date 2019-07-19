@@ -5,13 +5,11 @@
  */
 package org.camunda.operate.rest;
 
-import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
-
 import java.util.Collection;
 import java.util.List;
-
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.SequenceFlowEntity;
+import org.camunda.operate.es.reader.ActivityStatisticsReader;
 import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.SequenceFlowReader;
@@ -41,12 +39,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import io.micrometer.core.annotation.Timed;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.SwaggerDefinition;
 import io.swagger.annotations.Tag;
+import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
 
 @Api(tags = {"Workflow instances"})
 @SwaggerDefinition(tags = {
@@ -66,6 +64,9 @@ public class WorkflowInstanceRestService {
 
   @Autowired
   private ListViewReader listViewReader;
+
+  @Autowired
+  private ActivityStatisticsReader activityStatisticsReader;
   
   @Autowired
   private IncidentReader incidentReader;
@@ -155,7 +156,7 @@ public class WorkflowInstanceRestService {
     if ( (workflowKeys != null && workflowKeys.size() == 1) == (bpmnProcessId != null && workflowVersion != null) ) {
       throw new InvalidRequestException("Exactly one workflow must be specified in the request (via workflowIds or bpmnProcessId/version).");
     }
-    return listViewReader.getActivityStatistics(queries.get(0));
+    return activityStatisticsReader.getActivityStatistics(queries.get(0));
   }
   
   @ApiOperation("Get workflow instance core statistics (aggregations)")
