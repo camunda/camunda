@@ -18,7 +18,7 @@ fixture('Process Analysis')
 test('show the statistics diagram', async t => {
   await t.click(Analysis.navItem);
 
-  await u.selectDefinition(t, 'Lead Qualification', '1');
+  await u.selectDefinition(t, 'Lead Qualification');
 
   await t.click(Analysis.flowNode('call_right_away'));
   await t.click(Analysis.flowNode('msLeadIsOpp'));
@@ -29,7 +29,7 @@ test('show the statistics diagram', async t => {
 test('show end event statistics on hover', async t => {
   await t.click(Analysis.navItem);
 
-  await u.selectDefinition(t, 'Lead Qualification', '1');
+  await u.selectDefinition(t, 'Lead Qualification');
 
   await t.hover(Analysis.flowNode('msLeadIsOpp'));
 
@@ -46,7 +46,7 @@ test('show end event statistics on hover', async t => {
 test('should deselect elements by clicking on the node or on the control panel', async t => {
   await t.click(Analysis.navItem);
 
-  await u.selectDefinition(t, 'Lead Qualification', '1');
+  await u.selectDefinition(t, 'Lead Qualification');
 
   await t.click(Analysis.flowNode('call_right_away'));
   await t.click(Analysis.flowNode('msLeadIsOpp'));

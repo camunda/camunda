@@ -19,7 +19,7 @@ fixture('Combined Report')
 
 test('combine two single number reports', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Lead Qualification', '1');
+  await u.selectDefinition(t, 'Lead Qualification');
 
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
@@ -31,7 +31,7 @@ test('combine two single number reports', async t => {
   await u.gotoOverview(t);
 
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt', '2');
+  await u.selectDefinition(t, 'Invoice Receipt');
 
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
@@ -62,7 +62,7 @@ test('combine two single number reports', async t => {
 
 test('combine two single table reports', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Lead Qualification', '1');
+  await u.selectDefinition(t, 'Lead Qualification');
 
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'Start Date of Process Instance', 'Year');
@@ -75,7 +75,7 @@ test('combine two single table reports', async t => {
   await u.gotoOverview(t);
 
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Lead Qualification', '1');
+  await u.selectDefinition(t, 'Lead Qualification');
 
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'End Date of Process Instance', 'Year');
@@ -113,7 +113,7 @@ test('reorder table reports', async t => {
 
 test('combine two single chart reports', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt', '2');
+  await u.selectDefinition(t, 'Invoice Receipt');
 
   await u.selectView(t, 'Flow Node', 'Duration');
   await u.selectVisualization(t, 'Bar Chart');
@@ -125,7 +125,7 @@ test('combine two single chart reports', async t => {
   await u.gotoOverview(t);
 
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt', '2');
+  await u.selectDefinition(t, 'Invoice Receipt');
 
   await u.selectView(t, 'User Task', 'Duration');
   await u.selectGroupby(t, 'Flow Nodes');

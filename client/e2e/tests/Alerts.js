@@ -18,7 +18,7 @@ fixture('Alerts')
 
 test('add an alert', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Lead Qualification', '1');
+  await u.selectDefinition(t, 'Lead Qualification');
 
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');

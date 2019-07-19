@@ -6,7 +6,7 @@
 
 import setup from '../setup';
 import config from '../config';
-import {login} from '../utils';
+import {login, save} from '../utils';
 
 import * as e from './Homepage.elements.js';
 
@@ -26,6 +26,7 @@ test('create a report and show it on the Homepage', async t => {
   await t.expect(e.createNewMenu.textContent).contains('Decision Report');
 
   await t.click(e.submenuOption('Process Report'));
+  await save(t);
   await t.click(e.homepageLink);
 
   await t.expect(e.reportItem.visible).ok();
@@ -36,6 +37,7 @@ test('create a dashboard and show it on the homepage', async t => {
   await login(t);
 
   await t.click(e.createDashboardButton);
+  await save(t);
   await t.click(e.homepageLink);
 
   await t.expect(e.dashboardItem.visible).ok();

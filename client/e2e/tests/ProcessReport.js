@@ -17,7 +17,7 @@ fixture('Process Report')
 
 test('create and name a report', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt', '2');
+  await u.selectDefinition(t, 'Invoice Receipt');
   await u.selectView(t, 'Raw Data');
 
   await t.typeText(e.nameEditField, 'New Name', {replace: true});
@@ -104,7 +104,7 @@ test('update definition', async t => {
   await t.hover(e.report);
   await t.click(e.editButton);
 
-  await u.selectDefinition(t, 'Lead Qualification', '1');
+  await u.selectDefinition(t, 'Lead Qualification');
 
   await t.expect(e.reportRenderer.textContent).notContains('invoice');
   await t.expect(e.reportRenderer.textContent).contains('leadQualification');
@@ -170,7 +170,7 @@ test('select process instance count grouped by end date', async t => {
   await t.hover(e.report);
   await t.click(e.editButton);
 
-  await u.selectDefinition(t, 'Lead Qualification', '1');
+  await u.selectDefinition(t, 'Lead Qualification');
   await u.selectView(t, 'Process Instance', 'Count');
 
   await u.selectGroupby(t, 'End Date of Process Instance', 'Automatic');
@@ -312,7 +312,7 @@ test('aggregators and reset to default', async t => {
   await t.hover(e.report);
   await t.click(e.editButton);
 
-  await u.selectDefinition(t, 'Lead Qualification', '1');
+  await u.selectDefinition(t, 'Lead Qualification');
 
   const avg = await e.reportNumber.textContent;
 
@@ -487,7 +487,7 @@ test('warning about missing datapoints', async t => {
   await t.hover(e.report);
   await t.click(e.editButton);
 
-  await u.selectDefinition(t, 'Lead Qualification', '1');
+  await u.selectDefinition(t, 'Lead Qualification');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'Start Date of Process Instance', 'Hour');
   await u.selectVisualization(t, 'Table');

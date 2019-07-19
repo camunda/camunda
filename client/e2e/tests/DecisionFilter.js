@@ -22,7 +22,7 @@ test('should apply a filter to the report result', async t => {
   await t.click(Homepage.option('New Report'));
   await t.click(Homepage.submenuOption('Decision Report'));
 
-  await u.selectDefinition(t, 'Invoice Classification', '2');
+  await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
   await u.selectGroupby(t, 'None');
 
@@ -48,7 +48,7 @@ test('should have seperate input and output variables', async t => {
   await t.click(Homepage.option('New Report'));
   await t.click(Homepage.submenuOption('Decision Report'));
 
-  await u.selectDefinition(t, 'Invoice Classification', '2');
+  await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
   await u.selectGroupby(t, 'None');
 

@@ -16,7 +16,7 @@ export const homepageLink = Selector('.HeaderNav__item').withText('Dashboards & 
 export const reportItem = Selector('.ReportItem');
 export const dashboardItem = Selector('.DashboardItem');
 export const collectionItem = Selector('.CollectionItem');
-export const createDashboardButton = Selector('.createDashboard button');
+export const createDashboardButton = Selector('.createDashboard .Button');
 export const duplicate = text => Selector(`button[title="Duplicate ${text}"]`);
 export const edit = text => Selector(`a[title="Edit ${text}"]`);
 export const showAll = type => Selector(`.${type} button`).withText('Show all');

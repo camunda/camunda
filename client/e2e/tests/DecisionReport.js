@@ -21,7 +21,7 @@ test('create a dmn js table report', async t => {
   await t.click(Homepage.option('New Report'));
   await t.click(Homepage.submenuOption('Decision Report'));
 
-  await u.selectDefinition(t, 'Invoice Classification', '2');
+  await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
   await u.selectGroupby(t, 'Rules');
 
@@ -37,7 +37,7 @@ test('create raw date report', async t => {
   await t.click(Homepage.option('New Report'));
   await t.click(Homepage.submenuOption('Decision Report'));
 
-  await u.selectDefinition(t, 'Invoice Classification', '2');
+  await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Raw Data');
 
   await t.expect(Report.reportTable.textContent).contains('Decision Definition Key');
@@ -50,7 +50,7 @@ test('save the report', async t => {
   await t.click(Homepage.option('New Report'));
   await t.click(Homepage.submenuOption('Decision Report'));
 
-  await u.selectDefinition(t, 'Invoice Classification', '2');
+  await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Raw Data');
 
   await t.typeText(Report.nameEditField, 'new decision report', {replace: true});
@@ -68,7 +68,7 @@ test('create a single number report', async t => {
   await t.click(Homepage.option('New Report'));
   await t.click(Homepage.submenuOption('Decision Report'));
 
-  await u.selectDefinition(t, 'Invoice Classification', '2');
+  await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
   await u.selectGroupby(t, 'None');
 
@@ -80,7 +80,7 @@ test('create a report grouped by evaluation date', async t => {
   await t.click(Homepage.option('New Report'));
   await t.click(Homepage.submenuOption('Decision Report'));
 
-  await u.selectDefinition(t, 'Invoice Classification', '2');
+  await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
   await u.selectGroupby(t, 'Evaluation Date', 'Month');
 
@@ -98,7 +98,7 @@ test('create a report grouped by Input variable', async t => {
   await t.click(Homepage.option('New Report'));
   await t.click(Homepage.submenuOption('Decision Report'));
 
-  await u.selectDefinition(t, 'Invoice Classification', '2');
+  await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
   await u.selectGroupby(t, 'Input Variable', 'Invoice Amount');
 

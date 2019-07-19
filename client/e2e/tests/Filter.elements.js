@@ -19,14 +19,12 @@ export const dateFilterEndInput = Selector('.DateFields .DateInput__input-group:
 export const pickerDate = number =>
   Selector('.DateFields .rdr-Calendar:first-child .rdr-Day').withText(number);
 export const yearFilterButton = Selector('.Button').withText('This Year');
-
 export const relativeDateButton = Selector('.ButtonGroup .Button').withText('Relative Date');
 const relativeDateInputs = Selector('.label')
   .withText('In the last')
   .nextSibling();
 export const relativeDateInput = relativeDateInputs.find('input');
 export const relativeDateDropdown = relativeDateInputs.find('.Select');
-
 export const durationFilterOperator = Selector('.DurationFilter__inputs .Select');
 export const durationFilterInput = Selector('.DurationFilter__inputs input[type="text"]');
 export const modalCancel = Selector('.Modal .Button').withText('Cancel');

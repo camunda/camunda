@@ -17,7 +17,7 @@ fixture('Dashboard')
 
 test('create a report and add it to the Dashboard', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt', '2');
+  await u.selectDefinition(t, 'Invoice Receipt');
   await u.selectView(t, 'Raw Data');
   await u.save(t);
   await u.gotoOverview(t);

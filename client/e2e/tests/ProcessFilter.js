@@ -19,7 +19,7 @@ fixture('Process Report Filter')
 test('should apply a filter to the report result', async t => {
   await u.createNewReport(t);
 
-  await u.selectDefinition(t, 'Invoice Receipt', '2');
+  await u.selectDefinition(t, 'Invoice Receipt');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
 
@@ -43,7 +43,7 @@ test('should apply a filter to the report result', async t => {
 
 test('instance state filters', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt', '2');
+  await u.selectDefinition(t, 'Invoice Receipt');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
   await t.click(Report.filterButton);
@@ -64,7 +64,7 @@ test('instance state filters', async t => {
 
 test('pick a start date from the date picker', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Lead Qualification', '1');
+  await u.selectDefinition(t, 'Lead Qualification');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
 
@@ -81,7 +81,7 @@ test('pick a start date from the date picker', async t => {
 
 test('pick a start date from the predefined buttons', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt', '2');
+  await u.selectDefinition(t, 'Invoice Receipt');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
   await t.click(Report.filterButton);
@@ -99,7 +99,7 @@ test('pick a start date from the predefined buttons', async t => {
 
 test('add relative end date filter', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt', '2');
+  await u.selectDefinition(t, 'Invoice Receipt');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
   await t.click(Report.filterButton);
@@ -114,7 +114,7 @@ test('add relative end date filter', async t => {
 
 test('add duration filter', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt', '2');
+  await u.selectDefinition(t, 'Invoice Receipt');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
   await t.click(Report.filterButton);
@@ -130,7 +130,7 @@ test('add duration filter', async t => {
 
 test('add Flow Node filter', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt', '2');
+  await u.selectDefinition(t, 'Invoice Receipt');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
   await t.click(Report.filterButton);
@@ -145,7 +145,7 @@ test('add Flow Node filter', async t => {
 
 test('the filter is visible in the control panel and contains correct information', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt', '2');
+  await u.selectDefinition(t, 'Invoice Receipt');
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Flow Node'));
   await t.click(Report.flowNode('reviewInvoice'));
