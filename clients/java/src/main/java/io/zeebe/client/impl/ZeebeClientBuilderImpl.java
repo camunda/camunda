@@ -18,6 +18,7 @@ package io.zeebe.client.impl;
 import static io.zeebe.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE;
 import static io.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
 
+import io.netty.handler.ssl.SslContext;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
@@ -35,6 +36,8 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   private Duration defaultJobPollInterval = Duration.ofMillis(100);
   private Duration defaultMessageTimeToLive = Duration.ofHours(1);
   private Duration defaultRequestTimeout = Duration.ofSeconds(20);
+  private boolean useSecureConnection = false;
+  private SslContext sslContext;
 
   @Override
   public String getBrokerContactPoint() {
@@ -122,6 +125,28 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   @Override
   public Duration getDefaultRequestTimeout() {
     return defaultRequestTimeout;
+  }
+
+  @Override
+  public ZeebeClientBuilder useSecureConnection() {
+    this.useSecureConnection = true;
+    return this;
+  }
+
+  @Override
+  public boolean isSecureConnectionEnabled() {
+    return useSecureConnection;
+  }
+
+  @Override
+  public ZeebeClientBuilder sslContext(final SslContext sslContext) {
+    this.sslContext = sslContext;
+    return this;
+  }
+
+  @Override
+  public SslContext getSslContext() {
+    return sslContext;
   }
 
   @Override

@@ -110,6 +110,17 @@
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-tcnative-boringssl-static</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-handler</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
@@ -118,14 +129,13 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
-          <usedDependencies>
-            <!-- dependency indirectly used by grpc managed channel provider -->
-            <dependency>io.grpc:grpc-netty</dependency>
-          </usedDependencies>
+          <failOnWarning>true</failOnWarning>
+          <ignoredDependencies>
+            <ignoredDependency>io.netty:netty-tcnative-boringssl-static</ignoredDependency>
+          </ignoredDependencies>
         </configuration>
       </plugin>
     </plugins>
   </build>
-
 </project>
 

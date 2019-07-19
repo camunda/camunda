@@ -17,7 +17,7 @@
 package io.zeebe.client.impl;
 
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import io.grpc.netty.NettyChannelBuilder;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.command.ActivateJobsCommandStep1;
@@ -103,10 +103,16 @@ public class ZeebeClientImpl implements ZeebeClient {
       throw new RuntimeException("Failed to parse broker contact point", e);
     }
 
-    // TODO: Issue #1134 - https://github.com/zeebe-io/zeebe/issues/1134
-    return ManagedChannelBuilder.forAddress(address.getHost(), address.getPort())
-        .usePlaintext()
-        .build();
+    final NettyChannelBuilder channelBuilder =
+        NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
+
+    if (config.isSecureConnectionEnabled()) {
+      channelBuilder.useTransportSecurity().sslContext(config.getSslContext());
+    } else {
+      channelBuilder.usePlaintext();
+    }
+
+    return channelBuilder.build();
   }
 
   public static GatewayStub buildGatewayStub(ManagedChannel channel) {
