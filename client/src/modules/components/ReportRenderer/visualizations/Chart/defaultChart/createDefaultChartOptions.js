@@ -11,7 +11,7 @@ import {getColorFor, createColors, determineBarColor} from '../colorsUtils';
 
 export default function createDefaultChartOptions({report, targetValue, theme, formatter}) {
   const {
-    data: {visualization, view, groupBy, configuration, decisionDefinitionKey},
+    data: {visualization, groupBy, configuration, decisionDefinitionKey},
     result
   } = report;
 
@@ -71,7 +71,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
             configuration,
             formatter,
             instanceCountArr,
-            view.property,
+            isDuration,
             visualization
           );
         },

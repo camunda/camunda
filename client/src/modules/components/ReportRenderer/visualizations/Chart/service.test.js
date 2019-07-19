@@ -14,9 +14,8 @@ it('should include the relative value in tooltips', () => {
     {},
     v => v,
     [5],
-    'frequency',
-    'bar',
-    false
+    false,
+    'bar'
   );
 
   expect(response).toBe('2.5\u00A0(50%)');

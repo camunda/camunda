@@ -14,7 +14,7 @@ export function formatTooltip(
   {alwaysShowAbsolute, alwaysShowRelative},
   formatter,
   processInstanceCountData = [],
-  property,
+  hideRelative,
   type
 ) {
   let processInstanceCount = processInstanceCountData[datasetIndex];
@@ -30,7 +30,7 @@ export function formatTooltip(
     processInstanceCount,
     alwaysShowAbsolute,
     alwaysShowRelative,
-    property.toLowerCase().includes('duration')
+    hideRelative
   );
 }
 

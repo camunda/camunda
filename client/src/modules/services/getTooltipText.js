@@ -10,7 +10,7 @@ export default function getTooltipText(
   processInstanceCount,
   alwaysShowAbsolute,
   alwaysShowRelative,
-  isDuration
+  hideRelative
 ) {
   if (!data && data !== 0) {
     return '';
@@ -19,7 +19,7 @@ export default function getTooltipText(
   const absolute = formatter(data);
   const relative = getRelativeValue(data, processInstanceCount);
 
-  if (isDuration) {
+  if (hideRelative) {
     return absolute;
   }
 

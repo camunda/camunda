@@ -15,13 +15,10 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
     result
   } = report;
 
-  const {
-    view: {property},
-    groupBy
-  } = Object.values(result.data)[0].data;
+  const {groupBy} = Object.values(result.data)[0].data;
 
   const isDark = theme === 'dark';
-  const stacked = visualization === 'number';
+  const isNumber = visualization === 'number';
   const instanceCountArr = Object.values(result.data).map(
     report => report.result.processInstanceCount
   );
@@ -35,7 +32,7 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
     ...createBarOptions({
       targetValue,
       configuration,
-      stacked,
+      stacked: isNumber,
       maxDuration,
       isDark,
       isPersistedTooltips,
@@ -70,7 +67,7 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
             configuration,
             formatter,
             instanceCountArr,
-            property,
+            isDuration || isNumber,
             visualization
           );
         },

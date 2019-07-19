@@ -14,9 +14,12 @@ import './BarChartConfig.scss';
 export default function BarChartConfig({onChange, report}) {
   const {
     combined,
-    data: {configuration},
+    data: {visualization, configuration},
     result
   } = report;
+
+  const durationReport = isDurationReport(combined ? Object.values(result.data)[0] : report);
+  const combinedNumberReport = combined && visualization === 'number';
 
   return (
     <div className="BarChartConfig">
@@ -32,7 +35,7 @@ export default function BarChartConfig({onChange, report}) {
       <fieldset>
         <legend>Tooltips</legend>
         <RelativeAbsoluteSelection
-          hideRelative={isDurationReport(combined ? Object.values(result.data)[0] : report)}
+          hideRelative={durationReport || combinedNumberReport}
           absolute={configuration.alwaysShowAbsolute}
           relative={configuration.alwaysShowRelative}
           onChange={(type, value) => {

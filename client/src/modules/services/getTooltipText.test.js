@@ -6,7 +6,7 @@
 
 import getTooltipText from './getTooltipText';
 
-it('should return only absolute value for duration reports', () => {
+it('should return only absolute value when hideRelative is true', () => {
   const result = getTooltipText(5, () => 5, 5, true, true, true);
   expect(result).toBe(5);
 });
