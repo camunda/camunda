@@ -38,8 +38,6 @@ spec:
     command: ["cat"]
     tty: true
     env:
-      # every JVM process will get a 1/4 of HEAP from total memory
-      - name: JAVA_TOOL_OPTIONS
       - name: LIMITS_CPU
         valueFrom:
           resourceFieldRef:
@@ -50,11 +48,11 @@ spec:
         value: tcp://localhost:2375
     resources:
       limits:
-        cpu: 3
-        memory: 3Gi
+        cpu: 4
+        memory: 4Gi
       requests:
-        cpu: 3
-        memory: 3Gi
+        cpu: 4
+        memory: 4Gi
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
     env:
@@ -144,7 +142,7 @@ pipeline {
   options {
     buildDiscarder(logRotator(numToKeepStr: '5'))
     timestamps()
-    timeout(time: 30, unit: 'MINUTES')
+    timeout(time: 60, unit: 'MINUTES')
   }
 
   stages {

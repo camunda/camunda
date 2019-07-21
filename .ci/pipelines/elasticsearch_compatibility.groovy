@@ -55,11 +55,11 @@ spec:
         value: tcp://localhost:2375
     resources:
       limits:
-        cpu: 3
-        memory: 3Gi
+        cpu: 4
+        memory: 4Gi
       requests:
-        cpu: 3
-        memory: 3Gi
+        cpu: 4
+        memory: 4Gi
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
     env:
@@ -150,11 +150,11 @@ spec:
         value: tcp://localhost:2375
     resources:
       limits:
-        cpu: 3
-        memory: 3Gi
+        cpu: 4
+        memory: 4Gi
       requests:
-        cpu: 3
-        memory: 3Gi
+        cpu: 4
+        memory: 4Gi
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
     env:
