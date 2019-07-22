@@ -79,11 +79,13 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     Collections.singletonMap("flat_settings", "true")
   );
 
-  private ObjectMapper objectMapper;
-  private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
-  private OptimizeIndexNameService indexNameService;
-  private boolean haveToClean = true;
+  private static ObjectMapper objectMapper = createObjectMapper();
+
   private ConfigurationService configurationService;
+  private OptimizeIndexNameService indexNameService;
+  private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
+
+  private boolean haveToClean = true;
 
   private final String customIndexPrefix;
   // maps types to a list of document entry ids added to that type
@@ -100,13 +102,21 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   @Override
   protected void starting(Description description) {
     initConfigurationService();
-    initObjectMapper();
     initEsClient();
     disableAutomaticIndexCreation();
     if (haveToClean) {
       log.info("Cleaning elasticsearch...");
       this.cleanAndVerify();
       log.info("All documents have been wiped out! Elasticsearch has successfully been cleaned!");
+    }
+  }
+
+  @SneakyThrows
+  @Override
+  protected void finished(final Description description) {
+    if (prefixAwareRestHighLevelClient != null) {
+      prefixAwareRestHighLevelClient.close();
+      prefixAwareRestHighLevelClient = null;
     }
   }
 
@@ -352,28 +362,26 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     }
   }
 
-  private void initObjectMapper() {
-    if (objectMapper == null) {
-      DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
-      JavaTimeModule javaTimeModule = new JavaTimeModule();
-      javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(dateTimeFormatter));
-      javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(dateTimeFormatter));
+  private static ObjectMapper createObjectMapper() {
+    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+    JavaTimeModule javaTimeModule = new JavaTimeModule();
+    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(dateTimeFormatter));
+    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(dateTimeFormatter));
 
-      objectMapper = Jackson2ObjectMapperBuilder
-        .json()
-        .modules(javaTimeModule)
-        .featuresToDisable(
-          SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
-          DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
-          DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
-          DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES
-        )
-        .featuresToEnable(
-          JsonParser.Feature.ALLOW_COMMENTS,
-          SerializationFeature.INDENT_OUTPUT
-        )
-        .build();
-    }
+    return Jackson2ObjectMapperBuilder
+      .json()
+      .modules(javaTimeModule)
+      .featuresToDisable(
+        SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
+        DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
+        DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+        DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES
+      )
+      .featuresToEnable(
+        JsonParser.Feature.ALLOW_COMMENTS,
+        SerializationFeature.INDENT_OUTPUT
+      )
+      .build();
   }
 
   private void disableAutomaticIndexCreation() {

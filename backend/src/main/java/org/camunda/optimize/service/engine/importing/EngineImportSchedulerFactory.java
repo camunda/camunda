@@ -156,6 +156,7 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
         oldScheduler.shutdown();
       }
     }
+    engineContextFactory.close();
     engineContextFactory.init();
     importIndexHandlerProvider.reloadConfiguration();
     schedulers = this.buildSchedulers();

@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ClientRequestContext;
@@ -48,6 +49,14 @@ public class EngineContextFactory {
         engineContext
       );
       configuredEngines.put(engineContext.getEngineAlias(), engineContext);
+    }
+  }
+
+  @PreDestroy
+  public void close() {
+    if (this.configuredEngines != null) {
+      this.configuredEngines.values().stream().map(EngineContext::getEngineClient).forEach(Client::close);
+      this.configuredEngines = null;
     }
   }
 

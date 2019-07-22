@@ -19,7 +19,7 @@
     <env.LIMITS_CPU/>
 
     <skip.unit.tests>${skipTests}</skip.unit.tests>
-    <test.argLine>-Xmx2048m</test.argLine>
+    <test.argLine>-Xmx1024m</test.argLine>
   </properties>
 
   <dependencies>
