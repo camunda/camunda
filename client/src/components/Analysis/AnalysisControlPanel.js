@@ -51,7 +51,8 @@ export default class AnalysisControlPanel extends React.Component {
   getDefinitionConfig = () => {
     return {
       processDefinitionKey: this.props.processDefinitionKey,
-      processDefinitionVersions: this.props.processDefinitionVersions
+      processDefinitionVersions: this.props.processDefinitionVersions,
+      tenantIds: this.props.tenantIds
     };
   };
 

@@ -13,7 +13,8 @@ import {DateFilter, VariableFilter, NodeFilter, DurationFilter} from './modals';
 import FilterList from './FilterList';
 import './Filter.scss';
 
-import {loadVariables, loadValues, filterIncompatibleExistingFilters} from './service';
+import {loadValues, filterIncompatibleExistingFilters} from './service';
+import {loadVariables} from '../service';
 
 export default class Filter extends React.Component {
   state = {
@@ -55,12 +56,14 @@ export default class Filter extends React.Component {
         getVariables: async () =>
           await loadVariables(
             this.props.processDefinitionKey,
-            this.props.processDefinitionVersions
+            this.props.processDefinitionVersions,
+            this.props.tenantIds
           ),
         getValues: async (name, type, numResults, valueFilter) =>
           await loadValues(
             this.props.processDefinitionKey,
             this.props.processDefinitionVersions,
+            this.props.tenantIds,
             name,
             type,
             0,

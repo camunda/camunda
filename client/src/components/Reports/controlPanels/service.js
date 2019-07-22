@@ -4,12 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {get} from 'request';
+import {post} from 'request';
 
-export async function loadVariables(processDefinitionKey, processDefinitionVersion) {
-  const response = await get('api/variables', {
+export async function loadVariables(processDefinitionKey, processDefinitionVersions, tenantIds) {
+  const response = await post('api/variables', {
     processDefinitionKey,
-    processDefinitionVersion,
+    processDefinitionVersions,
+    tenantIds,
     namePrefix: '',
     sortOrder: 'asc',
     orderBy: 'name'
