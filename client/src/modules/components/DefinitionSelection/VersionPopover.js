@@ -7,7 +7,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {Popover, Input, Form} from 'components';
+import {Popover, Input, Form, Badge} from 'components';
 
 import './VersionPopover.scss';
 
@@ -47,23 +47,23 @@ export default function VersionPopover({versions, selected, onChange, disabled})
             disabled: !specific
           })}
         >
-          {versions.map(version => {
+          {versions.map(({version, versionTag}) => {
             return (
-              <div key={version.version}>
+              <div key={version}>
                 <Input
                   type="checkbox"
-                  checked={selected.includes(version.version)}
+                  checked={selected.includes(version)}
                   disabled={!specific}
                   onChange={({target}) => {
                     if (target.checked) {
-                      onChange(selected.concat([version.version]).sort((a, b) => b - a));
+                      onChange(selected.concat([version]).sort((a, b) => b - a));
                     } else {
-                      onChange(selected.filter(selected => selected !== version.version));
+                      onChange(selected.filter(selected => selected !== version));
                     }
                   }}
                 />
-                {version.version}
-                <span className="tag">{version.versionTag}</span>
+                {version}
+                {versionTag && <Badge>{versionTag}</Badge>}
               </div>
             );
           })}

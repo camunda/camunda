@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {Button, Icon, CollectionsDropdown} from 'components';
+import {Button, Icon, CollectionsDropdown, Badge} from 'components';
 import {getReportInfo, getReportIcon} from '../service';
 import LastModified from './LastModified';
 import {Link} from 'react-router-dom';
@@ -32,8 +32,8 @@ export default withStore(function ReportItem({
         <div className="textInfo">
           <div className="data dataTitle">
             <h3>{report.name}</h3>
-            {report.combined && <span>Combined</span>}
-            {report.reportType && report.reportType === 'decision' && <span>Decision</span>}
+            {report.combined && <Badge>Combined</Badge>}
+            {report.reportType && report.reportType === 'decision' && <Badge>Decision</Badge>}
           </div>
           <div className="extraInfo">
             <span className="data custom">{getReportInfo(report)}</span>

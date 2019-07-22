@@ -40,3 +40,4 @@ export {EntityNameForm} from './EntityNameForm';
 export {CollectionsDropdown} from './CollectionsDropdown';
 export {EditCollectionModal} from './EditCollectionModal';
 export {Form} from './Form';
+export {Badge} from './Badge';

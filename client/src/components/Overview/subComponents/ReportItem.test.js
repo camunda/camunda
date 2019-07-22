@@ -125,11 +125,11 @@ it('should invok duplicate report when clicking duplicate report button with the
 it('should display combined tag for combined reports', () => {
   const node = shallow(<ReportItem {...props} report={combinedProcessReport} />);
 
-  expect(node.find('.dataTitle')).toIncludeText('Combined');
+  expect(node.find('.dataTitle Badge').prop('children')).toBe('Combined');
 });
 
 it('should display decision tag for decision reports', () => {
   const node = shallow(<ReportItem {...props} report={decisionReport} />);
 
-  expect(node.find('.dataTitle')).toIncludeText('Decision');
+  expect(node.find('.dataTitle Badge').prop('children')).toBe('Decision');
 });
