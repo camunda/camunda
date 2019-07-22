@@ -4,70 +4,20 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {DEFAULT_FILTER} from 'modules/constants';
+import {
+  createFilter,
+  groupedWorkflowsMock as defaultGroupedWorkflowsMock
+} from 'modules/testUtils';
 
-export const groupedWorkflowsMock = [
-  {
-    bpmnProcessId: 'demoProcess',
-    name: 'New demo process',
-    workflows: [
-      {
-        id: '6',
-        name: 'New demo process',
-        version: 3,
-        bpmnProcessId: 'demoProcess'
-      },
-      {
-        id: '4',
-        name: 'Demo process',
-        version: 2,
-        bpmnProcessId: 'demoProcess'
-      },
-      {
-        id: '1',
-        name: 'Demo process',
-        version: 1,
-        bpmnProcessId: 'demoProcess'
-      }
-    ]
-  },
-  {
-    bpmnProcessId: 'orderProcess',
-    name: 'Order',
-    workflows: []
-  }
-];
+export const groupedWorkflowsMock = defaultGroupedWorkflowsMock;
 
 // transformed groupedWorkflowsMock in an object structure
 export const workflows = {
   demoProcess: {
-    bpmnProcessId: 'demoProcess',
-    name: 'New demo process',
-    workflows: [
-      {
-        id: '6',
-        name: 'New demo process',
-        version: 3,
-        bpmnProcessId: 'demoProcess'
-      },
-      {
-        id: '4',
-        name: 'Demo process',
-        version: 2,
-        bpmnProcessId: 'demoProcess'
-      },
-      {
-        id: '1',
-        name: 'Demo process',
-        version: 1,
-        bpmnProcessId: 'demoProcess'
-      }
-    ]
+    ...groupedWorkflowsMock[0]
   },
   orderProcess: {
-    bpmnProcessId: 'orderProcess',
-    name: 'Order',
-    workflows: []
+    ...groupedWorkflowsMock[1]
   }
 };
 
@@ -89,7 +39,7 @@ export const mockPropsWithSelectableFlowNodes = {
 };
 
 export const COMPLETE_FILTER = {
-  ...DEFAULT_FILTER,
+  ...createFilter(),
   ids: 'a, b, c',
   errorMessage: 'This is an error message',
   startDate: '08 October 2018',
