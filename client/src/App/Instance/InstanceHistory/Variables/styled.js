@@ -202,7 +202,8 @@ export const DisplayText = styled.div`
   max-height: 80px;
   max-width: 27vw;
 
-  overflow: auto;
+  overflow-y: auto;
+  overflow-wrap: break-word;
 `;
 
 const textAreaStyles = css`
