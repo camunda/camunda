@@ -52,7 +52,7 @@ class Alerts extends React.Component {
   componentDidMount = async () => {
     this.loadAlerts();
     const reports = (await loadEntities('report', 'lastModified')).filter(
-      ({data: {visualization}}) => visualization === 'number'
+      ({combined, data: {visualization}}) => !combined && visualization === 'number'
     );
     this.setState({
       reports

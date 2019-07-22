@@ -17,7 +17,6 @@ import {
   Select,
   Typeahead,
   Message,
-  Switch,
   Form
 } from 'components';
 import {emailNotificationIsEnabled} from './service';
@@ -39,11 +38,6 @@ const newAlert = {
   },
   reminder: null,
   fixNotification: false
-};
-
-const defaultReminder = {
-  value: '2',
-  unit: 'hours'
 };
 
 export default function AlertModal(reports) {
@@ -101,7 +95,10 @@ export default function AlertModal(reports) {
     updateReminder = ({target: {checked}}) => {
       if (checked) {
         this.setState({
-          reminder: defaultReminder
+          reminder: {
+            value: '2',
+            unit: 'hours'
+          }
         });
       } else {
         this.setState({
@@ -319,26 +316,24 @@ export default function AlertModal(reports) {
                   />
                   Send notification when resolved
                 </label>
+                <label>
+                  <Input type="checkbox" checked={!!reminder} onChange={this.updateReminder} />
+                  Send reminder notification
+                </label>
               </Form.Group>
-              <Form.Group noSpacing>
-                <fieldset>
-                  <legend>
-                    <Switch checked={!!reminder} onChange={this.updateReminder} />
-                    Send reminder notification
-                  </legend>
+              {reminder && (
+                <Form.Group noSpacing>
                   <Labeled label="every">
                     <Form.InputGroup>
                       <Input
                         id="reminder-input"
-                        disabled={!reminder}
-                        value={reminder ? reminder.value : defaultReminder.value}
+                        value={reminder.value}
                         onChange={({target: {value}}) =>
                           this.setState(update(this.state, {reminder: {value: {$set: value}}}))
                         }
                       />
                       <Select
-                        value={reminder ? reminder.unit : defaultReminder.unit}
-                        disabled={!reminder}
+                        value={reminder.unit}
                         onChange={value =>
                           this.setState(update(this.state, {reminder: {unit: {$set: value}}}))
                         }
@@ -351,8 +346,8 @@ export default function AlertModal(reports) {
                       </Select>
                     </Form.InputGroup>
                   </Labeled>
-                </fieldset>
-              </Form.Group>
+                </Form.Group>
+              )}
             </Form>
           </Modal.Content>
           <Modal.Actions>

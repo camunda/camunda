@@ -16,7 +16,8 @@ const Alerts = AlertsWithErrorHandling.WrappedComponent;
 
 const reports = [
   {id: '1', data: {visualization: 'table', view: {property: 'frequency'}}, name: 'Report 1'},
-  {id: '2', data: {visualization: 'number', view: {property: 'duration'}}, name: 'Report 2'}
+  {id: '2', data: {visualization: 'number', view: {property: 'duration'}}, name: 'Report 2'},
+  {combined: true, id: '3', data: {visualization: 'number'}, name: 'Report 3'}
 ];
 
 const alert = {
