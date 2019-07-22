@@ -208,40 +208,46 @@ public class ProcessReportDataBuilder {
           processDefinitionKey,
           processDefinitionVersions
         );
-        reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
+        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_ASSIGNEE:
         reportData = createUserTaskIdleDurationMapGroupByAssigneeReport(
           processDefinitionKey,
           processDefinitionVersions
         );
-        reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
+        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_ASSIGNEE_BY_USER_TASK:
         reportData = createUserTaskIdleDurationMapGroupByAssigneeByUserTaskReport(
           processDefinitionKey,
           processDefinitionVersions
         );
-        reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
+        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_CANDIDATE:
         reportData = createUserTaskIdleDurationMapGroupByCandidateGroupReport(
           processDefinitionKey,
           processDefinitionVersions
         );
-        reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
+        setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_CANDIDATE_BY_USER_TASK:
         reportData = createUserTaskIdleDurationMapGroupByCandidateGroupByUserTaskReport(
           processDefinitionKey,
           processDefinitionVersions
         );
-        reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
+        setUserTaskDurationTimeIfConfigured(reportData);
         break;
     }
     reportData.setFilter(this.filter);
     reportData.setVisualization(visualization == null? reportData.getVisualization() : visualization);
     return reportData;
+  }
+
+  private void setUserTaskDurationTimeIfConfigured(ProcessReportDataDto reportData) {
+    if (userTaskDurationTime != null) {
+      reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
+    }
   }
 
   public ProcessReportDataBuilder setReportDataType(ProcessReportDataType reportDataType) {
