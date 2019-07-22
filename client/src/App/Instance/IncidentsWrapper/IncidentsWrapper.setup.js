@@ -6,69 +6,63 @@
 
 import {createIncident, createInstance} from 'modules/testUtils';
 
-const incidentTableProps = {
-  count: 2,
-  incidents: [
-    createIncident({
-      errorType: 'Condition error',
-      flowNodeId: 'flowNodeId_exclusiveGateway'
-    }),
-    createIncident({
-      errorType: 'Extract value error',
-      flowNodeId: 'flowNodeId_alwaysFailingTask'
-    })
-  ],
-  errorTypes: new Map(
-    Object.entries({
-      'Condition error': {
-        errorType: 'Condition error',
-        count: 1
-      },
-      'Extract value error': {
-        errorType: 'Extract value error',
-        count: 1
-      }
-    })
-  ),
-  flowNodes: new Map(
-    Object.entries({
-      flowNodeId_exclusiveGateway: {
-        flowNodeId: 'flowNodeId_exclusiveGateway',
-        flowNodeName: 'flowNodeName_exclusiveGateway',
-        count: 1
-      },
-      flowNodeId_alwaysFailingTask: {
-        flowNodeId: 'flowNodeId_alwaysFailingTask',
-        flowNodeName: 'flowNodeName_alwaysFailingTask',
-        count: 1
-      }
-    })
-  )
+const incidents = [
+  createIncident({
+    errorType: 'Condition error',
+    flowNodeId: 'flowNodeId_exclusiveGateway'
+  }),
+  createIncident({
+    errorType: 'Extract value error',
+    flowNodeId: 'flowNodeId_alwaysFailingTask'
+  })
+];
+
+const errorTypes = {
+  'Condition error': {
+    errorType: 'Condition error',
+    count: 1
+  },
+  'Extract value error': {
+    errorType: 'Extract value error',
+    count: 1
+  }
+};
+const flowNodes = {
+  flowNodeId_exclusiveGateway: {
+    flowNodeId: 'flowNodeId_exclusiveGateway',
+    flowNodeName: 'flowNodeName_exclusiveGateway',
+    count: 1
+  },
+  flowNodeId_alwaysFailingTask: {
+    flowNodeId: 'flowNodeId_alwaysFailingTask',
+    flowNodeName: 'flowNodeName_alwaysFailingTask',
+    count: 1
+  }
 };
 
 const defaultProps = {
   instance: createInstance(),
-  incidents: incidentTableProps.incidents,
-  incidentsCount: incidentTableProps.count,
+  incidents: incidents,
+  incidentsCount: 2,
   forceSpinner: false,
   selectedIncidents: ['1', '2', '3'],
   onIncidentOperation: jest.fn(),
   onIncidentSelection: jest.fn(),
-  errorTypes: incidentTableProps.errorTypes,
-  flowNodes: incidentTableProps.flowNodes
+  errorTypes: new Map(Object.entries(errorTypes)),
+  flowNodes: new Map(Object.entries(flowNodes))
 };
-
-const newErrorTypeMap = new Map(incidentTableProps.errorTypes);
-const newFlowNodeMap = new Map(incidentTableProps.flowNodes);
-
-newErrorTypeMap.delete('Condition error');
-newFlowNodeMap.delete('flowNodeId_exclusiveGateway');
 
 const incidentResolvedProps = {
   ...defaultProps,
-  incidents: [incidentTableProps.incidents[0]],
-  errorTypes: newErrorTypeMap,
-  flowNodes: newFlowNodeMap
+  incidents: [incidents[0]],
+  errorTypes: new Map(
+    Object.entries({'Extract value error': errorTypes['Extract value error']})
+  ),
+  flowNodes: new Map(
+    Object.entries({
+      flowNodeId_alwaysFailingTask: flowNodes['flowNodeId_alwaysFailingTask']
+    })
+  )
 };
 
 export const testData = {
