@@ -21,10 +21,19 @@ export function cockpitLink(endpoints, instance, type) {
 }
 
 export function sortColumns(head, body, columnOrder) {
+  if (!columnOrderDefined(columnOrder)) {
+    return {sortedHead: head, sortedBody: body};
+  }
   const sortedHead = sortHead(head, columnOrder);
   const sortedBody = sortBody(body, head, sortedHead);
 
   return {sortedHead, sortedBody};
+}
+
+function columnOrderDefined({instanceProps, variables, inputVariables, outputVariables}) {
+  return (
+    instanceProps.length || variables.length || inputVariables.length || outputVariables.length
+  );
 }
 
 function sortHead(head, columnOrder) {

@@ -21,6 +21,20 @@ it('should apply column order', () => {
   });
 });
 
+it('should return the original head and body if no sorting is applied', () => {
+  const columnOrder = {
+    instanceProps: [],
+    variables: [],
+    inputVariables: [],
+    outputVariables: []
+  };
+
+  const {sortedHead, sortedBody} = sortColumns(head, body, columnOrder);
+
+  expect(sortedHead).toBe(head);
+  expect(sortedBody).toBe(body);
+});
+
 it('should prepend columns without specified column position', () => {
   const columnOrder = {instanceProps: ['processInstanceId'], variables: ['var1']};
 
