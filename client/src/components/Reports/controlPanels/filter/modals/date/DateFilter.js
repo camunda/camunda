@@ -138,11 +138,11 @@ export default class DateFilter extends React.Component {
           )}
           {mode === 'dynamic' && (
             <Form horizontal>
+              <p className="tip">
+                Only include process instances
+                {this.props.filterType === 'startDate' ? ' started:' : ' ended:'}
+              </p>
               <Form.Group noSpacing>
-                <p className="tip">
-                  Only include process instances
-                  {this.props.filterType === 'startDate' ? ' started:' : ' ended:'}
-                </p>
                 <Labeled label="In the last">
                   <Form.InputGroup>
                     <Input

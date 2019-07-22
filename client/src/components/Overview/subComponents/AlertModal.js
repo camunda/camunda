@@ -258,7 +258,7 @@ export default function AlertModal(reports) {
                 <InfoMessage>Alerts only available for reports visualised as numbers</InfoMessage>
               </Form.Group>
               <Form.Group>
-                <label>Has a Value</label>
+                <span>Has a Value</span>
                 <Form.InputGroup>
                   <Select
                     value={thresholdOperator}
@@ -311,13 +311,14 @@ export default function AlertModal(reports) {
                 />
               </Form.Group>
               <Form.Group noSpacing>
-                <Input
-                  id="notification-checkbox"
-                  type="checkbox"
-                  checked={fixNotification}
-                  onChange={({target: {checked}}) => this.setState({fixNotification: checked})}
-                />
-                <label htmlFor="notification-checkbox">Send notification when resolved</label>
+                <label>
+                  <Input
+                    type="checkbox"
+                    checked={fixNotification}
+                    onChange={({target: {checked}}) => this.setState({fixNotification: checked})}
+                  />
+                  Send notification when resolved
+                </label>
               </Form.Group>
               <Form.Group noSpacing>
                 <fieldset>

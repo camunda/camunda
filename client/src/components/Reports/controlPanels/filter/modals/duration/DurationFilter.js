@@ -50,12 +50,12 @@ export default class DurationFilter extends React.Component {
           <p className="description">Only include process instances that ran for... </p>
           <Form horizontal>
             <Form.Group noSpacing>
-              <label>
+              <div>
                 <Select value={operator} onChange={this.setOperator}>
                   <Select.Option value=">">more than</Select.Option>
                   <Select.Option value="<">less than</Select.Option>
                 </Select>
-              </label>
+              </div>
               <Form.InputGroup>
                 <Input isInvalid={!isValidInput} value={value} onChange={this.setValue} />
                 <Select value={unit} onChange={this.setUnit}>

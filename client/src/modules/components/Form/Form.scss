@@ -130,16 +130,26 @@
           }
         }
 
-        > label:first-child {
-          display: inline-block;
-          text-align: right;
-          padding-right: 10px;
+        > *:not(.Labeled):not(.LabeledInput):not(fieldset):not(label):first-child {
           width: 30%;
+          display: inline-block;
+          padding-right: 10px;
+          margin-bottom: 0;
+          text-align: right;
 
-          + .InputGroup {
+          + * {
             display: inline-flex;
             width: 70%;
           }
+        }
+
+        > span:first-child {
+          font-size: 0.875em;
+        }
+
+        > label {
+          display: block;
+          padding: 10px 0px;
         }
       }
 
