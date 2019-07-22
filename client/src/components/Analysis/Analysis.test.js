@@ -116,7 +116,7 @@ it('should contain a statistics section if gateway and endEvent is selected', ()
   expect(node).toIncludeText('Statistics');
 });
 
-it.only('should clear the selection when another process definition is selected', async () => {
+it('should clear the selection when another process definition is selected', async () => {
   const node = mount(<Analysis />);
 
   await node.instance().setState({gateway: 'g', endEvent: 'e'});
