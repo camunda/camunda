@@ -10,7 +10,8 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableNameDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.filter.CanceledInstancesOnlyQueryFilter;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
@@ -53,9 +54,9 @@ import static org.junit.Assert.assertTrue;
 
 public class ProcessImportIT extends AbstractImportIT {
 
-  protected static final Set<String> PROCESS_INSTANCE_NULLABLE_FIELDS =
+  private static final Set<String> PROCESS_INSTANCE_NULLABLE_FIELDS =
     Collections.singleton(ProcessInstanceType.TENANT_ID);
-  protected static final Set<String> PROCESS_DEFINITION_NULLABLE_FIELDS =
+  private static final Set<String> PROCESS_DEFINITION_NULLABLE_FIELDS =
     Collections.singleton(ProcessDefinitionType.TENANT_ID);
 
   @Test
@@ -376,11 +377,14 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    List<VariableRetrievalDto> variablesResponseDtos =
+    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
+    variableRequestDto.setProcessDefinitionKey(firstProcInst.getProcessDefinitionKey());
+    variableRequestDto.setProcessDefinitionVersion(firstProcInst.getProcessDefinitionVersion());
+    List<VariableNameDto> variablesResponseDtos =
       embeddedOptimizeRule
         .getRequestExecutor()
-        .buildGetVariablesRequest(firstProcInst.getProcessDefinitionKey(), firstProcInst.getProcessDefinitionVersion())
-        .executeAndReturnList(VariableRetrievalDto.class, 200);
+        .buildProcessVariableNamesRequest(variableRequestDto)
+        .executeAndReturnList(VariableNameDto.class, 200);
 
     assertThat(variablesResponseDtos.size(), is(3));
   }

@@ -7,10 +7,12 @@ package org.camunda.optimize.service.es.reader;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableNameDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
+import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.elasticsearch.action.search.SearchRequest;
@@ -18,7 +20,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
@@ -36,12 +37,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DATE_VARIABLES;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_KEY;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STRING_VARIABLES;
+import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.createDefinitionQuery;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getAllVariableTypeFieldLabels;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabel;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldLabel;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.variableTypeToFieldLabel;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -55,7 +57,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 @RequiredArgsConstructor
 @Component
 @Slf4j
-public class VariableReader {
+public class ProcessVariableReader {
 
   private static final String FILTER_FOR_NAME_AGGREGATION = "filterForName";
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
@@ -65,17 +67,23 @@ public class VariableReader {
   private static final String STRING_VARIABLE_VALUE_LOWERCASE = "lowercaseField";
 
   private final OptimizeElasticsearchClient esClient;
+  private final ProcessDefinitionReader processDefinitionReader;
 
-  public List<VariableRetrievalDto> getVariables(String processDefinitionKey,
-                                                 String processDefinitionVersion,
-                                                 String namePrefix) {
+  public List<VariableNameDto> getVariableNames(ProcessVariableNameRequestDto requestDto) {
     log.debug(
-      "Fetching variables for process definition with key [{}] and version [{}]",
-      processDefinitionKey,
-      processDefinitionVersion
+      "Fetching variable names for process definition with key [{}] and versions [{}]",
+      requestDto.getProcessDefinitionKey(),
+      requestDto.getProcessDefinitionVersions()
     );
 
-    BoolQueryBuilder query = buildProcessDefinitionBaseQuery(processDefinitionKey, processDefinitionVersion);
+    BoolQueryBuilder query =
+      createDefinitionQuery(
+        requestDto.getProcessDefinitionKey(),
+        requestDto.getProcessDefinitionVersions(),
+        requestDto.getTenantIds(),
+        new ProcessInstanceType(),
+        processDefinitionReader::getLatestVersionToKey
+      );
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
@@ -84,52 +92,38 @@ public class VariableReader {
       .types(PROC_INSTANCE_TYPE)
       .source(searchSourceBuilder);
 
-    addVariableAggregation(searchSourceBuilder, namePrefix);
+    addVariableNameAggregation(searchSourceBuilder, requestDto);
     SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format(
-        "Was not able to fetch variables process definition with key [%s] and version [%s]",
-        processDefinitionKey,
-        processDefinitionVersion
+        "Was not able to fetch variable names for process definition with key [%s] and versions [%s]",
+        requestDto.getProcessDefinitionKey(),
+        requestDto.getProcessDefinitionVersions()
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
     Aggregations aggregations = searchResponse.getAggregations();
-    return extractVariables(aggregations);
+    return extractVariableNames(aggregations);
   }
 
-  private BoolQueryBuilder buildProcessDefinitionBaseQuery(String processDefinitionKey,
-                                                           String processDefinitionVersion) {
-    BoolQueryBuilder query;
-    query =
-      QueryBuilders.boolQuery()
-        .must(QueryBuilders.termsQuery(PROCESS_DEFINITION_KEY, processDefinitionKey));
-
-    if (!ReportConstants.ALL_VERSIONS.equals(processDefinitionVersion)) {
-      query = query
-        .must(QueryBuilders.termsQuery(PROCESS_DEFINITION_VERSION, processDefinitionVersion));
-    }
-    return query;
-  }
-
-  private List<VariableRetrievalDto> extractVariables(Aggregations aggregations) {
-    List<VariableRetrievalDto> getVariablesResponseList = new ArrayList<>();
+  private List<VariableNameDto> extractVariableNames(Aggregations aggregations) {
+    List<VariableNameDto> getVariablesResponseList = new ArrayList<>();
     for (String variableFieldLabel : ProcessVariableHelper.getAllVariableTypeFieldLabels()) {
-      getVariablesResponseList.addAll(extractVariablesFromType(aggregations, variableFieldLabel));
+      getVariablesResponseList.addAll(extractVariableNamesFromType(aggregations, variableFieldLabel));
     }
     return getVariablesResponseList;
   }
 
-  private List<VariableRetrievalDto> extractVariablesFromType(Aggregations aggregations, String variableFieldLabel) {
+  private List<VariableNameDto> extractVariableNamesFromType(Aggregations aggregations, String variableFieldLabel) {
     Nested variables = aggregations.get(variableFieldLabel);
     Filter filteredVariables = variables.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     Terms nameTerms = filteredVariables.getAggregations().get(NAMES_AGGREGATION);
-    List<VariableRetrievalDto> responseDtoList = new ArrayList<>();
+    List<VariableNameDto> responseDtoList = new ArrayList<>();
     for (Terms.Bucket nameBucket : nameTerms.getBuckets()) {
-      VariableRetrievalDto response = new VariableRetrievalDto();
+      VariableNameDto response = new VariableNameDto();
       response.setName(nameBucket.getKeyAsString());
       response.setType(ProcessVariableHelper.fieldLabelToVariableType(variableFieldLabel));
       responseDtoList.add(response);
@@ -137,8 +131,8 @@ public class VariableReader {
     return responseDtoList;
   }
 
-  private void addVariableAggregation(SearchSourceBuilder requestBuilder, String namePrefix) {
-    String securedNamePrefix = namePrefix == null ? "" : namePrefix;
+  private void addVariableNameAggregation(SearchSourceBuilder requestBuilder, ProcessVariableNameRequestDto requestDto) {
+    String securedNamePrefix = requestDto.getNamePrefix() == null ? "" : requestDto.getNamePrefix();
     for (String variableFieldLabel : getAllVariableTypeFieldLabels()) {
       FilterAggregationBuilder filterAllVariablesWithCertainPrefixInName = filter(
         FILTERED_VARIABLES_AGGREGATION,
@@ -163,24 +157,25 @@ public class VariableReader {
     }
   }
 
-  public List<String> getVariableValues(String processDefinitionKey,
-                                        String processDefinitionVersion,
-                                        String name,
-                                        String type,
-                                        String valueFilter) {
+  public List<String> getVariableValues(ProcessVariableValueRequestDto requestDto) {
     log.debug(
-      "Fetching variable values for process definition with key [{}] and version [{}]",
-      processDefinitionKey,
-      processDefinitionVersion
+      "Fetching variable values for process definition with key [{}] and versions [{}]",
+      requestDto.getProcessDefinitionKey(),
+      requestDto.getProcessDefinitionVersions()
     );
 
-    String variableFieldLabel = ProcessVariableHelper.variableTypeToFieldLabel(type);
-
-    BoolQueryBuilder query = buildProcessDefinitionBaseQuery(processDefinitionKey, processDefinitionVersion);
+    BoolQueryBuilder query =
+      createDefinitionQuery(
+        requestDto.getProcessDefinitionKey(),
+        requestDto.getProcessDefinitionVersions(),
+        requestDto.getTenantIds(),
+        new ProcessInstanceType(),
+        processDefinitionReader::getLatestVersionToKey
+      );
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
-      .aggregation(getVariableValueAggregation(name, variableFieldLabel, valueFilter))
+      .aggregation(getVariableValueAggregation(requestDto))
       .size(0);
     SearchRequest searchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
       .types(PROC_INSTANCE_TYPE)
@@ -192,18 +187,19 @@ public class VariableReader {
     } catch (IOException e) {
       String reason = String.format(
         "Was not able to fetch variable values for variable [%s] and type [%s]",
-        name,
-        type
+        requestDto.getName(),
+        requestDto.getType()
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
     Aggregations aggregations = searchResponse.getAggregations();
-    return extractVariableValues(aggregations, variableFieldLabel);
+    return extractVariableValues(aggregations, requestDto);
   }
 
-  private List<String> extractVariableValues(Aggregations aggregations, String variableFieldLabel) {
+  private List<String> extractVariableValues(Aggregations aggregations, ProcessVariableValueRequestDto requestDto) {
+    String variableFieldLabel = variableTypeToFieldLabel(requestDto.getType());
     Nested variablesFromType = aggregations.get(variableFieldLabel);
     Filter filteredVariables = variablesFromType.getAggregations().get(FILTER_FOR_NAME_AGGREGATION);
     Terms valueTerms = filteredVariables.getAggregations().get(VALUE_AGGREGATION);
@@ -211,21 +207,24 @@ public class VariableReader {
     for (Terms.Bucket valueBucket : valueTerms.getBuckets()) {
       allValues.add(valueBucket.getKeyAsString());
     }
-    return allValues;
+    int lastIndex = Math.min(allValues.size(), requestDto.getResultOffset() + requestDto.getNumResults());
+    return allValues.subList(requestDto.getResultOffset(), lastIndex);
   }
 
-  private AggregationBuilder getVariableValueAggregation(String name, String variableFieldLabel, String valueFilter) {
+  private AggregationBuilder getVariableValueAggregation(ProcessVariableValueRequestDto requestDto) {
+    String variableFieldLabel = variableTypeToFieldLabel(requestDto.getType());
+    Integer size = Math.min(requestDto.getResultOffset() + requestDto.getNumResults(), MAX_RESPONSE_SIZE_LIMIT);
     TermsAggregationBuilder collectAllVariableValues =
       terms(VALUE_AGGREGATION)
         .field(getNestedVariableValueFieldLabel(variableFieldLabel))
-        .size(10_000)
+        .size(size)
         .order(BucketOrder.key(true));
 
     if (DATE_VARIABLES.equals(variableFieldLabel)) {
       collectAllVariableValues.format(OPTIMIZE_DATE_FORMAT);
     }
     FilterAggregationBuilder filterForVariableWithGivenNameAndPrefix =
-      getVariableValueFilterAggregation(name, variableFieldLabel, valueFilter);
+      getVariableValueFilterAggregation(requestDto.getName(), variableFieldLabel, requestDto.getValueFilter());
     NestedAggregationBuilder checkoutVariables =
       nested(variableFieldLabel, variableFieldLabel);
 

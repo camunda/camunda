@@ -8,7 +8,7 @@ package org.camunda.optimize.dto.optimize.query.variable;
 import lombok.Data;
 
 @Data
-public class VariableRetrievalDto {
+public class VariableNameDto {
 
   protected String name;
   protected VariableType type;

@@ -27,6 +27,8 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.security.AuthCookieService;
@@ -586,17 +588,17 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetVariablesRequest(String key, Object version) {
+  public OptimizeRequestExecutor buildProcessVariableNamesRequest(ProcessVariableNameRequestDto variableRequestDto) {
     this.path = "variables/";
-    this.addSingleQueryParam("processDefinitionKey", key);
-    this.addSingleQueryParam("processDefinitionVersion", version);
-    this.requestType = GET;
+    this.requestType = POST;
+    this.body = getBody(variableRequestDto);
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetVariableValuesRequest() {
+  public OptimizeRequestExecutor buildProcessVariableValuesRequest(ProcessVariableValueRequestDto valueRequestDto) {
     this.path = "variables/values";
-    this.requestType = GET;
+    this.requestType = POST;
+    this.body = getBody(valueRequestDto);
     return this;
   }
 

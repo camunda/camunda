@@ -9,7 +9,6 @@ import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefi
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OffsetResultListDecorator;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OrderByQueryParamResultListDecorator;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OriginalResultList;
@@ -28,7 +27,6 @@ public class QueryParamAdjustmentUtil {
 
   private static final String ORDER_BY = "orderBy";
   private static final Map<String, Comparator> reportComparators = new HashMap<>();
-  private static final Map<String, Comparator> variableComparators = new HashMap<>();
   private static final Map<String, Comparator> collectionComparators = new HashMap<>();
 
   private static final String LAST_MODIFIED = "lastModified";
@@ -43,9 +41,6 @@ public class QueryParamAdjustmentUtil {
     reportComparators.put(
       NAME, Comparator.comparing(ReportDefinitionDto<ReportDataDto>::getName)
     );
-
-    variableComparators.put(NAME, Comparator.comparing(VariableRetrievalDto::getName));
-    variableComparators.put(TYPE, Comparator.comparing(VariableRetrievalDto::getType));
 
     collectionComparators.put(CREATED, Comparator.comparing(ResolvedCollectionDefinitionDto::getCreated).reversed());
     collectionComparators.put(NAME, Comparator.comparing(ResolvedCollectionDefinitionDto::getName));
@@ -111,18 +106,6 @@ public class QueryParamAdjustmentUtil {
         )
       );
     return adjustedResultList.adjustList();
-  }
-
-  public static List<VariableRetrievalDto> adjustVariablesToQueryParameters(
-    List<VariableRetrievalDto> variables,
-    MultivaluedMap<String, String> queryParameters
-  ) {
-    List<String> key = queryParameters.get(ORDER_BY);
-    String queryParam = (key == null || key.isEmpty()) ? NAME : key.get(0);
-
-    Comparator<VariableRetrievalDto> sorting = variableComparators.get(queryParam);
-
-    return adjustResultListAccordingToQueryParameters(variables, queryParameters, sorting, queryParam);
   }
 
   public static List<ResolvedCollectionDefinitionDto> adjustCollectionResultsToQueryParameters(

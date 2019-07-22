@@ -8,7 +8,8 @@ package org.camunda.optimize.plugin.adapter.variable;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableNameDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -74,7 +75,7 @@ public class VariableImportAdapterPluginIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinition);
+    List<VariableNameDto> variablesResponseDtos = getVariables(processDefinition);
 
     //then only half the variables are added to Optimize
     assertThat(variablesResponseDtos.size(), is(2));
@@ -97,7 +98,7 @@ public class VariableImportAdapterPluginIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinition);
+    List<VariableNameDto> variablesResponseDtos = getVariables(processDefinition);
 
     //then only half the variables are added to Optimize
     assertThat(variablesResponseDtos.size(), is(2));
@@ -115,7 +116,7 @@ public class VariableImportAdapterPluginIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinition);
+    List<VariableNameDto> variablesResponseDtos = getVariables(processDefinition);
 
     //then only half the variables are added to Optimize
     assertThat(variablesResponseDtos.size(), is(2));
@@ -133,7 +134,7 @@ public class VariableImportAdapterPluginIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinition);
+    List<VariableNameDto> variablesResponseDtos = getVariables(processDefinition);
 
     //then all the variables are added to Optimize
     assertThat(variablesResponseDtos.size(), is(2));
@@ -151,7 +152,7 @@ public class VariableImportAdapterPluginIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinition);
+    List<VariableNameDto> variablesResponseDtos = getVariables(processDefinition);
 
     //then extra variable is added to Optimize
     assertThat(variablesResponseDtos.size(), is(3));
@@ -168,7 +169,7 @@ public class VariableImportAdapterPluginIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinition);
+    List<VariableNameDto> variablesResponseDtos = getVariables(processDefinition);
 
     //then only half the variables are added to Optimize
     assertThat(variablesResponseDtos.size(), is(1));
@@ -200,7 +201,7 @@ public class VariableImportAdapterPluginIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableRetrievalDto> variablesResponseDtos = getVariables(instanceDto);
+    List<VariableNameDto> variablesResponseDtos = getVariables(instanceDto);
 
     //then only half the variables are added to Optimize
     assertThat(variablesResponseDtos.size(), is(1));
@@ -208,24 +209,24 @@ public class VariableImportAdapterPluginIT {
     assertThat(variablesResponseDtos.get(0).getType(), is(VariableType.STRING));
   }
 
-  private List<VariableRetrievalDto> getVariables(ProcessInstanceEngineDto processDefinition) {
+  private List<VariableNameDto> getVariables(ProcessInstanceEngineDto processDefinition) {
+    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
+    variableRequestDto.setProcessDefinitionKey(processDefinition.getProcessDefinitionKey());
+    variableRequestDto.setProcessDefinitionVersion(processDefinition.getProcessDefinitionVersion());
     return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildGetVariablesRequest(
-        processDefinition.getProcessDefinitionKey(),
-        processDefinition.getProcessDefinitionVersion()
-      )
-      .executeAndReturnList(VariableRetrievalDto.class, 200);
+            .getRequestExecutor()
+            .buildProcessVariableNamesRequest(variableRequestDto)
+            .executeAndReturnList(VariableNameDto.class, 200);
   }
 
   private ProcessInstanceEngineDto deploySimpleServiceTaskWithVariables(Map<String, Object> variables) throws
                                                                                                        Exception {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess" + System.currentTimeMillis())
       .name("aProcessName" + System.currentTimeMillis())
-      .startEvent()
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent()
+        .startEvent()
+        .serviceTask()
+          .camundaExpression("${true}")
+        .endEvent()
       .done();
     ProcessInstanceEngineDto procInstance = engineRule.deployAndStartProcessWithVariables(processModel, variables);
     engineRule.waitForAllProcessesToFinish();

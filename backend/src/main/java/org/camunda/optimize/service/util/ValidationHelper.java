@@ -49,7 +49,7 @@ public class ValidationHelper {
     }
   }
 
-  private static void ensureListNotEmpty(String fieldName, List target) {
+  public static void ensureListNotEmpty(String fieldName, List target) {
     if (target == null || target.isEmpty()) {
       throw new OptimizeValidationException(fieldName + " is not allowed to be empty or null");
     }

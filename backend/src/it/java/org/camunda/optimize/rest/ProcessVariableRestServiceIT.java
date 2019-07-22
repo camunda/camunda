@@ -5,7 +5,9 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableNameDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -20,22 +22,27 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 
-public class VariableRestServiceIT {
+public class ProcessVariableRestServiceIT {
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  private EngineIntegrationRule engineRule = new EngineIntegrationRule();
+  private ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  private EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   @Rule
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
-  public void getVariablesWithoutAuthentication() {
+  public void getVariableNamesWithoutAuthentication() {
+    // given
+    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
+    variableRequestDto.setProcessDefinitionKey("zhoka");
+    variableRequestDto.setProcessDefinitionVersion("boka");
+
     // when
     Response response = embeddedOptimizeRule
             .getRequestExecutor()
-            .buildGetVariablesRequest("zhoka", "boka")
+            .buildProcessVariableNamesRequest(variableRequestDto)
             .withoutAuthentication()
             .execute();
 
@@ -44,14 +51,18 @@ public class VariableRestServiceIT {
   }
 
   @Test
-  public void getVariables() {
+  public void getVariableNames() {
+    // given
+    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
+    variableRequestDto.setProcessDefinitionKey("akey");
+    variableRequestDto.setProcessDefinitionVersion("aVersion");
 
     // when
-    List<VariableRetrievalDto> responseList =
+    List<VariableNameDto> responseList =
         embeddedOptimizeRule
             .getRequestExecutor()
-            .buildGetVariablesRequest("aKey", "aVersion")
-            .executeAndReturnList(VariableRetrievalDto.class, 200);
+            .buildProcessVariableNamesRequest(variableRequestDto)
+            .executeAndReturnList(VariableNameDto.class, 200);
 
     // then the status code is not authorized
     assertThat(responseList.isEmpty(), is(true));
@@ -62,7 +73,7 @@ public class VariableRestServiceIT {
     // when
     Response response = embeddedOptimizeRule
             .getRequestExecutor()
-            .buildGetVariableValuesRequest()
+            .buildProcessVariableValuesRequest(new ProcessVariableValueRequestDto())
             .withoutAuthentication()
             .execute();
 
@@ -72,14 +83,17 @@ public class VariableRestServiceIT {
 
   @Test
   public void getVariableValues() {
+    // given
+    ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
+    requestDto.setProcessDefinitionKey("aKey");
+    requestDto.setProcessDefinitionVersion("aVersion");
+    requestDto.setName("bla");
+    requestDto.setType("Boolean");
+
     // when
     List responseList = embeddedOptimizeRule
             .getRequestExecutor()
-            .buildGetVariableValuesRequest()
-            .addSingleQueryParam("processDefinitionKey", "aKey")
-            .addSingleQueryParam("processDefinitionVersion", "aVersion")
-            .addSingleQueryParam("name", "bla")
-            .addSingleQueryParam("type", "Boolean")
+            .buildProcessVariableValuesRequest(requestDto)
             .executeAndReturnList(String.class, 200);
 
     // then
