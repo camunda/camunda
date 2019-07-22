@@ -15,9 +15,9 @@ pipelineJob('import-performance-large-static-dataset') {
 
     choiceParam('SQL_DUMP', ['optimize_large_data-performance.sqlc', 'optimize_large_data-stage.sqlc'])
     stringParam('EXPECTED_NUMBER_OF_PROCESS_INSTANCES', '10000007', '')
-    stringParam('EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES', '123162903', '')
-    stringParam('EXPECTED_NUMBER_OF_USER_TASKS', '1611181', '')
-    stringParam('EXPECTED_NUMBER_OF_VARIABLES', '108349190', '')
+    stringParam('EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES', '123500119', '')
+    stringParam('EXPECTED_NUMBER_OF_USER_TASKS', '7653359', '')
+    stringParam('EXPECTED_NUMBER_OF_VARIABLES', '108796868', '')
     stringParam('EXPECTED_NUMBER_OF_DECISION_INSTANCES', '2500006', '')
   }
 
