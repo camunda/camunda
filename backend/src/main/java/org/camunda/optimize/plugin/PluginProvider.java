@@ -5,99 +5,89 @@
  */
 package org.camunda.optimize.plugin;
 
+import com.google.common.collect.Iterables;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassGraphException;
+import io.github.classgraph.ClassInfoList;
+import io.github.classgraph.ScanResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.util.ClassUtils;
 
+import javax.annotation.PostConstruct;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 @RequiredArgsConstructor
 @Slf4j
 public abstract class PluginProvider<PluginType> {
 
   protected final ConfigurationService configurationService;
-  private final DefaultListableBeanFactory beanFactory;
+  private final PluginJarFileLoader pluginJarLoader;
 
   private List<PluginType> registeredPlugins = new ArrayList<>();
   private boolean initializedOnce = false;
-  private Set<BeanDefinition> loadedBeans;
 
+  @PostConstruct
   public void initPlugins() {
-    ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
-    // Filter to include only classes that have a particular annotation.
-    provider.addIncludeFilter(new AssignableTypeFilter(getPluginClass()));
-    // Find classes in the given package (or subpackages)
-    List<String> basePackages = getBasePackages();
-    loadedBeans = new HashSet<>();
-    for (String basePackage : basePackages) {
-      loadedBeans.addAll(provider.findCandidateComponents(basePackage));
-    }
-    for (BeanDefinition beanDefinition : loadedBeans) {
-      if (validPlugin(beanDefinition)) {
-        String beanName = fetchName(beanDefinition);
-        if (!beanFactory.isBeanNameInUse(beanName)) {
-          try {
-            beanFactory
-              .registerBeanDefinition(beanName, beanDefinition);
-            //looks for some reason that there might be glitch in classloading without this explicit cast
-            registeredPlugins.add(beanFactory.getBean(beanName, getPluginClass()));
-          } catch (Exception e) {
-            log.debug("Cannot register plugin [{}]", beanName);
-            // if anything went wrong unregister
-            if (beanFactory.isBeanNameInUse(beanName)) {
-              beanFactory.removeBeanDefinition(beanName);
-            }
-          }
-        }
+    for (Path pluginJar : pluginJarLoader.getPluginJars()) {
+      try {
+        final PluginClassLoader pluginClassLoader = new PluginClassLoader(
+          pluginJar.toUri().toURL(),
+          getClass().getClassLoader()
+        );
+        registerPlugins(pluginClassLoader);
+      } catch (IOException e) {
+        log.error("Cannot register plugin [{}]", pluginJar);
       }
     }
+
+    this.initializedOnce = true;
   }
 
-  protected abstract List<String> getBasePackages();
+  private void registerPlugins(final PluginClassLoader pluginClassLoader) {
+
+    try (ScanResult scanResult = new ClassGraph()
+      .enableClassInfo()
+      .overrideClassLoaders(pluginClassLoader)
+      .whitelistPackages(Iterables.toArray(getBasePackages(), String.class))
+      .ignoreParentClassLoaders()
+      .scan()) {
+      final ClassInfoList pluginClasses = scanResult.getClassesImplementing(getPluginClass().getName());
+
+      pluginClasses.loadClasses().forEach(pluginClass -> {
+        try {
+          if (validPluginClass(pluginClass)) {
+            @SuppressWarnings("unchecked")
+            PluginType plugin = (PluginType) pluginClass.newInstance();
+            registeredPlugins.add(plugin);
+          } else {
+            log.error("Plugin class [{}] is not valid because it has no default constructor!", pluginClass.getSimpleName());
+          }
+        } catch (InstantiationException | IllegalAccessException e) {
+          log.error("Cannot register plugin class [{}]", pluginClass.getSimpleName());
+        }
+      });
+    } catch (ClassGraphException e) {
+      log.error("There was an error with ClassGraph scanning a plugin!");
+    }
+  }
 
   protected abstract Class<PluginType> getPluginClass();
 
-  private boolean validPlugin(BeanDefinition beanDefinition) {
-    boolean result = false;
-    try {
-      result = ClassUtils.hasConstructor(this.getClass().getClassLoader()
-                                           .loadClass(beanDefinition.getBeanClassName()));
-    } catch (ClassNotFoundException e) {
-      log.debug("plugin [{}] is not valid", beanDefinition.getBeanClassName());
-    }
+  protected abstract List<String> getBasePackages();
 
-    return result;
-  }
-
-  private String fetchName(BeanDefinition beanDefinition) {
-    String result = null;
-    try {
-      result = ClassUtils.forName(beanDefinition.getBeanClassName(), this.getClass().getClassLoader()).getSimpleName();
-    } catch (ClassNotFoundException e) {
-      log.error("error while loading plugin", e);
-    }
-    if (result == null) {
-      //always works
-      result = beanDefinition.getBeanClassName();
-    }
-    return result;
+  private boolean validPluginClass(Class<?> pluginClass) {
+    return ClassUtils.hasConstructor(pluginClass);
   }
 
   public List<PluginType> getPlugins() {
     if (!initializedOnce) {
       this.initPlugins();
-      this.initializedOnce = true;
     }
-
     return registeredPlugins;
   }
 
@@ -108,30 +98,7 @@ public abstract class PluginProvider<PluginType> {
   public void resetPlugins() {
     if (initializedOnce) {
       this.initializedOnce = false;
-      for (BeanDefinition beanDefinition : loadedBeans) {
-        if (validPlugin(beanDefinition)) {
-          try {
-            String simpleName = fetchName(beanDefinition);
-            ;
-            beanFactory.removeBeanDefinition(simpleName);
-            beanFactory.destroySingleton(simpleName);
-            unregisterPlugin(simpleName);
-          } catch (Exception e) {
-            //nothing to do
-          }
-        }
-      }
+      registeredPlugins.clear();
     }
   }
-
-  private void unregisterPlugin(String simpleName) {
-    Iterator<PluginType> pluginIterator = registeredPlugins.iterator();
-    while (pluginIterator.hasNext()) {
-      PluginType plugin = pluginIterator.next();
-      if (plugin.getClass().getSimpleName().equals(simpleName)) {
-        pluginIterator.remove();
-      }
-    }
-  }
-
 }

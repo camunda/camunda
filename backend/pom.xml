@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -14,8 +15,8 @@
     <jetty.version>9.4.19.v20190610</jetty.version>
     <jersey.version>2.29</jersey.version>
     <skipTests>false</skipTests>
-    <it.test.excludedGroups />
-    <env.LIMITS_CPU />
+    <it.test.excludedGroups/>
+    <env.LIMITS_CPU/>
 
     <skip.unit.tests>${skipTests}</skip.unit.tests>
     <test.argLine>-Xmx2048m</test.argLine>
@@ -228,6 +229,13 @@
       <version>3.6.1</version>
     </dependency>
 
+    <!-- ClassGraph  -->
+    <dependency>
+      <groupId>io.github.classgraph</groupId>
+      <artifactId>classgraph</artifactId>
+      <version>LATEST</version>
+    </dependency>
+
     <!--Test dependencies-->
     <dependency>
       <groupId>pl.pragmatists</groupId>
@@ -365,7 +373,7 @@
                 </filter>
               </filters>
               <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                   <resource>META-INF/spring.handlers</resource>
                 </transformer>
@@ -513,6 +521,18 @@
           <type>war</type>
           <scope>test</scope>
         </dependency>
+        <dependency>
+          <groupId>org.camunda.optimize</groupId>
+          <artifactId>optimize-main-test-plugin</artifactId>
+          <version>${project.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.camunda.optimize</groupId>
+          <artifactId>optimize-pluginloading-test-plugin</artifactId>
+          <version>${project.version}</version>
+          <scope>test</scope>
+        </dependency>
       </dependencies>
 
       <build>
@@ -605,15 +625,15 @@
                 <configuration>
                   <skip>${skip.docker}</skip>
                   <target name="check-cambpm-is-running" description="Check whether CamBPM is running">
-                    <echo message="Check CamBPM Tomcat is running..." />
+                    <echo message="Check CamBPM Tomcat is running..."/>
                     <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                      <socket server="localhost" port="${tomcat.connector.http.port}" />
+                      <socket server="localhost" port="${tomcat.connector.http.port}"/>
                     </waitfor>
-                    <echo message="CamBPM Tomcat socket is open. Checking for manager app to become available..." />
+                    <echo message="CamBPM Tomcat socket is open. Checking for manager app to become available..."/>
                     <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                      <http url="http://admin:admin@localhost:${tomcat.connector.http.port}/manager/text/list" />
+                      <http url="http://admin:admin@localhost:${tomcat.connector.http.port}/manager/text/list"/>
                     </waitfor>
-                    <echo message="CamBPM Tomcat manager app is running." />
+                    <echo message="CamBPM Tomcat manager app is running."/>
                   </target>
                 </configuration>
                 <goals>
@@ -695,6 +715,39 @@
                 </deployable>
               </deployables>
             </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy-valid-test-plugins</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.camunda.optimize</groupId>
+                      <artifactId>optimize-main-test-plugin</artifactId>
+                      <version>${project.version}</version>
+                      <type>jar</type>
+                      <overWrite>true</overWrite>
+                      <outputDirectory>${project.build.directory}/testPluginsValid</outputDirectory>
+                    </artifactItem>
+                    <artifactItem>
+                      <groupId>org.camunda.optimize</groupId>
+                      <artifactId>optimize-pluginloading-test-plugin</artifactId>
+                      <version>${project.version}</version>
+                      <type>jar</type>
+                      <overWrite>true</overWrite>
+                      <outputDirectory>${project.build.directory}/testPluginsValid</outputDirectory>
+                    </artifactItem>
+                  </artifactItems>
+                </configuration>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
         <resources>

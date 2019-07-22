@@ -50,6 +50,7 @@ public class DecisionVariableImportPluginAdapterIT {
     configurationService = embeddedOptimizeRule.getConfigurationService();
     inputPluginProvider = embeddedOptimizeRule.getApplicationContext().getBean(DecisionInputImportAdapterProvider.class);
     outputPluginProvider = embeddedOptimizeRule.getApplicationContext().getBean(DecisionOutputImportAdapterProvider.class);
+    configurationService.setPluginDirectory("target/testPluginsValid");
   }
 
   @After
@@ -66,7 +67,7 @@ public class DecisionVariableImportPluginAdapterIT {
 
   @Test
   public void adaptInputs() {
-    addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.dmn1.DoubleNumericInputValues");
+    addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.dmn1.DoubleNumericInputValues");
     deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
       put("amount", 200);
       put("invoiceCategory", "Misc");
@@ -86,7 +87,7 @@ public class DecisionVariableImportPluginAdapterIT {
 
   @Test
   public void skipInvalidAdaptedInputs() {
-    addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.dmn2.ReturnInvalidInputs");
+    addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.dmn2.ReturnInvalidInputs");
     engineRule.deployAndStartDecisionDefinition();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -100,7 +101,7 @@ public class DecisionVariableImportPluginAdapterIT {
 
   @Test
   public void pluginReturnsMoreInputVariables() {
-    addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.dmn3.ReturnMoreInputVariables");
+    addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.dmn3.ReturnMoreInputVariables");
     engineRule.deployAndStartDecisionDefinition();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -150,8 +151,8 @@ public class DecisionVariableImportPluginAdapterIT {
 
   @Test
   public void applySeveralInputAdapters() {
-    addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.dmn1.DoubleNumericValues",
-                                                       "org.camunda.optimize.plugin.adapter.variable.dmn5.SetAllStringInputsToFoo");
+    addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.dmn1.DoubleNumericValues",
+                                                       "org.camunda.optimize.testplugin.adapter.variable.dmn5.SetAllStringInputsToFoo");
     deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
       put("amount", 300);
       put("invoiceCategory", "notFoo");
@@ -178,7 +179,7 @@ public class DecisionVariableImportPluginAdapterIT {
 
   @Test
   public void adaptOutputs() {
-    addDMNOutputImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.dmn4.AddNewOutput");
+    addDMNOutputImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.dmn4.AddNewOutput");
     deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
       put("amount", 200);
       put("invoiceCategory", "Misc");
@@ -194,8 +195,8 @@ public class DecisionVariableImportPluginAdapterIT {
 
   @Test
   public void adaptingOutputsAndInputsWorksTogether() {
-    addDMNOutputImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.dmn4.AddNewOutput");
-    addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.dmn1.DoubleNumericInputValues");
+    addDMNOutputImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.dmn4.AddNewOutput");
+    addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.dmn1.DoubleNumericInputValues");
     deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
       put("amount", 200);
       put("invoiceCategory", "Misc");
@@ -241,6 +242,7 @@ public class DecisionVariableImportPluginAdapterIT {
       .map(s -> s.replaceFirst("\\.\\w+$", ""))
       .collect(Collectors.toList());
     configurationService.setDecisionInputImportPluginBasePackages(basePackagesList);
+    inputPluginProvider.resetPlugins();
   }
 
   private void addDMNOutputImportPluginBasePackagesToConfiguration(String... basePackages) {
@@ -248,5 +250,6 @@ public class DecisionVariableImportPluginAdapterIT {
       .map(s -> s.replaceFirst("\\.\\w+$", ""))
       .collect(Collectors.toList());
     configurationService.setDecisionOutputImportPluginBasePackages(basePackagesList);
+    outputPluginProvider.resetPlugins();
   }
 }

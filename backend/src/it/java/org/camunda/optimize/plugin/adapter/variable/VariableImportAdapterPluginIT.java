@@ -46,6 +46,7 @@ public class VariableImportAdapterPluginIT {
   public void setup() {
     configurationService = embeddedOptimizeRule.getConfigurationService();
     pluginProvider = embeddedOptimizeRule.getApplicationContext().getBean(ImportAdapterProvider.class);
+    configurationService.setPluginDirectory("target/testPluginsValid");
   }
 
   @After
@@ -56,13 +57,13 @@ public class VariableImportAdapterPluginIT {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
   public void variableImportCanBeAdaptedByPlugin() throws Exception {
     // given
-    addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.util1");
-    pluginProvider.resetPlugins();
+    addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.util1");
+
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
@@ -83,9 +84,9 @@ public class VariableImportAdapterPluginIT {
   public void variableImportCanBeAdaptedBySeveralPlugins() throws Exception {
     // given
     addVariableImportPluginBasePackagesToConfiguration(
-      "org.camunda.optimize.plugin.adapter.variable.util1",
-      "org.camunda.optimize.plugin.adapter.variable.util2");
-    pluginProvider.resetPlugins();
+      "org.camunda.optimize.testplugin.adapter.variable.util1",
+      "org.camunda.optimize.testplugin.adapter.variable.util2"
+    );
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", "bar");
     variables.put("var2", "bar");
@@ -105,8 +106,7 @@ public class VariableImportAdapterPluginIT {
   @Test
   public void adapterWithoutDefaultConstructorIsNotAdded() throws Exception {
     // given
-    addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.error1");
-    pluginProvider.resetPlugins();
+    addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.error1");
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
@@ -125,7 +125,6 @@ public class VariableImportAdapterPluginIT {
   public void notExistingAdapterDoesNotStopImportProcess() throws Exception {
     // given
     addVariableImportPluginBasePackagesToConfiguration("foo.bar");
-    pluginProvider.resetPlugins();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
@@ -141,29 +140,9 @@ public class VariableImportAdapterPluginIT {
   }
 
   @Test
-  public void adapterWithDefaultConstructorThrowingErrorDoesNotStopImportProcess() throws Exception {
-    // given
-    addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.error2");
-    pluginProvider.resetPlugins();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("var1", 1);
-    variables.put("var2", 1);
-    ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinition);
-
-    //then only half the variables are added to Optimize
-    assertThat(variablesResponseDtos.size(), is(2));
-  }
-
-  @Test
   public void adapterCanBeUsedToEnrichVariableImport() throws Exception {
     // given
-    addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.util3");
-    pluginProvider.resetPlugins();
+    addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.util3");
     Map<String, Object> variables = new HashMap<>();
     variables.put("var1", 1);
     variables.put("var2", 1);
@@ -181,8 +160,7 @@ public class VariableImportAdapterPluginIT {
   @Test
   public void invalidPluginVariablesAreNotAddedToVariableImport() throws Exception {
     // given
-    addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.util4");
-    pluginProvider.resetPlugins();
+    addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.util4");
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", 1);
     ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
@@ -200,7 +178,7 @@ public class VariableImportAdapterPluginIT {
   @Test
   public void mapComplexVariableToPrimitiveOne() throws Exception {
     // given
-    addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.plugin.adapter.variable.util5");
+    addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.util5");
 
     Map<String, Object> person = new HashMap<>();
     person.put("name", "Kermit");
@@ -232,18 +210,22 @@ public class VariableImportAdapterPluginIT {
 
   private List<VariableRetrievalDto> getVariables(ProcessInstanceEngineDto processDefinition) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetVariablesRequest(processDefinition.getProcessDefinitionKey(), processDefinition.getProcessDefinitionVersion())
-            .executeAndReturnList(VariableRetrievalDto.class, 200);
+      .getRequestExecutor()
+      .buildGetVariablesRequest(
+        processDefinition.getProcessDefinitionKey(),
+        processDefinition.getProcessDefinitionVersion()
+      )
+      .executeAndReturnList(VariableRetrievalDto.class, 200);
   }
 
-  private ProcessInstanceEngineDto deploySimpleServiceTaskWithVariables(Map<String, Object> variables) throws Exception {
+  private ProcessInstanceEngineDto deploySimpleServiceTaskWithVariables(Map<String, Object> variables) throws
+                                                                                                       Exception {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess" + System.currentTimeMillis())
       .name("aProcessName" + System.currentTimeMillis())
-        .startEvent()
-        .serviceTask()
-          .camundaExpression("${true}")
-        .endEvent()
+      .startEvent()
+      .serviceTask()
+      .camundaExpression("${true}")
+      .endEvent()
       .done();
     ProcessInstanceEngineDto procInstance = engineRule.deployAndStartProcessWithVariables(processModel, variables);
     engineRule.waitForAllProcessesToFinish();
@@ -253,6 +235,7 @@ public class VariableImportAdapterPluginIT {
   private void addVariableImportPluginBasePackagesToConfiguration(String... basePackages) {
     List<String> basePackagesList = Arrays.asList(basePackages);
     configurationService.setVariableImportPluginBasePackages(basePackagesList);
+    pluginProvider.resetPlugins();
   }
 
 }

@@ -7,7 +7,6 @@ package org.camunda.optimize.plugin;
 
 import org.camunda.optimize.plugin.security.authentication.AuthenticationExtractor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -16,8 +15,8 @@ import java.util.List;
 public class AuthenticationExtractorProvider extends PluginProvider<AuthenticationExtractor> {
 
   public AuthenticationExtractorProvider(final ConfigurationService configurationService,
-                                         final DefaultListableBeanFactory beanFactory) {
-    super(configurationService, beanFactory);
+                                         final PluginJarFileLoader pluginJarLoader) {
+    super(configurationService, pluginJarLoader);
   }
 
   @Override

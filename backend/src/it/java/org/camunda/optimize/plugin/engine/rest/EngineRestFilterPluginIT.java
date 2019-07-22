@@ -51,7 +51,7 @@ public class EngineRestFilterPluginIT {
   public void setup() {
     configurationService = embeddedOptimizeRule.getConfigurationService();
     pluginProvider = embeddedOptimizeRule.getApplicationContext().getBean(EngineRestFilterProvider.class);
-    pluginProvider.resetPlugins();
+    configurationService.setPluginDirectory("target/testPluginsValid");
   }
 
   @After
@@ -64,8 +64,9 @@ public class EngineRestFilterPluginIT {
   public void allEventFieldDataOfImportIsAvailableWithCustomAuthentication() throws Exception {
     // given
     configurationService.setEngineRestFilterPluginBasePackages(
-      Collections.singletonList("org.camunda.optimize.plugin.engine.rest")
+      Collections.singletonList("org.camunda.optimize.testplugin.engine.rest")
     );
+    pluginProvider.resetPlugins();
     EngineConfiguration engineConfiguration = embeddedOptimizeRule.getConfigurationService()
       .getConfiguredEngines()
       .get("1");

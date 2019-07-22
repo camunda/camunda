@@ -39,9 +39,8 @@ if [ "$1" == "debug" ]; then
   DEBUG_JAVA_OPTS="-Xdebug -agentlib:jdwp=transport=dt_socket,address=$DEBUG_PORT,server=y,suspend=n"
 fi
 
-# Set up the optimize classpaths, i.e. add the environment folder, all jars in the
-# plugin directory and the optimize jar
-OPTIMIZE_CLASSPATH=$BASEDIR/environment:$BASEDIR/plugin/*:$BASEDIR/optimize-backend-${project.version}.jar
+# Set up the optimize classpaths, i.e. add the environment folder and the optimize jar
+OPTIMIZE_CLASSPATH=$BASEDIR/environment:$BASEDIR/optimize-backend-${project.version}.jar
 
 # forward any set java properties
 for argument in "$@"

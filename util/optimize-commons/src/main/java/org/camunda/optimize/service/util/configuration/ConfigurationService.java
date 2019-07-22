@@ -142,6 +142,7 @@ public class ConfigurationService {
   private List<String> authenticationExtractorPluginBasePackages;
   private List<String> DecisionOutputImportPluginBasePackages;
   private List<String> DecisionInputImportPluginBasePackages;
+  private String pluginDirectory;
 
 
   private String containerHost;
@@ -728,6 +729,14 @@ public class ConfigurationService {
     ensureGreaterThanZero(engineImportIdentityLinkLogsMaxPageSize);
     return engineImportIdentityLinkLogsMaxPageSize;
   }
+
+  public String getPluginDirectory() {
+    if (pluginDirectory == null) {
+      pluginDirectory = configJsonContext.read(ConfigurationServiceConstants.PLUGIN_BASE_DIRECTORY, String.class);
+    }
+    return pluginDirectory;
+  }
+
 
   public List<String> getVariableImportPluginBasePackages() {
     if (variableImportPluginBasePackages == null) {

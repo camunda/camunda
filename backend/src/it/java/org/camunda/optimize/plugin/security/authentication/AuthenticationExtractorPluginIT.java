@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.plugin.security.authentication;
+package org.camunda.optimize.testplugin.security.authentication;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -36,7 +36,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.camunda.optimize.plugin.security.authentication.util1.AutomaticallySignInAuthenticationExtractorPlugin.CUSTOM_AUTH_HEADER;
 import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
@@ -70,6 +69,7 @@ public class AuthenticationExtractorPluginIT {
     pluginProvider =
       embeddedOptimizeRule.getApplicationContext().getBean(AuthenticationExtractorProvider.class);
     createKermitUserAndGrantOptimizeAccess();
+    configurationService.setPluginDirectory("target/testPluginsValid");
   }
 
   @After
@@ -94,7 +94,7 @@ public class AuthenticationExtractorPluginIT {
   @Test
   public void automaticallySignInWhenCustomHeaderIsSet() {
     // given
-    String basePackage = "org.camunda.optimize.plugin.security.authentication.util1";
+    String basePackage = "org.camunda.optimize.testplugin.security.authentication.util1";
     addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
     NewCookie newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
 
@@ -114,13 +114,13 @@ public class AuthenticationExtractorPluginIT {
   public void signInWithCustomHeaderSetApiCall() {
     // given
     deployAndImportTestDefinition();
-    String basePackage = "org.camunda.optimize.plugin.security.authentication.util1";
+    String basePackage = "org.camunda.optimize.testplugin.security.authentication.util1";
     addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
 
     // when
     Response response = embeddedOptimizeRule.getRequestExecutor()
       .buildGetAllAlertsRequest()
-      .addSingleHeader(CUSTOM_AUTH_HEADER, KERMIT_USER)
+      .addSingleHeader("user", KERMIT_USER)
       .withoutAuthentication()
       .execute();
 
@@ -133,7 +133,7 @@ public class AuthenticationExtractorPluginIT {
   public void withoutBasePackageThereIsNotCookieProvided() {
     // when simulate first user request with wrong header
     Response initialOptimizeResponse = embeddedOptimizeRule
-      .rootTarget("/").request().header(CUSTOM_AUTH_HEADER, KERMIT_USER).get();
+      .rootTarget("/").request().header("user", KERMIT_USER).get();
     NewCookie cookieThatWillBeSetInTheBrowser =
       initialOptimizeResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
 
@@ -144,7 +144,7 @@ public class AuthenticationExtractorPluginIT {
   @Test
   public void wrongCustomHeaderDoesNotProvideCookie() {
     // given
-    String basePackage = "org.camunda.optimize.plugin.security.authentication.util1";
+    String basePackage = "org.camunda.optimize.testplugin.security.authentication.util1";
     addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
 
     // when simulate first user request with wrong header
@@ -160,7 +160,7 @@ public class AuthenticationExtractorPluginIT {
   @Test
   public void deleteCookieOnSignOut() {
     // given
-    String basePackage = "org.camunda.optimize.plugin.security.authentication.util1";
+    String basePackage = "org.camunda.optimize.testplugin.security.authentication.util1";
     addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
     NewCookie newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
 
@@ -179,7 +179,7 @@ public class AuthenticationExtractorPluginIT {
   @Test
   public void deleteCookieOn401Response() {
     // given
-    String basePackage = "org.camunda.optimize.plugin.security.authentication.util1";
+    String basePackage = "org.camunda.optimize.testplugin.security.authentication.util1";
     addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
 
     NewCookie newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
@@ -199,7 +199,7 @@ public class AuthenticationExtractorPluginIT {
   public void onSessionTimeoutTheSessionIsRenewed() {
     // given
     deployAndImportTestDefinition();
-    String basePackage = "org.camunda.optimize.plugin.security.authentication.util1";
+    String basePackage = "org.camunda.optimize.testplugin.security.authentication.util1";
     addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
     NewCookie newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
 
@@ -270,7 +270,7 @@ public class AuthenticationExtractorPluginIT {
 
   private NewCookie simulateSingleSignOnAuthHeaderRequestAndReturnCookies(String headerValue) {
     Response initialOptimizeResponse = embeddedOptimizeRule
-      .rootTarget("/").request().header(CUSTOM_AUTH_HEADER, headerValue).get();
+      .rootTarget("/").request().header("user", headerValue).get();
 
     NewCookie cookieThatWillBeSetInTheBrowser =
       initialOptimizeResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);

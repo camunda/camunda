@@ -234,6 +234,8 @@ es:
       refresh_interval: 2s
 
 plugin:
+  # Defines the directory path in the local Optimize file system which should be checked for plugins
+  directory: './plugin'
   variableImport:
     #Look in the given base package list for variable import adaption plugins.
     #If empty, the import is not influenced.
