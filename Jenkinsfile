@@ -402,7 +402,7 @@ pipeline {
           steps {
             retry(2) {
               container('maven') {
-                runMaven('deploy -Dskip.fe.build -DskipTests -Dskip.docker -pl distro -am')
+                runMaven('deploy -Dskip.fe.build -DskipTests -Dskip.docker')
               }
             }
           }
