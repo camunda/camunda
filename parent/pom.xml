@@ -43,7 +43,7 @@
     <version.commons-lang>3.9</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
-    <version.commons-codec>1.12</version.commons-codec>
+    <version.commons-codec>1.13</version.commons-codec>
     <version.elasticsearch>6.8.1</version.elasticsearch>
     <version.embedded-elasticsearch>2.10.0</version.embedded-elasticsearch>
     <version.error-prone>2.3.3</version.error-prone>
