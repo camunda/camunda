@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
@@ -37,6 +38,7 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -48,6 +50,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByVariable;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.hamcrest.CoreMatchers.is;
@@ -243,6 +246,45 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       );
     });
   }
+
+  @Test
+  public void dateVariablesAreSortedDescByDefault() {
+    // given
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("dateVar", OffsetDateTime.now());
+
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+
+    variables = Collections.singletonMap("dateVar", OffsetDateTime.now().minusDays(2));
+    engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+
+    variables = Collections.singletonMap("dateVar", OffsetDateTime.now().minusDays(1));
+    engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
+      processInstanceDto.getProcessDefinitionKey(),
+      Collections.singletonList(processInstanceDto.getProcessDefinitionVersion()),
+      "dateVar",
+      VariableType.DATE
+    );
+    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> response = evaluateCountMapReport(
+      reportData);
+
+    // then
+    final List<MapResultEntryDto<Long>> resultData = response.getResult().getData();
+    final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
+    assertThat(
+      resultKeys,
+      // expect ascending order
+      contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
+    );
+  }
+
+
 
   @Test
   public void otherProcessDefinitionsDoNoAffectResult() throws SQLException {

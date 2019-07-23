@@ -10,6 +10,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Varia
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
@@ -30,6 +32,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.es.report.command.process.util.GroupByDateVariableIntervalSelection.createDateVariableAggregation;
 import static org.camunda.optimize.service.es.report.command.util.IntervalAggregationService.RANGE_AGGREGATION;
@@ -60,7 +63,7 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
 
     BoolQueryBuilder query = setupBaseQuery(processReportData);
 
-    VariableGroupByValueDto groupByVariable = ((VariableGroupByDto) processReportData.getGroupBy()).getValue();
+    VariableGroupByValueDto groupByVariable = getVariableGroupByDto();
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
@@ -89,11 +92,23 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
 
   }
 
+  private VariableGroupByValueDto getVariableGroupByDto() {
+    final ProcessReportDataDto processReportData = getReportData();
+    return ((VariableGroupByDto) processReportData.getGroupBy()).getValue();
+  }
+
   @Override
   protected void sortResultData(final SingleProcessMapReportResult evaluationResult) {
-    ((ProcessReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
-      sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
-    );
+    final Optional<SortingDto> sortingOpt = ((ProcessReportDataDto) getReportData()).getParameters().getSorting();
+    if (sortingOpt.isPresent()) {
+      MapResultSortingUtility.sortResultData(sortingOpt.get(), evaluationResult);
+
+    } else if (VariableType.DATE.equals(getVariableGroupByDto().getType())) {
+      MapResultSortingUtility.sortResultData(
+        new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC),
+        evaluationResult
+      );
+    }
   }
 
   private AggregationBuilder createAggregation(String variableName, VariableType variableType) {
