@@ -39,8 +39,8 @@ public class ServiceGroup {
   public void removeReference(ServiceGroupReference<?> reference) {
     final Iterator<ServiceGroupReferenceImpl> iterator = references.iterator();
 
-    while (iterator.hasNext()) // could be more efficient with further indexing
-    {
+    // could be more efficient with further indexing
+    while (iterator.hasNext()) {
       final ServiceGroupReferenceImpl serviceGroupReferenceImpl = iterator.next();
       if (serviceGroupReferenceImpl.injector == reference) {
         serviceGroupReferenceImpl.uninject();

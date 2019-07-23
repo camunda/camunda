@@ -48,6 +48,10 @@ public class LaneImpl extends BaseElementImpl implements Lane {
   protected static ElementReferenceCollection<FlowNode, FlowNodeRef> flowNodeRefCollection;
   protected static ChildElement<ChildLaneSet> childLaneSetChild;
 
+  public LaneImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -83,10 +87,6 @@ public class LaneImpl extends BaseElementImpl implements Lane {
     childLaneSetChild = sequenceBuilder.element(ChildLaneSet.class).build();
 
     typeBuilder.build();
-  }
-
-  public LaneImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

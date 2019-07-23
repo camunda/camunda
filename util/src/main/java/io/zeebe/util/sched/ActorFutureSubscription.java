@@ -12,8 +12,8 @@ import io.zeebe.util.sched.future.ActorFuture;
 
 public class ActorFutureSubscription implements ActorSubscription {
   private final ActorJob callbackJob;
-  private ActorFuture<?> future;
   private final int phaseMask;
+  private ActorFuture<?> future;
 
   public ActorFutureSubscription(ActorFuture<?> future, ActorJob callbackJob, int phaseMask) {
     this.future = future;

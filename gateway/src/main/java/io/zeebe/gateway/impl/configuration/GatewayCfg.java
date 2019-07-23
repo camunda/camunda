@@ -81,6 +81,11 @@ public class GatewayCfg {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(network, cluster, threads, monitoring, security);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -94,11 +99,6 @@ public class GatewayCfg {
         && Objects.equals(threads, that.threads)
         && Objects.equals(monitoring, that.monitoring)
         && Objects.equals(security, that.security);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(network, cluster, threads, monitoring, security);
   }
 
   @Override

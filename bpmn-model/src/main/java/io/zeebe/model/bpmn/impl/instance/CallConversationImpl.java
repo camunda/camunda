@@ -43,6 +43,10 @@ public class CallConversationImpl extends ConversationNodeImpl implements CallCo
   protected static AttributeReference<GlobalConversation> calledCollaborationRefAttribute;
   protected static ChildElementCollection<ParticipantAssociation> participantAssociationCollection;
 
+  public CallConversationImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -69,10 +73,6 @@ public class CallConversationImpl extends ConversationNodeImpl implements CallCo
         sequenceBuilder.elementCollection(ParticipantAssociation.class).build();
 
     typeBuilder.build();
-  }
-
-  public CallConversationImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

@@ -37,27 +37,23 @@ import org.junit.Test;
 public class MappingIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-
-  @Rule
-  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
-
   private static final BpmnModelInstance WORKFLOW_INPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
           .startEvent()
           .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeInput("foo", "foo"))
           .done();
-
   private static final BpmnModelInstance WORKFLOW_OUTPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
           .startEvent()
           .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeOutput("foo", "foo"))
           .done();
-
   private static final Map<String, Object> VARIABLES = Maps.of(entry("foo", "bar"));
-
   private static final String VARIABLES_JSON =
       "{'string':'value', 'jsonObject':{'testAttr':'test'}}";
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Test
   public void shouldCreateIncidentForInputMappingFailure() {

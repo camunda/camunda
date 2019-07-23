@@ -64,12 +64,11 @@ public class CommandApiRule extends ExternalResource {
   protected final int nodeId;
   protected final Supplier<AtomixCluster> atomixSupplier;
   protected final int partitionCount;
-  protected int nextPartitionId = 0;
-  protected MsgPackHelper msgPackHelper;
-
   private final Int2ObjectHashMap<PartitionTestClient> testPartitionClients =
       new Int2ObjectHashMap<>();
   private final ControlledActorClock controlledActorClock = new ControlledActorClock();
+  protected int nextPartitionId = 0;
+  protected MsgPackHelper msgPackHelper;
   protected ClientTransport transport;
   protected int defaultPartitionId = -1;
   private AtomixCluster atomix;
@@ -115,6 +114,17 @@ public class CommandApiRule extends ExternalResource {
     defaultPartitionId = partitionIds.get(0);
   }
 
+  @Override
+  protected void after() {
+    if (transport != null) {
+      transport.close();
+    }
+
+    if (scheduler != null) {
+      scheduler.stop();
+    }
+  }
+
   public void restart() {
     fetchAtomix();
   }
@@ -126,17 +136,6 @@ public class CommandApiRule extends ExternalResource {
 
   private void waitForTopology() {
     waitUntil(() -> getBrokerInfoStream().count() > 0);
-  }
-
-  @Override
-  protected void after() {
-    if (transport != null) {
-      transport.close();
-    }
-
-    if (scheduler != null) {
-      scheduler.stop();
-    }
   }
 
   /** targets the default partition by default */

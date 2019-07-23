@@ -47,6 +47,10 @@ public class MessageFlowImpl extends BaseElementImpl implements MessageFlow {
   protected static AttributeReference<InteractionNode> targetRefAttribute;
   protected static AttributeReference<Message> messageRefAttribute;
 
+  public MessageFlowImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -84,10 +88,6 @@ public class MessageFlowImpl extends BaseElementImpl implements MessageFlow {
             .build();
 
     typeBuilder.build();
-  }
-
-  public MessageFlowImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

@@ -25,16 +25,13 @@ public class LogStorageAppender extends Actor {
   private final AtomicBoolean isFailed = new AtomicBoolean(false);
 
   private final BlockPeek blockPeek = new BlockPeek();
-  private byte[] bytesToAppend;
-  private long commitPosition;
-
   private final String name;
   private final Subscription writeBufferSubscription;
-
-  private final Runnable peekedBlockHandler = this::appendBlock;
   private final int maxAppendBlockSize;
-
   private final DistributedLogstreamPartition distributedLog;
+  private byte[] bytesToAppend;
+  private long commitPosition;
+  private final Runnable peekedBlockHandler = this::appendBlock;
 
   public LogStorageAppender(
       String name,

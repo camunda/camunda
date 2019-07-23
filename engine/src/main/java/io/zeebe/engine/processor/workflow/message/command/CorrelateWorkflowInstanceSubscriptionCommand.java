@@ -21,14 +21,12 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
       new CorrelateWorkflowInstanceSubscriptionEncoder();
   private final CorrelateWorkflowInstanceSubscriptionDecoder decoder =
       new CorrelateWorkflowInstanceSubscriptionDecoder();
-
+  private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer variables = new UnsafeBuffer(0, 0);
   private int subscriptionPartitionId;
   private long workflowInstanceKey;
   private long elementInstanceKey;
   private long messageKey;
-
-  private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
-  private final UnsafeBuffer variables = new UnsafeBuffer(0, 0);
 
   @Override
   protected CorrelateWorkflowInstanceSubscriptionEncoder getBodyEncoder() {
@@ -38,6 +36,19 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
   @Override
   protected CorrelateWorkflowInstanceSubscriptionDecoder getBodyDecoder() {
     return decoder;
+  }
+
+  @Override
+  public void reset() {
+    subscriptionPartitionId =
+        CorrelateWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue();
+    workflowInstanceKey =
+        CorrelateWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue();
+    elementInstanceKey = CorrelateWorkflowInstanceSubscriptionDecoder.elementInstanceKeyNullValue();
+    messageKey = CorrelateWorkflowInstanceSubscriptionDecoder.messageKeyNullValue();
+
+    messageName.wrap(0, 0);
+    variables.wrap(0, 0);
   }
 
   @Override
@@ -84,19 +95,6 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     variables.wrap(buffer, offset, variablesLength);
     offset += variablesLength;
     decoder.limit(offset);
-  }
-
-  @Override
-  public void reset() {
-    subscriptionPartitionId =
-        CorrelateWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue();
-    workflowInstanceKey =
-        CorrelateWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue();
-    elementInstanceKey = CorrelateWorkflowInstanceSubscriptionDecoder.elementInstanceKeyNullValue();
-    messageKey = CorrelateWorkflowInstanceSubscriptionDecoder.messageKeyNullValue();
-
-    messageName.wrap(0, 0);
-    variables.wrap(0, 0);
   }
 
   public int getSubscriptionPartitionId() {

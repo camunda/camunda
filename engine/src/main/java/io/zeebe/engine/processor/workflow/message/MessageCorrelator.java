@@ -25,6 +25,10 @@ public class MessageCorrelator {
   private final MessageState messageState;
   private final MessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
+  private Consumer<SideEffectProducer> sideEffect;
+  private MessageSubscriptionRecord subscriptionRecord;
+  private MessageSubscription subscription;
+  private long messageKey;
 
   public MessageCorrelator(
       MessageState messageState,
@@ -34,11 +38,6 @@ public class MessageCorrelator {
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
   }
-
-  private Consumer<SideEffectProducer> sideEffect;
-  private MessageSubscriptionRecord subscriptionRecord;
-  private MessageSubscription subscription;
-  private long messageKey;
 
   public void correlateNextMessage(
       MessageSubscription subscription,

@@ -43,6 +43,10 @@ public class ServiceTaskImpl extends TaskImpl implements ServiceTask {
   protected static Attribute<String> implementationAttribute;
   protected static AttributeReference<Operation> operationRefAttribute;
 
+  public ServiceTaskImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -70,10 +74,6 @@ public class ServiceTaskImpl extends TaskImpl implements ServiceTask {
             .build();
 
     typeBuilder.build();
-  }
-
-  public ServiceTaskImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

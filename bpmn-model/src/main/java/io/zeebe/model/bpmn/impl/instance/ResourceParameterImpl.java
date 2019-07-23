@@ -43,6 +43,10 @@ public class ResourceParameterImpl extends BaseElementImpl implements ResourcePa
   protected static AttributeReference<ItemDefinition> typeAttribute;
   protected static Attribute<Boolean> isRequiredAttribute;
 
+  public ResourceParameterImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -68,10 +72,6 @@ public class ResourceParameterImpl extends BaseElementImpl implements ResourcePa
     isRequiredAttribute = typeBuilder.booleanAttribute(BPMN_ATTRIBUTE_IS_REQUIRED).build();
 
     typeBuilder.build();
-  }
-
-  public ResourceParameterImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

@@ -36,12 +36,6 @@ public class ClientConductor extends Conductor {
     actor.pollBlocking(connectTransportPoller::pollBlocking, connectTransportPoller::processKeys);
   }
 
-  @Override
-  protected void onActorClosing() {
-    connectTransportPoller.close();
-    super.onActorClosing();
-  }
-
   public void openChannel(RemoteAddressImpl address, int connectAttempt) {
     final TransportChannel channel =
         channelFactory.buildClientChannel(
@@ -76,6 +70,12 @@ public class ClientConductor extends Conductor {
 
           super.onChannelClosed(channel, wasConnected);
         });
+  }
+
+  @Override
+  protected void onActorClosing() {
+    connectTransportPoller.close();
+    super.onActorClosing();
   }
 
   private void onRemoteAddressAdded(RemoteAddressImpl remoteAddress) {

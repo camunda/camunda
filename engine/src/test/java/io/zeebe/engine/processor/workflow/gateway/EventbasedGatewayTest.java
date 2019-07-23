@@ -36,6 +36,7 @@ import org.junit.Test;
 
 public class EventbasedGatewayTest {
 
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final BpmnModelInstance WORKFLOW_WITH_TIMERS =
       Bpmn.createExecutableProcess("WORKFLOW_WITH_TIMERS")
           .startEvent("start")
@@ -49,7 +50,6 @@ public class EventbasedGatewayTest {
           .sequenceFlowId("to-end2")
           .endEvent("end2")
           .done();
-
   private static final BpmnModelInstance WORKFLOW_WITH_EQUAL_TIMERS =
       Bpmn.createExecutableProcess("WORKFLOW_WITH_EQUAL_TIMERS")
           .startEvent("start")
@@ -63,7 +63,6 @@ public class EventbasedGatewayTest {
           .sequenceFlowId("to-end2")
           .endEvent("end2")
           .done();
-
   private static final BpmnModelInstance WORKFLOW_WITH_MESSAGES =
       Bpmn.createExecutableProcess("WORKFLOW_WITH_MESSAGES")
           .startEvent("start")
@@ -79,7 +78,6 @@ public class EventbasedGatewayTest {
           .sequenceFlowId("to-end2")
           .endEvent("end2")
           .done();
-
   private static final BpmnModelInstance WORKFLOW_WITH_TIMER_AND_MESSAGE =
       Bpmn.createExecutableProcess("WORKFLOW_WITH_TIMER_AND_MESSAGE")
           .startEvent("start")
@@ -94,8 +92,6 @@ public class EventbasedGatewayTest {
           .sequenceFlowId("to-end2")
           .endEvent("end2")
           .done();
-
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

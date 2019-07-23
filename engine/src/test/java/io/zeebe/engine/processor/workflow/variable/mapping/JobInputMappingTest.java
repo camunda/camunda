@@ -30,9 +30,8 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class JobInputMappingTest {
 
-  private static final String PROCESS_ID = "process";
-
   @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
+  private static final String PROCESS_ID = "process";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

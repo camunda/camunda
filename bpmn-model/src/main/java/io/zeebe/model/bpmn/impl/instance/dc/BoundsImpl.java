@@ -43,6 +43,10 @@ public class BoundsImpl extends BpmnModelElementInstanceImpl implements Bounds {
   protected static Attribute<Double> widthAttribute;
   protected static Attribute<Double> heightAttribute;
 
+  public BoundsImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -65,10 +69,6 @@ public class BoundsImpl extends BpmnModelElementInstanceImpl implements Bounds {
     heightAttribute = typeBuilder.doubleAttribute(DC_ATTRIBUTE_HEIGHT).required().build();
 
     typeBuilder.build();
-  }
-
-  public BoundsImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

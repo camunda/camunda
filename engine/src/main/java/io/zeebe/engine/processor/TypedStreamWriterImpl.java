@@ -22,25 +22,6 @@ public class TypedStreamWriterImpl extends TypedCommandWriterImpl implements Typ
   }
 
   @Override
-  public void appendNewEvent(final long key, final Intent intent, final UnpackedObject value) {
-    appendRecord(key, RecordType.EVENT, intent, value, noop);
-  }
-
-  @Override
-  public void appendFollowUpEvent(final long key, final Intent intent, final UnpackedObject value) {
-    appendRecord(key, RecordType.EVENT, intent, value, noop);
-  }
-
-  @Override
-  public void appendFollowUpEvent(
-      final long key,
-      final Intent intent,
-      final UnpackedObject value,
-      final Consumer<RecordMetadata> metadata) {
-    appendRecord(key, RecordType.EVENT, intent, value, metadata);
-  }
-
-  @Override
   public void appendRejection(
       final TypedRecord<? extends UnpackedObject> command,
       final RejectionType rejectionType,
@@ -69,5 +50,24 @@ public class TypedStreamWriterImpl extends TypedCommandWriterImpl implements Typ
         reason,
         command.getValue(),
         metadata);
+  }
+
+  @Override
+  public void appendNewEvent(final long key, final Intent intent, final UnpackedObject value) {
+    appendRecord(key, RecordType.EVENT, intent, value, noop);
+  }
+
+  @Override
+  public void appendFollowUpEvent(final long key, final Intent intent, final UnpackedObject value) {
+    appendRecord(key, RecordType.EVENT, intent, value, noop);
+  }
+
+  @Override
+  public void appendFollowUpEvent(
+      final long key,
+      final Intent intent,
+      final UnpackedObject value,
+      final Consumer<RecordMetadata> metadata) {
+    appendRecord(key, RecordType.EVENT, intent, value, metadata);
   }
 }

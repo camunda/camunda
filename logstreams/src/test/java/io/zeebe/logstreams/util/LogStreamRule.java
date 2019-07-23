@@ -36,16 +36,12 @@ import org.mockito.stubbing.Answer;
 
 public class LogStreamRule extends ExternalResource {
   private final TemporaryFolder temporaryFolder;
-
+  private final ControlledActorClock clock = new ControlledActorClock();
+  private final Consumer<LogStreamBuilder> streamBuilder;
   private ActorScheduler actorScheduler;
   private ServiceContainer serviceContainer;
   private LogStream logStream;
   private DistributedLogstreamService distributedLogImpl;
-
-  private final ControlledActorClock clock = new ControlledActorClock();
-
-  private final Consumer<LogStreamBuilder> streamBuilder;
-
   private LogStreamBuilder builder;
   private ActorSchedulerRule actorSchedulerRule;
 
@@ -66,6 +62,13 @@ public class LogStreamRule extends ExternalResource {
     startLogStream();
   }
 
+  @Override
+  protected void after() {
+    stopLogStream();
+
+    actorSchedulerRule.after();
+  }
+
   public void startLogStream() {
     actorScheduler = actorSchedulerRule.get();
 
@@ -81,13 +84,6 @@ public class LogStreamRule extends ExternalResource {
     streamBuilder.accept(builder);
 
     openLogStream();
-  }
-
-  @Override
-  protected void after() {
-    stopLogStream();
-
-    actorSchedulerRule.after();
   }
 
   public void stopLogStream() {
@@ -161,12 +157,12 @@ public class LogStreamRule extends ExternalResource {
     return logStream;
   }
 
-  public void setCommitPosition(final long position) {
-    logStream.setCommitPosition(position);
-  }
-
   public long getCommitPosition() {
     return logStream.getCommitPosition();
+  }
+
+  public void setCommitPosition(final long position) {
+    logStream.setCommitPosition(position);
   }
 
   public ControlledActorClock getClock() {

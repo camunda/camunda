@@ -37,6 +37,10 @@ public abstract class ItemAwareElementImpl extends BaseElementImpl implements It
   protected static AttributeReference<ItemDefinition> itemSubjectRefAttribute;
   protected static ChildElement<DataState> dataStateChild;
 
+  public ItemAwareElementImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -56,10 +60,6 @@ public abstract class ItemAwareElementImpl extends BaseElementImpl implements It
     dataStateChild = sequenceBuilder.element(DataState.class).build();
 
     typeBuilder.build();
-  }
-
-  public ItemAwareElementImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

@@ -86,8 +86,8 @@ public class StringValue extends BaseValue {
   }
 
   @Override
-  public String toString() {
-    return bytes.getStringWithoutLengthUtf8(0, length);
+  public void write(MsgPackWriter writer) {
+    writer.writeString(bytes);
   }
 
   @Override
@@ -102,13 +102,18 @@ public class StringValue extends BaseValue {
   }
 
   @Override
-  public void write(MsgPackWriter writer) {
-    writer.writeString(bytes);
+  public int getEncodedLength() {
+    return MsgPackWriter.getEncodedStringLength(length);
   }
 
   @Override
-  public int getEncodedLength() {
-    return MsgPackWriter.getEncodedStringLength(length);
+  public String toString() {
+    return bytes.getStringWithoutLengthUtf8(0, length);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(bytes, getLength());
   }
 
   @Override
@@ -123,10 +128,5 @@ public class StringValue extends BaseValue {
 
     final StringValue that = (StringValue) o;
     return getLength() == that.getLength() && Objects.equals(bytes, that.bytes);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(bytes, getLength());
   }
 }

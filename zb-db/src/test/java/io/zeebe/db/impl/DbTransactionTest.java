@@ -25,11 +25,9 @@ import org.junit.rules.TemporaryFolder;
 
 public class DbTransactionTest {
 
-  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
   private final ZeebeDbFactory<ColumnFamilies> dbFactory =
       DefaultZeebeDbFactory.getDefaultFactory(ColumnFamilies.class);
-
+  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private DbContext dbContext;
 
   private ColumnFamily<DbLong, DbLong> oneColumnFamily;
@@ -42,13 +40,6 @@ public class DbTransactionTest {
   private DbLong twoKey;
   private DbLong threeKey;
   private DbLong threeValue;
-
-  private enum ColumnFamilies {
-    DEFAULT, // rocksDB needs a default column family
-    ONE,
-    TWO,
-    THREE
-  }
 
   @Before
   public void setup() throws Exception {
@@ -462,5 +453,12 @@ public class DbTransactionTest {
     assertThat(oneColumnFamily.exists(oneKey)).isFalse();
     assertThat(twoColumnFamily.exists(twoKey)).isTrue();
     assertThat(threeColumnFamily.exists(threeKey)).isFalse();
+  }
+
+  private enum ColumnFamilies {
+    DEFAULT, // rocksDB needs a default column family
+    ONE,
+    TWO,
+    THREE
   }
 }

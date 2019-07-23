@@ -44,6 +44,10 @@ public class ComplexGatewayImpl extends GatewayImpl implements ComplexGateway {
   protected static AttributeReference<SequenceFlow> defaultAttribute;
   protected static ChildElement<ActivationCondition> activationConditionChild;
 
+  public ComplexGatewayImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -69,10 +73,6 @@ public class ComplexGatewayImpl extends GatewayImpl implements ComplexGateway {
     activationConditionChild = sequenceBuilder.element(ActivationCondition.class).build();
 
     typeBuilder.build();
-  }
-
-  public ComplexGatewayImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

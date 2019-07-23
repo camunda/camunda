@@ -83,11 +83,6 @@ public class PartitionInstallService extends Actor
   }
 
   @Override
-  public Void get() {
-    return null;
-  }
-
-  @Override
   public void start(final ServiceStartContext startContext) {
     this.startContext = startContext;
 
@@ -129,6 +124,11 @@ public class PartitionInstallService extends Actor
   }
 
   @Override
+  public Void get() {
+    return null;
+  }
+
+  @Override
   protected void onActorStarted() {
     actor.runOnCompletion(
         leaderElectionInstallFuture,
@@ -138,23 +138,6 @@ public class PartitionInstallService extends Actor
           } else {
             LOG.error("Could not install leader election for partition {}", partitionId, e);
           }
-        });
-  }
-
-  @Override
-  public void onTransitionToLeader(int partitionId, long term) {
-    actor.call(
-        () -> {
-          final CompletableActorFuture<Void> nextTransitionFuture = new CompletableActorFuture<>();
-          if (transitionFuture != null && !transitionFuture.isDone()) {
-            // wait until previous transition is complete
-            actor.runOnCompletion(
-                transitionFuture, (r, e) -> transitionToLeader(nextTransitionFuture, term));
-
-          } else {
-            transitionToLeader(nextTransitionFuture, term);
-          }
-          transitionFuture = nextTransitionFuture;
         });
   }
 
@@ -178,6 +161,23 @@ public class PartitionInstallService extends Actor
 
           } else {
             transitionToFollower(nextTransitionFuture);
+          }
+          transitionFuture = nextTransitionFuture;
+        });
+  }
+
+  @Override
+  public void onTransitionToLeader(int partitionId, long term) {
+    actor.call(
+        () -> {
+          final CompletableActorFuture<Void> nextTransitionFuture = new CompletableActorFuture<>();
+          if (transitionFuture != null && !transitionFuture.isDone()) {
+            // wait until previous transition is complete
+            actor.runOnCompletion(
+                transitionFuture, (r, e) -> transitionToLeader(nextTransitionFuture, term));
+
+          } else {
+            transitionToLeader(nextTransitionFuture, term);
           }
           transitionFuture = nextTransitionFuture;
         });

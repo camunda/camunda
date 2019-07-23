@@ -38,24 +38,22 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class MessageMappingTest {
 
+  @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
   private static final String MESSAGE_NAME = "message";
   private static final String CORRELATION_VARIABLE = "key";
-
   private static final BpmnModelInstance CATCH_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("catch")
           .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
           .done();
-
   private static final BpmnModelInstance RECEIVE_TASK_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .receiveTask("catch")
           .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
           .done();
-
   private static final BpmnModelInstance INTERRUPTING_BOUNDARY_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
@@ -64,7 +62,6 @@ public class MessageMappingTest {
           .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
           .endEvent()
           .done();
-
   private static final BpmnModelInstance NON_INTERRUPTING_BOUNDARY_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
@@ -73,7 +70,6 @@ public class MessageMappingTest {
           .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
           .endEvent()
           .done();
-
   private static final BpmnModelInstance EVENT_BASED_GATEWAY_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent("start")
@@ -90,11 +86,17 @@ public class MessageMappingTest {
           .endEvent("end2")
           .done();
 
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
+
   @Parameter(0)
   public String elementType;
 
   @Parameter(1)
   public BpmnModelInstance workflow;
+
+  private String correlationKey;
 
   @Parameters(name = "{0}")
   public static Object[][] parameters() {
@@ -106,14 +108,6 @@ public class MessageMappingTest {
       {"non-interrupting boundary event", NON_INTERRUPTING_BOUNDARY_EVENT_WORKFLOW},
     };
   }
-
-  @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
-
-  @Rule
-  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
-
-  private String correlationKey;
 
   @Before
   public void setUp() {

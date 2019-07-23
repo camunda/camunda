@@ -80,6 +80,11 @@ public class EnumValue<E extends Enum<E>> extends BaseValue {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(getValue());
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -91,10 +96,5 @@ public class EnumValue<E extends Enum<E>> extends BaseValue {
 
     final EnumValue<?> enumValue = (EnumValue<?>) o;
     return Objects.equals(getValue(), enumValue.getValue());
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(getValue());
   }
 }

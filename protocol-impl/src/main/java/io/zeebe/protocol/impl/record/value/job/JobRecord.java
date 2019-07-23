@@ -26,15 +26,13 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
+  public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
   private static final String EMPTY_STRING = "";
   private static final String RETRIES = "retries";
   private static final String TYPE = "type";
   private static final String CUSTOM_HEADERS = "customHeaders";
   private static final String VARIABLES = "variables";
   private static final String ERROR_MESSAGE = "errorMessage";
-
-  public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
-
   private final LongProperty deadlineProp = new LongProperty("deadline", -1);
   private final StringProperty workerProp = new StringProperty("worker", EMPTY_STRING);
   private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
@@ -79,11 +77,6 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
     return customHeadersProp.getValue();
   }
 
-  @Override
-  public long getDeadline() {
-    return deadlineProp.getValue();
-  }
-
   @JsonIgnore
   public DirectBuffer getErrorMessageBuffer() {
     return errorMessageProp.getValue();
@@ -110,33 +103,13 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
   }
 
   @Override
-  public String getErrorMessage() {
-    return BufferUtil.bufferAsString(errorMessageProp.getValue());
-  }
-
-  @JsonIgnore
-  public DirectBuffer getTypeBuffer() {
-    return typeProp.getValue();
+  public long getDeadline() {
+    return deadlineProp.getValue();
   }
 
   @Override
-  public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variableProp.getValue());
-  }
-
-  @JsonIgnore
-  public DirectBuffer getVariablesBuffer() {
-    return variableProp.getValue();
-  }
-
-  @JsonIgnore
-  public DirectBuffer getWorkerBuffer() {
-    return workerProp.getValue();
-  }
-
-  @JsonIgnore
-  public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProp.getValue();
+  public String getErrorMessage() {
+    return BufferUtil.bufferAsString(errorMessageProp.getValue());
   }
 
   @Override
@@ -160,18 +133,18 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
   }
 
   @Override
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProp.getValue();
-  }
-
-  @Override
   public long getWorkflowKey() {
     return workflowKeyProp.getValue();
   }
 
-  @JsonIgnore
-  public DirectBuffer getElementIdBuffer() {
-    return elementIdProp.getValue();
+  public JobRecord setWorkflowKey(long workflowKey) {
+    this.workflowKeyProp.setValue(workflowKey);
+    return this;
+  }
+
+  public JobRecord setWorkflowDefinitionVersion(int version) {
+    this.workflowDefinitionVersionProp.setValue(version);
+    return this;
   }
 
   public JobRecord setBpmnProcessId(String bpmnProcessId) {
@@ -184,6 +157,11 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
     return this;
   }
 
+  public JobRecord setElementInstanceKey(long elementInstanceKey) {
+    this.elementInstanceKeyProp.setValue(elementInstanceKey);
+    return this;
+  }
+
   public JobRecord setElementId(String elementId) {
     this.elementIdProp.setValue(elementId);
     return this;
@@ -191,41 +169,6 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
 
   public JobRecord setElementId(DirectBuffer elementId) {
     return setElementId(elementId, 0, elementId.capacity());
-  }
-
-  public JobRecord setElementId(DirectBuffer activityId, int offset, int length) {
-    this.elementIdProp.setValue(activityId, offset, length);
-    return this;
-  }
-
-  public JobRecord setElementInstanceKey(long elementInstanceKey) {
-    this.elementInstanceKeyProp.setValue(elementInstanceKey);
-    return this;
-  }
-
-  public JobRecord setWorkflowDefinitionVersion(int version) {
-    this.workflowDefinitionVersionProp.setValue(version);
-    return this;
-  }
-
-  public JobRecord setWorkflowInstanceKey(long key) {
-    this.workflowInstanceKeyProp.setValue(key);
-    return this;
-  }
-
-  public JobRecord setWorkflowKey(long workflowKey) {
-    this.workflowKeyProp.setValue(workflowKey);
-    return this;
-  }
-
-  public JobRecord setCustomHeaders(DirectBuffer buffer) {
-    customHeadersProp.setValue(buffer, 0, buffer.capacity());
-    return this;
-  }
-
-  public JobRecord setDeadline(long val) {
-    deadlineProp.setValue(val);
-    return this;
   }
 
   public JobRecord setErrorMessage(String errorMessage) {
@@ -237,13 +180,27 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
     return setErrorMessage(buf, 0, buf.capacity());
   }
 
-  public JobRecord setErrorMessage(DirectBuffer buf, int offset, int length) {
-    errorMessageProp.setValue(buf, offset, length);
+  public JobRecord setDeadline(long val) {
+    deadlineProp.setValue(val);
     return this;
   }
 
   public JobRecord setRetries(int retries) {
     retriesProp.setValue(retries);
+    return this;
+  }
+
+  public JobRecord setWorker(String worker) {
+    this.workerProp.setValue(worker);
+    return this;
+  }
+
+  public JobRecord setWorker(DirectBuffer worker) {
+    return setWorker(worker, 0, worker.capacity());
+  }
+
+  public JobRecord setCustomHeaders(DirectBuffer buffer) {
+    customHeadersProp.setValue(buffer, 0, buffer.capacity());
     return this;
   }
 
@@ -256,9 +213,14 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
     return setType(buf, 0, buf.capacity());
   }
 
-  public JobRecord setType(DirectBuffer buf, int offset, int length) {
-    typeProp.setValue(buf, offset, length);
-    return this;
+  @JsonIgnore
+  public DirectBuffer getTypeBuffer() {
+    return typeProp.getValue();
+  }
+
+  @Override
+  public Map<String, Object> getVariables() {
+    return MsgPackConverter.convertToMap(variableProp.getValue());
   }
 
   public JobRecord setVariables(DirectBuffer variables) {
@@ -266,13 +228,49 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
     return this;
   }
 
-  public JobRecord setWorker(String worker) {
-    this.workerProp.setValue(worker);
+  @JsonIgnore
+  public DirectBuffer getVariablesBuffer() {
+    return variableProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getWorkerBuffer() {
+    return workerProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBpmnProcessIdBuffer() {
+    return bpmnProcessIdProp.getValue();
+  }
+
+  @Override
+  public long getWorkflowInstanceKey() {
+    return workflowInstanceKeyProp.getValue();
+  }
+
+  public JobRecord setWorkflowInstanceKey(long key) {
+    this.workflowInstanceKeyProp.setValue(key);
     return this;
   }
 
-  public JobRecord setWorker(DirectBuffer worker) {
-    return setWorker(worker, 0, worker.capacity());
+  @JsonIgnore
+  public DirectBuffer getElementIdBuffer() {
+    return elementIdProp.getValue();
+  }
+
+  public JobRecord setElementId(DirectBuffer activityId, int offset, int length) {
+    this.elementIdProp.setValue(activityId, offset, length);
+    return this;
+  }
+
+  public JobRecord setErrorMessage(DirectBuffer buf, int offset, int length) {
+    errorMessageProp.setValue(buf, offset, length);
+    return this;
+  }
+
+  public JobRecord setType(DirectBuffer buf, int offset, int length) {
+    typeProp.setValue(buf, offset, length);
+    return this;
   }
 
   public JobRecord setWorker(DirectBuffer worker, int offset, int length) {

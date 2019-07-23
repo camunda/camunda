@@ -30,9 +30,8 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
 
   private final LogStreamWriterImpl logStreamWriter;
   private final DeploymentsState deploymentsState;
-
-  private ActorControl actor;
   private final DeploymentDistributor deploymentDistributor;
+  private ActorControl actor;
 
   public DeploymentDistributeProcessor(
       final DeploymentsState deploymentsState,

@@ -34,10 +34,8 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class ServerTransportMemoryPoolTest {
-  protected static final SocketAddress ADDRESS = SocketUtil.getNextAddress();
-
   public static final DirectBuffer BUF1 = new UnsafeBuffer(new byte[32]);
-
+  protected static final SocketAddress ADDRESS = SocketUtil.getNextAddress();
   public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
   public AutoCloseableRule closeables = new AutoCloseableRule();
 

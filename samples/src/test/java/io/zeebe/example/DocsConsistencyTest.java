@@ -25,6 +25,12 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class DocsConsistencyTest {
+  @Parameter(0)
+  public Class<?> exampleClass;
+
+  @Parameter(1)
+  public String expectedClassName;
+
   @Parameters
   public static Collection<Object[]> data() {
     return Arrays.asList(
@@ -40,12 +46,6 @@ public class DocsConsistencyTest {
           {HandleVariablesAsPojo.class, "io.zeebe.example.data.HandleVariablesAsPojo"},
         });
   }
-
-  @Parameter(0)
-  public Class<?> exampleClass;
-
-  @Parameter(1)
-  public String expectedClassName;
 
   @Test
   public void todo() {

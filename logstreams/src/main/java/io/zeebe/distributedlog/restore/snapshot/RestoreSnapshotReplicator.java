@@ -21,9 +21,9 @@ public class RestoreSnapshotReplicator {
 
   private final RestoreClient client;
   private final SnapshotRestoreContext restoreContext;
-  private SnapshotConsumer snapshotConsumer;
   private final Executor executor;
   private final Logger logger;
+  private SnapshotConsumer snapshotConsumer;
   private int numChunks;
 
   public RestoreSnapshotReplicator(

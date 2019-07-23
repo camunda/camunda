@@ -64,6 +64,10 @@ public abstract class ActivityImpl extends FlowNodeImpl implements Activity {
   protected static ChildElementCollection<ResourceRole> resourceRoleCollection;
   protected static ChildElement<LoopCharacteristics> loopCharacteristicsChild;
 
+  public ActivityImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -107,10 +111,6 @@ public abstract class ActivityImpl extends FlowNodeImpl implements Activity {
     loopCharacteristicsChild = sequenceBuilder.element(LoopCharacteristics.class).build();
 
     typeBuilder.build();
-  }
-
-  public ActivityImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

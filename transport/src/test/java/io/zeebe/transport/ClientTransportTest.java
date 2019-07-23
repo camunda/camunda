@@ -61,26 +61,19 @@ import org.junit.rules.RuleChain;
 import org.mockito.ArgumentMatchers;
 
 public class ClientTransportTest {
-  private ControlledActorClock clock = new ControlledActorClock();
-  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);
-  public AutoCloseableRule closeables = new AutoCloseableRule();
-
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
-
   public static final DirectBuffer BUF1 = BufferUtil.wrapBytes(1, 2, 3, 4);
   public static final BufferWriter WRITER1 = writerFor(BUF1);
-
   public static final int NODE_ID1 = 1;
   public static final SocketAddress SERVER_ADDRESS1 = SocketUtil.getNextAddress();
-
   public static final int NODE_ID2 = 2;
   public static final SocketAddress SERVER_ADDRESS2 = SocketUtil.getNextAddress();
-
   public static final int REQUEST_POOL_SIZE = 4;
   public static final ByteValue BUFFER_SIZE = ByteValue.ofKilobytes(16);
-
+  public AutoCloseableRule closeables = new AutoCloseableRule();
+  public ControlledActorClock clock = new ControlledActorClock();
+  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
   protected Dispatcher clientReceiveBuffer;
-
   protected ClientTransport clientTransport;
 
   @Before

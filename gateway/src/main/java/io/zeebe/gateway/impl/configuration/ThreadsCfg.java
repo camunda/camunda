@@ -31,6 +31,11 @@ public class ThreadsCfg {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(managementThreads);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -40,11 +45,6 @@ public class ThreadsCfg {
     }
     final ThreadsCfg that = (ThreadsCfg) o;
     return managementThreads == that.managementThreads;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(managementThreads);
   }
 
   @Override

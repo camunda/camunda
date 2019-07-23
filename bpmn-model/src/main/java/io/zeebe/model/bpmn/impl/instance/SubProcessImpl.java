@@ -48,6 +48,10 @@ public class SubProcessImpl extends ActivityImpl implements SubProcess {
   protected static ChildElementCollection<FlowElement> flowElementCollection;
   protected static ChildElementCollection<Artifact> artifactCollection;
 
+  public SubProcessImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -74,10 +78,6 @@ public class SubProcessImpl extends ActivityImpl implements SubProcess {
     artifactCollection = sequenceBuilder.elementCollection(Artifact.class).build();
 
     typeBuilder.build();
-  }
-
-  public SubProcessImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

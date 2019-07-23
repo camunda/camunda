@@ -46,6 +46,31 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   private static final Logger LOG = Loggers.DB_LOGGER;
   private static final String ERROR_MESSAGE_CLOSE_RESOURCE =
       "Expected to close RocksDB resource successfully, but exception was thrown. Will continue to close remaining resources.";
+  private final OptimisticTransactionDB optimisticTransactionDB;
+  private final List<AutoCloseable> closables;
+  private final EnumMap<ColumnFamilyNames, Long> columnFamilyMap;
+  private final Long2ObjectHashMap<ColumnFamilyHandle> handelToEnumMap;
+  private final ReadOptions prefixReadOptions;
+  private final ReadOptions defaultReadOptions;
+  private final WriteOptions defaultWriteOptions;
+
+  protected ZeebeTransactionDb(
+      OptimisticTransactionDB optimisticTransactionDB,
+      EnumMap<ColumnFamilyNames, Long> columnFamilyMap,
+      Long2ObjectHashMap<ColumnFamilyHandle> handelToEnumMap,
+      List<AutoCloseable> closables) {
+    this.optimisticTransactionDB = optimisticTransactionDB;
+    this.columnFamilyMap = columnFamilyMap;
+    this.handelToEnumMap = handelToEnumMap;
+    this.closables = closables;
+
+    prefixReadOptions = new ReadOptions().setPrefixSameAsStart(true).setTotalOrderSeek(false);
+    closables.add(prefixReadOptions);
+    defaultReadOptions = new ReadOptions();
+    closables.add(defaultReadOptions);
+    defaultWriteOptions = new WriteOptions();
+    closables.add(defaultWriteOptions);
+  }
 
   public static <ColumnFamilyNames extends Enum<ColumnFamilyNames>>
       ZeebeTransactionDb<ColumnFamilyNames> openTransactionalDb(
@@ -84,34 +109,6 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
     }
   }
 
-  private final OptimisticTransactionDB optimisticTransactionDB;
-  private final List<AutoCloseable> closables;
-
-  private final EnumMap<ColumnFamilyNames, Long> columnFamilyMap;
-  private final Long2ObjectHashMap<ColumnFamilyHandle> handelToEnumMap;
-
-  private final ReadOptions prefixReadOptions;
-  private final ReadOptions defaultReadOptions;
-  private final WriteOptions defaultWriteOptions;
-
-  protected ZeebeTransactionDb(
-      OptimisticTransactionDB optimisticTransactionDB,
-      EnumMap<ColumnFamilyNames, Long> columnFamilyMap,
-      Long2ObjectHashMap<ColumnFamilyHandle> handelToEnumMap,
-      List<AutoCloseable> closables) {
-    this.optimisticTransactionDB = optimisticTransactionDB;
-    this.columnFamilyMap = columnFamilyMap;
-    this.handelToEnumMap = handelToEnumMap;
-    this.closables = closables;
-
-    prefixReadOptions = new ReadOptions().setPrefixSameAsStart(true).setTotalOrderSeek(false);
-    closables.add(prefixReadOptions);
-    defaultReadOptions = new ReadOptions();
-    closables.add(defaultReadOptions);
-    defaultWriteOptions = new WriteOptions();
-    closables.add(defaultWriteOptions);
-  }
-
   long getColumnFamilyHandle(ColumnFamilyNames columnFamily) {
     return columnFamilyMap.get(columnFamily);
   }
@@ -125,6 +122,29 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
           ValueType valueInstance) {
     return new TransactionalColumnFamily<>(this, columnFamily, context, keyInstance, valueInstance);
   }
+
+  @Override
+  public void createSnapshot(File snapshotDir) {
+    try (Checkpoint checkpoint = Checkpoint.create(optimisticTransactionDB)) {
+      try {
+        checkpoint.createCheckpoint(snapshotDir.getAbsolutePath());
+      } catch (RocksDBException rocksException) {
+        throw new ZeebeDbException(rocksException);
+      }
+    }
+  }
+
+  @Override
+  public DbContext createContext() {
+    final Transaction transaction = optimisticTransactionDB.beginTransaction(defaultWriteOptions);
+    final ZeebeTransaction zeebeTransaction = new ZeebeTransaction(transaction);
+    closables.add(zeebeTransaction);
+    return new DefaultDbContext(zeebeTransaction);
+  }
+
+  ////////////////////////////////////////////////////////////////////
+  //////////////////////////// GET ///////////////////////////////////
+  ////////////////////////////////////////////////////////////////////
 
   protected void put(long columnFamilyHandle, DbContext context, DbKey key, DbValue value) {
     ensureInOpenTransaction(
@@ -147,10 +167,6 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
         () -> operation.run((ZeebeTransaction) context.getCurrentTransaction()));
   }
 
-  ////////////////////////////////////////////////////////////////////
-  //////////////////////////// GET ///////////////////////////////////
-  ////////////////////////////////////////////////////////////////////
-
   protected DirectBuffer get(long columnFamilyHandle, DbContext context, DbKey key) {
     context.writeKey(key);
     final int keyLength = key.getLength();
@@ -172,6 +188,10 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
     return context.getValueView();
   }
 
+  ////////////////////////////////////////////////////////////////////
+  //////////////////////////// ITERATION /////////////////////////////
+  ////////////////////////////////////////////////////////////////////
+
   protected boolean exists(long columnFamilyHandle, DbContext context, DbKey key) {
     context.wrapValueView(new byte[0]);
     ensureInOpenTransaction(
@@ -192,7 +212,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
             transaction.delete(columnFamilyHandle, context.getKeyBufferArray(), key.getLength()));
   }
 
-  public boolean existsPrefix(
+  boolean existsPrefix(
       long columnFamilyHandle,
       DbContext context,
       DbKey keyPrefix,
@@ -382,25 +402,6 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
           }
         });
     return isEmpty.get();
-  }
-
-  @Override
-  public void createSnapshot(File snapshotDir) {
-    try (Checkpoint checkpoint = Checkpoint.create(optimisticTransactionDB)) {
-      try {
-        checkpoint.createCheckpoint(snapshotDir.getAbsolutePath());
-      } catch (RocksDBException rocksException) {
-        throw new ZeebeDbException(rocksException);
-      }
-    }
-  }
-
-  @Override
-  public DbContext createContext() {
-    final Transaction transaction = optimisticTransactionDB.beginTransaction(defaultWriteOptions);
-    final ZeebeTransaction zeebeTransaction = new ZeebeTransaction(transaction);
-    closables.add(zeebeTransaction);
-    return new DefaultDbContext(zeebeTransaction);
   }
 
   @Override

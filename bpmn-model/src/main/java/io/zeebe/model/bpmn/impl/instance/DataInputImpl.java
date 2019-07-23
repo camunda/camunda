@@ -39,6 +39,10 @@ public class DataInputImpl extends ItemAwareElementImpl implements DataInput {
   protected static Attribute<String> nameAttribute;
   protected static Attribute<Boolean> isCollectionAttribute;
 
+  public DataInputImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -59,10 +63,6 @@ public class DataInputImpl extends ItemAwareElementImpl implements DataInput {
         typeBuilder.booleanAttribute(BPMN_ATTRIBUTE_IS_COLLECTION).defaultValue(false).build();
 
     typeBuilder.build();
-  }
-
-  public DataInputImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

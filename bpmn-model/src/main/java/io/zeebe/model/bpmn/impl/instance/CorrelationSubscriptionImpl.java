@@ -45,6 +45,10 @@ public class CorrelationSubscriptionImpl extends BaseElementImpl
   protected static ChildElementCollection<CorrelationPropertyBinding>
       correlationPropertyBindingCollection;
 
+  public CorrelationSubscriptionImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -73,10 +77,6 @@ public class CorrelationSubscriptionImpl extends BaseElementImpl
         sequenceBuilder.elementCollection(CorrelationPropertyBinding.class).build();
 
     typeBuilder.build();
-  }
-
-  public CorrelationSubscriptionImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

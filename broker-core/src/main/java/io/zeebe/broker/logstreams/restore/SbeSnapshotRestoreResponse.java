@@ -52,32 +52,13 @@ public class SbeSnapshotRestoreResponse
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
-    super.wrap(buffer, offset, length);
-    final boolean valid = decoder.success() == BooleanType.TRUE;
-    decoder.wrapSnapshotChunk(snapshotChunkBuffer);
-    if (valid) {
-      final SnapshotChunkImpl snapshotChunk = new SnapshotChunkImpl();
-      snapshotChunk.wrap(snapshotChunkBuffer);
-      delegate = new SuccessSnapshotRestoreResponse(snapshotChunk);
-    }
-  }
-
-  @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
-    super.write(buffer, offset);
-    encoder.success(delegate.isSuccess() ? BooleanType.TRUE : BooleanType.FALSE);
-    encoder.putSnapshotChunk(snapshotChunkBuffer, 0, snapshotChunkBuffer.capacity());
+  public boolean isSuccess() {
+    return delegate.isSuccess();
   }
 
   @Override
   public SnapshotChunk getSnapshotChunk() {
     return delegate.getSnapshotChunk();
-  }
-
-  @Override
-  public boolean isSuccess() {
-    return delegate.isSuccess();
   }
 
   public static byte[] serialize(SnapshotRestoreResponse response) {
@@ -104,5 +85,24 @@ public class SbeSnapshotRestoreResponse
     return super.getLength()
         + SnapshotRestoreResponseEncoder.snapshotChunkHeaderLength()
         + snapshotChunkBuffer.capacity();
+  }
+
+  @Override
+  public void write(MutableDirectBuffer buffer, int offset) {
+    super.write(buffer, offset);
+    encoder.success(delegate.isSuccess() ? BooleanType.TRUE : BooleanType.FALSE);
+    encoder.putSnapshotChunk(snapshotChunkBuffer, 0, snapshotChunkBuffer.capacity());
+  }
+
+  @Override
+  public void wrap(DirectBuffer buffer, int offset, int length) {
+    super.wrap(buffer, offset, length);
+    final boolean valid = decoder.success() == BooleanType.TRUE;
+    decoder.wrapSnapshotChunk(snapshotChunkBuffer);
+    if (valid) {
+      final SnapshotChunkImpl snapshotChunk = new SnapshotChunkImpl();
+      snapshotChunk.wrap(snapshotChunkBuffer);
+      delegate = new SuccessSnapshotRestoreResponse(snapshotChunk);
+    }
   }
 }

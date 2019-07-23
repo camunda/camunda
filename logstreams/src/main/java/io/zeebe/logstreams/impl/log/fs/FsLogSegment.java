@@ -43,17 +43,9 @@ public class FsLogSegment {
       "Expected to allocate new segment of size %d, but not enough space available (%d)";
   private static final String ERROR_MSG_INSUFFICIENT_CAPACITY =
       "Expected to append block with size %d, but actual capacity is insufficient %d.";
-
-  protected volatile short state;
-
   private final String fileName;
-
+  protected volatile short state;
   private FileChannel fileChannel;
-
-  private UnsafeBuffer metadataSection;
-
-  private MappedByteBuffer mappedBuffer;
-
   private final Rater rater =
       new Rater(
           1024 * 1024 * 4,
@@ -64,6 +56,8 @@ public class FsLogSegment {
               throw new RuntimeException(e);
             }
           });
+  private UnsafeBuffer metadataSection;
+  private MappedByteBuffer mappedBuffer;
 
   public FsLogSegment(String fileName) {
     this.fileName = fileName;
@@ -123,12 +117,12 @@ public class FsLogSegment {
     return metadataSection.getIntVolatile(SEGMENT_SIZE_OFFSET);
   }
 
-  private void setSizeOrdered(int tail) {
-    metadataSection.putIntOrdered(SEGMENT_SIZE_OFFSET, tail);
-  }
-
   private void setSizeVolatile(int tail) {
     metadataSection.putIntVolatile(SEGMENT_SIZE_OFFSET, tail);
+  }
+
+  private void setSizeOrdered(int tail) {
+    metadataSection.putIntOrdered(SEGMENT_SIZE_OFFSET, tail);
   }
 
   public int getCapacity() {

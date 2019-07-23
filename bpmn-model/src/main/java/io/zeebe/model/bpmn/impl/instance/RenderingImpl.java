@@ -33,6 +33,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class RenderingImpl extends BaseElementImpl implements Rendering {
 
+  public RenderingImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -48,9 +52,5 @@ public class RenderingImpl extends BaseElementImpl implements Rendering {
                 });
 
     typeBuilder.build();
-  }
-
-  public RenderingImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 }

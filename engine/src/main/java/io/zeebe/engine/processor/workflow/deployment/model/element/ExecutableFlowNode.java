@@ -47,11 +47,11 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     this.inputMappings = inputMappings;
   }
 
-  public void setOutputMappings(Mapping[] outputMappings) {
-    this.outputMappings = outputMappings;
-  }
-
   public Mapping[] getOutputMappings() {
     return outputMappings;
+  }
+
+  public void setOutputMappings(Mapping[] outputMappings) {
+    this.outputMappings = outputMappings;
   }
 }

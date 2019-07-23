@@ -42,6 +42,10 @@ public class TimerEventDefinitionImpl extends EventDefinitionImpl implements Tim
   protected static ChildElement<TimeDuration> timeDurationChild;
   protected static ChildElement<TimeCycle> timeCycleChild;
 
+  public TimerEventDefinitionImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -66,10 +70,6 @@ public class TimerEventDefinitionImpl extends EventDefinitionImpl implements Tim
     timeCycleChild = sequenceBuilder.element(TimeCycle.class).build();
 
     typeBuilder.build();
-  }
-
-  public TimerEventDefinitionImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

@@ -52,6 +52,11 @@ public class NetworkCfg {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(host, port);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -61,11 +66,6 @@ public class NetworkCfg {
     }
     final NetworkCfg that = (NetworkCfg) o;
     return port == that.port && Objects.equals(host, that.host);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(host, port);
   }
 
   @Override

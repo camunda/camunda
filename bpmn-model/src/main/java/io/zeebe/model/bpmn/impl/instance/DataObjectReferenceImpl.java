@@ -40,6 +40,10 @@ public class DataObjectReferenceImpl extends FlowElementImpl implements DataObje
   protected static AttributeReference<DataObject> dataObjectRefAttribute;
   protected static ChildElement<DataState> dataStateChild;
 
+  public DataObjectReferenceImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -71,10 +75,6 @@ public class DataObjectReferenceImpl extends FlowElementImpl implements DataObje
     dataStateChild = sequenceBuilder.element(DataState.class).build();
 
     typeBuilder.build();
-  }
-
-  public DataObjectReferenceImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

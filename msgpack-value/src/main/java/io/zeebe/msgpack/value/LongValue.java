@@ -22,12 +22,12 @@ public class LongValue extends BaseValue {
     this.value = initialValue;
   }
 
-  public void setValue(long val) {
-    this.value = val;
-  }
-
   public long getValue() {
     return value;
+  }
+
+  public void setValue(long val) {
+    this.value = val;
   }
 
   @Override
@@ -56,6 +56,11 @@ public class LongValue extends BaseValue {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(getValue());
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -67,10 +72,5 @@ public class LongValue extends BaseValue {
 
     final LongValue longValue = (LongValue) o;
     return getValue() == longValue.getValue();
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(getValue());
   }
 }

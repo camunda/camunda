@@ -47,8 +47,8 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class BlacklistInstanceTest {
 
-  @ClassRule public static ZeebeStateRule zeebeStateRule = new ZeebeStateRule();
   private static final AtomicLong KEY_GENERATOR = new AtomicLong(0);
+  @ClassRule public static ZeebeStateRule zeebeStateRule = new ZeebeStateRule();
 
   @Parameter(0)
   public ValueType recordValueType;
@@ -58,6 +58,8 @@ public class BlacklistInstanceTest {
 
   @Parameter(2)
   public boolean expectedToBlacklist;
+
+  private long workflowInstanceKey;
 
   @Parameters(name = "{0} {1} should blacklist instance {2}")
   public static Object[][] parameters() {
@@ -206,8 +208,6 @@ public class BlacklistInstanceTest {
       {ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION, WorkflowInstanceSubscriptionIntent.CLOSED, true}
     };
   }
-
-  private long workflowInstanceKey;
 
   @Before
   public void setup() {

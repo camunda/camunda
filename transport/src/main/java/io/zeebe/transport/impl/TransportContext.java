@@ -82,12 +82,12 @@ public class TransportContext {
     this.endpointRegistry = endpointRegistry;
   }
 
-  public void setReceiveHandler(FragmentHandler receiveHandler) {
-    this.receiveHandler = receiveHandler;
-  }
-
   public FragmentHandler getReceiveHandler() {
     return receiveHandler;
+  }
+
+  public void setReceiveHandler(FragmentHandler receiveHandler) {
+    this.receiveHandler = receiveHandler;
   }
 
   public ServerSocketBinding getServerSocketBinding() {
@@ -98,20 +98,20 @@ public class TransportContext {
     this.serverSocketBinding = serverSocketBinding;
   }
 
-  public void setChannelKeepAlivePeriod(Duration channelKeepAlivePeriod) {
-    this.channelKeepAlivePeriod = channelKeepAlivePeriod;
-  }
-
   public Duration getChannelKeepAlivePeriod() {
     return channelKeepAlivePeriod;
   }
 
-  public void setChannelFactory(TransportChannelFactory channelFactory) {
-    this.channelFactory = channelFactory;
+  public void setChannelKeepAlivePeriod(Duration channelKeepAlivePeriod) {
+    this.channelKeepAlivePeriod = channelKeepAlivePeriod;
   }
 
   public TransportChannelFactory getChannelFactory() {
     return channelFactory;
+  }
+
+  public void setChannelFactory(TransportChannelFactory channelFactory) {
+    this.channelFactory = channelFactory;
   }
 
   public void setSendBuffer(Dispatcher sendBuffer) {
@@ -122,11 +122,11 @@ public class TransportContext {
     return sendBuffer;
   }
 
-  public void setName(String name) {
-    this.name = name;
-  }
-
   public String getName() {
     return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
   }
 }

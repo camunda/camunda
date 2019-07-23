@@ -28,12 +28,10 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 public class CompactListTest {
+  @Rule public ExpectedException expectedExceptionRule = ExpectedException.none();
   CompactList list;
-
   UnsafeBuffer writeBuffer = new UnsafeBuffer(0, 0);
   UnsafeBuffer readBuffer = new UnsafeBuffer(0, 0);
-
-  @Rule public ExpectedException expectedExceptionRule = ExpectedException.none();
 
   @Before
   public void setup() {

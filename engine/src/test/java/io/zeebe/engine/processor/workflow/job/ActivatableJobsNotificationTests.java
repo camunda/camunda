@@ -41,9 +41,6 @@ public class ActivatableJobsNotificationTests {
               .serviceTask("task", b -> b.zeebeTaskType(type).done())
               .endEvent("end")
               .done();
-
-  private String taskType;
-
   private static Consumer<String> jobAvailableCallback =
       (Consumer<String>) Mockito.spy(Consumer.class);
 
@@ -54,6 +51,8 @@ public class ActivatableJobsNotificationTests {
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  private String taskType;
 
   @Before
   public void setup() {

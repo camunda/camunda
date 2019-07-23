@@ -31,11 +31,9 @@ import org.rocksdb.Status.SubCode;
 
 public class ZeebeRocksDbTransactionTest {
 
-  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
   private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
       DefaultZeebeDbFactory.getDefaultFactory(DefaultColumnFamily.class);
-
+  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private DbContext dbContext;
 
   @Before

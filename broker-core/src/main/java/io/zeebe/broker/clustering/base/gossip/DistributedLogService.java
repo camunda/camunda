@@ -22,16 +22,14 @@ import java.util.concurrent.CompletableFuture;
 
 public class DistributedLogService implements Service<Void> {
 
-  private final Injector<Atomix> atomixInjector = new Injector<>();
-  private Atomix atomix;
-
-  private final String primitiveName = "distributed-log";
-
   private static final MultiRaftProtocol PROTOCOL =
       MultiRaftProtocol.builder()
           // Maps partitionName to partitionId
           .withPartitioner(DistributedLogstreamName.getInstance())
           .build();
+  private final Injector<Atomix> atomixInjector = new Injector<>();
+  private final String primitiveName = "distributed-log";
+  private Atomix atomix;
 
   @Override
   public void start(ServiceStartContext startContext) {
@@ -54,12 +52,12 @@ public class DistributedLogService implements Service<Void> {
     startContext.async(startFuture);
   }
 
-  public Injector<Atomix> getAtomixInjector() {
-    return atomixInjector;
-  }
-
   @Override
   public Void get() {
     return null;
+  }
+
+  public Injector<Atomix> getAtomixInjector() {
+    return atomixInjector;
   }
 }

@@ -34,8 +34,6 @@ import org.junit.Test;
 import org.mockito.InOrder;
 
 public class LogBufferAppenderClaimTest {
-  private static final Runnable DO_NOTHING = () -> {};
-
   static final int A_PARTITION_LENGTH = 1024;
   static final byte[] A_MSG_PAYLOAD = "some bytes".getBytes(Charset.forName("utf-8"));
   static final int A_MSG_PAYLOAD_LENGTH = A_MSG_PAYLOAD.length;
@@ -43,7 +41,7 @@ public class LogBufferAppenderClaimTest {
   static final UnsafeBuffer A_MSG = new UnsafeBuffer(A_MSG_PAYLOAD);
   static final int A_PARTITION_ID = 10;
   static final int A_STREAM_ID = 20;
-
+  private static final Runnable DO_NOTHING = () -> {};
   UnsafeBuffer metadataBufferMock;
   UnsafeBuffer dataBufferMock;
   LogBufferAppender logBufferAppender;

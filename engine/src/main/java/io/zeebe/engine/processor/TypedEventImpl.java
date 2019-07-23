@@ -28,37 +28,18 @@ public class TypedEventImpl implements TypedRecord {
     this.value = value;
   }
 
-  public int getMaxValueLength() {
-    return this.rawEvent.getMaxValueLength();
-  }
-
   public long getPosition() {
     return rawEvent.getPosition();
   }
 
   @Override
-  public long getKey() {
-    return rawEvent.getKey();
+  public long getSourceRecordPosition() {
+    return rawEvent.getSourceEventPosition();
   }
 
   @Override
-  public UnifiedRecordValue getValue() {
-    return value;
-  }
-
-  @Override
-  public int getRequestStreamId() {
-    return metadata.getRequestStreamId();
-  }
-
-  @Override
-  public long getRequestId() {
-    return metadata.getRequestId();
-  }
-
-  @Override
-  public String toString() {
-    return "TypedEventImpl{" + "metadata=" + metadata + ", value=" + value + '}';
+  public long getTimestamp() {
+    return rawEvent.getTimestamp();
   }
 
   @Override
@@ -92,13 +73,32 @@ public class TypedEventImpl implements TypedRecord {
   }
 
   @Override
-  public long getSourceRecordPosition() {
-    return rawEvent.getSourceEventPosition();
+  public long getKey() {
+    return rawEvent.getKey();
   }
 
   @Override
-  public long getTimestamp() {
-    return rawEvent.getTimestamp();
+  public UnifiedRecordValue getValue() {
+    return value;
+  }
+
+  @Override
+  public int getRequestStreamId() {
+    return metadata.getRequestStreamId();
+  }
+
+  @Override
+  public long getRequestId() {
+    return metadata.getRequestId();
+  }
+
+  public int getMaxValueLength() {
+    return this.rawEvent.getMaxValueLength();
+  }
+
+  @Override
+  public String toString() {
+    return "TypedEventImpl{" + "metadata=" + metadata + ", value=" + value + '}';
   }
 
   @Override

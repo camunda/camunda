@@ -35,6 +35,17 @@ public class MsgPackReadingBoundaryCheckingExceptionTest {
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
+  @Parameter(0)
+  public byte[] testingBuf;
+
+  @Parameter(1)
+  public Consumer<MsgPackReader> codeUnderTest;
+
+  @Parameter(2)
+  public String exceptionMessage;
+
+  protected MsgPackReader reader;
+
   @Parameters(name = "{0}")
   public static Iterable<Object[]> data() {
     return Arrays.asList(
@@ -81,17 +92,6 @@ public class MsgPackReadingBoundaryCheckingExceptionTest {
           },
         });
   }
-
-  @Parameter(0)
-  public byte[] testingBuf;
-
-  @Parameter(1)
-  public Consumer<MsgPackReader> codeUnderTest;
-
-  @Parameter(2)
-  public String exceptionMessage;
-
-  protected MsgPackReader reader;
 
   @Before
   public void setUp() {

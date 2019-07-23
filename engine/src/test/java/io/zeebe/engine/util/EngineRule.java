@@ -66,27 +66,12 @@ public final class EngineRule extends ExternalResource {
 
   private static final int PARTITION_ID = Protocol.DEPLOYMENT_PARTITION;
   private static final RecordingExporter RECORDING_EXPORTER = new RecordingExporter();
-
+  protected final StreamProcessorRule environmentRule;
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
-
-  protected final StreamProcessorRule environmentRule;
-
   private final int partitionCount;
   private final boolean explicitStart;
   private Consumer<String> jobsAvailableCallback = type -> {};
-
-  public static EngineRule singlePartition() {
-    return new EngineRule(1);
-  }
-
-  public static EngineRule multiplePartition(int partitionCount) {
-    return new EngineRule(partitionCount);
-  }
-
-  public static EngineRule explicitStart() {
-    return new EngineRule(1, true);
-  }
 
   private EngineRule(int partitionCount) {
     this(partitionCount, false);
@@ -98,6 +83,18 @@ public final class EngineRule extends ExternalResource {
     environmentRule =
         new StreamProcessorRule(
             PARTITION_ID, partitionCount, DefaultZeebeDbFactory.DEFAULT_DB_FACTORY);
+  }
+
+  public static EngineRule singlePartition() {
+    return new EngineRule(1);
+  }
+
+  public static EngineRule multiplePartition(int partitionCount) {
+    return new EngineRule(partitionCount);
+  }
+
+  public static EngineRule explicitStart() {
+    return new EngineRule(1, true);
   }
 
   @Override
@@ -245,6 +242,35 @@ public final class EngineRule extends ExternalResource {
     environmentRule.writeBatch(records);
   }
 
+  private static class ProcessingExporterTransistor implements StreamProcessorLifecycleAware {
+
+    private BufferedLogStreamReader logStreamReader;
+    private int partitionId;
+
+    @Override
+    public void onOpen(ReadonlyProcessingContext context) {
+      partitionId = context.getLogStream().getPartitionId();
+      final ActorControl actor = context.getActor();
+
+      final ActorCondition onCommitCondition =
+          actor.onCondition("on-commit", this::onNewEventCommitted);
+      final LogStream logStream = context.getLogStream();
+      logStream.registerOnCommitPositionUpdatedCondition(onCommitCondition);
+
+      logStreamReader = new BufferedLogStreamReader(logStream);
+    }
+
+    private void onNewEventCommitted() {
+      while (logStreamReader.hasNext()) {
+        final LoggedEvent rawEvent = logStreamReader.next();
+
+        final CopiedRecord typedRecord = CopiedRecords.createCopiedRecord(partitionId, rawEvent);
+
+        RECORDING_EXPORTER.export(typedRecord);
+      }
+    }
+  }
+
   private class DeploymentDistributionImpl implements DeploymentDistributor {
 
     private final Map<Long, PendingDeploymentDistribution> pendingDeployments = new HashMap<>();
@@ -277,6 +303,10 @@ public final class EngineRule extends ExternalResource {
     }
   }
 
+  /////////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////// PROCESSOR EXPORTER CROSSOVER ///////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////////
+
   private class PartitionCommandSenderImpl implements PartitionCommandSender {
 
     private final SubscriptionCommandMessageHandler handler =
@@ -291,39 +321,6 @@ public final class EngineRule extends ExternalResource {
 
       handler.apply(bytes);
       return true;
-    }
-  }
-
-  /////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////// PROCESSOR EXPORTER CROSSOVER ///////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////////////////
-
-  private static class ProcessingExporterTransistor implements StreamProcessorLifecycleAware {
-
-    private BufferedLogStreamReader logStreamReader;
-    private int partitionId;
-
-    @Override
-    public void onOpen(ReadonlyProcessingContext context) {
-      partitionId = context.getLogStream().getPartitionId();
-      final ActorControl actor = context.getActor();
-
-      final ActorCondition onCommitCondition =
-          actor.onCondition("on-commit", this::onNewEventCommitted);
-      final LogStream logStream = context.getLogStream();
-      logStream.registerOnCommitPositionUpdatedCondition(onCommitCondition);
-
-      logStreamReader = new BufferedLogStreamReader(logStream);
-    }
-
-    private void onNewEventCommitted() {
-      while (logStreamReader.hasNext()) {
-        final LoggedEvent rawEvent = logStreamReader.next();
-
-        final CopiedRecord typedRecord = CopiedRecords.createCopiedRecord(partitionId, rawEvent);
-
-        RECORDING_EXPORTER.export(typedRecord);
-      }
     }
   }
 }

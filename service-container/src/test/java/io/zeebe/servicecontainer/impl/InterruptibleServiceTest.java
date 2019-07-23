@@ -153,13 +153,13 @@ public class InterruptibleServiceTest {
       wasStopped = true;
     }
 
-    public void finishStart() {
-      startFuture.complete(null);
-    }
-
     @Override
     public Object get() {
       return value;
+    }
+
+    public void finishStart() {
+      startFuture.complete(null);
     }
   }
 }

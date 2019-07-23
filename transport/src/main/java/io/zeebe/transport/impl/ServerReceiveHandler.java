@@ -17,6 +17,7 @@ import io.zeebe.transport.ServerRequestHandler;
 import org.agrona.DirectBuffer;
 
 public class ServerReceiveHandler implements FragmentHandler {
+  protected final ServerOutput output;
   private final TransportHeaderDescriptor transportHeaderDescriptor =
       new TransportHeaderDescriptor();
   private final RequestResponseHeaderDescriptor requestResponseHeaderDescriptor =
@@ -25,7 +26,6 @@ public class ServerReceiveHandler implements FragmentHandler {
   private final ServerMessageHandler messageHandler;
   private final ServerRequestHandler requestHandler;
   private final ServerControlMessageListener controlMessageListener;
-  protected final ServerOutput output;
 
   public ServerReceiveHandler(
       ServerOutput output,

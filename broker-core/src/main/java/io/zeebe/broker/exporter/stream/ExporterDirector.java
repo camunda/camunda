@@ -54,24 +54,18 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
       "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
-
-  private ActorScheduler actorScheduler;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
-
   private final List<ExporterContainer> containers;
   private final int partitionId;
-
   private final LogStream logStream;
   private final LogStreamReader logStreamReader;
   private final RecordExporter recordExporter;
-
   private final ZeebeDb zeebeDb;
-
   private final ExporterMetrics metrics;
-
   private final String name;
   private final RetryStrategy exportingRetryStrategy;
   private final RetryStrategy recordWrapStrategy;
+  private ActorScheduler actorScheduler;
   private EventFilter eventFilter;
   private ExportersState state;
 
@@ -107,13 +101,13 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   }
 
   @Override
-  public String getName() {
-    return name;
+  public ExporterDirector get() {
+    return this;
   }
 
   @Override
-  public ExporterDirector get() {
-    return this;
+  public String getName() {
+    return name;
   }
 
   @Override
@@ -142,6 +136,32 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
 
     isOpened.set(true);
     onSnapshotRecovered();
+  }
+
+  @Override
+  protected void onActorClosing() {
+    logStreamReader.close();
+    if (onCommitPositionUpdatedCondition != null) {
+      logStream.removeOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
+      onCommitPositionUpdatedCondition = null;
+    }
+  }
+
+  @Override
+  protected void onActorClosed() {
+    LOG.debug("Closed exporter director '{}'.", getName());
+  }
+
+  @Override
+  protected void onActorCloseRequested() {
+    isOpened.set(false);
+    for (final ExporterContainer container : containers) {
+      try {
+        container.exporter.close();
+      } catch (final Exception e) {
+        container.context.getLogger().error("Error on close", e);
+      }
+    }
   }
 
   private void recoverFromSnapshot() {
@@ -280,72 +300,8 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
         });
   }
 
-  @Override
-  protected void onActorCloseRequested() {
-    isOpened.set(false);
-    for (final ExporterContainer container : containers) {
-      try {
-        container.exporter.close();
-      } catch (final Exception e) {
-        container.context.getLogger().error("Error on close", e);
-      }
-    }
-  }
-
-  @Override
-  protected void onActorClosing() {
-    logStreamReader.close();
-    if (onCommitPositionUpdatedCondition != null) {
-      logStream.removeOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
-      onCommitPositionUpdatedCondition = null;
-    }
-  }
-
-  @Override
-  protected void onActorClosed() {
-    LOG.debug("Closed exporter director '{}'.", getName());
-  }
-
   public boolean isClosed() {
     return !isOpened.get();
-  }
-
-  private class ExporterContainer implements Controller {
-    private final ExporterContext context;
-    private final Exporter exporter;
-    private long position;
-
-    ExporterContainer(ExporterDescriptor descriptor) {
-      context =
-          new ExporterContext(
-              Loggers.getExporterLogger(descriptor.getId()), descriptor.getConfiguration());
-
-      exporter = descriptor.newInstance();
-    }
-
-    @Override
-    public void updateLastExportedRecordPosition(final long position) {
-      actor.run(
-          () -> {
-            state.setPosition(getId(), position);
-            this.position = position;
-          });
-    }
-
-    @Override
-    public void scheduleTask(final Duration delay, final Runnable task) {
-      actor.runDelayed(delay, task);
-    }
-
-    private String getId() {
-      return context.getConfiguration().getId();
-    }
-
-    private boolean acceptRecord(RecordMetadata metadata) {
-      final Context.RecordFilter filter = context.getFilter();
-      return filter.acceptType(metadata.getRecordType())
-          && filter.acceptValue(metadata.getValueType());
-    }
   }
 
   private static class RecordExporter {
@@ -434,6 +390,44 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
           + ", acceptValueTypes="
           + acceptValueTypes
           + '}';
+    }
+  }
+
+  private class ExporterContainer implements Controller {
+    private final ExporterContext context;
+    private final Exporter exporter;
+    private long position;
+
+    ExporterContainer(ExporterDescriptor descriptor) {
+      context =
+          new ExporterContext(
+              Loggers.getExporterLogger(descriptor.getId()), descriptor.getConfiguration());
+
+      exporter = descriptor.newInstance();
+    }
+
+    @Override
+    public void updateLastExportedRecordPosition(final long position) {
+      actor.run(
+          () -> {
+            state.setPosition(getId(), position);
+            this.position = position;
+          });
+    }
+
+    @Override
+    public void scheduleTask(final Duration delay, final Runnable task) {
+      actor.runDelayed(delay, task);
+    }
+
+    private String getId() {
+      return context.getConfiguration().getId();
+    }
+
+    private boolean acceptRecord(RecordMetadata metadata) {
+      final Context.RecordFilter filter = context.getFilter();
+      return filter.acceptType(metadata.getRecordType())
+          && filter.acceptValue(metadata.getValueType());
     }
   }
 }

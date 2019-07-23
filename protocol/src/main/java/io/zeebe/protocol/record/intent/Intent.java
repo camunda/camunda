@@ -36,7 +36,7 @@ public interface Intent {
           VariableDocumentIntent.class,
           WorkflowInstanceCreationIntent.class,
           ErrorIntent.class);
-
+  short NULL_VAL = 255;
   Intent UNKNOWN =
       new Intent() {
         @Override
@@ -49,8 +49,6 @@ public interface Intent {
           return "UNKNOWN";
         }
       };
-
-  short NULL_VAL = 255;
 
   short value();
 

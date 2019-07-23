@@ -23,6 +23,11 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class JsonConditionVariableNamesTest {
 
+  @Parameter public String expression;
+
+  @Parameter(1)
+  public DirectBuffer[] expectedVariableNames;
+
   private static DirectBuffer[] fromStrings(String... args) {
     return Arrays.stream(args)
         .map(str -> BufferUtil.wrapString(str))
@@ -46,11 +51,6 @@ public class JsonConditionVariableNamesTest {
           {"foo > 2 && (foo < 4 || bar == 6)", fromStrings("foo", "bar")}
         });
   }
-
-  @Parameter public String expression;
-
-  @Parameter(1)
-  public DirectBuffer[] expectedVariableNames;
 
   @Test
   public void shouldReturnOnlyUniqueVariableNames() {

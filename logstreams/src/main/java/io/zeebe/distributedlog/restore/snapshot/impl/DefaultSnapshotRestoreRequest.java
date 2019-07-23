@@ -31,12 +31,12 @@ public class DefaultSnapshotRestoreRequest implements SnapshotRestoreRequest {
     return chunkIdx;
   }
 
-  public void setSnapshotId(long snapshotId) {
-    this.snapshotId = snapshotId;
-  }
-
   public void setChunkIdx(int chunkIdx) {
     this.chunkIdx = chunkIdx;
+  }
+
+  public void setSnapshotId(long snapshotId) {
+    this.snapshotId = snapshotId;
   }
 
   @Override

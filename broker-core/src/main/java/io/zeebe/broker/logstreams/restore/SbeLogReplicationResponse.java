@@ -47,52 +47,6 @@ public class SbeLogReplicationResponse
   }
 
   @Override
-  public void reset() {
-    super.reset();
-    delegate.setToPosition(toPositionNullValue());
-    delegate.setMoreAvailable(false);
-    delegate.setSerializedEvents(new UnsafeBuffer(), 0, 0);
-  }
-
-  @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
-    super.wrap(buffer, offset, length);
-    final DirectBuffer wrapBuffer = new UnsafeBuffer();
-    decoder.wrapSerializedEvents(wrapBuffer);
-
-    delegate.setToPosition(decoder.toPosition());
-    delegate.setMoreAvailable(decoder.moreAvailable() == BooleanType.TRUE);
-    delegate.setSerializedEvents(wrapBuffer, 0, wrapBuffer.capacity());
-  }
-
-  @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
-    super.write(buffer, offset);
-    final byte[] serializedEvents = delegate.getSerializedEvents();
-
-    encoder.toPosition(delegate.getToPosition());
-    encoder.moreAvailable(delegate.hasMoreAvailable() ? BooleanType.TRUE : BooleanType.FALSE);
-
-    if (getSerializedEventsLength() > 0) {
-      encoder.putSerializedEvents(serializedEvents, 0, serializedEvents.length);
-    } else {
-      encoder.putSerializedEvents(new UnsafeBuffer(), 0, 0);
-    }
-  }
-
-  @Override
-  public int getLength() {
-    return super.getLength() + serializedEventsHeaderLength() + getSerializedEventsLength();
-  }
-
-  @Override
-  public boolean isValid() {
-    return delegate.isValid()
-        && getSerializedEventsLength() > 0
-        && delegate.getToPosition() != toPositionNullValue();
-  }
-
-  @Override
   public long getToPosition() {
     return delegate.getToPosition();
   }
@@ -105,6 +59,13 @@ public class SbeLogReplicationResponse
   @Override
   public byte[] getSerializedEvents() {
     return delegate.getSerializedEvents();
+  }
+
+  @Override
+  public boolean isValid() {
+    return delegate.isValid()
+        && getSerializedEventsLength() > 0
+        && delegate.getToPosition() != toPositionNullValue();
   }
 
   @Override
@@ -129,5 +90,44 @@ public class SbeLogReplicationResponse
   @Override
   protected LogReplicationResponseDecoder getBodyDecoder() {
     return decoder;
+  }
+
+  @Override
+  public void reset() {
+    super.reset();
+    delegate.setToPosition(toPositionNullValue());
+    delegate.setMoreAvailable(false);
+    delegate.setSerializedEvents(new UnsafeBuffer(), 0, 0);
+  }
+
+  @Override
+  public int getLength() {
+    return super.getLength() + serializedEventsHeaderLength() + getSerializedEventsLength();
+  }
+
+  @Override
+  public void write(MutableDirectBuffer buffer, int offset) {
+    super.write(buffer, offset);
+    final byte[] serializedEvents = delegate.getSerializedEvents();
+
+    encoder.toPosition(delegate.getToPosition());
+    encoder.moreAvailable(delegate.hasMoreAvailable() ? BooleanType.TRUE : BooleanType.FALSE);
+
+    if (getSerializedEventsLength() > 0) {
+      encoder.putSerializedEvents(serializedEvents, 0, serializedEvents.length);
+    } else {
+      encoder.putSerializedEvents(new UnsafeBuffer(), 0, 0);
+    }
+  }
+
+  @Override
+  public void wrap(DirectBuffer buffer, int offset, int length) {
+    super.wrap(buffer, offset, length);
+    final DirectBuffer wrapBuffer = new UnsafeBuffer();
+    decoder.wrapSerializedEvents(wrapBuffer);
+
+    delegate.setToPosition(decoder.toPosition());
+    delegate.setMoreAvailable(decoder.moreAvailable() == BooleanType.TRUE);
+    delegate.setSerializedEvents(wrapBuffer, 0, wrapBuffer.capacity());
   }
 }

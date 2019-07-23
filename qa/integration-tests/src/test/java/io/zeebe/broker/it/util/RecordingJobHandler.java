@@ -15,9 +15,9 @@ import java.util.Collections;
 import java.util.List;
 
 public class RecordingJobHandler implements JobHandler {
+  protected final JobHandler[] jobHandlers;
   protected List<ActivatedJob> handledJobs = Collections.synchronizedList(new ArrayList<>());
   protected int nextJobHandler = 0;
-  protected final JobHandler[] jobHandlers;
 
   public RecordingJobHandler() {
     this(

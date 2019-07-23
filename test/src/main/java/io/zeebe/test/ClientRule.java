@@ -14,9 +14,8 @@ import org.junit.rules.ExternalResource;
 
 public class ClientRule extends ExternalResource {
 
-  protected ZeebeClient client;
-
   protected final Supplier<Properties> properties;
+  protected ZeebeClient client;
 
   public ClientRule() {
     this(Properties::new);
@@ -35,13 +34,13 @@ public class ClientRule extends ExternalResource {
     createClient();
   }
 
-  public void createClient() {
-    client = ZeebeClient.newClientBuilder().withProperties(properties.get()).build();
-  }
-
   @Override
   protected void after() {
     destroyClient();
+  }
+
+  public void createClient() {
+    client = ZeebeClient.newClientBuilder().withProperties(properties.get()).build();
   }
 
   public void destroyClient() {

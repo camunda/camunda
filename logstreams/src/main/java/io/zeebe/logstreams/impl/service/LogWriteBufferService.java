@@ -48,6 +48,11 @@ public class LogWriteBufferService implements Service<Dispatcher> {
     ctx.async(dispatcher.closeAsync());
   }
 
+  @Override
+  public Dispatcher get() {
+    return dispatcher;
+  }
+
   private int determineInitialPartitionId() {
     final LogStorage logStorage = logStorageInjector.getValue();
 
@@ -72,11 +77,6 @@ public class LogWriteBufferService implements Service<Dispatcher> {
 
       return partitionId;
     }
-  }
-
-  @Override
-  public Dispatcher get() {
-    return dispatcher;
   }
 
   public Injector<LogStorage> getLogStorageInjector() {

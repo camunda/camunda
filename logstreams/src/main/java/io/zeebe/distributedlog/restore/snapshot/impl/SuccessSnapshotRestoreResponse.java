@@ -19,13 +19,13 @@ public class SuccessSnapshotRestoreResponse implements SnapshotRestoreResponse {
   }
 
   @Override
-  public SnapshotChunk getSnapshotChunk() {
-    return snapshotChunk;
+  public boolean isSuccess() {
+    return true;
   }
 
   @Override
-  public boolean isSuccess() {
-    return true;
+  public SnapshotChunk getSnapshotChunk() {
+    return snapshotChunk;
   }
 
   @Override

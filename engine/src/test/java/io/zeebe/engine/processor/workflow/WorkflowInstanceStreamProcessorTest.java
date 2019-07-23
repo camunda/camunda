@@ -47,10 +47,7 @@ import org.mockito.ArgumentCaptor;
 
 public class WorkflowInstanceStreamProcessorTest {
 
-  @Rule public Timeout timeoutRule = new Timeout(2, TimeUnit.MINUTES);
-
   private static final String PROCESS_ID = "process";
-
   private static final BpmnModelInstance SERVICE_TASK_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent("start")
@@ -59,7 +56,6 @@ public class WorkflowInstanceStreamProcessorTest {
           .sequenceFlowId("flow2")
           .endEvent("end")
           .done();
-
   private static final BpmnModelInstance SUB_PROCESS_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
@@ -71,7 +67,6 @@ public class WorkflowInstanceStreamProcessorTest {
           .subProcessDone()
           .endEvent()
           .done();
-
   private static final BpmnModelInstance MESSAGE_CATCH_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
@@ -79,7 +74,6 @@ public class WorkflowInstanceStreamProcessorTest {
               "catch-event",
               c -> c.message(m -> m.name("order canceled").zeebeCorrelationKey("orderId")))
           .done();
-
   private static final BpmnModelInstance TIMER_BOUNDARY_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
@@ -91,11 +85,10 @@ public class WorkflowInstanceStreamProcessorTest {
           .moveToActivity("task1")
           .endEvent("end")
           .done();
-
   private final StreamProcessorRule envRule = new StreamProcessorRule();
   private final WorkflowInstanceStreamProcessorRule streamProcessorRule =
       new WorkflowInstanceStreamProcessorRule(envRule);
-
+  @Rule public Timeout timeoutRule = new Timeout(2, TimeUnit.MINUTES);
   @Rule public RuleChain chain = RuleChain.outerRule(envRule).around(streamProcessorRule);
 
   @Test

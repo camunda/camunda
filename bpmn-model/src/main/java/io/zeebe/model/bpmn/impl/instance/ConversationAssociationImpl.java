@@ -41,6 +41,10 @@ public class ConversationAssociationImpl extends BaseElementImpl
   protected static AttributeReference<ConversationNode> innerConversationNodeRefAttribute;
   protected static AttributeReference<ConversationNode> outerConversationNodeRefAttribute;
 
+  public ConversationAssociationImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -71,10 +75,6 @@ public class ConversationAssociationImpl extends BaseElementImpl
             .build();
 
     typeBuilder.build();
-  }
-
-  public ConversationAssociationImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

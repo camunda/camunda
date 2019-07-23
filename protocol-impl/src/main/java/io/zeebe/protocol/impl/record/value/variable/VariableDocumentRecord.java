@@ -66,14 +66,19 @@ public class VariableDocumentRecord extends UnifiedRecordValue
     return MsgPackConverter.convertToMap(variablesProperty.getValue());
   }
 
+  public VariableDocumentRecord setVariables(DirectBuffer variables) {
+    variablesProperty.setValue(variables);
+    return this;
+  }
+
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
     return variablesProperty.getValue();
   }
 
-  public VariableDocumentRecord setVariables(DirectBuffer variables) {
-    variablesProperty.setValue(variables);
-    return this;
+  @Override
+  public int hashCode() {
+    return Objects.hash(scopeKeyProperty, updateSemanticsProperty, variablesProperty);
   }
 
   @Override
@@ -90,10 +95,5 @@ public class VariableDocumentRecord extends UnifiedRecordValue
     return Objects.equals(scopeKeyProperty, that.scopeKeyProperty)
         && Objects.equals(updateSemanticsProperty, that.updateSemanticsProperty)
         && Objects.equals(variablesProperty, that.variablesProperty);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(scopeKeyProperty, updateSemanticsProperty, variablesProperty);
   }
 }

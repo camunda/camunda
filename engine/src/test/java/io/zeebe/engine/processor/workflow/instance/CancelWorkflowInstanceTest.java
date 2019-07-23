@@ -36,13 +36,13 @@ import org.junit.Test;
 
 public class CancelWorkflowInstanceTest {
 
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("WORKFLOW")
           .startEvent()
           .serviceTask("task", t -> t.zeebeTaskType("test").zeebeTaskRetries(5))
           .endEvent()
           .done();
-
   private static final BpmnModelInstance SUB_PROCESS_WORKFLOW =
       Bpmn.createExecutableProcess("SUB_PROCESS_WORKFLOW")
           .startEvent()
@@ -54,7 +54,6 @@ public class CancelWorkflowInstanceTest {
           .subProcessDone()
           .endEvent()
           .done();
-
   private static final BpmnModelInstance FORK_PROCESS;
 
   static {
@@ -69,8 +68,6 @@ public class CancelWorkflowInstanceTest {
     FORK_PROCESS =
         builder.serviceTask("task2", b -> b.zeebeTaskType("type2")).endEvent("end2").done();
   }
-
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

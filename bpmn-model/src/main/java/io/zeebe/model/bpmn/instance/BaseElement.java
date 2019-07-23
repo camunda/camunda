@@ -34,9 +34,9 @@ public interface BaseElement extends BpmnModelElementInstance {
 
   ExtensionElements getExtensionElements();
 
-  <T extends BpmnModelElementInstance> T getSingleExtensionElement(Class<T> type);
-
   void setExtensionElements(ExtensionElements extensionElements);
+
+  <T extends BpmnModelElementInstance> T getSingleExtensionElement(Class<T> type);
 
   DiagramElement getDiagramElement();
 }

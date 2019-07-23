@@ -59,16 +59,16 @@ public class JsonPathTokenizerTest {
     }
 
     @Override
+    public int hashCode() {
+      return super.hashCode();
+    }
+
+    @Override
     public boolean equals(Object obj) {
       final Token otherToken = (Token) obj;
       return type == otherToken.type
           && position == otherToken.position
           && length == otherToken.length;
-    }
-
-    @Override
-    public int hashCode() {
-      return super.hashCode();
     }
 
     @Override

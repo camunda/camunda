@@ -38,6 +38,10 @@ public class StartEventImpl extends CatchEventImpl implements StartEvent {
 
   protected static Attribute<Boolean> isInterruptingAttribute;
 
+  public StartEventImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
 
     final ModelElementTypeBuilder typeBuilder =
@@ -57,10 +61,6 @@ public class StartEventImpl extends CatchEventImpl implements StartEvent {
         typeBuilder.booleanAttribute(BPMN_ATTRIBUTE_IS_INTERRUPTING).defaultValue(true).build();
 
     typeBuilder.build();
-  }
-
-  public StartEventImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

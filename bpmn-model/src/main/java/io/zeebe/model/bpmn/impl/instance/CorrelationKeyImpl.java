@@ -43,6 +43,10 @@ public class CorrelationKeyImpl extends BaseElementImpl implements CorrelationKe
   protected static ElementReferenceCollection<CorrelationProperty, CorrelationPropertyRef>
       correlationPropertyRefCollection;
 
+  public CorrelationKeyImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -68,10 +72,6 @@ public class CorrelationKeyImpl extends BaseElementImpl implements CorrelationKe
             .build();
 
     typeBuilder.build();
-  }
-
-  public CorrelationKeyImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

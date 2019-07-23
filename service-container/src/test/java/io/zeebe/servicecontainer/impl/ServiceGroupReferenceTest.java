@@ -37,19 +37,15 @@ public class ServiceGroupReferenceTest {
   @Rule
   public final ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
 
-  private ServiceContainerImpl serviceContainer;
-
   ServiceName<Object> service1Name;
   ServiceName<Object> service2Name;
-
   ServiceName<Object> group1Name;
   ServiceName<Object> group2Name;
-
   Service<Object> mockService1;
   Service<Object> mockService2;
-
   Object mockService2Value;
   Object mockService1Value;
+  private ServiceContainerImpl serviceContainer;
 
   @Before
   public void setup() {
@@ -307,6 +303,11 @@ public class ServiceGroupReferenceTest {
       recordCurrentTask("stop");
     }
 
+    @Override
+    public Void get() {
+      return null;
+    }
+
     public void onReferenceAdd(ServiceName<Object> name, Object o) {
       recordCurrentTask("reference-add");
     }
@@ -318,11 +319,6 @@ public class ServiceGroupReferenceTest {
     protected void recordCurrentTask(String identifier) {
       final ActorTask currentTask = ActorThread.current().getCurrentTask();
       actorContext.put(identifier, currentTask);
-    }
-
-    @Override
-    public Void get() {
-      return null;
     }
   }
 }

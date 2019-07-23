@@ -32,12 +32,12 @@ public class TransformContext {
     return currentWorkflow;
   }
 
-  public void addWorkflow(ExecutableWorkflow workflow) {
-    workflows.put(workflow.getId(), workflow);
-  }
-
   public void setCurrentWorkflow(ExecutableWorkflow currentWorkflow) {
     this.currentWorkflow = currentWorkflow;
+  }
+
+  public void addWorkflow(ExecutableWorkflow workflow) {
+    workflows.put(workflow.getId(), workflow);
   }
 
   public ExecutableWorkflow getWorkflow(String id) {

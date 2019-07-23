@@ -17,25 +17,22 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 
 public class TopologyManagerService implements Service<TopologyManager> {
+  private final NodeInfo localMember;
+  private final ClusterCfg clusterCfg;
+  private final Injector<Atomix> atomixInjector = new Injector<>();
   private TopologyManagerImpl topologyManager;
-
   private final ServiceGroupReference<Partition> leaderInstallReference =
       ServiceGroupReference.<Partition>create()
           .onAdd(
               (name, partition) ->
                   topologyManager.updateRole(partition.getState(), partition.getPartitionId()))
           .build();
-
   private final ServiceGroupReference<Partition> followerInstallReference =
       ServiceGroupReference.<Partition>create()
           .onAdd(
               (name, partition) ->
                   topologyManager.updateRole(partition.getState(), partition.getPartitionId()))
           .build();
-
-  private final NodeInfo localMember;
-  private final ClusterCfg clusterCfg;
-  private final Injector<Atomix> atomixInjector = new Injector<>();
 
   public TopologyManagerService(NodeInfo localMember, ClusterCfg clusterCfg) {
     this.localMember = localMember;

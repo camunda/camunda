@@ -39,6 +39,18 @@ public abstract class SbeBufferWriterReader<
   }
 
   @Override
+  public void write(final MutableDirectBuffer buffer, final int offset) {
+    headerEncoder
+        .wrap(buffer, offset)
+        .blockLength(getBodyEncoder().sbeBlockLength())
+        .templateId(getBodyEncoder().sbeTemplateId())
+        .schemaId(getBodyEncoder().sbeSchemaId())
+        .version(getBodyEncoder().sbeSchemaVersion());
+
+    getBodyEncoder().wrap(buffer, offset + headerEncoder.encodedLength());
+  }
+
+  @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     reset();
 
@@ -49,18 +61,6 @@ public abstract class SbeBufferWriterReader<
             offset + headerDecoder.encodedLength(),
             headerDecoder.blockLength(),
             headerDecoder.version());
-  }
-
-  @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
-    headerEncoder
-        .wrap(buffer, offset)
-        .blockLength(getBodyEncoder().sbeBlockLength())
-        .templateId(getBodyEncoder().sbeTemplateId())
-        .schemaId(getBodyEncoder().sbeSchemaId())
-        .version(getBodyEncoder().sbeSchemaVersion());
-
-    getBodyEncoder().wrap(buffer, offset + headerEncoder.encodedLength());
   }
 
   public boolean tryWrap(DirectBuffer buffer) {

@@ -13,13 +13,6 @@ import static org.agrona.UnsafeAccess.UNSAFE;
 public class ActorConditionImpl implements ActorCondition, ActorSubscription {
   private static final long TRIGGER_COUNT_OFFSET;
 
-  private volatile long triggerCount = 0;
-  private long runCount = 0;
-
-  private final ActorJob job;
-  private final String conditionName;
-  private final ActorTask task;
-
   static {
     try {
       TRIGGER_COUNT_OFFSET =
@@ -28,6 +21,12 @@ public class ActorConditionImpl implements ActorCondition, ActorSubscription {
       throw new RuntimeException(e);
     }
   }
+
+  private final ActorJob job;
+  private final String conditionName;
+  private final ActorTask task;
+  private volatile long triggerCount = 0;
+  private long runCount = 0;
 
   public ActorConditionImpl(String conditionName, ActorJob job) {
     this.conditionName = conditionName;
@@ -42,8 +41,8 @@ public class ActorConditionImpl implements ActorCondition, ActorSubscription {
   }
 
   @Override
-  public void onJobCompleted() {
-    runCount++;
+  public void cancel() {
+    task.onSubscriptionCancelled(this);
   }
 
   @Override
@@ -62,12 +61,12 @@ public class ActorConditionImpl implements ActorCondition, ActorSubscription {
   }
 
   @Override
-  public String toString() {
-    return "Condition " + conditionName;
+  public void onJobCompleted() {
+    runCount++;
   }
 
   @Override
-  public void cancel() {
-    task.onSubscriptionCancelled(this);
+  public String toString() {
+    return "Condition " + conditionName;
   }
 }

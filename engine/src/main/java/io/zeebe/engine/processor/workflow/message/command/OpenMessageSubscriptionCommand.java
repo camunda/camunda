@@ -17,14 +17,12 @@ public class OpenMessageSubscriptionCommand
 
   private final OpenMessageSubscriptionEncoder encoder = new OpenMessageSubscriptionEncoder();
   private final OpenMessageSubscriptionDecoder decoder = new OpenMessageSubscriptionDecoder();
-
+  private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer correlationKey = new UnsafeBuffer(0, 0);
   private int subscriptionPartitionId;
   private long workflowInstanceKey;
   private long elementInstanceKey;
   private boolean closeOnCorrelate;
-
-  private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
-  private final UnsafeBuffer correlationKey = new UnsafeBuffer(0, 0);
 
   @Override
   protected OpenMessageSubscriptionEncoder getBodyEncoder() {
@@ -34,6 +32,15 @@ public class OpenMessageSubscriptionCommand
   @Override
   protected OpenMessageSubscriptionDecoder getBodyDecoder() {
     return decoder;
+  }
+
+  @Override
+  public void reset() {
+    subscriptionPartitionId = OpenMessageSubscriptionDecoder.subscriptionPartitionIdNullValue();
+    workflowInstanceKey = OpenMessageSubscriptionDecoder.workflowInstanceKeyNullValue();
+    elementInstanceKey = OpenMessageSubscriptionDecoder.elementInstanceKeyNullValue();
+    messageName.wrap(0, 0);
+    correlationKey.wrap(0, 0);
   }
 
   @Override
@@ -80,15 +87,6 @@ public class OpenMessageSubscriptionCommand
     correlationKey.wrap(buffer, offset, correlationKeyLength);
     offset += correlationKeyLength;
     decoder.limit(offset);
-  }
-
-  @Override
-  public void reset() {
-    subscriptionPartitionId = OpenMessageSubscriptionDecoder.subscriptionPartitionIdNullValue();
-    workflowInstanceKey = OpenMessageSubscriptionDecoder.workflowInstanceKeyNullValue();
-    elementInstanceKey = OpenMessageSubscriptionDecoder.elementInstanceKeyNullValue();
-    messageName.wrap(0, 0);
-    correlationKey.wrap(0, 0);
   }
 
   public int getSubscriptionPartitionId() {

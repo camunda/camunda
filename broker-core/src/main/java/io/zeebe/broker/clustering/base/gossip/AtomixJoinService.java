@@ -17,8 +17,8 @@ import java.util.concurrent.CompletableFuture;
 
 public class AtomixJoinService implements Service<Void> {
 
-  private Atomix atomix;
   private final Injector<Atomix> atomixInjector = new Injector<>();
+  private Atomix atomix;
 
   @Override
   public void start(ServiceStartContext startContext) {

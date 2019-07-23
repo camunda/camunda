@@ -29,6 +29,12 @@ public class EventOccurredHandlerTest extends ElementHandlerTestCase<ExecutableF
     handler = new EventOccurredHandler<>();
   }
 
+  @Override
+  protected ElementInstance createAndSetContextElementInstance(WorkflowInstanceIntent state) {
+    final ElementInstance instance = super.createAndSetContextElementInstance(state);
+    return instance;
+  }
+
   @Test
   public void shouldNotHandleStateIfNoElementGiven() {
     // given
@@ -81,11 +87,5 @@ public class EventOccurredHandlerTest extends ElementHandlerTestCase<ExecutableF
 
     // when - then
     Assertions.assertThat(handler.shouldHandleState(context)).isTrue();
-  }
-
-  @Override
-  protected ElementInstance createAndSetContextElementInstance(WorkflowInstanceIntent state) {
-    final ElementInstance instance = super.createAndSetContextElementInstance(state);
-    return instance;
   }
 }

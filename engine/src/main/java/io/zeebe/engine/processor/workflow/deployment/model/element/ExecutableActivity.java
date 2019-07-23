@@ -35,12 +35,12 @@ public class ExecutableActivity extends ExecutableFlowNode implements Executable
     return catchEvents;
   }
 
-  public List<ExecutableBoundaryEvent> getBoundaryEvents() {
-    return boundaryEvents;
-  }
-
   @Override
   public Collection<DirectBuffer> getInterruptingElementIds() {
     return interruptingIds;
+  }
+
+  public List<ExecutableBoundaryEvent> getBoundaryEvents() {
+    return boundaryEvents;
   }
 }

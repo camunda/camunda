@@ -39,6 +39,10 @@ public class DocumentationImpl extends BpmnModelElementInstanceImpl implements D
   protected static Attribute<String> idAttribute;
   protected static Attribute<String> textFormatAttribute;
 
+  public DocumentationImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
 
     final ModelElementTypeBuilder typeBuilder =
@@ -59,10 +63,6 @@ public class DocumentationImpl extends BpmnModelElementInstanceImpl implements D
         typeBuilder.stringAttribute(BPMN_ATTRIBUTE_TEXT_FORMAT).defaultValue("text/plain").build();
 
     typeBuilder.build();
-  }
-
-  public DocumentationImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

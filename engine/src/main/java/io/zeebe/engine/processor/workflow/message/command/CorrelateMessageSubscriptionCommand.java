@@ -20,12 +20,10 @@ public class CorrelateMessageSubscriptionCommand
       new CorrelateMessageSubscriptionEncoder();
   private final CorrelateMessageSubscriptionDecoder decoder =
       new CorrelateMessageSubscriptionDecoder();
-
+  private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
   private int subscriptionPartitionId;
   private long workflowInstanceKey;
   private long elementInstanceKey;
-
-  private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
 
   @Override
   protected CorrelateMessageSubscriptionEncoder getBodyEncoder() {
@@ -35,6 +33,15 @@ public class CorrelateMessageSubscriptionCommand
   @Override
   protected CorrelateMessageSubscriptionDecoder getBodyDecoder() {
     return decoder;
+  }
+
+  @Override
+  public void reset() {
+    subscriptionPartitionId =
+        CorrelateMessageSubscriptionDecoder.subscriptionPartitionIdNullValue();
+    workflowInstanceKey = CorrelateMessageSubscriptionDecoder.workflowInstanceKeyNullValue();
+    elementInstanceKey = CorrelateMessageSubscriptionDecoder.elementInstanceKeyNullValue();
+    messageName.wrap(0, 0);
   }
 
   @Override
@@ -68,15 +75,6 @@ public class CorrelateMessageSubscriptionCommand
     offset += CorrelateMessageSubscriptionDecoder.messageNameHeaderLength();
     final int messageNameLength = decoder.messageNameLength();
     messageName.wrap(buffer, offset, messageNameLength);
-  }
-
-  @Override
-  public void reset() {
-    subscriptionPartitionId =
-        CorrelateMessageSubscriptionDecoder.subscriptionPartitionIdNullValue();
-    workflowInstanceKey = CorrelateMessageSubscriptionDecoder.workflowInstanceKeyNullValue();
-    elementInstanceKey = CorrelateMessageSubscriptionDecoder.elementInstanceKeyNullValue();
-    messageName.wrap(0, 0);
   }
 
   public int getSubscriptionPartitionId() {

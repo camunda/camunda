@@ -23,8 +23,6 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor {
   protected static final int MAP_VALUE_FILTER_ID = 1;
   protected static final int ARRAY_INDEX_FILTER_ID = 2;
   protected static final int WILDCARD_FILTER_ID = 3;
-
-  private JsonPathQuery currentQuery;
   protected static final MsgPackFilter[] JSON_PATH_FILTERS = new MsgPackFilter[4];
 
   static {
@@ -35,9 +33,9 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor {
   }
 
   protected JsonPathTokenizer tokenizer = new JsonPathTokenizer();
-
   protected UnsafeBuffer expressionBuffer = new UnsafeBuffer(0, 0);
   protected ParsingMode mode;
+  private JsonPathQuery currentQuery;
 
   public JsonPathQuery compile(String jsonPathExpression) {
     expressionBuffer.wrap(jsonPathExpression.getBytes(StandardCharsets.UTF_8));

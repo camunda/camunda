@@ -10,15 +10,13 @@ package io.zeebe.util.sched;
 import java.util.concurrent.TimeUnit;
 
 public class TimerSubscription implements ActorSubscription, ScheduledTimer, Runnable {
-  private volatile boolean isDone = false;
-  private volatile boolean isCanceled = false;
-
   private final ActorJob job;
   private final ActorTask task;
   private final TimeUnit timeUnit;
   private final long deadline;
   private final boolean isRecurring;
-
+  private volatile boolean isDone = false;
+  private volatile boolean isCanceled = false;
   private long timerId = -1L;
   private ActorThread thread;
 
@@ -54,14 +52,6 @@ public class TimerSubscription implements ActorSubscription, ScheduledTimer, Run
     }
   }
 
-  public void setTimerId(long timerId) {
-    this.timerId = timerId;
-  }
-
-  public long getTimerId() {
-    return timerId;
-  }
-
   @Override
   public void cancel() {
     if (!isCanceled && (!isDone || isRecurring)) {
@@ -75,6 +65,14 @@ public class TimerSubscription implements ActorSubscription, ScheduledTimer, Run
         run();
       }
     }
+  }
+
+  public long getTimerId() {
+    return timerId;
+  }
+
+  public void setTimerId(long timerId) {
+    this.timerId = timerId;
   }
 
   public void submit() {

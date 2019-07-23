@@ -40,14 +40,13 @@ public class ClusterBaseLayerServiceNames {
   public static final ServiceName<StorageConfigurationManager> RAFT_CONFIGURATION_MANAGER =
       ServiceName.newServiceName(
           "cluster.base.raft.configurationManager", StorageConfigurationManager.class);
+  public static final ServiceName<Partition> LEADER_PARTITION_GROUP_NAME =
+      ServiceName.newServiceName("cluster.base.leaderGroup", Partition.class);
+  public static final ServiceName<Partition> FOLLOWER_PARTITION_GROUP_NAME =
+      ServiceName.newServiceName("cluster.base.followerGroup", Partition.class);
 
   public static ServiceName<Void> raftInstallServiceName(int partitionId) {
     return ServiceName.newServiceName(
         String.format("cluster.base.raft.install.partition-%d", partitionId), Void.class);
   }
-
-  public static final ServiceName<Partition> LEADER_PARTITION_GROUP_NAME =
-      ServiceName.newServiceName("cluster.base.leaderGroup", Partition.class);
-  public static final ServiceName<Partition> FOLLOWER_PARTITION_GROUP_NAME =
-      ServiceName.newServiceName("cluster.base.followerGroup", Partition.class);
 }

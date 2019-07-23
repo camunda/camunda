@@ -43,6 +43,10 @@ public class ResourceParameterBindingImpl extends BaseElementImpl
   protected static AttributeReference<ResourceParameter> parameterRefAttribute;
   protected static ChildElement<Expression> expressionChild;
 
+  public ResourceParameterBindingImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -70,10 +74,6 @@ public class ResourceParameterBindingImpl extends BaseElementImpl
     expressionChild = sequenceBuilder.element(Expression.class).required().build();
 
     typeBuilder.build();
-  }
-
-  public ResourceParameterBindingImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

@@ -51,13 +51,13 @@ public class SnapshotChunkUtil {
     }
 
     @Override
-    public String getChunkName() {
-      return chunkName;
+    public int getTotalCount() {
+      return totalCount;
     }
 
     @Override
-    public int getTotalCount() {
-      return totalCount;
+    public String getChunkName() {
+      return chunkName;
     }
 
     @Override

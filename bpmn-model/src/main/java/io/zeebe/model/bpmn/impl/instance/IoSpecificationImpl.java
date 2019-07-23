@@ -45,6 +45,10 @@ public class IoSpecificationImpl extends BaseElementImpl implements IoSpecificat
   protected static ChildElementCollection<InputSet> inputSetCollection;
   protected static ChildElementCollection<OutputSet> outputSetCollection;
 
+  public IoSpecificationImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -70,10 +74,6 @@ public class IoSpecificationImpl extends BaseElementImpl implements IoSpecificat
     outputSetCollection = sequenceBuilder.elementCollection(OutputSet.class).required().build();
 
     typeBuilder.build();
-  }
-
-  public IoSpecificationImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

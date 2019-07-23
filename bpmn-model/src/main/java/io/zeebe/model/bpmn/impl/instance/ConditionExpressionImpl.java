@@ -38,6 +38,10 @@ public class ConditionExpressionImpl extends FormalExpressionImpl implements Con
 
   protected static Attribute<String> typeAttribute;
 
+  public ConditionExpressionImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -60,10 +64,6 @@ public class ConditionExpressionImpl extends FormalExpressionImpl implements Con
             .build();
 
     typeBuilder.build();
-  }
-
-  public ConditionExpressionImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

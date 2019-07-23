@@ -47,17 +47,17 @@ public class EmbeddedGatewayService implements Service<Gateway> {
     }
   }
 
+  @Override
+  public Gateway get() {
+    return gateway;
+  }
+
   private void startGateway() {
     try {
       gateway.start();
     } catch (final IOException e) {
       throw new RuntimeException("Gateway was not able to start", e);
     }
-  }
-
-  @Override
-  public Gateway get() {
-    return gateway;
   }
 
   public Injector<AtomixCluster> getAtomixClusterInjector() {

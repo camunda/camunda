@@ -20,6 +20,8 @@ import org.agrona.DirectBuffer;
 public class ServiceTaskElementActivatedHandler<T extends ExecutableServiceTask>
     extends ElementActivatedHandler<T> {
 
+  private final JobRecord jobCommand = new JobRecord();
+
   public ServiceTaskElementActivatedHandler() {
     this(null);
   }
@@ -27,8 +29,6 @@ public class ServiceTaskElementActivatedHandler<T extends ExecutableServiceTask>
   public ServiceTaskElementActivatedHandler(WorkflowInstanceIntent nextState) {
     super(nextState);
   }
-
-  private final JobRecord jobCommand = new JobRecord();
 
   @Override
   protected boolean handleState(BpmnStepContext<T> context) {

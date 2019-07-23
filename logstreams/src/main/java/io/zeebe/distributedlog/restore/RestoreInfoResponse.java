@@ -14,15 +14,15 @@ public interface RestoreInfoResponse {
   /** @return the replication target in order to restore the local log */
   ReplicationTarget getReplicationTarget();
 
-  enum ReplicationTarget {
-    SNAPSHOT,
-    EVENTS,
-    NONE,
-  }
-
   /**
    * @return restore info for snapshot if {@link this::getReplicationTarget()} is equal to SNAPSHOT.
    *     Otherwise returns null
    */
   SnapshotRestoreInfo getSnapshotRestoreInfo();
+
+  enum ReplicationTarget {
+    SNAPSHOT,
+    EVENTS,
+    NONE,
+  }
 }

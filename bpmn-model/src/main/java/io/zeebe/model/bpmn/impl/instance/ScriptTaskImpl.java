@@ -43,6 +43,10 @@ public class ScriptTaskImpl extends TaskImpl implements ScriptTask {
   protected static Attribute<String> scriptFormatAttribute;
   protected static ChildElement<Script> scriptChild;
 
+  public ScriptTaskImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -64,10 +68,6 @@ public class ScriptTaskImpl extends TaskImpl implements ScriptTask {
     scriptChild = sequenceBuilder.element(Script.class).build();
 
     typeBuilder.build();
-  }
-
-  public ScriptTaskImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

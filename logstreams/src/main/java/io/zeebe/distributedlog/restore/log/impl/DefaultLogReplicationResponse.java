@@ -40,10 +40,6 @@ public class DefaultLogReplicationResponse implements LogReplicationResponse {
     return moreAvailable;
   }
 
-  public void setMoreAvailable(boolean moreAvailable) {
-    this.moreAvailable = moreAvailable;
-  }
-
   @Override
   public byte[] getSerializedEvents() {
     return serializedEvents;
@@ -51,6 +47,10 @@ public class DefaultLogReplicationResponse implements LogReplicationResponse {
 
   public void setSerializedEvents(byte[] serializedEvents) {
     this.serializedEvents = serializedEvents;
+  }
+
+  public void setMoreAvailable(boolean moreAvailable) {
+    this.moreAvailable = moreAvailable;
   }
 
   public void setSerializedEvents(DirectBuffer buffer, int offset, int length) {

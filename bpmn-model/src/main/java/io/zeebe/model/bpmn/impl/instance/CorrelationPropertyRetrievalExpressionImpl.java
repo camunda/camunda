@@ -42,6 +42,10 @@ public class CorrelationPropertyRetrievalExpressionImpl extends BaseElementImpl
   protected static AttributeReference<Message> messageRefAttribute;
   protected static ChildElement<MessagePath> messagePathChild;
 
+  public CorrelationPropertyRetrievalExpressionImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -71,10 +75,6 @@ public class CorrelationPropertyRetrievalExpressionImpl extends BaseElementImpl
     messagePathChild = sequenceBuilder.element(MessagePath.class).required().build();
 
     typeBuilder.build();
-  }
-
-  public CorrelationPropertyRetrievalExpressionImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

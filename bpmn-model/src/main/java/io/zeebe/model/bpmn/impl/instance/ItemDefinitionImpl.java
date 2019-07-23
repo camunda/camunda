@@ -37,6 +37,10 @@ public class ItemDefinitionImpl extends RootElementImpl implements ItemDefinitio
   protected static Attribute<Boolean> isCollectionAttribute;
   protected static Attribute<ItemKind> itemKindAttribute;
 
+  public ItemDefinitionImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -63,10 +67,6 @@ public class ItemDefinitionImpl extends RootElementImpl implements ItemDefinitio
             .build();
 
     typeBuilder.build();
-  }
-
-  public ItemDefinitionImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

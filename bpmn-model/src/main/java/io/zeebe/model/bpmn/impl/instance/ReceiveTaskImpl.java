@@ -48,6 +48,10 @@ public class ReceiveTaskImpl extends TaskImpl implements ReceiveTask {
   protected static AttributeReference<Message> messageRefAttribute;
   protected static AttributeReference<Operation> operationRefAttribute;
 
+  public ReceiveTaskImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -84,10 +88,6 @@ public class ReceiveTaskImpl extends TaskImpl implements ReceiveTask {
             .build();
 
     typeBuilder.build();
-  }
-
-  public ReceiveTaskImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

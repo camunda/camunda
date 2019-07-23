@@ -15,11 +15,8 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class TransportHeaderWriter {
-  private final UnsafeBuffer bufferView = new UnsafeBuffer();
-
   private static final int REQUEST_HEADER_LENGTH;
   private static final int MESSAGE_HEADER_LENGTH;
-
   private static final int STREAM_ID_OFFSET;
   private static final int REQUEST_ID_OFFSET;
 
@@ -39,6 +36,8 @@ public class TransportHeaderWriter {
             + TransportHeaderDescriptor.HEADER_LENGTH
             + RequestResponseHeaderDescriptor.REQUEST_ID_OFFSET;
   }
+
+  private final UnsafeBuffer bufferView = new UnsafeBuffer();
 
   public static int getFramedRequestLength(int messageLength) {
     return DataFrameDescriptor.alignedLength(REQUEST_HEADER_LENGTH + messageLength);

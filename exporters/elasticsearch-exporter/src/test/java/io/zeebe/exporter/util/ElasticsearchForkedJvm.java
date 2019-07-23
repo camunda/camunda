@@ -37,7 +37,7 @@ public class ElasticsearchForkedJvm implements ElasticsearchNode<ElasticsearchFo
   private static final int DEFAULT_TCP_PORT = 9300;
 
   private final TemporaryFolder temporaryFolder;
-
+  private final List<String> javaOptions = new ArrayList<>();
   private EmbeddedElastic.Builder builder;
   private EmbeddedElastic elastic;
   private boolean isSslEnabled;
@@ -46,8 +46,6 @@ public class ElasticsearchForkedJvm implements ElasticsearchNode<ElasticsearchFo
   private String password;
   private File installationDirectory;
   private RestHighLevelClient client;
-
-  private final List<String> javaOptions = new ArrayList<>();
 
   public ElasticsearchForkedJvm(TemporaryFolder temporaryFolder) {
     this(temporaryFolder, EmbeddedElastic.builder());

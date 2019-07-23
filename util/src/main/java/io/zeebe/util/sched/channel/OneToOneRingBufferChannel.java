@@ -13,11 +13,11 @@ import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.ringbuffer.OneToOneRingBuffer;
 
 public class OneToOneRingBufferChannel extends OneToOneRingBuffer implements ConsumableChannel {
+  private final ActorConditions conditions = new ActorConditions();
+
   public OneToOneRingBufferChannel(AtomicBuffer buffer) {
     super(buffer);
   }
-
-  private final ActorConditions conditions = new ActorConditions();
 
   @Override
   public boolean hasAvailable() {

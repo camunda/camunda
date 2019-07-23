@@ -26,22 +26,6 @@ public class ByteValue {
     this.unit = unit;
   }
 
-  public static ByteValue ofBytes(long value) {
-    return new ByteValue(value, ByteUnit.BYTES);
-  }
-
-  public static ByteValue ofKilobytes(long value) {
-    return new ByteValue(value, ByteUnit.KILOBYTES);
-  }
-
-  public static ByteValue ofMegabytes(long value) {
-    return new ByteValue(value, ByteUnit.MEGABYTES);
-  }
-
-  public static ByteValue ofGigabytes(long value) {
-    return new ByteValue(value, ByteUnit.GIGABYTES);
-  }
-
   public ByteValue(String humanReadable) {
     final Matcher matcher = PATTERN.matcher(humanReadable);
 
@@ -59,6 +43,22 @@ public class ByteValue {
     final String unitString = matcher.group(2).toUpperCase();
 
     unit = ByteUnit.getUnit(unitString);
+  }
+
+  public static ByteValue ofBytes(long value) {
+    return new ByteValue(value, ByteUnit.BYTES);
+  }
+
+  public static ByteValue ofKilobytes(long value) {
+    return new ByteValue(value, ByteUnit.KILOBYTES);
+  }
+
+  public static ByteValue ofMegabytes(long value) {
+    return new ByteValue(value, ByteUnit.MEGABYTES);
+  }
+
+  public static ByteValue ofGigabytes(long value) {
+    return new ByteValue(value, ByteUnit.GIGABYTES);
   }
 
   public ByteUnit getUnit() {
@@ -90,11 +90,6 @@ public class ByteValue {
   }
 
   @Override
-  public String toString() {
-    return String.format("%d%s", value, unit.metric());
-  }
-
-  @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
@@ -122,5 +117,10 @@ public class ByteValue {
       return false;
     }
     return true;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("%d%s", value, unit.metric());
   }
 }

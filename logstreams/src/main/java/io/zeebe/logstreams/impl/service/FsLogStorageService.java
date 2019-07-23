@@ -39,15 +39,6 @@ public class FsLogStorageService implements Service<LogStorage> {
     startContext.run(this::openLogStorage);
   }
 
-  public void openLogStorage() {
-    try {
-      logStorage.open();
-    } catch (IOException e) {
-      // retry until success
-      openLogStorage();
-    }
-  }
-
   @Override
   public void stop(final ServiceStopContext stopContext) {
     stopContext.run(logStorage::close);
@@ -56,5 +47,14 @@ public class FsLogStorageService implements Service<LogStorage> {
   @Override
   public LogStorage get() {
     return logStorage;
+  }
+
+  public void openLogStorage() {
+    try {
+      logStorage.open();
+    } catch (IOException e) {
+      // retry until success
+      openLogStorage();
+    }
   }
 }

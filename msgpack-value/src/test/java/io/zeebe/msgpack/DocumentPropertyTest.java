@@ -21,22 +21,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
 public class DocumentPropertyTest {
-  private class Document extends UnpackedObject {
-    private final DocumentProperty documentProperty = new DocumentProperty("documentProp");
-
-    Document() {
-      this.declareProperty(documentProperty);
-    }
-
-    public DirectBuffer getDocument() {
-      return documentProperty.getValue();
-    }
-
-    public void setDocument(DirectBuffer document) {
-      documentProperty.setValue(document);
-    }
-  }
-
   @Test
   public void shouldSerializeWithDefaultValue() {
     // given
@@ -235,5 +219,21 @@ public class DocumentPropertyTest {
     documentBytes.getBytes(0, bytes);
 
     assertThat(deserializedBytes).isEqualTo(bytes);
+  }
+
+  private class Document extends UnpackedObject {
+    private final DocumentProperty documentProperty = new DocumentProperty("documentProp");
+
+    Document() {
+      this.declareProperty(documentProperty);
+    }
+
+    public DirectBuffer getDocument() {
+      return documentProperty.getValue();
+    }
+
+    public void setDocument(DirectBuffer document) {
+      documentProperty.setValue(document);
+    }
   }
 }

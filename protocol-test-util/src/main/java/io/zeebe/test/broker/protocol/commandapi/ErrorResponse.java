@@ -15,11 +15,9 @@ import io.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;
 
 public class ErrorResponse implements BufferReader {
+  protected final MsgPackHelper msgPackHelper;
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
   private final ErrorResponseDecoder bodyDecoder = new ErrorResponseDecoder();
-
-  protected final MsgPackHelper msgPackHelper;
-
   protected String errorData;
 
   public ErrorResponse(MsgPackHelper msgPackHelper) {

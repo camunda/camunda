@@ -35,6 +35,10 @@ public class DataOutputImpl extends ItemAwareElementImpl implements DataOutput {
   protected static Attribute<String> nameAttribute;
   protected static Attribute<Boolean> isCollectionAttribute;
 
+  public DataOutputImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -55,10 +59,6 @@ public class DataOutputImpl extends ItemAwareElementImpl implements DataOutput {
         typeBuilder.booleanAttribute(BPMN_ATTRIBUTE_IS_COLLECTION).defaultValue(false).build();
 
     typeBuilder.build();
-  }
-
-  public DataOutputImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

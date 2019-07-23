@@ -24,36 +24,6 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
  */
 @SuppressWarnings("restriction")
 public class ActorTask {
-  /** Describes an actor's scheduling state */
-  public enum TaskSchedulingState {
-    NOT_SCHEDULED,
-    ACTIVE,
-    QUEUED,
-    WAITING,
-    WAKING_UP,
-    TERMINATED
-  }
-
-  /** An actor task's lifecycle phases */
-  public enum ActorLifecyclePhase {
-    STARTING(1),
-    STARTED(2),
-    CLOSE_REQUESTED(4),
-    CLOSING(8),
-    CLOSED(16),
-    FAILED(32);
-
-    private final int value;
-
-    ActorLifecyclePhase(int value) {
-      this.value = value;
-    }
-
-    public int getValue() {
-      return value;
-    }
-  }
-
   private static final long STATE_COUNT_OFFSET;
   private static final long SCHEDULING_STATE_OFFSET;
 
@@ -68,16 +38,16 @@ public class ActorTask {
   }
 
   public final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
+  final Actor actor;
   private final CompletableActorFuture<Void> jobClosingTaskFuture = new CompletableActorFuture<>();
-
   private final CompletableActorFuture<Void> startingFuture = new CompletableActorFuture<>();
   private final CompletableActorFuture<Void> jobStartingTaskFuture = new CompletableActorFuture<>();
-
-  final Actor actor;
-
+  volatile TaskSchedulingState schedulingState = null;
+  volatile long stateCount = 0;
+  ActorJob currentJob;
+  boolean shouldYield;
   private ActorExecutor actorExecutor;
   private ActorThreadGroup actorThreadGroup;
-
   /**
    * jobs that are submitted to this task externally. A job is submitted "internally" if it is
    * submitted from a job within the same actor while the task is in RUNNING state.
@@ -85,19 +55,8 @@ public class ActorTask {
   private volatile Queue<ActorJob> submittedJobs = new ClosedQueue();
 
   private Deque<ActorJob> fastLaneJobs = new ClosedQueue();
-
   private ActorLifecyclePhase lifecyclePhase = ActorLifecyclePhase.CLOSED;
-
-  volatile TaskSchedulingState schedulingState = null;
-
-  volatile long stateCount = 0;
-
-  ActorJob currentJob;
-
   private ActorSubscription[] subscriptions = new ActorSubscription[0];
-
-  boolean shouldYield;
-
   /**
    * the priority class of the task. Only set if the task is scheduled as non-blocking, CPU-bound
    */
@@ -548,8 +507,6 @@ public class ActorTask {
     return startingFuture;
   }
 
-  // subscription helpers
-
   public void addSubscription(ActorSubscription subscription) {
     final ActorSubscription[] arrayCopy = Arrays.copyOf(subscriptions, subscriptions.length + 1);
     arrayCopy[arrayCopy.length - 1] = subscription;
@@ -577,6 +534,8 @@ public class ActorTask {
     this.subscriptions = newSubscriptions;
   }
 
+  // subscription helpers
+
   public void onSubscriptionCancelled(ActorSubscription subscription) {
     if (lifecyclePhase != ActorLifecyclePhase.CLOSED) {
       removeSubscription(subscription);
@@ -598,5 +557,35 @@ public class ActorTask {
 
   public void insertJob(ActorJob job) {
     fastLaneJobs.addFirst(job);
+  }
+
+  /** Describes an actor's scheduling state */
+  public enum TaskSchedulingState {
+    NOT_SCHEDULED,
+    ACTIVE,
+    QUEUED,
+    WAITING,
+    WAKING_UP,
+    TERMINATED
+  }
+
+  /** An actor task's lifecycle phases */
+  public enum ActorLifecyclePhase {
+    STARTING(1),
+    STARTED(2),
+    CLOSE_REQUESTED(4),
+    CLOSING(8),
+    CLOSED(16),
+    FAILED(32);
+
+    private final int value;
+
+    ActorLifecyclePhase(int value) {
+      this.value = value;
+    }
+
+    public int getValue() {
+      return value;
+    }
   }
 }

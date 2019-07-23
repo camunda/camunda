@@ -42,6 +42,10 @@ public class LaneSetImpl extends BaseElementImpl implements LaneSet {
   protected static Attribute<String> nameAttribute;
   protected static ChildElementCollection<Lane> laneCollection;
 
+  public LaneSetImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -63,10 +67,6 @@ public class LaneSetImpl extends BaseElementImpl implements LaneSet {
     laneCollection = sequenceBuilder.elementCollection(Lane.class).build();
 
     typeBuilder.build();
-  }
-
-  public LaneSetImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

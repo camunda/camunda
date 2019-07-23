@@ -29,21 +29,18 @@ import org.junit.Test;
 public class WorkflowInstanceVariableTest {
 
   public static final String PROCESS_ID = "process";
-
+  @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .serviceTask("task", t -> t.zeebeTaskType("test"))
           .endEvent()
           .done();
-
-  @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
+  private static long workflowKey;
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
-
-  private static long workflowKey;
 
   @BeforeClass
   public static void init() {

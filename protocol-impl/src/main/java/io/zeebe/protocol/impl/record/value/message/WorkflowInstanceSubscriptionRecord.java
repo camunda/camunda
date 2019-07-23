@@ -57,9 +57,24 @@ public class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
     return BufferUtil.bufferAsString(messageNameProp.getValue());
   }
 
+  public WorkflowInstanceSubscriptionRecord setMessageName(DirectBuffer messageName) {
+    messageNameProp.setValue(messageName);
+    return this;
+  }
+
+  public WorkflowInstanceSubscriptionRecord setElementInstanceKey(long key) {
+    elementInstanceKeyProp.setValue(key);
+    return this;
+  }
+
   @JsonIgnore
   public long getMessageKey() {
     return messageKeyProp.getValue();
+  }
+
+  public WorkflowInstanceSubscriptionRecord setMessageKey(long messageKey) {
+    messageKeyProp.setValue(messageKey);
+    return this;
   }
 
   @JsonIgnore
@@ -72,9 +87,19 @@ public class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
     return subscriptionPartitionIdProp.getValue();
   }
 
+  public WorkflowInstanceSubscriptionRecord setSubscriptionPartitionId(int partitionId) {
+    subscriptionPartitionIdProp.setValue(partitionId);
+    return this;
+  }
+
   @Override
   public Map<String, Object> getVariables() {
     return MsgPackConverter.convertToMap(variablesProp.getValue());
+  }
+
+  public WorkflowInstanceSubscriptionRecord setVariables(DirectBuffer variables) {
+    variablesProp.setValue(variables);
+    return this;
   }
 
   @JsonIgnore
@@ -86,38 +111,13 @@ public class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
     return workflowInstanceKeyProp.getValue();
   }
 
-  public WorkflowInstanceSubscriptionRecord setCloseOnCorrelate(boolean closeOnCorrelate) {
-    this.closeOnCorrelateProp.setValue(closeOnCorrelate);
-    return this;
-  }
-
-  public WorkflowInstanceSubscriptionRecord setElementInstanceKey(long key) {
-    elementInstanceKeyProp.setValue(key);
-    return this;
-  }
-
-  public WorkflowInstanceSubscriptionRecord setMessageKey(long messageKey) {
-    messageKeyProp.setValue(messageKey);
-    return this;
-  }
-
-  public WorkflowInstanceSubscriptionRecord setMessageName(DirectBuffer messageName) {
-    messageNameProp.setValue(messageName);
-    return this;
-  }
-
-  public WorkflowInstanceSubscriptionRecord setSubscriptionPartitionId(int partitionId) {
-    subscriptionPartitionIdProp.setValue(partitionId);
-    return this;
-  }
-
-  public WorkflowInstanceSubscriptionRecord setVariables(DirectBuffer variables) {
-    variablesProp.setValue(variables);
-    return this;
-  }
-
   public WorkflowInstanceSubscriptionRecord setWorkflowInstanceKey(long key) {
     workflowInstanceKeyProp.setValue(key);
+    return this;
+  }
+
+  public WorkflowInstanceSubscriptionRecord setCloseOnCorrelate(boolean closeOnCorrelate) {
+    this.closeOnCorrelateProp.setValue(closeOnCorrelate);
     return this;
   }
 }

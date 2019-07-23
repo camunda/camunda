@@ -112,6 +112,98 @@ public class ServiceController extends Actor {
     LOG.warn("Ignoring event {} in state {}", event.getType(), state.getClass().getSimpleName());
   }
 
+  private void invokeStop(boolean interrupted) {
+    state = awaitStopState;
+
+    if (startContext != null) {
+      startContext.invalidate();
+    }
+
+    stopContext = new StopContextImpl();
+    stopContext.wasInterrupted = interrupted;
+
+    try {
+      service.stop(stopContext);
+
+      if (stopContext.action != null) {
+        actor.runBlocking(stopContext.action, stopContext);
+      }
+
+      if (!stopContext.isAsync()) {
+        fireEvent(ServiceEventType.SERVICE_STOPPED);
+      }
+    } catch (Throwable t) {
+      LOG.error("Exception while stopping service {}: {}", this, t);
+      fireEvent(ServiceEventType.SERVICE_STOPPED);
+    }
+  }
+
+  @Override
+  public String toString() {
+    return String.format("%s in %s", name, state.getClass().getSimpleName());
+  }
+
+  public void fireEvent(ServiceEventType evtType) {
+    fireEvent(evtType, null);
+  }
+
+  public void fireEvent(ServiceEventType evtType, Object payload) {
+    final ServiceEvent event = new ServiceEvent(evtType, this, payload);
+
+    channel.add(event);
+    container.getChannel().add(event);
+  }
+
+  public Set<ServiceName<?>> getDependencies() {
+    return dependencies;
+  }
+
+  public ActorFuture<Void> remove() {
+    actor.run(
+        () -> {
+          fireEvent(ServiceEventType.SERVICE_STOPPING);
+        });
+
+    return stopFuture;
+  }
+
+  public ServiceName<?> getGroupName() {
+    return groupName;
+  }
+
+  public ServiceName<?> getServiceName() {
+    return name;
+  }
+
+  public Map<ServiceName<?>, ServiceGroupReference<?>> getInjectedReferences() {
+    return injectedReferences;
+  }
+
+  // API & Cmds ////////////////////////////////////////////////
+
+  public Service getService() {
+    return service;
+  }
+
+  public void addReferencedValue(ServiceGroupReference ref, ServiceName name, Object value) {
+    actor.call(
+        () -> {
+          invoke(ref.getAddHandler(), name, value);
+        });
+  }
+
+  public void removeReferencedValue(ServiceGroupReference ref, ServiceName name, Object value) {
+    actor.call(
+        () -> {
+          invoke(ref.getRemoveHandler(), name, value);
+        });
+  }
+
+  @SuppressWarnings("unchecked")
+  private static <S> void invoke(BiConsumer consumer, ServiceName name, Object value) {
+    consumer.accept(name, value);
+  }
+
   @SuppressWarnings("unchecked")
   class AwaitDependenciesStartedState implements Consumer<ServiceEvent> {
     @Override
@@ -290,32 +382,6 @@ public class ServiceController extends Actor {
     }
   }
 
-  private void invokeStop(boolean interrupted) {
-    state = awaitStopState;
-
-    if (startContext != null) {
-      startContext.invalidate();
-    }
-
-    stopContext = new StopContextImpl();
-    stopContext.wasInterrupted = interrupted;
-
-    try {
-      service.stop(stopContext);
-
-      if (stopContext.action != null) {
-        actor.runBlocking(stopContext.action, stopContext);
-      }
-
-      if (!stopContext.isAsync()) {
-        fireEvent(ServiceEventType.SERVICE_STOPPED);
-      }
-    } catch (Throwable t) {
-      LOG.error("Exception while stopping service {}: {}", this, t);
-      fireEvent(ServiceEventType.SERVICE_STOPPED);
-    }
-  }
-
   class StartContextImpl implements ServiceStartContext, Consumer<Throwable> {
     final Set<ServiceName<?>> dependentServices = new HashSet<>();
 
@@ -330,13 +396,13 @@ public class ServiceController extends Actor {
     }
 
     @Override
-    public ServiceName<?> getServiceName() {
-      return name;
+    public String getName() {
+      return name.getName();
     }
 
     @Override
-    public String getName() {
-      return name.getName();
+    public ServiceName<?> getServiceName() {
+      return name;
     }
 
     @Override
@@ -362,6 +428,18 @@ public class ServiceController extends Actor {
     public <S> ActorFuture<Void> removeService(ServiceName<S> name) {
       validCheck();
       return container.removeService(name);
+    }
+
+    @Override
+    public <S> ActorFuture<Boolean> hasService(ServiceName<S> name) {
+      validCheck();
+      return container.hasService(name);
+    }
+
+    @Override
+    public ActorScheduler getScheduler() {
+      validCheck();
+      return container.getActorScheduler();
     }
 
     @Override
@@ -411,18 +489,6 @@ public class ServiceController extends Actor {
       } else {
         fireEvent(ServiceEventType.SERVICE_START_FAILED, u);
       }
-    }
-
-    @Override
-    public ActorScheduler getScheduler() {
-      validCheck();
-      return container.getActorScheduler();
-    }
-
-    @Override
-    public <S> ActorFuture<Boolean> hasService(ServiceName<S> name) {
-      validCheck();
-      return container.hasService(name);
     }
   }
 
@@ -475,71 +541,5 @@ public class ServiceController extends Actor {
     public void accept(Throwable u) {
       fireEvent(ServiceEventType.SERVICE_STOPPED);
     }
-  }
-
-  // API & Cmds ////////////////////////////////////////////////
-
-  @Override
-  public String toString() {
-    return String.format("%s in %s", name, state.getClass().getSimpleName());
-  }
-
-  public void fireEvent(ServiceEventType evtType) {
-    fireEvent(evtType, null);
-  }
-
-  public void fireEvent(ServiceEventType evtType, Object payload) {
-    final ServiceEvent event = new ServiceEvent(evtType, this, payload);
-
-    channel.add(event);
-    container.getChannel().add(event);
-  }
-
-  public Set<ServiceName<?>> getDependencies() {
-    return dependencies;
-  }
-
-  public ActorFuture<Void> remove() {
-    actor.run(
-        () -> {
-          fireEvent(ServiceEventType.SERVICE_STOPPING);
-        });
-
-    return stopFuture;
-  }
-
-  public ServiceName<?> getGroupName() {
-    return groupName;
-  }
-
-  public ServiceName<?> getServiceName() {
-    return name;
-  }
-
-  public Map<ServiceName<?>, ServiceGroupReference<?>> getInjectedReferences() {
-    return injectedReferences;
-  }
-
-  public Service getService() {
-    return service;
-  }
-
-  public void addReferencedValue(ServiceGroupReference ref, ServiceName name, Object value) {
-    actor.call(
-        () -> {
-          invoke(ref.getAddHandler(), name, value);
-        });
-  }
-
-  public void removeReferencedValue(ServiceGroupReference ref, ServiceName name, Object value) {
-    actor.call(
-        () -> {
-          invoke(ref.getRemoveHandler(), name, value);
-        });
-  }
-
-  @SuppressWarnings("unchecked")
-  private static <S> void invoke(BiConsumer consumer, ServiceName name, Object value) {
-    consumer.accept(name, value);
   }
 }

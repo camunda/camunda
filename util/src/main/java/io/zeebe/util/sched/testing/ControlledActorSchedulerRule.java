@@ -89,6 +89,10 @@ public class ControlledActorSchedulerRule extends ExternalResource {
     return future;
   }
 
+  public ControlledActorClock getClock() {
+    return clock;
+  }
+
   static class CallingActor<T> extends Actor {
     private final ActorFuture<T> future;
     private final Callable<T> callable;
@@ -126,9 +130,5 @@ public class ControlledActorSchedulerRule extends ExternalResource {
           new ControlledActorThread(name, id, threadGroup, taskScheduler, clock, timerQueue);
       return controlledThread;
     }
-  }
-
-  public ControlledActorClock getClock() {
-    return clock;
   }
 }

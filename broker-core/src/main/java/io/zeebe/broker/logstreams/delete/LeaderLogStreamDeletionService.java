@@ -30,6 +30,14 @@ public class LeaderLogStreamDeletionService implements DeletionService, Service 
   }
 
   @Override
+  public void stop(final ServiceStopContext stopContext) {}
+
+  @Override
+  public LeaderLogStreamDeletionService get() {
+    return this;
+  }
+
+  @Override
   public void delete(final long position) {
     final long minPosition = Math.min(position, getMinimumExportedPosition());
     logStream.delete(minPosition);
@@ -37,14 +45,6 @@ public class LeaderLogStreamDeletionService implements DeletionService, Service 
 
   private long getMinimumExportedPosition() {
     return exporterManagerService.getLowestExporterPosition();
-  }
-
-  @Override
-  public void stop(final ServiceStopContext stopContext) {}
-
-  @Override
-  public LeaderLogStreamDeletionService get() {
-    return this;
   }
 
   public Injector<ExporterManagerService> getExporterManagerInjector() {

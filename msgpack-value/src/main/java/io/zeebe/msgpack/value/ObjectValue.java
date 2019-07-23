@@ -68,18 +68,19 @@ public class ObjectValue extends BaseValue {
     builder.append("}");
   }
 
-  protected <T extends BaseProperty<?>> void writeJson(StringBuilder builder, List<T> properties) {
-    for (int i = 0; i < properties.size(); i++) {
-      if (i > 0) {
-        builder.append(",");
-      }
+  /**
+   * Caution: In case not all properties are writeable (i.e. value not set and no default), this
+   * method may write some of the values and only then throw an exception. The same exception is
+   * raised by {@link #getEncodedLength()}. If you call that first and it succeeds, you are safe to
+   * write all the values.
+   */
+  @Override
+  public void write(MsgPackWriter writer) {
+    final int size = declaredProperties.size() + undeclaredProperties.size();
 
-      final BaseProperty<? extends BaseValue> prop = properties.get(i);
-
-      if (prop.hasValue()) {
-        prop.writeJSON(builder);
-      }
-    }
+    writer.writeMapHeader(size);
+    write(writer, declaredProperties);
+    write(writer, undeclaredProperties);
   }
 
   @Override
@@ -122,19 +123,29 @@ public class ObjectValue extends BaseValue {
     }
   }
 
-  /**
-   * Caution: In case not all properties are writeable (i.e. value not set and no default), this
-   * method may write some of the values and only then throw an exception. The same exception is
-   * raised by {@link #getEncodedLength()}. If you call that first and it succeeds, you are safe to
-   * write all the values.
-   */
   @Override
-  public void write(MsgPackWriter writer) {
+  public int getEncodedLength() {
     final int size = declaredProperties.size() + undeclaredProperties.size();
 
-    writer.writeMapHeader(size);
-    write(writer, declaredProperties);
-    write(writer, undeclaredProperties);
+    int length = MsgPackWriter.getEncodedMapHeaderLenght(size);
+    length += getEncodedLength(declaredProperties);
+    length += getEncodedLength(undeclaredProperties);
+
+    return length;
+  }
+
+  protected <T extends BaseProperty<?>> void writeJson(StringBuilder builder, List<T> properties) {
+    for (int i = 0; i < properties.size(); i++) {
+      if (i > 0) {
+        builder.append(",");
+      }
+
+      final BaseProperty<? extends BaseValue> prop = properties.get(i);
+
+      if (prop.hasValue()) {
+        prop.writeJSON(builder);
+      }
+    }
   }
 
   protected <T extends BaseProperty<?>> void write(MsgPackWriter writer, List<T> properties) {
@@ -145,14 +156,8 @@ public class ObjectValue extends BaseValue {
   }
 
   @Override
-  public int getEncodedLength() {
-    final int size = declaredProperties.size() + undeclaredProperties.size();
-
-    int length = MsgPackWriter.getEncodedMapHeaderLenght(size);
-    length += getEncodedLength(declaredProperties);
-    length += getEncodedLength(undeclaredProperties);
-
-    return length;
+  public int hashCode() {
+    return Objects.hash(declaredProperties, undeclaredProperties, recycledProperties);
   }
 
   @Override
@@ -169,11 +174,6 @@ public class ObjectValue extends BaseValue {
     return Objects.equals(declaredProperties, that.declaredProperties)
         && Objects.equals(undeclaredProperties, that.undeclaredProperties)
         && Objects.equals(recycledProperties, that.recycledProperties);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(declaredProperties, undeclaredProperties, recycledProperties);
   }
 
   protected <T extends BaseProperty<?>> int getEncodedLength(List<T> properties) {

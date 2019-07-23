@@ -48,9 +48,9 @@ public class DebugHttpServer {
   }
 
   private final int maxSize;
-  private HttpServer server;
   private final Map<String, byte[]> resources;
   private final LinkedList<String> records;
+  private HttpServer server;
 
   public DebugHttpServer(int port, int maxSize) {
     this.maxSize = maxSize;

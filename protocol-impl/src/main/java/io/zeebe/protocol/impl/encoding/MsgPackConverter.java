@@ -9,14 +9,23 @@ package io.zeebe.protocol.impl.encoding;
 
 import static io.zeebe.util.StringUtil.getBytes;
 
-import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.core.JsonEncoding;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonParser.Feature;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.JsonSerializable;
 import io.zeebe.util.buffer.BufferUtil;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -41,19 +50,16 @@ public final class MsgPackConverter {
    * need differently * configured factories. Factory reuse is important if efficiency matters; *
    * most recycling of expensive construct is done on per-factory basis.
    */
-
-  // prevent instantiation
-  private MsgPackConverter() {}
-
   private static final JsonFactory MESSAGE_PACK_FACTORY =
       new MessagePackFactory().setReuseResourceInGenerator(false).setReuseResourceInParser(false);
   private static final JsonFactory JSON_FACTORY =
       new MappingJsonFactory().configure(Feature.ALLOW_SINGLE_QUOTES, true);
-
   private static final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper(JSON_FACTORY);
-
   private static final ObjectMapper MESSSAGE_PACK_OBJECT_MAPPER =
       new ObjectMapper(MESSAGE_PACK_FACTORY);
+
+  // prevent instantiation
+  private MsgPackConverter() {}
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////// JSON to MSGPACK //////////////////////////////////////////

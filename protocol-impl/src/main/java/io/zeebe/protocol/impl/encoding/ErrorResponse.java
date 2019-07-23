@@ -25,9 +25,8 @@ public class ErrorResponse implements BufferWriter, BufferReader {
 
   private final ErrorResponseEncoder bodyEncoder = new ErrorResponseEncoder();
   private final ErrorResponseDecoder bodyDecoder = new ErrorResponseDecoder();
-
-  private ErrorCode errorCode;
   private final DirectBuffer errorData = new UnsafeBuffer();
+  private ErrorCode errorCode;
 
   public ErrorResponse() {
     reset();

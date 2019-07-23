@@ -91,12 +91,12 @@ public class WorkflowInstanceSubscription implements DbValue {
     this.workflowInstanceKey = workflowInstanceKey;
   }
 
-  public void setElementInstanceKey(long elementInstanceKey) {
-    this.elementInstanceKey = elementInstanceKey;
-  }
-
   public long getElementInstanceKey() {
     return elementInstanceKey;
+  }
+
+  public void setElementInstanceKey(long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   public long getCommandSentTime() {

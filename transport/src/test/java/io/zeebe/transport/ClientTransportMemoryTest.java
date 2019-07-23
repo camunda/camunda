@@ -45,20 +45,15 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class ClientTransportMemoryTest {
-  private ControlledActorClock clock = new ControlledActorClock();
-  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);
-  public AutoCloseableRule closeables = new AutoCloseableRule();
-
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
-
   public static final DirectBuffer BUF1 = BufferUtil.wrapBytes(1, 2, 3, 4);
   public static final BufferWriter WRITER1 = writerFor(BUF1);
-
   public static final int NODE_ID1 = 1;
   public static final SocketAddress SERVER_ADDRESS1 = SocketUtil.getNextAddress();
-
+  public AutoCloseableRule closeables = new AutoCloseableRule();
+  public ControlledActorClock clock = new ControlledActorClock();
+  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
   protected ClientTransport clientTransport;
-
   private NonBlockingMemoryPool requestMemoryPoolSpy;
   private NonBlockingMemoryPool messageMemoryPoolSpy;
 

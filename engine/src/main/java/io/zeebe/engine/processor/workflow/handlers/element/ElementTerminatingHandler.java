@@ -27,12 +27,12 @@ public class ElementTerminatingHandler<T extends ExecutableFlowNode> extends Abs
   }
 
   @Override
-  protected boolean shouldHandleState(BpmnStepContext<T> context) {
-    return super.shouldHandleState(context) && isStateSameAsElementState(context);
+  protected boolean handleState(BpmnStepContext<T> context) {
+    return true;
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
-    return true;
+  protected boolean shouldHandleState(BpmnStepContext<T> context) {
+    return super.shouldHandleState(context) && isStateSameAsElementState(context);
   }
 }

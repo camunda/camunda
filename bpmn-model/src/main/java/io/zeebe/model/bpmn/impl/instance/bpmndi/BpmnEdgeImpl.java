@@ -52,6 +52,10 @@ public class BpmnEdgeImpl extends LabeledEdgeImpl implements BpmnEdge {
   protected static Attribute<MessageVisibleKind> messageVisibleKindAttribute;
   protected static ChildElement<BpmnLabel> bpmnLabelChild;
 
+  public BpmnEdgeImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -94,10 +98,6 @@ public class BpmnEdgeImpl extends LabeledEdgeImpl implements BpmnEdge {
     bpmnLabelChild = sequenceBuilder.element(BpmnLabel.class).build();
 
     typeBuilder.build();
-  }
-
-  public BpmnEdgeImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

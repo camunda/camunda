@@ -69,15 +69,15 @@ public class StubbedGateway extends Gateway {
     return (T) brokerRequests.get(0);
   }
 
-  @FunctionalInterface
-  interface RequestHandler<RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>> {
-    ResponseT handle(RequestT request) throws Exception;
-  }
-
   public interface RequestStub<
           RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>>
       extends RequestHandler<RequestT, ResponseT> {
     void registerWith(StubbedGateway gateway);
+  }
+
+  @FunctionalInterface
+  interface RequestHandler<RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>> {
+    ResponseT handle(RequestT request) throws Exception;
   }
 
   private class StubbedBrokerClient implements BrokerClient {

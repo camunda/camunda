@@ -20,27 +20,16 @@ public class Tuple<L, R> {
     return right;
   }
 
-  public L getLeft() {
-    return left;
-  }
-
   public void setRight(R right) {
     this.right = right;
   }
 
-  public void setLeft(L left) {
-    this.left = left;
+  public L getLeft() {
+    return left;
   }
 
-  @Override
-  public String toString() {
-    final StringBuilder builder = new StringBuilder();
-    builder.append("<");
-    builder.append(left);
-    builder.append(", ");
-    builder.append(right);
-    builder.append(">");
-    return builder.toString();
+  public void setLeft(L left) {
+    this.left = left;
   }
 
   @Override
@@ -79,5 +68,16 @@ public class Tuple<L, R> {
       return false;
     }
     return true;
+  }
+
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("<");
+    builder.append(left);
+    builder.append(", ");
+    builder.append(right);
+    builder.append(">");
+    return builder.toString();
   }
 }

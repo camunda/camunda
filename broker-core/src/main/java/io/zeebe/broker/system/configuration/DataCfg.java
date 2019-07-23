@@ -69,12 +69,12 @@ public class DataCfg implements ConfigurationEntry {
     this.snapshotReplicationPeriod = snapshotReplicationPeriod;
   }
 
-  public void setMaxSnapshots(final int maxSnapshots) {
-    this.maxSnapshots = maxSnapshots;
-  }
-
   public int getMaxSnapshots() {
     return maxSnapshots;
+  }
+
+  public void setMaxSnapshots(final int maxSnapshots) {
+    this.maxSnapshots = maxSnapshots;
   }
 
   public String getRaftSegmentSize() {

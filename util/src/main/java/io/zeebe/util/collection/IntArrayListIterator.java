@@ -25,16 +25,16 @@ public class IntArrayListIterator implements IntIterator {
   }
 
   @Override
+  public Integer next() {
+    return nextInt();
+  }
+
+  @Override
   public int nextInt() {
     if (!hasNext()) {
       throw new NoSuchElementException();
     } else {
       return list.getInt(cursor++);
     }
-  }
-
-  @Override
-  public Integer next() {
-    return nextInt();
   }
 }

@@ -43,6 +43,10 @@ public class IoBindingImpl extends BaseElementImpl implements IoBinding {
   protected static AttributeReference<DataInput> inputDataRefAttribute;
   protected static AttributeReference<DataOutput> outputDataRefAttribute;
 
+  public IoBindingImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -79,10 +83,6 @@ public class IoBindingImpl extends BaseElementImpl implements IoBinding {
             .build();
 
     typeBuilder.build();
-  }
-
-  public IoBindingImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

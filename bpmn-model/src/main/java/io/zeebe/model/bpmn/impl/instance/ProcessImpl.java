@@ -69,6 +69,10 @@ public class ProcessImpl extends CallableElementImpl implements Process {
       correlationSubscriptionCollection;
   protected static ElementReferenceCollection<Process, Supports> supportsCollection;
 
+  public ProcessImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -122,10 +126,6 @@ public class ProcessImpl extends CallableElementImpl implements Process {
             .build();
 
     typeBuilder.build();
-  }
-
-  public ProcessImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

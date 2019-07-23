@@ -40,23 +40,15 @@ public class FsLogStorage implements LogStorage {
 
   protected final FsLogStorageConfiguration config;
   private final ReadResultProcessor defaultReadResultProcessor = (buffer, readResult) -> readResult;
-
+  protected volatile int state = STATE_CREATED;
   /** Readable log segments */
   private FsLogSegments logSegments;
 
   private FsLogSegment currentSegment;
-
   private int dirtySegmentId = -1;
-
-  protected volatile int state = STATE_CREATED;
 
   public FsLogStorage(final FsLogStorageConfiguration cfg) {
     this.config = cfg;
-  }
-
-  @Override
-  public boolean isByteAddressable() {
-    return true;
   }
 
   @Override
@@ -86,21 +78,6 @@ public class FsLogStorage implements LogStorage {
     markSegmentAsDirty(currentSegment);
 
     return opresult;
-  }
-
-  private void onSegmentFilled() throws IOException {
-    final FsLogSegment filledSegment = currentSegment;
-
-    final int nextSegmentId = 1 + filledSegment.getSegmentId();
-    final String nextSegmentName = config.fileName(nextSegmentId);
-    final FsLogSegment newSegment = new FsLogSegment(nextSegmentName);
-
-    newSegment.allocate(nextSegmentId, config.getSegmentSize());
-    logSegments.addSegment(newSegment);
-    currentSegment = newSegment;
-    // Do this last so readers do not attempt to advance to next segment yet
-    // before it is visible
-    filledSegment.setFilled();
   }
 
   @Override
@@ -172,6 +149,11 @@ public class FsLogStorage implements LogStorage {
   }
 
   @Override
+  public boolean isByteAddressable() {
+    return true;
+  }
+
+  @Override
   public void open() throws IOException {
     ensureNotOpenedStorage();
 
@@ -184,6 +166,81 @@ public class FsLogStorage implements LogStorage {
     checkConsistency();
 
     state = STATE_OPENED;
+  }
+
+  @Override
+  public void close() {
+    ensureOpenedStorage();
+
+    logSegments.closeAll();
+
+    if (config.isDeleteOnClose()) {
+      final String logPath = config.getPath();
+      try {
+        FileUtil.deleteFolder(logPath);
+      } catch (final Exception e) {
+        LOG.error("Failed to delete folder {}: {}", logPath, e);
+      }
+    }
+
+    dirtySegmentId = -1;
+
+    state = STATE_CLOSED;
+  }
+
+  @Override
+  public boolean isOpen() {
+    return state == STATE_OPENED;
+  }
+
+  @Override
+  public boolean isClosed() {
+    return state == STATE_CLOSED;
+  }
+
+  @Override
+  public long getFirstBlockAddress() {
+    ensureOpenedStorage();
+
+    final FsLogSegment firstSegment = logSegments.getFirst();
+    if (firstSegment != null && firstSegment.getSizeVolatile() > METADATA_LENGTH) {
+      return position(firstSegment.getSegmentId(), METADATA_LENGTH);
+    } else {
+      return -1;
+    }
+  }
+
+  @Override
+  public void flush() throws Exception {
+    ensureOpenedStorage();
+
+    if (dirtySegmentId >= 0) {
+      for (int id = dirtySegmentId; id <= currentSegment.getSegmentId(); id++) {
+        final FsLogSegment segment = logSegments.getSegment(id);
+        if (segment != null) {
+          segment.flush();
+        } else {
+          LOG.warn("Ignoring segment {} on flush as it does not exist", id);
+        }
+      }
+
+      dirtySegmentId = -1;
+    }
+  }
+
+  private void onSegmentFilled() throws IOException {
+    final FsLogSegment filledSegment = currentSegment;
+
+    final int nextSegmentId = 1 + filledSegment.getSegmentId();
+    final String nextSegmentName = config.fileName(nextSegmentId);
+    final FsLogSegment newSegment = new FsLogSegment(nextSegmentName);
+
+    newSegment.allocate(nextSegmentId, config.getSegmentSize());
+    logSegments.addSegment(newSegment);
+    currentSegment = newSegment;
+    // Do this last so readers do not attempt to advance to next segment yet
+    // before it is visible
+    filledSegment.setFilled();
   }
 
   private void initLogSegments(final File logDir) throws IOException {
@@ -253,44 +310,6 @@ public class FsLogStorage implements LogStorage {
     }
   }
 
-  @Override
-  public void close() {
-    ensureOpenedStorage();
-
-    logSegments.closeAll();
-
-    if (config.isDeleteOnClose()) {
-      final String logPath = config.getPath();
-      try {
-        FileUtil.deleteFolder(logPath);
-      } catch (final Exception e) {
-        LOG.error("Failed to delete folder {}: {}", logPath, e);
-      }
-    }
-
-    dirtySegmentId = -1;
-
-    state = STATE_CLOSED;
-  }
-
-  @Override
-  public void flush() throws Exception {
-    ensureOpenedStorage();
-
-    if (dirtySegmentId >= 0) {
-      for (int id = dirtySegmentId; id <= currentSegment.getSegmentId(); id++) {
-        final FsLogSegment segment = logSegments.getSegment(id);
-        if (segment != null) {
-          segment.flush();
-        } else {
-          LOG.warn("Ignoring segment {} on flush as it does not exist", id);
-        }
-      }
-
-      dirtySegmentId = -1;
-    }
-  }
-
   private void markSegmentAsDirty(final FsLogSegment segment) {
     if (dirtySegmentId < 0) {
       dirtySegmentId = segment.getSegmentId();
@@ -299,18 +318,6 @@ public class FsLogStorage implements LogStorage {
 
   public FsLogStorageConfiguration getConfig() {
     return config;
-  }
-
-  @Override
-  public long getFirstBlockAddress() {
-    ensureOpenedStorage();
-
-    final FsLogSegment firstSegment = logSegments.getFirst();
-    if (firstSegment != null && firstSegment.getSizeVolatile() > METADATA_LENGTH) {
-      return position(firstSegment.getSegmentId(), METADATA_LENGTH);
-    } else {
-      return -1;
-    }
   }
 
   private void ensureOpenedStorage() {
@@ -326,15 +333,5 @@ public class FsLogStorage implements LogStorage {
     if (state == STATE_OPENED) {
       throw new IllegalStateException("log storage is already opened");
     }
-  }
-
-  @Override
-  public boolean isOpen() {
-    return state == STATE_OPENED;
-  }
-
-  @Override
-  public boolean isClosed() {
-    return state == STATE_CLOSED;
   }
 }

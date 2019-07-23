@@ -39,6 +39,10 @@ public class PointImpl extends BpmnModelElementInstanceImpl implements Point {
   protected static Attribute<Double> xAttribute;
   protected static Attribute<Double> yAttribute;
 
+  public PointImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -57,10 +61,6 @@ public class PointImpl extends BpmnModelElementInstanceImpl implements Point {
     yAttribute = typeBuilder.doubleAttribute(DC_ATTRIBUTE_Y).required().build();
 
     typeBuilder.build();
-  }
-
-  public PointImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

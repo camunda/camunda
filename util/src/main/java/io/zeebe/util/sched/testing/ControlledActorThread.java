@@ -30,6 +30,18 @@ public class ControlledActorThread extends ActorThread {
     idleStrategy = new ControlledIdleStartegy();
   }
 
+  public void workUntilDone() {
+    try {
+      barrier.await(); // work at least 1 full cycle until the runner becomes idle after having been
+      while (barrier.getNumberWaiting() < 1) {
+        // spin until thread is idle again
+        Thread.yield();
+      }
+    } catch (InterruptedException | BrokenBarrierException e) {
+      LangUtil.rethrowUnchecked(e);
+    }
+  }
+
   class ControlledIdleStartegy extends ActorTaskRunnerIdleStrategy {
     @Override
     protected void onIdle() {
@@ -40,18 +52,6 @@ public class ControlledActorThread extends ActorThread {
       } catch (InterruptedException | BrokenBarrierException e) {
         LangUtil.rethrowUnchecked(e);
       }
-    }
-  }
-
-  public void workUntilDone() {
-    try {
-      barrier.await(); // work at least 1 full cycle until the runner becomes idle after having been
-      while (barrier.getNumberWaiting() < 1) {
-        // spin until thread is idle again
-        Thread.yield();
-      }
-    } catch (InterruptedException | BrokenBarrierException e) {
-      LangUtil.rethrowUnchecked(e);
     }
   }
 }

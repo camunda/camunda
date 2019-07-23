@@ -37,17 +37,13 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
 
 public class TransportChannelListenerTest {
-  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
-  public AutoCloseableRule closeables = new AutoCloseableRule();
-
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
-
-  private static final int NODE_ID = 1;
-  private static final SocketAddress ADDRESS = SocketUtil.getNextAddress();
-
   protected static final DirectBuffer EMPTY_BUFFER = new UnsafeBuffer(0, 0);
   protected static final BufferWriter WRITER = writerFor(EMPTY_BUFFER);
-
+  private static final int NODE_ID = 1;
+  private static final SocketAddress ADDRESS = SocketUtil.getNextAddress();
+  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
+  public AutoCloseableRule closeables = new AutoCloseableRule();
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
   protected ServerTransport serverTransport;
 
   @Before
@@ -247,10 +243,6 @@ public class TransportChannelListenerTest {
       return actualFactory.buildClientChannel(listener, remoteAddress, maxMessageSize, readHandler);
     }
 
-    public int getCreatedChannels() {
-      return createdChannels.get();
-    }
-
     @Override
     public TransportChannel buildServerChannel(
         ChannelLifecycleListener listener,
@@ -259,6 +251,10 @@ public class TransportChannelListenerTest {
         FragmentHandler readHandler,
         SocketChannel media) {
       throw new UnsupportedOperationException();
+    }
+
+    public int getCreatedChannels() {
+      return createdChannels.get();
     }
   }
 }

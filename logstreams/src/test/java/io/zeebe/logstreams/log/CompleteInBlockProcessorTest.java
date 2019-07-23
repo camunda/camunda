@@ -33,11 +33,9 @@ import org.junit.rules.TemporaryFolder;
 
 /** @author Christopher Zell <christopher.zell@camunda.com> */
 public class CompleteInBlockProcessorTest {
-  private static final int SEGMENT_SIZE = 1024 * 16;
-
   protected static final int LENGTH = headerLength(0); // 44 -> 52
   protected static final int ALIGNED_LEN = alignedFramedLength(LENGTH); // 56 -> 64
-
+  private static final int SEGMENT_SIZE = 1024 * 16;
   @Rule public TemporaryFolder tempFolder = new TemporaryFolder();
 
   @Rule public ExpectedException thrown = ExpectedException.none();

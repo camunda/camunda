@@ -51,24 +51,14 @@ public class WorkflowInstanceCreationRecord extends UnifiedRecordValue
     return workflowKeyProperty.getValue();
   }
 
-  @Override
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProperty.getValue();
+  public WorkflowInstanceCreationRecord setWorkflowKey(long key) {
+    this.workflowKeyProperty.setValue(key);
+    return this;
   }
 
-  @Override
-  public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProperty.getValue());
-  }
-
-  @JsonIgnore
-  public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProperty.getValue();
-  }
-
-  @JsonIgnore
-  public DirectBuffer getVariablesBuffer() {
-    return variablesProperty.getValue();
+  public WorkflowInstanceCreationRecord setVersion(int version) {
+    this.versionProperty.setValue(version);
+    return this;
   }
 
   public WorkflowInstanceCreationRecord setBpmnProcessId(String bpmnProcessId) {
@@ -81,14 +71,19 @@ public class WorkflowInstanceCreationRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public long getWorkflowInstanceKey() {
+    return workflowInstanceKeyProperty.getValue();
+  }
+
   public WorkflowInstanceCreationRecord setWorkflowInstanceKey(long instanceKey) {
     this.workflowInstanceKeyProperty.setValue(instanceKey);
     return this;
   }
 
-  public WorkflowInstanceCreationRecord setWorkflowKey(long key) {
-    this.workflowKeyProperty.setValue(key);
-    return this;
+  @Override
+  public Map<String, Object> getVariables() {
+    return MsgPackConverter.convertToMap(variablesProperty.getValue());
   }
 
   public WorkflowInstanceCreationRecord setVariables(DirectBuffer variables) {
@@ -96,8 +91,13 @@ public class WorkflowInstanceCreationRecord extends UnifiedRecordValue
     return this;
   }
 
-  public WorkflowInstanceCreationRecord setVersion(int version) {
-    this.versionProperty.setValue(version);
-    return this;
+  @JsonIgnore
+  public DirectBuffer getBpmnProcessIdBuffer() {
+    return bpmnProcessIdProperty.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getVariablesBuffer() {
+    return variablesProperty.getValue();
   }
 }

@@ -12,9 +12,8 @@ import java.util.List;
 
 public class ExecutableExclusiveGateway extends ExecutableFlowNode {
 
-  private ExecutableSequenceFlow defaultFlow;
-
   private final List<ExecutableSequenceFlow> outgoingWithCondition = new ArrayList<>();
+  private ExecutableSequenceFlow defaultFlow;
 
   public ExecutableExclusiveGateway(String id) {
     super(id);

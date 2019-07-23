@@ -19,10 +19,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class IndexedRecord implements DbValue {
 
+  private final WorkflowInstanceRecord value = new WorkflowInstanceRecord();
   private long key;
   private WorkflowInstanceIntent state;
-
-  private final WorkflowInstanceRecord value = new WorkflowInstanceRecord();
 
   IndexedRecord() {}
 

@@ -1,141 +1,151 @@
 <?xml version="1.0"?>
 <!DOCTYPE module PUBLIC "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
-    "https://checkstyle.org/dtds/configuration_1_3.dtd">
+  "https://checkstyle.org/dtds/configuration_1_3.dtd">
 <module name="Checker">
-    <module name="SeverityMatchFilter">
-        <property name="severity" value="info"/>
-        <property name="acceptOnMatch" value="false"/>
+  <module name="SeverityMatchFilter">
+    <property name="severity" value="info"/>
+    <property name="acceptOnMatch" value="false"/>
+  </module>
+
+  <module name="FileTabCharacter">
+    <property name="eachLine" value="true"/>
+  </module>
+
+  <module name="TreeWalker">
+    <property name="tabWidth" value="4"/>
+    <property name="severity" value="error"/>
+
+    <module name="ConstantName"/>
+
+    <module name="FinalLocalVariable"/>
+
+    <module name="LocalFinalVariableName"/>
+
+    <module name="LocalVariableName"/>
+
+    <module name="MemberName">
+      <property name="format" value="^[a-z][a-zA-Z0-9_]*$"/>
     </module>
 
-    <module name="FileTabCharacter">
-        <property name="eachLine" value="true"/>
+    <module name="MethodName"/>
+
+    <module name="PackageName"/>
+
+    <module name="ParameterName"/>
+
+    <module name="StaticVariableName"/>
+
+    <module name="TypeName"/>
+
+    <module name="RedundantImport"/>
+
+    <module name="EmptyForInitializerPad"/>
+
+    <module name="MethodParamPad"/>
+
+    <module name="NoWhitespaceBefore"/>
+
+    <module name="WhitespaceAfter">
+      <property name="tokens" value="COMMA, SEMI"/>
     </module>
 
-    <module name="TreeWalker">
-        <property name="tabWidth" value="4"/>
-        <property name="severity" value="error"/>
+    <module name="NeedBraces"/>
 
-        <module name="ConstantName"/>
+    <module name="TypecastParenPad"/>
 
-        <module name="FinalLocalVariable"/>
+    <module name="ModifierOrder"/>
 
-        <module name="LocalFinalVariableName"/>
+    <module name="RedundantModifier"/>
 
-        <module name="LocalVariableName"/>
-
-        <module name="MemberName">
-            <property name="format" value="^[a-z][a-zA-Z0-9_]*$"/>
-        </module>
-
-        <module name="MethodName"/>
-
-        <module name="PackageName"/>
-
-        <module name="ParameterName"/>
-
-        <module name="StaticVariableName"/>
-
-        <module name="TypeName"/>
-
-        <module name="RedundantImport"/>
-
-        <module name="EmptyForInitializerPad"/>
-
-        <module name="MethodParamPad"/>
-
-        <module name="NoWhitespaceBefore"/>
-
-        <module name="WhitespaceAfter">
-            <property name="tokens" value="COMMA, SEMI"/>
-        </module>
-
-        <module name="NeedBraces"/>
-
-        <module name="TypecastParenPad"/>
-
-        <module name="ModifierOrder"/>
-
-        <module name="RedundantModifier"/>
-
-        <module name="NestedTryDepth">
-            <property name="max" value="2"/>
-        </module>
-
-        <module name="CovariantEquals"/>
-
-        <module name="EmptyStatement"/>
-
-        <module name="EqualsHashCode"/>
-
-        <module name="DefaultComesLast"/>
-
-        <module name="SimplifyBooleanExpression"/>
-
-        <module name="SimplifyBooleanReturn"/>
-
-        <module name="StringLiteralEquality"/>
-
-        <module name="PackageDeclaration"/>
-
-        <module name="FallThrough"/>
-
-        <module name="FinalClass"/>
-
-        <module name="MutableException"/>
-
-        <module name="TodoComment">
-            <property name="severity" value="info"/>
-            <property name="format" value="TODO"/>
-        </module>
-
-        <module name="UpperEll"/>
-
-        <module name="IllegalType">
-            <property name="legalAbstractClassNames"
-                      value="AbstractBeanDefinition, AbstractEntry"/>
-            <property name="illegalClassNames"
-                      value="java.util.GregorianCalendar, java.util.Vector"/>
-        </module>
-
-        <module name="DescendantToken">
-            <property name="tokens" value="LITERAL_ASSERT"/>
-            <property name="limitedTokens"
-                      value="ASSIGN,DEC,INC,POST_DEC,POST_INC,PLUS_ASSIGN,MINUS_ASSIGN,STAR_ASSIGN,DIV_ASSIGN,MOD_ASSIGN,BSR_ASSIGN,SR_ASSIGN,SL_ASSIGN,BAND_ASSIGN,BXOR_ASSIGN,BOR_ASSIGN,METHOD_CALL"/>
-            <property name="maximumNumber" value="2"/>
-        </module>
-
-        <module name="Regexp">
-            <property name="format" value="[ \t]+$"/>
-            <property name="illegalPattern" value="true"/>
-            <property name="message" value="Trailing whitespace"/>
-        </module>
-
-        <module name="DefaultComesLast" />
-
-        <module name="InterfaceIsType" />
-
-        <module name="MutableException" />
-
-        <module name="EmptyCatchBlock">
-          <property name="commentFormat" value="^.+$" />
-        </module>
-
-        <module name="InnerAssignment" />
-
-        <module name="EqualsAvoidNull" />
-
-        <module name="NestedForDepth">
-          <property name="max" value="2" />
-        </module>
-
-        <module name="NestedTryDepth">
-          <property name="max" value="2" />
-        </module>
-
-        <module name="NestedIfDepth">
-          <property name="max" value="2" />
-        </module>
-
-        <module name="MissingSwitchDefault" />
+    <module name="NestedTryDepth">
+      <property name="max" value="2"/>
     </module>
+
+    <module name="CovariantEquals"/>
+
+    <module name="EmptyStatement"/>
+
+    <module name="EqualsHashCode"/>
+
+    <module name="DefaultComesLast"/>
+
+    <module name="SimplifyBooleanExpression"/>
+
+    <module name="SimplifyBooleanReturn"/>
+
+    <module name="StringLiteralEquality"/>
+
+    <module name="PackageDeclaration"/>
+
+    <module name="FallThrough"/>
+
+    <module name="FinalClass"/>
+
+    <module name="MutableException"/>
+
+    <module name="TodoComment">
+      <property name="severity" value="info"/>
+      <property name="format" value="TODO"/>
+    </module>
+
+    <module name="UpperEll"/>
+
+    <module name="IllegalType">
+      <property name="legalAbstractClassNames"
+        value="AbstractBeanDefinition, AbstractEntry"/>
+      <property name="illegalClassNames"
+        value="java.util.GregorianCalendar, java.util.Vector"/>
+    </module>
+
+    <module name="DescendantToken">
+      <property name="tokens" value="LITERAL_ASSERT"/>
+      <property name="limitedTokens"
+        value="ASSIGN,DEC,INC,POST_DEC,POST_INC,PLUS_ASSIGN,MINUS_ASSIGN,STAR_ASSIGN,DIV_ASSIGN,MOD_ASSIGN,BSR_ASSIGN,SR_ASSIGN,SL_ASSIGN,BAND_ASSIGN,BXOR_ASSIGN,BOR_ASSIGN,METHOD_CALL"/>
+      <property name="maximumNumber" value="2"/>
+    </module>
+
+    <module name="Regexp">
+      <property name="format" value="[ \t]+$"/>
+      <property name="illegalPattern" value="true"/>
+      <property name="message" value="Trailing whitespace"/>
+    </module>
+
+    <module name="DefaultComesLast"/>
+
+    <module name="InterfaceIsType"/>
+
+    <module name="MutableException"/>
+
+    <module name="EmptyCatchBlock">
+      <property name="commentFormat" value="^.+$"/>
+    </module>
+
+    <module name="InnerAssignment"/>
+
+    <module name="EqualsAvoidNull"/>
+
+    <module name="NestedForDepth">
+      <property name="max" value="2"/>
+    </module>
+
+    <module name="NestedTryDepth">
+      <property name="max" value="2"/>
+    </module>
+
+    <module name="NestedIfDepth">
+      <property name="max" value="2"/>
+    </module>
+
+    <module name="MissingSwitchDefault" />
+
+    <module name="InnerTypeLast"/>
+
+    <module name="ModifierOrder"/>
+
+    <module name="CustomImportOrder">
+      <property name="sortImportsInGroupAlphabetically" value="true"/>
+      <property name="separateLineBetweenGroups" value="true"/>
+      <property name="customImportOrderRules" value="STATIC###THIRD_PARTY_PACKAGE"/>
+    </module>
+  </module>
 </module>

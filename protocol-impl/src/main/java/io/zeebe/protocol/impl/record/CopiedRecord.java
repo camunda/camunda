@@ -26,9 +26,9 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
   private final RecordType recordType;
   private final Intent intent;
   private final int partitionId;
-  protected ValueType valueType;
   private final RejectionType rejectionType;
   private final String rejectionReason;
+  protected ValueType valueType;
 
   public CopiedRecord(
       T recordValue,

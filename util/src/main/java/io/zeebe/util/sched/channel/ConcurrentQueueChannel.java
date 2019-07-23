@@ -29,6 +29,16 @@ public class ConcurrentQueueChannel<E> implements Queue<E>, ConsumableChannel {
   }
 
   @Override
+  public void registerConsumer(ActorCondition onDataAvailable) {
+    actorConditions.registerConsumer(onDataAvailable);
+  }
+
+  @Override
+  public void removeConsumer(ActorCondition onDataAvailable) {
+    actorConditions.removeConsumer(onDataAvailable);
+  }
+
+  @Override
   public boolean add(E e) {
     if (wrapped.add(e)) {
       actorConditions.signalConsumers();
@@ -44,21 +54,6 @@ public class ConcurrentQueueChannel<E> implements Queue<E>, ConsumableChannel {
       return true;
     }
     return false;
-  }
-
-  @Override
-  public int size() {
-    return wrapped.size();
-  }
-
-  @Override
-  public boolean isEmpty() {
-    return wrapped.isEmpty();
-  }
-
-  @Override
-  public boolean contains(Object o) {
-    return wrapped.contains(o);
   }
 
   @Override
@@ -79,6 +74,21 @@ public class ConcurrentQueueChannel<E> implements Queue<E>, ConsumableChannel {
   @Override
   public E peek() {
     return wrapped.peek();
+  }
+
+  @Override
+  public int size() {
+    return wrapped.size();
+  }
+
+  @Override
+  public boolean isEmpty() {
+    return wrapped.isEmpty();
+  }
+
+  @Override
+  public boolean contains(Object o) {
+    return wrapped.contains(o);
   }
 
   @Override
@@ -122,22 +132,12 @@ public class ConcurrentQueueChannel<E> implements Queue<E>, ConsumableChannel {
   }
 
   @Override
-  public void forEach(Consumer<? super E> action) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public void clear() {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void registerConsumer(ActorCondition onDataAvailable) {
-    actorConditions.registerConsumer(onDataAvailable);
-  }
-
-  @Override
-  public void removeConsumer(ActorCondition onDataAvailable) {
-    actorConditions.removeConsumer(onDataAvailable);
+  public void forEach(Consumer<? super E> action) {
+    throw new UnsupportedOperationException();
   }
 }

@@ -34,6 +34,10 @@ public class TransactionImpl extends SubProcessImpl implements Transaction {
 
   protected static Attribute<TransactionMethod> methodAttribute;
 
+  public TransactionImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -55,10 +59,6 @@ public class TransactionImpl extends SubProcessImpl implements Transaction {
             .build();
 
     typeBuilder.build();
-  }
-
-  public TransactionImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

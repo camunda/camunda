@@ -21,35 +21,12 @@ public class PriorityScheduler implements TaskScheduler {
   private static final int TIME_SLICES_PER_SECOND = 100;
   private static final long TIME_SLICE_LENTH_NS =
       TimeUnit.MILLISECONDS.toNanos(1000 / TIME_SLICES_PER_SECOND);
-
-  /** Corresponds to one second. A new run is started every second */
-  class Run {
-    /** the nanotime when this run was started */
-    long startNs = 0;
-
-    long sliceId = 0;
-
-    int getTimeSlicePriority(long now) {
-      sliceId = ((now - startNs) / TIME_SLICE_LENTH_NS);
-
-      if (sliceId >= TIME_SLICES_PER_SECOND) {
-        startNs = now;
-        sliceId = sliceId % TIME_SLICES_PER_SECOND;
-      }
-
-      return slicePriorities[(int) sliceId];
-    }
-  }
-
   /** the function used to acquire a task for a given priority */
   private final IntFunction<ActorTask> getTaskFn;
-
   /** the current run */
   private final Run currentRun;
-
   /** how many priorities there are */
   private final int priorityCount;
-
   /** pre-calculated priorities for time slices */
   private final int[] slicePriorities;
 
@@ -125,5 +102,24 @@ public class PriorityScheduler implements TaskScheduler {
     }
 
     return nextTask;
+  }
+
+  /** Corresponds to one second. A new run is started every second */
+  class Run {
+    /** the nanotime when this run was started */
+    long startNs = 0;
+
+    long sliceId = 0;
+
+    int getTimeSlicePriority(long now) {
+      sliceId = ((now - startNs) / TIME_SLICE_LENTH_NS);
+
+      if (sliceId >= TIME_SLICES_PER_SECOND) {
+        startNs = now;
+        sliceId = sliceId % TIME_SLICES_PER_SECOND;
+      }
+
+      return slicePriorities[(int) sliceId];
+    }
   }
 }

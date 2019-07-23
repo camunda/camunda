@@ -22,13 +22,13 @@ public class VariableInstance extends UnpackedObject implements DbValue {
     this.declareProperty(keyProp).declareProperty(valueProp);
   }
 
+  public long getKey() {
+    return keyProp.getValue();
+  }
+
   public VariableInstance setKey(long key) {
     keyProp.setValue(key);
     return this;
-  }
-
-  public long getKey() {
-    return keyProp.getValue();
   }
 
   public VariableInstance setValue(DirectBuffer value, int offset, int length) {

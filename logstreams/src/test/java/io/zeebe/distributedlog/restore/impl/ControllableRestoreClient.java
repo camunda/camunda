@@ -27,30 +27,13 @@ public class ControllableRestoreClient implements RestoreClient {
 
   private final Map<Integer, CompletableFuture<SnapshotRestoreResponse>>
       snapshotReplicationRequests = new HashMap<>();
+  public List<LogReplicationRequest> requestLog = new ArrayList<>();
 
   @Override
   public CompletableFuture<SnapshotRestoreResponse> requestSnapshotChunk(
       MemberId server, SnapshotRestoreRequest request) {
     return snapshotReplicationRequests.computeIfAbsent(
         request.getChunkIdx(), k -> new CompletableFuture<>());
-  }
-
-  public void completeRequestSnapshotChunk(int chunkIdx, SnapshotRestoreResponse response) {
-    snapshotReplicationRequests
-        .computeIfAbsent(chunkIdx, k -> new CompletableFuture<>())
-        .complete(response);
-  }
-
-  public void completeRequestSnapshotChunk(int chunkIdx, Throwable throwable) {
-    snapshotReplicationRequests
-        .computeIfAbsent(chunkIdx, k -> new CompletableFuture<>())
-        .completeExceptionally(throwable);
-  }
-
-  public List<LogReplicationRequest> requestLog = new ArrayList<>();
-
-  public List<LogReplicationRequest> getRequestLog() {
-    return requestLog;
   }
 
   @Override
@@ -66,6 +49,22 @@ public class ControllableRestoreClient implements RestoreClient {
   public CompletableFuture<RestoreInfoResponse> requestRestoreInfo(
       MemberId server, RestoreInfoRequest request) {
     throw new UnsupportedOperationException("Not yet implemented");
+  }
+
+  public void completeRequestSnapshotChunk(int chunkIdx, SnapshotRestoreResponse response) {
+    snapshotReplicationRequests
+        .computeIfAbsent(chunkIdx, k -> new CompletableFuture<>())
+        .complete(response);
+  }
+
+  public void completeRequestSnapshotChunk(int chunkIdx, Throwable throwable) {
+    snapshotReplicationRequests
+        .computeIfAbsent(chunkIdx, k -> new CompletableFuture<>())
+        .completeExceptionally(throwable);
+  }
+
+  public List<LogReplicationRequest> getRequestLog() {
+    return requestLog;
   }
 
   public void completeLogReplication(long from, Throwable ex) {

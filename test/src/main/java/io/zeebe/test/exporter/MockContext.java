@@ -38,16 +38,16 @@ public class MockContext implements Context {
     return configuration;
   }
 
-  @Override
-  public void setFilter(RecordFilter filter) {
-    this.filter = filter;
-  }
-
   public void setConfiguration(Configuration configuration) {
     this.configuration = configuration;
   }
 
   public RecordFilter getFilter() {
     return filter;
+  }
+
+  @Override
+  public void setFilter(RecordFilter filter) {
+    this.filter = filter;
   }
 }

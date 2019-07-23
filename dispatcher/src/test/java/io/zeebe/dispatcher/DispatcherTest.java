@@ -46,7 +46,7 @@ public class DispatcherTest {
   static final int A_LOG_WINDOW_LENGTH = 128;
   static final int A_PARITION_SIZE = 1024;
   static final int A_STREAM_ID = 20;
-
+  @Rule public ExpectedException thrown = ExpectedException.none();
   Dispatcher dispatcher;
   LogBuffer logBuffer;
   LogBufferPartition logBufferPartition0;
@@ -59,8 +59,6 @@ public class DispatcherTest {
   FragmentHandler fragmentHandler;
   ClaimedFragment claimedFragment;
   AtomicPosition subscriberPosition;
-
-  @Rule public ExpectedException thrown = ExpectedException.none();
 
   @Before
   public void setup() {

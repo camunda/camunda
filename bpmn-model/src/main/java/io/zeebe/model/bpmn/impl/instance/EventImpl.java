@@ -39,6 +39,10 @@ public abstract class EventImpl extends FlowNodeImpl implements Event {
 
   protected static ChildElementCollection<Property> propertyCollection;
 
+  public EventImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -52,10 +56,6 @@ public abstract class EventImpl extends FlowNodeImpl implements Event {
     propertyCollection = sequence.elementCollection(Property.class).build();
 
     typeBuilder.build();
-  }
-
-  public EventImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

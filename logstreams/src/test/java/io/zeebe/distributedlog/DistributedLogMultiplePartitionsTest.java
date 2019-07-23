@@ -25,22 +25,19 @@ import org.junit.rules.Timeout;
 
 public class DistributedLogMultiplePartitionsTest {
 
+  public static final int DEFAULT_RETRIES = 500;
+  private static final List<String> MEMBERS = Arrays.asList("1", "2", "3");
+  private static final int NUM_PARTITIONS = 3;
+  private static final int REPLICATION_FACTOR = 3;
   public ActorSchedulerRule actorSchedulerRule1 = new ActorSchedulerRule();
   public ActorSchedulerRule actorSchedulerRule2 = new ActorSchedulerRule();
   public ActorSchedulerRule actorSchedulerRule3 = new ActorSchedulerRule();
-
   public ServiceContainerRule serviceContainerRule1 = new ServiceContainerRule(actorSchedulerRule1);
-
   public ServiceContainerRule serviceContainerRule2 = new ServiceContainerRule(actorSchedulerRule2);
-
   public ServiceContainerRule serviceContainerRule3 = new ServiceContainerRule(actorSchedulerRule3);
-
-  private static final List<String> MEMBERS = Arrays.asList("1", "2", "3");
-
   public DistributedLogRule node1 =
       new DistributedLogRule(
           serviceContainerRule1, 1, NUM_PARTITIONS, REPLICATION_FACTOR, MEMBERS, null);
-
   public DistributedLogRule node2 =
       new DistributedLogRule(
           serviceContainerRule2,
@@ -49,7 +46,6 @@ public class DistributedLogMultiplePartitionsTest {
           REPLICATION_FACTOR,
           MEMBERS,
           Collections.singletonList(node1.getNode()));
-
   public DistributedLogRule node3 =
       new DistributedLogRule(
           serviceContainerRule3,
@@ -58,13 +54,7 @@ public class DistributedLogMultiplePartitionsTest {
           REPLICATION_FACTOR,
           MEMBERS,
           Collections.singletonList(node2.getNode()));
-
   public Timeout timeoutRule = Timeout.seconds(60);
-
-  public static final int DEFAULT_RETRIES = 500;
-
-  private static final int NUM_PARTITIONS = 3;
-  private static final int REPLICATION_FACTOR = 3;
 
   @Rule
   public RuleChain ruleChain =
@@ -122,11 +112,6 @@ public class DistributedLogMultiplePartitionsTest {
     return event;
   }
 
-  private class Event {
-    String message;
-    long position;
-  }
-
   private void assertEventReplicated(int partitionId, Event event) {
     TestUtil.waitUntil(
         () -> node1.eventAppended(partitionId, event.message, event.position), DEFAULT_RETRIES);
@@ -138,5 +123,10 @@ public class DistributedLogMultiplePartitionsTest {
 
   private void assertEventsCount(int partitionId, DistributedLogRule node, int expectedCount) {
     assertThat(node.getCommittedEventsCount(partitionId)).isEqualTo(expectedCount);
+  }
+
+  private class Event {
+    String message;
+    long position;
   }
 }

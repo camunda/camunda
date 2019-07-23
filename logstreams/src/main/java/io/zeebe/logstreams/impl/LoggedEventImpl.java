@@ -7,7 +7,12 @@
  */
 package io.zeebe.logstreams.impl;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.versionOffset;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
 
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -31,6 +36,11 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
   }
 
   @Override
+  public int getStreamId() {
+    return buffer.getInt(streamIdOffset(fragmentOffset), Protocol.ENDIANNESS);
+  }
+
+  @Override
   public int getType() {
     return buffer.getShort(typeOffset(fragmentOffset), Protocol.ENDIANNESS);
   }
@@ -41,18 +51,13 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
   }
 
   @Override
-  public int getMessageLength() {
-    return messageLength(buffer.getInt(lengthOffset(fragmentOffset), Protocol.ENDIANNESS));
-  }
-
-  @Override
   public int getMessageOffset() {
     return messageOffset;
   }
 
   @Override
-  public int getStreamId() {
-    return buffer.getInt(streamIdOffset(fragmentOffset), Protocol.ENDIANNESS);
+  public int getMessageLength() {
+    return messageLength(buffer.getInt(lengthOffset(fragmentOffset), Protocol.ENDIANNESS));
   }
 
   @Override
@@ -74,6 +79,11 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
   }
 
   @Override
+  public long getSourceEventPosition() {
+    return LogEntryDescriptor.getSourceEventPosition(buffer, messageOffset);
+  }
+
+  @Override
   public long getKey() {
     return LogEntryDescriptor.getKey(buffer, messageOffset);
   }
@@ -89,6 +99,11 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
   }
 
   @Override
+  public int getMetadataOffset() {
+    return LogEntryDescriptor.metadataOffset(messageOffset);
+  }
+
+  @Override
   public short getMetadataLength() {
     return LogEntryDescriptor.getMetadataLength(buffer, messageOffset);
   }
@@ -100,13 +115,13 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
   }
 
   @Override
-  public int getMetadataOffset() {
-    return LogEntryDescriptor.metadataOffset(messageOffset);
+  public void readMetadata(final BufferReader reader) {
+    reader.wrap(buffer, getMetadataOffset(), getMetadataLength());
   }
 
   @Override
-  public void readMetadata(final BufferReader reader) {
-    reader.wrap(buffer, getMetadataOffset(), getMetadataLength());
+  public DirectBuffer getValueBuffer() {
+    return buffer;
   }
 
   @Override
@@ -123,18 +138,8 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
   }
 
   @Override
-  public DirectBuffer getValueBuffer() {
-    return buffer;
-  }
-
-  @Override
   public void readValue(final BufferReader reader) {
     reader.wrap(buffer, getValueOffset(), getValueLength());
-  }
-
-  @Override
-  public long getSourceEventPosition() {
-    return LogEntryDescriptor.getSourceEventPosition(buffer, messageOffset);
   }
 
   @Override

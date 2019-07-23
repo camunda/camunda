@@ -47,6 +47,10 @@ public class CorrelationPropertyImpl extends RootElementImpl implements Correlat
   protected static ChildElementCollection<CorrelationPropertyRetrievalExpression>
       correlationPropertyRetrievalExpressionCollection;
 
+  public CorrelationPropertyImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder;
     typeBuilder =
@@ -79,10 +83,6 @@ public class CorrelationPropertyImpl extends RootElementImpl implements Correlat
             .build();
 
     typeBuilder.build();
-  }
-
-  public CorrelationPropertyImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

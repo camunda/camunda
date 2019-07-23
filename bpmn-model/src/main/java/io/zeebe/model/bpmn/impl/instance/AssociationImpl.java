@@ -41,6 +41,10 @@ public class AssociationImpl extends ArtifactImpl implements Association {
   protected static AttributeReference<BaseElement> targetRefAttribute;
   protected static Attribute<AssociationDirection> associationDirectionAttribute;
 
+  public AssociationImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -76,10 +80,6 @@ public class AssociationImpl extends ArtifactImpl implements Association {
             .build();
 
     typeBuilder.build();
-  }
-
-  public AssociationImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

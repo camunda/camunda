@@ -40,8 +40,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class BoundaryEventTest {
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
-
   private static final BpmnModelInstance MULTIPLE_SEQUENCE_FLOWS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
@@ -55,7 +55,6 @@ public class BoundaryEventTest {
           .moveToActivity("task")
           .endEvent()
           .done();
-
   private static final BpmnModelInstance NON_INTERRUPTING_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
@@ -65,8 +64,6 @@ public class BoundaryEventTest {
           .timerWithCycle("R/PT1S")
           .endEvent()
           .done();
-
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

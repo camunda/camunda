@@ -31,6 +31,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class OutputSetRefs extends BpmnModelElementInstanceImpl {
 
+  public OutputSetRefs(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -45,9 +49,5 @@ public class OutputSetRefs extends BpmnModelElementInstanceImpl {
                 });
 
     typeBuilder.build();
-  }
-
-  public OutputSetRefs(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 }

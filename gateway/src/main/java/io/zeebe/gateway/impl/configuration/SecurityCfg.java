@@ -36,13 +36,17 @@ public class SecurityCfg {
     return this;
   }
 
+  public String getCertificateChainPath() {
+    return certificateChainPath;
+  }
+
   public SecurityCfg setCertificateChainPath(final String certificateChainPath) {
     this.certificateChainPath = certificateChainPath;
     return this;
   }
 
-  public String getCertificateChainPath() {
-    return certificateChainPath;
+  public String getPrivateKeyPath() {
+    return privateKeyPath;
   }
 
   public SecurityCfg setPrivateKeyPath(final String privateKeyPath) {
@@ -50,8 +54,9 @@ public class SecurityCfg {
     return this;
   }
 
-  public String getPrivateKeyPath() {
-    return privateKeyPath;
+  @Override
+  public int hashCode() {
+    return Objects.hash(enabled, certificateChainPath, privateKeyPath);
   }
 
   @Override
@@ -66,11 +71,6 @@ public class SecurityCfg {
     return enabled == that.enabled
         && Objects.equals(certificateChainPath, that.certificateChainPath)
         && Objects.equals(privateKeyPath, that.privateKeyPath);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(enabled, certificateChainPath, privateKeyPath);
   }
 
   @Override

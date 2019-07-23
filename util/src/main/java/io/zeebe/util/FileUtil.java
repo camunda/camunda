@@ -178,13 +178,13 @@ public class FileUtil {
     }
 
     @Override
-    public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+    public FileVisitResult visitFileFailed(Path file, IOException exc) {
+      LOG.error("Problem on copying snapshot to runtime.", exc);
       return CONTINUE;
     }
 
     @Override
-    public FileVisitResult visitFileFailed(Path file, IOException exc) {
-      LOG.error("Problem on copying snapshot to runtime.", exc);
+    public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
       return CONTINUE;
     }
   }

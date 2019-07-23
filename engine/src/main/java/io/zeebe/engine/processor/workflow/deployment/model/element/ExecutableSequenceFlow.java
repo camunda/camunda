@@ -19,12 +19,12 @@ public class ExecutableSequenceFlow extends AbstractFlowElement {
     super(id);
   }
 
-  public void setTarget(ExecutableFlowNode target) {
-    this.target = target;
-  }
-
   public ExecutableFlowNode getTarget() {
     return target;
+  }
+
+  public void setTarget(ExecutableFlowNode target) {
+    this.target = target;
   }
 
   public ExecutableFlowNode getSource() {
@@ -35,11 +35,11 @@ public class ExecutableSequenceFlow extends AbstractFlowElement {
     this.source = source;
   }
 
-  public void setCondition(CompiledJsonCondition condition) {
-    this.condition = condition;
-  }
-
   public CompiledJsonCondition getCondition() {
     return condition;
+  }
+
+  public void setCondition(CompiledJsonCondition condition) {
+    this.condition = condition;
   }
 }

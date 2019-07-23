@@ -41,7 +41,8 @@ public class StreamProcessorRule implements TestRule {
   private static final Logger LOG = new ZbLogger("io.zeebe.broker.test");
 
   private static final int PARTITION_ID = 0;
-
+  // things provisioned by this rule
+  private static final String STREAM_NAME = "stream-";
   // environment
   private final TemporaryFolder tempFolder = new TemporaryFolder();
   private final AutoCloseableRule closeables = new AutoCloseableRule();
@@ -50,16 +51,11 @@ public class StreamProcessorRule implements TestRule {
   private final ServiceContainerRule serviceContainerRule =
       new ServiceContainerRule(actorSchedulerRule);
   private final ZeebeDbFactory zeebeDbFactory;
-
-  // things provisioned by this rule
-  private static final String STREAM_NAME = "stream-";
-
-  private TestStreams streams;
-
   private final SetupRule rule;
   private final int startPartitionId;
   private final int partitionCount;
-
+  private final RuleChain chain;
+  private TestStreams streams;
   private ZeebeState zeebeState;
 
   public StreamProcessorRule() {
@@ -85,8 +81,6 @@ public class StreamProcessorRule implements TestRule {
             .around(new FailedTestRecordPrinter())
             .around(rule);
   }
-
-  private final RuleChain chain;
 
   @Override
   public Statement apply(Statement base, Description description) {
@@ -162,43 +156,6 @@ public class StreamProcessorRule implements TestRule {
       final LogStream logStream = streams.getLogStream(getLogName(partitionId++));
       LogStreamPrinter.printRecords(logStream);
     }
-  }
-
-  private class SetupRule extends ExternalResource {
-
-    private final int startPartitionId;
-    private final int partitionCount;
-
-    SetupRule(int startPartitionId, int partitionCount) {
-      this.startPartitionId = startPartitionId;
-      this.partitionCount = partitionCount;
-    }
-
-    @Override
-    protected void before() {
-      streams =
-          new TestStreams(
-              tempFolder, closeables, serviceContainerRule.get(), actorSchedulerRule.get());
-
-      int partitionId = startPartitionId;
-      for (int i = 0; i < partitionCount; i++) {
-        streams.createLogStream(getLogName(partitionId), partitionId++);
-      }
-    }
-  }
-
-  private class FailedTestRecordPrinter extends TestWatcher {
-
-    @Override
-    protected void failed(Throwable e, Description description) {
-      LOG.info("Test failed, following records where exported:");
-      printAllRecords();
-    }
-  }
-
-  @FunctionalInterface
-  public interface StreamProcessorTestFactory {
-    TypedRecordProcessors build(TypedRecordProcessors builder, ZeebeState zeebeState);
   }
 
   public long writeWorkflowInstanceEvent(WorkflowInstanceIntent intent) {
@@ -289,5 +246,42 @@ public class StreamProcessorRule implements TestRule {
 
   private static String getLogName(int partitionId) {
     return STREAM_NAME + partitionId;
+  }
+
+  @FunctionalInterface
+  public interface StreamProcessorTestFactory {
+    TypedRecordProcessors build(TypedRecordProcessors builder, ZeebeState zeebeState);
+  }
+
+  private class SetupRule extends ExternalResource {
+
+    private final int startPartitionId;
+    private final int partitionCount;
+
+    SetupRule(int startPartitionId, int partitionCount) {
+      this.startPartitionId = startPartitionId;
+      this.partitionCount = partitionCount;
+    }
+
+    @Override
+    protected void before() {
+      streams =
+          new TestStreams(
+              tempFolder, closeables, serviceContainerRule.get(), actorSchedulerRule.get());
+
+      int partitionId = startPartitionId;
+      for (int i = 0; i < partitionCount; i++) {
+        streams.createLogStream(getLogName(partitionId), partitionId++);
+      }
+    }
+  }
+
+  private class FailedTestRecordPrinter extends TestWatcher {
+
+    @Override
+    protected void failed(Throwable e, Description description) {
+      LOG.info("Test failed, following records where exported:");
+      printAllRecords();
+    }
   }
 }

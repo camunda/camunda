@@ -22,12 +22,12 @@ public class IntegerValue extends BaseValue {
     this.value = initialValue;
   }
 
-  public void setValue(int val) {
-    this.value = val;
-  }
-
   public int getValue() {
     return value;
+  }
+
+  public void setValue(int val) {
+    this.value = val;
   }
 
   @Override
@@ -63,6 +63,11 @@ public class IntegerValue extends BaseValue {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(getValue());
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -74,10 +79,5 @@ public class IntegerValue extends BaseValue {
 
     final IntegerValue that = (IntegerValue) o;
     return getValue() == that.getValue();
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(getValue());
   }
 }

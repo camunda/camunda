@@ -20,11 +20,10 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements Iterat
 
   // buffer
   private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-  private int elementCount;
-  private int bufferLength;
-
   // inner value
   private final T innerValue;
+  private int elementCount;
+  private int bufferLength;
   private int oldInnerValueLength;
   private InnerValueState innerValueState;
 
@@ -59,32 +58,6 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements Iterat
   }
 
   @Override
-  public void read(final MsgPackReader reader) {
-    reset();
-
-    elementCount = reader.readArrayHeader();
-
-    writer.wrap(buffer, 0);
-
-    for (int i = 0; i < elementCount; i++) {
-      innerValue.read(reader);
-      innerValue.write(writer);
-    }
-
-    resetInnerValue();
-
-    bufferLength = writer.getOffset();
-  }
-
-  @Override
-  public void write(final MsgPackWriter writer) {
-    flushAndResetInnerValue();
-
-    writer.writeArrayHeader(elementCount);
-    writer.writeRaw(buffer, 0, bufferLength);
-  }
-
-  @Override
   public void writeJSON(final StringBuilder builder) {
     flushAndResetInnerValue();
 
@@ -103,6 +76,32 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements Iterat
     }
 
     builder.append("]");
+  }
+
+  @Override
+  public void write(final MsgPackWriter writer) {
+    flushAndResetInnerValue();
+
+    writer.writeArrayHeader(elementCount);
+    writer.writeRaw(buffer, 0, bufferLength);
+  }
+
+  @Override
+  public void read(final MsgPackReader reader) {
+    reset();
+
+    elementCount = reader.readArrayHeader();
+
+    writer.wrap(buffer, 0);
+
+    for (int i = 0; i < elementCount; i++) {
+      innerValue.read(reader);
+      innerValue.write(writer);
+    }
+
+    resetInnerValue();
+
+    bufferLength = writer.getOffset();
   }
 
   @Override
@@ -144,6 +143,20 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements Iterat
     return innerValue;
   }
 
+  @Override
+  public void remove() {
+    if (innerValueState != InnerValueState.Modify) {
+      throw new IllegalStateException("No element available to remove, call next() before");
+    }
+
+    elementCount -= 1;
+    cursorIndex -= 1;
+
+    moveValuesLeft(cursorOffset + oldInnerValueLength, oldInnerValueLength);
+
+    innerValueState = InnerValueState.Uninitialized;
+  }
+
   public T add() {
     final boolean elementUpdated = innerValueState == InnerValueState.Modify;
     final int innerValueLength = getInnerValueLength();
@@ -164,17 +177,8 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements Iterat
   }
 
   @Override
-  public void remove() {
-    if (innerValueState != InnerValueState.Modify) {
-      throw new IllegalStateException("No element available to remove, call next() before");
-    }
-
-    elementCount -= 1;
-    cursorIndex -= 1;
-
-    moveValuesLeft(cursorOffset + oldInnerValueLength, oldInnerValueLength);
-
-    innerValueState = InnerValueState.Uninitialized;
+  public int hashCode() {
+    return Objects.hash(buffer, elementCount, bufferLength);
   }
 
   @Override
@@ -191,11 +195,6 @@ public class ArrayValue<T extends BaseValue> extends BaseValue implements Iterat
     return elementCount == that.elementCount
         && bufferLength == that.bufferLength
         && Objects.equals(buffer, that.buffer);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(buffer, elementCount, bufferLength);
   }
 
   private int getInnerValueLength() {

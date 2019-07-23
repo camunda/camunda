@@ -49,6 +49,10 @@ public class DataStoreImpl extends RootElementImpl implements DataStore {
   protected static AttributeReference<ItemDefinition> itemSubjectRefAttribute;
   protected static ChildElement<DataState> dataStateChild;
 
+  public DataStoreImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -81,10 +85,6 @@ public class DataStoreImpl extends RootElementImpl implements DataStore {
     dataStateChild = sequenceBuilder.element(DataState.class).build();
 
     typeBuilder.build();
-  }
-
-  public DataStoreImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

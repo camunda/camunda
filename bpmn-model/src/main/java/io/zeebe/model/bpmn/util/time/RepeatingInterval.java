@@ -31,18 +31,23 @@ public class RepeatingInterval implements Timer {
   }
 
   @Override
-  public int getRepetitions() {
-    return repetitions;
-  }
-
-  @Override
   public Interval getInterval() {
     return interval;
   }
 
   @Override
+  public int getRepetitions() {
+    return repetitions;
+  }
+
+  @Override
   public long getDueDate(long fromEpochMillis) {
     return getInterval().toEpochMilli(fromEpochMillis);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getRepetitions(), getInterval());
   }
 
   @Override
@@ -59,11 +64,6 @@ public class RepeatingInterval implements Timer {
 
     return getRepetitions() == repeatingInterval.getRepetitions()
         && Objects.equals(getInterval(), repeatingInterval.getInterval());
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(getRepetitions(), getInterval());
   }
 
   public static RepeatingInterval parse(String text) {

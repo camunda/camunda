@@ -22,16 +22,13 @@ public class LeaderManagementRequestHandler extends Actor
     implements Service<LeaderManagementRequestHandler> {
 
   private final Injector<Atomix> atomixInjector = new Injector<>();
-  private PushDeploymentRequestHandler pushDeploymentRequestHandler;
-
+  private final Int2ObjectHashMap<Partition> leaderForPartitions = new Int2ObjectHashMap<>();
   private final ServiceGroupReference<Partition> leaderPartitionsGroupReference =
       ServiceGroupReference.<Partition>create()
           .onAdd((s, p) -> addPartition(p))
           .onRemove((s, p) -> removePartition(p))
           .build();
-
-  private final Int2ObjectHashMap<Partition> leaderForPartitions = new Int2ObjectHashMap<>();
-
+  private PushDeploymentRequestHandler pushDeploymentRequestHandler;
   private Atomix atomix;
 
   @Override
@@ -46,10 +43,8 @@ public class LeaderManagementRequestHandler extends Actor
   }
 
   @Override
-  protected void onActorStarting() {
-    pushDeploymentRequestHandler =
-        new PushDeploymentRequestHandler(leaderForPartitions, actor, atomix);
-    atomix.getCommunicationService().subscribe("deployment", pushDeploymentRequestHandler);
+  public LeaderManagementRequestHandler get() {
+    return this;
   }
 
   @Override
@@ -58,8 +53,10 @@ public class LeaderManagementRequestHandler extends Actor
   }
 
   @Override
-  public LeaderManagementRequestHandler get() {
-    return this;
+  protected void onActorStarting() {
+    pushDeploymentRequestHandler =
+        new PushDeploymentRequestHandler(leaderForPartitions, actor, atomix);
+    atomix.getCommunicationService().subscribe("deployment", pushDeploymentRequestHandler);
   }
 
   private void addPartition(final Partition partition) {

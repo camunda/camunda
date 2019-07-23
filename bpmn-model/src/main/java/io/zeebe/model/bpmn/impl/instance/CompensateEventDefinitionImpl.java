@@ -42,6 +42,10 @@ public class CompensateEventDefinitionImpl extends EventDefinitionImpl
   protected static Attribute<Boolean> waitForCompletionAttribute;
   protected static AttributeReference<Activity> activityRefAttribute;
 
+  public CompensateEventDefinitionImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -67,10 +71,6 @@ public class CompensateEventDefinitionImpl extends EventDefinitionImpl
             .build();
 
     typeBuilder.build();
-  }
-
-  public CompensateEventDefinitionImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

@@ -17,9 +17,8 @@ import org.slf4j.Logger;
 
 public class TestUtil {
 
-  private static final Logger LOG = new ZbLogger(TestUtil.class);
-
   public static final int MAX_RETRIES = 100;
+  private static final Logger LOG = new ZbLogger(TestUtil.class);
 
   public static <T> Invocation<T> doRepeatedly(Callable<T> callable) {
     return new Invocation<>(callable);

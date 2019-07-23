@@ -49,6 +49,10 @@ public abstract class FlowNodeImpl extends FlowElementImpl implements FlowNode {
   protected static ElementReferenceCollection<SequenceFlow, Incoming> incomingCollection;
   protected static ElementReferenceCollection<SequenceFlow, Outgoing> outgoingCollection;
 
+  public FlowNodeImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -72,10 +76,6 @@ public abstract class FlowNodeImpl extends FlowElementImpl implements FlowNode {
             .build();
 
     typeBuilder.build();
-  }
-
-  public FlowNodeImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

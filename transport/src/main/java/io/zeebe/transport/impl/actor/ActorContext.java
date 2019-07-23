@@ -16,14 +16,6 @@ public abstract class ActorContext {
   private Sender sender;
   private Receiver receiver;
 
-  public void setConductor(Conductor clientConductor) {
-    this.conductor = clientConductor;
-  }
-
-  public void setReceiver(Receiver receiver) {
-    this.receiver = receiver;
-  }
-
   public void removeListener(TransportListener listener) {
     conductor.removeListener(listener);
   }
@@ -52,6 +44,10 @@ public abstract class ActorContext {
     return conductor;
   }
 
+  public void setConductor(Conductor clientConductor) {
+    this.conductor = clientConductor;
+  }
+
   public ClientConductor getClientConductor() {
     return (ClientConductor) conductor;
   }
@@ -62,6 +58,10 @@ public abstract class ActorContext {
 
   public Receiver getReceiver() {
     return receiver;
+  }
+
+  public void setReceiver(Receiver receiver) {
+    this.receiver = receiver;
   }
 
   public Sender getSender() {

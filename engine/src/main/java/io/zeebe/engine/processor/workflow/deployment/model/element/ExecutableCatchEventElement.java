@@ -26,6 +26,11 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   }
 
   @Override
+  public boolean isTimer() {
+    return timer != null;
+  }
+
+  @Override
   public boolean isMessage() {
     return message != null;
   }
@@ -37,11 +42,6 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
 
   public void setMessage(ExecutableMessage message) {
     this.message = message;
-  }
-
-  @Override
-  public boolean isTimer() {
-    return timer != null;
   }
 
   @Override

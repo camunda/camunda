@@ -31,16 +31,14 @@ import org.junit.Test;
 
 public class MessageIncidentTest {
 
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
-
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent(
               "catch", e -> e.message(m -> m.name("cancel").zeebeCorrelationKey("orderId")))
           .done();
-
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

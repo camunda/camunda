@@ -40,10 +40,9 @@ import org.slf4j.Logger;
 
 public class DeploymentDistributorImpl implements DeploymentDistributor {
 
-  private static final Logger LOG = Loggers.WORKFLOW_REPOSITORY_LOGGER;
   public static final Duration PUSH_REQUEST_TIMEOUT = Duration.ofSeconds(15);
   public static final Duration RETRY_DELAY = Duration.ofMillis(100);
-
+  private static final Logger LOG = Loggers.WORKFLOW_REPOSITORY_LOGGER;
   private final PushDeploymentResponse pushDeploymentResponse = new PushDeploymentResponse();
 
   private final ErrorResponse errorResponse = new ErrorResponse();
@@ -81,6 +80,7 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
     return list;
   }
 
+  @Override
   public ActorFuture<Void> pushDeployment(
       final long key, final long position, final DirectBuffer buffer) {
     final ActorFuture<Void> pushedFuture = new CompletableActorFuture<>();
@@ -95,6 +95,7 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
     return pushedFuture;
   }
 
+  @Override
   public PendingDeploymentDistribution removePendingDeployment(final long key) {
     return deploymentsState.removePendingDeployment(key);
   }

@@ -31,14 +31,12 @@ import org.mockito.MockitoAnnotations;
 
 public class CatchEventBehaviorTest {
   private static final String TIME_DATE = "1990-01-01T00:00:00Z";
-
+  private final Random random = new Random();
   @Mock private ZeebeState zeebeState;
   @Mock private SubscriptionCommandSender commandSender;
   @Mock private TypedStreamWriter streamWriter;
   @Captor private ArgumentCaptor<UnpackedObject> captor;
-
   private CatchEventBehavior catchEventBehavior;
-  private final Random random = new Random();
 
   @Before
   public void setUp() {

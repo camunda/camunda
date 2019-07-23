@@ -42,6 +42,10 @@ public class BusinessRuleTaskImpl extends TaskImpl implements BusinessRuleTask {
   protected static Attribute<String> implementationAttribute;
   protected static ChildElementCollection<Rendering> renderingCollection;
 
+  public BusinessRuleTaskImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -63,10 +67,6 @@ public class BusinessRuleTaskImpl extends TaskImpl implements BusinessRuleTask {
             .build();
 
     typeBuilder.build();
-  }
-
-  public BusinessRuleTaskImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

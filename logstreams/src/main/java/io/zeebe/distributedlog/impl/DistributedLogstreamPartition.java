@@ -23,22 +23,19 @@ import org.slf4j.Logger;
 
 public class DistributedLogstreamPartition implements Service<DistributedLogstreamPartition> {
   private static final Logger LOG = new ZbLogger(DistributedLogstreamPartition.class);
-
-  private DistributedLogstream distributedLog;
-
-  private final int partitionId;
-  private final String partitionName;
-  private final String primitiveName;
-  private Atomix atomix;
-  private String memberId;
-  private final long currentLeaderTerm;
-  private final Injector<Atomix> atomixInjector = new Injector<>();
-
   private static final MultiRaftProtocol PROTOCOL =
       MultiRaftProtocol.builder()
           // Maps partitionName to partitionId
           .withPartitioner(DistributedLogstreamName.getInstance())
           .build();
+  private final int partitionId;
+  private final String partitionName;
+  private final String primitiveName;
+  private final long currentLeaderTerm;
+  private final Injector<Atomix> atomixInjector = new Injector<>();
+  private DistributedLogstream distributedLog;
+  private Atomix atomix;
+  private String memberId;
 
   public DistributedLogstreamPartition(int partitionId, long leaderTerm) {
     this.partitionId = partitionId;
