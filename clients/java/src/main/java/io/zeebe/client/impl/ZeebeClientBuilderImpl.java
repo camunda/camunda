@@ -18,7 +18,6 @@ package io.zeebe.client.impl;
 import static io.zeebe.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE;
 import static io.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
 
-import io.netty.handler.ssl.SslContext;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
@@ -37,7 +36,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   private Duration defaultMessageTimeToLive = Duration.ofHours(1);
   private Duration defaultRequestTimeout = Duration.ofSeconds(20);
   private boolean useSecureConnection = false;
-  private SslContext sslContext;
+  private String certificatePath;
 
   @Override
   public String getBrokerContactPoint() {
@@ -85,8 +84,8 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public SslContext getSslContext() {
-    return sslContext;
+  public String getCaCertificatePath() {
+    return certificatePath;
   }
 
   @Override
@@ -184,8 +183,8 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder sslContext(final SslContext sslContext) {
-    this.sslContext = sslContext;
+  public ZeebeClientBuilder caCertificatePath(final String certificatePath) {
+    this.certificatePath = certificatePath;
     return this;
   }
 

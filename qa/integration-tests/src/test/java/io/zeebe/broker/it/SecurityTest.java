@@ -9,13 +9,10 @@ package io.zeebe.broker.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.grpc.netty.GrpcSslContexts;
-import io.netty.handler.ssl.SslContext;
 import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.response.Topology;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import javax.net.ssl.SSLException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -47,21 +44,14 @@ public class SecurityTest {
     assertThat(topology.getBrokers().size()).isEqualTo(1);
   }
 
-  private SslContext createContext() {
-    try {
-      return GrpcSslContexts.forClient()
-          .trustManager(
-              io.zeebe.broker.it.clustering.DeploymentClusteredTest.class
-                  .getClassLoader()
-                  .getResourceAsStream("security/ca.cert.pem"))
-          .build();
-    } catch (SSLException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   private ZeebeClientBuilder configureClientForTls(final ZeebeClientBuilder clientBuilder) {
-    return clientBuilder.useSecureConnection().sslContext(createContext());
+    return clientBuilder
+        .useSecureConnection()
+        .caCertificatePath(
+            io.zeebe.broker.it.clustering.DeploymentClusteredTest.class
+                .getClassLoader()
+                .getResource("security/ca.cert.pem")
+                .getPath());
   }
 
   private void configureGatewayForTls(final GatewayCfg gatewayCfg) {
