@@ -5,7 +5,6 @@
  */
 package org.camunda.operate;
 
-import org.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,23 +21,16 @@ import io.micrometer.core.instrument.config.MeterFilter;
 public class Metrics implements MeterRegistryCustomizer<MeterRegistry>{
   
   Logger logger = LoggerFactory.getLogger(Metrics.class);
-  @Autowired
-  OperateProperties operateProperties;
-  
+
   public static final String OPERATE_NAMESPACE = "operate.";
 
   private static Predicate<Id> IS_OPERATE = id -> id.getName().startsWith(OPERATE_NAMESPACE);
   
   @Autowired
   private MeterRegistry registry;
-
+  
   @Override
   public void customize(MeterRegistry registry) {
-    if(!isEnabled()) {
-      logger.info("Metrics are disabled");
-      registry.close();
-      return;
-    }
     logger.info("Metrics are enabled (only for "+OPERATE_NAMESPACE+"*) meters");
     registry.config()
       .meterFilter(MeterFilter.denyUnless(IS_OPERATE));   
@@ -48,7 +40,4 @@ public class Metrics implements MeterRegistryCustomizer<MeterRegistry>{
     registry.counter(OPERATE_NAMESPACE+name, dimensions).increment(count); 
   }
  
-  public boolean isEnabled() {
-    return operateProperties.metricsEnabled();
-  }
 }

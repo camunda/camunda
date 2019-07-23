@@ -25,8 +25,10 @@ import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.UserDto;
 import org.camunda.operate.security.WebSecurityConfig;
 import org.camunda.operate.user.UserStorage;
+import org.camunda.operate.util.MetricAssert;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -165,14 +167,14 @@ public class AuthenticationTest {
     assertThat(responseEntity.getHeaders().containsKey(X_CSRF_TOKEN)).isFalse();
   }
   
-  @Test
+  @Ignore @Test
   public void testMetricsUserCanAccessMetricsEndpoint() {
     testRestTemplate.getRestTemplate().getInterceptors().add(new BasicAuthenticationInterceptor(METRICS_USER, METRICS_USER));
     ResponseEntity<String> response = testRestTemplate.getForEntity("/actuator",String.class);
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(response.getBody()).contains("actuator/info");
     
-    ResponseEntity<String> prometheusResponse = testRestTemplate.getForEntity("/actuator/prometheus",String.class);
+    ResponseEntity<String> prometheusResponse = testRestTemplate.getForEntity(MetricAssert.ENDPOINT,String.class);
     assertThat(prometheusResponse.getStatusCodeValue()).isEqualTo(200);
     assertThat(prometheusResponse.getBody()).contains("# TYPE system_cpu_usage gauge");
   }

@@ -5,30 +5,27 @@
  */
 package org.camunda.operate.rest;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import org.camunda.operate.Metrics;
+
+import static org.camunda.operate.util.MetricAssert.assertThatMetricsFrom;
+import static org.hamcrest.CoreMatchers.containsString;
+
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-
 
 public class MetricServiceTest extends OperateIntegrationTest{
-  
+  protected final String testMetric = "testThatEndpointIsAccessible";
   @Autowired
   Metrics metrics;
-  
+
   @Test
-  public void testThatEndpointIsAccessible() throws Exception {
-    metrics.recordCounts("test", 1, "name","testThatEndpointIsAccessible");
-    String expectedResponseSubstring = metrics.isEnabled()?"testThatEndpointIsAccessible":"";
-    MockHttpServletRequestBuilder request = get("/actuator/prometheus");
-    mockMvc.perform(request)
-        .andExpect(status().isOk())
-        .andExpect(content().string(containsString(expectedResponseSubstring)));
+  public void testThatEndpointIsAccessibleAndMetricsEnabled() throws Exception {
+    // Given metrics enabled (Properties)
+    // when
+    metrics.recordCounts("test", 1, "name",testMetric);
+    // then
+    assertThatMetricsFrom(mockMvc,containsString(testMetric));
   }
+   
 }
