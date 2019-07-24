@@ -56,7 +56,7 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
       }
       zeebeClient.newResolveIncidentCommand(incident.getKey()).send().join();
       // mark operation as sent
-      markAsSent(operation);
+      markAsSucceeded(operation);
     } catch (ClientException ex) {
       logger.error("Zeebe command rejected: " + ex.getMessage(), ex);
       // fail operation

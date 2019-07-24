@@ -8,7 +8,6 @@ package org.camunda.operate.it;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Future;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.http.HttpStatus;
@@ -32,15 +31,12 @@ import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.rest.dto.listview.WorkflowInstanceStateDto;
-import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationResponseDto;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebe.operation.CancelWorkflowInstanceHandler;
-import org.camunda.operate.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebe.operation.ResolveIncidentHandler;
 import org.camunda.operate.zeebe.operation.UpdateVariableHandler;
 import org.junit.After;
@@ -50,7 +46,6 @@ import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -66,20 +61,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 public class OperationIT extends OperateZeebeIntegrationTest {
 
-  private static final String POST_BATCH_OPERATION_URL = WORKFLOW_INSTANCE_URL + "/operation";
-  private static final String POST_OPERATION_URL = WORKFLOW_INSTANCE_URL + "/%s/operation";
   private static final String QUERY_INSTANCES_URL = WORKFLOW_INSTANCE_URL;
 
   @Rule
   public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
 
-  private MockMvc mockMvc;
-
   @Autowired
   private OperateProperties operateProperties;
-
-  @Autowired
-  private OperationExecutor operationExecutor;
 
   @Autowired
   private CancelWorkflowInstanceHandler cancelWorkflowInstanceHandler;
@@ -89,10 +77,6 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private UpdateVariableHandler updateVariableHandler;
-
-  @Autowired
-  @Qualifier("activityIsActiveCheck")
-  private Predicate<Object[]> activityIsActiveCheck;
 
   @Autowired
   @Qualifier("incidentIsResolvedCheck")
@@ -153,15 +137,17 @@ public class OperationIT extends OperateZeebeIntegrationTest {
       fail("Failed to inject ZeebeClient into some of the beans");
     }
 
-    this.mockMvc = mockMvcTestRule.getMockMvc();
-    this.initialBatchOperationMaxSize = operateProperties.getBatchOperationMaxSize();
+    mockMvc = mockMvcTestRule.getMockMvc();
+    initialBatchOperationMaxSize = operateProperties.getBatchOperationMaxSize();
     deployWorkflow("demoProcess_v_2.bpmn");
     zeebeClient = zeebeRule.getClientRule().getClient();
   }
 
   @After
-  public void after() {
+  public void after() {    
     operateProperties.setBatchOperationMaxSize(initialBatchOperationMaxSize);
+    
+    //super.after();
   }
 
   @Test
@@ -459,22 +445,6 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertVariable(variables, newVar2Name, newVar2Value, false);
   }
 
-  protected void postUpdateVariableOperation(Long workflowInstanceKey, String newVarName, String newVarValue) throws Exception {
-    final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
-    op.setName(newVarName);
-    op.setValue(newVarValue);
-    op.setScopeId(ConversionUtils.toStringOrNull(workflowInstanceKey));
-    postOperationWithOKResponse(workflowInstanceKey, op);
-  }
-
-  protected void postUpdateVariableOperation(Long workflowInstanceKey, Long scopeKey, String newVarName, String newVarValue) throws Exception {
-    final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
-    op.setName(newVarName);
-    op.setValue(newVarValue);
-    op.setScopeId(ConversionUtils.toStringOrNull(scopeKey));
-    postOperationWithOKResponse(workflowInstanceKey, op);
-  }
-
   private void assertVariable(List<VariableDto> variables, String name, String value, Boolean hasActiveOperation) {
     final List<VariableDto> collect = variables.stream().filter(v -> v.getName().equals(name)).collect(Collectors.toList());
     assertThat(collect).hasSize(1);
@@ -582,16 +552,6 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getEndDate()).isNotNull();
     //assert that process is canceled
     assertThat(workflowInstances.getWorkflowInstances().get(0).getState()).isEqualTo(WorkflowInstanceStateDto.CANCELED);
-  }
-
-  private void executeOneBatch() {
-    try {
-      List<Future<?>> futures = operationExecutor.executeOneBatch();
-      //wait till all scheduled tasks are executed
-      for(Future f: futures) { f.get(); }
-    } catch (Exception e) {
-      fail(e.getMessage(), e);
-    }
   }
 
   @Test
@@ -783,59 +743,6 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(mvcResult.getResolvedException().getMessage()).contains(expectedErrorMsg);
   }
 
-  private MvcResult postBatchOperationWithOKResponse(ListViewQueryDto query, OperationType operationType) throws Exception {
-    return postBatchOperation(query, operationType, HttpStatus.SC_OK);
-  }
-
-  private MvcResult postBatchOperation(ListViewQueryDto query, OperationType operationType, int expectedStatus) throws Exception {
-    BatchOperationRequestDto batchOperationDto = createBatchOperationDto(operationType, query);
-    MockHttpServletRequestBuilder postOperationRequest =
-      post(POST_BATCH_OPERATION_URL)
-        .content(mockMvcTestRule.json(batchOperationDto))
-        .contentType(mockMvcTestRule.getContentType());
-
-    final MvcResult mvcResult =
-      mockMvc.perform(postOperationRequest)
-        .andExpect(status().is(expectedStatus))
-        .andReturn();
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
-    return mvcResult;
-  }
-
-  private MvcResult postOperationWithOKResponse(Long workflowInstanceKey, OperationRequestDto operationRequest) throws Exception {
-    return postOperation(workflowInstanceKey, operationRequest, HttpStatus.SC_OK);
-  }
-
-  private MvcResult postOperation(Long workflowInstanceKey, OperationRequestDto operationRequest, int expectedStatus) throws Exception {
-    MockHttpServletRequestBuilder postOperationRequest =
-      post(String.format(POST_OPERATION_URL, workflowInstanceKey))
-        .content(mockMvcTestRule.json(operationRequest))
-        .contentType(mockMvcTestRule.getContentType());
-
-    final MvcResult mvcResult =
-      mockMvc.perform(postOperationRequest)
-        .andExpect(status().is(expectedStatus))
-        .andReturn();
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
-    return mvcResult;
-  }
-
-
-  private BatchOperationRequestDto createBatchOperationDto(OperationType operationType, ListViewQueryDto query) {
-    BatchOperationRequestDto batchOperationDto = new BatchOperationRequestDto();
-    batchOperationDto.getQueries().add(query);
-    batchOperationDto.setOperationType(operationType);
-    return batchOperationDto;
-  }
-
-  private long startDemoWorkflowInstance() {
-    String processId = "demoProcess";
-    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
-    return workflowInstanceKey;
-  }
-
   private long startDemoWorkflowInstanceWithIncidents() {
     final long workflowInstanceKey = startDemoWorkflowInstance();
     failTaskWithNoRetriesLeft("taskA", workflowInstanceKey, "some error");
@@ -865,17 +772,6 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     query.setRunning(true);
     query.setActive(true);
     query.setIncidents(true);
-    return query;
-  }
-
-  private ListViewQueryDto createAllQuery() {
-    ListViewQueryDto query = new ListViewQueryDto();
-    query.setRunning(true);
-    query.setActive(true);
-    query.setIncidents(true);
-    query.setFinished(true);
-    query.setCanceled(true);
-    query.setCompleted(true);
     return query;
   }
 

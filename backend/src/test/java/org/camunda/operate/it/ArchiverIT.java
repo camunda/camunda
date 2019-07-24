@@ -5,6 +5,15 @@
  */
 package org.camunda.operate.it;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
+import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -15,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Predicate;
+
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.es.archiver.Archiver;
@@ -48,18 +58,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.client.ZeebeClient;
+
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
-import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 public class ArchiverIT extends OperateZeebeIntegrationTest {
 
@@ -77,10 +80,6 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private RestHighLevelClient esClient;
-
-  @Autowired
-  @Qualifier("activityIsActiveCheck")
-  private Predicate<Object[]> activityIsActiveCheck;
 
   @Autowired
   @Qualifier("workflowInstanceIsCompletedCheck")
@@ -108,14 +107,11 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
   private Random random = new Random();
 
-  private ZeebeClient zeebeClient;
-
   private DateTimeFormatter dateTimeFormatter;
 
   @Before
   public void init() {
     super.before();
-    zeebeClient = super.getClient();
     dateTimeFormatter = DateTimeFormatter.ofPattern(operateProperties.getElasticsearch().getRolloverDateFormat()).withZone(ZoneId.systemDefault());
   }
 

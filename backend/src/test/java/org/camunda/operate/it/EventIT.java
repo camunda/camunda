@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
-import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 
@@ -63,13 +62,10 @@ public class EventIT extends OperateZeebeIntegrationTest {
 
   private OffsetDateTime testStartTime;
 
-  private ZeebeClient zeebeClient;
-
   @Before
   public void init() {
     super.before();
     testStartTime = OffsetDateTime.now();
-    zeebeClient = super.getClient();
   }
 
   @Test

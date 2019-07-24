@@ -38,12 +38,11 @@ public abstract class OperateIntegrationTest {
   
   @Rule
   public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
-  
 
   protected MockMvc mockMvc;
 
   @Before
-  public void starting() {
+  public void before() {
     this.mockMvc = mockMvcTestRule.getMockMvc();
   }
   

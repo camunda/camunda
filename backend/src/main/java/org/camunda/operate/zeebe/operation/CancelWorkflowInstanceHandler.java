@@ -49,13 +49,12 @@ public class CancelWorkflowInstanceHandler extends AbstractOperationHandler impl
     try {
       zeebeClient.newCancelInstanceCommand(workflowInstance.getKey()).send().join();
       //mark operation as sent
-      markAsSent(operation);
+      markAsSucceeded(operation);
     } catch (ClientException ex) {
       logger.error("Zeebe command rejected: " + ex.getMessage(), ex);
       //fail operation
       failOperation(operation, ex.getMessage());
     }
-
   }
 
   @Override

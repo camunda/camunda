@@ -29,3 +29,5 @@ logging:
     org.camunda.operate: INFO
 #Spring Boot Actuator endpoints to be exposed
 management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
+# Enable or disable metrics
+#management.metrics.export.prometheus.enabled: false

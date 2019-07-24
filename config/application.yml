@@ -36,3 +36,5 @@ logging:
     ROOT: INFO
     org.camunda.operate: INFO
 management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,env
+# Enable or disable metrics
+#management.metrics.export.prometheus.enabled: false

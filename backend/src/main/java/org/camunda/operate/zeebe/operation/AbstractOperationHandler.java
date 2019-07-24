@@ -6,6 +6,8 @@
 package org.camunda.operate.zeebe.operation;
 
 import java.time.OffsetDateTime;
+
+import org.camunda.operate.Metrics;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.es.writer.BatchOperationWriter;
@@ -18,6 +20,9 @@ import org.springframework.util.StringUtils;
 
 public abstract class AbstractOperationHandler implements OperationHandler {
 
+  // Metric signature
+  private static final String COMMANDS = "commands", STATUS = "status", SUCCEEDED="succeeded", FAILED="failed",TYPE="type";
+
   private static final Logger logger = LoggerFactory.getLogger(AbstractOperationHandler.class);
 
   @Autowired
@@ -25,6 +30,8 @@ public abstract class AbstractOperationHandler implements OperationHandler {
   @Autowired
   protected OperateProperties operateProperties;
 
+  @Autowired
+  protected Metrics metrics;
   @Override
   public void handle(OperationEntity operation) {
     try {
@@ -38,8 +45,21 @@ public abstract class AbstractOperationHandler implements OperationHandler {
       logger.error("Unable to process operation: " + ex.getMessage(), ex);
     }
   }
+  
+  protected void recordCommandMetric(final String result,final OperationEntity operation) {
+    metrics.recordCounts(COMMANDS, 1, STATUS,result,TYPE, operation.getType().name()); 
+  }
+  
+  protected void recordCommandSucceededMetric(final OperationEntity operation) {
+    recordCommandMetric(SUCCEEDED, operation);
+  }
+  
+  protected void recordCommandFailedMetric(final OperationEntity operation) {
+    recordCommandMetric(FAILED, operation);
+  }
 
   protected void failOperation(OperationEntity operation, String errorMsg) throws PersistenceException {
+    recordCommandFailedMetric(operation);
     if (operation.getState().equals(OperationState.LOCKED) && operation.getLockOwner().equals(operateProperties.getOperationExecutor().getWorkerId())
       && operation.getType().equals(getType())) {
       operation.setState(OperationState.FAILED);
@@ -52,7 +72,8 @@ public abstract class AbstractOperationHandler implements OperationHandler {
     }
   }
 
-  protected void markAsSent(OperationEntity operation) throws PersistenceException {
+  protected void markAsSucceeded(OperationEntity operation) throws PersistenceException {
+    recordCommandSucceededMetric(operation);
     if (operation.getState().equals(OperationState.LOCKED) && operation.getLockOwner().equals(operateProperties.getOperationExecutor().getWorkerId())
       && operation.getType().equals(getType())) {
       operation.setState(OperationState.SENT);

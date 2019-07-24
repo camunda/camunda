@@ -5,8 +5,11 @@
  */
 package org.camunda.operate.it;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.rest.ActivityInstanceRestService.ACTIVITY_INSTANCE_URL;
+
 import java.util.List;
-import java.util.function.Predicate;
+
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.rest.dto.activity.ActivityInstanceDto;
@@ -15,33 +18,12 @@ import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeRequestDto;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
-import org.junit.Before;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.web.servlet.MvcResult;
+
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.zeebe.client.ZeebeClient;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.rest.ActivityInstanceRestService.ACTIVITY_INSTANCE_URL;
 
 public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
-
-  @Autowired
-  @Qualifier("activityIsActiveCheck")
-  private Predicate<Object[]> activityIsActiveCheck;
-
-  @Autowired
-  @Qualifier("incidentIsActiveCheck")
-  private Predicate<Object[]> incidentIsActiveCheck;
-
-  private ZeebeClient zeebeClient;
-
-  @Before
-  public void init() {
-    super.before();
-    zeebeClient = super.getClient();
-  }
 
   @Test
   public void testActivityInstanceTreeForNonInterruptingBoundaryEvent() throws Exception {

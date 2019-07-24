@@ -6,27 +6,49 @@
 package org.camunda.operate.util;
 
 import io.zeebe.client.api.worker.JobWorker;
+
+import java.util.List;
+import java.util.concurrent.Future;
 import java.util.function.Predicate;
+
+import org.apache.http.HttpStatus;
+import org.camunda.operate.entities.OperationType;
+import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
+import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
+import org.camunda.operate.rest.dto.operation.OperationRequestDto;
+import org.camunda.operate.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebeimport.ImportPositionHolder;
 import org.camunda.operate.zeebeimport.PartitionHolder;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
+import org.junit.Before;
 import org.junit.Rule;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;
 import static org.assertj.core.api.Assertions.fail;
+import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest {
+  
+  private static final String POST_OPERATION_URL = WORKFLOW_INSTANCE_URL + "/%s/operation";
+  private static final String POST_BATCH_OPERATION_URL = WORKFLOW_INSTANCE_URL + "/operation";
 
   @MockBean
   protected ZeebeClient mockedZeebeClient;    //we don't want to create ZeebeClient, we will rather use the one from test rule
+  
+  protected ZeebeClient zeebeClient;
 
   @Rule
   public final OperateZeebeRule zeebeRule;
@@ -39,40 +61,59 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
   @Autowired
-  private PartitionHolder partitionHolder;
+  protected PartitionHolder partitionHolder;
 
   @Autowired
-  private ImportPositionHolder importPositionHolder;
+  protected ImportPositionHolder importPositionHolder;
 
   @Autowired
-  private WorkflowCache workflowCache;
+  protected WorkflowCache workflowCache;
+  
+  /// Predicate checks
+  @Autowired
+  @Qualifier("variableExistsCheck")
+  protected Predicate<Object[]> variableExistsCheck;
+  
+  @Autowired
+  @Qualifier("variableEqualsCheck")
+  protected Predicate<Object[]> variableEqualsCheck;
 
   @Autowired
   @Qualifier("workflowIsDeployedCheck")
-  private Predicate<Object[]> workflowIsDeployedCheck;
+  protected Predicate<Object[]> workflowIsDeployedCheck;
 
   @Autowired
   @Qualifier("incidentIsActiveCheck")
-  private Predicate<Object[]> incidentIsActiveCheck;
+  protected Predicate<Object[]> incidentIsActiveCheck;
 
   @Autowired
   @Qualifier("workflowInstanceIsCanceledCheck")
-  private Predicate<Object[]> workflowInstanceIsCanceledCheck;
+  protected Predicate<Object[]> workflowInstanceIsCanceledCheck;
 
   @Autowired
   @Qualifier("activityIsCompletedCheck")
-  private Predicate<Object[]> activityIsCompletedCheck;
+  protected Predicate<Object[]> activityIsCompletedCheck;
+  
+  @Autowired
+  @Qualifier("activityIsActiveCheck")
+  protected Predicate<Object[]> activityIsActiveCheck;
 
   private JobWorker jobWorker;
 
   private String workerName;
 
-  protected void before() {
+  @Autowired
+  protected OperationExecutor operationExecutor;
+  
+  @Before
+  public void before() {
+    super.before();
     clientRule = zeebeRule.getClientRule();
     assertThat(clientRule).as("clientRule is not null").isNotNull();
     brokerRule = zeebeRule.getBrokerRule();
     assertThat(brokerRule).as("brokerRule is not null").isNotNull();
 
+    zeebeClient = getClient();
     workerName = TestUtil.createRandomString(10);
 
     workflowCache.clearCache();
@@ -150,5 +191,94 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     JobWorker jobWorker = ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), payload);
     elasticsearchTestRule.processAllRecordsAndWait(activityIsCompletedCheck, workflowInstanceKey, activityId);
     jobWorker.close();
+  }
+  
+  protected void postUpdateVariableOperation(Long workflowInstanceKey, String newVarName, String newVarValue) throws Exception {
+    final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
+    op.setName(newVarName);
+    op.setValue(newVarValue);
+    op.setScopeId(ConversionUtils.toStringOrNull(workflowInstanceKey));
+    postOperationWithOKResponse(workflowInstanceKey, op);
+  }
+
+  protected void postUpdateVariableOperation(Long workflowInstanceKey, Long scopeKey, String newVarName, String newVarValue) throws Exception {
+    final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
+    op.setName(newVarName);
+    op.setValue(newVarValue);
+    op.setScopeId(ConversionUtils.toStringOrNull(scopeKey));
+    postOperationWithOKResponse(workflowInstanceKey, op);
+  }
+  
+  protected void executeOneBatch() {
+    try {
+      List<Future<?>> futures = operationExecutor.executeOneBatch();
+      //wait till all scheduled tasks are executed
+      for(Future f: futures) { f.get(); }
+    } catch (Exception e) {
+      fail(e.getMessage(), e);
+    }
+  }
+  
+  protected MvcResult postOperationWithOKResponse(Long workflowInstanceKey, OperationRequestDto operationRequest) throws Exception {
+    return postOperation(workflowInstanceKey, operationRequest, HttpStatus.SC_OK);
+  }
+
+  protected MvcResult postOperation(Long workflowInstanceKey, OperationRequestDto operationRequest, int expectedStatus) throws Exception {
+    MockHttpServletRequestBuilder postOperationRequest =
+      post(String.format(POST_OPERATION_URL, workflowInstanceKey))
+        .content(mockMvcTestRule.json(operationRequest))
+        .contentType(mockMvcTestRule.getContentType());
+
+    final MvcResult mvcResult =
+      mockMvc.perform(postOperationRequest)
+        .andExpect(status().is(expectedStatus))
+        .andReturn();
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    return mvcResult;
+  }
+  
+  protected long startDemoWorkflowInstance() {
+    String processId = "demoProcess";
+    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(getClient(), processId, "{\"a\": \"b\"}");
+    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    return workflowInstanceKey;
+  }
+
+  protected MvcResult postBatchOperationWithOKResponse(ListViewQueryDto query, OperationType operationType) throws Exception {
+    return postBatchOperation(query, operationType, HttpStatus.SC_OK);
+  }
+
+  protected MvcResult postBatchOperation(ListViewQueryDto query, OperationType operationType, int expectedStatus) throws Exception {
+    BatchOperationRequestDto batchOperationDto = createBatchOperationDto(operationType, query);
+    MockHttpServletRequestBuilder postOperationRequest =
+      post(POST_BATCH_OPERATION_URL)
+        .content(mockMvcTestRule.json(batchOperationDto))
+        .contentType(mockMvcTestRule.getContentType());
+
+    final MvcResult mvcResult =
+      mockMvc.perform(postOperationRequest)
+        .andExpect(status().is(expectedStatus))
+        .andReturn();
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    return mvcResult;
+  }
+  
+  protected ListViewQueryDto createAllQuery() {
+    ListViewQueryDto query = new ListViewQueryDto();
+    query.setRunning(true);
+    query.setActive(true);
+    query.setIncidents(true);
+    query.setFinished(true);
+    query.setCanceled(true);
+    query.setCompleted(true);
+    return query;
+  }
+
+  protected BatchOperationRequestDto createBatchOperationDto(OperationType operationType, ListViewQueryDto query) {
+    BatchOperationRequestDto batchOperationDto = new BatchOperationRequestDto();
+    batchOperationDto.getQueries().add(query);
+    batchOperationDto.setOperationType(operationType);
+    return batchOperationDto;
   }
 }

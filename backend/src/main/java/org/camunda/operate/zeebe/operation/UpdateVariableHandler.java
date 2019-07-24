@@ -34,7 +34,7 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
         .variables(updateVariableJson)
         .local(true)
         .send().join();
-      markAsSent(operation);
+      markAsSucceeded(operation);
     } catch (ClientException ex) {
       logger.error("Zeebe command rejected: " + ex.getMessage(), ex);
       //fail operation
