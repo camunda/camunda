@@ -320,3 +320,10 @@ historyCleanup:
   perDecisionDefinitionConfig:
   # 'myDecisionDefinitionKey':
   #   ttl: 'P2M'
+
+locales:
+  # all locales available
+  # Note: for others than the default there must be a <localeCode>.json file available under ./environment/localization.
+  availableLocales: ['en', 'de']
+  # the fallback locale is used if there is a locale requested that is not available in availableLocales
+  fallbackLocale: 'en'

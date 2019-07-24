@@ -90,9 +90,11 @@ public interface ConfigurationServiceConstants {
   String CONTAINER_ACCESSURL = "$.container.accessUrl";
 
   String EXPORT_CSV_LIMIT = "$.export.csv.limit";
-  String EXPORT_CSV_OFFSET = "$.export.csv.offset";
 
   String HISTORY_CLEANUP = "$.historyCleanup";
 
   String SHARING_ENABLED = "$.sharing.enabled";
+
+  String AVAILABLE_LOCALES = "$.locales.availableLocales";
+  String FALLBACK_LOCALE = "$.locales.fallbackLocale";
 }

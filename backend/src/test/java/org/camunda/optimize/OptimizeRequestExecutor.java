@@ -695,6 +695,13 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetLocalizationRequest(final String localeCode) {
+    this.path = "localization";
+    this.requestType = GET;
+    this.addSingleQueryParam("localeCode", localeCode);
+    return this;
+  }
+
   private Entity getBody(Object entity) {
     try {
       return entity == null ? Entity.json("") : Entity.json(objectMapper.writeValueAsString(entity));

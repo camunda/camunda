@@ -28,6 +28,7 @@ import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,7 +50,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.AVAILABLE_LOCALES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.cutTrailingSlash;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePathAsAbsoluteUrl;
@@ -73,6 +76,7 @@ public class ConfigurationService {
   // @formatter:off
   private static final TypeRef<HashMap<String, EngineConfiguration>> ENGINES_MAP_TYPEREF =
     new TypeRef<HashMap<String, EngineConfiguration>>() {};
+  public static final TypeRef<List<String>> LIST_OF_STRINGS_TYPE_REF = new TypeRef<List<String>>() {};
   // @formatter:on
 
   private ReadContext configJsonContext;
@@ -182,6 +186,10 @@ public class ConfigurationService {
   private OptimizeCleanupConfiguration cleanupServiceConfiguration;
 
   private Boolean sharingEnabled;
+
+  // localization
+  private List<String> availableLocales;
+  private String fallbackLocale;
 
   public ConfigurationService() {
     this((String[]) null, null);
@@ -440,10 +448,9 @@ public class ConfigurationService {
 
   public List<String> getDecisionOutputImportPluginBasePackages() {
     if (DecisionOutputImportPluginBasePackages == null) {
-      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {
-      };
-      DecisionOutputImportPluginBasePackages =
-        configJsonContext.read(ConfigurationServiceConstants.DECISION_OUTPUT_IMPORT_PLUGIN_BASE_PACKAGES, typeRef);
+      DecisionOutputImportPluginBasePackages = configJsonContext.read(
+        ConfigurationServiceConstants.DECISION_OUTPUT_IMPORT_PLUGIN_BASE_PACKAGES, LIST_OF_STRINGS_TYPE_REF
+      );
     }
     return DecisionOutputImportPluginBasePackages;
   }
@@ -740,10 +747,8 @@ public class ConfigurationService {
 
   public List<String> getVariableImportPluginBasePackages() {
     if (variableImportPluginBasePackages == null) {
-      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {
-      };
       variableImportPluginBasePackages = configJsonContext.read(
-        ConfigurationServiceConstants.VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES, typeRef
+        ConfigurationServiceConstants.VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES, LIST_OF_STRINGS_TYPE_REF
       );
     }
     return variableImportPluginBasePackages;
@@ -751,10 +756,8 @@ public class ConfigurationService {
 
   public List<String> getEngineRestFilterPluginBasePackages() {
     if (engineRestFilterPluginBasePackages == null) {
-      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {
-      };
       engineRestFilterPluginBasePackages = configJsonContext.read(
-        ConfigurationServiceConstants.ENGINE_REST_FILTER_PLUGIN_BASE_PACKAGES, typeRef
+        ConfigurationServiceConstants.ENGINE_REST_FILTER_PLUGIN_BASE_PACKAGES, LIST_OF_STRINGS_TYPE_REF
       );
     }
     return engineRestFilterPluginBasePackages;
@@ -762,10 +765,8 @@ public class ConfigurationService {
 
   public List<String> getAuthenticationExtractorPluginBasePackages() {
     if (authenticationExtractorPluginBasePackages == null) {
-      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {
-      };
       authenticationExtractorPluginBasePackages = configJsonContext.read(
-        ConfigurationServiceConstants.AUTHENTICATION_EXTRACTOR_BASE_PACKAGES, typeRef
+        ConfigurationServiceConstants.AUTHENTICATION_EXTRACTOR_BASE_PACKAGES, LIST_OF_STRINGS_TYPE_REF
       );
     }
     return authenticationExtractorPluginBasePackages;
@@ -800,10 +801,10 @@ public class ConfigurationService {
 
   public List<String> getDecisionInputImportPluginBasePackages() {
     if (DecisionInputImportPluginBasePackages == null) {
-      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {
-      };
       DecisionInputImportPluginBasePackages =
-        configJsonContext.read(ConfigurationServiceConstants.DECISION_INPUT_IMPORT_PLUGIN_BASE_PACKAGES, typeRef);
+        configJsonContext.read(
+          ConfigurationServiceConstants.DECISION_INPUT_IMPORT_PLUGIN_BASE_PACKAGES, LIST_OF_STRINGS_TYPE_REF
+        );
     }
     return DecisionInputImportPluginBasePackages;
   }
@@ -1039,11 +1040,8 @@ public class ConfigurationService {
 
   public List<String> getElasticsearchSecuritySSLCertificateAuthorities() {
     if (elasticsearchSecuritySSLCertificateAuthorities == null && getElasticsearchSecuritySSLEnabled()) {
-      // @formatter:off
-      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {};
-      // @formatter:on
       List<String> authoritiesAsList = configJsonContext.read(
-        ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES, typeRef
+        ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES, LIST_OF_STRINGS_TYPE_REF
       );
       elasticsearchSecuritySSLCertificateAuthorities = authoritiesAsList.stream()
         .map(a -> resolvePathAsAbsoluteUrl(a).getPath())
@@ -1061,6 +1059,28 @@ public class ConfigurationService {
       cleanupServiceConfiguration.validate();
     }
     return cleanupServiceConfiguration;
+  }
+
+  public List<String> getAvailableLocales() {
+    if (availableLocales == null) {
+      availableLocales = configJsonContext.read(
+        AVAILABLE_LOCALES, LIST_OF_STRINGS_TYPE_REF
+      );
+      if (availableLocales == null || availableLocales.isEmpty()) {
+        throw new OptimizeConfigurationException(AVAILABLE_LOCALES + " is not allowed to be empty");
+      }
+    }
+    return availableLocales;
+  }
+
+  public String getFallbackLocale() {
+    if (fallbackLocale == null) {
+      fallbackLocale = configJsonContext.read(FALLBACK_LOCALE, String.class);
+      if (StringUtils.isEmpty(fallbackLocale)) {
+        throw new OptimizeConfigurationException(FALLBACK_LOCALE + " is not allowed to be empty");
+      }
+    }
+    return fallbackLocale;
   }
 
 }
