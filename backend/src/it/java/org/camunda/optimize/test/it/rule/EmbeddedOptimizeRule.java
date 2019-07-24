@@ -273,7 +273,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public String getNewAuthenticationToken() {
-    return getOptimize().getNewAuthenticationToken();
+    return getOptimize().getNewAuthenticationToken().orElse(null);
   }
 
   public String authenticateUser(String username, String password) {

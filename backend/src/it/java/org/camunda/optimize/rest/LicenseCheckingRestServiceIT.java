@@ -10,6 +10,7 @@ import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,6 +33,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class LicenseCheckingRestServiceIT {
 
+  public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
   public static ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
@@ -42,7 +44,7 @@ public class LicenseCheckingRestServiceIT {
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(engineIntegrationRule).around(embeddedOptimizeRule);
 
   @BeforeClass
   public static void init() {

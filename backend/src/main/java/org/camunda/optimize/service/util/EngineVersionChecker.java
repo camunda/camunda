@@ -5,11 +5,11 @@
  */
 package org.camunda.optimize.service.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.EngineVersionDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.camunda.optimize.service.util.configuration.EngineConstantsUtil;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
@@ -23,9 +23,9 @@ import static org.camunda.optimize.service.metadata.Version.getMinorVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.getPatchVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.stripToPlainVersion;
 
+@Slf4j
 public class EngineVersionChecker {
   private static List<String> supportedEngines = new ArrayList<>();
-  private static final Logger logger = LoggerFactory.getLogger(EngineVersionChecker.class);
 
   static {
     supportedEngines.add("7.9.12");
@@ -37,13 +37,13 @@ public class EngineVersionChecker {
     Client client = engineContext.getEngineClient();
     Response response;
     try {
-      response = client.target(engineRestPath + "/version")
+      response = client.target(engineRestPath + EngineConstantsUtil.VERSION_ENDPOINT)
         .request()
         .get();
     } catch (Exception e) {
       // if we can't connect to the engine, we will just log an error and skip the check
       String errorMessage = buildEngineConnectionRefusedErrorMessage(engineContext.getEngineAlias());
-      logger.error(errorMessage, e);
+      log.error(errorMessage, e);
       return;
     }
 

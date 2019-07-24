@@ -7,6 +7,7 @@ package org.camunda.optimize;
 
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -25,10 +26,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class EmbeddedCamundaOptimizeIT {
 
+  private EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
   private EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   @Rule
-  public RuleChain chain = RuleChain.outerRule(embeddedOptimizeRule);
+  public RuleChain chain = RuleChain.outerRule(engineIntegrationRule).around(embeddedOptimizeRule);
 
   @Test
   public void onOptimizeDestroyNoRemainingZombieThreads() throws Exception {

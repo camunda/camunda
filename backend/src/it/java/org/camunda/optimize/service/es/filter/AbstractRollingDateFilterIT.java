@@ -39,7 +39,7 @@ import static org.hamcrest.core.IsNull.notNullValue;
 public abstract class AbstractRollingDateFilterIT {
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
+  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule(engineRule.getEngineName());
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 

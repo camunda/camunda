@@ -58,7 +58,7 @@ public class ForceReimportIT {
 
   private ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   private EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  private EngineIntegrationRule engineRule = new EngineIntegrationRule("reimport-preparation.properties");
+  private EngineIntegrationRule engineRule = new EngineIntegrationRule();
 
   @Rule
   public RuleChain chain = RuleChain

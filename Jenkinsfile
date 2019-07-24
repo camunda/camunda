@@ -105,9 +105,6 @@ String camBpmContainerSpec(String camBpmVersion = CAMBPM_VERSION_LATEST) {
         memory: 1Gi
     volumeMounts:
     - name: cambpm-config
-      mountPath: /camunda/conf/bpm-platform.xml
-      subPath: bpm-platform.xml
-    - name: cambpm-config
       mountPath: /camunda/conf/tomcat-users.xml
       subPath: tomcat-users.xml
     - name: cambpm-config

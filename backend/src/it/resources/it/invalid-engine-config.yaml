@@ -1,7 +1,7 @@
 ---
 engines:
   '1':
-    name: default
+    name: ${prefixedDefaultEngineName:integrationTest}
     rest: 'http://localhost:8080/engine-rest/ding-dong-you-rest-path-is-wrong'
     authentication:
       enabled: false

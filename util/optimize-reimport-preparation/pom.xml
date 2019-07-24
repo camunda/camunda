@@ -66,12 +66,6 @@
               <value>org.camunda.optimize.test.it.rule.StartOptimizeExecutionListener</value>
             </property>
           </properties>
-          <systemProperties>
-            <property>
-              <name>database</name>
-              <value>${database}</value>
-            </property>
-          </systemProperties>
         </configuration>
         <executions>
           <execution>

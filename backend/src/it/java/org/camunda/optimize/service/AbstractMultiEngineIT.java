@@ -39,14 +39,12 @@ public class AbstractMultiEngineIT {
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   protected EngineIntegrationRule defaultEngineRule = new EngineIntegrationRule();
-  protected EngineIntegrationRule secondEngineRule = new EngineIntegrationRule(
-    "multiple-engine/multiple-engine-integration-rules.properties"
-  );
+  protected EngineIntegrationRule secondEngineRule = new EngineIntegrationRule("anotherEngine");
   private ConfigurationService configurationService;
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(defaultEngineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(defaultEngineRule).around(secondEngineRule).around(embeddedOptimizeRule);
 
   @Before
   public void init() {
@@ -157,13 +155,12 @@ public class AbstractMultiEngineIT {
   }
 
   protected void addSecondEngineToConfiguration() {
-    String anotherEngine = "anotherEngine";
-    addEngineToConfiguration(anotherEngine);
+    addEngineToConfiguration(secondEngineRule.getEngineName());
     embeddedOptimizeRule.reloadConfiguration();
   }
 
-  protected void addSecureEngineToConfiguration() {
-    addEngineToConfiguration("anotherEngine", SECURE_REST_ENDPOINT, true, "admin", "admin");
+  protected void addSecureSecondEngineToConfiguration() {
+    addEngineToConfiguration(secondEngineRule.getEngineName(), SECURE_REST_ENDPOINT, true, "admin", "admin");
   }
 
   protected void addEngineToConfiguration(String engineName) {

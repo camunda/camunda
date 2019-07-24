@@ -63,11 +63,9 @@ public class QueryPerformanceTest {
   private static final Properties properties = PropertyUtil.loadProperties(PROPERTY_LOCATION);
   private static final Random randomGen = new Random();
 
-  private static ElasticSearchIntegrationTestRule elasticSearchRule =
-    new ElasticSearchIntegrationTestRule();
+  private static ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   private static EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  private static EngineIntegrationRule engineRule =
-    new EngineIntegrationRule(PROPERTY_LOCATION);
+  private static EngineIntegrationRule engineRule = new EngineIntegrationRule("default", false);
 
   @ClassRule
   public static RuleChain chain = RuleChain

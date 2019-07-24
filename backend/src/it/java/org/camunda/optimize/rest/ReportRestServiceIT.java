@@ -24,6 +24,7 @@ import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationExcept
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.DecisionReportDataType;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
@@ -63,11 +64,13 @@ public class ReportRestServiceIT {
   private static final String RANDOM_KEY = "someRandomKey";
   private static final String RANDOM_VERSION = "someRandomVersion";
   private static final String RANDOM_STRING = "something";
+
+  public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(engineIntegrationRule).around(embeddedOptimizeRule);
 
   @Test
   public void createNewReportWithoutAuthentication() {

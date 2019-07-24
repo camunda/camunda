@@ -8,6 +8,7 @@ package org.camunda.optimize.jetty;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -34,13 +35,14 @@ import static org.hamcrest.Matchers.nullValue;
 
 public class RedirectToLicensePageIT {
 
+  public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
   private LicenseManager licenseManager;
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+    .outerRule(engineIntegrationRule).around(elasticSearchRule).around(embeddedOptimizeRule);
 
   @Before
   public void setup() {

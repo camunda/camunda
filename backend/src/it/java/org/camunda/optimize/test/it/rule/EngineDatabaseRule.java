@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.test.it.rule;
 
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -20,34 +19,30 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
+@Slf4j
 public class EngineDatabaseRule extends TestWatcher {
-
-  private Logger logger = LoggerFactory.getLogger(getClass());
-
   private static final String DATABASE_H2 = "h2";
   private static final String DATABASE_POSTGRESQL = "postgresql";
 
   private static final String JDBC_DRIVER_H2 = "org.h2.Driver";
-  private static final String DB_URL_H2 = "jdbc:h2:tcp://localhost:9092/mem:camunda1";
+  private static final String DB_URL_H2_TEMPLATE = "jdbc:h2:tcp://localhost:9092/mem:%s";
   private static final String USER_H2 = "sa";
   private static final String PASS_H2 = "";
 
-  private static final String JDBC_DRIVER_POSTGRESQL = "org.postgresql.Driver";
-  private static final String DB_URL_POSTGRESQL = "jdbc:postgresql://localhost:5432/engine";
-  private static final String USER_POSTGRESQL = "camunda";
-  private static final String PASS_POSTGRESQL = "camunda";
+  private static final Map<String, Connection> CONNECTION_CACHE = new HashMap<>();
 
-  private static Connection connection = null;
+  private static String database = DATABASE_H2;
 
-  private String database = System.getProperty("database", "h2");
+  private Connection connection = null;
   private Boolean usePostgresOptimizations = true;
 
-  public EngineDatabaseRule(Properties properties) {
+  public EngineDatabaseRule(final Properties properties) {
     database = properties.getProperty("db.name");
     usePostgresOptimizations = Optional.ofNullable(properties.getProperty("db.usePostgresOptimizations"))
       .map(Boolean::valueOf)
@@ -62,59 +57,36 @@ public class EngineDatabaseRule extends TestWatcher {
     initDatabaseConnection(jdbcDriver, dbUrl, dbUser, dbPassword);
   }
 
-  public EngineDatabaseRule() {
-    String jdbcDriver;
-    String dbUrl;
-    String dbUser;
-    String dbPassword;
-
-    switch (database) {
-      case DATABASE_H2:
-        jdbcDriver = JDBC_DRIVER_H2;
-        dbUrl = DB_URL_H2;
-        dbUser = USER_H2;
-        dbPassword = PASS_H2;
-        break;
-      case DATABASE_POSTGRESQL:
-        jdbcDriver = JDBC_DRIVER_POSTGRESQL;
-        dbUrl = DB_URL_POSTGRESQL;
-        dbUser = USER_POSTGRESQL;
-        dbPassword = PASS_POSTGRESQL;
-        break;
-      default:
-        throw new IllegalArgumentException("Unable to discover database " + database);
-    }
-    initDatabaseConnection(jdbcDriver, dbUrl, dbUser, dbPassword);
+  public EngineDatabaseRule(@NonNull final String dataBaseName) {
+    final String dbUrl = String.format(DB_URL_H2_TEMPLATE, dataBaseName);
+    initDatabaseConnection(JDBC_DRIVER_H2, dbUrl, USER_H2, PASS_H2);
   }
 
   private void initDatabaseConnection(String jdbcDriver, String dbUrl, String dbUser, String dbPassword) {
     try {
-      if (connection == null || connection.isClosed()) {
-
-        // Register JDBC driver
+      if (CONNECTION_CACHE.containsKey(dbUrl)) {
+        connection = CONNECTION_CACHE.get(dbUrl);
+      } else {
         Class.forName(jdbcDriver);
 
-        logger.info("Connecting to a selected " + database + " database...");
+        log.debug("Connecting to a selected " + database + " database...");
         connection = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
-        logger.info("Connected to " + database + " database successfully...");
+        log.debug("Connected to " + database + " database successfully...");
 
         // to be able to batch sql statements
         connection.setAutoCommit(false);
+
+        CONNECTION_CACHE.put(dbUrl, connection);
       }
     } catch (SQLException e) {
-      logger.error("Error while trying to connect to database " + database + "!", e);
+      log.error("Error while trying to connect to database " + database + "!", e);
     } catch (ClassNotFoundException e) {
-      logger.error("Could not find " + database + " jdbc driver class!", e);
+      log.error("Could not find " + database + " jdbc driver class!", e);
     }
   }
 
   private String handleDatabaseSyntax(String statement) {
     return (database.equals(DATABASE_POSTGRESQL)) ? statement.toLowerCase() : statement;
-  }
-
-  @Override
-  protected void starting(Description description) {
-    super.starting(description);
   }
 
   public void changeActivityDuration(String processInstanceId,
@@ -487,11 +459,6 @@ public class EngineDatabaseRule extends TestWatcher {
     ResultSet statement = connection.createStatement().executeQuery(sql);
     statement.next();
     return statement.getInt("total");
-  }
-
-  @Override
-  protected void finished(Description description) {
-    super.finished(description);
   }
 
   private boolean usePostgresOptimizations() {

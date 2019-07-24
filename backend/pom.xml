@@ -509,7 +509,7 @@
         </dependency>
         <dependency>
           <groupId>org.camunda.optimize</groupId>
-          <artifactId>engine-purge</artifactId>
+          <artifactId>engine-it-plugin</artifactId>
           <scope>test</scope>
           <type>war</type>
           <version>${project.version}</version>
@@ -554,14 +554,10 @@
                   <value>org.camunda.optimize.test.it.rule.StartOptimizeExecutionListener</value>
                 </property>
               </properties>
-              <systemProperties>
-                <property>
-                  <name>database</name>
-                  <value>${database}</value>
-                </property>
-              </systemProperties>
               <systemPropertyVariables>
-                <indexPrefix>test-fork-${surefire.forkNumber}</indexPrefix>
+                <enginePrefix>${surefire.forkNumber}-</enginePrefix>
+                <prefixedDefaultEngineName>${surefire.forkNumber}-integrationTest</prefixedDefaultEngineName>
+                <indexPrefix>${surefire.forkNumber}-</indexPrefix>
               </systemPropertyVariables>
             </configuration>
             <executions>
@@ -705,10 +701,10 @@
                 </deployable>
                 <deployable>
                   <groupId>org.camunda.optimize</groupId>
-                  <artifactId>engine-purge</artifactId>
+                  <artifactId>engine-it-plugin</artifactId>
                   <type>war</type>
                   <properties>
-                    <context>purge</context>
+                    <context>engine-it-plugin</context>
                   </properties>
                 </deployable>
                 <deployable>

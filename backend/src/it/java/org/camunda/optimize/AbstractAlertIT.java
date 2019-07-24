@@ -55,7 +55,7 @@ public abstract class AbstractAlertIT {
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
+  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule(engineRule.getEngineName());
 
   protected String createAlert(AlertCreationDto simpleAlert) {
     return embeddedOptimizeRule

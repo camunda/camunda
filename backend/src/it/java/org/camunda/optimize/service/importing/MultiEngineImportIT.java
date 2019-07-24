@@ -121,7 +121,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     // given
     secondEngineRule.addUser("admin", "admin");
     secondEngineRule.grantAllAuthorizations("admin");
-    addSecureEngineToConfiguration();
+    addSecureSecondEngineToConfiguration();
     embeddedOptimizeRule.reloadConfiguration();
     deployAndStartSimpleProcessDefinitionForAllEngines();
 
@@ -173,8 +173,6 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
   @Test
   public void afterRestartOfOptimizeRightImportIndexIsUsed() throws Exception {
     // given
-    secondEngineRule.addUser("demo", "demo");
-    secondEngineRule.grantAllAuthorizations("demo");
     addSecondEngineToConfiguration();
     deployAndStartSimpleProcessDefinitionForAllEngines();
     // we need finished user tasks

@@ -899,7 +899,7 @@ public class ConfigurationService {
    * @param engineAlias - an alias of configured engine
    * @return <b>raw</b> REST endpoint, without engine suffix
    */
-  public String getEngineRestApiEndpoint(String engineAlias) {
+  private String getEngineRestApiEndpoint(String engineAlias) {
     return getEngineConfiguration(engineAlias)
       .map(EngineConfiguration::getRest)
       .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));

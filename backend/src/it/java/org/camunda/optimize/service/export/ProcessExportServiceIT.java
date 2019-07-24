@@ -127,7 +127,7 @@ public class ProcessExportServiceIT {
   private EngineIntegrationRule engineRule = new EngineIntegrationRule();
   private ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   private EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  private EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
+  private EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule(engineRule.getEngineName());
 
   @Rule
   public RuleChain chain = RuleChain

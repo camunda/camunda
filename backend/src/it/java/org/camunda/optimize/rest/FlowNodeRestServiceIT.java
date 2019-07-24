@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -25,12 +26,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class FlowNodeRestServiceIT {
 
+  public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(engineIntegrationRule).around(embeddedOptimizeRule);
 
   @Test
   public void mapFlowNodeWithoutAuthentication() {

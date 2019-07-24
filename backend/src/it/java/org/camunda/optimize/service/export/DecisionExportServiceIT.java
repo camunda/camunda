@@ -93,12 +93,11 @@ public class DecisionExportServiceIT {
   private String expectedCSV;
 
   private static final String FAKE = "FAKE";
-  private static final String CSV_EXPORT = "export/csv";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
+  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule(engineRule.getEngineName());
 
   @Rule
   public RuleChain chain = RuleChain

@@ -440,11 +440,14 @@ public class ProcessImportIT extends AbstractImportIT {
   @Test
   public void runningActivitiesDoNotOverwriteCompletedActivities() throws IOException {
     //given
+    // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
-      .name("startEvent")
+        .name("startEvent")
       .endEvent()
+        .name("endEvent")
       .done();
+    // @formatter:on
     engineRule.deployAndStartProcess(processModel);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
 
@@ -452,7 +455,7 @@ public class ProcessImportIT extends AbstractImportIT {
     HistoricActivityInstanceEngineDto startEvent =
       engineRule.getHistoricActivityInstances()
         .stream()
-        .filter(a -> a.getActivityName().equals("startEvent"))
+        .filter(a -> "startEvent".equals(a.getActivityName()))
         .findFirst()
         .get();
     startEvent.setEndTime(null);

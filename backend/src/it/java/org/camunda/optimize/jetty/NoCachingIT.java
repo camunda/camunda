@@ -8,6 +8,7 @@ package org.camunda.optimize.jetty;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -30,12 +31,13 @@ import static org.hamcrest.Matchers.is;
 
 public class NoCachingIT {
 
+  public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+  public RuleChain chain = RuleChain.outerRule(engineIntegrationRule)
+    .around(elasticSearchRule).around(embeddedOptimizeRule);
 
   private LicenseManager licenseManager;
 

@@ -52,7 +52,7 @@ public class AbstractProcessDefinitionIT {
   protected EngineIntegrationRule engineRule = new EngineIntegrationRule();
   protected ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   protected EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  protected EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
+  protected EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule(engineRule.getEngineName());
 
   @Rule
   public RuleChain chain = RuleChain

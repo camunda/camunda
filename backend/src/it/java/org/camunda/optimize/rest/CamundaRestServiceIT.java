@@ -85,7 +85,7 @@ public class CamundaRestServiceIT {
     WebappsEndpointDto defaultEndpoint = webappsEndpoints.get("1");
     assertThat(defaultEndpoint, notNullValue());
     assertThat(defaultEndpoint.getEndpoint(), is("http://localhost:8080/camunda"));
-    assertThat(defaultEndpoint.getEngineName(), is("default"));
+    assertThat(defaultEndpoint.getEngineName(), is(engineRule.getEngineName()));
   }
 
   @Test
@@ -107,7 +107,7 @@ public class CamundaRestServiceIT {
     WebappsEndpointDto defaultEndpoint = webappsEndpoints.get("1");
     assertThat(defaultEndpoint, notNullValue());
     assertThat(defaultEndpoint.getEndpoint(), is("foo"));
-    assertThat(defaultEndpoint.getEngineName(), is("default"));
+    assertThat(defaultEndpoint.getEngineName(), is(engineRule.getEngineName()));
   }
 
   @Test

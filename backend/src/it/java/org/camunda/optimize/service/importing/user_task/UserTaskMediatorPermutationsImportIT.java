@@ -70,7 +70,7 @@ public class UserTaskMediatorPermutationsImportIT {
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
+  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule(engineRule.getEngineName());
 
   private ObjectMapper objectMapper;
   private final List<Class<? extends EngineImportMediator>> mediatorOrder;

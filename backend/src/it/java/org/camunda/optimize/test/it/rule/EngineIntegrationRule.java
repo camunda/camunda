@@ -11,7 +11,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.Getter;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -29,6 +31,7 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -54,11 +57,9 @@ import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.mapper.CustomDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomSerializer;
-import org.camunda.optimize.test.util.PropertyUtil;
+import org.camunda.optimize.test.engine.EnginePluginClient;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import java.io.IOException;
@@ -70,10 +71,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
@@ -86,57 +88,68 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
- * Rule that performs clean up of engine on integration test startup and
- * one more clean up after integration test.
+ * Rule that performs clean up of engine on integration test startup and one more clean up after integration test.
  * <p>
- * Relies on expectation of /purge endpoint available in Tomcat for HTTP GET
- * requests and performing actual purge.
+ * Relies on it-plugin being deployed on cambpm platform Tomcat.
  */
+@Slf4j
 public class EngineIntegrationRule extends TestWatcher {
+  private static final Set<String> DEPLOYED_ENGINES = new HashSet<>(Collections.singleton("default"));
 
+  private static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
+  private static final CloseableHttpClient HTTP_CLIENT = HttpClients.createDefault();
+  private static final EnginePluginClient ENGINE_PLUGIN_CLIENT = new EnginePluginClient(HTTP_CLIENT);
+
+  public static final String DEFAULT_DMN_DEFINITION_PATH = "dmn/invoiceBusinessDecision_withName_and_versionTag.xml";
   private static final int MAX_WAIT = 10;
   private static final String COUNT = "count";
-  private static final String DEFAULT_PROPERTIES_PATH = "integration-rules.properties";
-  private static final CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().build();
-  public static final String DEFAULT_DMN_DEFINITION_PATH = "dmn/invoiceBusinessDecision_withName_and_versionTag.xml";
 
-  private Properties properties;
-  private Logger logger = LoggerFactory.getLogger(EngineIntegrationRule.class);
-
-  private ObjectMapper objectMapper;
   private boolean shouldCleanEngine;
 
+  @Getter
+  private final String engineName;
+
   public EngineIntegrationRule() {
-    this(DEFAULT_PROPERTIES_PATH);
+    this(null);
   }
 
-  public EngineIntegrationRule(String propertiesLocation) {
-    properties = PropertyUtil.loadProperties(propertiesLocation);
-    checkIfShouldCleanEngine();
-    setupObjectMapper();
+  public EngineIntegrationRule(final String customEngineName) {
+    this(customEngineName, true);
   }
 
-  private void checkIfShouldCleanEngine() {
-    String shouldCleanEngineProperty =
-      properties.getProperty("camunda.optimize.test.clean-engine");
-    shouldCleanEngine = Optional.ofNullable(shouldCleanEngineProperty)
-      .orElseThrow(OptimizeIntegrationTestException::new)
-      .trim()
-      .matches("true");
+  public EngineIntegrationRule(final String customEngineName, final boolean shouldCleanEngine) {
+    this.engineName = Optional.ofNullable(customEngineName)
+      .map(IntegrationTestProperties::resolveFullEngineName)
+      .orElseGet(IntegrationTestProperties::resolveFullDefaultEngineName);
+    this.shouldCleanEngine = shouldCleanEngine;
+    initEngine();
   }
 
-  private String getEngineVersion() {
-    return properties.getProperty("camunda.engine.version");
+  @Override
+  protected void starting(final Description description) {
+    super.starting(description);
+
+    if (shouldCleanEngine) {
+      ENGINE_PLUGIN_CLIENT.cleanEngine(engineName);
+      addUser("demo", "demo");
+      grantAllAuthorizations("demo");
+    }
   }
 
-  private void setupObjectMapper() {
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(properties.getProperty(
-      "camunda.optimize.serialization.date.format"));
-    JavaTimeModule javaTimeModule = new JavaTimeModule();
+  private void initEngine() {
+    if (!DEPLOYED_ENGINES.contains(engineName)) {
+      ENGINE_PLUGIN_CLIENT.deployEngine(engineName);
+      DEPLOYED_ENGINES.add(engineName);
+    }
+  }
+
+  private static ObjectMapper createObjectMapper() {
+    final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(IntegrationTestProperties.getEngineDateFormat());
+    final JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(formatter));
     javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(formatter));
 
-    objectMapper = Jackson2ObjectMapperBuilder
+    return Jackson2ObjectMapperBuilder
       .json()
       .modules(javaTimeModule)
       .featuresToDisable(
@@ -152,31 +165,6 @@ public class EngineIntegrationRule extends TestWatcher {
       .build();
   }
 
-  protected void starting(Description description) {
-    if (shouldCleanEngine) {
-      cleanEngine();
-      addUser("demo", "demo");
-      grantAllAuthorizations("demo");
-    }
-  }
-
-  private void cleanEngine() {
-    logger.info("Start cleaning engine");
-    CloseableHttpClient client = getHttpClient();
-    HttpGet getRequest = new HttpGet(properties.get("camunda.optimize.test.purge").toString());
-    try {
-      CloseableHttpResponse response = client.execute(getRequest);
-      if (response.getStatusLine().getStatusCode() != 200) {
-        throw new RuntimeException("Something really bad happened during purge, " +
-                                     "please check tomcat logs of engine-purge servlet");
-      }
-      response.close();
-      logger.info("Finished cleaning engine");
-    } catch (IOException e) {
-      logger.error("Error cleaning engine with purge request", e);
-    }
-  }
-
   public UUID createIndependentUserTask() throws IOException {
     final UUID taskId = UUID.randomUUID();
     final HttpPost completePost = new HttpPost(getEngineUrl() + "/task/create");
@@ -184,7 +172,7 @@ public class EngineIntegrationRule extends TestWatcher {
       String.format("{\"id\":\"%s\",\"name\":\"name\"}", taskId.toString())
     ));
     completePost.addHeader("Content-Type", "application/json");
-    try (CloseableHttpResponse response = getHttpClient().execute(completePost)) {
+    try (CloseableHttpResponse response = HTTP_CLIENT.execute(completePost)) {
       if (response.getStatusLine().getStatusCode() != 204) {
         throw new RuntimeException(
           "Could not create user task! Status-code: " + response.getStatusLine().getStatusCode()
@@ -195,22 +183,18 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public void addCandidateGroupForAllRunningUserTasks(final String groupId) {
-    final BasicCredentialsProvider credentialsProvider =
-      getBasicCredentialsProvider(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    try (final CloseableHttpClient httpClient = HttpClientBuilder.create()
-      .setDefaultCredentialsProvider(credentialsProvider).build()
-    ) {
+    try (final CloseableHttpClient httpClient = createClientWithDefaultBasicAuth()) {
       final List<TaskDto> tasks = getUserTasks(httpClient, null);
       for (TaskDto task : tasks) {
         addCandidateGroupToUserTask(httpClient, task.getId(), groupId);
       }
     } catch (IOException e) {
-      logger.error("Error while trying to create http client auth authentication!", e);
+      log.error("Error while trying to create http client auth authentication!", e);
     }
   }
 
   private void addCandidateGroupToUserTask(final CloseableHttpClient httpClient, final String taskId,
-                                          final String groupId) throws IOException {
+                                           final String groupId) throws IOException {
     HttpPost addCandidateGroupPost = new HttpPost(getAddIdentityLinkUrl(taskId));
     String bodyAsString = String.format("{\"groupId\": \"%s\", \"type\": \"candidate\"}", groupId);
     addCandidateGroupPost.setEntity(new StringEntity(bodyAsString));
@@ -229,22 +213,19 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public void deleteCandidateGroupForAllRunningUserTasks(final String groupId) {
-    final BasicCredentialsProvider credentialsProvider =
-      getBasicCredentialsProvider(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    try (final CloseableHttpClient httpClient = HttpClientBuilder.create()
-      .setDefaultCredentialsProvider(credentialsProvider).build()
-    ) {
+    try (final CloseableHttpClient httpClient = createClientWithDefaultBasicAuth()) {
       final List<TaskDto> tasks = getUserTasks(httpClient, null);
       for (TaskDto task : tasks) {
         deleteCandidateGroupToUserTask(httpClient, task.getId(), groupId);
       }
     } catch (IOException e) {
-      logger.error("Error while trying to create http client auth authentication!", e);
+      log.error("Error while trying to create http client auth authentication!", e);
     }
   }
 
-  private void deleteCandidateGroupToUserTask(final CloseableHttpClient httpClient, final String taskId,
-                                          final String groupId) throws IOException {
+  private void deleteCandidateGroupToUserTask(final CloseableHttpClient httpClient,
+                                              final String taskId,
+                                              final String groupId) throws IOException {
     HttpPost addCandidateGroupPost = new HttpPost(getDeleteIdentityLinkUrl(taskId));
     String bodyAsString = String.format("{\"groupId\": \"%s\", \"type\": \"candidate\"}", groupId);
     addCandidateGroupPost.setEntity(new StringEntity(bodyAsString));
@@ -275,16 +256,13 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public void finishAllRunningUserTasks(final String user, final String password, final String processInstanceId) {
-    final BasicCredentialsProvider credentialsProvider = getBasicCredentialsProvider(user, password);
-    try (final CloseableHttpClient httpClient = HttpClientBuilder.create()
-      .setDefaultCredentialsProvider(credentialsProvider).build()
-    ) {
+    try (final CloseableHttpClient httpClient = createClientWithBasicAuth(user, password)) {
       final List<TaskDto> tasks = getUserTasks(httpClient, processInstanceId);
       for (TaskDto task : tasks) {
         claimAndCompleteUserTask(httpClient, user, task);
       }
     } catch (IOException e) {
-      logger.error("Error while trying to create http client auth authentication!", e);
+      log.error("Error while trying to create http client auth authentication!", e);
     }
   }
 
@@ -297,16 +275,13 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public void claimAllRunningUserTasks(final String user, final String password, final String processInstanceId) {
-    final BasicCredentialsProvider credentialsProvider = getBasicCredentialsProvider(user, password);
-    try (final CloseableHttpClient httpClient = HttpClientBuilder.create()
-      .setDefaultCredentialsProvider(credentialsProvider).build()
-    ) {
+    try (final CloseableHttpClient httpClient = createClientWithBasicAuth(user, password)) {
       final List<TaskDto> tasks = getUserTasks(httpClient, processInstanceId);
       for (TaskDto task : tasks) {
         claimUserTask(httpClient, user, task);
       }
     } catch (IOException e) {
-      logger.error("Error while trying to create http client auth authentication!", e);
+      log.error("Error while trying to create http client auth authentication!", e);
     }
   }
 
@@ -315,16 +290,13 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   private void unclaimAllRunningUserTasks(final String user, final String password, final String processInstanceId) {
-    final BasicCredentialsProvider credentialsProvider = getBasicCredentialsProvider(user, password);
-    try (final CloseableHttpClient httpClient = HttpClientBuilder.create()
-      .setDefaultCredentialsProvider(credentialsProvider).build()
-    ) {
+    try (final CloseableHttpClient httpClient = createClientWithBasicAuth(user, password)) {
       final List<TaskDto> tasks = getUserTasks(httpClient, processInstanceId);
       for (TaskDto task : tasks) {
         unclaimUserTask(httpClient, user, task);
       }
     } catch (IOException e) {
-      logger.error("Error while trying to create http client auth authentication!", e);
+      log.error("Error while trying to create http client auth authentication!", e);
     }
   }
 
@@ -347,23 +319,14 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   private void completeUserTaskWithoutClaim(final String user, final String password, final String processInstanceId) {
-    final BasicCredentialsProvider credentialsProvider = getBasicCredentialsProvider(user, password);
-    try (final CloseableHttpClient httpClient = HttpClientBuilder.create()
-      .setDefaultCredentialsProvider(credentialsProvider).build()
-    ) {
+    try (final CloseableHttpClient httpClient = createClientWithBasicAuth(user, password)) {
       final List<TaskDto> tasks = getUserTasks(httpClient, processInstanceId);
       for (TaskDto task : tasks) {
         completeUserTask(httpClient, task);
       }
     } catch (IOException e) {
-      logger.error("Error while trying to complete user task!", e);
+      log.error("Error while trying to complete user task!", e);
     }
-  }
-
-  private BasicCredentialsProvider getBasicCredentialsProvider(final String user, final String password) {
-    final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-    credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(user, password));
-    return credentialsProvider;
   }
 
   private List<TaskDto> getUserTasks(final CloseableHttpClient authenticatingClient,
@@ -378,7 +341,7 @@ public class EngineIntegrationRule extends TestWatcher {
       try (CloseableHttpResponse response = authenticatingClient.execute(get)) {
         String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
         // @formatter:off
-        tasks = objectMapper.readValue(responseString, new TypeReference<List<TaskDto>>() {});
+        tasks = OBJECT_MAPPER.readValue(responseString, new TypeReference<List<TaskDto>>() {});
         // @formatter:on
       } catch (IOException e) {
         throw new RuntimeException("Error while trying to finish the user task!!");
@@ -447,14 +410,13 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public String getProcessDefinitionId() {
-    CloseableHttpClient client = getHttpClient();
     HttpRequestBase get = new HttpGet(getProcessDefinitionUri());
     CloseableHttpResponse response;
     try {
-      response = client.execute(get);
+      response = HTTP_CLIENT.execute(get);
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       List<ProcessDefinitionEngineDto> procDefs =
-        objectMapper.readValue(responseString, new TypeReference<List<ProcessDefinitionEngineDto>>() {
+        OBJECT_MAPPER.readValue(responseString, new TypeReference<List<ProcessDefinitionEngineDto>>() {
         });
       response.close();
       assertThat(procDefs.size(), is(1));
@@ -465,7 +427,6 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public List<ProcessDefinitionEngineDto> getLatestProcessDefinitions() {
-    CloseableHttpClient client = getHttpClient();
     URI uri;
     try {
       uri = new URIBuilder(getProcessDefinitionUri())
@@ -477,10 +438,10 @@ public class EngineIntegrationRule extends TestWatcher {
     HttpRequestBase get = new HttpGet(uri);
     CloseableHttpResponse response;
     try {
-      response = client.execute(get);
+      response = HTTP_CLIENT.execute(get);
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       List<ProcessDefinitionEngineDto> procDefs =
-        objectMapper.readValue(responseString, new TypeReference<List<ProcessDefinitionEngineDto>>() {
+        OBJECT_MAPPER.readValue(responseString, new TypeReference<List<ProcessDefinitionEngineDto>>() {
         });
       response.close();
       return procDefs;
@@ -490,14 +451,13 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public ProcessDefinitionXmlEngineDto getProcessDefinitionXml(String processDefinitionId) {
-    CloseableHttpClient client = getHttpClient();
     HttpRequestBase get = new HttpGet(getProcessDefinitionXmlUri(processDefinitionId));
     CloseableHttpResponse response;
     try {
-      response = client.execute(get);
+      response = HTTP_CLIENT.execute(get);
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       ProcessDefinitionXmlEngineDto xml =
-        objectMapper.readValue(responseString, ProcessDefinitionXmlEngineDto.class);
+        OBJECT_MAPPER.readValue(responseString, ProcessDefinitionXmlEngineDto.class);
       response.close();
       return xml;
     } catch (IOException e) {
@@ -531,13 +491,12 @@ public class EngineIntegrationRule extends TestWatcher {
                                                                      Map<String, Object> variables,
                                                                      String businessKey,
                                                                      String tenantId) {
-    final CloseableHttpClient client = getHttpClient();
-    final DeploymentDto deployment = deployProcess(bpmnModelInstance, client, tenantId);
-    final List<ProcessDefinitionEngineDto> procDefs = getAllProcessDefinitions(deployment, client);
+    final DeploymentDto deployment = deployProcess(bpmnModelInstance, tenantId);
+    final List<ProcessDefinitionEngineDto> procDefs = getAllProcessDefinitions(deployment, HTTP_CLIENT);
     assertThat(procDefs.size(), is(1));
     final ProcessDefinitionEngineDto processDefinitionEngineDto = procDefs.get(0);
     final ProcessInstanceEngineDto processInstanceDto = startProcessInstance(
-      processDefinitionEngineDto.getId(), client, variables, businessKey
+      processDefinitionEngineDto.getId(), variables, businessKey
     );
     processInstanceDto.setProcessDefinitionKey(processDefinitionEngineDto.getKey());
     processInstanceDto.setProcessDefinitionVersion(String.valueOf(processDefinitionEngineDto.getVersion()));
@@ -546,27 +505,25 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public HistoricProcessInstanceDto getHistoricProcessInstance(String processInstanceId) {
-    CloseableHttpClient client = getHttpClient();
     HttpRequestBase get = new HttpGet(getHistoricGetProcessInstanceUri(processInstanceId));
     HistoricProcessInstanceDto processInstanceDto = new HistoricProcessInstanceDto();
     try {
-      CloseableHttpResponse response = client.execute(get);
+      CloseableHttpResponse response = HTTP_CLIENT.execute(get);
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      processInstanceDto = objectMapper.readValue(responseString, new TypeReference<HistoricProcessInstanceDto>() {
+      processInstanceDto = OBJECT_MAPPER.readValue(responseString, new TypeReference<HistoricProcessInstanceDto>() {
       });
       response.close();
     } catch (IOException e) {
-      logger.error("Could not get process definition for process instance: " + processInstanceId, e);
+      log.error("Could not get process definition for process instance: " + processInstanceId, e);
     }
     return processInstanceDto;
   }
 
   public List<HistoricActivityInstanceEngineDto> getHistoricActivityInstances() {
-    CloseableHttpClient client = getHttpClient();
     HttpRequestBase get = new HttpGet(getHistoricGetActivityInstanceUri());
-    try (CloseableHttpResponse response = client.execute(get)) {
+    try (CloseableHttpResponse response = HTTP_CLIENT.execute(get)) {
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      return objectMapper.readValue(responseString, new TypeReference<List<HistoricActivityInstanceEngineDto>>() {
+      return OBJECT_MAPPER.readValue(responseString, new TypeReference<List<HistoricActivityInstanceEngineDto>>() {
       });
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not fetch historic activity instances", e);
@@ -574,19 +531,18 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public void deleteHistoricProcessInstance(String processInstanceId) {
-    CloseableHttpClient client = getHttpClient();
     HttpDelete delete = new HttpDelete(getHistoricGetProcessInstanceUri(processInstanceId));
     try {
-      CloseableHttpResponse response = client.execute(delete);
+      CloseableHttpResponse response = HTTP_CLIENT.execute(delete);
       if (response.getStatusLine().getStatusCode() != 204) {
-        logger.error(
+        log.error(
           "Could not delete process definition for process instance [{}]. Reason: wrong response code [{}]",
           processInstanceId,
           response.getStatusLine().getStatusCode()
         );
       }
     } catch (Exception e) {
-      logger.error("Could not delete process definition for process instance: " + processInstanceId, e);
+      log.error("Could not delete process definition for process instance: " + processInstanceId, e);
     }
   }
 
@@ -605,10 +561,10 @@ public class EngineIntegrationRule extends TestWatcher {
       }
 
       final HttpRequestBase get = new HttpGet(historicGetProcessInstanceUriBuilder.build());
-      try (final CloseableHttpResponse response = getHttpClient().execute(get)) {
+      try (final CloseableHttpResponse response = HTTP_CLIENT.execute(get)) {
         String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
         // @formatter:off
-        final List<HistoricUserTaskInstanceDto> historicUserTaskInstanceDto = objectMapper.readValue(
+        final List<HistoricUserTaskInstanceDto> historicUserTaskInstanceDto = OBJECT_MAPPER.readValue(
           responseString,
           new TypeReference<List<HistoricUserTaskInstanceDto>>() {}
         );
@@ -626,29 +582,27 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public void externallyTerminateProcessInstance(String processInstanceId) {
-    CloseableHttpClient client = getHttpClient();
     HttpDelete delete = new HttpDelete(getGetProcessInstanceUri(processInstanceId));
     try {
-      CloseableHttpResponse response = client.execute(delete);
+      CloseableHttpResponse response = HTTP_CLIENT.execute(delete);
       if (response.getStatusLine().getStatusCode() != 204) {
-        logger.error(
+        log.error(
           "Could not cancel process definition for process instance [{}]. Reason: wrong response code [{}]",
           processInstanceId,
           response.getStatusLine().getStatusCode()
         );
       }
     } catch (Exception e) {
-      logger.error("Could not cancel process definition for process instance: " + processInstanceId, e);
+      log.error("Could not cancel process definition for process instance: " + processInstanceId, e);
     }
   }
 
   public void deleteVariableInstanceForProcessInstance(String variableName, String processInstanceId) {
-    CloseableHttpClient client = getHttpClient();
     HttpDelete delete = new HttpDelete(getVariableDeleteUri(variableName, processInstanceId));
     try {
-      CloseableHttpResponse response = client.execute(delete);
+      CloseableHttpResponse response = HTTP_CLIENT.execute(delete);
       if (response.getStatusLine().getStatusCode() != 204) {
-        logger.error(
+        log.error(
           "Could not delete variable [{}] for process instance [{}]. Reason: wrong response code [{}]",
           variableName,
           processInstanceId,
@@ -656,14 +610,9 @@ public class EngineIntegrationRule extends TestWatcher {
         );
       }
     } catch (Exception e) {
-      logger.error("Could not delete variable for process instance: " + processInstanceId, e);
+      log.error("Could not delete variable for process instance: " + processInstanceId, e);
     }
   }
-
-  private CloseableHttpClient getHttpClient() {
-    return closeableHttpClient;
-  }
-
 
   public String deployProcessAndGetId(BpmnModelInstance modelInstance) {
     ProcessDefinitionEngineDto processDefinitionId = deployProcessAndGetProcessDefinition(modelInstance, null);
@@ -676,57 +625,48 @@ public class EngineIntegrationRule extends TestWatcher {
 
   public ProcessDefinitionEngineDto deployProcessAndGetProcessDefinition(BpmnModelInstance modelInstance,
                                                                          String tenantId) {
-    CloseableHttpClient client = getHttpClient();
-    DeploymentDto deploymentDto = deployProcess(modelInstance, client, tenantId);
-    return getProcessDefinitionEngineDto(deploymentDto, client);
+    DeploymentDto deploymentDto = deployProcess(modelInstance, tenantId);
+    return getProcessDefinitionEngineDto(deploymentDto);
   }
 
   private DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance,
-                                      CloseableHttpClient client,
                                       String tenantId) {
     String process = Bpmn.convertToString(bpmnModelInstance);
     HttpPost deploymentRequest = createDeploymentRequest(process, "test.bpmn", tenantId);
     DeploymentDto deployment = new DeploymentDto();
     try {
-      CloseableHttpResponse response = client.execute(deploymentRequest);
+      CloseableHttpResponse response = EngineIntegrationRule.HTTP_CLIENT.execute(deploymentRequest);
       if (response.getStatusLine().getStatusCode() != 200) {
         throw new RuntimeException("Something really bad happened during deployment, " +
                                      "could not create a deployment!");
       }
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      deployment = objectMapper.readValue(responseString, DeploymentDto.class);
+      deployment = OBJECT_MAPPER.readValue(responseString, DeploymentDto.class);
       response.close();
     } catch (IOException e) {
-      logger.error("Error during deployment request! Could not deploy the given process model!", e);
+      log.error("Error during deployment request! Could not deploy the given process model!", e);
     }
     return deployment;
   }
 
   public void startDecisionInstance(String decisionDefinitionId) {
-    CloseableHttpClient client = getHttpClient();
-    startDecisionInstance(decisionDefinitionId, client, new HashMap<String, Object>() {{
+    startDecisionInstance(decisionDefinitionId, new HashMap<String, Object>() {{
       put("amount", 200);
       put("invoiceCategory", "Misc");
     }});
   }
 
-  public void startDecisionInstance(String decisionDefinitionId, Map<String, Object> variables) {
-    CloseableHttpClient client = getHttpClient();
-    startDecisionInstance(decisionDefinitionId, client, variables);
-  }
-
-  private void startDecisionInstance(String decisionDefinitionId,
-                                     CloseableHttpClient client,
-                                     Map<String, Object> variables) {
+  public void startDecisionInstance(String decisionDefinitionId,
+                                    Map<String, Object> variables) {
     final HttpPost post = new HttpPost(getStartDecisionInstanceUri(decisionDefinitionId));
     post.addHeader("Content-Type", "application/json");
     final Map<String, Object> requestBodyAsMap = convertVariableMap(variables);
 
     final String requestBodyAsJson;
     try {
-      requestBodyAsJson = objectMapper.writeValueAsString(requestBodyAsMap);
+      requestBodyAsJson = OBJECT_MAPPER.writeValueAsString(requestBodyAsMap);
       post.setEntity(new StringEntity(requestBodyAsJson, ContentType.APPLICATION_JSON));
-      try (final CloseableHttpResponse response = client.execute(post)) {
+      try (final CloseableHttpResponse response = HTTP_CLIENT.execute(post)) {
         if (response.getStatusLine().getStatusCode() != 200) {
           String body = "";
           if (response.getEntity() != null) {
@@ -741,13 +681,9 @@ public class EngineIntegrationRule extends TestWatcher {
       }
     } catch (IOException e) {
       final String message = "Could not start the given decision model!";
-      logger.error(message, e);
+      log.error(message, e);
       throw new RuntimeException(message, e);
     }
-  }
-
-  private HttpPost createDeploymentRequest(String process, String fileName) {
-    return createDeploymentRequest(process, fileName, null);
   }
 
   private HttpPost createDeploymentRequest(String process, String fileName, String tenantId) {
@@ -818,17 +754,17 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   private String getEngineUrl() {
-    return properties.get("camunda.optimize.engine.rest").toString() +
-      properties.get("camunda.optimize.engine.name").toString();
+    return IntegrationTestProperties.getEnginesRestEndpoint() + engineName;
   }
 
   private String getSecuredEngineUrl() {
     return getEngineUrl().replace("/engine-rest", "/engine-rest-secure");
   }
 
-  private ProcessDefinitionEngineDto getProcessDefinitionEngineDto(DeploymentDto deployment,
-                                                                   CloseableHttpClient client) {
-    List<ProcessDefinitionEngineDto> processDefinitions = getAllProcessDefinitions(deployment, client);
+  private ProcessDefinitionEngineDto getProcessDefinitionEngineDto(final DeploymentDto deployment) {
+    List<ProcessDefinitionEngineDto> processDefinitions = getAllProcessDefinitions(
+      deployment, EngineIntegrationRule.HTTP_CLIENT
+    );
     assertThat("Deployment should contain only one process definition!", processDefinitions.size(), is(1));
     return processDefinitions.get(0);
   }
@@ -842,21 +778,21 @@ public class EngineIntegrationRule extends TestWatcher {
         .addParameter("deploymentId", deployment.getId())
         .build();
     } catch (URISyntaxException e) {
-      logger.error("Could not build uri!", e);
+      log.error("Could not build uri!", e);
     }
     get.setURI(uri);
     CloseableHttpResponse response = null;
     try {
       response = client.execute(get);
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      return objectMapper.readValue(
+      return OBJECT_MAPPER.readValue(
         responseString,
         new TypeReference<List<ProcessDefinitionEngineDto>>() {
         }
       );
     } catch (IOException e) {
       String message = "Could not retrieve all process definitions!";
-      logger.error(message, e);
+      log.error(message, e);
       throw new RuntimeException(message, e);
     } finally {
       if (response != null) {
@@ -864,31 +800,31 @@ public class EngineIntegrationRule extends TestWatcher {
           response.close();
         } catch (IOException e) {
           String message = "Could not close response!";
-          logger.error(message, e);
+          log.error(message, e);
         }
       }
     }
   }
 
-  public DecisionDefinitionEngineDto getDecisionDefinitionByDeployment(DeploymentDto deployment) {
+  private DecisionDefinitionEngineDto getDecisionDefinitionByDeployment(DeploymentDto deployment) {
     HttpRequestBase get = new HttpGet(getDecisionDefinitionUri());
     try {
       URI uri = new URIBuilder(get.getURI()).addParameter("deploymentId", deployment.getId()).build();
       get.setURI(uri);
-      try (CloseableHttpResponse response = getHttpClient().execute(get)) {
+      try (CloseableHttpResponse response = HTTP_CLIENT.execute(get)) {
         String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-        final List<DecisionDefinitionEngineDto> decisionDefinitionEngineDtos = objectMapper.readValue(
+        final List<DecisionDefinitionEngineDto> decisionDefinitionEngineDtos = OBJECT_MAPPER.readValue(
           responseString, new TypeReference<List<DecisionDefinitionEngineDto>>() {
           }
         );
         return decisionDefinitionEngineDtos.get(0);
       }
     } catch (URISyntaxException e) {
-      logger.error("Could not build uri!", e);
+      log.error("Could not build uri!", e);
       throw new RuntimeException(e);
     } catch (IOException e) {
       String message = "Could not retrieve all process definitions!";
-      logger.error(message, e);
+      log.error(message, e);
       throw new RuntimeException(message, e);
     }
   }
@@ -901,15 +837,7 @@ public class EngineIntegrationRule extends TestWatcher {
     return startProcessInstance(processDefinitionId, variables, "aBusinessKey");
   }
 
-  public ProcessInstanceEngineDto startProcessInstance(String processDefinitionId,
-                                                       Map<String, Object> variables,
-                                                       String businessKey) {
-    CloseableHttpClient client = getHttpClient();
-    return startProcessInstance(processDefinitionId, client, variables, businessKey);
-  }
-
   private ProcessInstanceEngineDto startProcessInstance(String procDefId,
-                                                        CloseableHttpClient client,
                                                         Map<String, Object> variables,
                                                         String businessKey) {
     HttpPost post = new HttpPost(getStartProcessInstanceUri(procDefId));
@@ -918,9 +846,9 @@ public class EngineIntegrationRule extends TestWatcher {
     requestBodyAsMap.put("businessKey", businessKey);
     String requestBodyAsJson;
     try {
-      requestBodyAsJson = objectMapper.writeValueAsString(requestBodyAsMap);
+      requestBodyAsJson = OBJECT_MAPPER.writeValueAsString(requestBodyAsMap);
       post.setEntity(new StringEntity(requestBodyAsJson, ContentType.APPLICATION_JSON));
-      try (CloseableHttpResponse response = client.execute(post)) {
+      try (CloseableHttpResponse response = EngineIntegrationRule.HTTP_CLIENT.execute(post)) {
         if (response.getStatusLine().getStatusCode() != 200) {
           String body = "";
           if (response.getEntity() != null) {
@@ -933,14 +861,14 @@ public class EngineIntegrationRule extends TestWatcher {
           );
         }
         String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-        ProcessInstanceEngineDto processInstanceEngineDto = objectMapper.readValue(
+        ProcessInstanceEngineDto processInstanceEngineDto = OBJECT_MAPPER.readValue(
           responseString, ProcessInstanceEngineDto.class
         );
         return processInstanceEngineDto;
       }
     } catch (IOException e) {
       String message = "Could not start the given process model!";
-      logger.error(message, e);
+      log.error(message, e);
       throw new RuntimeException(message, e);
     }
   }
@@ -973,7 +901,7 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public void waitForAllProcessesToFinish() throws Exception {
-    CloseableHttpClient client = getHttpClient();
+
     boolean done = false;
     HttpRequestBase get = new HttpGet(getCountHistoryUri());
     URI uri = null;
@@ -982,15 +910,15 @@ public class EngineIntegrationRule extends TestWatcher {
         .addParameter("unfinished", "true")
         .build();
     } catch (URISyntaxException e) {
-      logger.error("Could not build uri!", e);
+      log.error("Could not build uri!", e);
     }
     get.setURI(uri);
     int iterations = 0;
     Thread.sleep(100);
     while (!done && iterations < MAX_WAIT) {
-      CloseableHttpResponse response = client.execute(get);
+      CloseableHttpResponse response = HTTP_CLIENT.execute(get);
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      HashMap<String, Object> parsed = objectMapper.readValue(
+      HashMap<String, Object> parsed = OBJECT_MAPPER.readValue(
         responseString,
         new TypeReference<HashMap<String, Object>>() {
         }
@@ -1018,11 +946,10 @@ public class EngineIntegrationRule extends TestWatcher {
     tenantDto.setName(name);
 
     try {
-      CloseableHttpClient client = getHttpClient();
       HttpPost httpPost = new HttpPost(getEngineUrl() + "/tenant/create");
       httpPost.addHeader("Content-Type", "application/json");
-      httpPost.setEntity(new StringEntity(objectMapper.writeValueAsString(tenantDto), ContentType.APPLICATION_JSON));
-      try (CloseableHttpResponse response = client.execute(httpPost)) {
+      httpPost.setEntity(new StringEntity(OBJECT_MAPPER.writeValueAsString(tenantDto), ContentType.APPLICATION_JSON));
+      try (CloseableHttpResponse response = HTTP_CLIENT.execute(httpPost)) {
         if (response.getStatusLine().getStatusCode() != 204) {
           throw new OptimizeIntegrationTestException("Wrong status code when trying to create tenant!");
         }
@@ -1038,11 +965,10 @@ public class EngineIntegrationRule extends TestWatcher {
     tenantDto.setName(name);
 
     try {
-      CloseableHttpClient client = getHttpClient();
       HttpPut httpPut = new HttpPut(getEngineUrl() + "/tenant/" + id);
       httpPut.addHeader("Content-Type", "application/json");
-      httpPut.setEntity(new StringEntity(objectMapper.writeValueAsString(tenantDto), ContentType.APPLICATION_JSON));
-      try (CloseableHttpResponse response = client.execute(httpPut)) {
+      httpPut.setEntity(new StringEntity(OBJECT_MAPPER.writeValueAsString(tenantDto), ContentType.APPLICATION_JSON));
+      try (CloseableHttpResponse response = HTTP_CLIENT.execute(httpPut)) {
         if (response.getStatusLine().getStatusCode() != 204) {
           throw new OptimizeIntegrationTestException("Wrong status code when trying to update tenant!");
         }
@@ -1055,32 +981,30 @@ public class EngineIntegrationRule extends TestWatcher {
   public void addUser(String username, String password) {
     UserDto userDto = constructDemoUserDto(username, password);
     try {
-      CloseableHttpClient client = getHttpClient();
       HttpPost httpPost = new HttpPost(getEngineUrl() + "/user/create");
       httpPost.addHeader("Content-Type", "application/json");
 
-      httpPost.setEntity(new StringEntity(objectMapper.writeValueAsString(userDto), ContentType.APPLICATION_JSON));
-      CloseableHttpResponse response = client.execute(httpPost);
+      httpPost.setEntity(new StringEntity(OBJECT_MAPPER.writeValueAsString(userDto), ContentType.APPLICATION_JSON));
+      CloseableHttpResponse response = HTTP_CLIENT.execute(httpPost);
       if (response.getStatusLine().getStatusCode() != 204) {
         throw new OptimizeIntegrationTestException("Wrong status code when trying to add user!");
       }
       response.close();
     } catch (Exception e) {
-      logger.error("error creating user", e);
+      log.error("error creating user", e);
     }
   }
 
   @SneakyThrows
   public void unlockUser(String username) {
-    final CloseableHttpClient client = getHttpClient();
     final HttpUriRequest request;
-    if (getEngineVersion().matches("7\\.11\\..*")) {
+    if (IntegrationTestProperties.getEngineVersion().matches("7\\.11\\..*")) {
       request = new HttpPost(getEngineUrl() + "/user/" + username + "/unlock");
     } else {
       request = new HttpGet(getEngineUrl() + "/user/" + username + "/unlock");
     }
     request.addHeader("Content-Type", "application/json");
-    try (final CloseableHttpResponse response = client.execute(request)) {
+    try (final CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
       if (response.getStatusLine().getStatusCode() != 204) {
         throw new OptimizeIntegrationTestException("Wrong status code when trying to unlock user!");
       }
@@ -1089,18 +1013,17 @@ public class EngineIntegrationRule extends TestWatcher {
 
   public void createAuthorization(AuthorizationDto authorizationDto) {
     try {
-      CloseableHttpClient client = getHttpClient();
       HttpPost httpPost = new HttpPost(getEngineUrl() + "/authorization/create");
       httpPost.addHeader("Content-Type", "application/json");
 
       httpPost.setEntity(
-        new StringEntity(objectMapper.writeValueAsString(authorizationDto), ContentType.APPLICATION_JSON)
+        new StringEntity(OBJECT_MAPPER.writeValueAsString(authorizationDto), ContentType.APPLICATION_JSON)
       );
-      CloseableHttpResponse response = client.execute(httpPost);
+      CloseableHttpResponse response = HTTP_CLIENT.execute(httpPost);
       assertThat(response.getStatusLine().getStatusCode(), is(200));
       response.close();
     } catch (IOException e) {
-      logger.error("Could not create authorization", e);
+      log.error("Could not create authorization", e);
     }
   }
 
@@ -1125,16 +1048,16 @@ public class EngineIntegrationRule extends TestWatcher {
       values.put("resourceId", "*");
 
       try {
-        CloseableHttpClient client = getHttpClient();
+
         HttpPost httpPost = new HttpPost(getEngineUrl() + "/authorization/create");
         httpPost.addHeader("Content-Type", "application/json");
 
-        httpPost.setEntity(new StringEntity(objectMapper.writeValueAsString(values), ContentType.APPLICATION_JSON));
-        CloseableHttpResponse response = client.execute(httpPost);
+        httpPost.setEntity(new StringEntity(OBJECT_MAPPER.writeValueAsString(values), ContentType.APPLICATION_JSON));
+        CloseableHttpResponse response = HTTP_CLIENT.execute(httpPost);
         assertThat(response.getStatusLine().getStatusCode(), is(200));
         response.close();
       } catch (Exception e) {
-        logger.error("error creating authorization", e);
+        log.error("error creating authorization", e);
       }
     }
 
@@ -1159,32 +1082,29 @@ public class EngineIntegrationRule extends TestWatcher {
     groupDto.setType("anyGroupType");
 
     try {
-      CloseableHttpClient client = getHttpClient();
       HttpPost httpPost = new HttpPost(getEngineUrl() + "/group/create");
       httpPost.addHeader("Content-Type", "application/json");
 
-      httpPost.setEntity(new StringEntity(objectMapper.writeValueAsString(groupDto), ContentType.APPLICATION_JSON));
-      CloseableHttpResponse response = client.execute(httpPost);
+      httpPost.setEntity(new StringEntity(OBJECT_MAPPER.writeValueAsString(groupDto), ContentType.APPLICATION_JSON));
+      CloseableHttpResponse response = HTTP_CLIENT.execute(httpPost);
       assertThat(response.getStatusLine().getStatusCode(), is(204));
       response.close();
     } catch (Exception e) {
-      logger.error("error creating group", e);
+      log.error("error creating group", e);
     }
   }
 
   public void addUserToGroup(String userId, String groupId) {
-
     try {
-      CloseableHttpClient client = getHttpClient();
       HttpPut put = new HttpPut(getEngineUrl() + "/group/" + groupId + "/members/" + userId);
       put.addHeader("Content-Type", "application/json");
 
       put.setEntity(new StringEntity("", ContentType.APPLICATION_JSON));
-      CloseableHttpResponse response = client.execute(put);
+      CloseableHttpResponse response = HTTP_CLIENT.execute(put);
       assertThat(response.getStatusLine().getStatusCode(), is(204));
       response.close();
     } catch (Exception e) {
-      logger.error("error creating group members", e);
+      log.error("error creating group members", e);
     }
   }
 
@@ -1241,25 +1161,39 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public DecisionDefinitionEngineDto deployDecisionDefinition(DmnModelInstance dmnModelInstance, String tenantId) {
-    CloseableHttpClient client = getHttpClient();
-    DeploymentDto deploymentDto = deployDecisionDefinition(dmnModelInstance, client, tenantId);
+
+    DeploymentDto deploymentDto = deployDefinition(dmnModelInstance, tenantId);
     return getDecisionDefinitionByDeployment(deploymentDto);
   }
 
-  private DeploymentDto deployDecisionDefinition(DmnModelInstance dmnModelInstance, CloseableHttpClient client,
-                                                 String tenantId) {
+  private DeploymentDto deployDefinition(DmnModelInstance dmnModelInstance, String tenantId) {
     String decisionDefinition = Dmn.convertToString(dmnModelInstance);
     HttpPost deploymentRequest = createDeploymentRequest(decisionDefinition, "test.dmn", tenantId);
     DeploymentDto deployment = new DeploymentDto();
-    try (CloseableHttpResponse response = client.execute(deploymentRequest)) {
+    try (CloseableHttpResponse response = EngineIntegrationRule.HTTP_CLIENT.execute(deploymentRequest)) {
       if (response.getStatusLine().getStatusCode() != 200) {
         throw new RuntimeException("Something really bad happened during deployment, could not create a deployment!");
       }
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      deployment = objectMapper.readValue(responseString, DeploymentDto.class);
+      deployment = OBJECT_MAPPER.readValue(responseString, DeploymentDto.class);
     } catch (IOException e) {
-      logger.error("Error during deployment request! Could not deploy the given decisionDefinition model!", e);
+      log.error("Error during deployment request! Could not deploy the given decisionDefinition model!", e);
     }
     return deployment;
+  }
+
+  private CloseableHttpClient createClientWithDefaultBasicAuth() {
+    return createClientWithBasicAuth(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
+
+  private CloseableHttpClient createClientWithBasicAuth(final String user, final String password) {
+    return HttpClientBuilder.create()
+      .setDefaultCredentialsProvider(getBasicCredentialsProvider(user, password)).build();
+  }
+
+  private BasicCredentialsProvider getBasicCredentialsProvider(final String user, final String password) {
+    final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+    credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(user, password));
+    return credentialsProvider;
   }
 }

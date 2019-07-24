@@ -9,25 +9,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.http.entity.mime.MIME;
-import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
-import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
-import org.camunda.optimize.rest.engine.dto.UserDto;
-import org.camunda.optimize.rest.engine.dto.UserProfileDto;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.camunda.optimize.service.cleanup.OptimizeCleanupScheduler;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.test.util.PropertyUtil;
 import org.glassfish.jersey.client.ClientProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.ApplicationContext;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ClientRequestFilter;
@@ -39,16 +36,8 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Properties;
-
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_RESOURCES_RESOURCE_ID;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import java.util.Optional;
 
 /**
  * This class is wrapper around the embedded optimize to ensure
@@ -66,7 +55,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   public static final String DEFAULT_PASSWORD = "demo";
   private static final String DEFAULT_CONTEXT_LOCATION = "classpath:embeddedOptimizeContext.xml";
   private static final int MAX_LOGGED_BODY_SIZE = 10_000;
-  private static final String PROPERTIES_LOCATION = "integration-rules.properties";
 
   private static String authenticationToken;
   private static TestEmbeddedCamundaOptimize testOptimizeInstance;
@@ -76,8 +64,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
    * to your custom configuration.
    */
   private static String serializedDefaultConfiguration;
-
-  private Properties properties;
 
   /**
    * Uses the singleton pattern to ensure there is only one
@@ -106,7 +92,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   private TestEmbeddedCamundaOptimize(String contextLocation) {
     super(contextLocation);
-    properties = PropertyUtil.loadProperties(PROPERTIES_LOCATION);
   }
 
   public void start() throws Exception {
@@ -119,8 +104,8 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
       }
       resetConfiguration();
       reloadConfiguration();
-      storeAuthenticationToken();
     }
+    initAuthenticationToken();
   }
 
   public boolean isStarted() {
@@ -184,9 +169,10 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   /**
    * The actual storing is only performed once, when this class is the first time initialized.
    */
-  private void storeAuthenticationToken() {
+  private void initAuthenticationToken() {
     if (authenticationToken == null) {
-      authenticationToken = getNewAuthenticationToken();
+      authenticationToken = getNewAuthenticationToken()
+        .orElseThrow(() -> new OptimizeIntegrationTestException("Could not obtain authentication token."));
     }
   }
 
@@ -194,83 +180,16 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     return authenticationToken;
   }
 
-  public String getNewAuthenticationToken() {
-    addDemoUserToEngine();
-    grantDemoUserOptimizeAuthorizations();
-    grantDemoUserAllDefinitionAuthorizations();
-    authenticationToken = this.authenticateDemoUser();
-    return authenticationToken;
+  public Optional<String> getNewAuthenticationToken() {
+    return this.authenticateDemoUser();
   }
 
-  private String authenticateDemoUser() {
+  private Optional<String> authenticateDemoUser() {
     Response tokenResponse = authenticateDemo();
-    return tokenResponse.readEntity(String.class);
-  }
-
-  private void addDemoUserToEngine() {
-    UserDto userDto = constructDemoUserDto(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    try {
-      getClient()
-        .target(getEngineUrl())
-        .path("/user/create")
-        .request()
-        .post(Entity.json(userDto));
-    } catch (Exception e) {
-      logger.error("Could not create demo user", e);
+    if (tokenResponse.getStatus() == HttpServletResponse.SC_OK) {
+      return Optional.of(tokenResponse.readEntity(String.class));
     }
-  }
-
-  private void grantDemoUserAllDefinitionAuthorizations() {
-    grantDemoUserDefinitionAuthorizations(RESOURCE_TYPE_PROCESS_DEFINITION);
-    grantDemoUserDefinitionAuthorizations(RESOURCE_TYPE_DECISION_DEFINITION);
-  }
-
-  private void grantDemoUserDefinitionAuthorizations(final int resourceType) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(resourceType);
-    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
-    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
-    authorizationDto.setUserId(DEFAULT_USERNAME);
-    try {
-      getClient()
-        .target(getEngineUrl())
-        .path("/authorization/create")
-        .request()
-        .post(Entity.json(authorizationDto));
-    } catch (Exception e) {
-      logger.error("Could not create process definition authorization for demo user", e);
-    }
-  }
-
-  private void grantDemoUserOptimizeAuthorizations() {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(RESOURCE_TYPE_APPLICATION);
-    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
-    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
-    authorizationDto.setUserId(DEFAULT_USERNAME);
-    try {
-      getClient()
-        .target(getEngineUrl())
-        .path("/authorization/create")
-        .request()
-        .post(Entity.json(authorizationDto));
-    } catch (Exception e) {
-      logger.error("Could not create optimize application authorization for demo user", e);
-    }
-  }
-
-  private UserDto constructDemoUserDto(String username, String password) {
-    UserProfileDto profile = new UserProfileDto();
-    profile.setEmail("foo@camunda.org");
-    profile.setId(username);
-    UserCredentialsDto credentials = new UserCredentialsDto();
-    credentials.setPassword(password);
-    UserDto userDto = new UserDto();
-    userDto.setProfile(profile);
-    userDto.setCredentials(credentials);
-    return userDto;
+    return Optional.empty();
   }
 
   private Response authenticateDemo() {
@@ -285,11 +204,11 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   }
 
   public WebTarget target() {
-    return getClient().target(getEmbeddedOptimizeEndpoint());
+    return getClient().target(IntegrationTestProperties.getEmbeddedOptimizeRestApiEndpoint());
   }
 
   public WebTarget rootTarget() {
-    return getClient().target(getEmbeddedOptimizeRootEndpoint());
+    return getClient().target(IntegrationTestProperties.getEmbeddedOptimizeEndpoint());
   }
 
   public final WebTarget rootTarget(String path) {
@@ -298,19 +217,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   public final WebTarget target(String path) {
     return this.target().path(path);
-  }
-
-  private String getEmbeddedOptimizeEndpoint() {
-    return properties.getProperty("camunda.optimize.test.embedded-optimize");
-  }
-
-  private String getEngineUrl() {
-    return properties.get("camunda.optimize.engine.rest").toString() +
-      properties.get("camunda.optimize.engine.name").toString();
-  }
-
-  private String getEmbeddedOptimizeRootEndpoint() {
-    return properties.getProperty("camunda.optimize.test.embedded-optimize.root");
   }
 
   private Client getClient() {

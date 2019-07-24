@@ -34,6 +34,7 @@ public class EngineConstantsUtil {
   public static final String USER_OPERATIONS_LOG_ENDPOINT = "/optimize/user-operation";
   public static final String IDENTITY_LINK_LOG_ENDPOINT = "/optimize/identity-link-log";
   public static final String TENANT_ENDPOINT = "/tenant";
+  public static final String VERSION_ENDPOINT = "/version";
 
   public static final String DECISION_INSTANCE_ENDPOINT = "/optimize/decision-instance";
 

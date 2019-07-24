@@ -51,7 +51,6 @@
     <skip.fe.build>false</skip.fe.build>
 
     <skip.docker>false</skip.docker>
-    <database>h2</database>
     <docker.compose.file>docker-compose.yml</docker.compose.file>
   </properties>
 
@@ -100,14 +99,6 @@
       <properties>
         <camunda.engine.version>7.9.12</camunda.engine.version>
         <engine.profile.id>engine-7.9</engine.profile.id>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>postgresql</id>
-      <properties>
-        <database>postgresql</database>
-        <docker.compose.file>docker-compose.postgresql.yml</docker.compose.file>
       </properties>
     </profile>
 

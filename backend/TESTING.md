@@ -41,7 +41,7 @@ The spring context enables you to instantiate an object of each class used in Op
 
 This project has integration tests implemented that rely on following facts:
 
-* tomcat is with engine, engine-rest and engine-purge modules is started and is listening to port 8080
+* tomcat is with engine, engine-rest and engine-it-plugin modules is started and is listening to port 8080
 for HTTP requests
 * elasticsearch is started and is listening to port 9300 for TCP connections, as well as as port 9200
 for HTTP connections

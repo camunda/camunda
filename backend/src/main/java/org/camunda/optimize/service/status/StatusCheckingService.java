@@ -14,6 +14,7 @@ import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.EngineConstantsUtil;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -61,18 +62,20 @@ public class StatusCheckingService {
   private boolean isConnectedToEngine(EngineContext engineContext) {
     boolean isConnected = false;
     try {
-      String endPoint = configurationService.getEngineRestApiEndpoint(engineContext.getEngineAlias());
-      String engineEndpoint = endPoint + "/engine";
-      Response response = engineContext.getEngineClient()
+      final String engineEndpoint = configurationService
+        .getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias()) + EngineConstantsUtil.VERSION_ENDPOINT;
+      try (final Response response = engineContext.getEngineClient()
         .target(engineEndpoint)
         .request(MediaType.APPLICATION_JSON)
-        .get();
-      boolean hasCorrectResponseCode = response.getStatus() == 200;
-      boolean engineIsRunning = engineWithEngineNameIsRunning(
-        response,
-        configurationService.getEngineName(engineContext.getEngineAlias())
-      );
-      isConnected = hasCorrectResponseCode && engineIsRunning;
+        .get()) {
+
+        boolean hasCorrectResponseCode = response.getStatus() == 200;
+        boolean engineIsRunning = engineWithEngineNameIsRunning(
+          response,
+          configurationService.getEngineName(engineContext.getEngineAlias())
+        );
+        isConnected = hasCorrectResponseCode && engineIsRunning;
+      }
     } catch (Exception ignored) {
       // do nothing
     }
