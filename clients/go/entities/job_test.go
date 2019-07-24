@@ -31,10 +31,10 @@ var (
 		"foo":   "bar",
 		"hello": "world",
 	}
-    expectedJsonAsMapVariables = map[string]interface{}{
-        "foo":   "bar",
-        "hello": "world",
-    }
+	expectedJsonAsMapVariables = map[string]interface{}{
+		"foo":   "bar",
+		"hello": "world",
+	}
 	expectedJsonAsStruct = MyType{
 		Foo:   "bar",
 		Hello: "world",
