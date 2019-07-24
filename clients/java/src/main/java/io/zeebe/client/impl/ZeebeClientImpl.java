@@ -17,7 +17,9 @@
 package io.zeebe.client.impl;
 
 import io.grpc.ManagedChannel;
+import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
+import io.netty.handler.ssl.SslContext;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.command.ActivateJobsCommandStep1;
@@ -48,6 +50,7 @@ import io.zeebe.client.impl.worker.JobWorkerBuilderImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import java.io.Closeable;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -107,7 +110,24 @@ public class ZeebeClientImpl implements ZeebeClient {
         NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
 
     if (config.isSecureConnectionEnabled()) {
-      channelBuilder.useTransportSecurity().sslContext(config.getSslContext());
+      final String certificatePath = config.getCaCertificatePath();
+      SslContext sslContext = null;
+
+      if (certificatePath != null) {
+        if (certificatePath.isEmpty()) {
+          throw new IllegalArgumentException(
+              "Expected valid certificate path but found empty path instead.");
+        }
+
+        try (FileInputStream certInputStream = new FileInputStream(certificatePath)) {
+
+          sslContext = GrpcSslContexts.forClient().trustManager(certInputStream).build();
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+
+      channelBuilder.useTransportSecurity().sslContext(sslContext);
     } else {
       channelBuilder.usePlaintext();
     }

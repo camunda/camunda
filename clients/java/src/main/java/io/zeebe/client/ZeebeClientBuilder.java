@@ -15,7 +15,6 @@
  */
 package io.zeebe.client;
 
-import io.netty.handler.ssl.SslContext;
 import io.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import java.time.Duration;
 import java.util.Properties;
@@ -73,9 +72,10 @@ public interface ZeebeClientBuilder {
   ZeebeClientBuilder useSecureConnection();
 
   /**
-   * SSL/TLS context provided by {@link * GrpcSslContexts} to be used instead of the system default.
+   * Path to a root CA certificate to be used instead of the certificate in the default default
+   * store.
    */
-  ZeebeClientBuilder sslContext(SslContext sslContext);
+  ZeebeClientBuilder caCertificatePath(String certificatePath);
 
   /** @return a new {@link ZeebeClient} with the provided configuration options. */
   ZeebeClient build();
