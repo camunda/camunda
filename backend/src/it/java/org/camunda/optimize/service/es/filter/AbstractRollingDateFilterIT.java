@@ -32,6 +32,7 @@ import java.util.Map;
 import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 
@@ -73,7 +74,7 @@ public abstract class AbstractRollingDateFilterIT {
     int expectedPiCount) {
 
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
-    assertThat(resultDataDto.getFirstProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultDataDto.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
     final List<RawDataProcessInstanceDto> resultData = evaluationResult.getResult().getData();

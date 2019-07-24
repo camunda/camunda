@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.process.flownode.frequency;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.AbstractServiceTaskBuilder;
@@ -36,6 +35,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.google.common.collect.Lists.newArrayList;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
@@ -173,9 +173,9 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     // given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
-    final List<String> selectedTenants = Lists.newArrayList(tenantId1);
+    final List<String> selectedTenants = newArrayList(tenantId1);
     final String processKey = deployAndStartMultiTenantSimpleServiceTaskProcess(
-      Lists.newArrayList(null, tenantId1, tenantId2)
+      newArrayList(null, tenantId1, tenantId2)
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -209,10 +209,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(
-      resultReportDataDto.getFirstProcessDefinitionVersion(),
-      is(processInstanceDto.getProcessDefinitionVersion())
-    );
+    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.FLOW_NODE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
@@ -241,10 +238,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(
-      resultReportDataDto.getFirstProcessDefinitionVersion(),
-      is(processInstanceDto.getProcessDefinitionVersion())
-    );
+    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.FLOW_NODE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
@@ -392,7 +386,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     // then
     final ProcessReportDataDto resultReportDataDto1 = evaluationResponse1.getReportDefinition().getData();
     assertThat(resultReportDataDto1.getProcessDefinitionKey(), is(instanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto1.getFirstProcessDefinitionVersion(), is(instanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto1.getDefinitionVersions(), contains(instanceDto.getProcessDefinitionVersion()));
     final ProcessCountReportMapResultDto result1 = evaluationResponse1.getResult();
     assertThat(result1.getData(), is(notNullValue()));
     assertThat(result1.getData().size(), is(3));
@@ -400,7 +394,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
     final ProcessReportDataDto resultReportDataDto2 = evaluationResponse2.getReportDefinition().getData();
     assertThat(resultReportDataDto2.getProcessDefinitionKey(), is(instanceDto2.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto2.getFirstProcessDefinitionVersion(), is(instanceDto2.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto2.getDefinitionVersions(), contains(instanceDto2.getProcessDefinitionVersion()));
     final ProcessCountReportMapResultDto result2 = evaluationResponse2.getResult();
     assertThat(result2.getData(), is(notNullValue()));
     assertThat(result2.getData().size(), is(3));

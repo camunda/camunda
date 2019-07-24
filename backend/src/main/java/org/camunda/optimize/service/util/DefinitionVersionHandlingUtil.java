@@ -30,9 +30,9 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 @UtilityClass
 public class DefinitionVersionHandlingUtil {
 
-  public static String convertToValidDefinitionVersion(String processDefinitionKey,
+  public static String convertToValidDefinitionVersion(@NonNull String processDefinitionKey,
                                                        @NonNull List<String> processDefinitionVersions,
-                                                       Function<String, String> getLatestVersionToKey) {
+                                                       @NonNull Function<String, String> getLatestVersionToKey) {
     Optional<String> isDefinitionVersionSetToAllOrLatest = processDefinitionVersions.stream()
       .filter(
         version -> ReportConstants.ALL_VERSIONS.equalsIgnoreCase(version) ||

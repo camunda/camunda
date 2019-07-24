@@ -60,13 +60,6 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   }
 
   @JsonIgnore
-  public String getFirstProcessDefinitionVersion() {
-    return this.processDefinitionVersions.stream().findFirst().orElse(null);
-  }
-
-
-
-  @JsonIgnore
   @Override
   public String createCommandKey() {
     String viewCommandKey = view == null ? "null" : view.createCommandKey();

@@ -57,6 +57,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 
@@ -181,7 +182,7 @@ public class SingleReportHandlingIT {
     assertThat(reports.size(), is(1));
     SingleProcessReportDefinitionDto newReport = (SingleProcessReportDefinitionDto) reports.get(0);
     assertThat(newReport.getData().getProcessDefinitionKey(), is("procdef"));
-    assertThat(newReport.getData().getFirstProcessDefinitionVersion(), is("123"));
+    assertThat(newReport.getData().getDefinitionVersions(), contains("123"));
     assertThat(newReport.getData().getConfiguration().getYLabel(), is("fooYLabel"));
     assertThat(newReport.getData().getParameters().getProcessPart().getStart(), is("start123"));
     assertThat(newReport.getData().getParameters().getProcessPart().getEnd(), is("end123"));

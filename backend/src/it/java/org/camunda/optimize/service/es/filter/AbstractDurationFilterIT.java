@@ -29,6 +29,7 @@ import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 
@@ -104,7 +105,7 @@ public class AbstractDurationFilterIT {
   protected void assertResult(ProcessInstanceEngineDto processInstance, ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult) {
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
-    assertThat(resultDataDto.getFirstProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultDataDto.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
     final List<RawDataProcessInstanceDto> resultData = evaluationResult.getResult().getData();
     assertThat(resultData, is(notNullValue()));

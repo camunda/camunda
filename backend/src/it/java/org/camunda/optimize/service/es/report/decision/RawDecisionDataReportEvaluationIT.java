@@ -34,6 +34,7 @@ import java.util.function.BiFunction;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -82,7 +83,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     final DecisionReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
     assertThat(resultDataDto.getDecisionDefinitionKey(), is(decisionDefinitionDto.getKey()));
-    assertThat(resultDataDto.getDecisionDefinitionVersions(), is(Lists.newArrayList(decisionDefinitionVersion)));
+    assertThat(resultDataDto.getDecisionDefinitionVersions(), contains(decisionDefinitionVersion));
     assertThat(resultDataDto.getView(), is(notNullValue()));
     assertThat(resultDataDto.getView().getProperty(), is(DecisionViewProperty.RAW_DATA));
   }
@@ -109,7 +110,10 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
 
-    assertThat(evaluationResult.getReportDefinition().getData().getFirstDecisionDefinitionVersion(), is(ALL_VERSIONS));
+    assertThat(
+      evaluationResult.getReportDefinition().getData().getDecisionDefinitionVersions(),
+      contains(ALL_VERSIONS)
+    );
   }
 
   @Test

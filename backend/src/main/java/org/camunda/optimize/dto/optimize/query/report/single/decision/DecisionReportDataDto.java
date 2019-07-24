@@ -57,11 +57,6 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
   }
 
   @JsonIgnore
-  public String getFirstDecisionDefinitionVersion() {
-    return decisionDefinitionVersions.stream().findFirst().orElse(null);
-  }
-
-  @JsonIgnore
   @Override
   public String createCommandKey() {
     String viewCommandKey = view == null ? "null" : view.createCommandKey();

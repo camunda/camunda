@@ -301,23 +301,6 @@ public class ProcessReportDataBuilderHelper {
     return reportData;
   }
 
-  public static ProcessReportDataDto createFlowNodeDurationGroupByFlowNodeTableReport(
-    String processDefinitionKey,
-    List<String> processDefinitionVersions
-  ) {
-    ProcessViewDto view = ProcessViewDtoCreator.createFlowNodeDurationView();
-
-    ProcessGroupByDto groupByDto = createGroupByFlowNode();
-
-    return createReportDataViewRaw(
-      processDefinitionKey,
-      processDefinitionVersions,
-      ProcessVisualization.TABLE,
-      view,
-      groupByDto
-    );
-  }
-
   public static ProcessReportDataDto createFlowNodeDurationGroupByFlowNodeHeatmapReport(
     String processDefinitionKey,
     List<String> processDefinitionVersions
@@ -333,25 +316,6 @@ public class ProcessReportDataBuilderHelper {
       view,
       groupByDto
     );
-  }
-
-  public static ProcessReportDataDto createUserTaskTotalDurationMapGroupByUserTaskReport(
-    final String processDefinitionKey,
-    final List<String> processDefinitionVersions
-  ) {
-    final ProcessViewDto view = createUserTaskDurationView();
-    final ProcessGroupByDto groupByDto = createGroupByFlowNode();
-
-    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
-      processDefinitionKey,
-      processDefinitionVersions,
-      ProcessVisualization.TABLE,
-      view,
-      groupByDto
-    );
-    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.TOTAL);
-
-    return reportDataViewRaw;
   }
 
   public static ProcessReportDataDto createUserTaskFrequencyMapGroupByUserTaskReport(
@@ -457,63 +421,6 @@ public class ProcessReportDataBuilderHelper {
     return reportDataViewRaw;
   }
 
-  public static ProcessReportDataDto createUserTaskWorkDurationMapGroupByUserTaskReport(
-    final String processDefinitionKey,
-    final List<String> processDefinitionVersions) {
-    final ProcessViewDto view = createUserTaskDurationView();
-    final ProcessGroupByDto groupByDto = createGroupByFlowNode();
-
-    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
-      processDefinitionKey,
-      processDefinitionVersions,
-      ProcessVisualization.TABLE,
-      view,
-      groupByDto
-    );
-    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.WORK);
-
-    return reportDataViewRaw;
-  }
-
-  public static ProcessReportDataDto createUserTaskTotalDurationMapGroupByAssigneeReport(
-    final String processDefinitionKey,
-    final List<String> processDefinitionVersions
-  ) {
-    final ProcessViewDto view = createUserTaskDurationView();
-    final ProcessGroupByDto groupByDto = createGroupByAssignee();
-
-    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
-      processDefinitionKey,
-      processDefinitionVersions,
-      ProcessVisualization.TABLE,
-      view,
-      groupByDto
-    );
-    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.TOTAL);
-
-    return reportDataViewRaw;
-  }
-
-  public static ProcessReportDataDto createUserTaskTotalDurationMapGroupByAssigneeByUserTaskReport(
-    final String processDefinitionKey,
-    final List<String> processDefinitionVersions
-  ) {
-    final ProcessViewDto view = createUserTaskDurationView();
-    final ProcessGroupByDto groupByDto = createGroupByAssignee();
-
-    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
-      processDefinitionKey,
-      processDefinitionVersions,
-      ProcessVisualization.TABLE,
-      view,
-      groupByDto
-    );
-    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.TOTAL);
-    reportDataViewRaw.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
-
-    return reportDataViewRaw;
-  }
-
   public static ProcessReportDataDto createUserTaskIdleDurationMapGroupByAssigneeReport(
     final String processDefinitionKey,
     final List<String> processDefinitionVersions
@@ -573,101 +480,6 @@ public class ProcessReportDataBuilderHelper {
     return reportDataViewRaw;
   }
 
-  public static ProcessReportDataDto createUserTaskWorkDurationMapGroupByAssigneeReport(
-    final String processDefinitionKey,
-    final List<String> processDefinitionVersions) {
-    final ProcessViewDto view = createUserTaskDurationView();
-    final ProcessGroupByDto groupByDto = createGroupByAssignee();
-
-    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
-      processDefinitionKey,
-      processDefinitionVersions,
-      ProcessVisualization.TABLE,
-      view,
-      groupByDto
-    );
-    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.WORK);
-
-    return reportDataViewRaw;
-  }
-
-  public static ProcessReportDataDto createUserTaskWorkDurationMapGroupByAssigneeByUserTaskReport(
-    final String processDefinitionKey,
-    final List<String> processDefinitionVersions) {
-    final ProcessViewDto view = createUserTaskDurationView();
-    final ProcessGroupByDto groupByDto = createGroupByAssignee();
-
-    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
-      processDefinitionKey,
-      processDefinitionVersions,
-      ProcessVisualization.TABLE,
-      view,
-      groupByDto
-    );
-    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.WORK);
-    reportDataViewRaw.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
-
-    return reportDataViewRaw;
-  }
-
-  public static ProcessReportDataDto createUserTaskWorkDurationMapGroupByCandidateGroupByUserTaskReport(
-    final String processDefinitionKey,
-    final List<String> processDefinitionVersions) {
-    final ProcessViewDto view = createUserTaskDurationView();
-    final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
-
-    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
-      processDefinitionKey,
-      processDefinitionVersions,
-      ProcessVisualization.TABLE,
-      view,
-      groupByDto
-    );
-    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.WORK);
-    reportDataViewRaw.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
-
-    return reportDataViewRaw;
-  }
-
-  public static ProcessReportDataDto createUserTaskTotalDurationMapGroupByCandidateGroupReport(
-    final String processDefinitionKey,
-    final List<String> processDefinitionVersions
-  ) {
-    final ProcessViewDto view = createUserTaskDurationView();
-    final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
-
-    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
-      processDefinitionKey,
-      processDefinitionVersions,
-      ProcessVisualization.TABLE,
-      view,
-      groupByDto
-    );
-    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.TOTAL);
-
-    return reportDataViewRaw;
-  }
-
-  public static ProcessReportDataDto createUserTaskTotalDurationMapGroupByCandidateGroupByUserTaskReport(
-    final String processDefinitionKey,
-    final List<String> processDefinitionVersions
-  ) {
-    final ProcessViewDto view = createUserTaskDurationView();
-    final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
-
-    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
-      processDefinitionKey,
-      processDefinitionVersions,
-      ProcessVisualization.TABLE,
-      view,
-      groupByDto
-    );
-    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.TOTAL);
-    reportDataViewRaw.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
-
-    return reportDataViewRaw;
-  }
-
   public static ProcessReportDataDto createUserTaskIdleDurationMapGroupByCandidateGroupReport(
     final String processDefinitionKey,
     final List<String> processDefinitionVersions
@@ -683,24 +495,6 @@ public class ProcessReportDataBuilderHelper {
       groupByDto
     );
     reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-
-    return reportDataViewRaw;
-  }
-
-  public static ProcessReportDataDto createUserTaskWorkDurationMapGroupByCandidateGroupReport(
-    final String processDefinitionKey,
-    final List<String> processDefinitionVersions) {
-    final ProcessViewDto view = createUserTaskDurationView();
-    final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
-
-    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
-      processDefinitionKey,
-      processDefinitionVersions,
-      ProcessVisualization.TABLE,
-      view,
-      groupByDto
-    );
-    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.WORK);
 
     return reportDataViewRaw;
   }
@@ -753,23 +547,6 @@ public class ProcessReportDataBuilderHelper {
     return createReportDataViewRaw(
       processDefinitionKey,
       processDefinitionVersions,
-      ProcessVisualization.NUMBER,
-      view,
-      groupByDto
-    );
-  }
-
-  public static ProcessReportDataDto createPiFrequencyCountGroupedByNoneAsNumber(String processDefinitionKey,
-                                                                                 List<String> processDefinitionVersions) {
-    ProcessViewDto view = createCountProcessInstanceFrequencyView();
-
-    ProcessGroupByDto groupByDto = createGroupByNone();
-
-    return createReportDataViewRaw(
-      processDefinitionKey,
-      processDefinitionVersions,
-      //does not really affect backend, since command object is instantiated based on
-      //group by criterion
       ProcessVisualization.NUMBER,
       view,
       groupByDto

@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.process;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -41,6 +40,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.google.common.collect.Lists.newArrayList;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 import static org.hamcrest.CoreMatchers.is;
@@ -71,7 +71,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
     assertThat(result.getProcessInstanceCount(), is(1L));
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
-    assertThat(resultDataDto.getFirstProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultDataDto.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
     assertThat(resultDataDto.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result.getData(), is(notNullValue()));
@@ -105,7 +105,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
-    assertThat(resultDataDto.getFirstProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(reportData.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
     assertThat(resultDataDto.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result.getData(), is(notNullValue()));
@@ -141,7 +141,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
-    assertThat(resultDataDto.getFirstProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultDataDto.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
     assertThat(resultDataDto.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result.getData(), is(notNullValue()));
@@ -175,7 +175,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
-    assertThat(resultDataDto.getFirstProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultDataDto.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
     assertThat(resultDataDto.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result.getData(), is(notNullValue()));
@@ -218,7 +218,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
-    assertThat(resultDataDto.getFirstProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultDataDto.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
     assertThat(resultDataDto.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result.getData(), is(notNullValue()));
@@ -238,9 +238,9 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
-    final List<String> selectedTenants = Lists.newArrayList(tenantId1);
+    final List<String> selectedTenants = newArrayList(tenantId1);
     final String processKey = deployAndStartMultiTenantSimpleServiceTaskProcess(
-      Lists.newArrayList(null, tenantId1, tenantId2)
+      newArrayList(null, tenantId1, tenantId2)
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -319,7 +319,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
-    final Object[] processInstanceIdsOrderedAsc = Lists.newArrayList(
+    final Object[] processInstanceIdsOrderedAsc = newArrayList(
       processInstanceDto1.getId(), processInstanceDto2.getId(), processInstanceDto3.getId()
     ).stream().sorted(Collections.reverseOrder()).toArray();
 
@@ -379,7 +379,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
-    final Object[] processInstanceIdsOrderedAsc = Lists.newArrayList(
+    final Object[] processInstanceIdsOrderedAsc = newArrayList(
       processInstanceDto1.getId(), processInstanceDto2.getId(), processInstanceDto3.getId(), processInstanceDto4.getId()
     ).toArray();
 
@@ -441,7 +441,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
-    assertThat(resultDataDto.getFirstProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultDataDto.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(2));
     result.getData().forEach(
@@ -475,7 +475,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
-    assertThat(resultDataDto.getFirstProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultDataDto.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
     assertThat(result.getData().size(), is(1));
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getData().get(0);
     assertThat(rawDataProcessInstanceDto.getProcessDefinitionId(), is(processInstance.getDefinitionId()));
@@ -508,7 +508,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then
     final ProcessReportDataDto resultDataDto1 = evaluationResult1.getReportDefinition().getData();
     assertThat(resultDataDto1.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
-    assertThat(resultDataDto1.getFirstProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultDataDto1.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto1.getView(), is(notNullValue()));
     assertThat(resultDataDto1.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result1.getData(), is(notNullValue()));
@@ -532,7 +532,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then
     final ProcessReportDataDto resultDataDto2 = evaluationResult2.getReportDefinition().getData();
     assertThat(resultDataDto2.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
-    assertThat(resultDataDto2.getFirstProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultDataDto2.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto2.getView(), is(notNullValue()));
     assertThat(resultDataDto2.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result2.getData(), is(notNullValue()));
@@ -564,7 +564,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then
     final ProcessReportDataDto resultDataDto1 = evaluationResult1.getReportDefinition().getData();
     assertThat(resultDataDto1.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
-    assertThat(resultDataDto1.getFirstProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultDataDto1.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto1.getView(), is(notNullValue()));
     assertThat(resultDataDto1.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result1.getData(), is(notNullValue()));
@@ -580,7 +580,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then
     final ProcessReportDataDto resultDataDto2 = evaluationResult2.getReportDefinition().getData();
     assertThat(resultDataDto2.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
-    assertThat(resultDataDto2.getFirstProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultDataDto2.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto2.getView(), is(notNullValue()));
     assertThat(resultDataDto2.getView().getProperty(), is(ProcessViewProperty.RAW_DATA));
     assertThat(result2.getData(), is(notNullValue()));
@@ -610,7 +610,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
-    assertThat(resultDataDto.getFirstProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
+    assertThat(resultDataDto.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
     assertThat(result.getData().size(), is(1));
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getData().get(0);
     assertThat(rawDataProcessInstanceDto.getProcessInstanceId(), is(processInstance.getId()));
@@ -659,7 +659,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
-    assertThat(resultDataDto.getFirstProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
+    assertThat(resultDataDto.getDefinitionVersions(), contains(processDefinition.getVersionAsString()));
     assertThat(result.getData().size(), is(1));
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getData().get(0);
     assertThat(rawDataProcessInstanceDto.getProcessInstanceId(), is(processInstance.getId()));
