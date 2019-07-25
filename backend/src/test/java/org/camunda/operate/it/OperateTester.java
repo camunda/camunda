@@ -9,7 +9,6 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -17,7 +16,6 @@ import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
-import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.exceptions.OperateRuntimeException;
@@ -32,7 +30,6 @@ import org.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.IndexNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +39,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.worker.JobWorker;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 
 @Component
@@ -84,9 +82,27 @@ public class OperateTester {
   @Qualifier("operationsByWorkflowInstanceAreCompletedCheck")
   private Predicate<Object[]> operationsByWorkflowInstanceAreCompletedCheck;
   
-  int waitingRound = 1;
+  @Autowired
+  @Qualifier("activityIsActiveCheck")
+  private Predicate<Object[]> activityIsActiveCheck;
+  
+  @Autowired
+  @Qualifier("incidentIsResolvedCheck")
+  private Predicate<Object[]> incidentIsResolvedCheck;
+  
+  @Autowired
+  @Qualifier("activityIsCompletedCheck")
+  private Predicate<Object[]> activityIsCompletedCheck;
 
-  private Long jobKey;
+  @Autowired
+  @Qualifier("workflowInstanceIsCanceledCheck")
+  private Predicate<Object[]> workflowInstanceIsCanceledCheck;
+  
+  @Autowired
+  @Qualifier("activityIsTerminatedCheck")
+  private Predicate<Object[]> activityIsTerminatedCheck;
+  
+  int waitingRound = 1;
 
   private MockMvcTestRule mockMvcTestRule;
   
@@ -104,12 +120,13 @@ public class OperateTester {
   }
 
   public OperateTester deployWorkflow(String... classpathResources) {
-    Validate.notNull(zeebeClient, "ZeebeClient should be set.");
+    ensureZeebeClientIsSet();
     workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, classpathResources);
     return this;
   }
-  
+
   public OperateTester deployWorkflow(BpmnModelInstance workflowModel, String resourceName) {
+    ensureZeebeClientIsSet();
     workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, workflowModel, resourceName);
     return this; 
   }
@@ -124,6 +141,7 @@ public class OperateTester {
   }
   
   public OperateTester startWorkflowInstance(String bpmnProcessId, String payload) {
+    ensureZeebeClientIsSet();
     workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, bpmnProcessId, payload);
     return this;
   }
@@ -144,7 +162,9 @@ public class OperateTester {
   }
   
   public OperateTester failTask(String taskName, String errorMessage) {
-    jobKey = ZeebeTestUtil.failTask(zeebeClient, taskName, UUID.randomUUID().toString(), 3,errorMessage);
+    ensureZeebeClientIsSet();
+    /*jobKey = */ 
+    ZeebeTestUtil.failTask(zeebeClient, taskName, getWorkerName(), 3,errorMessage);
     return this;
   }
  
@@ -152,6 +172,98 @@ public class OperateTester {
     processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
     return this;
   }
+
+  public OperateTester updateVariableOperation(String varName, String varValue) throws Exception {
+    final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
+    op.setName(varName);
+    op.setValue(varValue);
+    op.setScopeId(ConversionUtils.toStringOrNull(workflowInstanceKey));
+    postOperation("/api/workflow-instances/%s/operation",op);
+    return this;
+  }
+  
+  public OperateTester cancelWorkflowInstanceOperation() throws Exception {
+    ensureMockMvcTestRuleIsSet();
+    final ListViewQueryDto workflowInstanceQuery = ListViewQueryDto.all();
+    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
+    
+    BatchOperationRequestDto batchOperationDto = new BatchOperationRequestDto();
+    batchOperationDto.getQueries().add(workflowInstanceQuery);
+    batchOperationDto.setOperationType(OperationType.CANCEL_WORKFLOW_INSTANCE);
+    
+    postOperation("/api/workflow-instances/operation", batchOperationDto);
+    return this;
+  }
+  
+  public OperateTester operationIsCompleted() {
+    refreshIndexesInElasticsearch();
+    executeOneBatch();
+    processAllRecordsAndWait(operationsByWorkflowInstanceAreCompletedCheck, workflowInstanceKey);
+    return this;
+  }
+
+  public OperateTester activityIsActive(String activityId) {
+    processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey,activityId);
+    return this;
+  }
+  
+  public OperateTester completeTask(String taskId) {
+    ensureZeebeClientIsSet();
+    ZeebeTestUtil.completeTask(zeebeClient, taskId, getWorkerName(), null, 3);
+    return this;
+  }
+  
+
+  public OperateTester completeTask(String taskId, String payload) {
+    ensureZeebeClientIsSet();
+    JobWorker jobWorker = ZeebeTestUtil.completeTask(zeebeClient, taskId, getWorkerName(), payload);
+    activityIsCompleted(taskId);
+    if(jobWorker!=null) jobWorker.close();
+    return this;
+  }
+
+  public OperateTester resolveIncident(Long jobKey, Long incidentKey) {
+    ZeebeTestUtil.resolveIncident(zeebeClient, jobKey,incidentKey);
+    return this;
+  }
+  
+  public OperateTester incidentIsResolved() {
+    processAllRecordsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
+    return this;
+  }
+  
+  public OperateTester activityIsCompleted(String activityId) {
+    processAllRecordsAndWait(activityIsCompletedCheck, workflowInstanceKey, activityId);
+    return this;
+  }
+  
+
+  public OperateTester activityIsTerminated(String activityId) {
+    processAllRecordsAndWait(activityIsTerminatedCheck, workflowInstanceKey, activityId);
+    return this;  
+  }
+  
+  public OperateTester cancelWorkflowInstance() {
+    ensureZeebeClientIsSet();
+    ZeebeTestUtil.cancelWorkflowInstance(zeebeClient, workflowInstanceKey);
+    return this;
+  }
+
+  public OperateTester workflowInstanceIsCanceled() {
+    processAllRecordsAndWait(workflowInstanceIsCanceledCheck,workflowInstanceKey);
+    return this;
+  }
+  
+  ///// Expose Id's /////
+  public Long getWorkflowInstanceKey() {
+    return workflowInstanceKey;
+  }
+
+  public Long getWorkflowKey() {
+    return workflowKey;
+  }
+  
+  ///// Helper /////
   
   public OperateTester and() {
     return this;
@@ -204,59 +316,11 @@ public class OperateTester {
       throw new OperateRuntimeException("Timeout exception");
     }
   }
-
-  public OperateTester updateVariableOperation(String varName, String varValue) throws Exception {
-    final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
-    op.setName(varName);
-    op.setValue(varValue);
-    op.setScopeId(ConversionUtils.toStringOrNull(workflowInstanceKey));
-    postOperation(op);
-    refreshIndexesInElasticsearch();
-    return this;
-  }
   
-  public OperateTester cancelWorkflowInstanceOperation() throws Exception {
-    final ListViewQueryDto workflowInstanceQuery = createAllQuery();
-    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
-    
-    BatchOperationRequestDto batchOperationDto = new BatchOperationRequestDto();
-    batchOperationDto.getQueries().add(workflowInstanceQuery);
-    batchOperationDto.setOperationType(OperationType.CANCEL_WORKFLOW_INSTANCE);
-    
+  private MvcResult postOperation(String url,Object operationRequest) throws Exception {
+    ensureMockMvcTestRuleIsSet();
     MockHttpServletRequestBuilder postOperationRequest =
-      post("/api/workflow-instances/operation")
-        .content(mockMvcTestRule.json(batchOperationDto))
-        .contentType(mockMvcTestRule.getContentType());
-     
-    mockMvcTestRule.getMockMvc().perform(postOperationRequest)
-        .andExpect(status().is(HttpStatus.SC_OK))
-        .andReturn();
-    
-    refreshIndexesInElasticsearch();
-    executeOneBatch();
-    return this;
-  }
-  
-  protected ListViewQueryDto createAllQuery() {
-    ListViewQueryDto query = new ListViewQueryDto();
-    query.setRunning(true);
-    query.setActive(true);
-    query.setIncidents(true);
-    query.setFinished(true);
-    query.setCanceled(true);
-    query.setCompleted(true);
-    return query;
-  }
-
-  public OperateTester operationIsCompleted() {
-    executeOneBatch();
-    processAllRecordsAndWait(operationsByWorkflowInstanceAreCompletedCheck, workflowInstanceKey);
-    return this;
-  }
-  
-  private MvcResult postOperation(OperationRequestDto operationRequest) throws Exception {
-    MockHttpServletRequestBuilder postOperationRequest =
-      post(String.format( "/api/workflow-instances/%s/operation", workflowInstanceKey))
+      post(String.format(url, workflowInstanceKey))
         .content(mockMvcTestRule.json(operationRequest))
         .contentType(mockMvcTestRule.getContentType());
 
@@ -267,13 +331,14 @@ public class OperateTester {
     return mvcResult;
   }
   
-  private void refreshIndexesInElasticsearch() {
+  public OperateTester refreshIndexesInElasticsearch() {
     try {
-     // esClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
+      //esClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
       zeebeEsClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
-    } catch (IndexNotFoundException | IOException e) {
+    } catch (Exception e) {
       logger.error(e.getMessage(), e);
     }
+    return this;
   }
 
   private void executeOneBatch() {
@@ -285,5 +350,17 @@ public class OperateTester {
       fail(e.getMessage(), e);
     }
   }
- 
+  
+  private void ensureZeebeClientIsSet() {
+    if(zeebeClient==null) throw new OperateRuntimeException("ZeebeClient should be set");
+  }
+  
+  private void ensureMockMvcTestRuleIsSet() {
+    if(mockMvcTestRule==null) throw new OperateRuntimeException("mockMvcTestRule should be set.");
+  }
+
+  private String getWorkerName() {
+    return "OperateTester-"+UUID.randomUUID().toString();
+  }
+
 }

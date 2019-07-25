@@ -17,28 +17,38 @@ import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeDto;
 import org.camunda.operate.rest.dto.activity.ActivityInstanceTreeRequestDto;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.ZeebeTestUtil;
+import org.junit.Before;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
 public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
 
+  @Autowired
+  OperateTester tester;
+  
+  @Before
+  public void before() {
+    super.before();
+    tester.setZeebeClient(getClient());
+  }
+  
   @Test
   public void testActivityInstanceTreeForNonInterruptingBoundaryEvent() throws Exception {
-    // having
-    String processId = "nonInterruptingBoundaryEvent";
-    deployWorkflow("nonInterruptingBoundaryEvent_v_2.bpmn");
-    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
-    //let the boundary event happen
-    Thread.sleep(1500L);
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task2");
-
-    //when
+    // given
+    Long workflowInstanceKey = tester
+      .deployWorkflow("nonInterruptingBoundaryEvent_v_2.bpmn")
+      .startWorkflowInstance("nonInterruptingBoundaryEvent")
+      .waitUntil().activityIsActive("task2")
+      .and()
+      .getWorkflowInstanceKey();
+  
+    // when
     ActivityInstanceTreeDto response = getActivityInstanceTreeFromRest(workflowInstanceKey);
 
-    //then
+    // then
     assertThat(response.getChildren()).hasSize(4);
     assertThat(response.getChildren()).hasSize(4);
     assertChild(response.getChildren(), 0, "startEvent", ActivityState.COMPLETED, workflowInstanceKey, ActivityType.START_EVENT, 0);
@@ -49,23 +59,21 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
 
   @Test
   public void testActivityInstanceTreeIsBuild() throws Exception {
-    // having
-    String processId = "prWithSubprocess";
-    deployWorkflow("subProcess.bpmn");
-    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
-    ZeebeTestUtil.completeTask(zeebeClient, "taskA", getWorkerName(), null, 3);
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskB");
-    ZeebeTestUtil.completeTask(zeebeClient, "taskB", getWorkerName(), null, 3);
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskC");
-    ZeebeTestUtil.failTask(zeebeClient, "taskC", getWorkerName(), 3, "some error");
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
-
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
-
-    //when
+    // given
+    Long workflowInstanceKey = tester
+      .deployWorkflow("subProcess.bpmn")
+      .startWorkflowInstance("prWithSubprocess")
+      .and()
+      .completeTask("taskA").waitUntil().activityIsActive("taskB")
+      .completeTask("taskB").waitUntil().activityIsActive("taskC")
+      .and()
+      .failTask("taskC","Some error").waitUntil().incidentIsActive()
+      .and() 
+      .getWorkflowInstanceKey();
+    // when
     ActivityInstanceTreeDto response = getActivityInstanceTreeFromRest(workflowInstanceKey);
 
-    //then
+    // then
     assertThat(response.getChildren()).hasSize(3);
 
     assertThat(response.getChildren()).hasSize(3);
@@ -106,20 +114,18 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
 
   @Test
   public void testActivityInstanceTreeIncidentStatePropagated() throws Exception {
-
-    // having
-    String processId = "prWithSubprocess";
-    deployWorkflow("subProcess.bpmn");
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
-    ZeebeTestUtil.completeTask(zeebeClient, "taskA", getWorkerName(), null, 3);
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskB");
-    ZeebeTestUtil.failTask(zeebeClient, "taskB", getWorkerName(), 3, "some error");
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
-
-    //when
+    // given
+    Long workflowInstanceKey = tester
+      .deployWorkflow("subProcess.bpmn")
+      .startWorkflowInstance("prWithSubprocess")
+      .completeTask("taskA").waitUntil().activityIsActive("taskB")
+      .failTask("taskB", "some error").waitUntil().incidentIsActive()
+      .and()
+      .getWorkflowInstanceKey();
+    // when
     ActivityInstanceTreeDto response = getActivityInstanceTreeFromRest(workflowInstanceKey);
 
-    //then
+    // then
     assertThat(response.getChildren()).filteredOn("activityId", "subprocess").hasSize(1);
     final ActivityInstanceDto subprocess = response.getChildren().stream().filter(ai -> ai.getActivityId().equals("subprocess"))
       .findFirst().get();
@@ -134,7 +140,6 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
 
     assertThat(innerSuprocess.getChildren()).filteredOn("activityId", "taskB").allMatch(ai -> ai.getState().equals(ActivityState.INCIDENT));
     assertThat(innerSuprocess.getChildren()).filteredOn(ai -> !ai.getActivityId().equals("taskB")).allMatch(ai -> !ai.getState().equals(ActivityState.INCIDENT));
-
   }
 
   @Test

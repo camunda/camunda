@@ -300,17 +300,6 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     return mvcResult;
   }
   
-  protected ListViewQueryDto createAllQuery() {
-    ListViewQueryDto query = new ListViewQueryDto();
-    query.setRunning(true);
-    query.setActive(true);
-    query.setIncidents(true);
-    query.setFinished(true);
-    query.setCanceled(true);
-    query.setCompleted(true);
-    return query;
-  }
-
   protected BatchOperationRequestDto createBatchOperationDto(OperationType operationType, ListViewQueryDto query) {
     BatchOperationRequestDto batchOperationDto = new BatchOperationRequestDto();
     batchOperationDto.getQueries().add(query);

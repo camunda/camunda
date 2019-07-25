@@ -16,8 +16,9 @@ import java.util.List;
 import org.camunda.operate.es.schema.templates.SequenceFlowTemplate;
 import org.camunda.operate.rest.dto.SequenceFlowDto;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.ZeebeTestUtil;
+import org.junit.Before;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 
 import io.zeebe.model.bpmn.Bpmn;
@@ -25,14 +26,24 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 
 public class SequenceFlowIT extends OperateZeebeIntegrationTest {
 
+  @Autowired
+  OperateTester tester;
+  
+  @Before
+  public void before() {
+    super.before();
+    tester.setZeebeClient(getClient());
+  }
+
   protected String getSequenceFlowURL(Long workflowInstanceKey) {
     return String.format(WORKFLOW_INSTANCE_URL + "/%s/sequence-flows", workflowInstanceKey);
   }
 
   @Test
   public void testVariablesLoaded() throws Exception {
-    // having
+    // given
     String processId = "demoProcess";
+    
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
       .startEvent("start")
         .sequenceFlowId("sf1")
@@ -41,15 +52,17 @@ public class SequenceFlowIT extends OperateZeebeIntegrationTest {
         .serviceTask("task2").zeebeTaskType("task2")
       .endEvent()
       .done();
-    deployWorkflow(workflow, processId + ".bpmn");
-
-    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"var1\": \"initialValue\", \"otherVar\": 123}");
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
-    ZeebeTestUtil.completeTask(zeebeClient, "task1", getWorkerName(), null);
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task2");
-
-
-    //when
+    
+    Long workflowInstanceKey = tester
+      .deployWorkflow(workflow,processId +".bpmn")
+      .startWorkflowInstance(processId,"{\"var1\": \"initialValue\", \"otherVar\": 123}")
+      .waitUntil().activityIsActive("task1")
+      .completeTask("task1")
+      .waitUntil().activityIsActive("task2")
+      .and()
+      .getWorkflowInstanceKey();
+    
+    // when
     List<SequenceFlowDto> sequenceFlows = getSequenceFlows(workflowInstanceKey);
 
     assertThat(sequenceFlows).extracting(SequenceFlowTemplate.ACTIVITY_ID).containsExactlyInAnyOrder("sf1", "sf2");

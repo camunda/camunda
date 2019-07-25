@@ -14,8 +14,9 @@ import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.rest.dto.incidents.IncidentDto;
 import org.camunda.operate.rest.dto.incidents.IncidentResponseDto;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.ZeebeTestUtil;
+import org.junit.Before;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -24,24 +25,35 @@ import io.zeebe.protocol.record.value.ErrorType;
 
 public class IncidentIT extends OperateZeebeIntegrationTest {
 
+  @Autowired
+  OperateTester tester;
+  
+  @Before
+  public void before() {
+    super.before();
+    tester.setZeebeClient(getClient());
+  }
+  
   @Test
   public void testIncidentsAreReturned() throws Exception {
-    // having
-    String processId = "complexProcess";
-    deployWorkflow("complexProcess_v_3.bpmn");
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
+    // given
+    final String processId = "complexProcess";
     final String errorMsg = "some error";
     final String activityId = "alwaysFailingTask";
-    ZeebeTestUtil.failTask(zeebeClient, activityId, getWorkerName(), 3, errorMsg);
-    elasticsearchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, workflowInstanceKey, 4);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    
+    Long workflowInstanceKey = tester
+      .deployWorkflow("complexProcess_v_3.bpmn")
+      .startWorkflowInstance(processId)
+      .failTask(activityId,errorMsg).waitUntil().incidentIsActive()
+      .and()
+      .getWorkflowInstanceKey();
 
-    //when
+    // when
     MvcResult mvcResult = getRequest(getIncidentsURL(workflowInstanceKey));
-    final IncidentResponseDto incidentResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<IncidentResponseDto>() {
-    });
+    final IncidentResponseDto incidentResponse = mockMvcTestRule
+        .fromResponse(mvcResult, new TypeReference<IncidentResponseDto>() {});
 
-    //then
+    // then
     assertThat(incidentResponse).isNotNull();
     assertThat(incidentResponse.getCount()).isEqualTo(4);
     assertThat(incidentResponse.getIncidents()).hasSize(4);

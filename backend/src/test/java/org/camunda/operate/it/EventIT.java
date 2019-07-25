@@ -19,7 +19,7 @@ import org.camunda.operate.es.reader.EventReader;
 import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.rest.dto.EventQueryDto;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.ZeebeTestUtil;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -33,39 +33,41 @@ public class EventIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private IncidentReader incidentReader;
+  
+  @Autowired
+  OperateTester tester;
+  
+  @Before
+  public void before() {
+    super.before();
+    tester.setZeebeClient(getClient());
+  }
 
   @Test
   public void testEventsForFinishedWorkflow() {
-    // having
+    // given
     final String processId = "processWithGateway";
-    final String taskA = "taskA";
-    final String taskC = "taskC";
-    final String errorMessage = "Some error";
-    final Long workflowKey = deployWorkflow("processWithGateway.bpmn");
+    tester
+      .deployWorkflow("processWithGateway.bpmn")
+      .startWorkflowInstance(processId,"{\"a\": \"b\"}")
+      .failTask("taskA", "some error").waitUntil().incidentIsActive();
     
-    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, "{\"a\": \"b\"}");
-
-    //create an incident
-    /*final Long jobKey =*/ failTaskWithNoRetriesLeft(taskA, workflowInstanceKey, errorMessage);
-
-    //update retries
+    Long workflowKey = tester.getWorkflowKey();
+    Long workflowInstanceKey = tester.getWorkflowInstanceKey();
+     
     List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
     assertThat(allIncidents).hasSize(1);
-    ZeebeTestUtil.resolveIncident(zeebeClient, allIncidents.get(0).getJobKey(), allIncidents.get(0).getKey());
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
-
-    //complete task A
-    completeTask(workflowInstanceKey, taskA, "{\"goToTaskC\":true}");
-
-    //complete task C
-    completeTask(workflowInstanceKey, taskC, "{\"b\": \"d\"}");
-
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsCompletedCheck, workflowInstanceKey, taskC);
-    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
-
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
-
-    //when
+    Long jobKey = allIncidents.get(0).getJobKey();
+    Long incidentKey = allIncidents.get(0).getKey();
+    
+    tester
+      .resolveIncident(jobKey,incidentKey).waitUntil().incidentIsResolved()
+      .completeTask("taskA","{\"goToTaskC\":true}")
+      .completeTask("taskC", "{\"b\": \"d\"}").waitUntil().activityIsCompleted("taskC")
+      .and()
+      .workflowInstanceIsCompleted();
+ 
+    // when
     EventQueryDto eventQueryDto = new EventQueryDto();
     eventQueryDto.setWorkflowInstanceId(workflowInstanceKey.toString());
     final List<EventEntity> eventEntities = eventReader.queryEvents(eventQueryDto);
@@ -89,39 +91,40 @@ public class EventIT extends OperateZeebeIntegrationTest {
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowKey, workflowInstanceKey, "taskC");
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowKey, workflowInstanceKey, "end1");
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowKey, workflowInstanceKey, "processWithGateway");
-
   }
 
   @Test
   public void testWorkflowInstanceCanceledOnIncident() {
-    // having
-    String activityId = "taskA";
-
+    // given
     String processId = "demoProcess";
-    final Long workflowKey = deployWorkflow("demoProcess_v_1.bpmn");
-    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, null);
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
-
-    cancelWorkflowInstance(workflowInstanceKey);
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsTerminatedCheck, workflowInstanceKey, activityId);
-    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
-
-    //when
+    String activityId = "taskA";
+    tester
+      .deployWorkflow("demoProcess_v_1.bpmn")
+      .startWorkflowInstance(processId)
+      .waitUntil().incidentIsActive()
+      .and()
+      .cancelWorkflowInstance().waitUntil().workflowInstanceIsCanceled()
+      .and()
+      .waitUntil().activityIsTerminated(activityId);
+          
+    Long workflowKey = tester.getWorkflowKey();
+    Long workflowInstanceKey = tester.getWorkflowInstanceKey();
+  
+    // when
     EventQueryDto eventQueryDto = new EventQueryDto();
     eventQueryDto.setWorkflowInstanceId(workflowInstanceKey.toString());
     final List<EventEntity> eventEntities = eventReader.queryEvents(eventQueryDto);
 
-    //then
+    // then
     assertEvent(eventEntities, EventSourceType.INCIDENT, EventType.RESOLVED, 1, processId, null, workflowInstanceKey, activityId);
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_TERMINATED, 1, processId, workflowKey, workflowInstanceKey, activityId);
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_TERMINATED, 1, processId, workflowKey, workflowInstanceKey, processId);
-
   }
 
   @Test
   public void testIncidentOnInputMapping() {
-    // having
+    // given
+    String wrongPayload = "{\"a\": \"b\"}";
     String processId = "demoProcess";
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
       .startEvent("start")
@@ -129,12 +132,14 @@ public class EventIT extends OperateZeebeIntegrationTest {
       .zeebeInput("var", "varIn")
       .endEvent()
       .done();
-
-    deployWorkflow(workflow, processId + ".bpmn");
-
-    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
-    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
-
+    
+    Long workflowInstanceKey = tester
+      .deployWorkflow(workflow,processId+".bpmn")
+      .startWorkflowInstance(processId,wrongPayload)
+      .waitUntil().incidentIsActive()
+      .and()
+      .getWorkflowInstanceKey();
+      
     //when
     EventQueryDto eventQueryDto = new EventQueryDto();
     eventQueryDto.setWorkflowInstanceId(workflowInstanceKey.toString());
@@ -145,7 +150,6 @@ public class EventIT extends OperateZeebeIntegrationTest {
     assertThat(lastEvent.getEventSourceType()).isEqualTo(EventSourceType.INCIDENT);
     assertThat(lastEvent.getEventType()).isEqualTo(EventType.CREATED);
     assertThat(lastEvent.getMetadata().getJobKey()).isNull();
-
   }
 
   public void assertEvent(List<EventEntity> eventEntities, EventSourceType eventSourceType, EventType eventType,
@@ -153,12 +157,12 @@ public class EventIT extends OperateZeebeIntegrationTest {
     assertEvent(eventEntities, eventSourceType, eventType, count, processId, workflowKey, workflowInstanceKey, null);
   }
 
-  public void assertEvent(List<EventEntity> eventEntities, EventSourceType eventSourceType, EventType eventType,
+  protected void assertEvent(List<EventEntity> eventEntities, EventSourceType eventSourceType, EventType eventType,
     int count, String processId, Long workflowKey, Long workflowInstanceKey, String activityId) {
     assertEvent(eventEntities, eventSourceType, eventType, count, processId, workflowKey, workflowInstanceKey, activityId, null);
   }
 
-  public void assertEvent(List<EventEntity> eventEntities, EventSourceType eventSourceType, EventType eventType,
+  protected void assertEvent(List<EventEntity> eventEntities, EventSourceType eventSourceType, EventType eventType,
     int count, String processId, Long workflowKey, Long workflowInstanceKey, String activityId, String errorMessage) {
     String assertionName = String.format("%s.%s", eventSourceType, eventType);
     final Predicate<EventEntity> eventEntityFilterCriteria = eventEntity -> {
