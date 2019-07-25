@@ -1,5 +1,89 @@
 {
   "app": {
     "name": "Optimize"
+  },
+  "navigation": {
+    "homepage": "Dashboards & Reports",
+    "analysis": "Analysis",
+    "alerts": "Alerts",
+    "logout": "Logout"
+  },
+  "home": {
+    "search": "Filter for name...",
+    "createBtn": {
+      "default": "Create New",
+      "collection": "New Collection",
+      "dashboard": "New Dashboard",
+      "report": {
+        "default": "New Report",
+        "process": "Process Report",
+        "combined": "Combined Process Report",
+        "decision": "Decision Report"
+      }
+    },
+    "collection": {
+      "empty": "Group Reports and Dashboards into Collections.",
+      "create": "Create a Collection...",
+      "Item": "Item",
+      "Items": "Items",
+      "noItems": "There are no items in this Collection.",
+      "noSearchResult": "No Collections matching '{searchQuery}'",
+      "edit": "Edit Collection",
+      "delete": "Delete Collection"
+    },
+    "dashboard": {
+      "create": "Create Dashboard",
+      "noSearchResult": "No Dashboards matching '{searchQuery}'",
+      "duplicate": "Duplicate Dashboard",
+      "edit": "Edit Dashboard",
+      "delete": "Delete Dashboard"
+    },
+    "report": {
+      "create": {
+        "default": "Create Process Report",
+        "process": "Create Process Report",
+        "combined": "Create Combined Process Report",
+        "decision": "Create Decision Report"
+      },
+      "noSearchResult": "No Reports matching '{searchQuery}'",
+      "duplicate": "Duplicate Report",
+      "edit": "Edit Report",
+      "delete": "Delete Report",
+      "badge": {
+        "combined": "Combined",
+        "decision": "Decision"
+      },
+      "types": {
+        "number": "Number Report",
+        "bar": "Bar Chart Report",
+        "line": "Line Chart Report",
+        "heat": "Heatmap Report",
+        "pie": "Pie Chart Report",
+        "table": "Table Report"
+      }
+    }
+  },
+  "report": {
+    "label": "Report",
+    "label-plural": "Reports"
+  },
+  "dashboard": {
+    "label": "Dashboard",
+    "label-plural": "Dashboards"
+  },
+  "alert": {
+    "label": "Alert",
+    "label-plural": "Alerts"
+  },
+  "common": {
+    "entity": {
+      "empty": "There are no {label} configured.",
+      "create": "Create a new {label}...",
+      "created": "Created",
+      "changed": "Last changed",
+      "by": "by",
+      "showAll": "Show all...",
+      "showLess": "Show less..."
+    }
   }
 }

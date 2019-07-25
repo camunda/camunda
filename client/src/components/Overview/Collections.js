@@ -14,6 +14,7 @@ import DashboardItem from './subComponents/DashboardItem';
 
 import {withStore} from './OverviewStore';
 import {filterEntitiesBySearch} from './service';
+import {t} from 'translation';
 
 class Collections extends React.Component {
   state = {
@@ -29,13 +30,13 @@ class Collections extends React.Component {
 
     const empty = collections.length === 0 && (
       <div className="collectionBlankSlate">
-        <strong>Group Reports and Dashboards into Collections.</strong> <br />
+        <strong>{t('home.collection.empty')}</strong> <br />
         <Button
           variant="link"
           className="createLink"
           onClick={() => this.props.setCollectionToUpdate({})}
         >
-          Create a Collection…
+          {t('home.collection.create')}
         </Button>
       </div>
     );
@@ -43,7 +44,7 @@ class Collections extends React.Component {
     const filteredCollections = filterEntitiesBySearch(collections, searchQuery);
 
     const noSearchResult = !empty && filteredCollections.length === 0 && (
-      <p className="empty">No Collections matching '{searchQuery}'</p>
+      <p className="empty">{t('home.collection.noSearchResult', {searchQuery})}</p>
     );
 
     return (
@@ -71,24 +72,24 @@ class Collections extends React.Component {
                     )}
                 </ul>
               ) : (
-                <p className="empty">There are no items in this Collection.</p>
+                <p className="empty">{t('home.collection.noItems')}</p>
               )}
               <div className="showAll">
                 {!this.state.loading &&
                   collection.data.entities.length > 5 &&
                   (this.state.showAllId !== collection.id ? (
                     <>
-                      {collection.data.entities.length} Items.{' '}
+                      {collection.data.entities.length} {t('home.collection.Items')}.{' '}
                       <Button
                         variant="link"
                         onClick={() => this.setState({showAllId: collection.id})}
                       >
-                        Show all...
+                        {t('common.entity.showAll')}
                       </Button>
                     </>
                   ) : (
                     <Button variant="link" onClick={() => this.setState({showAllId: null})}>
-                      Show less...
+                      {t('common.entity.showLess')}
                     </Button>
                   ))}
               </div>

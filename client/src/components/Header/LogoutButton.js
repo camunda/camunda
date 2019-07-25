@@ -12,6 +12,7 @@ import {Button} from 'components';
 import {addNotification} from 'notifications';
 
 import './LogoutButton.scss';
+import {t} from 'translation';
 
 export default withRouter(
   withErrorHandling(
@@ -35,7 +36,7 @@ export default withRouter(
         return (
           <div className="LogoutButton">
             <Button onClick={this.logout} title="Log out">
-              Logout
+              {t('navigation.logout')}
             </Button>
           </div>
         );

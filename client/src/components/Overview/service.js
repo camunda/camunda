@@ -5,6 +5,7 @@
  */
 
 import entityIcons from './entityIcons';
+import {t} from 'translation';
 
 export function filterEntitiesBySearch(entities, searchQuery) {
   return entities.filter(entity => entity.name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -46,7 +47,7 @@ export function getReportIcon(report) {
   }
   return {
     Icon: iconData.Component,
-    label: iconData.label
+    label: iconData.label && t(iconData.label)
   };
 }
 

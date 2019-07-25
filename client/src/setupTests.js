@@ -11,10 +11,16 @@ import 'jest-enzyme';
 import {shim as objectValuesShim} from 'object.values';
 import 'element-closest';
 import './modules/polyfills/array_flat';
-
+import {init} from 'translation';
+import * as request from 'request';
+import translation from '../../backend/src/main/resources/localization/en.json';
 Enzyme.configure({adapter: new Adapter()});
-
 document.execCommand = jest.fn();
+
+it('load translation', async () => {
+  jest.spyOn(request, 'get').mockImplementationOnce(async url => ({json: () => translation}));
+  await init();
+});
 
 global.MutationObserver = class MutationObserver {
   observe() {}

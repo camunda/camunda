@@ -10,6 +10,7 @@ import classnames from 'classnames';
 
 import entityIcons from '../entityIcons';
 import LastModified from './LastModified';
+import {t} from 'translation';
 
 const EntityIcon = entityIcons.collection.generic.Component;
 const OpenCloseIcon = entityIcons.entityOpenClose;
@@ -52,23 +53,27 @@ export default class CollectionItem extends React.Component {
               <div className="extraInfo">
                 <div className="custom">
                   <span>
-                    {entities.length} Item{entities.length !== 1 ? 's' : ''}
+                    {entities.length}{' '}
+                    {entities.length !== 1 ? t('home.collection.Items') : t('home.collection.Item')}
                   </span>
                 </div>
-                <LastModified label="Created" date={created} author={owner} />
+                <LastModified label={t('common.entity.created')} date={created} author={owner} />
               </div>
             </div>
           </Button>
           <div className="collections" />
           <div className="operations">
-            <Button title="Edit Collection" onClick={() => setCollectionToUpdate({id, name})}>
-              <Icon title="Edit Collection" type="edit" className="editLink" />
+            <Button
+              title={t('home.collection.edit')}
+              onClick={() => setCollectionToUpdate({id, name})}
+            >
+              <Icon type="edit" className="editLink" />
             </Button>
             <Button
-              title="Delete Report"
+              title={t('home.collection.delete')}
               onClick={showDeleteModalFor({type: 'collection', entity: {id, name}})}
             >
-              <Icon type="delete" title="Delete Report" className="deleteIcon" />
+              <Icon type="delete" className="deleteIcon" />
             </Button>
           </div>
         </div>

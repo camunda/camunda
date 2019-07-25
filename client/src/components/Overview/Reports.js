@@ -13,6 +13,7 @@ import NoEntities from './subComponents/NoEntities';
 import classnames from 'classnames';
 import {withStore} from './OverviewStore';
 import {filterEntitiesBySearch} from './service';
+import {t} from 'translation';
 
 const HeaderIcon = entityIcons.report.header.Component;
 const OpenCloseIcon = entityIcons.entityOpenClose;
@@ -40,7 +41,7 @@ class Reports extends React.Component {
     const filteredReports = filterEntitiesBySearch(reports, searchQuery);
 
     const noSearchResult = !empty && filteredReports.length === 0 && (
-      <p className="empty">No Reports matching '{searchQuery}'</p>
+      <p className="empty">{t('home.report.noSearchResult', {searchQuery})}</p>
     );
 
     return (
@@ -48,7 +49,7 @@ class Reports extends React.Component {
         <div className="header">
           <ToggleButton>
             <h1>
-              <HeaderIcon /> Reports
+              <HeaderIcon /> {t('report.label-plural')}
             </h1>
           </ToggleButton>
         </div>
@@ -73,14 +74,14 @@ class Reports extends React.Component {
                 !searchQuery &&
                 (this.state.limit ? (
                   <>
-                    {reports.length} Reports.{' '}
+                    {reports.length} {t('report.label-plural')}.{' '}
                     <Button variant="link" onClick={() => this.setState({limit: false})}>
-                      Show all...
+                      {t('common.entity.showAll')}
                     </Button>
                   </>
                 ) : (
                   <Button variant="link" onClick={() => this.setState({limit: true})}>
-                    Show less...
+                    {t('common.entity.showLess')}
                   </Button>
                 ))}
             </div>

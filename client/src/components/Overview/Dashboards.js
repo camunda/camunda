@@ -13,6 +13,7 @@ import NoEntities from './subComponents/NoEntities';
 import classnames from 'classnames';
 import {withStore} from './OverviewStore';
 import {filterEntitiesBySearch} from './service';
+import {t} from 'translation';
 
 const HeaderIcon = entityIcons.dashboard.header.Component;
 const OpenCloseIcon = entityIcons.entityOpenClose;
@@ -42,7 +43,7 @@ class Dashboards extends React.Component {
     const filteredDashboards = filterEntitiesBySearch(dashboards, searchQuery);
 
     const noSearchResult = !empty && filteredDashboards.length === 0 && (
-      <p className="empty">No Dashboards matching '{searchQuery}'</p>
+      <p className="empty">{t('home.dashboard.noSearchResult', {searchQuery})}</p>
     );
 
     return (
@@ -50,7 +51,7 @@ class Dashboards extends React.Component {
         <div className="header">
           <ToggleButton>
             <h1>
-              <HeaderIcon /> Dashboards
+              <HeaderIcon /> {t('dashboard.label-plural')}
             </h1>
           </ToggleButton>
         </div>
@@ -75,14 +76,14 @@ class Dashboards extends React.Component {
                 !searchQuery &&
                 (this.state.limit ? (
                   <>
-                    {dashboards.length} Dashboards.{' '}
+                    {dashboards.length} {t('dashboard.label-plural')}.{' '}
                     <Button variant="link" onClick={() => this.setState({limit: false})}>
-                      Show all...
+                      {t('common.entity.showAll')}
                     </Button>
                   </>
                 ) : (
                   <Button variant="link" onClick={() => this.setState({limit: true})}>
-                    Show less...
+                    {t('common.entity.showLess')}
                   </Button>
                 ))}
             </div>

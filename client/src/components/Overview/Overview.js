@@ -11,6 +11,7 @@ import Dashboards from './Dashboards';
 import Collections from './Collections';
 import {Input, ConfirmationModal, Button, Dropdown, Icon, LoadingIndicator} from 'components';
 import {StoreProvider, withStore} from './OverviewStore';
+import {t} from 'translation';
 
 function Overview({store: {loading, deleting, conflicts, deleteLoading, searchQuery}, ...props}) {
   if (loading) {
@@ -27,7 +28,7 @@ function Overview({store: {loading, deleting, conflicts, deleteLoading, searchQu
               required
               type="text"
               className="searchInput"
-              placeholder="Filter for name..."
+              placeholder={t('home.search')}
               value={searchQuery}
               onChange={({target: {value}}) => props.filter(value)}
             />
@@ -36,17 +37,23 @@ function Overview({store: {loading, deleting, conflicts, deleteLoading, searchQu
             </button>
           </div>
           <div className="createAllButton">
-            <Dropdown label="Create New" color="blue">
+            <Dropdown label={t('home.createBtn.default')} color="blue">
               <Dropdown.Option onClick={() => props.setCollectionToUpdate({})}>
-                New Collection
+                {t('home.createBtn.collection')}
               </Dropdown.Option>
-              <Dropdown.Option link="/dashboard/new/edit">New Dashboard</Dropdown.Option>
-              <Dropdown.Submenu label="New Report">
-                <Dropdown.Option link="/report/new/edit">Process Report</Dropdown.Option>
-                <Dropdown.Option link="/report/new-combined/edit">
-                  Combined Process Report
+              <Dropdown.Option link="/dashboard/new/edit">
+                {t('home.createBtn.dashboard')}
+              </Dropdown.Option>
+              <Dropdown.Submenu label={t('home.createBtn.report.default')}>
+                <Dropdown.Option link="/report/new/edit">
+                  {t('home.createBtn.report.process')}
                 </Dropdown.Option>
-                <Dropdown.Option link="/report/new-decision/edit">Decision Report</Dropdown.Option>
+                <Dropdown.Option link="/report/new-combined/edit">
+                  {t('home.createBtn.report.combined')}
+                </Dropdown.Option>
+                <Dropdown.Option link="/report/new-decision/edit">
+                  {t('home.createBtn.report.decision')}
+                </Dropdown.Option>
               </Dropdown.Submenu>
             </Dropdown>
           </div>
@@ -55,20 +62,24 @@ function Overview({store: {loading, deleting, conflicts, deleteLoading, searchQu
       <Collections />
       <div className="createDashboard">
         <Button tag="a" to="/dashboard/new/edit">
-          Create Dashboard
+          {t('home.dashboard.create')}
         </Button>
       </div>
       <Dashboards />
       <div className="createReport">
         <Button tag="a" to="/report/new/edit">
-          Create Process Report
+          {t('home.report.create.default')}
         </Button>
         <Dropdown label={<Icon type="down" />}>
-          <Dropdown.Option link="/report/new/edit">Create Process Report</Dropdown.Option>
-          <Dropdown.Option link="/report/new-combined/edit">
-            Create Combined Process Report
+          <Dropdown.Option link="/report/new/edit">
+            {t('home.report.create.process')}
           </Dropdown.Option>
-          <Dropdown.Option link="/report/new-decision/edit">Create Decision Report</Dropdown.Option>
+          <Dropdown.Option link="/report/new-combined/edit">
+            {t('home.report.create.combined')}
+          </Dropdown.Option>
+          <Dropdown.Option link="/report/new-decision/edit">
+            {t('home.report.create.decision')}
+          </Dropdown.Option>
         </Dropdown>
       </div>
       <Reports />

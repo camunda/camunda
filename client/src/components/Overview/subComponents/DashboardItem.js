@@ -10,6 +10,7 @@ import LastModified from './LastModified';
 import {Link} from 'react-router-dom';
 import entityIcons from '../entityIcons';
 import {withStore} from '../OverviewStore';
+import {t} from 'translation';
 
 const EntityIcon = entityIcons.dashboard.generic.Component;
 
@@ -36,11 +37,11 @@ export default withStore(function DashboardItem({
           </div>
           <div className="extraInfo">
             <span className="data custom">
-              {dashboard.reports.length} Report
-              {dashboard.reports.length !== 1 ? 's' : ''}
+              {dashboard.reports.length}{' '}
+              {t(`report.label${dashboard.reports.length !== 1 ? '-plural' : ''}`)}
             </span>
             <LastModified
-              label="Last changed"
+              label={t('common.entity.changed')}
               date={dashboard.lastModified}
               author={dashboard.lastModifier}
             />
@@ -58,23 +59,23 @@ export default withStore(function DashboardItem({
         />
       </div>
       <div className="operations">
-        <Link title="Edit Dashboard" to={`/dashboard/${dashboard.id}/edit`}>
+        <Link title={t('home.dashboard.edit')} to={`/dashboard/${dashboard.id}/edit`}>
           <Icon title="Edit Dashboard" type="edit" className="editLink" />
         </Link>
         <Button
-          title="Duplicate Dashboard"
+          title={t('home.dashboard.duplicate')}
           onClick={duplicateEntity('dashboard', dashboard, collection)}
         >
           <Icon type="copy-document" title="Duplicate Dashboard" className="duplicateIcon" />
         </Button>
         <Button
-          title="Delete Dashboard"
+          title={t('home.dashboard.delete')}
           onClick={showDeleteModalFor({
             type: 'dashboard',
             entity: dashboard
           })}
         >
-          <Icon type="delete" title="Delete Dashboard" className="deleteIcon" />
+          <Icon type="delete" className="deleteIcon" />
         </Button>
       </div>
     </li>

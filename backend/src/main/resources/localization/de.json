@@ -1,5 +1,89 @@
 {
   "app": {
     "name": "Optimiert"
+  },
+  "navigation": {
+    "homepage": "Dashboards & Berichte",
+    "analysis": "Analyse",
+    "alerts": "Alerts",
+    "logout": "Ausloggen"
+  },
+  "home": {
+    "search": "Nach Namen filtern ...",
+    "createBtn": {
+      "default": "Erstelle neu",
+      "collection": "Neue Sammlung",
+      "dashboard": "Neues Dashboard",
+      "report": {
+        "default": "Neuer Bericht",
+        "process": "Prozessbericht",
+        "combined": "Kombinierter Prozessbericht",
+        "decision": "Entscheidungsbericht"
+      }
+    },
+    "collection": {
+      "empty": "Berichte und Dashboards in Sammlungen gruppieren",
+      "create": "Sammlung erstellen ...",
+      "Item": "Item",
+      "Items": "Artikel",
+      "noItems": "Es sind keine Artikel in dieser Sammlung.",
+      "noSearchResult": "Keine mit '{searchQuery}' übereinstimmenden Sammlungen",
+      "edit": "Sammlung bearbeiten",
+      "delete": "Sammlung löschen"
+    },
+    "dashboard": {
+      "create": "Dashboard erstellen",
+      "noSearchResult": "Keine mit '{searchQuery}' übereinstimmenden Dashboards",
+      "duplicate": "Dashboard duplizieren",
+      "edit": "Dashboard bearbeiten",
+      "delete": "Dashboard löschen"
+    },
+    "report": {
+      "create": {
+        "default": "Prozessbericht erstellen",
+        "process": "Prozessbericht erstellen",
+        "combined": "Kombinierten Prozessbericht erstellen",
+        "decision": "Entscheidungsbericht erstellen"
+      },
+      "noSearchResult": "Keine Berichte, die mit '{searchQuery}' übereinstimmen",
+      "duplicate": "Doppelter Bericht",
+      "edit": "Bericht bearbeiten",
+      "delete": "Bericht löschen",
+      "badge": {
+        "combined": "kombiniert",
+        "decision": "Entscheidung"
+      },
+      "types": {
+        "number": "Zahlenbericht",
+        "bar": "Balkendiagrammbericht",
+        "line": "Liniendiagrammbericht",
+        "heat": "Heatmapbericht",
+        "pie": "Tortendiagrammbericht",
+        "table": "Tabellenbericht"
+      }
+    }
+  },
+  "report": {
+    "label": "Bericht",
+    "label-plural": "Berichte"
+  },
+  "dashboard": {
+    "label": "Instrumententafel",
+    "label-plural": "Dashboards"
+  },
+  "alert": {
+    "label": "Alarm",
+    "label-plural": "Alarme"
+  },
+  "common": {
+    "entity": {
+      "empty": "Es ist kein {label} konfiguriert.",
+      "create": "Erstelle ein neues {label} ...",
+      "created": "Erstellt",
+      "changed": "Zuletzt geändert",
+      "by": "durch",
+      "showAll": "Zeige alles...",
+      "showLess": "Zeige weniger..."
+    }
   }
 }

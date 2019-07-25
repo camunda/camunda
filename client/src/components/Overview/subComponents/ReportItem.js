@@ -10,6 +10,7 @@ import {getReportInfo, getReportIcon} from '../service';
 import LastModified from './LastModified';
 import {Link} from 'react-router-dom';
 import {withStore} from '../OverviewStore';
+import {t} from 'translation';
 
 export default withStore(function ReportItem({
   store: {collections},
@@ -32,13 +33,15 @@ export default withStore(function ReportItem({
         <div className="textInfo">
           <div className="data dataTitle">
             <h3>{report.name}</h3>
-            {report.combined && <Badge>Combined</Badge>}
-            {report.reportType && report.reportType === 'decision' && <Badge>Decision</Badge>}
+            {report.combined && <Badge>{t('home.report.badge.combined')}</Badge>}
+            {report.reportType && report.reportType === 'decision' && (
+              <Badge>{t('home.report.badge.decision')}</Badge>
+            )}
           </div>
           <div className="extraInfo">
             <span className="data custom">{getReportInfo(report)}</span>
             <LastModified
-              label="Last changed"
+              label={t('common.entity.changed')}
               date={report.lastModified}
               author={report.lastModifier}
             />
@@ -56,17 +59,20 @@ export default withStore(function ReportItem({
         />
       </div>
       <div className="operations">
-        <Link title="Edit Report" to={`/report/${report.id}/edit`}>
-          <Icon title="Edit Report" type="edit" className="editLink" />
+        <Link title={t('home.report.edit')} to={`/report/${report.id}/edit`}>
+          <Icon type="edit" className="editLink" />
         </Link>
-        <Button title="Duplicate Report" onClick={duplicateEntity('report', report, collection)}>
-          <Icon type="copy-document" title="Duplicate Report" className="duplicateIcon" />
+        <Button
+          title={t('home.report.duplicate')}
+          onClick={duplicateEntity('report', report, collection)}
+        >
+          <Icon type="copy-document" className="duplicateIcon" />
         </Button>
         <Button
-          title="Delete Report"
+          title={t('home.report.delete')}
           onClick={showDeleteModalFor({type: 'report', entity: report})}
         >
-          <Icon type="delete" title="Delete Report" className="deleteIcon" />
+          <Icon type="delete" className="deleteIcon" />
         </Button>
       </div>
     </li>

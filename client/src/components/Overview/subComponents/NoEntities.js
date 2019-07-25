@@ -10,21 +10,24 @@ import {Link} from 'react-router-dom';
 import {Button} from 'components';
 
 import './NoEntities.scss';
+import {t} from 'translation';
 
 export default function NoEntities({label, createFunction, link}) {
   const createLink = link ? (
     <Link to={link} className="createLink">
-      Create a new {label}…
+      {t('common.entity.create', {label})}
     </Link>
   ) : (
     <Button variant="link" className="createLink" onClick={createFunction}>
-      Create a new {label}…
+      {t('common.entity.create', {label})}
     </Button>
   );
 
   return (
     <li className="NoEntities">
-      There are no {label}s configured.
+      {t('common.entity.empty', {
+        label: t(`${label.toLowerCase()}.label-plural`)
+      })}
       {createLink}
     </li>
   );

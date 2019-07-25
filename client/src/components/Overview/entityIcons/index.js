@@ -30,20 +30,28 @@ const icons = {
   report: {
     header: {Component: reports},
     generic: {Component: reportEmpty},
-    bar: {label: 'Bar Chart Report', Component: reportBar, CombinedComponent: CombinedReportBar},
-    heat: {label: 'Heatmap Report', Component: reportHeat},
+    bar: {
+      label: 'home.report.types.bar',
+      Component: reportBar,
+      CombinedComponent: CombinedReportBar
+    },
+    heat: {label: 'home.report.types.heat', Component: reportHeat},
     line: {
-      label: 'Line Chart Report',
+      label: 'home.report.types.line',
       Component: reportLine,
       CombinedComponent: CombinedReportLine
     },
     number: {
-      label: 'Number Report',
+      label: 'home.report.types.number',
       Component: reportNumber,
       CombinedComponent: CombinedReportNumber
     },
-    pie: {label: 'Pie Chart Report', Component: reportPie},
-    table: {label: 'Table Report', Component: reportTable, CombinedComponent: CombinedReportTable}
+    pie: {label: 'home.report.types.pie', Component: reportPie},
+    table: {
+      label: 'home.report.types.table',
+      Component: reportTable,
+      CombinedComponent: CombinedReportTable
+    }
   },
   dashboard: {
     header: {Component: dashboards},

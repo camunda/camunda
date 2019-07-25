@@ -8,13 +8,14 @@ import React from 'react';
 import moment from 'moment';
 
 import './LastModified.scss';
+import {t} from 'translation';
 
 export default function LastModified({label, date, author}) {
   return (
     <span className="LastModified">
       {label} {moment(date).format('lll')}
       <br />
-      by <strong>{author}</strong>
+      {t('common.entity.by')} <strong>{author}</strong>
     </span>
   );
 }

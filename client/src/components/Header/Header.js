@@ -10,6 +10,7 @@ import {Link, withRouter} from 'react-router-dom';
 import {Logo} from 'components';
 import HeaderNav from './HeaderNav';
 import LogoutButton from './LogoutButton';
+import {t} from 'translation';
 
 import './Header.scss';
 
@@ -22,12 +23,12 @@ export default withRouter(function Header({name, location}) {
       </Link>
       <HeaderNav>
         <HeaderNav.Item
-          name="Dashboards & Reports"
+          name={t('navigation.homepage')}
           linksTo="/"
           active={['/', '/report/*', '/dashboard/*']}
         />
-        <HeaderNav.Item name="Analysis" linksTo="/analysis" active="/analysis" />
-        <HeaderNav.Item name="Alerts" linksTo="/alerts" active="/alerts" />
+        <HeaderNav.Item name={t('navigation.analysis')} linksTo="/analysis" active="/analysis" />
+        <HeaderNav.Item name={t('navigation.alerts')} linksTo="/alerts" active="/alerts" />
       </HeaderNav>
       <LogoutButton />
     </header>
