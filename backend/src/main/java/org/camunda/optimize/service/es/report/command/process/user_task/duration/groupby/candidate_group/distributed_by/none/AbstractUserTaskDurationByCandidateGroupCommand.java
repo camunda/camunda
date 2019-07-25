@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.dura
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
-import org.camunda.optimize.service.es.report.command.util.FlowNodeExecutionStateAggregationUtil;
+import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.report.command.util.FlowNodeExecutionStateAggregationUtil.addExecutionStateFilter;
+import static org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil.addExecutionStateFilter;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_CANDIDATE_GROUPS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_END_DATE;
@@ -127,7 +127,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupCommand
 
 
   private Script getScriptedAggregationField() {
-    return FlowNodeExecutionStateAggregationUtil.getAggregationScript(
+    return ExecutionStateAggregationUtil.getDurationAggregationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
       USER_TASKS + "." + getDurationFieldName(),
       USER_TASKS + "." + getReferenceDateFieldName()

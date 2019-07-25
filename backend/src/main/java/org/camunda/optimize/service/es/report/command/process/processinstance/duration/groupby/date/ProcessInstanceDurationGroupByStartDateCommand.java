@@ -11,9 +11,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.process.util.ProcessInstanceQueryUtil;
+import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
@@ -37,7 +40,15 @@ public class ProcessInstanceDurationGroupByStartDateCommand extends
 
   @Override
   protected AggregationBuilder createOperationsAggregation() {
-    return aggregationStrategy.getAggregationBuilder().field(ProcessInstanceType.DURATION);
+    return aggregationStrategy.getAggregationBuilder().script(getScriptedAggregationField());
+  }
+
+  private Script getScriptedAggregationField() {
+    return ExecutionStateAggregationUtil.getDurationAggregationScript(
+      LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
+      ProcessInstanceType.DURATION,
+      ProcessInstanceType.START_DATE
+    );
   }
 
   @Override

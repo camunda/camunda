@@ -6,7 +6,10 @@
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable;
 
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
+import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
@@ -24,6 +27,15 @@ public class ProcessInstanceDurationByVariableCommand
 
   @Override
   protected AggregationBuilder createOperationsAggregation() {
-    return aggregationStrategy.getAggregationBuilder().field(ProcessInstanceType.DURATION);
+    return aggregationStrategy.getAggregationBuilder().script(getScriptedAggregationField());
   }
+
+  private Script getScriptedAggregationField() {
+    return ExecutionStateAggregationUtil.getDurationAggregationScript(
+      LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
+      ProcessInstanceType.DURATION,
+      ProcessInstanceType.START_DATE
+    );
+  }
+
 }

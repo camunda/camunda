@@ -10,6 +10,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -28,6 +29,7 @@ import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResu
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Test;
@@ -47,8 +49,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static java.time.temporal.ChronoUnit.MILLIS;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
@@ -454,6 +458,102 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       resultData.get(resultData.size() - 1).getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(1000L))
     );
+  }
+
+  @Test
+  public void calculateDurationForCompletedProcessInstances() throws SQLException {
+    // given
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+
+    // 1 completed proc inst
+    ProcessInstanceEngineDto completeProcessInstanceDto = deployAndStartSimpleUserTaskProcess();
+    engineRule.finishAllRunningUserTasks(completeProcessInstanceDto.getId());
+
+    OffsetDateTime completedProcInstStartDate = now.minusDays(2);
+    OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
+    engineDatabaseRule.changeProcessInstanceStartDate(completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
+
+    // 1 running proc inst
+    final ProcessInstanceEngineDto newRunningProcessInstance = engineRule.startProcessInstance(
+      completeProcessInstanceDto.getDefinitionId()
+    );
+    OffsetDateTime runningProcInstStartDate = now.minusDays(1);
+    engineDatabaseRule.changeProcessInstanceStartDate(newRunningProcessInstance.getId(), runningProcInstStartDate);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final List<ProcessFilterDto> testExecutionStateFilter = ProcessFilterBuilder.filter()
+      .completedInstancesOnly()
+      .add()
+      .buildList();
+
+    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+      .setReportDataType(getTestReportDataType())
+      .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
+      .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
+      .setDateInterval(GroupByDateUnit.DAY)
+      .setFilter(testExecutionStateFilter)
+      .build();
+    ProcessDurationReportMapResultDto resultDto = evaluateDurationMapReport(reportData).getResult();
+
+    // then
+    final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(1));
+    assertThat(resultData.get(0).getValue(), is(1000L));
+  }
+
+  @Test
+  public void durationFilterWorksForCompletedProcessInstances() throws SQLException {
+    // given
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+
+    ProcessInstanceEngineDto completeProcessInstanceDto = deployAndStartSimpleUserTaskProcess();
+    engineRule.finishAllRunningUserTasks(completeProcessInstanceDto.getId());
+
+    OffsetDateTime completedProcInstStartDate = now.minusDays(2);
+    OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
+    engineDatabaseRule.changeProcessInstanceStartDate(completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
+
+    final ProcessInstanceEngineDto completedProcessInstance2 = engineRule.startProcessInstance(
+      completeProcessInstanceDto.getDefinitionId()
+    );
+    engineRule.finishAllRunningUserTasks(completedProcessInstance2.getId());
+    engineDatabaseRule.changeProcessInstanceStartDate(completedProcessInstance2.getId(), now.minusDays(1));
+    engineDatabaseRule.changeProcessInstanceEndDate(completedProcessInstance2.getId(), now);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final List<ProcessFilterDto> testExecutionStateFilter = ProcessFilterBuilder.filter()
+      .duration()
+      .operator(LESS_THAN)
+      .unit(RelativeDateFilterUnit.HOURS.getId())
+      .value(2L)
+      .add()
+      .buildList();
+
+    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+      .setReportDataType(getTestReportDataType())
+      .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
+      .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
+      .setDateInterval(GroupByDateUnit.DAY)
+      .setFilter(testExecutionStateFilter)
+      .build();
+    ProcessDurationReportMapResultDto resultDto = evaluateDurationMapReport(reportData).getResult();
+
+    // then
+    final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(1));
+    assertThat(resultData.get(0).getValue(), is(1000L));
   }
 
   @Test

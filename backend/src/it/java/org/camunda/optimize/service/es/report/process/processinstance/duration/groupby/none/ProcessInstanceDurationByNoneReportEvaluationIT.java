@@ -8,8 +8,10 @@ package org.camunda.optimize.service.es.report.process.processinstance.duration.
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
@@ -18,10 +20,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.junit.Test;
 
 import javax.ws.rs.core.Response;
+import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,11 +33,14 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static java.time.temporal.ChronoUnit.MILLIS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN_EQUALS;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -70,7 +77,9 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(
+      resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion())
+    );
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
@@ -104,7 +113,9 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(
+      resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion())
+    );
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
@@ -291,6 +302,192 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     calculatedResult = resultDto.getData();
     assertThat(calculatedResult, is(nullValue()));
   }
+
+
+  @Test
+  public void calculateDurationForRunningProcessInstances() throws SQLException {
+    // given
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+
+    // 1 completed proc inst
+    ProcessInstanceEngineDto completeProcessInstanceDto = deployAndStartSimpleUserTaskProcess();
+    engineRule.finishAllRunningUserTasks(completeProcessInstanceDto.getId());
+
+    OffsetDateTime completedProcInstStartDate = now.minusDays(2);
+    OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
+    engineDatabaseRule.changeProcessInstanceStartDate(completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
+
+    // 1 running proc inst
+    final ProcessInstanceEngineDto newRunningProcessInstance = engineRule.startProcessInstance(
+      completeProcessInstanceDto.getDefinitionId()
+    );
+    OffsetDateTime runningProcInstStartDate = now.minusDays(1);
+    engineDatabaseRule.changeProcessInstanceStartDate(newRunningProcessInstance.getId(), runningProcInstStartDate);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final List<ProcessFilterDto> testExecutionStateFilter = ProcessFilterBuilder.filter()
+      .runningInstancesOnly()
+      .add()
+      .buildList();
+
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+      .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
+      .setFilter(testExecutionStateFilter)
+      .build();
+    final ProcessDurationReportNumberResultDto result = evaluateDurationNumberReport(reportData).getResult();
+
+    // then
+    final Long resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData, is(runningProcInstStartDate.until(now, MILLIS)));
+  }
+
+  @Test
+  public void calculateDurationForCompletedProcessInstances() throws SQLException {
+    // given
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+
+    // 1 completed proc inst
+    ProcessInstanceEngineDto completeProcessInstanceDto = deployAndStartSimpleUserTaskProcess();
+    engineRule.finishAllRunningUserTasks(completeProcessInstanceDto.getId());
+
+    OffsetDateTime completedProcInstStartDate = now.minusDays(2);
+    OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
+    engineDatabaseRule.changeProcessInstanceStartDate(completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
+
+    // 1 running proc inst
+    final ProcessInstanceEngineDto newRunningProcessInstance = engineRule.startProcessInstance(
+      completeProcessInstanceDto.getDefinitionId()
+    );
+    OffsetDateTime runningProcInstStartDate = now.minusDays(1);
+    engineDatabaseRule.changeProcessInstanceStartDate(newRunningProcessInstance.getId(), runningProcInstStartDate);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final List<ProcessFilterDto> testExecutionStateFilter = ProcessFilterBuilder.filter()
+      .completedInstancesOnly()
+      .add()
+      .buildList();
+
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+      .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
+      .setFilter(testExecutionStateFilter)
+      .build();
+    final ProcessDurationReportNumberResultDto result = evaluateDurationNumberReport(reportData).getResult();
+
+    // then
+    final Long resultData = result.getData();
+    assertThat(resultData, is(1000L));
+  }
+
+
+  @Test
+  public void calculateDurationForRunningAndCompletedProcessInstances() throws SQLException {
+    // given
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+
+    // 1 completed proc inst
+    ProcessInstanceEngineDto completeProcessInstanceDto = deployAndStartSimpleUserTaskProcess();
+    engineRule.finishAllRunningUserTasks(completeProcessInstanceDto.getId());
+
+    OffsetDateTime completedProcInstStartDate = now.minusDays(2);
+    OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
+    engineDatabaseRule.changeProcessInstanceStartDate(completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
+
+    // 1 running proc inst
+    final ProcessInstanceEngineDto newRunningProcessInstance = engineRule.startProcessInstance(
+      completeProcessInstanceDto.getDefinitionId()
+    );
+    OffsetDateTime runningProcInstStartDate = now.minusDays(1);
+    engineDatabaseRule.changeProcessInstanceStartDate(newRunningProcessInstance.getId(), runningProcInstStartDate);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+      .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
+      .build();
+
+    final ProcessDurationReportNumberResultDto result = evaluateDurationNumberReport(reportData).getResult();
+
+    // then
+    final Long resultData = result.getData();
+    assertThat(
+      resultData,
+      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L, runningProcInstStartDate.until(now, MILLIS)))
+    );
+  }
+
+  @Test
+  public void durationFilterWorksForRunningProcessInstances() throws SQLException {
+    // given
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+
+
+    // 1 completed proc inst
+    ProcessInstanceEngineDto completeProcessInstanceDto = deployAndStartSimpleUserTaskProcess();
+    engineRule.finishAllRunningUserTasks(completeProcessInstanceDto.getId());
+
+    OffsetDateTime completedProcInstStartDate = now.minusDays(2);
+    OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
+    engineDatabaseRule.changeProcessInstanceStartDate(completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
+
+    // 1 running proc inst
+    final ProcessInstanceEngineDto newRunningProcessInstance = engineRule.startProcessInstance(
+      completeProcessInstanceDto.getDefinitionId()
+    );
+    OffsetDateTime runningProcInstStartDate = now.minusDays(1);
+    engineDatabaseRule.changeProcessInstanceStartDate(newRunningProcessInstance.getId(), runningProcInstStartDate);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final List<ProcessFilterDto> testExecutionStateFilter = ProcessFilterBuilder.filter()
+      .duration()
+      .operator(GREATER_THAN_EQUALS)
+      .unit(RelativeDateFilterUnit.HOURS.getId())
+      .value(1L)
+      .add()
+      .buildList();
+
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
+      .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
+      .setFilter(testExecutionStateFilter)
+      .build();
+    final ProcessDurationReportNumberResultDto result = evaluateDurationNumberReport(reportData).getResult();
+
+    // then
+    final Long resultData = result.getData();
+    assertThat(resultData, is(runningProcInstStartDate.until(now, MILLIS)));
+  }
+
 
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() {
