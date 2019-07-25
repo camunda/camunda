@@ -16,10 +16,12 @@
 
 package io.zeebe.client.impl;
 
+import io.grpc.CallCredentials;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContext;
+import io.zeebe.client.CredentialsProvider;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.command.ActivateJobsCommandStep1;
@@ -74,7 +76,7 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   public ZeebeClientImpl(final ZeebeClientConfiguration configuration, ManagedChannel channel) {
-    this(configuration, channel, buildGatewayStub(channel));
+    this(configuration, channel, buildGatewayStub(channel, configuration));
   }
 
   public ZeebeClientImpl(
@@ -109,6 +111,23 @@ public class ZeebeClientImpl implements ZeebeClient {
     final NettyChannelBuilder channelBuilder =
         NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
 
+    configureConnectionSecurity(config, channelBuilder);
+
+    return channelBuilder.build();
+  }
+
+  private static CallCredentials buildCallCredentials(ZeebeClientConfiguration config) {
+    final CredentialsProvider customCredentialsProvider = config.getCredentialsProvider();
+
+    if (customCredentialsProvider == null) {
+      return null;
+    }
+
+    return new ZeebeCallCredentials(customCredentialsProvider);
+  }
+
+  private static void configureConnectionSecurity(
+      ZeebeClientConfiguration config, NettyChannelBuilder channelBuilder) {
     if (!config.isPlaintextConnectionEnabled()) {
       final String certificatePath = config.getCaCertificatePath();
       SslContext sslContext = null;
@@ -120,7 +139,6 @@ public class ZeebeClientImpl implements ZeebeClient {
         }
 
         try (FileInputStream certInputStream = new FileInputStream(certificatePath)) {
-
           sslContext = GrpcSslContexts.forClient().trustManager(certInputStream).build();
         } catch (IOException e) {
           throw new RuntimeException(e);
@@ -131,12 +149,11 @@ public class ZeebeClientImpl implements ZeebeClient {
     } else {
       channelBuilder.usePlaintext();
     }
-
-    return channelBuilder.build();
   }
 
-  public static GatewayStub buildGatewayStub(ManagedChannel channel) {
-    return GatewayGrpc.newStub(channel);
+  public static GatewayStub buildGatewayStub(
+      ManagedChannel channel, ZeebeClientConfiguration config) {
+    return GatewayGrpc.newStub(channel).withCallCredentials(buildCallCredentials(config));
   }
 
   private static ScheduledExecutorService buildExecutorService(

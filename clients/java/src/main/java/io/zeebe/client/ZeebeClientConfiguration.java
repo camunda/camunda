@@ -47,4 +47,7 @@ public interface ZeebeClientConfiguration {
 
   /** @see ZeebeClientBuilder#caCertificatePath(String) */
   String getCaCertificatePath();
+
+  /** @see ZeebeClientBuilder#credentialsProvider(CredentialsProvider) */
+  CredentialsProvider getCredentialsProvider();
 }
