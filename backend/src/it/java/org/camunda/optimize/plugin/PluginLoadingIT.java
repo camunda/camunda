@@ -7,6 +7,8 @@ package org.camunda.optimize.plugin;
 
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -16,19 +18,23 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static org.camunda.optimize.plugin.PluginVersionChecker.buildMissingPluginVersionMessage;
+import static org.camunda.optimize.plugin.PluginVersionChecker.buildUnsupportedPluginVersionMessage;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class PluginLoadingIT {
-
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -37,13 +43,12 @@ public class PluginLoadingIT {
   private ConfigurationService configurationService;
   private ImportAdapterProvider pluginProvider;
 
+  public ExpectedException expectedExceptionRule = ExpectedException.none();
+
   @Before
   public void setup() {
     configurationService = embeddedOptimizeRule.getConfigurationService();
     pluginProvider = embeddedOptimizeRule.getApplicationContext().getBean(ImportAdapterProvider.class);
-    configurationService.setPluginDirectory("target/testPluginsValid");
-    String basePackage = "org.camunda.optimize.testplugin.pluginloading";
-    configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
   }
 
   @After
@@ -52,14 +57,21 @@ public class PluginLoadingIT {
     pluginProvider.resetPlugins();
   }
 
+
+  public TemporaryFolder tempFolderRule = new TemporaryFolder();
+
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule)
+    .around(engineRule)
+    .around(embeddedOptimizeRule)
+    .around(expectedExceptionRule)
+    .around(tempFolderRule);
 
   @Test
   public void loadedPluginClassesAreIndependentToOptimizeClasses() {
     // given
-
+    configurationService.setPluginDirectory("target/testPluginsValid");
     String basePackage = "org.camunda.optimize.testplugin.pluginloading.independent.testoptimize";
     configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
 
@@ -140,6 +152,17 @@ public class PluginLoadingIT {
     plugins.get(0).adaptVariables(Collections.emptyList());
   }
 
+  @Test(expected = OptimizeRuntimeException.class)
+  public void loadedPluginHasNoDefaultConstructor() {
+    // given
+    configurationService.setPluginDirectory("target/testPluginsValid");
+    String basePackage = "org.camunda.optimize.testplugin.adapter.variable.error1";
+    configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
+
+    // when
+    pluginProvider.initPlugins();
+  }
+
   @Test(expected = RuntimeException.class)
   public void loadedPluginThrowsExceptionInDefaultConstructor() {
     // given
@@ -164,16 +187,11 @@ public class PluginLoadingIT {
     assertThat(plugins.size(), is(0));
   }
 
-
   @Test
-  public void loadingPluginsWithEmptyPluginDirectoryConfigured() {
+  public void loadingPluginsWithEmptyPluginDirectoryConfigured() throws IOException {
     // given
-    File newDirectory = new File("newEmptyPluginDirectory");
-
-    final boolean testDirectoryCreated = newDirectory.mkdir();
-    assertThat(testDirectoryCreated, is(true));
-
-    configurationService.setPluginDirectory("newEmptyPluginDirectory");
+    final File newEmptyPluginDirectory = tempFolderRule.newFolder("newEmptyPluginDirectory");
+    configurationService.setPluginDirectory(newEmptyPluginDirectory.getAbsolutePath());
 
     // when
     pluginProvider.initPlugins();
@@ -181,9 +199,55 @@ public class PluginLoadingIT {
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
     assertThat(plugins.size(), is(0));
+  }
 
-    final boolean testDirectoryDeleted = newDirectory.delete();
-    assertThat(testDirectoryDeleted, is(true));
+  @Test
+  public void loadingPluginsMultipleTimesWithDifferentDirectories() {
+    // given
+    configurationService.setPluginDirectory("nonexistingDirectory");
+    String basePackage = "org.camunda.optimize.testplugin.pluginloading.independent.testoptimize";
+    configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
+
+    // when
+    pluginProvider.initPlugins();
+
+    // then
+    assertThat(pluginProvider.getPlugins().size(), is(0));
+
+    // when
+    configurationService.setPluginDirectory("target/testPluginsValid");
+    pluginProvider.resetPlugins();
+    pluginProvider.initPlugins();
+
+    // then
+    assertThat(pluginProvider.getPlugins().size(), is(1));
+  }
+
+
+  @Test
+  public void loadingPluginWithInvalidVersion() {
+    // given
+    configurationService.setPluginDirectory("target/testPluginsInvalid/invalidVersion");
+
+    // then
+    expectedExceptionRule.expect(OptimizeRuntimeException.class);
+    expectedExceptionRule.expectMessage(buildUnsupportedPluginVersionMessage("invalid_version", Version.VERSION));
+
+    // when
+    pluginProvider.initPlugins();
+  }
+
+  @Test
+  public void loadingPluginWithMissingVersion() {
+    // given
+    configurationService.setPluginDirectory("target/testPluginsInvalid/missingVersion");
+
+    // then
+    expectedExceptionRule.expect(OptimizeRuntimeException.class);
+    expectedExceptionRule.expectMessage(buildMissingPluginVersionMessage(Version.VERSION));
+
+    // when
+    pluginProvider.initPlugins();
   }
 
 }

@@ -142,6 +142,9 @@ void runRelease(params) {
     # update the optimize version in pom to development version
     sed -i "s/optimize.version>.*</optimize.version>${params.DEVELOPMENT_VERSION}</g" pom.xml
 
+    # update the optimize-examples version in pom to development version
+    sed -i "s/version>.*</version>${params.DEVELOPMENT_VERSION}</g" pom.xml
+
     # push the changes
     git add -u
     git commit -m \"chore(release): update pom to snapshot for development version\"

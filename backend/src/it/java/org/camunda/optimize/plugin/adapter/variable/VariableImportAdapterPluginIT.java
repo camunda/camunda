@@ -105,24 +105,6 @@ public class VariableImportAdapterPluginIT {
   }
 
   @Test
-  public void adapterWithoutDefaultConstructorIsNotAdded() throws Exception {
-    // given
-    addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.error1");
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("var1", 1);
-    variables.put("var2", 1);
-    ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    List<VariableNameDto> variablesResponseDtos = getVariables(processDefinition);
-
-    //then only half the variables are added to Optimize
-    assertThat(variablesResponseDtos.size(), is(2));
-  }
-
-  @Test
   public void notExistingAdapterDoesNotStopImportProcess() throws Exception {
     // given
     addVariableImportPluginBasePackagesToConfiguration("foo.bar");

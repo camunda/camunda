@@ -12,6 +12,7 @@ import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.util.ClassUtils;
 
@@ -20,6 +21,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.camunda.optimize.plugin.PluginVersionChecker.validatePluginVersion;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -39,9 +42,14 @@ public abstract class PluginProvider<PluginType> {
           pluginJar.toUri().toURL(),
           getClass().getClassLoader()
         );
+
+        validatePluginVersion(pluginClassLoader);
+
         registerPlugins(pluginClassLoader);
       } catch (IOException e) {
-        log.error("Cannot register plugin [{}]", pluginJar);
+        String reason = String.format("Cannot register plugin [%s]", pluginJar);
+        log.error(reason, e);
+        throw new OptimizeRuntimeException(reason, e);
       }
     }
 
@@ -65,14 +73,23 @@ public abstract class PluginProvider<PluginType> {
             PluginType plugin = (PluginType) pluginClass.newInstance();
             registeredPlugins.add(plugin);
           } else {
-            log.error("Plugin class [{}] is not valid because it has no default constructor!", pluginClass.getSimpleName());
+            String reason = String.format(
+              "Plugin class [%s] is not valid because it has no default constructor!",
+              pluginClass.getSimpleName()
+            );
+            log.error(reason);
+            throw new OptimizeRuntimeException(reason);
           }
         } catch (InstantiationException | IllegalAccessException e) {
-          log.error("Cannot register plugin class [{}]", pluginClass.getSimpleName());
+          String reason = String.format("Cannot register plugin class [%s]", pluginClass.getSimpleName());
+          log.error(reason, e);
+          throw new OptimizeRuntimeException(reason, e);
         }
       });
     } catch (ClassGraphException e) {
-      log.error("There was an error with ClassGraph scanning a plugin!");
+      String reason = "There was an error with ClassGraph scanning a plugin!";
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
     }
   }
 

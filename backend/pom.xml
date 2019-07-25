@@ -755,6 +755,39 @@
               </execution>
             </executions>
           </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <version>3.1.2</version>
+            <executions>
+              <execution>
+                <id>create-invalid-optimize-testplugin-invalidVersion</id>
+                <goals>
+                  <goal>test-jar</goal>
+                </goals>
+                <phase>pre-integration-test</phase>
+                <configuration>
+                  <includes>
+                    <include>**/plugin.version</include>
+                  </includes>
+                  <outputDirectory>${project.build.directory}/testPluginsInvalid/invalidVersion</outputDirectory>
+                  <classifier>test-plugin-invalidVersion</classifier>
+                </configuration>
+              </execution>
+              <execution>
+                <id>create-invalid-optimize-testplugin-missingVersion</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <phase>pre-integration-test</phase>
+                <configuration>
+                  <excludes>**/*</excludes>
+                  <outputDirectory>${project.build.directory}/testPluginsInvalid/missingVersion</outputDirectory>
+                  <classifier>test-plugin-missingVersion</classifier>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
         </plugins>
         <resources>
           <resource>

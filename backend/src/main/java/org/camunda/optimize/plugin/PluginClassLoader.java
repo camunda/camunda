@@ -8,6 +8,8 @@ package org.camunda.optimize.plugin;
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Set;
@@ -70,5 +72,18 @@ public class PluginClassLoader extends URLClassLoader {
       return super.loadClass(className);
     }
   }
+
+  /**
+   * returns a plugin resource without taking parent classloaders or system classloaders into account
+   */
+  public InputStream getPluginResourceAsStream(String name) throws IOException {
+    final URL resource = findResource(name);
+
+    if (resource != null) {
+      return resource.openStream();
+    }
+    return null;
+  }
+
 }
 
