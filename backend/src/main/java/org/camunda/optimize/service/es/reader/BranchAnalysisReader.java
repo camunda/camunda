@@ -21,7 +21,6 @@ import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.TenantAuthorizationService;
-import org.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -42,6 +41,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -143,7 +143,7 @@ public class BranchAnalysisReader {
   }
 
   private BoolQueryBuilder buildBaseQuery(final BranchAnalysisQueryDto request, final Set<String> activitiesToExclude) {
-    final BoolQueryBuilder query = DefinitionVersionHandlingUtil.createDefinitionQuery(
+    final BoolQueryBuilder query = createDefinitionQuery(
       request.getProcessDefinitionKey(),
       request.getProcessDefinitionVersions(),
       request.getTenantIds(),

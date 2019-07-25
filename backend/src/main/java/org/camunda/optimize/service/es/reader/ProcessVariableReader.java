@@ -38,7 +38,7 @@ import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DATE_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STRING_VARIABLES;
-import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.createDefinitionQuery;
+import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getAllVariableTypeFieldLabels;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabel;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldLabel;

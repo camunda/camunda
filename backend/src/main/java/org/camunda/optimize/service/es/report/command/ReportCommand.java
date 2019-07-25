@@ -14,13 +14,14 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.es.schema.type.DefinitionBasedType;
 import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.OffsetDateTime;
+
+import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
 
 public abstract class ReportCommand<R extends ReportEvaluationResult, RD extends ReportDefinitionDto<?>>
   implements Command<RD> {
@@ -78,7 +79,7 @@ public abstract class ReportCommand<R extends ReportEvaluationResult, RD extends
   }
 
   protected BoolQueryBuilder setupBaseQuery(final SingleReportDataDto reportData, final DefinitionBasedType type) {
-    return DefinitionVersionHandlingUtil.createDefinitionQuery(
+    return createDefinitionQuery(
       reportData.getDefinitionKey(),
       reportData.getDefinitionVersions(),
       reportData.getTenantIds(),
