@@ -15,34 +15,15 @@ import java.util.List;
 
 import org.camunda.operate.es.schema.templates.SequenceFlowTemplate;
 import org.camunda.operate.rest.dto.SequenceFlowDto;
-import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 
 public class SequenceFlowIT extends OperateZeebeIntegrationTest {
-
-  @Rule
-  public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
-
-  private ZeebeClient zeebeClient;
-
-  private MockMvc mockMvc;
-
-  @Before
-  public void init() {
-    super.before();
-    zeebeClient = super.getClient();
-    this.mockMvc = mockMvcTestRule.getMockMvc();
-  }
 
   protected String getSequenceFlowURL(Long workflowInstanceKey) {
     return String.format(WORKFLOW_INSTANCE_URL + "/%s/sequence-flows", workflowInstanceKey);

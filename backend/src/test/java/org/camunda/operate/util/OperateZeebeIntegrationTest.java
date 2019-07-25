@@ -5,7 +5,11 @@
  */
 package org.camunda.operate.util;
 
-import io.zeebe.client.api.worker.JobWorker;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
 import java.util.concurrent.Future;
@@ -13,6 +17,7 @@ import java.util.function.Predicate;
 
 import org.apache.http.HttpStatus;
 import org.camunda.operate.entities.OperationType;
+import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationRequestDto;
@@ -20,6 +25,7 @@ import org.camunda.operate.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebeimport.ImportPositionHolder;
 import org.camunda.operate.zeebeimport.PartitionHolder;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.mockito.internal.util.reflection.FieldSetter;
@@ -31,14 +37,10 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.worker.JobWorker;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;
-import static org.assertj.core.api.Assertions.fail;
-import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest {
   
@@ -71,6 +73,10 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   
   /// Predicate checks
   @Autowired
+  @Qualifier("incidentIsResolvedCheck")
+  protected Predicate<Object[]> incidentIsResolvedCheck;
+  
+  @Autowired
   @Qualifier("variableExistsCheck")
   protected Predicate<Object[]> variableExistsCheck;
   
@@ -83,12 +89,36 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected Predicate<Object[]> workflowIsDeployedCheck;
 
   @Autowired
+  @Qualifier("incidentsAreActiveCheck")
+  protected Predicate<Object[]> incidentsAreActiveCheck;
+  
+  @Autowired
   @Qualifier("incidentIsActiveCheck")
   protected Predicate<Object[]> incidentIsActiveCheck;
+  
+  @Autowired
+  @Qualifier("workflowInstanceIsCreatedCheck")
+  protected Predicate<Object[]> workflowInstanceIsCreatedCheck;
 
+  @Autowired
+  @Qualifier("workflowInstancesAreStartedCheck")
+  protected Predicate<Object[]> workflowInstancesAreStartedCheck;
+  
+  @Autowired
+  @Qualifier("workflowInstanceIsCompletedCheck")
+  protected Predicate<Object[]> workflowInstanceIsCompletedCheck;
+  
+  @Autowired
+  @Qualifier("workflowInstancesAreFinishedCheck")
+  protected Predicate<Object[]> workflowInstancesAreFinishedCheck;
+  
   @Autowired
   @Qualifier("workflowInstanceIsCanceledCheck")
   protected Predicate<Object[]> workflowInstanceIsCanceledCheck;
+  
+  @Autowired
+  @Qualifier("activityIsTerminatedCheck")
+  protected Predicate<Object[]> activityIsTerminatedCheck;
 
   @Autowired
   @Qualifier("activityIsCompletedCheck")
@@ -97,6 +127,13 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   @Autowired
   @Qualifier("activityIsActiveCheck")
   protected Predicate<Object[]> activityIsActiveCheck;
+  
+  @Autowired
+  @Qualifier("operationsByWorkflowInstanceAreCompletedCheck")
+  protected Predicate<Object[]> operationsByWorkflowInstanceAreCompleted;
+  
+  @Autowired
+  protected OperateProperties operateProperties;
 
   private JobWorker jobWorker;
 
@@ -104,7 +141,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
   @Autowired
   protected OperationExecutor operationExecutor;
-  
+ 
   @Before
   public void before() {
     super.before();
@@ -125,7 +162,8 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     }
   }
 
-  protected void after() {
+  @After
+  public void after() {
     workflowCache.clearCache();
     importPositionHolder.clearCache();
     if (jobWorker != null && jobWorker.isOpen()) {
@@ -138,10 +176,8 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     this(EmbeddedBrokerRule.DEFAULT_CONFIG_FILE);
   }
 
-  public OperateZeebeIntegrationTest(
-    final String configFileClasspathLocation) {
+  public OperateZeebeIntegrationTest(final String configFileClasspathLocation) {
     zeebeRule = new OperateZeebeRule(configFileClasspathLocation);
-
   }
 
   public ZeebeClient getClient() {

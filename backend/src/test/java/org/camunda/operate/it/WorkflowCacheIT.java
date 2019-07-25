@@ -5,51 +5,36 @@
  */
 package org.camunda.operate.it;
 
-import java.util.LinkedHashMap;
-import java.util.function.Predicate;
-import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.ZeebeTestUtil;
-import org.camunda.operate.zeebeimport.cache.WorkflowCache;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.internal.util.reflection.FieldSetter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.mock.mockito.SpyBean;
-import io.zeebe.client.ZeebeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
+import java.util.LinkedHashMap;
 
-  private ZeebeClient zeebeClient;
+import org.camunda.operate.util.OperateZeebeIntegrationTest;
+import org.camunda.operate.util.ZeebeTestUtil;
+import org.camunda.operate.zeebeimport.cache.WorkflowCache;
+import org.junit.After;
+import org.junit.Test;
+import org.mockito.internal.util.reflection.FieldSetter;
+import org.springframework.boot.test.mock.mockito.SpyBean;
+
+public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
 
   @SpyBean
   private WorkflowCache workflowCache;
 
-  @Autowired
-  @Qualifier("workflowIsDeployedCheck")
-  private Predicate<Object[]> workflowIsDeployedCheck;
-
-  @Before
-  public void init() {
-    super.before();
-    zeebeClient = super.getClient();
-  }
-
   @After
   public void after() {
-    super.after();
     //clean the cache
     try {
       FieldSetter.setField(workflowCache, WorkflowCache.class.getDeclaredField("cache"), new LinkedHashMap<>());
     } catch (NoSuchFieldException e) {
       fail("Failed to inject cache into some of the beans");
     }
+    super.after();
   }
 
   @Test

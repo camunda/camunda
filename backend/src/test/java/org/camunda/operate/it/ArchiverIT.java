@@ -23,7 +23,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.function.Predicate;
 
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
@@ -37,7 +36,6 @@ import org.camunda.operate.es.schema.templates.WorkflowInstanceDependant;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.exceptions.ReindexException;
-import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
@@ -57,7 +55,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -76,22 +73,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   private ArchiverHelper reindexHelper;
 
   @Autowired
-  private OperateProperties operateProperties;
-
-  @Autowired
   private RestHighLevelClient esClient;
-
-  @Autowired
-  @Qualifier("workflowInstanceIsCompletedCheck")
-  private Predicate<Object[]> workflowInstanceIsCompletedCheck;
-
-  @Autowired
-  @Qualifier("workflowInstancesAreFinished")
-  private Predicate<Object[]> workflowInstancesAreFinishedCheck;
-
-  @Autowired
-  @Qualifier("workflowInstancesAreStarted")
-  private Predicate<Object[]> workflowInstancesAreStartedCheck;
 
   @Autowired
   private ListViewTemplate workflowInstanceTemplate;
@@ -110,7 +92,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   private DateTimeFormatter dateTimeFormatter;
 
   @Before
-  public void init() {
+  public void before() {
     super.before();
     dateTimeFormatter = DateTimeFormatter.ofPattern(operateProperties.getElasticsearch().getRolloverDateFormat()).withZone(ZoneId.systemDefault());
   }

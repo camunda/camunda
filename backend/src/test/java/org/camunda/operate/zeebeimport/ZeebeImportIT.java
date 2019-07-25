@@ -5,11 +5,17 @@
  */
 package org.camunda.operate.zeebeimport;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
@@ -26,32 +32,22 @@ import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.rest.dto.listview.WorkflowInstanceStateDto;
-import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.value.IncidentRecordValue;
+
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
@@ -69,48 +65,6 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private ActivityInstanceReader activityInstanceReader;
-
-  @Autowired
-  @Qualifier("activityIsActiveCheck")
-  private Predicate<Object[]> activityIsActiveCheck;
-  
-  @Autowired
-  @Qualifier("workflowIsDeployedCheck")
-  private Predicate<Object[]> workflowIsDeployedCheck;
-  
-  @Autowired
-  @Qualifier("workflowInstanceIsCreatedCheck")
-  private Predicate<Object[]> workflowInstanceIsCreatedCheck;
-  
-  @Autowired
-  @Qualifier("incidentIsActiveCheck")
-  private Predicate<Object[]> incidentIsActiveCheck;
-  
-  @Autowired
-  @Qualifier("incidentIsResolvedCheck")
-  private Predicate<Object[]> incidentIsResolvedCheck;
-  
-  private ZeebeClient zeebeClient;
-
-  private OffsetDateTime testStartTime;
-
-  @Rule
-  public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
-
-  private MockMvc mockMvc;
-
-  @Before
-  public void init() {
-    super.before();
-    testStartTime = OffsetDateTime.now();
-    zeebeClient = super.getClient();
-    mockMvc = mockMvcTestRule.getMockMvc();
-  }
-
-  @After
-  public void after() {
-    super.after();
-  }
 
   @Test
   public void testWorkflowNameAndVersionAreLoaded() {

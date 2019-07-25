@@ -9,7 +9,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.function.Predicate;
 
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
@@ -30,18 +29,14 @@ import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.rest.dto.listview.VariablesQueryDto;
 import org.camunda.operate.rest.dto.listview.WorkflowInstanceStateDto;
 import org.camunda.operate.rest.exception.NotFoundException;
-import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ConversionUtils;
+import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 
-import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 
@@ -58,62 +53,6 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private ListViewReader listViewReader;
-
-  @Autowired
-  @Qualifier("activityIsTerminatedCheck")
-  private Predicate<Object[]> activityIsTerminatedCheck;
-
-  @Autowired
-  @Qualifier("activityIsActiveCheck")
-  private Predicate<Object[]> activityIsActiveCheck;
-
-  @Autowired
-  @Qualifier("activityIsCompletedCheck")
-  private Predicate<Object[]> activityIsCompletedCheck;
-
-  @Autowired
-  @Qualifier("incidentIsActiveCheck")
-  private Predicate<Object[]> incidentIsActiveCheck;
-
-  @Autowired
-  @Qualifier("incidentIsResolvedCheck")
-  private Predicate<Object[]> incidentIsResolvedCheck;
-
-  @Autowired
-  @Qualifier("workflowInstanceIsCompletedCheck")
-  private Predicate<Object[]> workflowInstanceIsCompletedCheck;
-
-  @Autowired
-  @Qualifier("workflowInstanceIsCanceledCheck")
-  private Predicate<Object[]> workflowInstanceIsCanceledCheck;
-
-  @Autowired
-  @Qualifier("workflowInstanceIsCreatedCheck")
-  private Predicate<Object[]> workflowInstanceIsCreatedCheck;
-
-  @Autowired
-  @Qualifier("variableExistsCheck")
-  private Predicate<Object[]> variableExistsCheck;
-  
-  @Autowired
-  @Qualifier("variableEqualsCheck")
-  private Predicate<Object[]> variableEqualsCheck;
-
-  private ZeebeClient zeebeClient;
-
-  private OffsetDateTime testStartTime;
-
-  @Before
-  public void init() {
-    super.before();
-    testStartTime = OffsetDateTime.now();
-    zeebeClient = super.getClient();
-  }
-
-  @After
-  public void after() {
-    super.after();
-  }
 
   @Test
   public void testWorkflowInstanceCreated() {

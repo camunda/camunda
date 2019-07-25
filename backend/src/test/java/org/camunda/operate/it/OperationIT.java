@@ -5,11 +5,18 @@
  */
 package org.camunda.operate.it;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 import org.apache.http.HttpStatus;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.IncidentEntity;
@@ -22,7 +29,6 @@ import org.camunda.operate.es.reader.OperationReader;
 import org.camunda.operate.es.reader.VariableReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
-import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.OperationDto;
 import org.camunda.operate.rest.dto.VariableDto;
 import org.camunda.operate.rest.dto.incidents.IncidentDto;
@@ -33,7 +39,6 @@ import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.rest.dto.listview.WorkflowInstanceStateDto;
 import org.camunda.operate.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.rest.dto.operation.OperationResponseDto;
-import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebe.operation.CancelWorkflowInstanceHandler;
@@ -41,33 +46,20 @@ import org.camunda.operate.zeebe.operation.ResolveIncidentHandler;
 import org.camunda.operate.zeebe.operation.UpdateVariableHandler;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.zeebe.client.ZeebeClient;
+
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class OperationIT extends OperateZeebeIntegrationTest {
 
   private static final String QUERY_INSTANCES_URL = WORKFLOW_INSTANCE_URL;
-
-  @Rule
-  public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
-
-  @Autowired
-  private OperateProperties operateProperties;
 
   @Autowired
   private CancelWorkflowInstanceHandler cancelWorkflowInstanceHandler;
@@ -77,34 +69,6 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private UpdateVariableHandler updateVariableHandler;
-
-  @Autowired
-  @Qualifier("incidentIsResolvedCheck")
-  private Predicate<Object[]> incidentIsResolvedCheck;
-
-  @Autowired
-  @Qualifier("incidentsAreActiveCheck")
-  public Predicate<Object[]> incidentsAreActiveCheck;
-
-  @Autowired
-  @Qualifier("workflowInstanceIsCanceledCheck")
-  private Predicate<Object[]> workflowInstanceIsCanceledCheck;
-
-  @Autowired
-  @Qualifier("workflowInstanceIsCompletedCheck")
-  private Predicate<Object[]> workflowInstanceIsCompletedCheck;
-
-  @Autowired
-  @Qualifier("variableExistsCheck")
-  private Predicate<Object[]> variableExistsCheck;
-  
-  @Autowired
-  @Qualifier("variableEqualsCheck")
-  private Predicate<Object[]> variableEqualsCheck;
-  
-  @Autowired
-  @Qualifier("operationsByWorkflowInstanceAreCompleted")
-  private Predicate<Object[]> operationsByWorkflowInstanceAreCompleted;
 
   @Autowired
   private WorkflowInstanceReader workflowInstanceReader;
@@ -123,10 +87,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
   private Long initialBatchOperationMaxSize;
 
-  private ZeebeClient zeebeClient;
-
   @Before
-  public void starting() {
+  public void before() {
     super.before();
 
     try {
@@ -140,7 +102,6 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     mockMvc = mockMvcTestRule.getMockMvc();
     initialBatchOperationMaxSize = operateProperties.getBatchOperationMaxSize();
     deployWorkflow("demoProcess_v_2.bpmn");
-    zeebeClient = zeebeRule.getClientRule().getClient();
   }
 
   @After

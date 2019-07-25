@@ -20,10 +20,8 @@ import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.rest.dto.EventQueryDto;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
-import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -34,39 +32,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
   private EventReader eventReader;
 
   @Autowired
-  @Qualifier("workflowInstanceIsCompletedCheck")
-  private Predicate<Object[]> workflowInstanceIsCompletedCheck;
-
-  @Autowired
-  @Qualifier("workflowInstanceIsCanceledCheck")
-  private Predicate<Object[]> workflowInstanceIsCanceledCheck;
-
-  @Autowired
-  @Qualifier("activityIsCompletedCheck")
-  private Predicate<Object[]> activityIsCompletedCheck;
-
-  @Autowired
-  @Qualifier("incidentIsActiveCheck")
-  private Predicate<Object[]> incidentIsActiveCheck;
-
-  @Autowired
-  @Qualifier("incidentIsResolvedCheck")
-  private Predicate<Object[]> incidentIsResolvedCheck;
-
-  @Autowired
-  @Qualifier("activityIsTerminatedCheck")
-  private Predicate<Object[]> activityIsTerminatedCheck;
-
-  @Autowired
   private IncidentReader incidentReader;
-
-  private OffsetDateTime testStartTime;
-
-  @Before
-  public void init() {
-    super.before();
-    testStartTime = OffsetDateTime.now();
-  }
 
   @Test
   public void testEventsForFinishedWorkflow() {
@@ -76,7 +42,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
     final String taskC = "taskC";
     final String errorMessage = "Some error";
     final Long workflowKey = deployWorkflow("processWithGateway.bpmn");
-
+    
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, "{\"a\": \"b\"}");
 
     //create an incident

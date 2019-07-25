@@ -10,6 +10,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.OffsetDateTime;
+
 import org.camunda.operate.TestApplication;
 import org.camunda.operate.property.OperateProperties;
 import org.junit.Before;
@@ -41,9 +43,12 @@ public abstract class OperateIntegrationTest {
 
   protected MockMvc mockMvc;
 
+  protected OffsetDateTime testStartTime;
+  
   @Before
   public void before() {
-    this.mockMvc = mockMvcTestRule.getMockMvc();
+    testStartTime = OffsetDateTime.now();
+    mockMvc = mockMvcTestRule.getMockMvc();
   }
   
   protected MvcResult getRequest(String requestUrl) throws Exception {

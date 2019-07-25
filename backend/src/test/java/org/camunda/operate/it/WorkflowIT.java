@@ -5,55 +5,37 @@
  */
 package org.camunda.operate.it;
 
-import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
-import org.camunda.operate.entities.WorkflowEntity;
-import org.camunda.operate.es.reader.WorkflowReader;
-import org.camunda.operate.es.schema.indices.WorkflowIndex;
-import org.camunda.operate.rest.dto.WorkflowGroupDto;
-import org.camunda.operate.util.MockMvcTestRule;
-import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.ZeebeTestUtil;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.List;
+import java.util.Map;
+
+import org.camunda.operate.entities.WorkflowEntity;
+import org.camunda.operate.es.reader.WorkflowReader;
+import org.camunda.operate.es.schema.indices.WorkflowIndex;
+import org.camunda.operate.rest.dto.WorkflowGroupDto;
+import org.camunda.operate.util.OperateZeebeIntegrationTest;
+import org.camunda.operate.util.ZeebeTestUtil;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.ProcessBuilder;
 
 public class WorkflowIT extends OperateZeebeIntegrationTest {
 
   private static final String QUERY_WORKFLOWS_GROUPED_URL = "/api/workflows/grouped";
   private static final String QUERY_WORKFLOW_XML_URL = "/api/workflows/%s/xml";
 
-  @Rule
-  public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
-
-  private MockMvc mockMvc;
-
   @Autowired
   private WorkflowReader workflowReader;
-
-  @Autowired
-  @Qualifier("workflowIsDeployedCheck")
-  private Predicate<Object[]> workflowIsDeployedCheck;
-
-  @Before
-  public void starting() {
-    super.before();
-    this.mockMvc = mockMvcTestRule.getMockMvc();
-  }
 
   @Test
   public void testWorkflowCreated() {
@@ -67,7 +49,6 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
     assertThat(workflowEntity.getVersion()).isEqualTo(1);
     assertThat(workflowEntity.getBpmnXml()).isNotEmpty();
     assertThat(workflowEntity.getName()).isEqualTo("Demo process");
-
   }
 
   @Test
@@ -100,7 +81,6 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
     //then
     assertThat(xml).isNotEmpty();
     assertThat(xml).contains("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-
   }
 
   @Test

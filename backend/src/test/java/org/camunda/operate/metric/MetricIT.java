@@ -10,41 +10,22 @@ import static org.camunda.operate.util.MetricAssert.assertThatMetricsFrom;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 
-import java.util.Collections;
-import java.util.function.Predicate;
-
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
+import org.camunda.operate.it.OperateTester;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebe.operation.CancelWorkflowInstanceHandler;
 import org.camunda.operate.zeebe.operation.ResolveIncidentHandler;
 import org.camunda.operate.zeebe.operation.UpdateVariableHandler;
-import org.camunda.operate.zeebeimport.ImportValueType;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 
 public class MetricIT extends OperateZeebeIntegrationTest{
   
-  @Autowired
-  @Qualifier("workflowInstanceIsCompletedCheck")
-  Predicate<Object[]> workflowInstanceIsCompletedCheck;
- 
-  @Autowired
-  @Qualifier("activityIsActiveCheck")
-  Predicate<Object[]> activityIsActiveCheck;
-  
-  @Autowired
-  @Qualifier("operationsByWorkflowInstanceAreCompleted")
-  Predicate<Object[]> operationsByWorkflowInstanceAreCompleted;
-  
-
   @Autowired
   private CancelWorkflowInstanceHandler cancelWorkflowInstanceHandler;
 
@@ -54,31 +35,33 @@ public class MetricIT extends OperateZeebeIntegrationTest{
   @Autowired
   private UpdateVariableHandler updateVariableHandler;
 
+  @Autowired
+  private OperateTester operateTester;
   
   @Before
-  public void setUp() {
+  public void before() {
     super.before();
+    injectZeebeClientIntoOperationHandler();
+    operateTester.setZeebeClient(getClient()).setMockMvcTestRule(mockMvcTestRule);
+  }
+
+  private void injectZeebeClientIntoOperationHandler() {
     try {
-      FieldSetter.setField(cancelWorkflowInstanceHandler, CancelWorkflowInstanceHandler.class.getDeclaredField("zeebeClient"), super.getClient());
-      FieldSetter.setField(updateRetriesHandler, ResolveIncidentHandler.class.getDeclaredField("zeebeClient"), super.getClient());
-      FieldSetter.setField(updateVariableHandler, UpdateVariableHandler.class.getDeclaredField("zeebeClient"), super.getClient());
+      FieldSetter.setField(cancelWorkflowInstanceHandler, CancelWorkflowInstanceHandler.class.getDeclaredField("zeebeClient"), zeebeClient);
+      FieldSetter.setField(updateRetriesHandler, ResolveIncidentHandler.class.getDeclaredField("zeebeClient"), zeebeClient);
+      FieldSetter.setField(updateVariableHandler, UpdateVariableHandler.class.getDeclaredField("zeebeClient"), zeebeClient);
     } catch (NoSuchFieldException e) {
       fail("Failed to inject ZeebeClient into some of the beans");
     }
-
-    this.mockMvc = mockMvcTestRule.getMockMvc();
-    
-    deployWorkflow("demoProcess_v_2.bpmn");
   }
 
   @Test // OPE-624 
   public void testProcessedEventsDuringImport() throws Exception {
     // Given metrics are enabled
     // When
-    deployWorkflow("demoProcess_v_1.bpmn");  
-    Long workflowInstanceKeyLong = ZeebeTestUtil.startWorkflowInstance(getClient(), "demoProcess", "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKeyLong);
-   
+    operateTester
+      .deployWorkflow("demoProcess_v_1.bpmn").waitUntil().workflowIsDeployed()
+      .startWorkflowInstance("demoProcess","{\"a\": \"b\"}").waitUntil().workflowInstanceIsFinished();
     // Then
     assertThatMetricsFrom(mockMvc,allOf(
         containsString("operate_events_processed_total{type=\"DEPLOYMENT\",}"),
@@ -92,14 +75,11 @@ public class MetricIT extends OperateZeebeIntegrationTest{
   public void testProcessedEventsDuringImportWithIncidents() throws Exception {
     // Given metrics are enabled
     // When
-    deployWorkflow("demoProcess_v_1.bpmn");
-    ZeebeTestUtil.startWorkflowInstance(getClient(), "demoProcess", "{\"a\": \"b\"}");
-    // And create an incident
-    ZeebeTestUtil.failTask(getClient(), "taskA", getWorkerName(), 3, "Some error");
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
-    elasticsearchTestRule.processAllEvents(8, ImportValueType.WORKFLOW_INSTANCE);
-    elasticsearchTestRule.processAllEvents(1, ImportValueType.INCIDENT);
-    
+    operateTester
+      .deployWorkflow("demoProcess_v_1.bpmn").waitUntil().workflowIsDeployed()
+      .startWorkflowInstance("demoProcess","{\"a\": \"b\"}")
+      .and()
+      .failTask("taskA","Some error").waitUntil().incidentIsActive();
     // Then
     assertThatMetricsFrom(mockMvc,allOf(
         containsString("operate_events_processed_total{type=\"DEPLOYMENT\",}"),
@@ -112,14 +92,15 @@ public class MetricIT extends OperateZeebeIntegrationTest{
   public void testOperationThatSucceeded() throws Exception {
     // Given metrics are enabled
     // When
-    final Long workflowInstanceKey = startDemoWorkflowInstance();
-    // we call UPDATE_VARIABLE operation on instance
-    postUpdateVariableOperation(workflowInstanceKey, "a", "\"newValue\"");
-
-    executeOneBatch();
-    elasticsearchTestRule.processAllRecordsAndWait(operationsByWorkflowInstanceAreCompleted, workflowInstanceKey);
+    operateTester
+      .deployWorkflow("demoProcess_v_2.bpmn").waitUntil().workflowIsDeployed()
+      .and()
+      .startWorkflowInstance("demoProcess").waitUntil().workflowInstanceIsStarted()
+      .and()
+      .updateVariableOperation("a","\"newValue\"").waitUntil().operationIsCompleted();
     // Then
-    assertThatMetricsFrom(mockMvc,containsString("operate_commands_total{status=\"succeeded\",type=\""+OperationType.UPDATE_VARIABLE+"\",}"));
+    assertThatMetricsFrom(mockMvc,
+        containsString("operate_commands_total{status=\"succeeded\",type=\""+OperationType.UPDATE_VARIABLE+"\",}"));
   }
   
   @Test // OPE-642
@@ -131,20 +112,16 @@ public class MetricIT extends OperateZeebeIntegrationTest{
         .startEvent()
         .endEvent()
         .done();
-    deployWorkflow(startEndProcess, "startEndProcess.bpmn");
-    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), bpmnProcessId, null);
-    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
-
-    //when
-    //we call CANCEL_WORKFLOW_INSTANCE operation on instance
-    final ListViewQueryDto workflowInstanceQuery = createAllQuery();
-    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
-    postBatchOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
-
-    //and execute the operation
-    executeOneBatch();
+    
+    operateTester
+      .deployWorkflow(startEndProcess, "startEndProcess.bpmn")
+      .and()
+      .startWorkflowInstance(bpmnProcessId).waitUntil().workflowInstanceIsCompleted()
+      .and()
+      .cancelWorkflowInstanceOperation().waitUntil().operationIsCompleted();
     // Then
-    assertThatMetricsFrom(mockMvc,containsString("operate_commands_total{status=\"failed\",type=\""+OperationType.CANCEL_WORKFLOW_INSTANCE+"\",}"));
+    assertThatMetricsFrom(mockMvc,
+        containsString("operate_commands_total{status=\"failed\",type=\""+OperationType.CANCEL_WORKFLOW_INSTANCE+"\",}"));
   }
   
 }

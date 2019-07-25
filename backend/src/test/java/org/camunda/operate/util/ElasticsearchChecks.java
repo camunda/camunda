@@ -326,7 +326,7 @@ public class ElasticsearchChecks {
    * Checks whether all workflowInstances from given workflowInstanceKeys (List<Long>) are finished
    * @return
    */
-  @Bean(name = "workflowInstancesAreFinished")
+  @Bean(name = "workflowInstancesAreFinishedCheck")
   public Predicate<Object[]> getWorkflowInstancesAreFinishedCheck() {
     return objects -> {
       assertThat(objects).hasSize(1);
@@ -344,7 +344,7 @@ public class ElasticsearchChecks {
    * Checks whether all workflowInstances from given workflowInstanceKeys (List<Long>) are started
    * @return
    */
-  @Bean(name = "workflowInstancesAreStarted")
+  @Bean(name = "workflowInstancesAreStartedCheck")
   public Predicate<Object[]> getWorkflowInstancesAreStartedCheck() {
     return objects -> {
       assertThat(objects).hasSize(1);
@@ -366,7 +366,7 @@ public class ElasticsearchChecks {
    * Checks whether all operations for given workflowInstanceKey (Long) are completed
    * @return
    */
-  @Bean(name = "operationsByWorkflowInstanceAreCompleted")
+  @Bean(name = "operationsByWorkflowInstanceAreCompletedCheck")
   public Predicate<Object[]> getOperationsByWorkflowInstanceAreCompleted() {
     return objects -> {
       assertThat(objects).hasSize(1);

@@ -54,13 +54,11 @@ public class OperationExecutorIT extends OperateIntegrationTest {
 
   @Autowired
   private OperationReader operationReader;
-
-  private OffsetDateTime testStartTime;
   private OffsetDateTime approxLockExpirationTime;
 
   @Before
-  public void init() {
-    testStartTime = OffsetDateTime.now();
+  public void before() {
+    super.before();
     approxLockExpirationTime = testStartTime.plus(operateProperties.getOperationExecutor().getLockTimeout(), ChronoUnit.MILLIS);
   }
 

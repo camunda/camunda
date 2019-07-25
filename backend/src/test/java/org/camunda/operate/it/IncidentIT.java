@@ -5,39 +5,24 @@
  */
 package org.camunda.operate.it;
 
-import io.zeebe.protocol.record.value.ErrorType;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+
 import java.util.Optional;
-import java.util.function.Predicate;
 
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.rest.dto.incidents.IncidentDto;
 import org.camunda.operate.rest.dto.incidents.IncidentResponseDto;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
-import org.junit.Before;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.web.servlet.MvcResult;
-import com.fasterxml.jackson.core.type.TypeReference;
-import io.zeebe.client.ZeebeClient;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import com.fasterxml.jackson.core.type.TypeReference;
+
+import io.zeebe.protocol.record.value.ErrorType;
 
 public class IncidentIT extends OperateZeebeIntegrationTest {
-
-  @Autowired
-  @Qualifier("incidentsAreActiveCheck")
-  private Predicate<Object[]> incidentsAreActiveCheck;
-
-  private ZeebeClient zeebeClient;
-
-  @Before
-  public void init() {
-    super.before();
-    zeebeClient = super.getClient();
-  }
 
   @Test
   public void testIncidentsAreReturned() throws Exception {
