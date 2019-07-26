@@ -25,7 +25,7 @@
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/
     </nexus.release.repository>
 
-    <version.netty>4.1.37.Final</version.netty>
+    <version.netty>4.1.38.Final</version.netty>
   </properties>
 
   <dependencyManagement>
