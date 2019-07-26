@@ -15,8 +15,10 @@
  */
 package io.zeebe.client.impl;
 
+import static io.zeebe.client.ClientProperties.CA_CERTIFICATE_PATH;
 import static io.zeebe.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE;
 import static io.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
+import static io.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
@@ -35,7 +37,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   private Duration defaultJobPollInterval = Duration.ofMillis(100);
   private Duration defaultMessageTimeToLive = Duration.ofHours(1);
   private Duration defaultRequestTimeout = Duration.ofSeconds(20);
-  private boolean useSecureConnection = false;
+  private boolean usePlaintextConnection = false;
   private String certificatePath;
 
   @Override
@@ -79,8 +81,8 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public boolean isSecureConnectionEnabled() {
-    return useSecureConnection;
+  public boolean isPlaintextConnectionEnabled() {
+    return usePlaintextConnection;
   }
 
   @Override
@@ -123,6 +125,12 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     if (properties.containsKey(DEFAULT_REQUEST_TIMEOUT)) {
       defaultRequestTimeout(
           Duration.ofMillis(Long.parseLong(properties.getProperty(DEFAULT_REQUEST_TIMEOUT))));
+    }
+    if (properties.containsKey(USE_PLAINTEXT_CONNECTION)) {
+      usePlaintext();
+    }
+    if (properties.containsKey(CA_CERTIFICATE_PATH)) {
+      caCertificatePath(properties.getProperty(CA_CERTIFICATE_PATH));
     }
 
     return this;
@@ -177,8 +185,8 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder useSecureConnection() {
-    this.useSecureConnection = true;
+  public ZeebeClientBuilder usePlaintext() {
+    this.usePlaintextConnection = true;
     return this;
   }
 

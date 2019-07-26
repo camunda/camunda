@@ -36,9 +36,9 @@ type ZBClientImpl struct {
 }
 
 type ZBClientConfig struct {
-	GatewayAddress      string
-	UseSecureConnection bool
-	CaCertificatePath   string
+	GatewayAddress         string
+	UsePlaintextConnection bool
+	CaCertificatePath      string
 }
 
 type ZBError string
@@ -109,7 +109,7 @@ func (client *ZBClientImpl) Close() error {
 func NewZBClient(config *ZBClientConfig) (ZBClient, error) {
 	var opts []grpc.DialOption
 
-	if config.UseSecureConnection {
+	if !config.UsePlaintextConnection {
 		var creds credentials.TransportCredentials
 
 		if config.CaCertificatePath == "" {

@@ -102,6 +102,11 @@ public class ClusteringRule extends ExternalResource {
   }
 
   public ClusteringRule(
+      final int partitionCount, final int replicationFactor, final int clusterSize) {
+    this(partitionCount, replicationFactor, clusterSize, cfg -> {});
+  }
+
+  public ClusteringRule(
       final int partitionCount,
       final int replicationFactor,
       final int clusterSize,
@@ -112,18 +117,7 @@ public class ClusteringRule extends ExternalResource {
         clusterSize,
         configurator,
         gatewayCfg -> {},
-        clientCfg -> {});
-  }
-
-  public ClusteringRule(
-      final int partitionCount, final int replicationFactor, final int clusterSize) {
-    this(
-        partitionCount,
-        replicationFactor,
-        clusterSize,
-        cfg -> {},
-        gatewayCfg -> {},
-        clientCfg -> {});
+        ZeebeClientBuilder::usePlaintext);
   }
 
   public ClusteringRule(

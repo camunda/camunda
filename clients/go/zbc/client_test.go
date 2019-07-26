@@ -38,9 +38,8 @@ func TestNewZBClientWithTls(t *testing.T) {
 
 	parts := strings.Split(lis.Addr().String(), ":")
 	client, e := NewZBClient(&ZBClientConfig{
-		GatewayAddress:      fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		UseSecureConnection: true,
-		CaCertificatePath:   "../resources/ca.cert.pem",
+		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		CaCertificatePath: "../resources/ca.cert.pem",
 	})
 
 	require.NoError(t, e)
@@ -67,9 +66,9 @@ func TestNewZBClientWithoutTls(t *testing.T) {
 
 	parts := strings.Split(lis.Addr().String(), ":")
 	client, e := NewZBClient(&ZBClientConfig{
-		GatewayAddress:      fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		UseSecureConnection: false,
-		CaCertificatePath:   "../resources/ca.cert.pem",
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		UsePlaintextConnection: true,
+		CaCertificatePath:      "../resources/ca.cert.pem",
 	})
 
 	require.NoError(t, e)
@@ -94,8 +93,7 @@ func TestNewZBClientWithDefaultRootCa(t *testing.T) {
 
 	parts := strings.Split(lis.Addr().String(), ":")
 	client, e := NewZBClient(&ZBClientConfig{
-		GatewayAddress:      fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		UseSecureConnection: true,
+		GatewayAddress: fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 	})
 
 	require.NoError(t, e)
@@ -120,9 +118,8 @@ func TestNewZBClientWithPathToNonExistingFile(t *testing.T) {
 
 	parts := strings.Split(lis.Addr().String(), ":")
 	_, e := NewZBClient(&ZBClientConfig{
-		GatewayAddress:      fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		UseSecureConnection: true,
-		CaCertificatePath:   "../resources/non.existing",
+		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		CaCertificatePath: "../resources/non.existing",
 	})
 
 	require.Equal(t, NonExistingFileError, e)

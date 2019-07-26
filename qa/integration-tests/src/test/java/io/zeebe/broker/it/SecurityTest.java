@@ -45,13 +45,11 @@ public class SecurityTest {
   }
 
   private ZeebeClientBuilder configureClientForTls(final ZeebeClientBuilder clientBuilder) {
-    return clientBuilder
-        .useSecureConnection()
-        .caCertificatePath(
-            io.zeebe.broker.it.clustering.DeploymentClusteredTest.class
-                .getClassLoader()
-                .getResource("security/ca.cert.pem")
-                .getPath());
+    return clientBuilder.caCertificatePath(
+        io.zeebe.broker.it.clustering.DeploymentClusteredTest.class
+            .getClassLoader()
+            .getResource("security/ca.cert.pem")
+            .getPath());
   }
 
   private void configureGatewayForTls(final GatewayCfg gatewayCfg) {
