@@ -17,7 +17,6 @@ import org.camunda.operate.zeebe.operation.CancelWorkflowInstanceHandler;
 import org.camunda.operate.zeebe.operation.ResolveIncidentHandler;
 import org.camunda.operate.zeebe.operation.UpdateVariableHandler;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 
-@Ignore("Does not finish on ci server")
 public class MetricIT extends OperateZeebeIntegrationTest{
   
   @Autowired
