@@ -50,25 +50,6 @@ public class ListViewQueryDto {
   private List<String> excludeIds;
 
   private VariablesQueryDto variable;
-  
-  public static ListViewQueryDto all() {
-    ListViewQueryDto query = new ListViewQueryDto();
-    query.setRunning(true);
-    query.setActive(true);
-    query.setIncidents(true);
-    query.setFinished(true);
-    query.setCanceled(true);
-    query.setCompleted(true);
-    return query;
-  }
-  
-  public static ListViewQueryDto allRunning() {
-    ListViewQueryDto query = new ListViewQueryDto();
-    query.setRunning(true);
-    query.setActive(true);
-    query.setIncidents(true);
-    return query;
-  }
 
   public ListViewQueryDto() {
   }

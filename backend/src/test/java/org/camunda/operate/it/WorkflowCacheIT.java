@@ -14,28 +14,17 @@ import static org.mockito.Mockito.verify;
 import java.util.LinkedHashMap;
 
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
+import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 
 public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
 
   @SpyBean
   private WorkflowCache workflowCache;
-  
-  @Autowired
-  OperateTester tester;
-  
-  @Before
-  @Override
-  public void before() {
-    super.before();
-    tester.setZeebeClient(getClient());
-  }
 
   @After
   public void after() {
@@ -55,13 +44,12 @@ public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  public void testWorkflowVersionAndNameReturnedAndReused() {    
-    Long workflowKey1 = tester
-          .deployWorkflow("demoProcess_v_1.bpmn").waitUntil().workflowIsDeployed()
-          .and().getWorkflowKey();
-    
-    tester
-        .deployWorkflow("processWithGateway.bpmn").waitUntil().workflowIsDeployed();
+  public void testWorkflowVersionAndNameReturnedAndReused() {
+    Long workflowKey1 = ZeebeTestUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
+    Long workflowKey2 = ZeebeTestUtil.deployWorkflow(zeebeClient, "processWithGateway.bpmn");
+
+    elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowKey1);
+    elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowKey2);
 
     String demoProcessName = workflowCache.getWorkflowNameOrDefaultValue(workflowKey1,null);
     assertThat(demoProcessName).isNotNull();
