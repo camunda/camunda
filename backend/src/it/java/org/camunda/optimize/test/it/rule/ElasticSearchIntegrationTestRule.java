@@ -60,7 +60,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_ID;
@@ -80,10 +79,9 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     Collections.singletonMap("flat_settings", "true")
   );
 
-  private static ObjectMapper objectMapper = createObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
+  private static final Map<String, OptimizeElasticsearchClient> CLIENT_CACHE = new HashMap<>();
 
-  private ConfigurationService configurationService;
-  private OptimizeIndexNameService indexNameService;
   private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
 
   private boolean haveToClean = true;
@@ -98,13 +96,26 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   public ElasticSearchIntegrationTestRule(final String customIndexPrefix) {
     this.customIndexPrefix = customIndexPrefix;
+    initEsClient();
+  }
+
+  private void initEsClient() {
+    if (CLIENT_CACHE.containsKey(customIndexPrefix)) {
+      prefixAwareRestHighLevelClient = CLIENT_CACHE.get(customIndexPrefix);
+    } else {
+      final ConfigurationService configurationService = createConfigurationService();
+      final OptimizeIndexNameService indexNameService = new OptimizeIndexNameService(configurationService);
+      prefixAwareRestHighLevelClient = new OptimizeElasticsearchClient(
+        ElasticsearchHighLevelRestClientBuilder.build(configurationService),
+        indexNameService
+      );
+      disableAutomaticIndexCreation();
+      CLIENT_CACHE.put(customIndexPrefix, prefixAwareRestHighLevelClient);
+    }
   }
 
   @Override
   protected void starting(Description description) {
-    initConfigurationService();
-    initEsClient();
-    disableAutomaticIndexCreation();
     if (haveToClean) {
       log.info("Cleaning elasticsearch...");
       this.cleanAndVerify();
@@ -112,17 +123,8 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     }
   }
 
-  @SneakyThrows
-  @Override
-  protected void finished(final Description description) {
-    if (prefixAwareRestHighLevelClient != null) {
-      prefixAwareRestHighLevelClient.close();
-      prefixAwareRestHighLevelClient = null;
-    }
-  }
-
   public ObjectMapper getObjectMapper() {
-    return objectMapper;
+    return OBJECT_MAPPER;
   }
 
   public void refreshAllOptimizeIndices() {
@@ -153,7 +155,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
    */
   public void addEntryToElasticsearch(String type, String id, Object entry) {
     try {
-      String json = objectMapper.writeValueAsString(entry);
+      String json = OBJECT_MAPPER.writeValueAsString(entry);
       IndexRequest request = new IndexRequest(type, type, id)
         .source(json, XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE); // necessary because otherwise I can't search for the entry immediately
@@ -172,7 +174,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     );
 
     String content = prefixAwareRestHighLevelClient.get(getRequest, RequestOptions.DEFAULT).getSourceAsString();
-    TimestampBasedImportIndexDto timestampBasedImportIndexDto = objectMapper.readValue(
+    TimestampBasedImportIndexDto timestampBasedImportIndexDto = OBJECT_MAPPER.readValue(
       content,
       TimestampBasedImportIndexDto.class
     );
@@ -187,7 +189,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
         .build();
 
     UpdateSettingsRequest request = new UpdateSettingsRequest(
-      indexNameService.getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE)
+      getIndexNameService().getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE)
     );
     request.settings(settings);
 
@@ -327,12 +329,16 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   public void deleteIndexOfType(final TypeMappingCreator type) {
     try {
       getOptimizeElasticClient().getHighLevelClient().indices().delete(
-        new DeleteIndexRequest(indexNameService.getVersionedOptimizeIndexNameForTypeMapping(type)),
+        new DeleteIndexRequest(getIndexNameService().getVersionedOptimizeIndexNameForTypeMapping(type)),
         RequestOptions.DEFAULT
       );
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not delete all Optimize data", e);
     }
+  }
+
+  private OptimizeIndexNameService getIndexNameService() {
+    return getOptimizeElasticClient().getIndexNameService();
   }
 
   public void cleanAndVerify() {
@@ -344,27 +350,14 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     haveToClean = false;
   }
 
-  private void initEsClient() {
-    if (indexNameService == null) {
-      indexNameService = new OptimizeIndexNameService(configurationService);
+  private ConfigurationService createConfigurationService() {
+    final ConfigurationService configurationService = new ConfigurationService(
+      new String[]{"service-config.yaml", "it/it-config.yaml"}
+    );
+    if (customIndexPrefix != null) {
+      configurationService.setEsIndexPrefix(configurationService.getEsIndexPrefix() + customIndexPrefix);
     }
-    if (prefixAwareRestHighLevelClient == null) {
-      prefixAwareRestHighLevelClient = new OptimizeElasticsearchClient(
-        ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-        indexNameService
-      );
-    }
-  }
-
-  private void initConfigurationService() {
-    if (configurationService == null) {
-      configurationService = new ConfigurationService(new String[]{"service-config.yaml", "it/it-config.yaml"});
-      if (customIndexPrefix != null) {
-        configurationService.setEsIndexPrefix(
-          configurationService.getEsIndexPrefix() + Optional.ofNullable(customIndexPrefix).orElse("")
-        );
-      }
-    }
+    return configurationService;
   }
 
   private static ObjectMapper createObjectMapper() {
@@ -434,7 +427,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
         .query(QueryBuilders.matchAllQuery());
       SearchRequest searchRequest = new SearchRequest();
-      searchRequest.indices(indexNameService.getIndexPrefix() + "*");
+      searchRequest.indices(getIndexNameService().getIndexPrefix() + "*");
       searchRequest.source(searchSourceBuilder);
       SearchResponse searchResponse = getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
 
