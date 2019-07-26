@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableNameDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
@@ -69,7 +69,7 @@ public class ProcessVariableReader {
   private final OptimizeElasticsearchClient esClient;
   private final ProcessDefinitionReader processDefinitionReader;
 
-  public List<VariableNameDto> getVariableNames(ProcessVariableNameRequestDto requestDto) {
+  public List<ProcessVariableNameResponseDto> getVariableNames(ProcessVariableNameRequestDto requestDto) {
     log.debug(
       "Fetching variable names for process definition with key [{}] and versions [{}]",
       requestDto.getProcessDefinitionKey(),
@@ -109,21 +109,21 @@ public class ProcessVariableReader {
     return extractVariableNames(aggregations);
   }
 
-  private List<VariableNameDto> extractVariableNames(Aggregations aggregations) {
-    List<VariableNameDto> getVariablesResponseList = new ArrayList<>();
+  private List<ProcessVariableNameResponseDto> extractVariableNames(Aggregations aggregations) {
+    List<ProcessVariableNameResponseDto> getVariablesResponseList = new ArrayList<>();
     for (String variableFieldLabel : ProcessVariableHelper.getAllVariableTypeFieldLabels()) {
       getVariablesResponseList.addAll(extractVariableNamesFromType(aggregations, variableFieldLabel));
     }
     return getVariablesResponseList;
   }
 
-  private List<VariableNameDto> extractVariableNamesFromType(Aggregations aggregations, String variableFieldLabel) {
+  private List<ProcessVariableNameResponseDto> extractVariableNamesFromType(Aggregations aggregations, String variableFieldLabel) {
     Nested variables = aggregations.get(variableFieldLabel);
     Filter filteredVariables = variables.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     Terms nameTerms = filteredVariables.getAggregations().get(NAMES_AGGREGATION);
-    List<VariableNameDto> responseDtoList = new ArrayList<>();
+    List<ProcessVariableNameResponseDto> responseDtoList = new ArrayList<>();
     for (Terms.Bucket nameBucket : nameTerms.getBuckets()) {
-      VariableNameDto response = new VariableNameDto();
+      ProcessVariableNameResponseDto response = new ProcessVariableNameResponseDto();
       response.setName(nameBucket.getKeyAsString());
       response.setType(ProcessVariableHelper.fieldLabelToVariableType(variableFieldLabel));
       responseDtoList.add(response);

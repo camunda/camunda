@@ -7,7 +7,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableNameDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -58,11 +58,11 @@ public class ProcessVariableRestServiceIT {
     variableRequestDto.setProcessDefinitionVersion("aVersion");
 
     // when
-    List<VariableNameDto> responseList =
+    List<ProcessVariableNameResponseDto> responseList =
         embeddedOptimizeRule
             .getRequestExecutor()
             .buildProcessVariableNamesRequest(variableRequestDto)
-            .executeAndReturnList(VariableNameDto.class, 200);
+            .executeAndReturnList(ProcessVariableNameResponseDto.class, 200);
 
     // then the status code is not authorized
     assertThat(responseList.isEmpty(), is(true));

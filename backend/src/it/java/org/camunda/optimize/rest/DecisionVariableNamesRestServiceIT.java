@@ -6,6 +6,8 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.OptimizeRequestExecutor;
+import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -18,23 +20,21 @@ import org.junit.runners.Parameterized;
 import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 
-import static org.camunda.optimize.rest.DecisionVariablesRestService.DECISION_DEFINITION_KEY;
-import static org.camunda.optimize.rest.DecisionVariablesRestService.DECISION_DEFINITION_VERSION;
-import static org.camunda.optimize.rest.DecisionVariablesRestService.VARIABLE_ID;
-import static org.camunda.optimize.rest.DecisionVariablesRestService.VARIABLE_TYPE;
+import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(Parameterized.class)
-public class DecisionVariablesRestServiceIT {
+public class DecisionVariableNamesRestServiceIT {
 
   private static final String TEST_VARIANT_INPUTS = "inputs";
   private static final String TEST_VARIANT_OUTPUTS = "outputs";
+  private static final String DECISION_KEY = "decisionKey";
+  private static final String DECISION_VERSION = "1";
 
   @Parameterized.Parameters
   public static Collection<Object[]> data() {
@@ -47,19 +47,19 @@ public class DecisionVariablesRestServiceIT {
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
-  private Function<Map<String, Object>, OptimizeRequestExecutor> getVariablesExecutorFunction;
+  private Function<DecisionVariableNameRequestDto, OptimizeRequestExecutor> getVariablesExecutorFunction;
 
   @Rule
   public RuleChain chain = RuleChain
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
-  public DecisionVariablesRestServiceIT(String inputsOrOutputs) {
+  public DecisionVariableNamesRestServiceIT(String inputsOrOutputs) {
     switch (inputsOrOutputs) {
       case TEST_VARIANT_INPUTS:
-        getVariablesExecutorFunction = this::getInputVariableValueResponse;
+        getVariablesExecutorFunction = this::getInputVariableNameResponse;
         break;
       case TEST_VARIANT_OUTPUTS:
-        getVariablesExecutorFunction = this::getOutputVariableValueResponse;
+        getVariablesExecutorFunction = this::getOutputVariableNameResponse;
         break;
       default:
         throw new RuntimeException("unsupported type " + inputsOrOutputs);
@@ -80,52 +80,37 @@ public class DecisionVariablesRestServiceIT {
   @Test
   public void getVariableValues() {
     // given
-    Map<String, Object> queryParams = generateDefaultParameterMap();
+    deployDefinition();
+    DecisionVariableNameRequestDto request = generateDefaultVariableRequest();
 
     // when
-    List responseList = getVariablesExecutorFunction.apply(queryParams)
+    List responseList = getVariablesExecutorFunction.apply(request)
       .executeAndReturnList(String.class, 200);
 
     // then
     assertThat(responseList.isEmpty(), is(true));
   }
 
-  @Test
-  public void missingVariableIdQueryParamThrowsError() {
-    // given
-    Map<String, Object> queryParams = generateDefaultParameterMap();
-    queryParams.remove(VARIABLE_ID);
-
-    // when
-    Response response = getVariablesExecutorFunction.apply(queryParams)
-      .execute();
-
-    // then
-    assertThat(response.getStatus(), is(500));
-  }
-
-  @Test
-  public void missingVariableTypeQueryParamThrowsError() {
-    // given
-    Map<String, Object> queryParams = generateDefaultParameterMap();
-    queryParams.remove(VARIABLE_TYPE);
-
-    // when
-    Response response = getVariablesExecutorFunction.apply(queryParams)
-      .execute();
-
-    // then
-    assertThat(response.getStatus(), is(500));
+  private void deployDefinition() {
+    DecisionDefinitionOptimizeDto definition = new DecisionDefinitionOptimizeDto();
+    definition.setId("fooId");
+    definition.setName("fooName");
+    definition.setKey(DECISION_KEY);
+    definition.setVersion(DECISION_VERSION);
+    definition.setTenantId(null);
+    definition.setDmn10Xml("someXml");
+    definition.setEngine(DEFAULT_ENGINE_ALIAS);
+    elasticSearchRule.addEntryToElasticsearch(DECISION_DEFINITION_TYPE, definition.getId(), definition);
   }
 
   @Test
   public void missingDecisionDefinitionKeyQueryParamThrowsError() {
     // given
-    Map<String, Object> queryParams = generateDefaultParameterMap();
-    queryParams.remove(DECISION_DEFINITION_KEY);
+    DecisionVariableNameRequestDto request = generateDefaultVariableRequest();
+    request.setDecisionDefinitionKey(null);
 
     // when
-    Response response = getVariablesExecutorFunction.apply(queryParams)
+    Response response = getVariablesExecutorFunction.apply(request)
       .execute();
 
     // then
@@ -135,38 +120,34 @@ public class DecisionVariablesRestServiceIT {
   @Test
   public void missingDecisionDefinitionVersionQueryParamThrowsError() {
     // given
-    Map<String, Object> queryParams = generateDefaultParameterMap();
-    queryParams.remove(DECISION_DEFINITION_VERSION);
+    DecisionVariableNameRequestDto request = generateDefaultVariableRequest();
+    request.setDecisionDefinitionVersions(null);
 
     // when
-    Response response = getVariablesExecutorFunction.apply(queryParams)
+    Response response = getVariablesExecutorFunction.apply(request)
       .execute();
 
     // then
     assertThat(response.getStatus(), is(500));
   }
 
-  private Map<String, Object> generateDefaultParameterMap() {
-    Map<String, Object> queryParams = new HashMap<>();
-    queryParams.put(VARIABLE_ID, "foo");
-    queryParams.put(VARIABLE_TYPE, "string");
-    queryParams.put(DECISION_DEFINITION_KEY, "aKey");
-    queryParams.put(DECISION_DEFINITION_VERSION, "aVersion");
-    return queryParams;
+  private DecisionVariableNameRequestDto generateDefaultVariableRequest() {
+    DecisionVariableNameRequestDto requestDto = new DecisionVariableNameRequestDto();
+    requestDto.setDecisionDefinitionKey(DECISION_KEY);
+    requestDto.setDecisionDefinitionVersion(DECISION_VERSION);
+    return requestDto;
   }
 
-  private OptimizeRequestExecutor getInputVariableValueResponse(Map<String, Object> queryParams) {
+  private OptimizeRequestExecutor getInputVariableNameResponse(DecisionVariableNameRequestDto requestDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildGetDecisionInputVariableValuesRequest()
-      .addQueryParams(queryParams);
+      .buildDecisionInputVariableNamesRequest(requestDto);
   }
 
-  private OptimizeRequestExecutor getOutputVariableValueResponse(Map<String, Object> queryParams) {
+  private OptimizeRequestExecutor getOutputVariableNameResponse(DecisionVariableNameRequestDto requestDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildGetDecisionOutputVariableValuesRequest()
-      .addQueryParams(queryParams);
+      .buildDecisionOutputVariableNamesRequest(requestDto);
   }
 
 }

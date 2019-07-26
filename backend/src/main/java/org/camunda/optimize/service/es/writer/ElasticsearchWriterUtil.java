@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es.writer;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -39,6 +41,20 @@ public class ElasticsearchWriterUtil {
         throw new OptimizeRuntimeException("Could not read field from entity: " + fieldName, e);
       }
     }
+
+    return createDefaultScript(ElasticsearchWriterUtil.createUpdateFieldsScript(params.keySet()), params);
+  }
+
+  static Script createFieldUpdateScript(final Set<String> fields,
+                                        final Object entityDto,
+                                        final ObjectMapper objectMapper) {
+    Map<String, Object> entityAsMap =
+      objectMapper.convertValue(entityDto, new TypeReference<Map<String, Object>>() {});
+
+    Map<String, Object> params = entityAsMap.entrySet()
+      .stream()
+      .filter(e -> fields.contains(e.getKey()))
+      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
     return createDefaultScript(ElasticsearchWriterUtil.createUpdateFieldsScript(params.keySet()), params);
   }

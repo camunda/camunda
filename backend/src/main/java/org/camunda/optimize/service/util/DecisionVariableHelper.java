@@ -18,7 +18,9 @@ import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.M
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.MULTIVALUE_FIELD_LONG;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.OUTPUTS;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.VARIABLE_CLAUSE_ID;
+import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.VARIABLE_CLAUSE_NAME;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.VARIABLE_VALUE;
+import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.VARIABLE_VALUE_TYPE;
 
 public class DecisionVariableHelper {
   private static final List<VariableType> MULTIVALUE_TYPE_FIELDS = Collections.unmodifiableList(Arrays.asList(
@@ -76,6 +78,14 @@ public class DecisionVariableHelper {
 
   public static String getVariableIdField(final String variablePath) {
     return variablePath + "." + VARIABLE_CLAUSE_ID;
+  }
+
+  public static String getVariableNameField(final String variablePath) {
+    return variablePath + "." + VARIABLE_CLAUSE_NAME;
+  }
+
+  public static String getVariableTypeField(final String variablePath) {
+    return variablePath + "." + VARIABLE_VALUE_TYPE;
   }
 
 }

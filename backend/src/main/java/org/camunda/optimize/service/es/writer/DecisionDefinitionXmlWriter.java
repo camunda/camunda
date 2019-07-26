@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.writer;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 import lombok.AllArgsConstructor;
@@ -25,6 +26,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_XML;
+import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.INPUT_VARIABLE_NAMES;
+import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.OUTPUT_VARIABLE_NAMES;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
@@ -32,7 +35,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_R
 @Component
 @Slf4j
 public class DecisionDefinitionXmlWriter {
-  private static final Set<String> FIELDS_TO_UPDATE = ImmutableSet.of(DECISION_DEFINITION_XML);
+  private static final Set<String> FIELDS_TO_UPDATE =
+    ImmutableSet.of(DECISION_DEFINITION_XML, INPUT_VARIABLE_NAMES, OUTPUT_VARIABLE_NAMES);
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
@@ -66,9 +70,10 @@ public class DecisionDefinitionXmlWriter {
 
   private void addImportProcessDefinitionXmlRequest(final BulkRequest bulkRequest,
                                                     final DecisionDefinitionOptimizeDto decisionDefinitionDto) {
-    final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(
+    final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
       FIELDS_TO_UPDATE,
-      decisionDefinitionDto
+      decisionDefinitionDto,
+      objectMapper
     );
     UpdateRequest updateRequest =
       new UpdateRequest(DECISION_DEFINITION_TYPE, DECISION_DEFINITION_TYPE, decisionDefinitionDto.getId())

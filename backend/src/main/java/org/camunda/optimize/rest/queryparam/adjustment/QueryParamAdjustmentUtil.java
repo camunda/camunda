@@ -31,7 +31,6 @@ public class QueryParamAdjustmentUtil {
 
   private static final String LAST_MODIFIED = "lastModified";
   private static final String NAME = "name";
-  private static final String TYPE = "type";
   private static final String CREATED = "created";
 
   static {
@@ -91,21 +90,6 @@ public class QueryParamAdjustmentUtil {
     resultList = adjustedResultList.adjustList();
 
     return resultList;
-  }
-
-  public static List<String> adjustVariableValuesToQueryParameters(
-    List<String> variableValues,
-    MultivaluedMap<String, String> queryParameters
-  ) {
-    QueryParameterAdjustedResultList<String> adjustedResultList =
-      new RestrictResultListSizeDecorator<>(
-        new OffsetResultListDecorator<>(
-          new SortOrderListDecorator<>(
-            new OriginalResultList<>(variableValues, queryParameters)
-          )
-        )
-      );
-    return adjustedResultList.adjustList();
   }
 
   public static List<ResolvedCollectionDefinitionDto> adjustCollectionResultsToQueryParameters(

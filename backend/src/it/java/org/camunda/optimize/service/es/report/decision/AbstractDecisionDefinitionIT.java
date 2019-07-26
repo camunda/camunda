@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static java.util.stream.Collectors.toMap;
-import static org.camunda.optimize.test.util.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 
 public abstract class AbstractDecisionDefinitionIT {
   protected static final String OUTPUT_CLASSIFICATION_ID = "clause3";

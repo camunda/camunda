@@ -27,6 +27,8 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
@@ -602,15 +604,31 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetDecisionInputVariableValuesRequest() {
+  public OptimizeRequestExecutor buildDecisionInputVariableValuesRequest(DecisionVariableValueRequestDto requestDto) {
     this.path = "decision-variables/inputs/values";
-    this.requestType = GET;
+    this.requestType = POST;
+    this.body = getBody(requestDto);
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetDecisionOutputVariableValuesRequest() {
+  public OptimizeRequestExecutor buildDecisionInputVariableNamesRequest(DecisionVariableNameRequestDto variableRequestDto) {
+    this.path = "decision-variables/inputs/names";
+    this.requestType = POST;
+    this.body = getBody(variableRequestDto);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildDecisionOutputVariableValuesRequest(DecisionVariableValueRequestDto requestDto) {
     this.path = "decision-variables/outputs/values";
-    this.requestType = GET;
+    this.requestType = POST;
+    this.body = getBody(requestDto);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildDecisionOutputVariableNamesRequest(DecisionVariableNameRequestDto variableRequestDto) {
+    this.path = "decision-variables/outputs/names";
+    this.requestType = POST;
+    this.body = getBody(variableRequestDto);
     return this;
   }
 

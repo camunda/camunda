@@ -3,10 +3,11 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.retrieval;
+package org.camunda.optimize.service.es.retrieval.variable;
 
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -19,17 +20,9 @@ import org.junit.rules.RuleChain;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.rest.DecisionVariablesRestService.DECISION_DEFINITION_KEY;
-import static org.camunda.optimize.rest.DecisionVariablesRestService.DECISION_DEFINITION_VERSION;
-import static org.camunda.optimize.rest.DecisionVariablesRestService.NUM_RESULTS;
-import static org.camunda.optimize.rest.DecisionVariablesRestService.RESULT_OFFSET;
-import static org.camunda.optimize.rest.DecisionVariablesRestService.VALUE_FILTER;
-import static org.camunda.optimize.rest.DecisionVariablesRestService.VARIABLE_ID;
-import static org.camunda.optimize.rest.DecisionVariablesRestService.VARIABLE_TYPE;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -58,10 +51,10 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.DOUBLE.getId()
+      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.DOUBLE
     );
     List<String> categoryInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING.getId()
+      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING
     );
 
     // then
@@ -94,7 +87,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     // when
 
     List<String> auditOutputVariableValues = getOutputVariableValues(
-      decisionDefinitionDto, OUTPUT_AUDIT_ID, VariableType.BOOLEAN.getId(), null
+      decisionDefinitionDto, OUTPUT_AUDIT_ID, VariableType.BOOLEAN, null
     );
 
     // then
@@ -120,7 +113,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.DOUBLE.getId()
+      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.DOUBLE
     );
 
     // then
@@ -141,10 +134,10 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.DOUBLE.getId()
+      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.DOUBLE
     );
     List<String> categoryInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING.getId()
+      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING
     );
 
     // then
@@ -171,7 +164,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto1, INPUT_AMOUNT_ID, VariableType.DOUBLE.getId()
+      decisionDefinitionDto1, INPUT_AMOUNT_ID, VariableType.DOUBLE
     );
 
     // then
@@ -195,7 +188,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto1, INPUT_AMOUNT_ID, VariableType.DOUBLE.getId()
+      decisionDefinitionDto1, INPUT_AMOUNT_ID, VariableType.DOUBLE
     );
 
     // then
@@ -219,7 +212,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto1.getKey(), "ALL", INPUT_AMOUNT_ID, VariableType.DOUBLE.getId()
+      decisionDefinitionDto1.getKey(), "ALL", INPUT_AMOUNT_ID, VariableType.DOUBLE
     );
 
     // then
@@ -241,7 +234,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.DOUBLE.getId(), null, 2, null
+      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.DOUBLE, null, 2, 0
     );
 
     // then
@@ -263,7 +256,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.DOUBLE.getId(), null, 10, 1
+      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.DOUBLE, null, 10, 1
     );
 
     // then
@@ -285,7 +278,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.DOUBLE.getId(), null, 1, 1
+      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.DOUBLE, null, 1, 1
     );
 
     // then
@@ -307,7 +300,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING.getId(), "Tra"
+      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING, "Tra"
     );
 
     // then
@@ -330,7 +323,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING.getId(), "ave"
+      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING, "ave"
     );
 
     // then
@@ -357,7 +350,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> classificationOutputVariableValues = getOutputVariableValues(
-      decisionDefinitionDto, OUTPUT_CLASSIFICATION_ID, VariableType.STRING.getId(), "ex"
+      decisionDefinitionDto, OUTPUT_CLASSIFICATION_ID, VariableType.STRING, "ex"
     );
 
     // then
@@ -380,7 +373,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING.getId(), "ave"
+      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING, "ave"
     );
 
     // then
@@ -403,7 +396,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING.getId(), "barbarbarbar"
+      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING, "barbarbarbar"
     );
 
     // then
@@ -423,7 +416,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.STRING.getId(), "20"
+      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.STRING, "20"
     );
 
     // then
@@ -441,7 +434,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING.getId(), "ave"
+      decisionDefinitionDto, INPUT_CATEGORY_ID, VariableType.STRING, "ave"
     );
 
     // then
@@ -459,7 +452,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.STRING.getId(), "ave"
+      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.STRING, "ave"
     );
 
     // then
@@ -477,7 +470,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.STRING.getId(), null
+      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.STRING, null
     );
 
     // then
@@ -495,7 +488,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
     // when
     List<String> amountInputVariableValues = getInputVariableValues(
-      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.STRING.getId(), ""
+      decisionDefinitionDto, INPUT_AMOUNT_ID, VariableType.STRING, ""
     );
 
     // then
@@ -511,7 +504,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
   private List<String> getInputVariableValues(final DecisionDefinitionEngineDto decisionDefinitionEngineDto,
                                               final String variableId,
-                                              final String variableType) {
+                                              final VariableType variableType) {
     return getInputVariableValues(
       decisionDefinitionEngineDto,
       variableId,
@@ -522,21 +515,21 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
 
   private List<String> getInputVariableValues(final DecisionDefinitionEngineDto decisionDefinitionEngineDto,
                                               final String variableId,
-                                              final String variableType,
+                                              final VariableType variableType,
                                               final String valueFilter) {
     return getInputVariableValues(
       decisionDefinitionEngineDto,
       variableId,
       variableType,
       valueFilter,
-      null,
-      null
+      Integer.MAX_VALUE,
+      0
     );
   }
 
   private List<String> getInputVariableValues(final DecisionDefinitionEngineDto decisionDefinitionEngineDto,
                                               final String variableId,
-                                              final String variableType,
+                                              final VariableType variableType,
                                               final String valueFilter,
                                               final Integer numResults,
                                               final Integer offset) {
@@ -554,21 +547,21 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
   private List<String> getInputVariableValues(final String decisionDefinitionKey,
                                               final String decisionDefinitionVersion,
                                               final String variableId,
-                                              final String variableType) {
+                                              final VariableType variableType) {
 
     return getInputVariableValues(
-      decisionDefinitionKey, decisionDefinitionVersion, variableId, variableType, null, null, null
+      decisionDefinitionKey, decisionDefinitionVersion, variableId, variableType, null, Integer.MAX_VALUE, 0
     );
   }
 
   private List<String> getInputVariableValues(final String decisionDefinitionKey,
                                               final String decisionDefinitionVersion,
                                               final String variableId,
-                                              final String variableType,
+                                              final VariableType variableType,
                                               final String valueFilter,
                                               final Integer numResults,
                                               final Integer offset) {
-    final Map<String, Object> queryParams = createQueryParamMap(
+    final DecisionVariableValueRequestDto queryParams = createVariableRequest(
       decisionDefinitionKey,
       decisionDefinitionVersion,
       variableId,
@@ -580,54 +573,47 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     return getInputVariableValues(queryParams);
   }
 
-  private Map<String, Object> createQueryParamMap(final String decisionDefinitionKey,
-                                                  final String decisionDefinitionVersion,
-                                                  final String variableId,
-                                                  final String variableType,
-                                                  final String valueFilter,
-                                                  final Integer numResults,
-                                                  final Integer offset) {
-    final Map<String, Object> queryParams = new HashMap<>();
-    queryParams.put(DECISION_DEFINITION_KEY, decisionDefinitionKey);
-    queryParams.put(DECISION_DEFINITION_VERSION, decisionDefinitionVersion);
-    queryParams.put(VARIABLE_ID, variableId);
-    queryParams.put(VARIABLE_TYPE, variableType);
-    queryParams.put(VALUE_FILTER, valueFilter);
-    queryParams.put(NUM_RESULTS, numResults);
-    queryParams.put(RESULT_OFFSET, offset);
-    return queryParams;
+  private DecisionVariableValueRequestDto createVariableRequest(final String decisionDefinitionKey,
+                                                                final String decisionDefinitionVersion,
+                                                                final String variableId,
+                                                                final VariableType variableType,
+                                                                final String valueFilter,
+                                                                final Integer numResults,
+                                                                final Integer offset) {
+    DecisionVariableValueRequestDto requestDto = new DecisionVariableValueRequestDto();
+    requestDto.setDecisionDefinitionKey(decisionDefinitionKey);
+    requestDto.setDecisionDefinitionVersion(decisionDefinitionVersion);
+    requestDto.setVariableId(variableId);
+    requestDto.setVariableType(variableType);
+    requestDto.setValueFilter(valueFilter);
+    requestDto.setResultOffset(offset);
+    requestDto.setNumResults(numResults);
+    return requestDto;
   }
 
-  private List<String> getInputVariableValues(Map<String, Object> queryParams) {
+  private List<String> getInputVariableValues(DecisionVariableValueRequestDto variableValueRequestDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildGetDecisionInputVariableValuesRequest()
-      .addQueryParams(queryParams)
+      .buildDecisionInputVariableValuesRequest(variableValueRequestDto)
       .executeAndReturnList(String.class, 200);
   }
 
   private List<String> getOutputVariableValues(final DecisionDefinitionEngineDto decisionDefinitionEngineDto,
                                                final String variableId,
-                                               final String variableType) {
-    return getOutputVariableValues(decisionDefinitionEngineDto, variableId, variableType, null);
-  }
-
-  private List<String> getOutputVariableValues(final DecisionDefinitionEngineDto decisionDefinitionEngineDto,
-                                               final String variableId,
-                                               final String variableType,
+                                               final VariableType variableType,
                                                final String valueFilter) {
+    DecisionVariableValueRequestDto variableRequest = createVariableRequest(
+      decisionDefinitionEngineDto.getKey(),
+      decisionDefinitionEngineDto.getVersionAsString(),
+      variableId,
+      variableType,
+      valueFilter,
+      Integer.MAX_VALUE,
+      0
+    );
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildGetDecisionOutputVariableValuesRequest()
-      .addQueryParams(createQueryParamMap(
-        decisionDefinitionEngineDto.getKey(),
-        String.valueOf(decisionDefinitionEngineDto.getVersion()),
-        variableId,
-        variableType,
-        valueFilter,
-        null,
-        null
-      ))
+      .buildDecisionOutputVariableValuesRequest(variableRequest)
       .executeAndReturnList(String.class, 200);
   }
 

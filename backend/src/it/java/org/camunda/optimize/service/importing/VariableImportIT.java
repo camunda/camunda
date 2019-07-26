@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableNameDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
@@ -62,7 +62,7 @@ public class VariableImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
-    List<VariableNameDto> variablesResponseDtos = getVariables(instanceDto);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(instanceDto);
 
     //then
     assertThat(variablesResponseDtos.size(), is(variables.size()));
@@ -86,7 +86,7 @@ public class VariableImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableNameDto> variablesResponseDtos = getVariables(instanceDto);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(instanceDto);
 
     //then
     assertThat(variablesResponseDtos.size(), is(0));
@@ -109,20 +109,20 @@ public class VariableImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
-    List<VariableNameDto> variablesResponseDtos = getVariables(instanceDto);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(instanceDto);
 
     //then
     assertThat(variablesResponseDtos.size(), is(variables.size()));
   }
 
-  private List<VariableNameDto> getVariables(ProcessInstanceEngineDto instanceDto) {
+  private List<ProcessVariableNameResponseDto> getVariables(ProcessInstanceEngineDto instanceDto) {
     ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
     variableRequestDto.setProcessDefinitionKey(instanceDto.getProcessDefinitionKey());
     variableRequestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildProcessVariableNamesRequest(variableRequestDto)
-      .executeAndReturnList(VariableNameDto.class, 200);
+      .executeAndReturnList(ProcessVariableNameResponseDto.class, 200);
   }
 
   @Test
@@ -147,7 +147,7 @@ public class VariableImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
-    List<VariableNameDto> variablesResponseDtos = getVariables(instanceDto);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(instanceDto);
 
     //then
     assertThat(variablesResponseDtos.size(), is(1));

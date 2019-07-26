@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableNameDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.filter.CanceledInstancesOnlyQueryFilter;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
@@ -380,11 +380,11 @@ public class ProcessImportIT extends AbstractImportIT {
     ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
     variableRequestDto.setProcessDefinitionKey(firstProcInst.getProcessDefinitionKey());
     variableRequestDto.setProcessDefinitionVersion(firstProcInst.getProcessDefinitionVersion());
-    List<VariableNameDto> variablesResponseDtos =
+    List<ProcessVariableNameResponseDto> variablesResponseDtos =
       embeddedOptimizeRule
         .getRequestExecutor()
         .buildProcessVariableNamesRequest(variableRequestDto)
-        .executeAndReturnList(VariableNameDto.class, 200);
+        .executeAndReturnList(ProcessVariableNameResponseDto.class, 200);
 
     assertThat(variablesResponseDtos.size(), is(3));
   }

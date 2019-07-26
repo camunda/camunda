@@ -7,17 +7,16 @@ package org.camunda.optimize.service.es.reader;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
+import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
@@ -33,14 +32,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.DECISION_DEFINITION_KEY;
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.DECISION_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.INPUTS;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.OUTPUTS;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableIdField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
+import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
@@ -59,50 +58,42 @@ public class DecisionVariableReader {
   private static final String VARIABLE_VALUE_LOWERCASE = "lowercaseField";
 
   private final OptimizeElasticsearchClient esClient;
+  private final DecisionDefinitionReader decisionDefinitionReader;
 
-  public List<String> getInputVariableValues(final String decisionDefinitionKey,
-                                             final String decisionDefinitionVersion,
-                                             final String variableId,
-                                             final VariableType variableType,
-                                             final String valueFilter) {
+  public List<String> getInputVariableValues(final DecisionVariableValueRequestDto requestDto) {
     log.debug(
-      "Fetching input variable values for decision definition with key [{}] and version [{}]",
-      decisionDefinitionKey,
-      decisionDefinitionVersion
+      "Fetching input variable values for decision definition with key [{}] and versions [{}]",
+      requestDto.getDecisionDefinitionKey(),
+      requestDto.getDecisionDefinitionVersions()
     );
 
-    return getVariableValues(
-      decisionDefinitionKey, decisionDefinitionVersion, variableId, variableType, valueFilter, INPUTS
-    );
+    return getVariableValues(requestDto, INPUTS);
   }
 
-  public List<String> getOutputVariableValues(final String decisionDefinitionKey,
-                                              final String decisionDefinitionVersion,
-                                              final String variableId,
-                                              final VariableType variableType,
-                                              final String valueFilter) {
+  public List<String> getOutputVariableValues(final DecisionVariableValueRequestDto requestDto) {
     log.debug(
-      "Fetching output variable values for decision definition with key [{}] and version [{}]",
-      decisionDefinitionKey,
-      decisionDefinitionVersion
+      "Fetching output variable values for decision definition with key [{}] and versions [{}]",
+      requestDto.getDecisionDefinitionKey(),
+      requestDto.getDecisionDefinitionVersions()
     );
 
-    return getVariableValues(
-      decisionDefinitionKey, decisionDefinitionVersion, variableId, variableType, valueFilter, OUTPUTS
-    );
+    return getVariableValues(requestDto, OUTPUTS);
   }
 
-  private List<String> getVariableValues(final String decisionDefinitionKey,
-                                         final String decisionDefinitionVersion,
-                                         final String variableId,
-                                         final VariableType variableType,
-                                         final String valueFilter,
+  private List<String> getVariableValues(final DecisionVariableValueRequestDto requestDto,
                                          final String variablesPath) {
-    final BoolQueryBuilder query = buildDecisionDefinitionBaseQuery(decisionDefinitionKey, decisionDefinitionVersion);
+    final BoolQueryBuilder query =
+      createDefinitionQuery(
+        requestDto.getDecisionDefinitionKey(),
+        requestDto.getDecisionDefinitionVersions(),
+        requestDto.getTenantIds(),
+        new DecisionInstanceType(),
+        decisionDefinitionReader::getLatestVersionToKey
+      );
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
-      .aggregation(getVariableValueAggregation(variableId, variablesPath, variableType, valueFilter))
+      .aggregation(getVariableValueAggregation(requestDto, variablesPath))
       .size(0);
 
     final SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_TYPE)
@@ -113,29 +104,21 @@ public class DecisionVariableReader {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
       final Aggregations aggregations = searchResponse.getAggregations();
 
-      return extractVariableValues(aggregations, variablesPath);
+      return extractVariableValues(aggregations, requestDto, variablesPath);
     } catch (IOException e) {
       final String reason = String.format(
-        "Was not able to fetch values for %s variable [%s] ", variableType, variableId
+        "Was not able to fetch values for variable [%s] with type [%s] ",
+        requestDto.getVariableId(),
+        requestDto.getVariableType()
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
   }
 
-  private BoolQueryBuilder buildDecisionDefinitionBaseQuery(final String decisionDefinitionKey,
-                                                            final String decisionDefinitionVersion) {
-    BoolQueryBuilder query = QueryBuilders.boolQuery()
-      .must(QueryBuilders.termsQuery(DECISION_DEFINITION_KEY, decisionDefinitionKey));
-
-    if (!ReportConstants.ALL_VERSIONS.equals(decisionDefinitionVersion)) {
-      query = query
-        .must(QueryBuilders.termsQuery(DECISION_DEFINITION_VERSION, decisionDefinitionVersion));
-    }
-    return query;
-  }
-
-  private List<String> extractVariableValues(final Aggregations aggregations, final String variableFieldLabel) {
+  private List<String> extractVariableValues(final Aggregations aggregations,
+                                             final DecisionVariableValueRequestDto requestDto,
+                                             final String variableFieldLabel) {
     Nested variablesFromType = aggregations.get(variableFieldLabel);
     Filter filteredVariables = variablesFromType.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     Terms valueTerms = filteredVariables.getAggregations().get(VALUE_AGGREGATION);
@@ -143,21 +126,20 @@ public class DecisionVariableReader {
     for (Terms.Bucket valueBucket : valueTerms.getBuckets()) {
       allValues.add(valueBucket.getKeyAsString());
     }
-    return allValues;
+    int lastIndex = Math.min(allValues.size(), requestDto.getResultOffset() + requestDto.getNumResults());
+    return allValues.subList(requestDto.getResultOffset(), lastIndex);
   }
 
-  private AggregationBuilder getVariableValueAggregation(final String variableId,
-                                                         final String variablePath,
-                                                         final VariableType variableType,
-                                                         final String valueFilter) {
+  private AggregationBuilder getVariableValueAggregation(final DecisionVariableValueRequestDto requestDto,
+                                                         final String variablePath) {
     final TermsAggregationBuilder collectAllVariableValues =
       terms(VALUE_AGGREGATION)
-        .field(getVariableValueFieldForType(variablePath, variableType))
-        .size(10_000)
+        .field(getVariableValueFieldForType(variablePath, requestDto.getVariableType()))
+        .size(MAX_RESPONSE_SIZE_LIMIT)
         .order(BucketOrder.key(true));
 
     final FilterAggregationBuilder filterForVariableWithGivenIdAndPrefix = getVariableValueFilterAggregation(
-      variableId, variablePath, valueFilter
+      requestDto.getVariableId(), variablePath, requestDto.getValueFilter()
     );
 
     return nested(variablePath, variablePath)
@@ -203,4 +185,5 @@ public class DecisionVariableReader {
   private String buildWildcardQuery(final String valueFilter) {
     return "*" + valueFilter + "*";
   }
+
 }

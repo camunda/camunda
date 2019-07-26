@@ -5,11 +5,48 @@
  */
 package org.camunda.optimize.upgrade.main.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
+import org.apache.commons.text.StringSubstitutor;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
+import org.camunda.optimize.service.engine.importing.DmnModelUtility;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
+import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.Upgrade;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import static org.camunda.optimize.service.engine.importing.DmnModelUtility.parseDmnModel;
+import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_ID;
+import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.INPUT_VARIABLE_NAMES;
+import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.OUTPUT_VARIABLE_NAMES;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
 
 public class UpgradeFrom25To26 implements Upgrade {
 
@@ -17,6 +54,18 @@ public class UpgradeFrom25To26 implements Upgrade {
   private static final String TO_VERSION = "2.6.0";
 
   private Logger logger = LoggerFactory.getLogger(getClass());
+
+
+  private ConfigurationService configurationService = new ConfigurationService();
+  private OptimizeIndexNameService indexNameService = new OptimizeIndexNameService(configurationService);
+  private OptimizeElasticsearchClient client = new OptimizeElasticsearchClient(
+      ElasticsearchHighLevelRestClientBuilder.build(configurationService),
+      indexNameService
+    );
+  private ObjectMapper objectMapper = new ObjectMapper();
+
+  private static final String DEFINITION_ID_TO_VAR_NAMES_PARAMETER_NAME = "definitionIdToVarNames";
+
 
   @Override
   public String getInitialVersion() {
@@ -31,14 +80,99 @@ public class UpgradeFrom25To26 implements Upgrade {
   @Override
   public void performUpgrade() {
     try {
-      UpgradePlan upgradePlan = UpgradePlanBuilder.createUpgradePlan()
-        .fromVersion(FROM_VERSION)
-        .toVersion(TO_VERSION)
-        .build();
+      UpgradePlan upgradePlan = buildUpgradePlan();
       upgradePlan.execute();
     } catch (Exception e) {
       logger.error("Error while executing upgrade", e);
       System.exit(2);
     }
+  }
+
+  public UpgradePlan buildUpgradePlan() {
+    return UpgradePlanBuilder.createUpgradePlan()
+      .fromVersion(FROM_VERSION)
+      .toVersion(TO_VERSION)
+      .addUpgradeStep(createDecisionDefinitionInputVariableNames())
+      .addUpgradeStep(createDecisionDefinitionOutputVariableNames())
+      .build();
+  }
+
+  private UpgradeStep createDecisionDefinitionInputVariableNames() {
+    return createDecisionDefinitionVariableNames(this::getDecisionDefinitionInputVariableNames, INPUT_VARIABLE_NAMES);
+  }
+
+  private UpgradeStep createDecisionDefinitionOutputVariableNames() {
+    return createDecisionDefinitionVariableNames(this::getDecisionDefinitionOutputVariableNames, OUTPUT_VARIABLE_NAMES);
+  }
+
+  private UpgradeStep createDecisionDefinitionVariableNames(Supplier<Map<String, List<DecisionVariableNameDto>>> defIdToVarNames,
+                                                            String varNameField) {
+    final Map<String, List<DecisionVariableNameDto>> definitionIdToVariableNames = defIdToVarNames.get();
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("definitionIdField", DECISION_DEFINITION_ID)
+        .put("variableNamesFiled", varNameField)
+        .put("definitionToVarNamesParam", DEFINITION_ID_TO_VAR_NAMES_PARAMETER_NAME)
+        .build()
+    );
+
+    Map<String, Object> params =
+      objectMapper.convertValue(definitionIdToVariableNames, new TypeReference<Map<String, Object>>() {});
+    // @formatter:off
+    String script = substitutor.replace(
+      "if (params.${definitionToVarNamesParam}.containsKey(ctx._source.${definitionIdField})) {\n" +
+        "ctx._source.${variableNamesFiled} = " +
+          "params.${definitionToVarNamesParam}.get(ctx._source.${definitionIdField});" +
+      "}\n"
+    );
+    // @formatter:on
+
+    return new UpdateDataStep(
+      DECISION_DEFINITION_TYPE,
+      QueryBuilders.matchAllQuery(),
+      script,
+      ImmutableMap.of(DEFINITION_ID_TO_VAR_NAMES_PARAMETER_NAME, params)
+    );
+  }
+
+  private Map<String, List<DecisionVariableNameDto>> getDecisionDefinitionInputVariableNames() {
+    return getDecisionDefinitionVariableNames(DmnModelUtility::extractInputVariables);
+  }
+
+  private Map<String, List<DecisionVariableNameDto>> getDecisionDefinitionOutputVariableNames() {
+    return getDecisionDefinitionVariableNames(DmnModelUtility::extractOutputVariables);
+  }
+
+  private Map<String, List<DecisionVariableNameDto>> getDecisionDefinitionVariableNames(Function<DmnModelInstance, List<DecisionVariableNameDto>> extractVariables) {
+    final Map<String, List<DecisionVariableNameDto>> result = new HashMap<>();
+    try {
+      final TimeValue scrollTimeOut = new TimeValue(configurationService.getElasticsearchScrollTimeout());
+      final SearchRequest scrollSearchRequest = new SearchRequest(DECISION_DEFINITION_TYPE)
+        .source(new SearchSourceBuilder().size(10))
+        .scroll(scrollTimeOut);
+
+      SearchResponse currentScrollResponse = client.search(scrollSearchRequest, RequestOptions.DEFAULT);
+      while (currentScrollResponse != null && currentScrollResponse.getHits().getHits().length != 0) {
+        Arrays.stream(currentScrollResponse.getHits().getHits())
+          .map(SearchHit::getSourceAsMap)
+          .forEach(sourceAsMap -> {
+            final String key = (String) sourceAsMap.get(DecisionDefinitionType.DECISION_DEFINITION_ID);
+            final String value = (String) sourceAsMap.get(DecisionDefinitionType.DECISION_DEFINITION_XML);
+            result.put(key, extractVariables.apply(parseDmnModel(value)));
+          });
+
+        if (currentScrollResponse.getHits().getTotalHits() > result.size()) {
+          SearchScrollRequest scrollRequest = new SearchScrollRequest(currentScrollResponse.getScrollId());
+          scrollRequest.scroll(scrollTimeOut);
+          currentScrollResponse = client.scroll(scrollRequest, RequestOptions.DEFAULT);
+        } else {
+          currentScrollResponse = null;
+        }
+      }
+    } catch (IOException e) {
+      String errorMessage = "Could not retrieve all decision definition XMLs!";
+      throw new UpgradeRuntimeException(errorMessage, e);
+    }
+    return result;
   }
 }

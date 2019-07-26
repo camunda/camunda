@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.test.util;
+package org.camunda.optimize.test.util.decision;
 
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;

@@ -7,6 +7,7 @@ package org.camunda.optimize.service.engine.importing.service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -17,6 +18,10 @@ import org.camunda.optimize.service.es.writer.DecisionDefinitionXmlWriter;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.camunda.optimize.service.engine.importing.DmnModelUtility.extractInputVariables;
+import static org.camunda.optimize.service.engine.importing.DmnModelUtility.extractOutputVariables;
+import static org.camunda.optimize.service.engine.importing.DmnModelUtility.parseDmnModel;
 
 @AllArgsConstructor
 @Slf4j
@@ -64,12 +69,14 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
   }
 
   private DecisionDefinitionOptimizeDto mapEngineEntityToOptimizeEntity(final DecisionDefinitionXmlEngineDto engineEntity) {
-    final DecisionDefinitionOptimizeDto optimizeDto = new DecisionDefinitionOptimizeDto(
+    final DmnModelInstance dmnModelInstance = parseDmnModel(engineEntity.getDmnXml());
+    return new DecisionDefinitionOptimizeDto(
       engineEntity.getId(),
       engineEntity.getDmnXml(),
-      engineContext.getEngineAlias()
+      engineContext.getEngineAlias(),
+      extractInputVariables(dmnModelInstance),
+      extractOutputVariables(dmnModelInstance)
     );
-    return optimizeDto;
   }
 
 }

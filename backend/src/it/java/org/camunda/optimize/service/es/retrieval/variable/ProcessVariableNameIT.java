@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.retrieval;
+package org.camunda.optimize.service.es.retrieval.variable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -13,7 +13,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableNameDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -64,7 +64,7 @@ public class ProcessVariableNameIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableNameDto> variableResponse = getVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(4));
@@ -91,7 +91,7 @@ public class ProcessVariableNameIT {
     variableNameRequestDto.setProcessDefinitionKey(processDefinition);
     variableNameRequestDto.setProcessDefinitionVersion(ALL_VERSIONS);
     variableNameRequestDto.setTenantIds(selectedTenants);
-    List<VariableNameDto> variableResponse = getVariableNames(variableNameRequestDto);
+    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(variableNameRequestDto);
 
     // then
     assertThat(variableResponse.size(), is(selectedTenants.size()));
@@ -117,7 +117,7 @@ public class ProcessVariableNameIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableNameDto> variableResponse =
+    List<ProcessVariableNameResponseDto> variableResponse =
       getVariableNames(
         processDefinition.getKey(),
         ImmutableList.of(processDefinition.getVersionAsString(), processDefinition3.getVersionAsString())
@@ -144,7 +144,7 @@ public class ProcessVariableNameIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableNameDto> variableResponse = getVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(15));
@@ -167,7 +167,7 @@ public class ProcessVariableNameIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableNameDto> variableResponse = getVariableNames(processDefinition.getKey(), ALL_VERSIONS);
+    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition.getKey(), ALL_VERSIONS);
 
     // then
     assertThat(variableResponse.size(), is(4));
@@ -194,7 +194,7 @@ public class ProcessVariableNameIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableNameDto> variableResponse = getVariableNames(processDefinition.getKey(), LATEST_VERSION);
+    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition.getKey(), LATEST_VERSION);
 
     // then
     assertThat(variableResponse.size(), is(1));
@@ -216,7 +216,7 @@ public class ProcessVariableNameIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableNameDto> variableResponse = getVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(1));
@@ -240,7 +240,7 @@ public class ProcessVariableNameIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableNameDto> variableResponse = getVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(3));
@@ -261,7 +261,7 @@ public class ProcessVariableNameIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableNameDto> variableResponse = getVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(1));
@@ -281,7 +281,7 @@ public class ProcessVariableNameIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableNameDto> variableResponse = getVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(2));
@@ -308,11 +308,11 @@ public class ProcessVariableNameIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableNameDto> variableResponse = getVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition);
 
     // then
     assertThat(variableResponse.size(), is(variables.size()));
-    for (VariableNameDto responseDto : variableResponse) {
+    for (ProcessVariableNameResponseDto responseDto : variableResponse) {
       assertThat(variables.containsKey(responseDto.getName()), is(true));
       assertThat(isVariableTypeSupported(responseDto.getType()), is(true));
     }
@@ -331,7 +331,7 @@ public class ProcessVariableNameIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableNameDto> variableResponse = getVariableNames(processDefinition, "a");
+    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition, "a");
 
     // then
     assertThat(variableResponse.size(), is(2));
@@ -352,7 +352,7 @@ public class ProcessVariableNameIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableNameDto> variableResponse = getVariableNames(processDefinition, "foo");
+    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition, "foo");
 
     // then
     assertThat(variableResponse.size(), is(0));
@@ -371,7 +371,7 @@ public class ProcessVariableNameIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableNameDto> variableResponse = getVariableNames(processDefinition, null);
+    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition, null);
 
     // then
     assertThat(variableResponse.size(), is(3));
@@ -393,7 +393,7 @@ public class ProcessVariableNameIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableNameDto> variableResponse = getVariableNames(processDefinition, "");
+    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition, "");
 
     // then
     assertThat(variableResponse.size(), is(3));
@@ -420,7 +420,7 @@ public class ProcessVariableNameIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<VariableNameDto> variableResponse = getVariableNames(processDefinition, "d");
+    List<ProcessVariableNameResponseDto> variableResponse = getVariableNames(processDefinition, "d");
 
     // then
     assertThat(variableResponse.size(), is(2));
@@ -438,8 +438,8 @@ public class ProcessVariableNameIT {
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
   }
 
-  private List<VariableNameDto> getVariableNames(ProcessDefinitionEngineDto processDefinition,
-                                                 String namePrefix) {
+  private List<ProcessVariableNameResponseDto> getVariableNames(ProcessDefinitionEngineDto processDefinition,
+                                                                String namePrefix) {
     ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
     variableRequestDto.setProcessDefinitionKey(processDefinition.getKey());
     variableRequestDto.setProcessDefinitionVersions(ImmutableList.of(processDefinition.getVersionAsString()));
@@ -447,29 +447,29 @@ public class ProcessVariableNameIT {
     return this.getVariableNames(variableRequestDto);
   }
 
-  private List<VariableNameDto> getVariableNames(ProcessDefinitionEngineDto processDefinition) {
+  private List<ProcessVariableNameResponseDto> getVariableNames(ProcessDefinitionEngineDto processDefinition) {
     ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
     variableRequestDto.setProcessDefinitionKey(processDefinition.getKey());
     variableRequestDto.setProcessDefinitionVersions(ImmutableList.of(processDefinition.getVersionAsString()));
     return getVariableNames(processDefinition, null);
   }
 
-  private List<VariableNameDto> getVariableNames(String key, List<String> versions) {
+  private List<ProcessVariableNameResponseDto> getVariableNames(String key, List<String> versions) {
     ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
     variableRequestDto.setProcessDefinitionKey(key);
     variableRequestDto.setProcessDefinitionVersions(versions);
     return getVariableNames(variableRequestDto);
   }
 
-  private List<VariableNameDto> getVariableNames(String key, String version) {
+  private List<ProcessVariableNameResponseDto> getVariableNames(String key, String version) {
     return getVariableNames(key, ImmutableList.of(version));
   }
 
-  private List<VariableNameDto> getVariableNames(ProcessVariableNameRequestDto variableRequestDto) {
+  private List<ProcessVariableNameResponseDto> getVariableNames(ProcessVariableNameRequestDto variableRequestDto) {
     return embeddedOptimizeRule
             .getRequestExecutor()
             .buildProcessVariableNamesRequest(variableRequestDto)
-            .executeAndReturnList(VariableNameDto.class, 200);
+            .executeAndReturnList(ProcessVariableNameResponseDto.class, 200);
   }
 
   private String deployAndStartMultiTenantUserTaskProcess(final List<String> deployedTenants) {

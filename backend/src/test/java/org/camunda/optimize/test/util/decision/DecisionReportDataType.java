@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.test.util;
+package org.camunda.optimize.test.util.decision;
 
 public enum DecisionReportDataType {
   RAW_DATA,

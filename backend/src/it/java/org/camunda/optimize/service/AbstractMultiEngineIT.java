@@ -25,7 +25,7 @@ import java.util.Map;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.test.util.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 
 public class AbstractMultiEngineIT {
   private static final String REST_ENDPOINT = "http://localhost:8080/engine-rest";

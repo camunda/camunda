@@ -88,7 +88,7 @@ public class DecisionDefinitionVersionResolverServiceTest {
 
   private void mockDecisionDefinitions(final String id, final String version) {
     List<DecisionDefinitionOptimizeDto> mockedDefinitions = Lists.newArrayList(
-      new DecisionDefinitionOptimizeDto(id, "key", version, "aVersionTag", "name", "", "engine", null)
+      new DecisionDefinitionOptimizeDto(id, "key", version, "aVersionTag", "name", "", "engine", null, null, null)
     );
     when(decisionDefinitionReader.getDecisionDefinitions(false, false)).thenReturn(mockedDefinitions);
   }

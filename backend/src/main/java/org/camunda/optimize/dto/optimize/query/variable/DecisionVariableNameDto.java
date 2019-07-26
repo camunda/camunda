@@ -8,8 +8,10 @@ package org.camunda.optimize.dto.optimize.query.variable;
 import lombok.Data;
 
 @Data
-public class VariableNameDto {
+public class DecisionVariableNameDto {
 
+  protected String id;
   protected String name;
   protected VariableType type;
+
 }

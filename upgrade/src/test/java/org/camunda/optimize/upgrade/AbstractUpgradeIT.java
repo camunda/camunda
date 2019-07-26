@@ -6,6 +6,10 @@
 package org.camunda.optimize.upgrade;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.nio.entity.NStringEntity;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
@@ -17,7 +21,10 @@ import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
+import org.camunda.optimize.upgrade.util.SchemaUpgradeUtil;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.junit.After;
 import org.junit.Before;
@@ -85,6 +92,17 @@ public abstract class AbstractUpgradeIT {
     } catch (IOException e) {
       throw new RuntimeException("Failed cleaning elasticsearch");
     }
+  }
+
+  protected void executeBulk(final String bulkPayload) throws IOException {
+    final Request request = new Request(HttpPost.METHOD_NAME, "/_bulk");
+    final HttpEntity entity = new NStringEntity(
+      SchemaUpgradeUtil.readClasspathFileAsString(bulkPayload),
+      ContentType.APPLICATION_JSON
+    );
+    request.setEntity(entity);
+    prefixAwareClient.getLowLevelClient().performRequest(request);
+    prefixAwareClient.getHighLevelClient().indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
   }
 
 }

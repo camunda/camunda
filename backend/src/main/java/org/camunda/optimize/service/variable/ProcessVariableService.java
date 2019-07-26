@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableNameDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.service.es.reader.ProcessVariableReader;
 import org.camunda.optimize.service.security.TenantAuthorizationService;
 import org.springframework.stereotype.Component;
@@ -28,7 +28,7 @@ public class ProcessVariableService {
   private final TenantAuthorizationService tenantAuthorizationService;
 
 
-  public List<VariableNameDto> getVariableNames(String userId, ProcessVariableNameRequestDto variableRequestDto) {
+  public List<ProcessVariableNameResponseDto> getVariableNames(String userId, ProcessVariableNameRequestDto variableRequestDto) {
     ensureNotEmpty("process definition key", variableRequestDto.getProcessDefinitionKey());
     ensureListNotEmpty("process definition versions", variableRequestDto.getProcessDefinitionVersions());
 
