@@ -33,6 +33,8 @@ const (
 var client zbc.ZBClient
 
 var addressFlag string
+var caCertPathFlag string
+var insecureFlag bool
 
 var rootCmd = &cobra.Command{
 	Use:   "zbctl",
@@ -56,6 +58,8 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&addressFlag, "address", "", "Specify the Zeebe addressFlag")
+	rootCmd.PersistentFlags().StringVar(&caCertPathFlag, "certPath", "", "Specify a path to a certificate with which to validate gateway requests")
+	rootCmd.PersistentFlags().BoolVar(&insecureFlag, "insecure", false, "Specify if zbctl should use an unsecured connection")
 }
 
 // initClient will create a client with in the following precedence: address flag, environment variable, default address
@@ -74,7 +78,11 @@ var initClient = func(cmd *cobra.Command, args []string) error {
 	address = appendPort(address)
 
 	var err error
-	client, err = zbc.NewZBClient(address)
+	client, err = zbc.NewZBClient(&zbc.ZBClientConfig{
+		GatewayAddress:         address,
+		UsePlaintextConnection: insecureFlag,
+		CaCertificatePath:      caCertPathFlag,
+	})
 	return err
 }
 
