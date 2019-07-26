@@ -73,7 +73,7 @@
     "camunda-bpm-sdk-js": "camunda/camunda-bpm-sdk-js#7.10",
     "chalk": "^2.4.2",
     "enzyme": "3.10.0",
-    "enzyme-adapter-react-16": "1.13.2",
+    "enzyme-adapter-react-16": "1.14.0",
     "eslint-plugin-camunda-licensed": "^0.4.2",
     "eslint-plugin-prettier": "^3.1.0",
     "eslint-plugin-testcafe": "^0.2.1",
