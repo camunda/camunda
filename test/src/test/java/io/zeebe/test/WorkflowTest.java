@@ -7,18 +7,28 @@
  */
 package io.zeebe.test;
 
+import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class WorkflowTest {
-  @Rule public final ZeebeTestRule testRule = new ZeebeTestRule();
+  @Rule
+  public final ZeebeTestRule testRule =
+      new ZeebeTestRule(
+          EmbeddedBrokerRule.DEFAULT_CONFIG_FILE,
+          () -> {
+            final Properties properties = new Properties();
+            properties.setProperty(ClientProperties.USE_PLAINTEXT_CONNECTION, "");
+            return properties;
+          });
 
   private ZeebeClient client;
 

@@ -68,8 +68,8 @@ public interface ZeebeClientBuilder {
   /** The request timeout used if not overridden by the command. Default is 20 seconds. */
   ZeebeClientBuilder defaultRequestTimeout(Duration requestTimeout);
 
-  /** Use a secure connection between the client and the gateway. */
-  ZeebeClientBuilder useSecureConnection();
+  /** Use a plaintext connection between the client and the gateway. */
+  ZeebeClientBuilder usePlaintext();
 
   /**
    * Path to a root CA certificate to be used instead of the certificate in the default default

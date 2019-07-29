@@ -42,8 +42,8 @@ public interface ZeebeClientConfiguration {
   /** @see ZeebeClientBuilder#defaultRequestTimeout(Duration) */
   Duration getDefaultRequestTimeout();
 
-  /** @see ZeebeClientBuilder#useSecureConnection() */
-  boolean isSecureConnectionEnabled();
+  /** @see ZeebeClientBuilder#usePlaintext() */
+  boolean isPlaintextConnectionEnabled();
 
   /** @see ZeebeClientBuilder#caCertificatePath(String) */
   String getCaCertificatePath();

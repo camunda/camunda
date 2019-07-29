@@ -41,13 +41,17 @@ public class GrpcClientRule extends ExternalResource {
       final EmbeddedBrokerRule brokerRule, final Consumer<ZeebeClientBuilder> configurator) {
     this(
         config -> {
-          config.brokerContactPoint(brokerRule.getGatewayAddress().toString());
+          config.brokerContactPoint(brokerRule.getGatewayAddress().toString()).usePlaintext();
           configurator.accept(config);
         });
   }
 
   public GrpcClientRule(final ClusteringRule clusteringRule) {
-    this(config -> config.brokerContactPoint(clusteringRule.getGatewayAddress().toString()));
+    this(
+        config ->
+            config
+                .brokerContactPoint(clusteringRule.getGatewayAddress().toString())
+                .usePlaintext());
   }
 
   public GrpcClientRule(final Consumer<ZeebeClientBuilder> configurator) {

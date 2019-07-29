@@ -109,7 +109,7 @@ public class ZeebeClientImpl implements ZeebeClient {
     final NettyChannelBuilder channelBuilder =
         NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
 
-    if (config.isSecureConnectionEnabled()) {
+    if (!config.isPlaintextConnectionEnabled()) {
       final String certificatePath = config.getCaCertificatePath();
       SslContext sslContext = null;
 
