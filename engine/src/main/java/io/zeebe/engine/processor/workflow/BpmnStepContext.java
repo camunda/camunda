@@ -13,7 +13,6 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlo
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.ElementInstanceState;
-import io.zeebe.msgpack.mapping.MsgPackMergeTool;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.IncidentIntent;
@@ -24,8 +23,8 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
 
   private final IncidentRecord incidentCommand = new IncidentRecord();
   private final SideEffectQueue sideEffect = new SideEffectQueue();
+
   private final EventOutput eventOutput;
-  private final MsgPackMergeTool mergeTool;
   private final WorkflowState stateDb;
 
   private long key;
@@ -38,7 +37,6 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
   public BpmnStepContext(WorkflowState stateDb, EventOutput eventOutput) {
     this.stateDb = stateDb;
     this.eventOutput = eventOutput;
-    this.mergeTool = new MsgPackMergeTool(4096);
   }
 
   public WorkflowInstanceRecord getValue() {
@@ -75,10 +73,6 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
   public void setStreamWriter(final TypedStreamWriter streamWriter) {
     this.eventOutput.setStreamWriter(streamWriter);
     this.commandWriter = streamWriter;
-  }
-
-  public MsgPackMergeTool getMergeTool() {
-    return mergeTool;
   }
 
   public TypedCommandWriter getCommandWriter() {

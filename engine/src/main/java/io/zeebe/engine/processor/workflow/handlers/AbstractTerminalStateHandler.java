@@ -25,7 +25,7 @@ public class AbstractTerminalStateHandler<T extends ExecutableFlowElement>
   }
 
   @Override
-  public void handle(BpmnStepContext<T> context) {
+  public void handle(final BpmnStepContext<T> context) {
     super.handle(context);
 
     // currently we always cleanup whether or not the state was successfully handled, which is fine
@@ -35,7 +35,7 @@ public class AbstractTerminalStateHandler<T extends ExecutableFlowElement>
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
     if (flowScopeInstance != null) {
       flowScopeInstance.consumeToken();
@@ -45,7 +45,7 @@ public class AbstractTerminalStateHandler<T extends ExecutableFlowElement>
     return true;
   }
 
-  protected void publishDeferredRecords(BpmnStepContext<T> context) {
+  protected void publishDeferredRecords(final BpmnStepContext<T> context) {
     final List<IndexedRecord> deferredRecords =
         context.getElementInstanceState().getDeferredRecords(context.getKey());
     final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
@@ -60,7 +60,7 @@ public class AbstractTerminalStateHandler<T extends ExecutableFlowElement>
     context.getStateDb().getElementInstanceState().updateInstance(flowScopeInstance);
   }
 
-  protected boolean isLastActiveExecutionPathInScope(BpmnStepContext<T> context) {
+  protected boolean isLastActiveExecutionPathInScope(final BpmnStepContext<T> context) {
     final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
 
     if (flowScopeInstance == null) {
@@ -68,7 +68,12 @@ public class AbstractTerminalStateHandler<T extends ExecutableFlowElement>
     }
 
     final int activePaths = flowScopeInstance.getNumberOfActiveTokens();
-    assert activePaths >= 0 : "number of active paths should never be negative";
+    if (activePaths < 0) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected number of active paths to be positive but got %d for instance %s",
+              activePaths, flowScopeInstance));
+    }
 
     return activePaths == 1;
   }

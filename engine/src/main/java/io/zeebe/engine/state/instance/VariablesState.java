@@ -121,7 +121,12 @@ public class VariablesState {
     }
   }
 
-  void setVariableLocal(
+  public void setVariableLocal(
+      long scopeKey, long workflowKey, DirectBuffer name, DirectBuffer value) {
+    setVariableLocal(scopeKey, workflowKey, name, 0, name.capacity(), value, 0, value.capacity());
+  }
+
+  public void setVariableLocal(
       long scopeKey,
       long workflowKey,
       DirectBuffer name,

@@ -19,6 +19,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformer.FlowEleme
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.FlowNodeTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.IntermediateCatchEventTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.MessageTransformer;
+import io.zeebe.engine.processor.workflow.deployment.model.transformer.MultiInstanceActivityTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.ParallelGatewayTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.ProcessTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.ReceiveTaskTransformer;
@@ -75,6 +76,7 @@ public class BpmnTransformer {
     step3Visitor.registerHandler(new EventBasedGatewayTransformer());
     step3Visitor.registerHandler(new ExclusiveGatewayTransformer());
     step3Visitor.registerHandler(new IntermediateCatchEventTransformer());
+    step3Visitor.registerHandler(new MultiInstanceActivityTransformer());
   }
 
   public List<ExecutableWorkflow> transformDefinitions(BpmnModelInstance modelInstance) {

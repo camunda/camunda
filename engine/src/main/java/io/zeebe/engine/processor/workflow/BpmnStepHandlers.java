@@ -37,6 +37,10 @@ import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElem
 import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElementTerminatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayEventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.gateway.ExclusiveGatewayElementActivatingHandler;
+import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyActivatedHandler;
+import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyActivatingHandler;
+import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyCompletingHandler;
+import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyTerminatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.receivetask.ReceiveTaskEventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.seqflow.FlowOutElementCompletedHandler;
 import io.zeebe.engine.processor.workflow.handlers.seqflow.ParallelMergeSequenceFlowTaken;
@@ -141,6 +145,19 @@ public class BpmnStepHandlers {
     stepHandlers.put(
         BpmnStep.PARALLEL_MERGE_SEQUENCE_FLOW_TAKEN, new ParallelMergeSequenceFlowTaken<>());
     stepHandlers.put(BpmnStep.SEQUENCE_FLOW_TAKEN, new SequenceFlowTakenHandler<>());
+
+    stepHandlers.put(
+        BpmnStep.MULTI_INSTANCE_ACTIVATING,
+        new MultiInstanceBodyActivatingHandler(stepHandlers::get));
+    stepHandlers.put(
+        BpmnStep.MULTI_INSTANCE_ACTIVATED,
+        new MultiInstanceBodyActivatedHandler(stepHandlers::get));
+    stepHandlers.put(
+        BpmnStep.MULTI_INSTANCE_COMPLETING,
+        new MultiInstanceBodyCompletingHandler(stepHandlers::get, catchEventSubscriber));
+    stepHandlers.put(
+        BpmnStep.MULTI_INSTANCE_TERMINATING,
+        new MultiInstanceBodyTerminatingHandler(stepHandlers::get, catchEventSubscriber));
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})

@@ -66,6 +66,13 @@ public abstract class AbstractActivityBuilder<
     return miCharacteristics.builder();
   }
 
+  public MultiInstanceLoopCharacteristicsBuilder multiInstance(
+      Consumer<MultiInstanceLoopCharacteristicsBuilder> consumer) {
+    final MultiInstanceLoopCharacteristicsBuilder builder = multiInstance();
+    consumer.accept(builder);
+    return builder;
+  }
+
   protected double calculateXCoordinate(Bounds boundaryEventBounds) {
     final BpmnShape attachedToElement = findBpmnShape(element);
 
