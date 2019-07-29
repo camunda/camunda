@@ -18,7 +18,8 @@ public class NonBlockingWorkflowInstanceCreator {
     final int numberOfInstances = 100_000;
     final String bpmnProcessId = "demoProcess";
 
-    final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
+    final ZeebeClientBuilder builder =
+        ZeebeClient.newClientBuilder().brokerContactPoint(broker).usePlaintext();
 
     try (ZeebeClient client = builder.build()) {
       System.out.println("Creating " + numberOfInstances + " workflow instances");

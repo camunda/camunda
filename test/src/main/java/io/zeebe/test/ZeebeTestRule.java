@@ -38,6 +38,8 @@ public class ZeebeTestRule extends ExternalResource {
               final Properties properties = propertiesProvider.get();
               properties.setProperty(
                   ClientProperties.BROKER_CONTACTPOINT, brokerRule.getGatewayAddress().toString());
+              properties.putIfAbsent(ClientProperties.USE_PLAINTEXT_CONNECTION, "");
+
               return properties;
             });
   }

@@ -99,7 +99,7 @@ Run the following:
 
 
 ```
-./bin/zbctl status
+./bin/zbctl --insecure status
 ```
 
 
@@ -107,7 +107,7 @@ Run the following:
 
 
 ```
-./bin/zbctl.darwin status
+./bin/zbctl.darwin --insecure status
 ```
 
 
@@ -115,7 +115,7 @@ Run the following:
 
 
 ```
-./bin/zbctl.exe status
+./bin/zbctl.exe --insecure status
 ```
 
 
@@ -141,7 +141,7 @@ Next, we'll deploy our workflow model via the CLI. We'll deploy the workflow mod
 
 
 ```
-./bin/zbctl deploy order-process.bpmn
+./bin/zbctl --insecure deploy order-process.bpmn
 ```
 
 
@@ -149,7 +149,7 @@ Next, we'll deploy our workflow model via the CLI. We'll deploy the workflow mod
 
 
 ```
-./bin/zbctl.darwin deploy order-process.bpmn
+./bin/zbctl.darwin --insecure deploy order-process.bpmn
 ```
 
 
@@ -157,7 +157,7 @@ Next, we'll deploy our workflow model via the CLI. We'll deploy the workflow mod
 
 
 ```
-./bin/zbctl.exe deploy order-process.bpmn
+./bin/zbctl.exe --insecure deploy order-process.bpmn
 ```
 
 

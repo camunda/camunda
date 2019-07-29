@@ -22,7 +22,8 @@ public class JobWorkerCreator {
 
     final String jobType = "foo";
 
-    final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
+    final ZeebeClientBuilder builder =
+        ZeebeClient.newClientBuilder().brokerContactPoint(broker).usePlaintext();
 
     try (ZeebeClient client = builder.build()) {
 

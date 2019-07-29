@@ -13,7 +13,7 @@ Go back to the Terminal window where you deployed the workflow model and execute
 
 
 ```
-./bin/zbctl create instance order-process --variables '{"orderId": "1234", "orderValue":99}'
+./bin/zbctl --insecure create instance order-process --variables '{"orderId": "1234", "orderValue":99}'
 ```
 
 
@@ -21,7 +21,7 @@ Go back to the Terminal window where you deployed the workflow model and execute
 
 
 ```
-./bin/zbctl.darwin create instance order-process --variables '{"orderId": "1234", "orderValue":99}'
+./bin/zbctl.darwin --insecure create instance order-process --variables '{"orderId": "1234", "orderValue":99}'
 ```
 
 
@@ -29,7 +29,7 @@ Go back to the Terminal window where you deployed the workflow model and execute
 
 
 ```
-./bin/zbctl.exe create instance order-process --variables '{\"orderId\": \"1234\", \
+./bin/zbctl.exe --insecure create instance order-process --variables '{\"orderId\": \"1234\", \
 "orderValue\":99}'
 ```
 
@@ -55,7 +55,7 @@ In the same Terminal window, run the command:
 
 
 ```
-./bin/zbctl create instance order-process --variables '{"orderId": "2345", "orderValue":100}'
+./bin/zbctl --insecure create instance order-process --variables '{"orderId": "2345", "orderValue":100}'
 ```
 
 
@@ -63,7 +63,7 @@ In the same Terminal window, run the command:
 
 
 ```
-./bin/zbctl.darwin create instance order-process --variables '{"orderId": "2345", "orderValue":100}'
+./bin/zbctl.darwin --insecure create instance order-process --variables '{"orderId": "2345", "orderValue":100}'
 ```
 
 
@@ -71,7 +71,7 @@ In the same Terminal window, run the command:
 
 
 ```
-./bin/zbctl.exe create instance order-process --variables '{\"orderId\": \"2345\", \
+./bin/zbctl.exe --insecure create instance order-process --variables '{\"orderId\": \"2345\", \
 "orderValue\":100}'
 ```
 
@@ -102,7 +102,7 @@ Open a new Terminal tab or window, change into the Zeebe broker directory, and u
 
 
 ```
-./bin/zbctl create worker initiate-payment --handler cat
+./bin/zbctl --insecure create worker initiate-payment --handler cat
 ```
 
 
@@ -110,7 +110,7 @@ Open a new Terminal tab or window, change into the Zeebe broker directory, and u
 
 
 ```
-./bin/zbctl.darwin create worker initiate-payment --handler cat
+./bin/zbctl.darwin --insecure create worker initiate-payment --handler cat
 ```
 
 
@@ -118,7 +118,7 @@ Open a new Terminal tab or window, change into the Zeebe broker directory, and u
 
 
 ```
-./bin/zbctl.exe create worker initiate-payment --handler "findstr .*"
+./bin/zbctl.exe --insecure create worker initiate-payment --handler "findstr .*"
 ```
 
 
@@ -149,8 +149,8 @@ Remember, `orderId` is the correlation key we set in the Modeler when configurin
 
 
 ```
-./bin/zbctl publish message "payment-received" --correlationKey="1234"
-./bin/zbctl publish message "payment-received" --correlationKey="2345"
+./bin/zbctl --insecure publish message "payment-received" --correlationKey="1234"
+./bin/zbctl --insecure publish message "payment-received" --correlationKey="2345"
 ```
 
 
@@ -158,8 +158,8 @@ Remember, `orderId` is the correlation key we set in the Modeler when configurin
 
 
 ```
-./bin/zbctl.darwin publish message "payment-received" --correlationKey="1234"
-./bin/zbctl.darwin publish message "payment-received" --correlationKey="2345"
+./bin/zbctl.darwin --insecure publish message "payment-received" --correlationKey="1234"
+./bin/zbctl.darwin --insecure publish message "payment-received" --correlationKey="2345"
 ```
 
 
@@ -167,8 +167,8 @@ Remember, `orderId` is the correlation key we set in the Modeler when configurin
 
 
 ```
-./bin/zbctl.exe publish message "payment-received" --correlationKey="1234"
-./bin/zbctl.exe publish message "payment-received" --correlationKey="2345"
+./bin/zbctl.exe --insecure publish message "payment-received" --correlationKey="1234"
+./bin/zbctl.exe --insecure publish message "payment-received" --correlationKey="2345"
 ```
 
 
@@ -185,7 +185,7 @@ You probably know what you need to do next. Go ahead and open a Terminal window 
 
 
 ```
-./bin/zbctl create worker ship-without-insurance --handler cat
+./bin/zbctl --insecure create worker ship-without-insurance --handler cat
 ```
 
 
@@ -193,7 +193,7 @@ You probably know what you need to do next. Go ahead and open a Terminal window 
 
 
 ```
-./bin/zbctl.darwin create worker ship-without-insurance --handler cat
+./bin/zbctl.darwin --insecure create worker ship-without-insurance --handler cat
 ```
 
 
@@ -201,7 +201,7 @@ You probably know what you need to do next. Go ahead and open a Terminal window 
 
 
 ```
-./bin/zbctl.exe create worker ship-without-insurance --handler "findstr .*"
+./bin/zbctl.exe --insecure create worker ship-without-insurance --handler "findstr .*"
 ```
 
 
@@ -226,7 +226,7 @@ Because the "Ship With Insurance" task has a different job type, we need to crea
 
 
 ```
-./bin/zbctl create worker ship-with-insurance --handler cat
+./bin/zbctl --insecure create worker ship-with-insurance --handler cat
 ```
 
 
@@ -234,7 +234,7 @@ Because the "Ship With Insurance" task has a different job type, we need to crea
 
 
 ```
-./bin/zbctl.darwin create worker ship-with-insurance --handler cat
+./bin/zbctl.darwin --insecure create worker ship-with-insurance --handler cat
 ```
 
 
@@ -242,7 +242,7 @@ Because the "Ship With Insurance" task has a different job type, we need to crea
 
 
 ```
-./bin/zbctl.exe create worker ship-with-insurance --handler "findstr .*"
+./bin/zbctl.exe --insecure create worker ship-with-insurance --handler "findstr .*"
 ```
 
 
