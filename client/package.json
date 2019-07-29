@@ -25,7 +25,7 @@
     "react-date-range": "^0.9.4",
     "react-dom": "^16.8.6",
     "react-full-screen": "^0.2.4",
-    "react-router": "^5.0.0",
+    "react-router": "^5.0.1",
     "react-router-dom": "^5.0.0",
     "react-table": "^6.10.0",
     "spinkit": "^1.2.5",
