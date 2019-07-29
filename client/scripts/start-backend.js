@@ -79,7 +79,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
         'java',
         [
           '-cp',
-          `optimize-backend-${backendVersion}.jar`,
+          `../src/main/resources/:optimize-backend-${backendVersion}.jar`,
           'org.camunda.optimize.Main',
           '-Xms1g',
           '-Xmx1g',
