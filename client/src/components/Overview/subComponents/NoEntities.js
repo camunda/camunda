@@ -15,11 +15,11 @@ import {t} from 'translation';
 export default function NoEntities({label, createFunction, link}) {
   const createLink = link ? (
     <Link to={link} className="createLink">
-      {t('common.entity.create', {label})}
+      {t(`common.entity.create.${label}`, {label})}
     </Link>
   ) : (
     <Button variant="link" className="createLink" onClick={createFunction}>
-      {t('common.entity.create', {label})}
+      {t(`common.entity.create.${label}`, {label})}
     </Button>
   );
 

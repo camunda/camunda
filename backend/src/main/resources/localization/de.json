@@ -76,14 +76,39 @@
     "label-plural": "Alarme"
   },
   "common": {
+    "save": "Speichern",
+    "cancel": "Stornieren",
+    "saving": "Speichern ...",
+    "creating": "Erstellen...",
     "entity": {
-      "empty": "Es ist kein {label} konfiguriert.",
-      "create": "Erstelle ein neues {label} ...",
+      "empty": "Es ist keine {label} konfiguriert.",
+      "create": {
+        "Report": "Neuen Bericht erstellen ...",
+        "Dashboard": "Neues Dashboard erstellen ...",
+        "Alert": "Neuen Alert erstellen"
+      },
       "created": "Erstellt",
       "changed": "Zuletzt geändert",
       "by": "durch",
       "showAll": "Zeige alles...",
       "showLess": "Zeige weniger..."
+    },
+    "collection": {
+      "label": "Sammlung",
+      "label-plural": "Sammlungen",
+      "dropdown": {
+        "default": "Zur Sammlung hinzufügen",
+        "in": "In {collectionsCount} {collection}",
+        "add": "Zu neuer Sammlung hinzufügen ..."
+      },
+      "modal": {
+        "title": {
+          "new": "Neue Sammlung erstellen",
+          "edit": "Sammlungsname bearbeiten"
+        },
+        "createBtn": "Sammlung erstellen",
+        "inputLabel": "Name hinzufügen"
+      }
     }
   }
 }

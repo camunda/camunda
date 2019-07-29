@@ -76,14 +76,39 @@
     "label-plural": "Alerts"
   },
   "common": {
+    "save": "Save",
+    "cancel": "cancel",
+    "saving": "Saving...",
+    "creating": "Creating...",
     "entity": {
       "empty": "There are no {label} configured.",
-      "create": "Create a new {label}...",
+      "create": {
+        "Report": "Create a new Report...",
+        "Dashboard": "Create a new Dashboard...",
+        "Alert": "Create a new Alert"
+      },
       "created": "Created",
       "changed": "Last changed",
       "by": "by",
       "showAll": "Show all...",
       "showLess": "Show less..."
+    },
+    "collection": {
+      "label": "Collection",
+      "label-plural": "Collections",
+      "dropdown": {
+        "default": "Add to Collection",
+        "in": "In {collectionsCount} {collection}",
+        "add": "Add to new Collection..."
+      },
+      "modal": {
+        "title": {
+          "new": "Create new Collection",
+          "edit": "Edit Collection name"
+        },
+        "createBtn": "Create Collection",
+        "inputLabel": "Add Name"
+      }
     }
   }
 }

@@ -6,6 +6,7 @@
 
 import React, {Component} from 'react';
 import {Button, LabeledInput, Modal, Form} from 'components';
+import {t} from 'translation';
 
 export default class EditCollectionModal extends Component {
   constructor(props) {
@@ -24,9 +25,9 @@ export default class EditCollectionModal extends Component {
   getConfirmButtonText = () => {
     const {name} = this.props.collection;
     if (this.state.loading) {
-      return name ? 'Saving...' : 'Creating...';
+      return name ? t('common.saving') : t('common.creating');
     }
-    return name ? 'Save' : 'Create Collection';
+    return name ? t('common.save') : t('common.collection.modal.createBtn');
   };
 
   render() {
@@ -34,14 +35,16 @@ export default class EditCollectionModal extends Component {
     return (
       <Modal open onClose={onClose} onConfirm={this.onConfirm}>
         <Modal.Header>
-          {collection.name ? 'Edit Collection name' : 'Create new Collection'}
+          {collection.name
+            ? t('common.collection.modal.title.edit')
+            : t('common.collection.modal.title.new')}
         </Modal.Header>
         <Modal.Content>
           <Form>
             <Form.Group>
               <LabeledInput
                 type="text"
-                label="Add Name"
+                label={t('common.collection.modal.inputLabel')}
                 style={{width: '100%'}}
                 value={this.state.name}
                 onChange={({target: {value}}) => this.setState({name: value})}
@@ -58,7 +61,7 @@ export default class EditCollectionModal extends Component {
             onClick={onClose}
             disabled={this.state.loading}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             variant="primary"

@@ -7,6 +7,7 @@
 import React from 'react';
 import {Dropdown} from 'components';
 import './CollectionsDropdown.scss';
+import {t} from 'translation';
 
 export default function CollectionsDropdown({
   collections,
@@ -17,9 +18,12 @@ export default function CollectionsDropdown({
   currentCollection
 }) {
   const collectionsCount = entityCollections.length;
-  let label = <span className="noCollection">Add to Collection</span>;
+  let label = <span className="noCollection">{t('common.collection.dropdown.default')}</span>;
   if (collectionsCount) {
-    label = `In ${collectionsCount} Collection${collectionsCount !== 1 ? 's' : ''}`;
+    label = t('common.collection.dropdown.in', {
+      collectionsCount,
+      collection: t(`common.collection.label${collectionsCount !== 1 ? '-plural' : ''}`)
+    });
   }
 
   let reorderedCollections = collections;
@@ -33,7 +37,7 @@ export default function CollectionsDropdown({
       className="CollectionsDropdown"
       fixedOptions={[
         <Dropdown.Option onClick={() => setCollectionToUpdate({data: {entities: [entity.id]}})}>
-          Add to new Collection...
+          {t('common.collection.dropdown.add')}
         </Dropdown.Option>
       ]}
     >
