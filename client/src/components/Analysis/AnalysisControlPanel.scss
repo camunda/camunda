@@ -5,63 +5,42 @@
   padding: 12px;
   margin-bottom: 1em;
 
-  .DefinitionSelection {
-    display: inline-block;
-    margin: 0 0.5em;
-    line-height: normal;
-    width: 15%;
-    min-width: 200px;
+  .list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: inline;
 
-    .Popover__button {
-      padding-left: 20px;
+    .item {
+      display: inline;
+      position: relative;
+      padding-right: 20px;
+
+      &.summary {
+        line-height: 50px;
+
+        .DefinitionSelection {
+          display: inline-block;
+          margin: 0 0.5em;
+          line-height: normal;
+          width: 220px;
+
+          .Popover__button {
+            padding-left: 20px;
+          }
+        }
+      }
+
+      .config {
+        cursor: default;
+        display: inline-block;
+        margin: 0 0.5em;
+        line-height: 20px;
+
+        &.configHover .ActionItem {
+          background-color: rgba(48, 116, 142, 0.6);
+        }
+      }
     }
   }
-}
-
-.AnalysisControlPanel__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: inline;
-}
-
-.AnalysisControlPanel__item {
-  display: inline-block;
-  position: relative;
-  padding-right: 20px;
-
-  .Labeled .label {
-    color: #626262;
-    font-size: 0.875em;
-    margin-bottom: 5px;
-  }
-
-  &.summary {
-    line-height: 50px;
-  }
-}
-
-.AnalysisControlPanel__item--select {
-  width: 15%;
-  min-width: 200px;
-}
-
-.AnalysisControlPanel__item--filter {
-  display: inline;
-  padding-top: 27px;
-}
-
-.AnalysisControlPanel__select {
-  width: 100%;
-}
-
-.AnalysisControlPanel__config {
-  cursor: default;
-  display: inline-block;
-  margin: 0 0.5em;
-  line-height: 20px;
-}
-
-.AnalysisControlPanel__config--hover .ActionItem {
-  background-color: rgba(48, 116, 142, 0.6);
 }

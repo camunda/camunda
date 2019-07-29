@@ -16,6 +16,7 @@ import DiagramBehavior from './DiagramBehavior';
 import Statistics from './Statistics';
 
 import './Analysis.scss';
+import {t} from 'translation';
 
 export default class Analysis extends React.Component {
   constructor(props) {
@@ -54,9 +55,7 @@ export default class Analysis extends React.Component {
           xml={xml}
         />
         {config.filter && incompatibleFilters(config.filter) && (
-          <Message type="warning">
-            No data is shown since the combination of filters is incompatible with each other
-          </Message>
+          <Message type="warning">{t('common.filter.incompatibleFilters')}</Message>
         )}
         <div className="content">
           <div className="Analysis__diagram">

@@ -14,6 +14,7 @@ import {getFlowNodeNames, getDiagramElementsBetween} from 'services';
 
 import './Statistics.scss';
 import {LoadingIndicator} from 'components';
+import {t} from 'translation';
 
 export default class Statistics extends React.Component {
   constructor(props) {
@@ -52,41 +53,47 @@ export default class Statistics extends React.Component {
       if (!totalGateway) {
         return (
           <div className="Statistics">
-            <div className="placeholder">
-              No Instances in the current filter passed the selected Gateway.
-            </div>
+            <div className="placeholder">{t('analysis.noInstances')}</div>
           </div>
         );
       }
 
       return (
         <div className="Statistics">
-          <p>
-            Of all <b>{totalGateway} instances</b> that passed the Gateway <i>{gatewayName}</i>
-          </p>
+          <p
+            dangerouslySetInnerHTML={{
+              __html: t('analysis.gatewayInstances', {totalGateway, gatewayName})
+            }}
+          />
           <ul>
             {Object.keys(this.state.data.followingNodes).map(key => {
               const count = this.state.data.followingNodes[key].activityCount;
               const reached = this.state.data.followingNodes[key].activitiesReached;
 
               return (
-                <li key={key}>
-                  <b>{count}</b> ({Math.round((count / totalGateway) * 100) || 0}%) took the{' '}
-                  <i>{key}</i> branch, <b>{reached}</b> ({Math.round((reached / count) * 100) || 0}
-                  %) of those then continued to reach the end event <i>{endEventName}</i>
-                </li>
+                <li
+                  key={key}
+                  dangerouslySetInnerHTML={{
+                    __html: t('analysis.branchDistribution', {
+                      count,
+                      branchPercentage: Math.round((count / totalGateway) * 100) || 0,
+                      key,
+                      reached,
+                      reachedEndPercentage: Math.round((reached / count) * 100) || 0,
+                      endEventName
+                    })
+                  }}
+                />
               );
             })}
           </ul>
-          <p>
-            Distribution of Instances at the Gateway <i>{gatewayName}</i>:
-          </p>
+          <p dangerouslySetInnerHTML={{__html: t('analysis.gatewayDistribution', {gatewayName})}} />
           <div className="diagram-container">
             <canvas ref={node => (this.absoluteChartRef = node)} />
           </div>
-          <p>
-            Probability to reach the end event <i>{endEventName}</i> after taking a branch:
-          </p>
+          <p
+            dangerouslySetInnerHTML={{__html: t('analysis.endEventProbability', {endEventName})}}
+          />
           <div className="diagram-container">
             <canvas ref={node => (this.relativeChartRef = node)} />
           </div>
@@ -104,9 +111,7 @@ export default class Statistics extends React.Component {
 
     return (
       <div className="Statistics">
-        <div className="placeholder">
-          Please select a Process Definition, a Gateway and an End Event to perform the Analysis.
-        </div>
+        <div className="placeholder">{t('analysis.instructionMessage')}</div>
       </div>
     );
   }

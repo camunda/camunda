@@ -1,92 +1,66 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`should display a sentence to describe what the user can do on this page 1`] = `
-<AnalysisControlPanel
-  filter={null}
-  processDefinitionKey=""
-  processDefinitionVersions={Array []}
-  tenantIds={Array []}
-  xml={null}
+<div
+  className="AnalysisControlPanel"
 >
-  <div
-    className="AnalysisControlPanel"
+  <ul
+    className="list"
   >
-    <ul
-      className="AnalysisControlPanel__list"
+    <li
+      className="item summary"
     >
-      <li
-        className="AnalysisControlPanel__item summary"
+      For
+      <DefinitionSelection
+        definitionKey=""
+        onChange={[Function]}
+        tenants={Array []}
+        type="process"
+        versions={Array []}
+        xml={null}
+      />
+      analyse how the branches of
+      <div
+        className="config"
+        name="gateway"
+        onMouseOut={[Function]}
+        onMouseOver={[Function]}
       >
-        For
-        <DefinitionSelection
-          definitionKey=""
-          onChange={[Function]}
-          tenants={Array []}
-          type="process"
-          versions={Array []}
-          xml={null}
+        <ActionItem
+          disabled={true}
+          onClick={[Function]}
         >
-          <div>
-            DefinitionSelection
-          </div>
-        </DefinitionSelection>
-        analyse how the branches of
-        <div
-          className="AnalysisControlPanel__config"
-          name="AnalysisControlPanel__gateway"
-          onMouseOut={[Function]}
-          onMouseOver={[Function]}
-        >
-          <ActionItem
-            disabled={true}
-            onClick={[Function]}
-          >
-            <button
-              disabled={true}
-              id="actionItem"
-              onClick={[Function]}
-            >
-              Select Gateway
-            </button>
-          </ActionItem>
-        </div>
-        affect the probability that an instance reached
-        <div
-          className="AnalysisControlPanel__config"
-          name="AnalysisControlPanel__endEvent"
-          onMouseOut={[Function]}
-          onMouseOver={[Function]}
-        >
-          <ActionItem
-            disabled={true}
-            onClick={[Function]}
-          >
-            <button
-              disabled={true}
-              id="actionItem"
-              onClick={[Function]}
-            >
-              Select End Event
-            </button>
-          </ActionItem>
-        </div>
-      </li>
-      <li
-        className="AnalysisControlPanel__item AnalysisControlPanel__item--filter"
+          Select Gateway
+        </ActionItem>
+      </div>
+      affect the probability that an instance reached
+      <div
+        className="config"
+        name="endEvent"
+        onMouseOut={[Function]}
+        onMouseOver={[Function]}
       >
-        <Filter
-          data={null}
-          flowNodeNames={null}
-          onChange={[Function]}
-          processDefinitionKey=""
-          processDefinitionVersions={Array []}
-          tenantIds={Array []}
-          xml={null}
+        <ActionItem
+          disabled={true}
+          onClick={[Function]}
         >
-          Filter
-        </Filter>
-      </li>
-    </ul>
-  </div>
-</AnalysisControlPanel>
+          Select End Event
+        </ActionItem>
+      </div>
+    </li>
+    <li
+      className="item itemFilter"
+    >
+      <Filter
+        data={null}
+        flowNodeNames={null}
+        onChange={[Function]}
+        processDefinitionKey=""
+        processDefinitionVersions={Array []}
+        tenantIds={Array []}
+        xml={null}
+      />
+    </li>
+  </ul>
+</div>
 `;

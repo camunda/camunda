@@ -75,6 +75,26 @@
     "label": "Alert",
     "label-plural": "Alerts"
   },
+  "analysis": {
+    "selectLabel": "For",
+    "gatwayLabel": "analyse how the branches of",
+    "endEventLabel": "affect the probability that an instance reached",
+    "emptySelectionLabel": {
+      "gateway": "Select Gateway",
+      "endEvent": "Select End Event"
+    },
+    "instructionMessage": "Please select a Process Definition, a Gateway and an End Event to perform the Analysis.",
+    "noInstances": "No Instances in the current filter passed the selected Gateway.",
+    "gatewayInstances": "Of all <b>{totalGateway} instances</b> that passed the Gateway <i>{gatewayName}</i>",
+    "branchDistribution": "<b>{count}</b> ({branchPercentage}%) took the  <i>{key}</i> branch, <b>{reached}</b> ({reachedEndPercentage}%) of those then continued to reach the end event <i>{endEventName}</i>",
+    "gatewayDistribution": "Distribution of Instances at the Gateway <i>{gatewayName}</i>:",
+    "endEventProbability": "Probability to reach the end event <i>{endEventName}</i> after taking a branch:",
+    "tooltip": {
+      "totalInstances": "Process Instances Total",
+      "reachedEnd": "Process Instances reached this state",
+      "reachedEndPercentage": "of Process Instances reached this state"
+    }
+  },
   "common": {
     "save": "Save",
     "cancel": "cancel",
@@ -109,6 +129,9 @@
         "createBtn": "Create Collection",
         "inputLabel": "Add Name"
       }
+    },
+    "filter": {
+      "incompatibleFilters": "No data is shown since the combination of filters is incompatible with each other"
     }
   }
 }

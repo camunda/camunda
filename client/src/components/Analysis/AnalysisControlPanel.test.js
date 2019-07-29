@@ -5,42 +5,15 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import {getFlowNodeNames} from 'services';
 
 import AnalysisControlPanel from './AnalysisControlPanel';
 
-jest.mock('../Reports', () => {
-  return {
-    Filter: () => 'Filter'
-  };
-});
-
-jest.mock('components', () => {
-  return {
-    ActionItem: props => (
-      <button id="actionItem" {...props}>
-        {props.children}
-      </button>
-    ),
-    Popover: ({title, children}) => (
-      <div>
-        {title} {children}
-      </div>
-    ),
-    Labeled: props => (
-      <div>
-        <label id={props.id}>{props.label}</label>
-        {props.children}
-      </div>
-    ),
-    DefinitionSelection: props => <div>DefinitionSelection</div>
-  };
-});
-
 jest.mock('services', () => {
   return {
+    ...jest.requireActual('services'),
     getFlowNodeNames: jest.fn().mockReturnValue({
       a: 'foo',
       b: 'bar'
@@ -69,21 +42,31 @@ const emptyData = {
 const spy = jest.fn();
 
 it('should contain a gateway and end Event field', () => {
-  const node = mount(<AnalysisControlPanel {...data} onChange={spy} />);
+  const node = shallow(<AnalysisControlPanel {...data} onChange={spy} />);
 
-  expect(node.find('[name="AnalysisControlPanel__gateway"]')).toExist();
-  expect(node.find('[name="AnalysisControlPanel__endEvent"]')).toExist();
+  expect(node.find('[name="gateway"]')).toExist();
+  expect(node.find('[name="endEvent"]')).toExist();
 });
 
 it('should show a please select message if an entity is not selected', () => {
-  const node = mount(<AnalysisControlPanel {...data} onChange={spy} />);
+  const node = shallow(<AnalysisControlPanel {...data} onChange={spy} />);
 
-  expect(node).toIncludeText('Select End Event');
-  expect(node).toIncludeText('Select Gateway');
+  expect(
+    node
+      .find('ActionItem')
+      .at(0)
+      .dive()
+  ).toIncludeText('Select Gateway');
+  expect(
+    node
+      .find('ActionItem')
+      .at(1)
+      .dive()
+  ).toIncludeText('Select End Event');
 });
 
 it('should show the element name if an element is selected', () => {
-  const node = mount(
+  const node = shallow(
     <AnalysisControlPanel
       {...data}
       onChange={spy}
@@ -94,12 +77,22 @@ it('should show the element name if an element is selected', () => {
     />
   );
 
-  expect(node).toIncludeText('I am a Gateway');
-  expect(node).not.toIncludeText('gatewayId');
+  expect(
+    node
+      .find('ActionItem')
+      .at(0)
+      .dive()
+  ).toIncludeText('I am a Gateway');
+  expect(
+    node
+      .find('ActionItem')
+      .at(0)
+      .dive()
+  ).not.toIncludeText('gatewayId');
 });
 
 it('should show the element id if an element has no name', () => {
-  const node = mount(
+  const node = shallow(
     <AnalysisControlPanel
       {...data}
       onChange={spy}
@@ -110,28 +103,31 @@ it('should show the element id if an element has no name', () => {
     />
   );
 
-  expect(node).toIncludeText('gatewayId');
+  expect(
+    node
+      .find('ActionItem')
+      .at(0)
+      .dive()
+  ).toIncludeText('gatewayId');
 });
 
 it('should disable gateway and EndEvent elements if no ProcDef selected', async () => {
-  const node = await mount(<AnalysisControlPanel hoveredControl="gateway" {...emptyData} />);
+  const node = await shallow(<AnalysisControlPanel hoveredControl="gateway" {...emptyData} />);
 
-  expect(node.find('#actionItem').first()).toBeDisabled();
-  expect(node.find('#actionItem').at(1)).toBeDisabled();
+  expect(node.find('ActionItem').at(0)).toBeDisabled();
+  expect(node.find('ActionItem').at(1)).toBeDisabled();
 
-  expect(node.find('.AnalysisControlPanel__config').at(1)).not.toHaveClassName(
-    'AnalysisControlPanel__config--hover'
-  );
+  expect(node.find('ActionItem').at(1)).not.toHaveClassName('AnalysisControlPanel__config--hover');
 });
 
 it('should pass the xml to the Filter component', async () => {
-  const node = await mount(<AnalysisControlPanel {...data} />);
+  const node = await shallow(<AnalysisControlPanel {...data} />);
   const filter = node.find('Filter');
   expect(filter.find('[xml="aFooXml"]')).toExist();
 });
 
 it('should load the flownode names and hand them to the filter if process definition changes', async () => {
-  const node = mount(<AnalysisControlPanel {...data} />);
+  const node = shallow(<AnalysisControlPanel {...data} />);
   node.setProps({
     processDefinitionKey: 'fooKey',
     processDefinitionVersions: ['fooVersion']
@@ -145,7 +141,7 @@ it('should load the flownode names and hand them to the filter if process defini
 });
 
 it('should display a sentence to describe what the user can do on this page', () => {
-  const node = mount(<AnalysisControlPanel {...emptyData} />);
+  const node = shallow(<AnalysisControlPanel {...emptyData} />);
 
   expect(node).toMatchSnapshot();
 });

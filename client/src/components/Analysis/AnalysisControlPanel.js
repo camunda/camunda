@@ -15,6 +15,7 @@ import {getFlowNodeNames} from 'services';
 import {Filter} from '../Reports';
 
 import './AnalysisControlPanel.scss';
+import {t} from 'translation';
 
 export default class AnalysisControlPanel extends React.Component {
   constructor(props) {
@@ -64,18 +65,18 @@ export default class AnalysisControlPanel extends React.Component {
     return this.props.processDefinitionKey && this.props.processDefinitionVersions;
   };
 
-  renderInput = ({type, label, bpmnKey}) => {
+  renderInput = ({type, bpmnKey}) => {
     const {hoveredControl, hoveredNode} = this.props;
     const disableFlowNodeSelection = !this.isProcDefSelected();
 
     return (
       <div
-        className={classnames('AnalysisControlPanel__config', {
-          'AnalysisControlPanel__config--hover':
+        className={classnames('config', {
+          configHover:
             !disableFlowNodeSelection &&
             (hoveredControl === type || (hoveredNode && hoveredNode.$instanceOf(bpmnKey)))
         })}
-        name={'AnalysisControlPanel__' + type}
+        name={type}
         onMouseOver={this.hover(type)}
         onMouseOut={this.hover(null)}
       >
@@ -83,7 +84,9 @@ export default class AnalysisControlPanel extends React.Component {
           disabled={disableFlowNodeSelection}
           onClick={() => this.props.updateSelection(type, null)}
         >
-          {this.props[type] ? this.props[type].name || this.props[type].id : 'Select ' + label}
+          {this.props[type]
+            ? this.props[type].name || this.props[type].id
+            : t(`analysis.emptySelectionLabel.${type}`)}
         </ActionItem>
       </div>
     );
@@ -92,9 +95,9 @@ export default class AnalysisControlPanel extends React.Component {
   render() {
     return (
       <div className="AnalysisControlPanel">
-        <ul className="AnalysisControlPanel__list">
-          <li className="AnalysisControlPanel__item summary">
-            For
+        <ul className="list">
+          <li className="item summary">
+            {t('analysis.selectLabel')}
             <DefinitionSelection
               type="process"
               definitionKey={this.props.processDefinitionKey}
@@ -112,12 +115,12 @@ export default class AnalysisControlPanel extends React.Component {
                 })
               }
             />
-            analyse how the branches of
-            {this.renderInput({type: 'gateway', label: 'Gateway', bpmnKey: 'bpmn:Gateway'})}
-            affect the probability that an instance reached
-            {this.renderInput({type: 'endEvent', label: 'End Event', bpmnKey: 'bpmn:EndEvent'})}
+            {t('analysis.gatwayLabel')}
+            {this.renderInput({type: 'gateway', bpmnKey: 'bpmn:Gateway'})}
+            {t('analysis.endEventLabel')}
+            {this.renderInput({type: 'endEvent', bpmnKey: 'bpmn:EndEvent'})}
           </li>
-          <li className="AnalysisControlPanel__item AnalysisControlPanel__item--filter">
+          <li className="item itemFilter">
             <Filter
               data={this.props.filter}
               flowNodeNames={this.state.flowNodeNames}

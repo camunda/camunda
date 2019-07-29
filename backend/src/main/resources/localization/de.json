@@ -75,6 +75,26 @@
     "label": "Alarm",
     "label-plural": "Alarme"
   },
+  "analysis": {
+    "selectLabel": "Für",
+    "gatwayLabel": "Analysieren Sie, wie die Zweige von",
+    "endEventLabel": "beeinflussen die Wahrscheinlichkeit, dass eine Instanz erreicht wurde",
+    "emptySelectionLabel": {
+      "gateway": "Gateway auswählen",
+      "endEvent": "Endereignis auswählen"
+    },
+    "instructionMessage": "Bitte wählen Sie eine Prozessdefinition, ein Gateway und ein Endereignis aus, um die Analyse durchzuführen.",
+    "noInstances": "Keine Instanzen im aktuellen Filter haben das ausgewählte Gateway passiert.",
+    "gatewayInstances": "Von allen <b>{totalGateway} Instanzen</b>, die das Gateway <i>{gatewayName}</i> passiert haben",
+    "branchDistribution": "<b>{count}</b> ({branchPercentage}%) nahm den <i>{key}</i> branch, <b>{reached}</b> ({reachedEndPercentage}%) von denen, die dann weiter das Endereignis <i>{endEventName}</i> erreichten",
+    "gatewayDistribution": "Verteilung von Instanzen am Gateway <i>{gatewayName}</i>:",
+    "endEventProbability": "Wahrscheinlichkeit, das Endereignis zu erreichen <i>{endEventName}</i> nach der Aufnahme eines Zweiges:",
+    "tooltip": {
+      "totalInstances": "Prozessinstanzen insgesamt",
+      "reachedEnd": "Prozessinstanzen haben diesen Status erreicht",
+      "reachedEndPercentage": "von Prozessinstanzen haben diesen Status erreicht"
+    }
+  },
   "common": {
     "save": "Speichern",
     "cancel": "Stornieren",
@@ -109,6 +129,9 @@
         "createBtn": "Sammlung erstellen",
         "inputLabel": "Name hinzufügen"
       }
+    },
+    "filter": {
+      "incompatibleFilters": "Es werden keine Daten angezeigt, da die Filterkombination nicht miteinander kompatibel ist."
     }
   }
 }

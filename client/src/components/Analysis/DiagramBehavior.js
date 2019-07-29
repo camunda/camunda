@@ -8,6 +8,7 @@ import React from 'react';
 
 import {getDiagramElementsBetween} from 'services';
 import {formatters} from 'services';
+import {t} from 'translation';
 
 import './DiagramBehavior.scss';
 
@@ -159,15 +160,15 @@ export default class DiagramBehavior extends React.Component {
         <tbody>
           <tr>
             <td>${piCount}</td>
-            <td>Process Instances Total</td>
+            <td>${t('analysis.tooltip.totalInstances')}</td>
           </tr>
           <tr>
             <td>${value}</td>
-            <td>Process Instances reached this state</td>
+            <td>${t('analysis.tooltip.reachedEnd')}</td>
           </tr>
           <tr>
             <td>${percentageValue}%</td>
-            <td>of Process Instances reached this state</td>
+            <td>${t('analysis.tooltip.reachedEndPercentage')}</td>
           </tr>
         </tbody>
       </table>
