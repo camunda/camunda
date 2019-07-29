@@ -1,7 +1,7 @@
 #####################################
 ### FRONTEND BUILD
 #####################################
-FROM node:12.6-alpine AS fe-build
+FROM node:12.7-alpine AS fe-build
 WORKDIR /build
 # Download dependencies
 COPY ./client/package.json ./client/yarn.lock /build/client/
