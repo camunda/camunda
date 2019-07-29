@@ -37,7 +37,6 @@ public class MultiInstanceInputCollectionTest {
 
   private static final String PROCESS_ID = "process";
   private static final String ELEMENT_ID = "task";
-  private static final String JOB_TYPE = "test";
   private static final String INPUT_COLLECTION = "items";
   private static final String INPUT_ELEMENT = "item";
 
@@ -47,7 +46,7 @@ public class MultiInstanceInputCollectionTest {
           .serviceTask(
               ELEMENT_ID,
               t ->
-                  t.zeebeTaskType(JOB_TYPE)
+                  t.zeebeTaskType("test")
                       .multiInstance(
                           b ->
                               b.zeebeInputCollection(INPUT_COLLECTION)
@@ -74,12 +73,12 @@ public class MultiInstanceInputCollectionTest {
             Collections.singletonMap("x", 2),
             Collections.singletonMap("x", 3))
       },
-      {Arrays.asList("x", null, true, 40)},
+      {Arrays.asList("task", null, true, 40)},
     };
   }
 
   @Test
-  public void shouldCreateOneInstanceForEachElement() {
+  public void test() {
     // given
     ENGINE.deployment().withXmlResource(WORKFLOW).deploy();
 
@@ -91,27 +90,36 @@ public class MultiInstanceInputCollectionTest {
             .withVariable(INPUT_COLLECTION, inputCollection)
             .create();
 
+    // then
     final int collectionSize = inputCollection.size();
 
-    // then
-    assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-                .withElementId(ELEMENT_ID)
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limit(collectionSize))
-        .hasSize(collectionSize);
+    final List<Long> elementInstanceKeys =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementId(ELEMENT_ID)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limit(collectionSize + 1)
+            .map(Record::getKey)
+            .collect(Collectors.toList());
+
+    assertThat(elementInstanceKeys).hasSize(collectionSize + 1);
+
+    // and
+    final List<Record<VariableRecordValue>> variables =
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withName(INPUT_ELEMENT)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limit(collectionSize)
+            .asList();
 
     final List<String> expectedVariableValues =
         inputCollection.stream().map(JsonUtil::toJson).collect(Collectors.toList());
 
-    assertThat(
-            RecordingExporter.variableRecords(VariableIntent.CREATED)
-                .withName(INPUT_ELEMENT)
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limit(collectionSize))
-        .hasSize(collectionSize)
-        .extracting(Record::getValue)
-        .extracting(VariableRecordValue::getValue)
+    assertThat(variables)
+        .extracting(r -> r.getValue().getValue())
         .containsExactlyElementsOf(expectedVariableValues);
+
+    assertThat(variables)
+        .extracting(r -> r.getValue().getScopeKey())
+        .containsExactlyElementsOf(elementInstanceKeys.subList(1, elementInstanceKeys.size()));
   }
 }

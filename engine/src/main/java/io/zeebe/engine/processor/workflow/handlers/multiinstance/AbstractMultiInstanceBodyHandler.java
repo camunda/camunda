@@ -29,13 +29,14 @@ public abstract class AbstractMultiInstanceBodyHandler
   private final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup;
 
   public AbstractMultiInstanceBodyHandler(
-      WorkflowInstanceIntent nextState, Function<BpmnStep, BpmnStepHandler> innerHandlerLookup) {
+      final WorkflowInstanceIntent nextState,
+      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup) {
     super(nextState);
     this.innerHandlerLookup = innerHandlerLookup;
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<ExecutableMultiInstanceBody> context) {
+  protected boolean handleState(final BpmnStepContext<ExecutableMultiInstanceBody> context) {
     boolean transitionToNextState = false;
 
     if (isInnerActivity(context)) {
@@ -48,20 +49,20 @@ public abstract class AbstractMultiInstanceBodyHandler
   }
 
   @Override
-  protected boolean shouldHandleState(BpmnStepContext<ExecutableMultiInstanceBody> context) {
+  protected boolean shouldHandleState(final BpmnStepContext<ExecutableMultiInstanceBody> context) {
     return super.shouldHandleState(context)
         && isStateSameAsElementState(context)
         && (isRootScope(context) || isElementActive(context.getFlowScopeInstance()));
   }
 
-  private boolean isInnerActivity(BpmnStepContext<ExecutableMultiInstanceBody> context) {
+  private boolean isInnerActivity(final BpmnStepContext<ExecutableMultiInstanceBody> context) {
     final DirectBuffer elementId = context.getElement().getId();
     final DirectBuffer flowScopeElementId =
         context.getFlowScopeInstance().getValue().getElementIdBuffer();
     return elementId.equals(flowScopeElementId);
   }
 
-  private void handleInnerActivity(BpmnStepContext<ExecutableMultiInstanceBody> context) {
+  private void handleInnerActivity(final BpmnStepContext<ExecutableMultiInstanceBody> context) {
     final ExecutableActivity innerActivity = context.getElement().getInnerActivity();
     final BpmnStep innerStep = innerActivity.getStep(context.getState());
 
@@ -74,7 +75,7 @@ public abstract class AbstractMultiInstanceBodyHandler
       BpmnStepContext<ExecutableMultiInstanceBody> context);
 
   protected MsgPackQueryProcessor.QueryResults readInputCollectionVariable(
-      BpmnStepContext<ExecutableMultiInstanceBody> context) {
+      final BpmnStepContext<ExecutableMultiInstanceBody> context) {
 
     final JsonPathQuery inputCollection =
         context.getElement().getLoopCharacteristics().getInputCollection();

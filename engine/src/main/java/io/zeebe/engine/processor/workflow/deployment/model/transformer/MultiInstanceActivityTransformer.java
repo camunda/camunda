@@ -31,7 +31,7 @@ public class MultiInstanceActivityTransformer implements ModelElementTransformer
   }
 
   @Override
-  public void transform(Activity element, TransformContext context) {
+  public void transform(final Activity element, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableActivity innerActivity =
         workflow.getElementById(element.getId(), ExecutableActivity.class);
@@ -63,13 +63,16 @@ public class MultiInstanceActivityTransformer implements ModelElementTransformer
       multiInstanceBody.bindLifecycleState(
           WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.ACTIVITY_ELEMENT_TERMINATED);
 
-      // change lifecycle of the inner activity
-      innerActivity.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.ELEMENT_ACTIVATING);
-      innerActivity.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.ELEMENT_COMPLETING);
+      multiInstanceBody.bindLifecycleState(
+          WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.MULTI_INSTANCE_EVENT_OCCURRED);
+
+      // avoid taking the outgoing sequence flow when inner activity is completed
       innerActivity.bindLifecycleState(
           WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.ELEMENT_COMPLETED);
+
+      // TODO (saig0) - #2855: attach boundary events to the multi-instance body
+      innerActivity.getEvents().removeAll(innerActivity.getBoundaryEvents());
+      innerActivity.getInterruptingElementIds().clear();
 
       // replace the inner element with the body
       workflow.addFlowElement(multiInstanceBody);
@@ -77,9 +80,9 @@ public class MultiInstanceActivityTransformer implements ModelElementTransformer
   }
 
   private ExecutableLoopCharacteristics transformLoopCharacteristics(
-      TransformContext context,
-      ExecutableActivity activity,
-      MultiInstanceLoopCharacteristics elementLoopCharacteristics) {
+      final TransformContext context,
+      final ExecutableActivity activity,
+      final MultiInstanceLoopCharacteristics elementLoopCharacteristics) {
 
     final boolean isSequential = elementLoopCharacteristics.isSequential();
 
