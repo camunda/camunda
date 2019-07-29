@@ -7,19 +7,19 @@ Let’s look at a case where `orderValue` is present but was set as a string, bu
 **Linux**
 
 ```
-./bin/zbctl create instance order-process --variables '{"orderId": "1234", "orderValue":"99"}'
+./bin/zbctl --insecure create instance order-process --variables '{"orderId": "1234", "orderValue":"99"}'
 ```
 
 **Mac** 
 
 ```
-./bin/zbctl.darwin create instance order-process --variables '{"orderId": "1234", "orderValue":"99"}'
+./bin/zbctl.darwin --insecure create instance order-process --variables '{"orderId": "1234", "orderValue":"99"}'
 ```
 
 **Windows (Powershell)**
 
 ```
-./bin/zbctl.exe create instance order-process --variables '{\"orderId\": \"1234\", \
+./bin/zbctl.exe --insecure create instance order-process --variables '{\"orderId\": \"1234\", \
 "orderValue\": \"99\"}'
 ```
 
@@ -28,40 +28,40 @@ To advance the instance to our XOR gateway, we’ll quickly create a job worker 
 **Linux**
 
 ```
-./bin/zbctl create worker initiate-payment --handler cat
+./bin/zbctl --insecure create worker initiate-payment --handler cat
 ```
 
 
 **Mac**
 
 ```
-./bin/zbctl.darwin create worker initiate-payment --handler cat
+./bin/zbctl.darwin --insecure create worker initiate-payment --handler cat
 ```
 
 
 **Windows (Powershell)**
 
 ```
-./bin/zbctl.exe create worker initiate-payment --handler "findstr .*"
+./bin/zbctl.exe --insecure create worker initiate-payment --handler "findstr .*"
 ```
 
 And we’ll publish a message that will be correlated with the instance so we can advance past the “Payment Received” Intermediate Message Catch Event: 
 
 **Linux**
 ```
-./bin/zbctl publish message "payment-received" --correlationKey="1234"
+./bin/zbctl --insecure publish message "payment-received" --correlationKey="1234"
 ```
 
 **Mac**
 
 ```
-./bin/zbctl.darwin publish message "payment-received" --correlationKey="1234"
+./bin/zbctl.darwin --insecure publish message "payment-received" --correlationKey="1234"
 ```
 
 **Windows (Powershell)**
 
 ```
-./bin/zbctl.exe publish message "payment-received" --correlationKey="1234"
+./bin/zbctl.exe --insecure publish message "payment-received" --correlationKey="1234"
 ```
 
 In the Operate interface, you should now see that the workflow instance has an [“Incident”](https://docs.zeebe.io/reference/incidents.html), which means there’s a problem with workflow execution that needs to be fixed before the workflow instance can progress to the next step. 
@@ -97,17 +97,17 @@ If you’d like to complete the workflow instance, you can create a worker for t
 **Linux**
 
 ```
-./bin/zbctl create worker ship-without-insurance --handler cat
+./bin/zbctl --insecure create worker ship-without-insurance --handler cat
 ```
 
 **Mac**
 
 ```
-./bin/zbctl.darwin create worker ship-without-insurance --handler cat
+./bin/zbctl.darwin --insecure create worker ship-without-insurance --handler cat
 ```
 
 **Windows (Powershell)**
 
 ```
-./bin/zbctl.exe create worker ship-without-insurance --handler "findstr .*"
+./bin/zbctl.exe --insecure create worker ship-without-insurance --handler "findstr .*"
 ```

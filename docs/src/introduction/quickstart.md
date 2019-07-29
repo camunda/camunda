@@ -59,9 +59,10 @@ To continue this guide open another terminal to execute commands using the
 Zeebe CLI `zbctl`.
 
 We can now check the status of the Zeebe broker.
+> **Note:** By default, the embedded gateway listens to a plaintext connection but the clients are configured to use TLS. Therefore, all `zbctl` commands in the quickstart will specify the `--insecure` flag. 
 
 ```
-./bin/zbctl status
+./bin/zbctl --insecure status
 ```
 ```
 Cluster size: 1
@@ -116,7 +117,7 @@ the types `payment-service`, `inventory-service` and `shipment-service`.
 But first let's deploy the workflow to the Zeebe broker.
 
 ```
-./bin/zbctl deploy order-process.bpmn
+./bin/zbctl --insecure deploy order-process.bpmn
 ```
 ```
 {
@@ -152,7 +153,7 @@ specify the initial data of the instance as variables when we start the instance
 > - Powershell: `'{"\"orderId"\": 1234}'`
 
 ```
-./bin/zbctl create instance order-process --variables '{"orderId": 1234}'
+./bin/zbctl --insecure create instance order-process --variables '{"orderId": 1234}'
 ```
 ```
 {
@@ -186,9 +187,9 @@ each of the three task types from the workflow definition: `payment-service`,
 > to execute this command.
 
 ```
-./bin/zbctl create worker payment-service --handler cat &
-./bin/zbctl create worker inventory-service --handler cat &
-./bin/zbctl create worker shipment-service --handler cat &
+./bin/zbctl --insecure create worker payment-service --handler cat &
+./bin/zbctl --insecure create worker inventory-service --handler cat &
+./bin/zbctl --insecure create worker shipment-service --handler cat &
 ```
 ```
 2019/06/06 20:54:36 Handler completed job 2251799813685257 with variables
@@ -207,7 +208,7 @@ After the job workers are running in the background we can create more instances
 of our workflow to observe how the workers will complete them.
 
 ```
-./bin/zbctl create instance order-process --variables '{"orderId": 12345}'
+./bin/zbctl --insecure create instance order-process --variables '{"orderId": 12345}'
 ```
 
 To close all job workers use the `kill` command to stop the background processes.

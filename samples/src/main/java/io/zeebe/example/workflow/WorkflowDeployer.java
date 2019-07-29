@@ -17,7 +17,7 @@ public class WorkflowDeployer {
     final String broker = "localhost:26500";
 
     final ZeebeClientBuilder clientBuilder =
-        ZeebeClient.newClientBuilder().brokerContactPoint(broker);
+        ZeebeClient.newClientBuilder().brokerContactPoint(broker).usePlaintext();
 
     try (ZeebeClient client = clientBuilder.build()) {
 

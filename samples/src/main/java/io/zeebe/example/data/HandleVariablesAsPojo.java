@@ -18,7 +18,8 @@ public class HandleVariablesAsPojo {
   public static void main(final String[] args) {
     final String broker = "127.0.0.1:26500";
 
-    final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
+    final ZeebeClientBuilder builder =
+        ZeebeClient.newClientBuilder().brokerContactPoint(broker).usePlaintext();
 
     try (ZeebeClient client = builder.build()) {
       final Order order = new Order();
