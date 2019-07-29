@@ -1,4 +1,8 @@
 ---
+container:
+  ports:
+    http: ${optimizeHttpPort:8090}
+    https: ${optimizeHttpsPort:8091}
 engines:
   '1':
     name: ${prefixedDefaultEngineName:integrationTest}

@@ -558,6 +558,10 @@
                 <enginePrefix>${surefire.forkNumber}-</enginePrefix>
                 <prefixedDefaultEngineName>${surefire.forkNumber}-integrationTest</prefixedDefaultEngineName>
                 <indexPrefix>${surefire.forkNumber}-</indexPrefix>
+                <!-- the 400/4001 prefix allows up to 99 forks till we exceed the valid port range of 65535 -->
+                <!-- and we stay in the user port range of 1024-49151 -->
+                <optimizeHttpPort>400${surefire.forkNumber}</optimizeHttpPort>
+                <optimizeHttpsPort>401${surefire.forkNumber}</optimizeHttpsPort>
               </systemPropertyVariables>
             </configuration>
             <executions>

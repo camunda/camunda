@@ -106,7 +106,9 @@ public class StatusWebSocketIT {
 
   private void connectStatusClientSocket(Object statusClientSocket)
     throws DeploymentException, IOException, URISyntaxException {
-    String dest = "ws://localhost:8090/ws/status";
+    final String dest = String.format(
+      "ws://localhost:%d/ws/status", embeddedOptimizeRule.getConfigurationService().getContainerHttpPort().orElse(8090)
+    );
     WebSocketContainer container = ContainerProvider.getWebSocketContainer();
     container.connectToServer(statusClientSocket, new URI(dest));
   }

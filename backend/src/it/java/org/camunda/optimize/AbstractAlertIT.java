@@ -87,6 +87,10 @@ public abstract class AbstractAlertIT {
     return new JobKey(id + "-reminder-job", "statusReminder-job");
   }
 
+  protected Integer getOptimizeHttpPort() {
+    return embeddedOptimizeRule.getConfigurationService().getContainerHttpPort().orElse(8090);
+  }
+
   protected OffsetDateTime getNextReminderExecutionTime(String id) throws SchedulerException {
     Date nextTimeReminderIsExecuted = embeddedOptimizeRule
       .getAlertService()

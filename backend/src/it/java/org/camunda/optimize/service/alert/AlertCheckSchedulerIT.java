@@ -284,7 +284,10 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     assertThat(emails[0].getSubject(), is("[Camunda-Optimize] - Report status"));
     String content = emails[0].getContent().toString();
     assertThat(content, containsString(simpleAlert.getName()));
-    assertThat(content, containsString("http://localhost:8090/#/report/" + reportId));
+    assertThat(
+      content,
+      containsString(String.format("http://localhost:%d/#/report/" + reportId, getOptimizeHttpPort()))
+    );
   }
 
   @Test
@@ -397,7 +400,6 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
       is(Instant.now().plus(intervalValue * 7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS))
     );
   }
-
 
   private Instant getNextFireTime(Trigger cronTrigger) {
     return cronTrigger.getNextFireTime().toInstant();

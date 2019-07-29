@@ -6,12 +6,13 @@
 package org.camunda.optimize.test.it.rule;
 
 import lombok.experimental.UtilityClass;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.util.PropertyUtil;
 
 import java.util.Properties;
 
 @UtilityClass
-public class IntegrationTestProperties {
+public class IntegrationTestConfigurationUtil {
   private static final String DEFAULT_PROPERTIES_PATH = "integration-rules.properties";
   private static final Properties PROPERTIES = PropertyUtil.loadProperties(DEFAULT_PROPERTIES_PATH);
 
@@ -44,10 +45,14 @@ public class IntegrationTestProperties {
   }
 
   public static String getEmbeddedOptimizeEndpoint() {
-    return PROPERTIES.getProperty("camunda.optimize.test.embedded-optimize");
+    return "http://localhost:" + System.getProperty("optimizeHttpPort", "8090");
   }
 
   public static String getEmbeddedOptimizeRestApiEndpoint() {
     return getEmbeddedOptimizeEndpoint() + "/api";
+  }
+
+  public static ConfigurationService createItConfigurationService() {
+    return new ConfigurationService(new String[]{"service-config.yaml", "it/it-config.yaml"});
   }
 }

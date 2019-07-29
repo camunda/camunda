@@ -46,7 +46,7 @@ public class StartOptimizeExecutionListener extends RunListener {
   private void deployDefaultEngine() throws IOException {
     try (final CloseableHttpClient minimal = HttpClients.createMinimal()) {
       new EnginePluginClient(minimal).deployEngine(
-        IntegrationTestProperties.resolveFullDefaultEngineName()
+        IntegrationTestConfigurationUtil.resolveFullDefaultEngineName()
       );
     }
   }

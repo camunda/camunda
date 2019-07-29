@@ -105,7 +105,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     }
   }
 
-  private ConfigurationService constructConfigurationService() {
+  protected ConfigurationService constructConfigurationService() {
     return new ConfigurationService();
   }
 

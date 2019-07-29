@@ -13,7 +13,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.test.it.rule.IntegrationTestProperties;
+import org.camunda.optimize.test.it.rule.IntegrationTestConfigurationUtil;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -21,7 +21,7 @@ import java.io.IOException;
 @AllArgsConstructor
 @Slf4j
 public class EnginePluginClient {
-  private static final String ENGINE_IT_PLUGIN_ENDPOINT = IntegrationTestProperties.getEngineItPluginEndpoint();
+  private static final String ENGINE_IT_PLUGIN_ENDPOINT = IntegrationTestConfigurationUtil.getEngineItPluginEndpoint();
   private static final String DEPLOY_PATH = "/deploy";
   private static final String PURGE_PATH = "/purge";
 

@@ -6,6 +6,7 @@
 package org.camunda.optimize.test.it.rule;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
@@ -36,8 +37,6 @@ import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.camunda.optimize.test.util.SynchronizationElasticsearchImportJob;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 
 import javax.ws.rs.client.Entity;
@@ -59,12 +58,12 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
 /**
  * Helper rule to start embedded jetty with Camunda Optimize on bord.
  */
+@Slf4j
 public class EmbeddedOptimizeRule extends TestWatcher {
 
   public static final String DEFAULT_ENGINE_ALIAS = "1";
 
   private String context = null;
-  private Logger logger = LoggerFactory.getLogger(EmbeddedOptimizeRule.class);
   private OptimizeRequestExecutor requestExecutor;
   private ObjectMapper objectMapper;
 
@@ -83,6 +82,39 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public EmbeddedOptimizeRule(String context) {
     this.context = context;
+  }
+
+  @Override
+  protected void starting(Description description) {
+    try {
+      startOptimize();
+      objectMapper = getApplicationContext().getBean(ObjectMapper.class);
+      requestExecutor =
+        new OptimizeRequestExecutor(
+          getOptimize().target(),
+          getAuthorizationCookieValue(),
+          objectMapper
+        );
+      if (isResetImportOnStart()) {
+        resetImportStartIndexes();
+      }
+    } catch (Exception e) {
+      final String message = "Failed starting embedded Optimize.";
+      log.error(message, e);
+      throw new OptimizeIntegrationTestException(message, e);
+    }
+  }
+
+  @Override
+  protected void finished(Description description) {
+    try {
+      this.getAlertService().getScheduler().clear();
+      TestEmbeddedCamundaOptimize.getInstance().resetConfiguration();
+      LocalDateUtil.reset();
+      reloadConfiguration();
+    } catch (Exception e) {
+      log.error("Failed to clean up after test", e);
+    }
   }
 
   public void startContinuousImportScheduling() {
@@ -115,7 +147,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   public void importAllEngineEntitiesFromLastIndex() {
     for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       if (scheduler.isEnabled()) {
-        logger.debug("scheduling import round");
+        log.debug("scheduling import round");
         scheduleImportAndWaitUntilIsFinished(scheduler);
       }
     }
@@ -197,7 +229,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     final CountDownLatch importIdleLatch = new CountDownLatch(getImportSchedulerFactory().getImportSchedulers().size());
     for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       if (scheduler.isImporting()) {
-        logger.info("Scheduler is still importing, waiting for it to finish.");
+        log.info("Scheduler is still importing, waiting for it to finish.");
         final ImportObserver importObserver = new ImportObserver() {
           @Override
           public void importInProgress(final String engineAlias) {
@@ -206,7 +238,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
           @Override
           public void importIsIdle(final String engineAlias) {
-            logger.info("Scheduler became idle, counting down latch.");
+            log.info("Scheduler became idle, counting down latch.");
             importIdleLatch.countDown();
             scheduler.unsubscribe(this);
           }
@@ -214,7 +246,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
         scheduler.subscribe(importObserver);
 
       } else {
-        logger.info("Scheduler is not importing, counting down latch.");
+        log.info("Scheduler is not importing, counting down latch.");
         importIdleLatch.countDown();
       }
     }
@@ -244,24 +276,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutor;
-  }
-
-  protected void starting(Description description) {
-    try {
-      startOptimize();
-      objectMapper = getApplicationContext().getBean(ObjectMapper.class);
-      requestExecutor =
-        new OptimizeRequestExecutor(
-          getOptimize().target(),
-          getAuthorizationCookieValue(),
-          objectMapper
-        );
-      if (isResetImportOnStart()) {
-        resetImportStartIndexes();
-      }
-    } catch (Exception e) {
-      //nothing to do here
-    }
   }
 
   public String getAuthenticationToken() {
@@ -297,17 +311,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     getElasticsearchImportJobExecutor().startExecutingImportJobs();
   }
 
-  protected void finished(Description description) {
-    try {
-      this.getAlertService().getScheduler().clear();
-      TestEmbeddedCamundaOptimize.getInstance().resetConfiguration();
-      LocalDateUtil.reset();
-      reloadConfiguration();
-    } catch (Exception e) {
-      logger.error("Failed to clean up after test", e);
-    }
-  }
-
   public void reloadConfiguration() {
     getOptimize().reloadConfiguration();
   }
@@ -316,19 +319,19 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     try {
       this.getElasticsearchImportJobExecutor().stopExecutingImportJobs();
     } catch (Exception e) {
-      logger.error("Failed to stop elasticsearch import", e);
+      log.error("Failed to stop elasticsearch import", e);
     }
 
     try {
       this.getAlertService().destroy();
     } catch (Exception e) {
-      logger.error("Failed to destroy alert service", e);
+      log.error("Failed to destroy alert service", e);
     }
 
     try {
       getOptimize().destroy();
     } catch (Exception e) {
-      logger.error("Failed to stop Optimize", e);
+      log.error("Failed to stop Optimize", e);
     }
   }
 

@@ -121,6 +121,11 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     testOptimizeInstance = null;
   }
 
+  @Override
+  protected ConfigurationService constructConfigurationService() {
+    return IntegrationTestConfigurationUtil.createItConfigurationService();
+  }
+
   public void resetConfiguration() throws IOException {
     logger.info("resetting config, parsing defaultconfig and copying properties");
     // copy all properties from the default configuration to the embedded optimize
@@ -204,11 +209,11 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   }
 
   public WebTarget target() {
-    return getClient().target(IntegrationTestProperties.getEmbeddedOptimizeRestApiEndpoint());
+    return getClient().target(IntegrationTestConfigurationUtil.getEmbeddedOptimizeRestApiEndpoint());
   }
 
   public WebTarget rootTarget() {
-    return getClient().target(IntegrationTestProperties.getEmbeddedOptimizeEndpoint());
+    return getClient().target(IntegrationTestConfigurationUtil.getEmbeddedOptimizeEndpoint());
   }
 
   public final WebTarget rootTarget(String path) {

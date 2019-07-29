@@ -28,10 +28,10 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule)
-      .around(engineRule)
-      .around(embeddedOptimizeRule)
-      .around(engineDatabaseRule);
+    .outerRule(elasticSearchRule)
+    .around(engineRule)
+    .around(embeddedOptimizeRule)
+    .around(engineDatabaseRule);
 
   private GreenMail greenMail;
 
@@ -150,7 +150,10 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     String content = emails[0].getContent().toString();
     assertThat(content, containsString(simpleAlert.getName()));
     assertThat(content, containsString("is not exceeded anymore."));
-    assertThat(content, containsString("http://localhost:8090/#/report/" + reportId));
+    assertThat(
+      content,
+      containsString(String.format("http://localhost:%d/#/report/" + reportId, getOptimizeHttpPort()))
+    );
   }
 
   @Test
@@ -160,9 +163,9 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
     // when
     EmailAlertEnabledDto emailEnabled = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEmailNotificationIsEnabledRequest()
-            .execute(EmailAlertEnabledDto.class, 200);
+      .getRequestExecutor()
+      .buildEmailNotificationIsEnabledRequest()
+      .execute(EmailAlertEnabledDto.class, 200);
 
     // then the status code is authorized
     assertThat(emailEnabled.isEnabled(), is(true));
@@ -175,9 +178,9 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
     // when
     EmailAlertEnabledDto emailEnabled = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEmailNotificationIsEnabledRequest()
-            .execute(EmailAlertEnabledDto.class, 200);
+      .getRequestExecutor()
+      .buildEmailNotificationIsEnabledRequest()
+      .execute(EmailAlertEnabledDto.class, 200);
 
     // then the status code is authorized
     assertThat(emailEnabled.isEnabled(), is(false));

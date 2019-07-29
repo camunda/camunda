@@ -119,8 +119,8 @@ public class EngineIntegrationRule extends TestWatcher {
 
   public EngineIntegrationRule(final String customEngineName, final boolean shouldCleanEngine) {
     this.engineName = Optional.ofNullable(customEngineName)
-      .map(IntegrationTestProperties::resolveFullEngineName)
-      .orElseGet(IntegrationTestProperties::resolveFullDefaultEngineName);
+      .map(IntegrationTestConfigurationUtil::resolveFullEngineName)
+      .orElseGet(IntegrationTestConfigurationUtil::resolveFullDefaultEngineName);
     this.shouldCleanEngine = shouldCleanEngine;
     initEngine();
   }
@@ -144,7 +144,7 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   private static ObjectMapper createObjectMapper() {
-    final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(IntegrationTestProperties.getEngineDateFormat());
+    final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(IntegrationTestConfigurationUtil.getEngineDateFormat());
     final JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(formatter));
     javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(formatter));
@@ -754,7 +754,7 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   private String getEngineUrl() {
-    return IntegrationTestProperties.getEnginesRestEndpoint() + engineName;
+    return IntegrationTestConfigurationUtil.getEnginesRestEndpoint() + engineName;
   }
 
   private String getSecuredEngineUrl() {
@@ -998,7 +998,7 @@ public class EngineIntegrationRule extends TestWatcher {
   @SneakyThrows
   public void unlockUser(String username) {
     final HttpUriRequest request;
-    if (IntegrationTestProperties.getEngineVersion().matches("7\\.11\\..*")) {
+    if (IntegrationTestConfigurationUtil.getEngineVersion().matches("7\\.11\\..*")) {
       request = new HttpPost(getEngineUrl() + "/user/" + username + "/unlock");
     } else {
       request = new HttpGet(getEngineUrl() + "/user/" + username + "/unlock");

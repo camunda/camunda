@@ -351,9 +351,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   private ConfigurationService createConfigurationService() {
-    final ConfigurationService configurationService = new ConfigurationService(
-      new String[]{"service-config.yaml", "it/it-config.yaml"}
-    );
+    final ConfigurationService configurationService = IntegrationTestConfigurationUtil.createItConfigurationService();
     if (customIndexPrefix != null) {
       configurationService.setEsIndexPrefix(configurationService.getEsIndexPrefix() + customIndexPrefix);
     }
