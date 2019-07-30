@@ -7,7 +7,11 @@
 import React from 'react';
 import {shallow, mount} from 'enzyme';
 
-import {DEFAULT_FILTER, FILTER_TYPES} from 'modules/constants';
+import {
+  FILTER_TYPES,
+  DEFAULT_FILTER,
+  DEFAULT_FILTER_CONTROLLED_VALUES
+} from 'modules/constants';
 import Button from 'modules/components/Button';
 import {mockResolvedAsyncFn} from 'modules/testUtils';
 import * as api from 'modules/api/instances/instances';
@@ -40,7 +44,7 @@ describe('Filters', () => {
       <Filters
         groupedWorkflows={workflows}
         {...mockProps}
-        filter={DEFAULT_FILTER}
+        filter={DEFAULT_FILTER_CONTROLLED_VALUES}
       />
     );
 
@@ -56,7 +60,12 @@ describe('Filters', () => {
 
   it('should render the running and finished filters', () => {
     // given
-    const {active, incidents, completed, canceled} = DEFAULT_FILTER;
+    const {
+      active,
+      incidents,
+      completed,
+      canceled
+    } = DEFAULT_FILTER_CONTROLLED_VALUES;
 
     const node = mount(
       <ThemeProvider>
@@ -64,7 +73,7 @@ describe('Filters', () => {
           <Filters
             groupedWorkflows={workflows}
             {...mockProps}
-            filter={DEFAULT_FILTER}
+            filter={DEFAULT_FILTER_CONTROLLED_VALUES}
           />
         </CollapsablePanelProvider>
       </ThemeProvider>
@@ -75,10 +84,8 @@ describe('Filters', () => {
     expect(FilterNodes).toHaveLength(2);
     expect(FilterNodes.at(0).prop('type')).toBe(FILTER_TYPES.RUNNING);
     expect(FilterNodes.at(0).prop('filter')).toEqual({active, incidents});
-    expect(FilterNodes.at(0).prop('onChange')).toBe(mockProps.onFilterChange);
     expect(FilterNodes.at(1).prop('type')).toBe(FILTER_TYPES.FINISHED);
     expect(FilterNodes.at(1).prop('filter')).toEqual({completed, canceled});
-    expect(FilterNodes.at(1).prop('onChange')).toBe(mockProps.onFilterChange);
   });
 
   describe('errorMessage filter', () => {
@@ -90,16 +97,17 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
       );
       const field = node
-        .find(Styled.TextInput)
-        .filterWhere(n => n.props().name === 'errorMessage');
+        .find(Styled.ValidationTextInput)
+        .filterWhere(n => n.props().name === 'errorMessage')
+        .find('input');
 
-      field.simulate('change', {target: {value: '', name: 'errorMessage'}});
+      field.simulate('change', {target: {value: 'asd', name: 'errorMessage'}});
 
       setTimeout(() => {
         // then
@@ -107,7 +115,8 @@ describe('Filters', () => {
         expect(field.prop('placeholder')).toEqual('Error Message');
         expect(field.prop('value')).toEqual('');
         expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-          errorMessage: ''
+          ...DEFAULT_FILTER_CONTROLLED_VALUES,
+          errorMessage: 'asd'
         });
 
         done();
@@ -122,13 +131,13 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
       );
       const field = node
-        .find(Styled.TextInput)
+        .find(Styled.ValidationTextInput)
         .filterWhere(n => n.props().name === 'errorMessage');
 
       field.simulate('change', {target: {value: '', name: 'errorMessage'}});
@@ -147,7 +156,7 @@ describe('Filters', () => {
         <Filters
           groupedWorkflows={workflows}
           {...mockProps}
-          filter={DEFAULT_FILTER}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
 
@@ -168,7 +177,7 @@ describe('Filters', () => {
       );
 
       const field = node
-        .find(Styled.TextInput)
+        .find(Styled.ValidationTextInput)
         .filterWhere(n => n.props().name === 'errorMessage');
 
       // then
@@ -180,7 +189,7 @@ describe('Filters', () => {
         <Filters
           groupedWorkflows={workflows}
           {...mockProps}
-          filter={DEFAULT_FILTER}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
 
@@ -191,45 +200,58 @@ describe('Filters', () => {
       expect(node.state().filter.errorMessage).toEqual('error message');
     });
 
-    it('should call onFilterChange with the right error message', () => {
-      const errorMessage = 'lorem ipsum';
+    it('should call onFilterChange with the right error message', done => {
       // given
+      const errorMessage = 'lorem ipsum';
       const node = shallow(
         <Filters
           groupedWorkflows={workflows}
           {...mockProps}
-          filter={DEFAULT_FILTER}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
 
       //when
-      node.instance().handleFieldChange({
+      node.instance().handleInputChange({
         target: {value: errorMessage, name: 'errorMessage'}
       });
+      node.instance().handleFilterChangeDebounced();
 
-      // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({errorMessage});
+      setTimeout(() => {
+        // then
+        expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+          ...DEFAULT_FILTER_CONTROLLED_VALUES,
+          errorMessage
+        });
+        done();
+      }, DEBOUNCE_DELAY * 2);
     });
 
-    it('should call onFilterChange with empty error message', () => {
+    it('should call onFilterChange with empty error message', done => {
       // given
-      // user blurs without writing
       const emptyErrorMessage = '';
       const node = shallow(
         <Filters
           groupedWorkflows={workflows}
           {...mockProps}
-          filter={DEFAULT_FILTER}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
 
       //when
-      node.instance().handleFieldChange({
+      node.instance().handleInputChange({
         target: {value: emptyErrorMessage, name: 'errorMessage'}
       });
+      node.instance().handleFilterChangeDebounced();
 
-      // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({errorMessage: ''});
+      setTimeout(() => {
+        // then
+        expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+          ...DEFAULT_FILTER_CONTROLLED_VALUES,
+          errorMessage: ''
+        });
+        done();
+      }, DEBOUNCE_DELAY * 2);
     });
   });
 
@@ -242,7 +264,7 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
@@ -261,7 +283,10 @@ describe('Filters', () => {
       expect(field.prop('placeholder')).toEqual(
         'Instance Id(s) separated by space or comma'
       );
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({ids: ''});
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
+        ids: ''
+      });
     });
 
     it('should initialize the field with empty value', () => {
@@ -269,7 +294,7 @@ describe('Filters', () => {
         <Filters
           groupedWorkflows={workflows}
           {...mockProps}
-          filter={DEFAULT_FILTER}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
 
@@ -281,7 +306,7 @@ describe('Filters', () => {
         <Filters
           groupedWorkflows={workflows}
           {...mockProps}
-          filter={DEFAULT_FILTER}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
 
@@ -299,7 +324,7 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockProps}
-              filter={COMPLETE_FILTER}
+              filter={{...DEFAULT_FILTER_CONTROLLED_VALUES, ids: 'a, b, c'}}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
@@ -320,17 +345,20 @@ describe('Filters', () => {
         <Filters
           groupedWorkflows={workflows}
           {...mockProps}
-          filter={DEFAULT_FILTER}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
 
       //when
-      node
-        .instance()
-        .handleFieldChange({target: {value: instanceIds, name: 'ids'}});
+      const instance = node.instance();
+      instance.handleInputChange({target: {value: instanceIds, name: 'ids'}});
+      instance.handleFilterChange();
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({ids: instanceIds});
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
+        ids: instanceIds
+      });
     });
 
     it('should call onFilterChange with an empty array', () => {
@@ -341,17 +369,20 @@ describe('Filters', () => {
         <Filters
           groupedWorkflows={workflows}
           {...mockProps}
-          filter={DEFAULT_FILTER}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
 
       //when
-      node
-        .instance()
-        .handleFieldChange({target: {value: emptyInstanceIds, name: 'ids'}});
+      const instance = node.instance();
+      instance.handleInputChange({
+        target: {value: emptyInstanceIds, name: 'ids'}
+      });
+      instance.handleFilterChange();
 
       // then
       expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
         ids: ''
       });
     });
@@ -366,7 +397,7 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
@@ -384,6 +415,7 @@ describe('Filters', () => {
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Workflow');
       expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
         workflow: '',
         activityId: '',
         version: ''
@@ -441,7 +473,7 @@ describe('Filters', () => {
         <Filters
           groupedWorkflows={workflows}
           {...mockProps}
-          filter={DEFAULT_FILTER}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
 
@@ -465,7 +497,7 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
@@ -515,7 +547,7 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
@@ -547,7 +579,7 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
@@ -581,7 +613,7 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
@@ -623,7 +655,7 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
@@ -663,7 +695,7 @@ describe('Filters', () => {
         <Filters
           groupedWorkflows={workflows}
           {...mockProps}
-          filter={DEFAULT_FILTER}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
 
@@ -674,6 +706,7 @@ describe('Filters', () => {
 
       // then
       expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
         workflow: 'demoProcess',
         version: '3',
         activityId: ''
@@ -686,7 +719,7 @@ describe('Filters', () => {
         <Filters
           groupedWorkflows={workflows}
           {...mockProps}
-          filter={DEFAULT_FILTER}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
 
@@ -716,7 +749,7 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
@@ -734,7 +767,10 @@ describe('Filters', () => {
       expect(field.props().placeholder).toEqual('Flow Node');
       expect(field.props().disabled).toBe(true);
       expect(field.props().options.length).toBe(0);
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({activityId: ''});
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
+        activityId: ''
+      });
     });
 
     it('should render the value from this.props.filter.activityId', () => {
@@ -765,7 +801,7 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
@@ -802,7 +838,7 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
@@ -841,7 +877,7 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockPropsWithSelectableFlowNodes}
-              filter={DEFAULT_FILTER}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
@@ -889,7 +925,7 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockPropsWithSelectableFlowNodes}
-              filter={DEFAULT_FILTER}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
               selectableFlowNodes={unsortedSelectableFlowNodes}
             />
           </CollapsablePanelProvider>
@@ -918,7 +954,7 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
@@ -953,7 +989,7 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockPropsWithSelectableFlowNodes}
-              filter={DEFAULT_FILTER}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
@@ -976,7 +1012,7 @@ describe('Filters', () => {
         <Filters
           groupedWorkflows={workflows}
           {...mockPropsWithSelectableFlowNodes}
-          filter={DEFAULT_FILTER}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
 
@@ -985,12 +1021,15 @@ describe('Filters', () => {
       node.instance().handleWorkflowNameChange({target: {value: value}});
       node.update();
 
-      node.instance().handleFieldChange({
+      const instance = node.instance();
+
+      instance.handleInputChange({
         target: {
           value: mockPropsWithSelectableFlowNodes.selectableFlowNodes[0].id,
           name: 'activityId'
         }
       });
+      instance.handleFilterChange();
 
       // then
       expect(node.state().filter.activityId).toEqual(activityId);
@@ -998,33 +1037,40 @@ describe('Filters', () => {
   });
 
   describe('startDate filter', () => {
-    const target = {value: '08 October 1084', name: 'startDate'};
-    it('should exist', () => {
+    it('should exist', done => {
       // given
+      const target = {value: '1084-10-08', name: 'startDate'};
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
               groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
       );
       const field = node
-        .find(Styled.TextInput)
-        .filterWhere(n => n.props().name === 'startDate');
-      const onBlur = field.props().onBlur;
-      onBlur({target});
+        .find(Styled.ValidationTextInput)
+        .filterWhere(n => n.props().name === 'startDate')
+        .find('input');
 
-      // then
-      expect(field.length).toEqual(1);
-      expect(field.props().placeholder).toEqual('Start Date');
-      expect(field.props().value).toEqual('');
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        startDate: '08 October 1084'
-      });
+      field.simulate('change', {target});
+
+      setTimeout(() => {
+        // then
+        expect(field.length).toEqual(1);
+        expect(field.props().placeholder).toEqual(
+          'Start Date yyyy-mm-dd hh:mm:ss'
+        );
+        expect(field.props().value).toEqual('');
+        expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+          ...DEFAULT_FILTER_CONTROLLED_VALUES,
+          startDate: '1084-10-08'
+        });
+        done();
+      }, DEBOUNCE_DELAY);
     });
 
     it('should be prefilled with the value from props.filter.startDate', async () => {
@@ -1040,11 +1086,11 @@ describe('Filters', () => {
         </ThemeProvider>
       );
       const field = node
-        .find(Styled.TextInput)
+        .find(Styled.ValidationTextInput)
         .filterWhere(n => n.props().name === 'startDate');
 
       // then
-      expect(field.props().value).toEqual('08 October 2018');
+      expect(field.props().value).toEqual('2018-10-08');
     });
 
     //change without implementation
@@ -1053,17 +1099,17 @@ describe('Filters', () => {
         <Filters
           groupedWorkflows={workflows}
           {...mockProps}
-          filter={DEFAULT_FILTER}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
 
       //when
       node.instance().handleInputChange({
-        target: {value: '25 January 2009', name: 'startDate'}
+        target: {value: '2009-01-25 10:23:01', name: 'startDate'}
       });
       node.update();
 
-      expect(node.state().filter.startDate).toEqual('25 January 2009');
+      expect(node.state().filter.startDate).toEqual('2009-01-25 10:23:01');
     });
 
     it('should update the filters in Instances page', async () => {
@@ -1071,20 +1117,22 @@ describe('Filters', () => {
         <Filters
           groupedWorkflows={workflows}
           {...mockProps}
-          filter={DEFAULT_FILTER}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
 
       //when
-      node.instance().handleFieldChange({
-        target: {value: '25 January 2009', name: 'startDate'}
+      const instance = node.instance();
+      instance.handleInputChange({
+        target: {value: '2009-01-25', name: 'startDate'}
       });
+      instance.handleFilterChange();
       node.update();
 
       // then
       expect(mockProps.onFilterChange).toHaveBeenCalled();
       expect(mockProps.onFilterChange.mock.calls[0][0].startDate).toBe(
-        '25 January 2009'
+        '2009-01-25'
       );
     });
 
@@ -1093,50 +1141,62 @@ describe('Filters', () => {
         <Filters
           groupedWorkflows={workflows}
           {...mockProps}
-          filter={DEFAULT_FILTER}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
 
       //when
-      node.instance().handleFieldChange({
+      const instance = node.instance();
+      instance.handleInputChange({
         target: {value: '', name: 'startDate'}
       });
+      instance.handleFilterChange();
       node.update();
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({startDate: ''});
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
+        startDate: ''
+      });
     });
   });
 
   describe('endDate filter', () => {
-    it('should exist', () => {
+    it('should exist', done => {
       // given
-      const target = {value: '08 October 1984', name: 'endDate'};
+      const target = {value: '1984-10-08', name: 'endDate'};
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
               groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
       );
       const field = node
-        .find(Styled.TextInput)
-        .filterWhere(n => n.props().name === 'endDate');
-      const onBlur = field.props().onBlur;
-      onBlur({target});
+        .find(Styled.ValidationTextInput)
+        .filterWhere(n => n.props().name === 'endDate')
+        .find('input');
 
-      // then
-      expect(field.length).toEqual(1);
-      expect(field.props().name).toEqual('endDate');
-      expect(field.props().placeholder).toEqual('End Date');
-      expect(field.props().value).toEqual('');
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        endDate: '08 October 1984'
-      });
+      field.simulate('change', {target});
+
+      setTimeout(() => {
+        // then
+        expect(field.length).toEqual(1);
+        expect(field.props().name).toEqual('endDate');
+        expect(field.props().placeholder).toEqual(
+          'End Date yyyy-mm-dd hh:mm:ss'
+        );
+        expect(field.props().value).toEqual('');
+        expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+          ...DEFAULT_FILTER_CONTROLLED_VALUES,
+          endDate: '1984-10-08'
+        });
+        done();
+      }, DEBOUNCE_DELAY * 2);
     });
 
     it('should be prefilled with the value from props.filter.endDate', async () => {
@@ -1154,11 +1214,11 @@ describe('Filters', () => {
 
       //when
       const field = node
-        .find(Styled.TextInput)
+        .find(Styled.ValidationTextInput)
         .filterWhere(n => n.props().name === 'endDate');
 
       // then
-      expect(field.props().value).toEqual('10-10-2018');
+      expect(field.props().value).toEqual('2018-10-10');
     });
 
     // change
@@ -1167,18 +1227,18 @@ describe('Filters', () => {
         <Filters
           groupedWorkflows={workflows}
           {...mockProps}
-          filter={DEFAULT_FILTER}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
 
       //when
       node.instance().handleInputChange({
-        target: {value: '25 January 2009', name: 'endDate'}
+        target: {value: '2009-01-25', name: 'endDate'}
       });
       node.update();
 
       // then
-      expect(node.state().filter.endDate).toEqual('25 January 2009');
+      expect(node.state().filter.endDate).toEqual('2009-01-25');
     });
 
     it('should update the filters in Instances page', async () => {
@@ -1186,27 +1246,29 @@ describe('Filters', () => {
         <Filters
           groupedWorkflows={workflows}
           {...mockProps}
-          filter={DEFAULT_FILTER}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
 
       //when
-      node.instance().handleFieldChange({
-        target: {value: '25 January 2009', name: 'endDate'}
+      const instance = node.instance();
+      instance.handleInputChange({
+        target: {value: '2009-01-25', name: 'endDate'}
       });
+      instance.handleFilterChange();
       node.update();
 
       // then
       expect(mockProps.onFilterChange).toHaveBeenCalled();
       expect(mockProps.onFilterChange.mock.calls[0][0].endDate).toBe(
-        '25 January 2009'
+        '2009-01-25'
       );
     });
   });
 
   describe('reset button', () => {
     it('should render the reset filters button', () => {
-      // given filter is different from DEFAULT_FILTER
+      // given filter is different from DEFAULT_FILTER_CONTROLLED_VALUES
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
@@ -1239,7 +1301,10 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER}
+              filter={{
+                ...DEFAULT_FILTER_CONTROLLED_VALUES,
+                ...DEFAULT_FILTER
+              }}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>

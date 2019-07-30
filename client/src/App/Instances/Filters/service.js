@@ -4,7 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {ALL_VERSIONS_OPTION, DEFAULT_CONTROLLED_VALUES} from './constants';
+import {ALL_VERSIONS_OPTION} from './constants';
+import {compactObject} from 'modules/utils';
 import {sortBy} from 'lodash';
 
 /**
@@ -42,17 +43,6 @@ export function addAllVersionsOption(options = []) {
     : [...options];
 }
 
-/**
- * Prevents controlled filter fields from receiving undefined values
- * Instances page passes filter prop with the active filters from url
- */
-export function getFilterWithDefaults(filter) {
-  return {
-    ...DEFAULT_CONTROLLED_VALUES,
-    ...filter
-  };
-}
-
 export function getLastVersionOfWorkflow(workflow = {}) {
   let version = '';
   if (workflow.workflows) {
@@ -60,4 +50,30 @@ export function getLastVersionOfWorkflow(workflow = {}) {
   }
 
   return version;
+}
+
+export function isDateComplete(date) {
+  if (date === '') {
+    return true;
+  }
+  return !!date.match(/^\d{4}-\d{2}-\d{2}(\W\d{2}:\d{2}(:\d{2})?)?$/);
+}
+
+function sanitizeVariable(variable) {
+  return variable.name === '' && variable.value === '' ? '' : variable;
+}
+
+function sanitizeDate(date) {
+  return isDateComplete(date) || date === '' ? date : '';
+}
+
+export function sanitizeFilter(filter) {
+  const {variable, startDate, endDate} = filter;
+
+  return compactObject({
+    ...filter,
+    variable: sanitizeVariable(variable),
+    startDate: sanitizeDate(startDate),
+    endDate: sanitizeDate(endDate)
+  });
 }

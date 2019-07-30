@@ -264,6 +264,7 @@ export const createFilter = (options = {}) => {
     canceled: true,
     completed: true,
     activityId: randomActivityIdIterator.next().value,
+    variable: {name: 'myVariable', value: '123'},
     ...options
   };
 };

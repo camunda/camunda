@@ -16,7 +16,8 @@ import {
   SORT_ORDER,
   DEFAULT_MAX_RESULTS,
   DEFAULT_FIRST_ELEMENT,
-  PAGE_TITLE
+  PAGE_TITLE,
+  DEFAULT_FILTER_CONTROLLED_VALUES
 } from 'modules/constants';
 import {
   fetchWorkflowInstancesStatistics,
@@ -30,10 +31,11 @@ import {
   getWorkflowByVersion
 } from 'modules/utils/filter';
 import {formatGroupedWorkflows} from 'modules/utils/instance';
-import {compactObject} from 'modules/utils';
 
 import Instances from './Instances';
 import {parseQueryString, decodeFields, fetchDiagramModel} from './service';
+
+import {sanitizeFilter} from './Filters/service';
 
 class InstancesContainer extends Component {
   static propTypes = {
@@ -184,20 +186,9 @@ class InstancesContainer extends Component {
     });
   };
 
-  handleFilterChange = async filterChange => {
-    const newFilter = compactObject({
-      ...this.state.filter,
-      ...filterChange
-    });
-
-    if (!isEqual(newFilter, this.state.filter)) {
-      await this.setFilterFromInput(newFilter);
-    }
-  };
-
   handleFilterReset = async fallbackFilter => {
     if (!isEqual(fallbackFilter, this.state.filter)) {
-      await this.setFilterFromInput(fallbackFilter);
+      await this.setFilter(fallbackFilter);
     }
   };
 
@@ -304,7 +295,24 @@ class InstancesContainer extends Component {
     });
   };
 
+  setFilterFromSelection = async activityId => {
+    await this.setFilter({
+      ...this.state.filter,
+      activityId
+    });
+  };
+
   setFilterFromInput = async filter => {
+    const sanitizedFilter = sanitizeFilter(filter);
+
+    if (isEqual(this.state.filter, sanitizedFilter)) {
+      return;
+    }
+
+    await this.setFilter(sanitizedFilter);
+  };
+
+  setFilter = async filter => {
     this.setFilterInURL(filter);
     let {workflow, version} = filter;
 
@@ -373,10 +381,14 @@ class InstancesContainer extends Component {
     return (
       <Instances
         {...this.state}
-        filter={decodeFields(this.state.filter)}
-        onFilterChange={this.handleFilterChange}
+        filter={{
+          ...DEFAULT_FILTER_CONTROLLED_VALUES,
+          ...decodeFields(this.state.filter)
+        }}
+        onFilterChange={this.setFilterFromInput}
         onFilterReset={this.handleFilterReset}
         onFirstElementChange={this.handleFirstElementChange}
+        onFlowNodeSelection={this.setFilterFromSelection}
         onSort={this.handleSortingChange}
         onWorkflowInstancesRefresh={this.handleWorkflowInstancesRefresh}
       />

@@ -21,7 +21,8 @@ import {
   DEFAULT_FIRST_ELEMENT,
   DEFAULT_MAX_RESULTS,
   SORT_ORDER,
-  INCIDENTS_FILTER
+  INCIDENTS_FILTER,
+  DEFAULT_FILTER_CONTROLLED_VALUES
 } from 'modules/constants';
 import {
   mockResolvedAsyncFn,
@@ -43,25 +44,27 @@ jest.mock(
 
 // props mocks
 const fullFilterWithoutWorkflow = {
+  ...DEFAULT_FILTER_CONTROLLED_VALUES,
   active: true,
   incidents: true,
   completed: true,
-  finished: true,
+  canceled: true,
   ids: '424242, 434343',
   errorMessage: 'No%20data%20found%20for%20query%20$.foo.',
-  startDate: '28 December 2018',
-  endDate: '28 December 2018'
+  startDate: '2018-12-28',
+  endDate: '2018-12-28'
 };
 
 const fullFilterWithWorkflow = {
+  ...DEFAULT_FILTER_CONTROLLED_VALUES,
   active: true,
   incidents: true,
   completed: true,
-  finished: true,
+  canceled: true,
   ids: '424242, 434343',
   errorMessage: 'No%20data%20found%20for%20query%20$.foo.',
-  startDate: '28 December 2018',
-  endDate: '28 December 2018',
+  startDate: '2018-12-28',
+  endDate: '2018-12-28',
   workflow: 'demoProcess',
   version: 1,
   activityId: 'taskD'
@@ -287,7 +290,11 @@ describe('InstancesContainer', () => {
     expect(InstancesNode.prop('groupedWorkflows')).toEqual(
       formatGroupedWorkflows(groupedWorkflowsMock)
     );
-    expect(InstancesNode.prop('filter')).toEqual(DEFAULT_FILTER);
+
+    expect(InstancesNode.prop('filter')).toEqual({
+      ...DEFAULT_FILTER_CONTROLLED_VALUES,
+      ...DEFAULT_FILTER
+    });
     expect(InstancesNode.props().diagramModel).toEqual({});
   });
 
@@ -333,12 +340,11 @@ describe('InstancesContainer', () => {
   });
 
   it('should pass data to Instances for full filter, with all versions', async () => {
-    const {activityId, version, ...rest} = fullFilterWithWorkflow;
     const node = mount(
       <InstancesContainerWrapped
         {...localStorageProps}
         {...getRouterProps({
-          ...rest,
+          ...fullFilterWithWorkflow,
           version: 'all'
         })}
       />
@@ -349,9 +355,11 @@ describe('InstancesContainer', () => {
     node.update();
 
     const InstancesNode = node.find(Instances);
+
     expect(InstancesNode.prop('filter')).toEqual(
       decodeFields({
-        ...rest,
+        ...fullFilterWithWorkflow,
+        activityId: '',
         version: 'all'
       })
     );
@@ -569,6 +577,7 @@ describe('InstancesContainer', () => {
         const {activityId, ...filterWithoutActivityId} = fullFilterWithWorkflow;
         const validFilterWithVersionAll = {
           ...filterWithoutActivityId,
+          activityId: '',
           version: 'all'
         };
         const node = mount(
@@ -608,7 +617,7 @@ describe('InstancesContainer', () => {
         // change filter without chaning workflow
         const newFilter = {
           ...fullFilterWithWorkflow,
-          endDate: '28 December 1955'
+          endDate: '1955-12-28'
         };
         node.find('Instances').prop('onFilterChange')(newFilter);
         await flushPromises();
@@ -653,7 +662,7 @@ describe('InstancesContainer', () => {
   });
 
   describe('handle filter change', () => {
-    it("should update filter in url if it' differnt from the current one", async () => {
+    it("should update filter in url if it's different from the current one", async () => {
       const node = mount(
         <InstancesContainerWrapped
           {...localStorageProps}
@@ -673,7 +682,8 @@ describe('InstancesContainer', () => {
       expect(pushMock.mock.calls[0][0].search).toBe(
         getFilterQueryString({
           ...fullFilterWithoutWorkflow,
-          ...fullFilterWithWorkflow
+          ...fullFilterWithWorkflow,
+          variable: ''
         })
       );
     });

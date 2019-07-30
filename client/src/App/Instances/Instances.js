@@ -62,16 +62,13 @@ export default class Instances extends Component {
     onSort: PropTypes.func.isRequired,
     onFilterChange: PropTypes.func.isRequired,
     onFilterReset: PropTypes.func.isRequired,
+    onFlowNodeSelection: PropTypes.func.isRequired,
     diagramModel: PropTypes.shape({
       bpmnElements: PropTypes.object,
       definitions: PropTypes.object
     }).isRequired,
     statistics: PropTypes.array.isRequired,
     onWorkflowInstancesRefresh: PropTypes.func
-  };
-
-  handleFlowNodeSelection = flowNodeId => {
-    this.props.onFilterChange({activityId: flowNodeId});
   };
 
   render() {
@@ -139,7 +136,7 @@ export default class Instances extends Component {
                       <Diagram
                         definitions={this.props.diagramModel.definitions}
                         flowNodesStatistics={this.props.statistics}
-                        onFlowNodeSelection={this.handleFlowNodeSelection}
+                        onFlowNodeSelection={this.props.onFlowNodeSelection}
                         selectedFlowNodeId={this.props.filter.activityId}
                         selectableFlowNodes={selectableIds}
                       />

@@ -88,6 +88,22 @@ export const FILTER_SELECTION = {
   }
 };
 
+// values that we read from the url and prefill the inputs
+export const DEFAULT_FILTER_CONTROLLED_VALUES = {
+  active: false,
+  incidents: false,
+  completed: false,
+  canceled: false,
+  ids: '',
+  errorMessage: '',
+  startDate: '',
+  endDate: '',
+  activityId: '',
+  version: '',
+  workflow: '',
+  variable: {name: '', value: ''}
+};
+
 export const DEFAULT_FILTER = FILTER_SELECTION.running;
 
 export const INCIDENTS_FILTER = FILTER_SELECTION.incidents;

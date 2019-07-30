@@ -13,6 +13,7 @@ import VerticalCollapseButton from 'modules/components/VerticalCollapseButton';
 import BasicTextInput from 'modules/components/Input';
 import BasicTextarea from 'modules/components/Textarea';
 import BasicSelect from 'modules/components/Select';
+import BasicValidationTextInput from 'modules/components/ValidationTextInput';
 import BasicCheckboxGroup from './CheckboxGroup';
 import {default as VariableFilterInputComp} from './VariableFilterInput';
 
@@ -76,6 +77,10 @@ export const Textarea = styled(BasicTextarea)`
 
 export const TextInput = styled(BasicTextInput)`
   ${widthStyle};
+`;
+
+export const ValidationTextInput = styled(BasicValidationTextInput)`
+  ${widthStyle}
 `;
 
 export const CheckboxGroup = styled(BasicCheckboxGroup)`

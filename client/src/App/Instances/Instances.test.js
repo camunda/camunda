@@ -21,7 +21,10 @@ import {
 } from 'modules/testUtils';
 import {parsedDiagram} from 'modules/utils/bpmn';
 import {formatGroupedWorkflows} from 'modules/utils/instance';
-import {DEFAULT_FILTER, DEFAULT_SORTING} from 'modules/constants';
+import {
+  DEFAULT_SORTING,
+  DEFAULT_FILTER_CONTROLLED_VALUES
+} from 'modules/constants';
 
 import Filters from './Filters';
 import ListView from './ListView';
@@ -65,6 +68,7 @@ jest.mock('modules/utils/bpmn');
 
 // props mocks
 const filterMock = {
+  ...DEFAULT_FILTER_CONTROLLED_VALUES,
   active: true,
   incidents: true,
   completed: true,
@@ -91,6 +95,7 @@ const mockProps = {
   onSort: jest.fn(),
   onFilterChange: jest.fn(),
   onFilterReset: jest.fn(),
+  onFlowNodeSelection: jest.fn(),
   diagramModel: parsedDiagram,
   statistics: [],
   onWorkflowInstancesRefresh: jest.fn()
@@ -98,7 +103,7 @@ const mockProps = {
 
 const defaultFilterMockProps = {
   ...mockProps,
-  filter: DEFAULT_FILTER,
+  filter: DEFAULT_FILTER_CONTROLLED_VALUES,
   diagramModel: {
     bpmnElements: {},
     definitions: {}
@@ -242,7 +247,7 @@ describe('Instances', () => {
       const customMockProps = {
         ...defaultFilterMockProps,
         diagramModel: {},
-        filter: {workflow: ''}
+        filter: {...DEFAULT_FILTER_CONTROLLED_VALUES, workflow: ''}
       };
       const node = mount(
         <ThemeProvider>
@@ -330,10 +335,8 @@ describe('Instances', () => {
       node.update();
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledTimes(1);
-      expect(mockProps.onFilterChange.mock.calls[0][0].activityId).toEqual(
-        'taskB'
-      );
+      expect(mockProps.onFlowNodeSelection).toHaveBeenCalledTimes(1);
+      expect(mockProps.onFlowNodeSelection.mock.calls[0][0]).toEqual('taskB');
     });
   });
 

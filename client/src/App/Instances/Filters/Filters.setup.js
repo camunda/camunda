@@ -42,8 +42,8 @@ export const COMPLETE_FILTER = {
   ...createFilter(),
   ids: 'a, b, c',
   errorMessage: 'This is an error message',
-  startDate: '08 October 2018',
-  endDate: '10-10-2018',
+  startDate: '2018-10-08',
+  endDate: '2018-10-10',
   workflow: 'demoProcess',
   version: '2',
   activityId: '4'

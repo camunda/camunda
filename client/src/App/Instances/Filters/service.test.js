@@ -1,0 +1,110 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
+import {isDateComplete, sanitizeFilter} from './service';
+import {DEFAULT_FILTER_CONTROLLED_VALUES} from 'modules/constants';
+
+describe('Filters/service', () => {
+  describe('isDateComplete', () => {
+    it('should return true for YYYY-MM-DD', () => {
+      expect(isDateComplete('2019-01-01')).toBe(true);
+    });
+
+    it('should return true for YYYY-MM-DD HH:mm', () => {
+      expect(isDateComplete('2019-03-01 12:59')).toBe(true);
+    });
+
+    it('should return true for YYYY-MM-DD HH:mm:ss', () => {
+      expect(isDateComplete('2019-03-12 12:59:30')).toBe(true);
+    });
+
+    it('should return true for empty string', () => {
+      expect(isDateComplete('')).toBe(true);
+    });
+
+    it('should return false for YYY', () => {
+      expect(isDateComplete('201')).toBe(false);
+    });
+
+    it('should return false for YYYY-M', () => {
+      expect(isDateComplete('2019-0')).toBe(false);
+    });
+
+    it('should return false for YYYY-MM-D', () => {
+      expect(isDateComplete('2019-03-1')).toBe(false);
+    });
+
+    it('should return false for YYYY-MM-DD HH', () => {
+      expect(isDateComplete('2019-03-12 12')).toBe(false);
+    });
+
+    it('should return false for invalid characters', () => {
+      expect(isDateComplete('ABCD-EF-GH')).toBe(false);
+    });
+  });
+
+  describe('sanitizeFilter', () => {
+    it('should return empty object when all values are default', () => {
+      const sanitizedFilter = sanitizeFilter(DEFAULT_FILTER_CONTROLLED_VALUES);
+
+      expect(sanitizedFilter).toEqual({});
+    });
+
+    it('should return empty object when variable is empty', () => {
+      const sanitizedFilter = sanitizeFilter({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
+        variable: {
+          name: '',
+          value: ''
+        }
+      });
+
+      expect(sanitizedFilter).toEqual({});
+    });
+
+    it('should return empty object when date is incomplete', () => {
+      const sanitizedFilter = sanitizeFilter({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
+        startDate: '2019-10'
+      });
+
+      expect(sanitizedFilter).toEqual({});
+    });
+
+    it('should return object when date is complete', () => {
+      const startDate = '2019-10-10';
+      const endDate = '2019-12-12';
+      const sanitizedFilter = sanitizeFilter({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
+        startDate,
+        endDate
+      });
+
+      expect(sanitizedFilter).toEqual({startDate, endDate});
+    });
+
+    it('should pass through values which don´t need to be santitized', () => {
+      const filter = {
+        active: true,
+        incidents: true,
+        completed: true,
+        canceled: true,
+        ids: '123456789',
+        errorMessage: 'Bad error.',
+        activityId: 'Task_1',
+        version: '2',
+        workflow: 'eventBasedGatewayProcess'
+      };
+
+      const sanitizedFilter = sanitizeFilter({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
+        ...filter
+      });
+
+      expect(sanitizedFilter).toEqual(filter);
+    });
+  });
+});

@@ -13,6 +13,7 @@ import Button from 'modules/components/Button';
 import {
   DEFAULT_FILTER,
   FILTER_TYPES,
+  DEFAULT_FILTER_CONTROLLED_VALUES,
   DIRECTION,
   BADGE_TYPE
 } from 'modules/constants';
@@ -24,34 +25,30 @@ import {
   getOptionsForWorkflowName,
   getOptionsForWorkflowVersion,
   addAllVersionsOption,
-  getFilterWithDefaults,
-  getLastVersionOfWorkflow
+  getLastVersionOfWorkflow,
+  isDateComplete
 } from './service';
 
-import {
-  ALL_VERSIONS_OPTION,
-  DEFAULT_CONTROLLED_VALUES,
-  DEBOUNCE_DELAY
-} from './constants';
+import {ALL_VERSIONS_OPTION, DEBOUNCE_DELAY} from './constants';
 
 export default class Filters extends React.Component {
   static propTypes = {
     filter: PropTypes.shape({
-      active: PropTypes.bool,
-      activityId: PropTypes.string,
-      canceled: PropTypes.bool,
-      completed: PropTypes.bool,
-      endDate: PropTypes.string,
-      errorMessage: PropTypes.string,
-      ids: PropTypes.string,
-      incidents: PropTypes.bool,
-      startDate: PropTypes.string,
-      version: PropTypes.string,
-      workflow: PropTypes.string,
+      active: PropTypes.bool.isRequired,
+      activityId: PropTypes.string.isRequired,
+      canceled: PropTypes.bool.isRequired,
+      completed: PropTypes.bool.isRequired,
+      endDate: PropTypes.string.isRequired,
+      errorMessage: PropTypes.string.isRequired,
+      ids: PropTypes.string.isRequired,
+      incidents: PropTypes.bool.isRequired,
+      startDate: PropTypes.string.isRequired,
+      version: PropTypes.string.isRequired,
+      workflow: PropTypes.string.isRequired,
       variable: PropTypes.shape({
         name: PropTypes.string,
         value: PropTypes.string
-      })
+      }).isRequired
     }).isRequired,
     filterCount: PropTypes.number.isRequired,
     onFilterChange: PropTypes.func.isRequired,
@@ -62,23 +59,28 @@ export default class Filters extends React.Component {
 
   state = {
     filter: {
-      ...DEFAULT_CONTROLLED_VALUES
+      active: false,
+      incidents: false,
+      completed: false,
+      canceled: false,
+      ids: '',
+      errorMessage: '',
+      startDate: '',
+      endDate: '',
+      activityId: '',
+      version: '',
+      workflow: '',
+      variable: {name: '', value: ''}
     }
   };
 
   componentDidMount = async () => {
-    this.setState({
-      filter: {
-        ...getFilterWithDefaults(this.props.filter)
-      }
-    });
+    this.updateFilter();
   };
 
-  componentDidUpdate = prevProps => {
+  componentDidUpdate = (prevProps, prevState) => {
     if (!isEqual(prevProps.filter, this.props.filter)) {
-      this.setState({
-        filter: {...getFilterWithDefaults(this.props.filter)}
-      });
+      this.updateFilter();
     }
   };
 
@@ -86,20 +88,77 @@ export default class Filters extends React.Component {
     this.resetTimer();
   };
 
+  timer = null;
+
   resetTimer = () => {
     clearTimeout(this.timer);
   };
 
-  timer = null;
+  timeout = () => {
+    const timerPromise = resolve => {
+      this.resetTimer();
+      this.timer = setTimeout(resolve, DEBOUNCE_DELAY);
+    };
 
-  updateByWorkflowVersion = () => {
-    const version = this.state.filter.version;
+    return new Promise(timerPromise);
+  };
 
-    this.props.onFilterChange({
-      workflow: this.state.filter.workflow,
+  setFilterState = (filter, callback = () => {}) => {
+    this.setState(
+      {
+        filter: {
+          ...this.state.filter,
+          ...filter
+        }
+      },
+      callback
+    );
+  };
+
+  updateFilter = () => {
+    const {
+      active,
+      canceled,
+      incidents,
+      completed,
+      workflow,
+      activityId,
+      errorMessage,
+      startDate,
+      endDate,
       version,
-      activityId: ''
+      ids
+    } = this.props.filter;
+
+    // fields that are evaluated immediately will be overwritten by props
+    const immediateFilter = {
+      active,
+      canceled,
+      incidents,
+      completed,
+      workflow,
+      activityId,
+      version,
+      ids
+    };
+
+    let debouncedFilter = {errorMessage, startDate, endDate};
+
+    // debounced fields will not be overwritten, if there is text inside
+    const sanitizedDebouncedFilter = {};
+    Object.entries(debouncedFilter).forEach(([key, value]) => {
+      const currentValue = this.state.filter[key];
+      const newValue = currentValue === '' ? value : currentValue;
+
+      sanitizedDebouncedFilter[key] = newValue;
     });
+
+    this.setFilterState({...immediateFilter, ...sanitizedDebouncedFilter});
+  };
+
+  handleFilterChangeDebounced = async () => {
+    await this.timeout();
+    this.handleFilterChange();
   };
 
   handleWorkflowNameChange = event => {
@@ -107,77 +166,53 @@ export default class Filters extends React.Component {
     const currentWorkflow = this.props.groupedWorkflows[value];
     const version = getLastVersionOfWorkflow(currentWorkflow);
 
-    this.setState(
-      {
-        filter: {
-          ...this.state.filter,
-          workflow: value,
-          version,
-          activityId: ''
-        }
-      },
-      this.updateByWorkflowVersion
+    this.setFilterState(
+      {workflow: value, version, activityId: ''},
+      this.handleFilterChange
     );
   };
 
   handleWorkflowVersionChange = event => {
     const {value} = event.target;
-    value !== '' &&
-      this.setState(
-        {
-          filter: {...this.state.filter, version: value, activityId: ''}
-        },
-        this.updateByWorkflowVersion
-      );
-  };
 
-  handleFieldChange = event => {
-    const {value, name} = event.target;
-
-    if (this.state.filter[name] !== value) {
-      this.handleInputChange(event);
+    if (value === '') {
+      return;
     }
 
-    this.props.onFilterChange({[name]: value});
+    this.setFilterState(
+      {version: value, activityId: ''},
+      this.handleFilterChange
+    );
   };
 
-  // handles input changes and triggers onFilterChange, when
-  // no input changes were made for a given timeout delay
-  handleInputChangeDebounced = event => {
-    const {value, name} = event.target;
+  handleActivityIdChange = event => {
+    this.handleInputChange(event, this.handleFilterChange);
+  };
 
-    this.handleInputChange(event);
-
-    this.resetTimer();
-
-    this.timer = setTimeout(() => {
-      this.props.onFilterChange({[name]: value});
-    }, DEBOUNCE_DELAY);
+  handleFilterChange = () => {
+    this.props.onFilterChange(this.state.filter);
   };
 
   // handler for controlled inputs
-  handleInputChange = event => {
+  handleInputChange = (event, callback) => {
     const {value, name} = event.target;
 
-    this.setState({
-      filter: {
-        ...this.state.filter,
+    this.setFilterState(
+      {
         [name]: value
-      }
-    });
+      },
+      callback
+    );
+  };
+
+  handleCheckboxChange = status => {
+    this.setFilterState(status, this.handleFilterChange);
   };
 
   onFilterReset = () => {
-    this.setState(
-      {
-        filter: {
-          ...DEFAULT_CONTROLLED_VALUES
-        }
-      },
-      () => {
-        //reset updates on Instances page
-        this.props.onFilterReset();
-      }
+    this.setFilterState(
+      {...DEFAULT_FILTER_CONTROLLED_VALUES, ...DEFAULT_FILTER},
+      this.props.onFilterReset
     );
   };
 
@@ -220,7 +255,7 @@ export default class Filters extends React.Component {
   };
 
   render() {
-    const {active, incidents, canceled, completed} = this.props.filter;
+    const {active, incidents, canceled, completed} = this.state.filter;
     const isWorkflowsDataLoaded = !isEmpty(this.props.groupedWorkflows);
     const workflowVersions =
       this.state.filter.workflow !== '' && isWorkflowsDataLoaded
@@ -287,34 +322,37 @@ export default class Filters extends React.Component {
                       value={this.state.filter.ids}
                       name="ids"
                       placeholder="Instance Id(s) separated by space or comma"
-                      onBlur={this.handleFieldChange}
+                      onBlur={this.handleFilterChange}
                       onChange={this.handleInputChange}
                     />
                   </Styled.Field>
                   <Styled.Field>
-                    <Styled.TextInput
+                    <Styled.ValidationTextInput
                       value={this.state.filter.errorMessage}
                       name="errorMessage"
                       placeholder="Error Message"
-                      onChange={this.handleInputChangeDebounced}
+                      onChange={this.handleInputChange}
+                      onFilterChange={this.handleFilterChangeDebounced}
                     />
                   </Styled.Field>
                   <Styled.Field>
-                    <Styled.TextInput
+                    <Styled.ValidationTextInput
                       value={this.state.filter.startDate}
                       name="startDate"
-                      placeholder="Start Date"
-                      onBlur={this.handleFieldChange}
+                      placeholder="Start Date yyyy-mm-dd hh:mm:ss"
                       onChange={this.handleInputChange}
+                      isComplete={isDateComplete}
+                      onFilterChange={this.handleFilterChangeDebounced}
                     />
                   </Styled.Field>
                   <Styled.Field>
-                    <Styled.TextInput
+                    <Styled.ValidationTextInput
                       value={this.state.filter.endDate}
                       name="endDate"
-                      placeholder="End Date"
-                      onBlur={this.handleFieldChange}
+                      placeholder="End Date yyyy-mm-dd hh:mm:ss"
                       onChange={this.handleInputChange}
+                      isComplete={isDateComplete}
+                      onFilterChange={this.handleFilterChangeDebounced}
                     />
                   </Styled.Field>
                   <Styled.Field>
@@ -329,7 +367,7 @@ export default class Filters extends React.Component {
                       options={this.sortAndModify(
                         this.props.selectableFlowNodes
                       )}
-                      onChange={this.handleFieldChange}
+                      onChange={this.handleActivityIdChange}
                     />
                   </Styled.Field>
                   <Styled.Field>
@@ -344,7 +382,7 @@ export default class Filters extends React.Component {
                       active,
                       incidents
                     }}
-                    onChange={this.props.onFilterChange}
+                    onChange={this.handleCheckboxChange}
                   />
                   <Styled.CheckboxGroup
                     type={FILTER_TYPES.FINISHED}
@@ -352,7 +390,7 @@ export default class Filters extends React.Component {
                       completed,
                       canceled
                     }}
-                    onChange={this.props.onFilterChange}
+                    onChange={this.handleCheckboxChange}
                   />
                 </Fragment>
               </Styled.Filters>
@@ -360,7 +398,10 @@ export default class Filters extends React.Component {
             <Styled.ResetButtonContainer>
               <Button
                 title="Reset filters"
-                disabled={isEqual(this.props.filter, DEFAULT_FILTER)}
+                disabled={isEqual(this.props.filter, {
+                  ...DEFAULT_FILTER_CONTROLLED_VALUES,
+                  ...DEFAULT_FILTER
+                })}
                 onClick={this.onFilterReset}
               >
                 Reset Filters
