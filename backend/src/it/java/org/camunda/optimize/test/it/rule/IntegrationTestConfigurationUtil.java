@@ -55,4 +55,8 @@ public class IntegrationTestConfigurationUtil {
   public static ConfigurationService createItConfigurationService() {
     return new ConfigurationService(new String[]{"service-config.yaml", "it/it-config.yaml"});
   }
+
+  public static int getSmtpPort() {
+    return Integer.parseInt(System.getProperty("smtpTestPort", "6666"));
+  }
 }

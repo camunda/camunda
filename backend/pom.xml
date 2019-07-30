@@ -561,6 +561,7 @@
                 <!-- and we stay in the user port range of 1024-49151 -->
                 <optimizeHttpPort>400${surefire.forkNumber}</optimizeHttpPort>
                 <optimizeHttpsPort>401${surefire.forkNumber}</optimizeHttpsPort>
+                <smtpTestPort>500${surefire.forkNumber}</smtpTestPort>
               </systemPropertyVariables>
             </configuration>
             <executions>

@@ -26,10 +26,11 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
-import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.camunda.optimize.test.it.rule.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.quartz.JobKey;
 import org.quartz.SchedulerException;
 
@@ -337,12 +338,14 @@ public abstract class AbstractAlertIT {
     embeddedOptimizeRule.getConfigurationService().setAlertEmailPassword("demo");
     embeddedOptimizeRule.getConfigurationService().setAlertEmailAddress("from@localhost.com");
     embeddedOptimizeRule.getConfigurationService().setAlertEmailHostname("127.0.0.1");
-    embeddedOptimizeRule.getConfigurationService().setAlertEmailPort(6666);
+    embeddedOptimizeRule.getConfigurationService().setAlertEmailPort(IntegrationTestConfigurationUtil.getSmtpPort());
     embeddedOptimizeRule.getConfigurationService().setAlertEmailProtocol("NONE");
   }
 
   protected GreenMail initGreenMail() {
-    GreenMail greenMail = new GreenMail(new ServerSetup(6666, null, ServerSetup.PROTOCOL_SMTP));
+    GreenMail greenMail = new GreenMail(
+      new ServerSetup(IntegrationTestConfigurationUtil.getSmtpPort(), null, ServerSetup.PROTOCOL_SMTP)
+    );
     greenMail.setUser("from@localhost.com", "demo", "demo");
     greenMail.setUser("test@camunda.com", "test@camunda.com", "test@camunda.com");
     greenMail.start();
