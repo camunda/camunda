@@ -4,6 +4,15 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+export const LOADING_STATE = {
+  OPERATION_SCHEDULED: 'OPERATION_SCHEDULED',
+  LOAD_FAILED: 'LOAD_FAILED',
+  LOADING: 'LOADING',
+  LOADED: 'LOADED'
+};
+
+export const SUBSCRIPTION_TOPIC = {};
+
 export const DIRECTION = {
   UP: 'UP',
   DOWN: 'DOWN',

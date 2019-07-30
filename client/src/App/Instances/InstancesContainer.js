@@ -8,6 +8,7 @@ import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 import {isEqual, isEmpty} from 'lodash';
 
+import {withData} from 'modules/DataManager';
 import withSharedState from 'modules/components/withSharedState';
 import {
   DEFAULT_FILTER,
@@ -383,7 +384,7 @@ class InstancesContainer extends Component {
   }
 }
 
-const WrappedInstancesContainer = withSharedState(InstancesContainer);
+const WrappedInstancesContainer = withData(withSharedState(InstancesContainer));
 WrappedInstancesContainer.WrappedComponent = InstancesContainer;
 
 export default WrappedInstancesContainer;
