@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable;
 
+import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
@@ -37,6 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.service.es.report.command.process.util.GroupByDateVariableIntervalSelection.createDateVariableAggregation;
 import static org.camunda.optimize.service.es.report.command.util.IntervalAggregationService.RANGE_AGGREGATION;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabelForType;
@@ -44,9 +46,11 @@ import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedV
 import static org.camunda.optimize.service.util.ProcessVariableHelper.variableTypeToFieldLabel;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.reverseNested;
 
 public abstract class AbstractProcessInstanceDurationByVariableCommand
   extends ProcessReportCommand<SingleProcessMapDurationReportResult> {
@@ -55,6 +59,8 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
   private static final String VARIABLES_AGGREGATION = "variables";
   public static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
   private static final String REVERSE_NESTED_AGGREGATION = "reverseNested";
+  public static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
+  private static final String FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION = "filteredProcInstCount";
 
   protected AggregationStrategy aggregationStrategy;
 
@@ -75,7 +81,8 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .fetchSource(false)
-      .aggregation(createAggregation(groupByVariable.getName(), groupByVariable.getType()))
+      .aggregation(createVariableAggregation(groupByVariable.getName(), groupByVariable.getType()))
+      .aggregation(createMissingVariableAggregation(groupByVariable.getName(), groupByVariable.getType()))
       .size(0);
     SearchRequest searchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
       .types(PROC_INSTANCE_TYPE)
@@ -119,7 +126,8 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
     }
   }
 
-  private AggregationBuilder createAggregation(String variableName, VariableType variableType) {
+
+  private AggregationBuilder createVariableAggregation(String variableName, VariableType variableType) {
     String path = variableTypeToFieldLabel(variableType);
     String nestedVariableNameFieldLabel = getNestedVariableNameFieldLabelForType(variableType);
     String nestedVariableValueFieldLabel = getNestedVariableValueFieldLabelForType(variableType);
@@ -143,11 +151,26 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
     AggregationBuilder operationsAggregation = addOperationsAggregation(AggregationBuilders.reverseNested(
       REVERSE_NESTED_AGGREGATION));
 
-    return nested(NESTED_AGGREGATION, path).subAggregation(
-      filter(
+    return nested(NESTED_AGGREGATION, path)
+      .subAggregation(filter(
         FILTERED_VARIABLES_AGGREGATION,
         boolQuery().must(termQuery(nestedVariableNameFieldLabel, variableName))
-      ).subAggregation(aggregationBuilder.subAggregation(operationsAggregation)));
+      ).subAggregation(aggregationBuilder.subAggregation(operationsAggregation))
+                        .subAggregation(reverseNested(FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION)));
+  }
+
+  private AggregationBuilder createMissingVariableAggregation(String variableName, VariableType variableType) {
+    String path = variableTypeToFieldLabel(variableType);
+    String nestedVariableNameFieldLabel = getNestedVariableNameFieldLabelForType(variableType);
+
+    return filter(
+      MISSING_VARIABLES_AGGREGATION,
+      boolQuery().mustNot(nestedQuery(
+        path,
+        termQuery(nestedVariableNameFieldLabel, variableName),
+        ScoreMode.None
+      ).ignoreUnmapped(true))
+    ).subAggregation(createOperationsAggregation());
   }
 
   private AggregationBuilder addOperationsAggregation(AggregationBuilder aggregationBuilder) {
@@ -170,6 +193,24 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
       ReverseNested reverseNested = b.getAggregations().get(REVERSE_NESTED_AGGREGATION);
       Long operationsResult = processAggregationOperation(reverseNested.getAggregations());
       resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), operationsResult));
+    }
+
+
+    final ReverseNested filteredProcInstCountAggregation = filteredVariables.getAggregations()
+      .get(FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION);
+    final long filteredProcInstCount = filteredProcInstCountAggregation.getDocCount();
+
+    // if there are process instances where the variable is missing then add a 'missing' bucket with aggs results
+    if (response.getHits().getTotalHits() > filteredProcInstCount) {
+
+      final Filter aggregation = response.getAggregations().get(MISSING_VARIABLES_AGGREGATION);
+      final Long missingVarsOperationResult = processAggregationOperation(aggregation.getAggregations());
+
+      resultData.add(
+        new MapResultEntryDto<>(
+          MISSING_VARIABLE_KEY,
+          missingVarsOperationResult
+        ));
     }
 
     resultDto.setData(resultData);

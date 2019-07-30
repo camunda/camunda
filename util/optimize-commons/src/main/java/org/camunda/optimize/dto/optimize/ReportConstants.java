@@ -87,4 +87,6 @@ public class ReportConstants {
   public static final String HYPER_MAP_RESULT_TYPE = "hyperMap";
   public static final String FREQUENCY_NUMBER_RESULT_TYPE = "frequencyNumber";
   public static final String DURATION_NUMBER_RESULT_TYPE = "durationNumber";
+
+  public static final String MISSING_VARIABLE_KEY = "missing";
 }

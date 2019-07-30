@@ -26,6 +26,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
+import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.service.es.report.command.process.util.GroupByDateVariableIntervalSelection.createDateVariableAggregation;
 import static org.camunda.optimize.service.es.report.command.util.IntervalAggregationService.RANGE_AGGREGATION;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabelForType;
@@ -44,12 +46,15 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.reverseNested;
 
 public class CountProcessInstanceFrequencyByVariableCommand extends ProcessReportCommand<SingleProcessMapReportResult> {
 
   private static final String NESTED_AGGREGATION = "nested";
   private static final String VARIABLES_AGGREGATION = "variables";
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
+  private static final String FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION = "filteredProcInstCount";
+  private static final String VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION = "proc_inst_count";
 
   @Override
   protected SingleProcessMapReportResult evaluate() {
@@ -133,12 +138,17 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
       );
     }
 
+    // the same process instance could have several same variable names -> do not count each but only the proc inst once
+    aggregationBuilder.subAggregation(reverseNested(VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION));
+
     return nested(NESTED_AGGREGATION, path)
       .subAggregation(
         filter(
           FILTERED_VARIABLES_AGGREGATION,
           boolQuery().must(termQuery(nestedVariableNameFieldLabel, variableName))
-        ).subAggregation(aggregationBuilder));
+        )
+          .subAggregation(aggregationBuilder)
+          .subAggregation(reverseNested(FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION)));
   }
 
   private ProcessCountReportMapResultDto mapToReportResult(final SearchResponse response) {
@@ -153,7 +163,19 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
 
     final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
     for (MultiBucketsAggregation.Bucket b : variableTerms.getBuckets()) {
-      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), b.getDocCount()));
+      final ReverseNested variableProcInstCount = b.getAggregations().get(VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION);
+      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), variableProcInstCount.getDocCount()));
+    }
+
+    final ReverseNested filteredProcessInstAggr = filteredVariables.getAggregations()
+      .get(FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION);
+    final long filteredProcInstCount = filteredProcessInstAggr.getDocCount();
+
+    if (response.getHits().getTotalHits() > filteredProcInstCount) {
+      resultData.add(new MapResultEntryDto<>(
+        MISSING_VARIABLE_KEY,
+        response.getHits().getTotalHits() - filteredProcInstCount
+      ));
     }
 
     resultDto.setData(resultData);

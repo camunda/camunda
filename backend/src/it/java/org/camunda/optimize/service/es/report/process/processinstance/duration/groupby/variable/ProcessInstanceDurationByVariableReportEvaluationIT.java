@@ -48,8 +48,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static java.time.temporal.ChronoUnit.MILLIS;
 import static com.google.common.collect.Lists.newArrayList;
+import static java.time.temporal.ChronoUnit.MILLIS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
@@ -801,6 +801,90 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
         assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000L)));
       }
     }
+  }
+
+  @Test
+  public void missingVariablesAggregationWorksForUndefinedAndNullVariables() throws SQLException {
+    // given
+
+    // 1 process instance with 'testVar'
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("testVar", "withValue");
+    OffsetDateTime testEndDate = OffsetDateTime.now();
+    OffsetDateTime testStartDate = testEndDate.minusSeconds(2);
+
+    ProcessInstanceEngineDto testProcInst = deployAndStartSimpleServiceTaskProcess(variables);
+    engineDatabaseRule.changeProcessInstanceStartDate(testProcInst.getId(), testStartDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(testProcInst.getId(), testEndDate);
+
+    // 3 process instances without 'testVar'
+    OffsetDateTime missingTestStartDate = testEndDate.minusDays(1);
+
+    variables.put("testVar", null);
+    final ProcessInstanceEngineDto nullVariableProcInst = engineRule.startProcessInstance(
+      testProcInst.getDefinitionId(),
+      variables
+    );
+    engineDatabaseRule.changeProcessInstanceStartDate(nullVariableProcInst.getId(), missingTestStartDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(
+      nullVariableProcInst.getId(),
+      missingTestStartDate.plus(200, MILLIS)
+    );
+
+    final ProcessInstanceEngineDto noVariableProcInst =
+      engineRule.startProcessInstance(testProcInst.getDefinitionId());
+    engineDatabaseRule.changeProcessInstanceStartDate(noVariableProcInst.getId(), missingTestStartDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(
+      noVariableProcInst.getId(),
+      missingTestStartDate.plus(3000, MILLIS)
+    );
+
+    variables = new HashMap<>();
+    variables.put("differentStringValue", "test");
+    final ProcessInstanceEngineDto diffVariableProcInst = engineRule.startProcessInstance(
+      testProcInst.getDefinitionId(),
+      variables
+    );
+    engineDatabaseRule.changeProcessInstanceStartDate(diffVariableProcInst.getId(), missingTestStartDate);
+    engineDatabaseRule.changeProcessInstanceEndDate(
+      diffVariableProcInst.getId(),
+      missingTestStartDate.plus(10000, MILLIS)
+    );
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+
+    // when
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(testProcInst.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(testProcInst.getProcessDefinitionVersion())
+      .setVariableName("testVar")
+      .setVariableType(VariableType.STRING)
+      .build();
+    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+      reportData);
+
+
+    // then
+    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(2));
+    assertThat(
+      result.getDataEntryForKey("withValue").get().getValue(),
+      is(testStartDate.until(testEndDate, MILLIS)
+      )
+    );
+    assertThat(
+      result.getDataEntryForKey("missing").get().getValue(),
+      is(calculateExpectedValueGivenDurationsDefaultAggr(
+        missingTestStartDate.until(missingTestStartDate.plus(200, MILLIS), MILLIS),
+        missingTestStartDate.until(missingTestStartDate.plus(3000, MILLIS), MILLIS),
+        missingTestStartDate.until(missingTestStartDate.plus(10000, MILLIS), MILLIS)
+      ))
+    );
   }
 
   @Test

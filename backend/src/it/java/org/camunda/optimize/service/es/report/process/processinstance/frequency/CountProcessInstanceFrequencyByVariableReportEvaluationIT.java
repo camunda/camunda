@@ -431,6 +431,47 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     return varToType;
   }
 
+
+  @Test
+  public void missingVariablesAggregationWorksForUndefinedAndNullVariables() {
+    // given
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("testVar", "withValue");
+
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+
+    variables.put("testVar", null);
+    engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+
+    engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
+
+    variables = new HashMap<>();
+    variables.put("differentStringValue", "test");
+    engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = createReport(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      "testVar",
+      VariableType.STRING
+    );
+    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(
+      reportData);
+
+    // then
+    final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(2));
+    assertThat(result.getDataEntryForKey("withValue").get().getValue(), is(1L));
+    assertThat(result.getDataEntryForKey("missing").get().getValue(), is(3L));
+  }
+
+
+
   @Test
   public void dateVariablesAreSortedDescByDefault() {
     // given

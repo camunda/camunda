@@ -873,7 +873,19 @@ public class EngineIntegrationRule extends TestWatcher {
     }
   }
 
+
+  private Object convertVariable(String variableName, Object variableValue) {
+    return createConvertedVariableMap(Collections.singletonMap(variableName, variableValue)).get(variableName);
+  }
+
   private Map<String, Object> convertVariableMap(Map<String, Object> plainVariables) {
+    Map<String, Object> variables = createConvertedVariableMap(plainVariables);
+    Map<String, Object> variableWrapper = new HashMap<>();
+    variableWrapper.put("variables", variables);
+    return variableWrapper;
+  }
+
+  private Map<String, Object> createConvertedVariableMap(final Map<String, Object> plainVariables) {
     Map<String, Object> variables = new HashMap<>();
     for (Map.Entry<String, Object> nameToValue : plainVariables.entrySet()) {
       Object value = nameToValue.getValue();
@@ -886,16 +898,18 @@ public class EngineIntegrationRule extends TestWatcher {
         variables.put(nameToValue.getKey(), fields);
       }
     }
-    Map<String, Object> variableWrapper = new HashMap<>();
-    variableWrapper.put("variables", variables);
-    return variableWrapper;
+    return variables;
   }
 
   private String getSimpleName(Map.Entry<String, Object> nameToValue) {
-
-    String simpleName = nameToValue.getValue().getClass().getSimpleName();
-    if (nameToValue.getValue().getClass().equals(OffsetDateTime.class)) {
-      simpleName = Date.class.getSimpleName();
+    String simpleName;
+    if (nameToValue.getValue() == null) {
+      simpleName = "null";
+    } else {
+      simpleName = nameToValue.getValue().getClass().getSimpleName();
+      if (nameToValue.getValue().getClass().equals(OffsetDateTime.class)) {
+        simpleName = Date.class.getSimpleName();
+      }
     }
     return simpleName;
   }
