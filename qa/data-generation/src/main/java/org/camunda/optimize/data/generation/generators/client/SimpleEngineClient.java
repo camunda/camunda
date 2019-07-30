@@ -70,7 +70,6 @@ public class SimpleEngineClient {
   private CloseableHttpClient client;
   private String engineRestEndpoint;
   private ObjectMapper objectMapper = new ObjectMapper();
-  private static final String[] tenants = {"tenant1", "tenant2", "tenant3"};
   private static final String[] users = {"mary", "john", "peter"};
 
   public SimpleEngineClient(String engineRestEndpoint) {
@@ -89,16 +88,26 @@ public class SimpleEngineClient {
   }
 
   public void initializeTenants() {
-    for (String tenant : tenants) {
+    for (int i = 1; i <= 3; i ++) {
       HttpPost createTenantPost = new HttpPost(engineRestEndpoint + "/tenant/create");
       try {
-        log.info("Creating tenant " + tenant);
-        createTenantPost.setEntity(new StringEntity("{\"id\": \"" + tenant + "\", \"name\": \""+ tenant +"\"}"));
+        log.info("Creating tenant " + i);
+        createTenantPost.setEntity(new StringEntity("{\"id\": \"tenant" + i + "\", \"name\": \"tenant"+ i +"\"}"));
         createTenantPost.addHeader("Content-Type", "application/json");
         client.execute(createTenantPost);
         for (String user : users) {
+          String body = "{\"type\" : 0,\n" +
+            " \"permissions\": [\"ALL\"],\n" +
+            " \"userId\": \"user\",\n" +
+            " \"groupId\": null,\n" +
+            " \"resourceType\": 0,\n" +
+            " \"resourceId\": \"*\"}";
+          HttpPost authPost = new HttpPost(engineRestEndpoint + "/authorization/create");
+          authPost.setEntity(new StringEntity(body));
+          authPost.addHeader("Content-Type", "application/json");
+          client.execute(authPost);
           if (ThreadLocalRandom.current().nextBoolean()) {
-            HttpPut userTenantPut = new HttpPut(engineRestEndpoint + "/tenant/" + tenant + "/user-members/" + user);
+            HttpPut userTenantPut = new HttpPut(engineRestEndpoint + "/tenant/tenant" + i + "/user-members/" + user);
             client.execute(userTenantPut);
           }
         }
@@ -108,10 +117,12 @@ public class SimpleEngineClient {
     }
   }
 
-  public List<String> deployProcesses(BpmnModelInstance modelInstance, int nVersions) {
-    return IntStream.rangeClosed(1, nVersions)
-      .mapToObj(n -> deployProcessAndGetId(modelInstance))
-      .collect(Collectors.toList());
+  public List<String> deployProcesses(BpmnModelInstance modelInstance, int nVersions, List<String> tenants) {
+    List<String> result = new ArrayList<>();
+    IntStream.rangeClosed(1, nVersions)
+      .mapToObj(n -> deployProcessAndGetId(modelInstance, tenants))
+      .collect(Collectors.toList()).forEach(result::addAll);
+    return result;
   }
 
   public void close() {
@@ -122,9 +133,9 @@ public class SimpleEngineClient {
     }
   }
 
-  private String deployProcessAndGetId(BpmnModelInstance modelInstance) {
-    DeploymentDto deploymentDto = deployProcess(modelInstance);
-    return getProcessDefinitionId(deploymentDto);
+  private List<String> deployProcessAndGetId(BpmnModelInstance modelInstance, List<String> tenants) {
+    List<DeploymentDto> deploymentDto = deployProcess(modelInstance, tenants);
+    return deploymentDto.stream().map(this::getProcessDefinitionId).collect(Collectors.toList());
   }
 
   public void cleanUpDeployments() {
@@ -208,42 +219,47 @@ public class SimpleEngineClient {
   }
 
 
-  private DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance) {
+  private List<DeploymentDto> deployProcess(BpmnModelInstance bpmnModelInstance, List<String> tenants) {
     String process = Bpmn.convertToString(bpmnModelInstance);
-    HttpPost deploymentRequest = createProcessDeploymentRequest(process);
-    DeploymentDto deployment = new DeploymentDto();
-    try (CloseableHttpResponse response = client.execute(deploymentRequest)) {
-      if (response.getStatusLine().getStatusCode() != 200) {
-        throw new RuntimeException("Something really bad happened during deployment, " +
-                                     "could not create a deployment!");
+    List<HttpPost> deploymentRequest = createProcessDeploymentRequest(process, tenants);
+    return deploymentRequest.stream().map(d -> {
+      DeploymentDto deployment = new DeploymentDto();
+      try (CloseableHttpResponse response = client.execute(d)) {
+        String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+        if (response.getStatusLine().getStatusCode() != 200) {
+          throw new RuntimeException("Something really bad happened during deployment, " +
+                                       "could not create a deployment!\n" +
+                                       responseString);
+        }
+        deployment = objectMapper.readValue(responseString, DeploymentDto.class);
+      } catch (IOException e) {
+        log.error("Error during deployment request! Could not deploy the given process model!", e);
       }
-      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      deployment = objectMapper.readValue(responseString, DeploymentDto.class);
-    } catch (IOException e) {
-      log.error("Error during deployment request! Could not deploy the given process model!", e);
-    }
-    return deployment;
+      return deployment;
+    }).collect(Collectors.toList());
   }
 
-  public void deployDecisionAndGetId(DmnModelInstance modelInstance) {
-    deployDecisionDefinition(modelInstance);
+  public void deployDecisionAndGetId(DmnModelInstance modelInstance, List<String> tenants) {
+    deployDecisionDefinition(modelInstance, tenants);
   }
 
-  private DeploymentDto deployDecisionDefinition(DmnModelInstance dmnModelInstance) {
+  private List<DeploymentDto> deployDecisionDefinition(DmnModelInstance dmnModelInstance, List<String> tenants) {
     String decision = Dmn.convertToString(dmnModelInstance);
-    HttpPost deploymentRequest = createDecisionDeploymentRequest(decision);
-    DeploymentDto deployment = new DeploymentDto();
-    try (CloseableHttpResponse response = client.execute(deploymentRequest)) {
-      if (response.getStatusLine().getStatusCode() != 200) {
-        throw new RuntimeException("Something really bad happened during deployment, " +
-                                     "could not create a deployment!");
+    List<HttpPost> deploymentRequest = createDecisionDeploymentRequest(decision, tenants);
+    return deploymentRequest.stream().map(d -> {
+      DeploymentDto deployment = new DeploymentDto();
+      try (CloseableHttpResponse response = client.execute(d)) {
+        if (response.getStatusLine().getStatusCode() != 200) {
+          throw new RuntimeException("Something really bad happened during deployment, " +
+                                       "could not create a deployment!");
+        }
+        String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+        deployment = objectMapper.readValue(responseString, DeploymentDto.class);
+      } catch (IOException e) {
+        log.error("Error during deployment request! Could not deploy the given dmn model!", e);
       }
-      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      deployment = objectMapper.readValue(responseString, DeploymentDto.class);
-    } catch (IOException e) {
-      log.error("Error during deployment request! Could not deploy the given dmn model!", e);
-    }
-    return deployment;
+      return deployment;
+    }).collect(Collectors.toList());
   }
 
 
@@ -252,7 +268,7 @@ public class SimpleEngineClient {
     post.addHeader("content-type", "application/json");
     post.setEntity(new StringEntity(convertVariableMapToJsonString(variables), StandardCharsets.UTF_8));
     try (CloseableHttpResponse response = client.execute(post)) {
-      post.setURI(new URI(post.getURI().toString() + "?tenant-id=tenant" + ThreadLocalRandom.current().nextInt(1, 4)));
+      post.setURI(new URI(post.getURI().toString()));
       if (response.getStatusLine().getStatusCode() != 200) {
         throw new RuntimeException("Could not start the process definition " + procDefId +
                                      ". Reason: " + response.getStatusLine().getReasonPhrase());
@@ -286,41 +302,53 @@ public class SimpleEngineClient {
     return engineRestEndpoint + "/process-definition/" + procDefId + "/start";
   }
 
-  private HttpPost createProcessDeploymentRequest(String process) {
-    HttpPost post = new HttpPost(getCreateDeploymentUri());
-    HttpEntity entity = MultipartEntityBuilder
-      .create()
-      .addTextBody("deployment-name", "deployment")
-      .addTextBody("enable-duplicate-filtering", "false")
-      .addTextBody("deployment-source", "process application")
-      .addTextBody("tenant-id", "tenant" + ThreadLocalRandom.current().nextInt(1, 4))
-      .addBinaryBody(
+  private List<HttpPost> createProcessDeploymentRequest(String process, List<String> tenants) {
+    return tenants.stream().map(t -> {
+      HttpPost post = new HttpPost(getCreateDeploymentUri());
+      MultipartEntityBuilder builder = MultipartEntityBuilder
+        .create()
+        .addTextBody("deployment-name", "deployment")
+        .addTextBody("enable-duplicate-filtering", "false")
+        .addTextBody("deployment-source", "process application");
+
+      if (t != null) {
+        builder.addTextBody("tenant-id", t);
+      }
+
+      HttpEntity entity = builder.addBinaryBody(
         "data",
         process.getBytes(StandardCharsets.UTF_8),
         ContentType.APPLICATION_OCTET_STREAM,
         "hiring_process.bpmn"
-      )
-      .build();
-    post.setEntity(entity);
-    return post;
+      ).build();
+      post.setEntity(entity);
+      return post;
+    }).collect(Collectors.toList());
   }
 
-  private HttpPost createDecisionDeploymentRequest(String decision) {
-    HttpPost post = new HttpPost(getCreateDeploymentUri());
-    HttpEntity entity = MultipartEntityBuilder
-      .create()
-      .addTextBody("deployment-name", "deployment")
-      .addTextBody("enable-duplicate-filtering", "false")
-      .addTextBody("deployment-source", "process application")
-      .addBinaryBody(
+  private List<HttpPost> createDecisionDeploymentRequest(String decision, List<String> tenants) {
+    return tenants.stream().map(t -> {
+      HttpPost post = new HttpPost(getCreateDeploymentUri());
+      MultipartEntityBuilder builder = MultipartEntityBuilder
+        .create()
+        .addTextBody("deployment-name", "deployment")
+        .addTextBody("enable-duplicate-filtering", "false")
+        .addTextBody("deployment-source", "process application");
+
+      if (t != null) {
+        builder.addTextBody("tenant-id", t);
+      }
+
+      HttpEntity entity = builder.addBinaryBody(
         "data",
         decision.getBytes(StandardCharsets.UTF_8),
         ContentType.APPLICATION_OCTET_STREAM,
         "decision.dmn"
-      )
-      .build();
-    post.setEntity(entity);
-    return post;
+      ).build();
+
+      post.setEntity(entity);
+      return post;
+    }).collect(Collectors.toList());
   }
 
   public void correlateMessage(String messageName) {

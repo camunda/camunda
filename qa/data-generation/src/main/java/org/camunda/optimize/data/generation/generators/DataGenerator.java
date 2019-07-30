@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -38,6 +39,7 @@ public abstract class DataGenerator implements Runnable {
   private int instanceCountToGenerate;
   private MessageEventCorrelater messageEventCorrelater;
   private BackoffCalculator backoffCalculator = new BackoffCalculator(1L, 30L);
+  protected List<String> tenants = new ArrayList<>();
 
   protected SimpleEngineClient engineClient;
   private AtomicInteger startedInstanceCount = new AtomicInteger(0);
@@ -73,7 +75,8 @@ public abstract class DataGenerator implements Runnable {
     final BpmnModelInstance instance = retrieveDiagram();
     try {
       createMessageEventCorrelater();
-      List<String> processDefinitionIds = engineClient.deployProcesses(instance, nVersions);
+      generateTenantsList();
+      List<String> processDefinitionIds = engineClient.deployProcesses(instance, nVersions, tenants);
       deployAdditionalDiagrams();
       List<Integer> processInstanceSizePerDefinition = createProcessInstanceSizePerDefinition();
       startProcessInstances(processInstanceSizePerDefinition, processDefinitionIds);
@@ -81,6 +84,17 @@ public abstract class DataGenerator implements Runnable {
       logger.error("Error while generating the data", e);
     } finally {
       logger.info("{} finished data generation!", getClass().getSimpleName());
+    }
+  }
+
+  private void generateTenantsList() {
+    int max = ThreadLocalRandom.current().nextInt(1, 5);
+    for (int i = 1; i <= max; i++) {
+      if (i == 4) {
+        tenants.add(null);
+        continue;
+      }
+      tenants.add("tenant" + i);
     }
   }
 
@@ -209,9 +223,10 @@ public abstract class DataGenerator implements Runnable {
 
 
   private List<Integer> createProcessInstanceSizePerDefinition() {
-    int maxBulkSizeCount = instanceCountToGenerate / nVersions;
-    int finalBulkSize = instanceCountToGenerate % nVersions;
-    LinkedList<Integer> bulkSizes = new LinkedList<>(Collections.nCopies(nVersions, maxBulkSizeCount));
+    int deploymentCount = nVersions * tenants.size();
+    int maxBulkSizeCount = instanceCountToGenerate / deploymentCount;
+    int finalBulkSize = instanceCountToGenerate % deploymentCount;
+    LinkedList<Integer> bulkSizes = new LinkedList<>(Collections.nCopies(deploymentCount, maxBulkSizeCount));
     if (finalBulkSize > 0) {
       bulkSizes.addLast(bulkSizes.removeLast() + finalBulkSize);
     }

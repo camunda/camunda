@@ -128,20 +128,12 @@ public class DataGenerationExecutor {
   public void awaitDataGenerationTermination() {
     importExecutor.shutdown();
     try {
-
       boolean finishedGeneration = importExecutor.awaitTermination(Integer.MAX_VALUE, TimeUnit.HOURS);
 
       if (!finishedGeneration) {
         logger.error("Could not finish data generation in time. Trying to interrupt!");
         importExecutor.shutdownNow();
       }
-
-      // add some grace period after data generation for the engine to finish work (e.g. 10mio / 16 =~ 600000 ms = 10
-      // minutes)
-      // minimum 30 seconds
-      final long sleepMillis = Math.max(30_000, totalInstanceCount / 16);
-      logger.info("Sleeping for {}s as a grace period for the engine to finish pending work.", sleepMillis / 1000);
-      Thread.sleep(sleepMillis);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       logger.error("Data generation has been interrupted!", e);

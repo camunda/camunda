@@ -41,7 +41,7 @@ public class BranchAnalysisDataGenerator extends DataGenerator {
     super.deployAdditionalDiagrams();
     BpmnModelInstance bpmnModelInstance =
       readProcessDiagramAsInstance(CALLEE_DIAGRAM);
-    engineClient.deployProcesses(bpmnModelInstance, 1);
+    engineClient.deployProcesses(bpmnModelInstance, 1, tenants);
   }
 
   @Override
