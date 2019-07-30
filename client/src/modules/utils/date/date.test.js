@@ -15,7 +15,7 @@ describe('date utils', () => {
     it('should return formatted date', () => {
       // given
       const givenDate = new Date('Thu Jun 28 2018 13:59:05');
-      const expectedDate = '28 Jun 2018 13:59:05';
+      const expectedDate = '2018-06-28 13:59:05';
 
       // then
       expect(formatDate(givenDate)).toEqual(expectedDate);
