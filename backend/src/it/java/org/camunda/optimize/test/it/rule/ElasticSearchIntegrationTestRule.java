@@ -76,8 +76,6 @@ import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 @Slf4j
 public class ElasticSearchIntegrationTestRule extends TestWatcher {
@@ -135,7 +133,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   public void refreshAllOptimizeIndices() {
     try {
-      RefreshRequest refreshAllIndicesRequest = new RefreshRequest();
+      RefreshRequest refreshAllIndicesRequest = new RefreshRequest(getIndexNameService().getIndexPrefix() + "*");
       getOptimizeElasticClient().getHighLevelClient()
         .indices()
         .refresh(refreshAllIndicesRequest, RequestOptions.DEFAULT);
@@ -363,7 +361,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   public void deleteAllOptimizeData() {
-    DeleteByQueryRequest request = new DeleteByQueryRequest("_all")
+    DeleteByQueryRequest request = new DeleteByQueryRequest(getIndexNameService().getIndexPrefix() + "*")
       .setQuery(matchAllQuery())
       .setRefresh(true);
 
@@ -391,7 +389,6 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   public void cleanAndVerify() {
     cleanUpElasticSearch();
-    assureElasticsearchIsClean();
   }
 
   public void disableCleanup() {
@@ -465,22 +462,6 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     } catch (Exception e) {
       //nothing to do
       log.error("can't clean optimize indexes", e);
-    }
-  }
-
-  private void assureElasticsearchIsClean() {
-    try {
-      SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-        .query(QueryBuilders.matchAllQuery());
-      SearchRequest searchRequest = new SearchRequest();
-      searchRequest.indices(getIndexNameService().getIndexPrefix() + "*");
-      searchRequest.source(searchSourceBuilder);
-      SearchResponse searchResponse = getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
-
-      Long hits = searchResponse.getHits().getTotalHits();
-      assertThat("Elasticsearch should be clean after Test!", hits, is(0L));
-    } catch (Exception e) {
-      throw new OptimizeIntegrationTestException("Could not check if elasticsearch is clean!", e);
     }
   }
 
