@@ -97,7 +97,7 @@ public class TransportChannelListenerTest {
     assertThat(clientListener.getClosedConnections()).hasSize(1);
     assertThat(clientListener.getClosedConnections().get(0))
         .extracting("address")
-        .containsExactly(ADDRESS);
+        .isEqualTo(ADDRESS);
 
     TestUtil.waitUntil(() -> !serverListener.getClosedConnections().isEmpty());
     assertThat(serverListener.getClosedConnections()).hasSize(1);
