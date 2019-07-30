@@ -25,9 +25,9 @@ import {getOptimizeVersion} from 'services';
 import ThresholdInput from './ThresholdInput';
 
 import {formatters, isDurationReport} from 'services';
+import {t} from 'translation';
 
 const newAlert = {
-  name: 'New Alert',
   email: '',
   reportId: '',
   thresholdOperator: '>',
@@ -47,14 +47,14 @@ export default function AlertModal(reports) {
 
       this.state = {
         ...newAlert,
+        name: t('alert.newAlert'),
         invalid: false
       };
     }
 
     componentDidMount = async () => {
-      const alert = this.props.entity;
-      if (alert && Object.keys(alert).length) {
-        this.updateAlert();
+      if (this.isDefined(this.props.entity)) {
+        this.loadAlert();
       }
 
       const version = (await getOptimizeVersion()).split('.');
@@ -66,30 +66,31 @@ export default function AlertModal(reports) {
       });
     };
 
-    updateAlert() {
-      const alert = this.props.entity;
+    isDefined = alert => alert && Object.keys(alert).length;
 
-      this.setState(
-        (alert &&
-          alert.id && {
-            ...alert,
-            threshold:
-              this.getReportType(alert.reportId) === 'duration'
-                ? formatters.convertDurationToObject(alert.threshold)
-                : alert.threshold.toString(),
-            checkInterval: {
-              value: alert.checkInterval.value.toString(),
-              unit: alert.checkInterval.unit
-            },
-            reminder: alert.reminder
-              ? {
-                  value: alert.reminder.value.toString(),
-                  unit: alert.reminder.unit
-                }
-              : null
-          }) ||
-          newAlert
-      );
+    loadAlert() {
+      const alert = this.props.entity;
+      if (!this.isDefined(alert)) {
+        this.setState({...newAlert, name: t('alert.newAlert')});
+      }
+
+      this.setState({
+        ...alert,
+        threshold:
+          this.getReportType(alert.reportId) === 'duration'
+            ? formatters.convertDurationToObject(alert.threshold)
+            : alert.threshold.toString(),
+        checkInterval: {
+          value: alert.checkInterval.value.toString(),
+          unit: alert.checkInterval.unit
+        },
+        reminder: alert.reminder
+          ? {
+              value: alert.reminder.value.toString(),
+              unit: alert.reminder.unit
+            }
+          : null
+      });
     }
 
     updateReminder = ({target: {checked}}) => {
@@ -133,7 +134,7 @@ export default function AlertModal(reports) {
 
     componentDidUpdate({entity}) {
       if (this.props.entity !== entity) {
-        this.updateAlert();
+        this.loadAlert();
       }
       if (!this.state.name.trim()) {
         this.setInvalid(true);
@@ -215,54 +216,51 @@ export default function AlertModal(reports) {
         emailNotificationIsEnabled,
         optimizeVersion
       } = this.state;
+      const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/setup/configuration/#email`;
       return (
         <Modal open={this.props.entity} onClose={this.props.onClose}>
-          <Modal.Header>{this.isInEditingMode() ? 'Edit Alert' : 'Create New Alert'}</Modal.Header>
+          <Modal.Header>
+            {this.isInEditingMode() ? t('alert.edit') : t('alert.createNew')}
+          </Modal.Header>
           <Modal.Content>
             <Form horizontal>
               {!emailNotificationIsEnabled && (
-                <Message type="warning">
-                  The email notification service is not configured. Optimize won't be able to inform
-                  you about critical values. Please check out the{' '}
-                  <a
-                    href={`https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/setup/configuration/#email`}
-                  >
-                    Optimize documentation
-                  </a>{' '}
-                  on how to enable the notification service.
-                </Message>
+                <Message
+                  type="warning"
+                  dangerouslySetInnerHTML={{__html: t('alert.emailWarning', {docsLink})}}
+                />
               )}
               <Form.Group>
                 <LabeledInput
                   id="name-input"
-                  label="Alert Name"
+                  label={t('alert.form.name')}
                   value={name}
                   onChange={({target: {value}}) => this.setState({name: value})}
                   autoComplete="off"
                 />
               </Form.Group>
               <Form.Group>
-                <Labeled label="When Report">
+                <Labeled label={t('alert.form.report')}>
                   <Typeahead
                     initialValue={reports.find(report => report.id === reportId)}
-                    placeholder="Select a Report"
+                    placeholder={t('alert.form.reportPlaceholder')}
                     values={reports}
                     onSelect={this.updateReport}
                     formatter={({name}) => name}
-                    noValuesMessage="No number reports have been created"
+                    noValuesMessage={t('alert.form.noReports')}
                   />
                 </Labeled>
-                <InfoMessage>Alerts only available for reports visualised as numbers</InfoMessage>
+                <InfoMessage>{t('alert.form.reportInfo')}</InfoMessage>
               </Form.Group>
               <Form.Group>
-                <span>Has a Value</span>
+                <span>{t('alert.form.threshold')}</span>
                 <Form.InputGroup>
                   <Select
                     value={thresholdOperator}
                     onChange={value => this.setState({thresholdOperator: value})}
                   >
-                    <Select.Option value=">">above</Select.Option>
-                    <Select.Option value="<">below</Select.Option>
+                    <Select.Option value=">">{t('alert.above')}</Select.Option>
+                    <Select.Option value="<">{t('alert.below')}</Select.Option>
                   </Select>
                   <ThresholdInput
                     id="value-input"
@@ -273,7 +271,7 @@ export default function AlertModal(reports) {
                 </Form.InputGroup>
               </Form.Group>
               <Form.Group>
-                <Labeled label="Check Report Every">
+                <Labeled label={t('alert.form.frequency')}>
                   <Form.InputGroup>
                     <Input
                       id="checkInterval-input"
@@ -288,12 +286,12 @@ export default function AlertModal(reports) {
                         this.setState(update(this.state, {checkInterval: {unit: {$set: value}}}))
                       }
                     >
-                      <Select.Option value="seconds">Seconds</Select.Option>
-                      <Select.Option value="minutes">Minutes</Select.Option>
-                      <Select.Option value="hours">Hours</Select.Option>
-                      <Select.Option value="days">Days</Select.Option>
-                      <Select.Option value="weeks">Weeks</Select.Option>
-                      <Select.Option value="months">Months</Select.Option>
+                      <Select.Option value="seconds">{t('common.unit.seconds')}</Select.Option>
+                      <Select.Option value="minutes">{t('common.unit.minutes')}</Select.Option>
+                      <Select.Option value="hours">{t('common.unit.hours')}</Select.Option>
+                      <Select.Option value="days">{t('common.unit.days')}</Select.Option>
+                      <Select.Option value="weeks">{t('common.unit.weeks')}</Select.Option>
+                      <Select.Option value="months">{t('common.unit.months')}</Select.Option>
                     </Select>
                   </Form.InputGroup>
                 </Labeled>
@@ -301,8 +299,8 @@ export default function AlertModal(reports) {
               <Form.Group>
                 <LabeledInput
                   id="email-input"
-                  label="Send Email to"
-                  placeholder="Email address"
+                  label={t('alert.form.email')}
+                  placeholder={t('alert.form.emailPlaceholder')}
                   value={email}
                   onChange={({target: {value}}) => this.setState({email: value})}
                 />
@@ -314,16 +312,16 @@ export default function AlertModal(reports) {
                     checked={fixNotification}
                     onChange={({target: {checked}}) => this.setState({fixNotification: checked})}
                   />
-                  Send notification when resolved
+                  {t('alert.form.sendNotification')}
                 </label>
                 <label>
                   <Input type="checkbox" checked={!!reminder} onChange={this.updateReminder} />
-                  Send reminder notification
+                  {t('alert.form.reminder')}
                 </label>
               </Form.Group>
               {reminder && (
                 <Form.Group noSpacing>
-                  <Labeled label="every">
+                  <Labeled label={t('alert.form.reminderFrequency')}>
                     <Form.InputGroup>
                       <Input
                         id="reminder-input"
@@ -338,11 +336,11 @@ export default function AlertModal(reports) {
                           this.setState(update(this.state, {reminder: {unit: {$set: value}}}))
                         }
                       >
-                        <Select.Option value="minutes">Minutes</Select.Option>
-                        <Select.Option value="hours">Hours</Select.Option>
-                        <Select.Option value="days">Days</Select.Option>
-                        <Select.Option value="weeks">Weeks</Select.Option>
-                        <Select.Option value="months">Months</Select.Option>
+                        <Select.Option value="minutes">{t('common.unit.minutes')}</Select.Option>
+                        <Select.Option value="hours">{t('common.unit.hours')}</Select.Option>
+                        <Select.Option value="days">{t('common.unit.days')}</Select.Option>
+                        <Select.Option value="weeks">{t('common.unit.weeks')}</Select.Option>
+                        <Select.Option value="months">{t('common.unit.months')}</Select.Option>
                       </Select>
                     </Form.InputGroup>
                   </Labeled>
@@ -351,14 +349,14 @@ export default function AlertModal(reports) {
             </Form>
           </Modal.Content>
           <Modal.Actions>
-            <Button onClick={this.props.onClose}>Cancel</Button>
+            <Button onClick={this.props.onClose}>{t('common.cancel')}</Button>
             <Button
               variant="primary"
               color="blue"
               onClick={this.confirm}
               disabled={this.state.invalid}
             >
-              {this.isInEditingMode() ? 'Apply Changes' : 'Create Alert'}
+              {this.isInEditingMode() ? t('alert.apply') : t('alert.create')}
             </Button>
           </Modal.Actions>
         </Modal>

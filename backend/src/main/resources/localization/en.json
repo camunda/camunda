@@ -73,7 +73,31 @@
   },
   "alert": {
     "label": "Alert",
-    "label-plural": "Alerts"
+    "label-plural": "Alerts",
+    "createNew": "Create New Alert",
+    "newAlert": "New Alert",
+    "edit": "Edit Alert",
+    "Delete": "Delete Alert",
+    "above": "above",
+    "below": "below",
+    "description": "Alert <span>{email}</span> when Report <span>{name}</span> has a value <span>{aboveOrBelow} {thresholdValue}</span>",
+    "emailWarning": "The email notification service is not configured. Optimize won't be able to inform you about critical values. Please check out the <a href='{docsLink}'>Optimize documentation</a> on how to enable the notification service.",
+    "form": {
+      "name": "Alert Name",
+      "report": "When Report",
+      "reportPlaceholder": "Select a Report",
+      "noReports": "No number reports have been created",
+      "reportInfo": "Alerts only available for reports visualised as numbers",
+      "threshold": "Has a Value",
+      "frequency": "Check Report Every",
+      "email": "Send Email to",
+      "emailPlaceholder": "Email address",
+      "sendNotification": "Send notification when resolved",
+      "reminder": "Send reminder notification",
+      "reminderFrequency": "every"
+    },
+    "apply": "Apply Changes",
+    "create": "Create Alert"
   },
   "analysis": {
     "selectLabel": "For",
@@ -132,6 +156,16 @@
     },
     "filter": {
       "incompatibleFilters": "No data is shown since the combination of filters is incompatible with each other"
+    },
+    "unit": {
+      "millis": "Milliseconds",
+      "seconds": "Seconds",
+      "minutes": "Minutes",
+      "hours": "Hours",
+      "days": "Days",
+      "weeks": "Weeks",
+      "months": "Months",
+      "years": "Years"
     }
   }
 }

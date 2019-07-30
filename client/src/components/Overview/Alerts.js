@@ -25,6 +25,7 @@ import entityIcons from './entityIcons';
 
 import LastModified from './subComponents/LastModified';
 import NoEntities from './subComponents/NoEntities';
+import {t} from 'translation';
 
 const HeaderIcon = entityIcons.alert.header.Component;
 const EntityIcon = entityIcons.alert.generic.Component;
@@ -72,20 +73,20 @@ class Alerts extends React.Component {
     });
   };
 
-  renderMetadata = alert => {
+  renderMetadata = ({reportId, email, thresholdOperator, threshold}) => {
     if (!this.state.reports) {
       return;
     }
-    const report = this.state.reports.find(({id}) => alert.reportId === id);
+    const report = this.state.reports.find(({id}) => reportId === id);
+    const aboveOrBelow = thresholdOperator === '<' ? t('alert.below') : t('alert.above');
+    const thresholdValue = isDurationReport(report) ? duration(threshold) : frequency(threshold);
     return (
-      <span className="metadata">
-        Alert <span className="highlight">{alert.email}</span> when Report{' '}
-        <span className="highlight">{report.name}</span> has a value{' '}
-        <span className="highlight">
-          {alert.thresholdOperator === '<' ? 'below ' : 'above '}
-          {isDurationReport(report) ? duration(alert.threshold) : frequency(alert.threshold)}
-        </span>
-      </span>
+      <span
+        className="metadata"
+        dangerouslySetInnerHTML={{
+          __html: t('alert.description', {email, name: report.name, aboveOrBelow, thresholdValue})
+        }}
+      />
     );
   };
 
@@ -134,7 +135,7 @@ class Alerts extends React.Component {
     return (
       <div className="Alerts">
         <h1>
-          <HeaderIcon /> Alerts
+          <HeaderIcon /> {t('alert.label-plural')}
         </h1>
         <Button
           color="blue"
@@ -142,7 +143,7 @@ class Alerts extends React.Component {
           className="createButton"
           onClick={this.showCreateModal}
         >
-          Create New Alert
+          {t('alert.createNew')}
         </Button>
         {error}
         {loading}
@@ -161,7 +162,7 @@ class Alerts extends React.Component {
                   <div className="extraInfo">
                     <span className="data custom">{this.renderMetadata(itemData)}</span>
                     <LastModified
-                      label="Last changed"
+                      label={t('common.entity.changed')}
                       date={itemData.lastModified}
                       author={itemData.lastModifier}
                     />
@@ -169,11 +170,11 @@ class Alerts extends React.Component {
                 </div>
               </span>
               <div className="operations">
-                <Button title="Edit Alert" onClick={this.showEditModalFor(itemData)}>
-                  <Icon title="Edit Alert" type="edit" className="editLink" />
+                <Button title={t('alert.edit')} onClick={this.showEditModalFor(itemData)}>
+                  <Icon type="edit" className="editLink" />
                 </Button>
-                <Button title="Delete Alert" onClick={this.showDeleteModalFor(itemData)}>
-                  <Icon type="delete" title="Delete Alert" className="deleteIcon" />
+                <Button title={t('alert.delete')} onClick={this.showDeleteModalFor(itemData)}>
+                  <Icon type="delete" className="deleteIcon" />
                 </Button>
               </div>
             </li>

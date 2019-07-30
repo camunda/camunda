@@ -83,7 +83,7 @@ it('should format durations with value and unit', async () => {
 
   const node = shallow(wrapper.instance().renderMetadata(newAlert));
 
-  expect(node).toIncludeText('12s');
+  expect(node.html()).toContain('12s');
 });
 
 it('should show a loading indicator', () => {

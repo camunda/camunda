@@ -144,14 +144,14 @@
     font-size: 14px;
     text-overflow: ellipsis;
     white-space: normal;
-  }
 
-  .highlight {
-    background-color: #7fa8c5;
-    padding: 1px 8px 2px;
-    border-radius: 10px;
-    color: #fff;
-    display: inline-block;
-    margin-bottom: 5px;
+    span {
+      background-color: #7fa8c5;
+      padding: 1px 8px 2px;
+      border-radius: 10px;
+      color: #fff;
+      display: inline-block;
+      margin-bottom: 5px;
+    }
   }
 }
