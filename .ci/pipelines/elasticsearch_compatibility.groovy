@@ -46,9 +46,7 @@ spec:
     tty: true
     env:
       - name: LIMITS_CPU
-        valueFrom:
-          resourceFieldRef:
-            resource: limits.cpu
+        value: 1
       - name: TZ
         value: Europe/Berlin
       - name: DOCKER_HOST
@@ -100,7 +98,7 @@ spec:
         add: ["IPC_LOCK"]
     resources:
       requests:
-        cpu: 1
+        cpu: 2
         memory: 2Gi
 """
 }

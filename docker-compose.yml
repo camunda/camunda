@@ -19,10 +19,8 @@ services:
       - 9300:9300
     volumes:
       - "./backend/target/es_logs:/usr/share/elasticsearch/logs"
-      - "./backend/src/it/resources/es_conf/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml"
-      - "./backend/src/it/resources/es_conf/log4j2.properties:/usr/share/elasticsearch/config/log4j2.properties"
     restart: always
-    cpu_count: 2
+    cpu_count: 4
     mem_limit: 2g
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9200/_cat/health | grep -q green"]
@@ -43,7 +41,7 @@ services:
       - "./backend/src/it/resources/tomcat/tomcat-users.xml:/camunda/conf/tomcat-users.xml"
       - "./backend/src/it/resources/tomcat/context.xml:/camunda/webapps/manager/META-INF/context.xml"
     restart: always
-    cpu_count: 1
+    cpu_count: 4
     mem_limit: 2g
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://localhost:8080/engine-rest/engine | grep -q default"]

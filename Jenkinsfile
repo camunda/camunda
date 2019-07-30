@@ -59,6 +59,15 @@ spec:
       command: ["sysctl", "-w", "vm.max_map_count=262144"]
       securityContext:
         privileged: true
+        capabilities:
+          add: ["IPC_LOCK", "SYS_RESOURCE"]
+    - name: increase-the-ulimit
+      image: busybox
+      command: ["sh", "-c", "ulimit -n 65536"]
+      securityContext:
+        privileged: true
+        capabilities:
+          add: ["IPC_LOCK", "SYS_RESOURCE"]
   containers:
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}
@@ -66,14 +75,12 @@ spec:
     tty: true
     env:
       - name: LIMITS_CPU
-        valueFrom:
-          resourceFieldRef:
-            resource: limits.cpu
+        value: 3
       - name: TZ
         value: Europe/Berlin
     resources:
       limits:
-        cpu: 4
+        cpu: 6
         memory: 4Gi
       requests:
         cpu: 4
@@ -88,21 +95,17 @@ String camBpmContainerSpec(String camBpmVersion = CAMBPM_VERSION_LATEST) {
     image: ${camBpmDockerImage}
     tty: true
     env:
-      - name: JAVA_TOOL_OPTIONS
-        value: |
-          -XX:+UnlockExperimentalVMOptions
-          -XX:+UseCGroupMemoryLimitForHeap
       - name: JAVA_OPTS
-        value: "-Xms512m -Xmx1g -XX:MaxMetaspaceSize=256m"
+        value: "-Xms2g -Xmx2g -XX:MaxMetaspaceSize=256m"
       - name: TZ
         value: Europe/Berlin
     resources:
       limits:
-        cpu: 2
-        memory: 2Gi
+        cpu: 4
+        memory: 3Gi
       requests:
-        cpu: 2
-        memory: 2Gi
+        cpu: 4
+        memory: 3Gi
     volumeMounts:
     - name: cambpm-config
       mountPath: /camunda/conf/tomcat-users.xml
@@ -118,7 +121,7 @@ String elasticSearchContainerSpec(boolean ssl = false, boolean basicAuth = false
       - name: ELASTIC_PASSWORD
         value: optimize
         """ : ""
-  String imageName = (basicAuth) ? "elasticsearch-platinum" : "elasticsearch"
+  String imageName = (basicAuth) ? "elasticsearch-platinum" : "elasticsearch-oss"
   String sslConfig = (ssl) ? """
       - name: xpack.security.http.ssl.enabled
         value: true
@@ -145,21 +148,21 @@ String elasticSearchContainerSpec(boolean ssl = false, boolean basicAuth = false
     securityContext:
       privileged: true
       capabilities:
-        add: ["IPC_LOCK"]
+        add: ["IPC_LOCK", "SYS_RESOURCE"]
     resources:
       limits:
-        cpu: 2
-        memory: 2Gi
+        cpu: 5
+        memory: 4Gi
       requests:
-        cpu: 2
-        memory: 1Gi
+        cpu: 5
+        memory: 4Gi
     env:
       - name: ES_NODE_NAME
         valueFrom:
           fieldRef:
             fieldPath: metadata.name
       - name: ES_JAVA_OPTS
-        value: "-Xms512m -Xmx512m"
+        value: "-Xms2g -Xmx2g"
       - name: bootstrap.memory_lock
         value: true
       - name: discovery.type
