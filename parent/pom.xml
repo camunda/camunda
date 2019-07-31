@@ -35,7 +35,7 @@
     <spotbugs.include>spotbugs/spotbugs-include.xml</spotbugs.include>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>1.0.3</version.agrona>
+    <version.agrona>1.0.5</version.agrona>
     <version.animal-sniffer>1.18</version.animal-sniffer>
     <version.assertj>3.13.1</version.assertj>
     <version.atomix>3.2.0-alpha4</version.atomix>
@@ -44,7 +44,7 @@
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.13</version.commons-codec>
-    <version.elasticsearch>6.8.1</version.elasticsearch>
+    <version.elasticsearch>6.8.2</version.elasticsearch>
     <version.embedded-elasticsearch>2.10.0</version.embedded-elasticsearch>
     <version.error-prone>2.3.3</version.error-prone>
     <version.grpc>1.22.1</version.grpc>
