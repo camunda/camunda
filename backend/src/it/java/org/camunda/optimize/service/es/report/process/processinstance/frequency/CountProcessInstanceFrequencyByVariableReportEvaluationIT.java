@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.processinstance.frequency;
 
+import com.google.common.collect.ImmutableMap;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -28,6 +29,7 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Test;
 
 import javax.ws.rs.core.Response;
+import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
@@ -38,8 +40,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.google.common.collect.ImmutableMap.of;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByVariable;
@@ -342,8 +346,9 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     // then
     final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().size(), is(2));
     assertThat(result.getDataEntryForKey("1").get().getValue(), is(1L));
+    assertThat(result.getDataEntryForKey(MISSING_VARIABLE_KEY).get().getValue(), is(1L));
   }
 
 
@@ -431,9 +436,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     return varToType;
   }
 
-
   @Test
-  public void missingVariablesAggregationWorksForUndefinedAndNullVariables() {
+  public void undefinedFilterInReport() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("testVar", "withValue");
@@ -448,6 +452,77 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     variables = new HashMap<>();
     variables.put("differentStringValue", "test");
     engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setVariableName("testVar")
+      .setVariableType(VariableType.STRING)
+      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
+      .setFilter(ProcessFilterBuilder.filter()
+                   .variable()
+                   .stringType()
+                   .filterForUndefined()
+                   .name("testVar")
+                   .add()
+                   .buildList())
+      .build();
+
+
+    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(
+      reportData);
+
+    // then
+    final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getDataEntryForKey(MISSING_VARIABLE_KEY).get().getValue(), is(3L));
+  }
+
+  @Test
+  public void multipleVariablesWithSameNameInOneProcessInstanceAreCountedOnlyOnce() throws SQLException {
+    // given
+    Map<String, Object> variables = ImmutableMap.of("testVar", "withValue", "testVarTemp", "withValue");
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    engineDatabaseRule.changeVariableName(processInstanceDto.getId(), "testVarTemp", "testVar");
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    assertThat(elasticSearchRule.getVariableInstanceCount("testVar", VariableType.STRING), is(2));
+
+    // when
+    ProcessReportDataDto reportData = createReport(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      "testVar",
+      VariableType.STRING
+    );
+    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(
+      reportData);
+
+    // then
+    final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getDataEntryForKey("withValue").get().getValue(), is(1L));
+  }
+
+  @Test
+  public void missingVariablesAggregationWorksForUndefinedAndNullVariables() {
+    // given
+    // 1 process instance with 'testVar'
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(of("testVar", "withValue"));
+
+    // 3 process instances without 'testVar'
+    engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), Collections.singletonMap("testVar", null));
+    engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), of("differentStringValue", "test"));
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -469,7 +544,6 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     assertThat(result.getDataEntryForKey("withValue").get().getValue(), is(1L));
     assertThat(result.getDataEntryForKey("missing").get().getValue(), is(3L));
   }
-
 
 
   @Test

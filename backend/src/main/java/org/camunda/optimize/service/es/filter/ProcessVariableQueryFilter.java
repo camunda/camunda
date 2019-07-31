@@ -64,11 +64,15 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
 
   private QueryBuilder createFilterQueryBuilder(VariableFilterDataDto dto) {
     ValidationHelper.ensureNotNull("Variable filter data", dto.getData());
+    if (dto.isFilterForUndefined()) {
+      return createFilterUndefinedQueryBuilder(dto);
+    }
+
     QueryBuilder queryBuilder = matchAllQuery();
     switch (dto.getType()) {
       case STRING:
         StringVariableFilterDataDto stringVarDto = (StringVariableFilterDataDto) dto;
-        queryBuilder =  createStringQueryBuilder(stringVarDto);
+        queryBuilder = createStringQueryBuilder(stringVarDto);
         break;
       case INTEGER:
       case DOUBLE:
@@ -83,13 +87,16 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
         break;
       case BOOLEAN:
         BooleanVariableFilterDataDto booleanVarDto = (BooleanVariableFilterDataDto) dto;
-        queryBuilder =  createBoolQueryBuilder(booleanVarDto);
+        queryBuilder = createBoolQueryBuilder(booleanVarDto);
         break;
       default:
-        logger.warn("Could not filter for variables! " +
-                        "Type [{}] is not supported for variable filters. Ignoring filter.",
-                dto.getType());
+        logger.warn(
+          "Could not filter for variables! " +
+            "Type [{}] is not supported for variable filters. Ignoring filter.",
+          dto.getType()
+        );
     }
+
     return queryBuilder;
   }
 
@@ -100,8 +107,10 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
     } else if (operator.equals(NOT_IN)) {
       return createInequalityMultiValueQueryBuilder(dto);
     } else {
-      logger.warn("Could not filter for variables! Operator [{}] is not allowed for type [String]. Ignoring filter.",
-              operator);
+      logger.warn(
+        "Could not filter for variables! Operator [{}] is not allowed for type [String]. Ignoring filter.",
+        operator
+      );
     }
     return boolQuery();
   }
@@ -119,7 +128,8 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
           boolQuery()
             .must(termQuery(nestedVariableNameFieldLabel, dto.getName()))
             .must(termQuery(nestedVariableValueFieldLabel, value)),
-          ScoreMode.None)
+          ScoreMode.None
+        )
       );
     }
     return boolQueryBuilder;
@@ -131,16 +141,16 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
     String nestedVariableNameFieldLabel = getNestedVariableNameFieldLabelForType(dto.getType());
     String nestedVariableValueFieldLabel = getNestedVariableValueFieldLabelForType(dto.getType());
     for (String value : dto.getData().getValues()) {
-        boolQueryBuilder.mustNot(
-          nestedQuery(
-            variableFieldLabel,
-            boolQuery()
-                .must(termQuery(nestedVariableNameFieldLabel, dto.getName()))
-                .must(termQuery(nestedVariableValueFieldLabel, value)),
-            ScoreMode.None
-          )
-        );
-      }
+      boolQueryBuilder.mustNot(
+        nestedQuery(
+          variableFieldLabel,
+          boolQuery()
+            .must(termQuery(nestedVariableNameFieldLabel, dto.getName()))
+            .must(termQuery(nestedVariableValueFieldLabel, value)),
+          ScoreMode.None
+        )
+      );
+    }
     return boolQueryBuilder;
   }
 
@@ -149,17 +159,20 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
     OperatorMultipleValuesVariableFilterSubDataDto data = dto.getData();
     BoolQueryBuilder boolQueryBuilder = boolQuery();
     if (data.getValues().size() < 1) {
-      logger.warn("Could not filter for variables! " +
-        "There were no value provided for operator [{}] and type [{}]. Ignoring filter.",
-              data.getOperator(),
-              dto.getType());
+      logger.warn(
+        "Could not filter for variables! " +
+          "There were no value provided for operator [{}] and type [{}]. Ignoring filter.",
+        data.getOperator(),
+        dto.getType()
+      );
       return boolQueryBuilder;
     }
     String nestedVariableNameFieldLabel = getNestedVariableNameFieldLabelForType(dto.getType());
     QueryBuilder resultQuery = nestedQuery(
       variableTypeToFieldLabel(dto.getType()),
       boolQueryBuilder,
-      ScoreMode.None);
+      ScoreMode.None
+    );
     boolQueryBuilder.must(
       termQuery(nestedVariableNameFieldLabel, dto.getName())
     );
@@ -186,7 +199,8 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
         break;
       default:
         logger.warn("Could not filter for variables! Operator [{}] is not supported for type [{}]. Ignoring filter.",
-                data.getOperator(), dto.getType());
+                    data.getOperator(), dto.getType()
+        );
     }
     return resultQuery;
   }
@@ -214,19 +228,19 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
     String name = dto.getName();
     RangeQueryBuilder rangeQuery = createRangeQuery(dto);
     TermsQueryBuilder matchVariableName =
-        termsQuery(getNestedVariableNameFieldLabelForType(dto.getType()), name);
+      termsQuery(getNestedVariableNameFieldLabelForType(dto.getType()), name);
     return nestedQuery(
-        DATE_VARIABLES,
-        boolQuery()
-            .must(matchVariableName)
-            .must(rangeQuery),
-        ScoreMode.None
+      DATE_VARIABLES,
+      boolQuery()
+        .must(matchVariableName)
+        .must(rangeQuery),
+      ScoreMode.None
     );
   }
 
   private RangeQueryBuilder createRangeQuery(DateVariableFilterDataDto dto) {
     ValidationHelper.ensureAtLeastOneNotNull("date filter date value",
-            dto.getData().getStart(), dto.getData().getEnd()
+                                             dto.getData().getStart(), dto.getData().getEnd()
     );
 
     RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(getNestedVariableValueFieldLabelForType(dto.getType()));
@@ -245,16 +259,24 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
     ValidationHelper.ensureNotEmpty("boolean filter value", dto.getData().getValue());
     boolean value = Boolean.parseBoolean(dto.getData().getValue());
     TermsQueryBuilder matchVariableName =
-        termsQuery(getNestedVariableNameFieldLabelForType(dto.getType()), dto.getName());
+      termsQuery(getNestedVariableNameFieldLabelForType(dto.getType()), dto.getName());
     TermsQueryBuilder matchBooleanValue =
-        termsQuery(getNestedVariableValueFieldLabelForType(dto.getType()), value);
+      termsQuery(getNestedVariableValueFieldLabelForType(dto.getType()), value);
     return nestedQuery(
-        BOOLEAN_VARIABLES,
-        boolQuery()
-            .must(matchVariableName)
-            .must(matchBooleanValue),
-        ScoreMode.None
+      BOOLEAN_VARIABLES,
+      boolQuery()
+        .must(matchVariableName)
+        .must(matchBooleanValue),
+      ScoreMode.None
     );
+  }
+
+  private QueryBuilder createFilterUndefinedQueryBuilder(VariableFilterDataDto dto) {
+    return boolQuery().mustNot(nestedQuery(
+      variableTypeToFieldLabel(dto.getType()),
+      termsQuery(getNestedVariableNameFieldLabelForType(dto.getType()), dto.getName()),
+      ScoreMode.None
+    ));
   }
 
 }

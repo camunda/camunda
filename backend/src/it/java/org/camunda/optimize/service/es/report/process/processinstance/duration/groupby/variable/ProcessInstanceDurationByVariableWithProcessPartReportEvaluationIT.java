@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
@@ -646,20 +647,18 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData().size(), is(1));
-    assertThat(
-      resultDto.getDataEntryForKey("1").get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L))
-    );
+    assertThat(resultDto.getData().size(), is(2));
+    assertThat(resultDto.getDataEntryForKey("1").get().getValue(), is(1000L));
+    assertThat(resultDto.getDataEntryForKey(MISSING_VARIABLE_KEY).get().getValue(), is(2000L));
   }
 
   @Test
   public void otherVariablesDoNotDistortTheResult() throws SQLException {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
-    OffsetDateTime endDate = startDate.plusSeconds(1);
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo1", "bar1");
+    variables.put("foo3", "bar1");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
     engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
     engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
@@ -693,11 +692,9 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData().size(), is(1));
-    assertThat(
-      resultDto.getDataEntryForKey("bar1").get().getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(1000L))
-    );
+    assertThat(resultDto.getData().size(), is(2));
+    assertThat(resultDto.getDataEntryForKey("bar1").get().getValue(), is(1000L));
+    assertThat(resultDto.getDataEntryForKey(MISSING_VARIABLE_KEY).get().getValue(), is(5000L));
   }
 
   @Test

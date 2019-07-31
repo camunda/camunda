@@ -9,5 +9,5 @@ import lombok.Data;
 
 @Data
 public class BooleanVariableFilterSubDataDto {
-    protected String value;
+  protected String value;
 }

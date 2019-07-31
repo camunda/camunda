@@ -122,6 +122,27 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
     String nestedVariableNameFieldLabel = getNestedVariableNameFieldLabelForType(variableType);
     String nestedVariableValueFieldLabel = getNestedVariableValueFieldLabelForType(variableType);
 
+    AggregationBuilder variableSubAggregation = createVariableSubAggregation(
+      variableName,
+      variableType,
+      nestedVariableNameFieldLabel,
+      nestedVariableValueFieldLabel
+    );
+
+    return nested(NESTED_AGGREGATION, path)
+      .subAggregation(
+        filter(
+          FILTERED_VARIABLES_AGGREGATION,
+          boolQuery().must(termQuery(nestedVariableNameFieldLabel, variableName))
+        )
+          .subAggregation(variableSubAggregation)
+          .subAggregation(reverseNested(FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION))
+      );
+  }
+
+  private AggregationBuilder createVariableSubAggregation(final String variableName, final VariableType variableType,
+                                                          final String nestedVariableNameFieldLabel,
+                                                          final String nestedVariableValueFieldLabel) {
     AggregationBuilder aggregationBuilder = AggregationBuilders
       .terms(VARIABLES_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
@@ -140,15 +161,7 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
 
     // the same process instance could have several same variable names -> do not count each but only the proc inst once
     aggregationBuilder.subAggregation(reverseNested(VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION));
-
-    return nested(NESTED_AGGREGATION, path)
-      .subAggregation(
-        filter(
-          FILTERED_VARIABLES_AGGREGATION,
-          boolQuery().must(termQuery(nestedVariableNameFieldLabel, variableName))
-        )
-          .subAggregation(aggregationBuilder)
-          .subAggregation(reverseNested(FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION)));
+    return aggregationBuilder;
   }
 
   private ProcessCountReportMapResultDto mapToReportResult(final SearchResponse response) {

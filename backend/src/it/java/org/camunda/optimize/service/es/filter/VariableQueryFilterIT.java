@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
@@ -25,7 +26,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,6 +41,7 @@ import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LES
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.NOT_IN;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsNull.notNullValue;
 
 
 public class VariableQueryFilterIT {
@@ -454,14 +455,14 @@ public class VariableQueryFilterIT {
       // when
       List<ProcessFilterDto> filter =
         ProcessFilterBuilder
-        .filter()
-        .variable()
-        .type(variableType)
-        .name("var")
-        .operator(LESS_THAN)
-        .values(Collections.singletonList("5"))
-        .add()
-        .buildList();
+          .filter()
+          .variable()
+          .type(variableType)
+          .name("var")
+          .operator(LESS_THAN)
+          .values(Collections.singletonList("5"))
+          .add()
+          .buildList();
 
       RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
@@ -499,14 +500,14 @@ public class VariableQueryFilterIT {
 
       List<ProcessFilterDto> filter =
         ProcessFilterBuilder
-        .filter()
-        .variable()
-        .name("var")
-        .values(values)
-        .type(variableType)
-        .operator(IN)
-        .add()
-        .buildList();
+          .filter()
+          .variable()
+          .name("var")
+          .values(values)
+          .type(variableType)
+          .operator(IN)
+          .add()
+          .buildList();
 
       RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
@@ -847,14 +848,14 @@ public class VariableQueryFilterIT {
     // when
     List<ProcessFilterDto> filter =
       ProcessFilterBuilder
-      .filter()
-      .variable()
-      .dateType()
-      .start(null)
-      .end(now)
-      .name("var")
-      .add()
-      .buildList();
+        .filter()
+        .variable()
+        .dateType()
+        .start(null)
+        .end(now)
+        .name("var")
+        .add()
+        .buildList();
 
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
@@ -1001,6 +1002,118 @@ public class VariableQueryFilterIT {
   }
 
   @Test
+  public void filterForUndefinedOverwritesOtherFilterData() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("testVar", "withValue");
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+
+    variables.put("testVar", null);
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+
+    engineRule.startProcessInstance(processDefinition.getId());
+
+    variables = new HashMap<>();
+    variables.put("differentStringValue", "test");
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    List<ProcessFilterDto> filters =
+      ProcessFilterBuilder
+        .filter()
+        .variable()
+        .stringType()
+        .filterForUndefined()
+        .name("testVar")
+        .values(Collections.singletonList("withValue"))
+        .operator(FilterOperatorConstants.IN)
+        .add()
+        .buildList();
+
+    RawDataProcessReportResultDto result =
+      evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
+
+    // then
+    assertResults(result, 3);
+  }
+
+  private Map<String, VariableType> createVarNameToTypeMap() {
+    Map<String, VariableType> varToType = new HashMap<>();
+    varToType.put("dateVar", VariableType.DATE);
+    varToType.put("boolVar", VariableType.BOOLEAN);
+    varToType.put("shortVar", VariableType.SHORT);
+    varToType.put("intVar", VariableType.INTEGER);
+    varToType.put("longVar", VariableType.LONG);
+    varToType.put("doubleVar", VariableType.DOUBLE);
+    varToType.put("stringVar", VariableType.STRING);
+    return varToType;
+  }
+
+  @Test
+  public void filterForUndefinedWorksWithAllVariableTypes() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+
+    Map<String, VariableType> varNameToTypeMap = createVarNameToTypeMap();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("dateVar", OffsetDateTime.now());
+    variables.put("boolVar", true);
+    variables.put("shortVar", (short) 2);
+    variables.put("intVar", 5);
+    variables.put("longVar", 5L);
+    variables.put("doubleVar", 5.5);
+    variables.put("stringVar", "aString");
+
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+
+    variables = new HashMap<>();
+    variables.put("dateVar", null);
+    variables.put("boolVar", null);
+    variables.put("shortVar", null);
+    variables.put("intVar", null);
+    variables.put("longVar", null);
+    variables.put("doubleVar", null);
+    variables.put("stringVar", null);
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+
+    engineRule.startProcessInstance(processDefinition.getId());
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+
+    for (Map.Entry<String, Object> entry : variables.entrySet()) {
+      // when
+      VariableType variableType = varNameToTypeMap.get(entry.getKey());
+
+      List<ProcessFilterDto> filters =
+        ProcessFilterBuilder
+          .filter()
+          .variable()
+          .name(entry.getKey())
+          .type(variableType)
+          .filterForUndefined()
+          .add()
+          .buildList();
+
+      RawDataProcessReportResultDto result =
+        evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
+
+      // then
+      assertThat(result.getData(), is(notNullValue()));
+      final List<RawDataProcessInstanceDto> resultData = result.getData();
+      assertThat(resultData.size(), is(2));
+
+    }
+  }
+
+
+  @Test
   public void validationExceptionOnNullValueField() {
 
     //given
@@ -1101,7 +1214,7 @@ public class VariableQueryFilterIT {
     assertThat("PI count", report.getData().size(), is(piCount));
   }
 
-  private ProcessDefinitionEngineDto deploySimpleProcessDefinition() throws IOException {
+  private ProcessDefinitionEngineDto deploySimpleProcessDefinition() {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
       .startEvent()
       .endEvent()

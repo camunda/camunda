@@ -11,6 +11,6 @@ import java.time.OffsetDateTime;
 
 @Data
 public class DateVariableFilterSubDataDto {
-    protected OffsetDateTime start;
-    protected OffsetDateTime end;
+  protected OffsetDateTime start;
+  protected OffsetDateTime end;
 }

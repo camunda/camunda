@@ -874,10 +874,6 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
 
-  private Object convertVariable(String variableName, Object variableValue) {
-    return createConvertedVariableMap(Collections.singletonMap(variableName, variableValue)).get(variableName);
-  }
-
   private Map<String, Object> convertVariableMap(Map<String, Object> plainVariables) {
     Map<String, Object> variables = createConvertedVariableMap(plainVariables);
     Map<String, Object> variableWrapper = new HashMap<>();

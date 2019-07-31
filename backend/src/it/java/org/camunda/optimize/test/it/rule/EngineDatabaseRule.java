@@ -322,6 +322,19 @@ public class EngineDatabaseRule extends TestWatcher {
     connection.commit();
   }
 
+
+  public void changeVariableName(String processInstanceId, String oldVariableName, String newVariableName) throws SQLException {
+    String sql = "UPDATE ACT_HI_DETAIL " +
+      "SET NAME_ = ? WHERE PROC_INST_ID_ = ? AND NAME_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setString(1, newVariableName);
+    statement.setString(2, processInstanceId);
+    statement.setString(3, oldVariableName);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+
   public void updateProcessInstanceStartDates(Map<String, OffsetDateTime> processInstanceIdToStartDate) throws
                                                                                                         SQLException {
     String sql = "UPDATE ACT_HI_PROCINST " +

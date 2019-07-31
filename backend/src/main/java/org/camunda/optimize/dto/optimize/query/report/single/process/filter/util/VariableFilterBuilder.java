@@ -27,6 +27,7 @@ public class VariableFilterBuilder {
   private OffsetDateTime start;
   private OffsetDateTime end;
   private String name;
+  private boolean filterForUndefined = false;
 
 
   private VariableFilterBuilder(ProcessFilterBuilder filterBuilder) {
@@ -77,6 +78,7 @@ public class VariableFilterBuilder {
     return this;
   }
 
+
   public VariableFilterBuilder name(String name) {
     this.name = name;
     return this;
@@ -88,6 +90,11 @@ public class VariableFilterBuilder {
       return this;
     }
     this.values.addAll(values);
+    return this;
+  }
+
+  public VariableFilterBuilder filterForUndefined() {
+    this.filterForUndefined = true;
     return this;
   }
 
@@ -130,14 +137,17 @@ public class VariableFilterBuilder {
       case STRING:
       case INTEGER:
         return createOperatorMultipleValuesFilter();
-      default: return filterBuilder;
+      default:
+        return filterBuilder;
     }
   }
 
   public ProcessFilterBuilder createBooleanVariableFilter() {
-    BooleanVariableFilterDataDto dataDto = new BooleanVariableFilterDataDto(values == null ? null : values.get(0));
+    BooleanVariableFilterDataDto dataDto =
+      new BooleanVariableFilterDataDto(values == null || values.isEmpty() ? null : values.get(0));
     dataDto.setName(name);
     dataDto.setType(type);
+    dataDto.setFilterForUndefined(filterForUndefined);
     VariableFilterDto filter = new VariableFilterDto();
     filter.setData(dataDto);
     filterBuilder.addFilter(filter);
@@ -148,6 +158,7 @@ public class VariableFilterBuilder {
     DateVariableFilterDataDto dateVariableFilterDataDto = new DateVariableFilterDataDto(start, end);
     dateVariableFilterDataDto.setName(name);
     dateVariableFilterDataDto.setType(type);
+    dateVariableFilterDataDto.setFilterForUndefined(filterForUndefined);
     VariableFilterDto filter = new VariableFilterDto();
     filter.setData(dateVariableFilterDataDto);
     filterBuilder.addFilter(filter);
@@ -172,10 +183,12 @@ public class VariableFilterBuilder {
       case LONG:
         filter.setData(new LongVariableFilterDataDto(operator, values));
         break;
-      default: break;
+      default:
+        break;
     }
     filter.getData().setName(name);
     filter.getData().setType(type);
+    filter.getData().setFilterForUndefined(filterForUndefined);
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }

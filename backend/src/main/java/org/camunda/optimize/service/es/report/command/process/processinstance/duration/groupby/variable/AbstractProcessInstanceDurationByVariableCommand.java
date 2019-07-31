@@ -59,7 +59,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
   private static final String VARIABLES_AGGREGATION = "variables";
   public static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
   private static final String REVERSE_NESTED_AGGREGATION = "reverseNested";
-  public static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
+  private static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
   private static final String FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION = "filteredProcInstCount";
 
   protected AggregationStrategy aggregationStrategy;
@@ -132,13 +132,34 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
     String nestedVariableNameFieldLabel = getNestedVariableNameFieldLabelForType(variableType);
     String nestedVariableValueFieldLabel = getNestedVariableValueFieldLabelForType(variableType);
 
-    AggregationBuilder aggregationBuilder = AggregationBuilders
+    AggregationBuilder variableSubAggregation = createVariableSubAggregation(
+      variableName,
+      variableType,
+      nestedVariableNameFieldLabel,
+      nestedVariableValueFieldLabel
+    );
+
+    return nested(NESTED_AGGREGATION, path)
+      .subAggregation(
+        filter(
+          FILTERED_VARIABLES_AGGREGATION,
+          boolQuery().must(termQuery(nestedVariableNameFieldLabel, variableName))
+        )
+          .subAggregation(variableSubAggregation)
+          .subAggregation(reverseNested(FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION))
+      );
+  }
+
+  private AggregationBuilder createVariableSubAggregation(final String variableName, final VariableType variableType,
+                                                          final String nestedVariableNameFieldLabel,
+                                                          final String nestedVariableValueFieldLabel) {
+    AggregationBuilder variableSubAggregation = AggregationBuilders
       .terms(VARIABLES_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
       .field(nestedVariableValueFieldLabel);
 
     if (VariableType.DATE.equals(variableType)) {
-      aggregationBuilder = createDateVariableAggregation(
+      variableSubAggregation = createDateVariableAggregation(
         variableName,
         nestedVariableNameFieldLabel,
         nestedVariableValueFieldLabel,
@@ -147,16 +168,11 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
         setupBaseQuery(getReportData())
       );
     }
+    AggregationBuilder operationsAggregation = reverseNested(REVERSE_NESTED_AGGREGATION)
+      .subAggregation(createOperationsAggregation());
 
-    AggregationBuilder operationsAggregation = addOperationsAggregation(AggregationBuilders.reverseNested(
-      REVERSE_NESTED_AGGREGATION));
-
-    return nested(NESTED_AGGREGATION, path)
-      .subAggregation(filter(
-        FILTERED_VARIABLES_AGGREGATION,
-        boolQuery().must(termQuery(nestedVariableNameFieldLabel, variableName))
-      ).subAggregation(aggregationBuilder.subAggregation(operationsAggregation))
-                        .subAggregation(reverseNested(FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION)));
+    variableSubAggregation.subAggregation(operationsAggregation);
+    return variableSubAggregation;
   }
 
   private AggregationBuilder createMissingVariableAggregation(String variableName, VariableType variableType) {
@@ -173,9 +189,6 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
     ).subAggregation(createOperationsAggregation());
   }
 
-  private AggregationBuilder addOperationsAggregation(AggregationBuilder aggregationBuilder) {
-    return aggregationBuilder.subAggregation(createOperationsAggregation());
-  }
 
   private ProcessDurationReportMapResultDto mapToReportResult(final SearchResponse response) {
     final ProcessDurationReportMapResultDto resultDto = new ProcessDurationReportMapResultDto();

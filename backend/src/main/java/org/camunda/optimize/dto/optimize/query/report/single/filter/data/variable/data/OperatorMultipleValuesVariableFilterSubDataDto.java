@@ -11,6 +11,6 @@ import java.util.List;
 
 @Data
 public class OperatorMultipleValuesVariableFilterSubDataDto {
-    protected String operator;
-    protected List<String> values;
+  protected String operator;
+  protected List<String> values;
 }

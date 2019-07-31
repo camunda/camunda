@@ -30,20 +30,20 @@ import static org.camunda.optimize.service.util.ProcessVariableHelper.STRING_TYP
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = StringVariableFilterDataDto.class, name = STRING_TYPE),
-    @JsonSubTypes.Type(value = StringVariableFilterDataDto.class, name = STRING_TYPE_LOWERCASE),
-    @JsonSubTypes.Type(value = ShortVariableFilterDataDto.class, name = SHORT_TYPE),
-    @JsonSubTypes.Type(value = ShortVariableFilterDataDto.class, name = SHORT_TYPE_LOWERCASE),
-    @JsonSubTypes.Type(value = LongVariableFilterDataDto.class, name = LONG_TYPE),
-    @JsonSubTypes.Type(value = LongVariableFilterDataDto.class, name = LONG_TYPE_LOWERCASE),
-    @JsonSubTypes.Type(value = DoubleVariableFilterDataDto.class, name = DOUBLE_TYPE),
-    @JsonSubTypes.Type(value = DoubleVariableFilterDataDto.class, name = DOUBLE_TYPE_LOWERCASE),
-    @JsonSubTypes.Type(value = IntegerVariableFilterDataDto.class, name = INTEGER_TYPE),
-    @JsonSubTypes.Type(value = IntegerVariableFilterDataDto.class, name = INTEGER_TYPE_LOWERCASE),
-    @JsonSubTypes.Type(value = BooleanVariableFilterDataDto.class, name = BOOLEAN_TYPE),
-    @JsonSubTypes.Type(value = BooleanVariableFilterDataDto.class, name = BOOLEAN_TYPE_LOWERCASE),
-    @JsonSubTypes.Type(value = DateVariableFilterDataDto.class, name = DATE_TYPE),
-    @JsonSubTypes.Type(value = DateVariableFilterDataDto.class, name = DATE_TYPE_LOWERCASE),
+  @JsonSubTypes.Type(value = StringVariableFilterDataDto.class, name = STRING_TYPE),
+  @JsonSubTypes.Type(value = StringVariableFilterDataDto.class, name = STRING_TYPE_LOWERCASE),
+  @JsonSubTypes.Type(value = ShortVariableFilterDataDto.class, name = SHORT_TYPE),
+  @JsonSubTypes.Type(value = ShortVariableFilterDataDto.class, name = SHORT_TYPE_LOWERCASE),
+  @JsonSubTypes.Type(value = LongVariableFilterDataDto.class, name = LONG_TYPE),
+  @JsonSubTypes.Type(value = LongVariableFilterDataDto.class, name = LONG_TYPE_LOWERCASE),
+  @JsonSubTypes.Type(value = DoubleVariableFilterDataDto.class, name = DOUBLE_TYPE),
+  @JsonSubTypes.Type(value = DoubleVariableFilterDataDto.class, name = DOUBLE_TYPE_LOWERCASE),
+  @JsonSubTypes.Type(value = IntegerVariableFilterDataDto.class, name = INTEGER_TYPE),
+  @JsonSubTypes.Type(value = IntegerVariableFilterDataDto.class, name = INTEGER_TYPE_LOWERCASE),
+  @JsonSubTypes.Type(value = BooleanVariableFilterDataDto.class, name = BOOLEAN_TYPE),
+  @JsonSubTypes.Type(value = BooleanVariableFilterDataDto.class, name = BOOLEAN_TYPE_LOWERCASE),
+  @JsonSubTypes.Type(value = DateVariableFilterDataDto.class, name = DATE_TYPE),
+  @JsonSubTypes.Type(value = DateVariableFilterDataDto.class, name = DATE_TYPE_LOWERCASE)
 })
 @Data
 public abstract class VariableFilterDataDto<DATA> implements FilterDataDto {
@@ -52,4 +52,6 @@ public abstract class VariableFilterDataDto<DATA> implements FilterDataDto {
 
   protected String name;
   protected DATA data;
+
+  protected boolean filterForUndefined;
 }
