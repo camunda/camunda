@@ -4,4 +4,4 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {DataManager, withData} from './context';
+export {DataManagerProvider, withData} from './context';

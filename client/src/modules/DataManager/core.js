@@ -4,10 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {LOADING_STATE} from 'modules/constants';
+
 export class Publisher {
-  constructor(SUBSCRIPTION_TOPIC) {
+  constructor(subscriptionTopics) {
     this.subscriptions = {};
-    this.registeredTopics = SUBSCRIPTION_TOPIC;
+    this.registeredTopics = subscriptionTopics;
   }
 
   printWarning(topic, action) {
@@ -53,24 +55,18 @@ export class Publisher {
 }
 
 export class DataManager extends Publisher {
-  constructor(LOADING_STATE, SUBSCRIPTION_TOPIC) {
-    super();
-    this.loadingStates = LOADING_STATE;
-    this.registeredTopics = SUBSCRIPTION_TOPIC;
-  }
-
   async _publishLoadingState(topic, request) {
-    this.publish(topic, {state: this.loadingStates['LOADING']});
+    this.publish(topic, {state: LOADING_STATE.LOADING});
 
     const response = await request();
 
     if (response.error) {
       this.publish(topic, {
-        state: this.loadingStates['LOAD_FAILED'],
+        state: LOADING_STATE.LOAD_FAILED,
         response
       });
     } else {
-      this.publish(topic, {state: this.loadingStates['LOADED'], response});
+      this.publish(topic, {state: LOADING_STATE.LOADED, response});
     }
 
     return response;

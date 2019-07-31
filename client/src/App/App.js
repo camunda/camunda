@@ -16,12 +16,12 @@ import Dashboard from './Dashboard';
 import InstancesContainer from './Instances/InstancesContainer';
 import Instance from './Instance';
 import GlobalStyles from './GlobalStyles';
-import {DataManager} from 'modules/DataManager';
+import {DataManagerProvider} from 'modules/DataManager';
 
 export default function App(props) {
   return (
     <ThemeProvider>
-      <DataManager>
+      <DataManagerProvider>
         <CollapsablePanelProvider>
           <GlobalStyles />
           <Router>
@@ -35,7 +35,7 @@ export default function App(props) {
             </Switch>
           </Router>
         </CollapsablePanelProvider>
-      </DataManager>
+      </DataManagerProvider>
     </ThemeProvider>
   );
 }

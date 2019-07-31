@@ -6,8 +6,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
-import {DataManager as DataManagerClass} from './core';
+import {SUBSCRIPTION_TOPIC} from 'modules/constants';
+import {DataManager} from './core';
 
 const DataContext = React.createContext({});
 
@@ -15,7 +15,7 @@ function withData(Component) {
   function WithData(props) {
     return (
       <DataContext.Consumer>
-        {contextValue => <Component {...props} {...contextValue} />}
+        {({dataManager}) => <Component {...props} dataManager={dataManager} />}
       </DataContext.Consumer>
     );
   }
@@ -29,22 +29,18 @@ function withData(Component) {
   return WithData;
 }
 
-function DataManager(props) {
-  const DataManager = new DataManagerClass(LOADING_STATE, SUBSCRIPTION_TOPIC);
+function DataManagerProvider(props) {
+  const dataManager = new DataManager(SUBSCRIPTION_TOPIC);
 
   return (
-    <DataContext.Provider
-      value={{
-        DataManager
-      }}
-    >
+    <DataContext.Provider value={{dataManager}}>
       {props.children}
     </DataContext.Provider>
   );
 }
 
-DataManager.propTypes = {
+DataManagerProvider.propTypes = {
   children: PropTypes.object
 };
 
-export {DataManager, withData};
+export {DataManagerProvider, withData};

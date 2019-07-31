@@ -198,7 +198,7 @@ describe('Publisher', () => {
 describe('DataManager', () => {
   let dataManger;
   beforeEach(() => {
-    dataManger = new DataManager(LOADING_STATE, MOCK_TOPICS);
+    dataManger = new DataManager(MOCK_TOPICS);
   });
 
   describe('_publishLoadingState', () => {
@@ -211,7 +211,7 @@ describe('DataManager', () => {
       await dataManger._publishLoadingState(topic, mockApi.success);
 
       expect(callback.mock.calls[0][0]).toEqual({
-        state: dataManger.loadingStates.LOADING
+        state: LOADING_STATE.LOADING
       });
     });
 
@@ -226,10 +226,10 @@ describe('DataManager', () => {
 
       // then
       expect(callback.mock.calls).toEqual([
-        [{state: dataManger.loadingStates.LOADING}],
+        [{state: LOADING_STATE.LOADING}],
         [
           {
-            state: dataManger.loadingStates.LOADED,
+            state: LOADING_STATE.LOADED,
             response: mockApiData.success
           }
         ]
@@ -247,10 +247,10 @@ describe('DataManager', () => {
 
       // then
       expect(callback.mock.calls).toEqual([
-        [{state: dataManger.loadingStates.LOADING}],
+        [{state: LOADING_STATE.LOADING}],
         [
           {
-            state: dataManger.loadingStates.LOAD_FAILED,
+            state: LOADING_STATE.LOAD_FAILED,
             response: mockApiData.error
           }
         ]
