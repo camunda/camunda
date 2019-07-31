@@ -73,7 +73,31 @@
   },
   "alert": {
     "label": "Alarm",
-    "label-plural": "Alarme"
+    "label-plural": "Alarme",
+    "createNew": "Neuen Alert erstellen",
+    "newAlert": "New Alert",
+    "edit": "Benachrichtigung bearbeiten",
+    "Delete": "Warnung löschen",
+    "above": "über",
+    "below": "unten",
+    "description": "Warnung <span> {email} </span>, wenn Bericht <span> {name} </span> einen Wert <span> {aboveOrBelow} {thresholdValue} </span> aufweist",
+    "emailWarning": "Der E-Mail-Benachrichtigungsdienst ist nicht konfiguriert. Optimize kann Sie nicht über kritische Werte informieren. Lesen Sie in der <a href='{docsLink}'> Dokumentation zum Optimieren </a> nach, wie Sie den Benachrichtigungsdienst aktivieren.",
+    "form": {
+      "name": "Alarmname",
+      "report": "Wenn der Bericht",
+      "reportPlaceholder": "Wählen Sie einen Bericht",
+      "noReports": "Es wurden keine Nummernberichte erstellt",
+      "reportInfo": "Warnmeldungen nur für Berichte verfügbar, die als Zahlen angezeigt werden",
+      "threshold": "Hat einen Wert",
+      "frequency": "Prüfbericht Jede",
+      "email": "Schicke eine Email an",
+      "emailPlaceholder": "E-Mail-Addresse",
+      "sendNotification": "Benachrichtigung senden, wenn gelöst",
+      "reminder": "Erinnerungsbenachrichtigung senden",
+      "reminderFrequency": "jeden"
+    },
+    "apply": "Änderungen übernehmen",
+    "create": "Benachrichtigung erstellen"
   },
   "analysis": {
     "selectLabel": "Für",
@@ -132,6 +156,16 @@
     },
     "filter": {
       "incompatibleFilters": "Es werden keine Daten angezeigt, da die Filterkombination nicht miteinander kompatibel ist."
+    },
+    "unit": {
+      "millis": "Millisekunden",
+      "seconds": "Sekunden",
+      "minutes": "Minuten",
+      "hours": "Stunden",
+      "days": "Tage",
+      "weeks": "Wochen",
+      "months": "Monate",
+      "years": "Jahre"
     }
   }
 }
