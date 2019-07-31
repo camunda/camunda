@@ -305,26 +305,6 @@ pipeline {
             }
           }
         }
-        stage('Security') {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build-it-security_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml securityTestPodSpec()
-            }
-          }
-          steps {
-            retry(2) {
-              securityTestSteps()
-            }
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
         stage('IT Latest') {
           agent {
             kubernetes {
@@ -507,13 +487,6 @@ void buildNotification(String buildStatus) {
 void integrationTestSteps(String engineVersion = 'latest') {
   container('maven') {
     runMaven("verify -Dskip.docker -Dskip.fe.build -Pit,engine-${engineVersion} -pl backend -am -T\$LIMITS_CPU")
-  }
-}
-
-void securityTestSteps() {
-  container('maven') {
-    // run migration tests
-    runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/connect-to-secured-es-tests -am -Psecured-es-it")
   }
 }
 
