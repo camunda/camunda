@@ -79,7 +79,7 @@ pipeline {
         }
         dir('operate') {
           git url: 'git@github.com:camunda/camunda-operate',
-            branch: "${params.BRANCH}",
+            branch: "${params.OPERATE_BRANCH}",
             credentialsId: 'camunda-jenkins-github-ssh',
             poll: false
         }

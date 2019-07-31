@@ -170,6 +170,7 @@ pipeline {
         build job: '/deploy-branch-to-k8s',
           parameters: [
               string(name: 'BRANCH', value: getBranchSlug()),
+              string(name: 'OPERATE_BRANCH', value: env.BRANCH_NAME),
           ]
       }
     }

@@ -12,7 +12,8 @@ pipelineJob('deploy-branch-to-k8s') {
 
   parameters {
     stringParam('INFRASTRUCTURE_BRANCH', 'master', 'Infrastructure branch to use for checkout of deployment script.')
-    stringParam('BRANCH', 'master', 'Operate branch to use for deployment.')
+    stringParam('BRANCH', 'master', 'Operate docker image to use for deployment.')
+    stringParam('OPERATE_BRANCH', 'master', 'Operate branch to use for deployment.')
     booleanParam('DRY_RUN', false, 'Enable dry-run mode.')
   }
 }
