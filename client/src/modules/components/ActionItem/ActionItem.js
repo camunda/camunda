@@ -10,13 +10,15 @@ import {Button} from 'components';
 
 import './ActionItem.scss';
 
-export default function ActionItem(props) {
+export default function ActionItem({disabled, onClick, ...props}) {
   return (
     <div className="ActionItem">
-      <Button disabled={props.disabled} onClick={props.onClick}>
+      <Button disabled={disabled} onClick={onClick}>
         ×
       </Button>
-      <span className={classnames('content', props.className)}>{props.children}</span>
+      <span {...props} className={classnames('content', props.className)}>
+        {props.children}
+      </span>
     </div>
   );
 }

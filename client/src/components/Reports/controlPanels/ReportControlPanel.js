@@ -12,7 +12,7 @@ import {DefinitionSelection} from 'components';
 import ReportSelect from './ReportSelect';
 
 import {Filter} from './filter';
-import {getFlowNodeNames, reportConfig, formatters, loadProcessDefinitionXml} from 'services';
+import {getFlowNodeNames, reportConfig, loadProcessDefinitionXml} from 'services';
 
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
@@ -22,6 +22,7 @@ import {loadVariables, isDurationHeatmap, isProcessInstanceDuration} from './ser
 import {Configuration} from './Configuration';
 
 import './ReportControlPanel.scss';
+import {t} from 'translation';
 
 const {process: processConfig} = reportConfig;
 
@@ -131,7 +132,7 @@ export default class ReportControlPanel extends React.Component {
       <div className="ReportControlPanel">
         <ul>
           <li className="select">
-            <span className="label">Process Definition</span>
+            <span className="label">{t('report.definition')}</span>
             <DefinitionSelection
               type="process"
               definitionKey={data.processDefinitionKey}
@@ -149,7 +150,7 @@ export default class ReportControlPanel extends React.Component {
 
             return (
               <li className="select" key={field}>
-                <span className="label">{formatters.convertCamelToSpaces(field)}</span>
+                <span className="label">{t(`report.${field}.label`)}</span>
                 <ReportSelect
                   type="process"
                   field={field}

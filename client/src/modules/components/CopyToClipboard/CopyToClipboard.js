@@ -9,6 +9,7 @@ import classnames from 'classnames';
 import {Input, Button} from 'components';
 
 import './CopyToClipboard.scss';
+import {t} from 'translation';
 
 export default class CopyToClipboard extends React.Component {
   copyText = event => {
@@ -36,7 +37,7 @@ export default class CopyToClipboard extends React.Component {
           onClick={this.copyText}
           disabled={this.props.disabled}
         >
-          Copy
+          {t('common.copy')}
         </Button>
       </div>
     );

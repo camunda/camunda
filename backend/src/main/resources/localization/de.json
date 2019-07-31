@@ -65,7 +65,58 @@
   },
   "report": {
     "label": "Bericht",
-    "label-plural": "Berichte"
+    "label-plural": "Berichte",
+    "downloadCSV": "CSV herunterladen",
+    "incomplete": "Anzeigen von {count} Datenpunkten im Ergebnis. Um die Ergebnismenge zu verfeinern, bearbeiten Sie die oben angegebene Einstellung.",
+    "definition": "Prozessdefinition",
+    "view": {
+      "label": "Aussicht",
+      "rawData": "Rohdaten",
+      "pi": "Prozessinstanz",
+      "fn": "Flow Node",
+      "userTask": "User Task",
+      "count": "Anzahl",
+      "duration": "Dauer"
+    },
+    "groupBy": {
+      "label": "Gruppiere nach",
+      "none": "Keiner",
+      "flowNode": "Flow Nodes",
+      "startDate": "Startdatum der Prozessinstanz",
+      "automatic": "Automatisch",
+      "endDate": "Enddatum der Prozessinstanz",
+      "variable": "Variable",
+      "userAssignee": "Beauftragter",
+      "userGroup": "Kandidatengruppe"
+    },
+    "visualization": {
+      "label": "Visualisierung",
+      "number": "Nummer",
+      "bar": "Balkendiagramm",
+      "line": "Liniendiagramm",
+      "pie": "Kuchendiagramm",
+      "table": "Tabelle",
+      "heat": "Heatmap"
+    },
+    "processPart": {
+      "label": "Prozessinstanzteil",
+      "title": "Prozessinstanzteil festlegen",
+      "description": "Betrachte nur einen Teil zwischen",
+      "selectStart": "Start auswählen",
+      "selectEnd": "Ende auswählen",
+      "noPathWarning": "Sie haben zwei Knoten ausgewählt, es besteht jedoch keine offensichtliche Verbindung zwischen diesen Knoten. Die Berichtsergebnisse sind möglicherweise leer oder irreführend."
+    },
+    "heatTarget": {
+      "label": "Zielwert",
+      "title": "Sollwertvergleich",
+      "table": {
+        "activity": "Aktivität",
+        "value": "Tatsächlicher Wert",
+        "target": "Zielwert"
+      },
+      "noChangeWarning": "Bitte ändern Sie mindestens einen Wert",
+      "invalidValue": "Alle Felder sollten einen numerischen Wert haben"
+    }
   },
   "dashboard": {
     "label": "Instrumententafel",
@@ -120,10 +171,19 @@
     }
   },
   "common": {
-    "save": "Speichern",
-    "cancel": "Stornieren",
-    "saving": "Speichern ...",
+    "name": "Name",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "save": "Sparen",
+    "apply": "Verwenden",
+    "cancel": "Abbrechen",
+    "copy": "Kopieren",
+    "saving": "Speichern ... ",
     "creating": "Erstellen...",
+    "select": "Wählen...",
+    "enableAll": "Alles aktivieren",
+    "disableAll": "Alle deaktivieren",
+    "and": "und",
     "entity": {
       "empty": "Es ist keine {label} konfiguriert.",
       "create": {
@@ -131,11 +191,16 @@
         "Dashboard": "Neues Dashboard erstellen ...",
         "Alert": "Neuen Alert erstellen"
       },
-      "created": "Erstellt",
+      "created": "Erstellt ",
       "changed": "Zuletzt geändert",
+      "modified": "Zuletzt bearbeitet",
       "by": "durch",
       "showAll": "Zeige alles...",
-      "showLess": "Zeige weniger..."
+      "showLess": "Zeige weniger...",
+      "namePlaceholder": {
+        "Report": "Berichtsname ",
+        "Dashboard": "Name des Dashboards "
+      }
     },
     "collection": {
       "label": "Sammlung",
@@ -154,8 +219,51 @@
         "inputLabel": "Name hinzufügen"
       }
     },
+    "sharing": {
+      "buttonTitle": "Aktie",
+      "disabled": "Freigabe ist pro Konfiguration deaktiviert",
+      "popoverTitle": "Freigabe aktivieren",
+      "link": {
+        "title": "Verknüpfung",
+        "description": {
+          "report": "Verwenden Sie die folgende URL, um den Bericht für Personen freizugeben, die kein Camunda Optimize-Konto haben:",
+          "dashboard": "Verwenden Sie die folgende URL, um das Dashboard für Personen freizugeben, die kein Camunda Optimize-Konto haben:"
+        }
+      },
+      "embed": {
+        "title": "Einbetten",
+        "description": {
+          "report": "Verwenden Sie den folgenden HTML-Code, um den Bericht in Blogs und Webseiten einzubetten:",
+          "dashboard": "Verwenden Sie den folgenden HTML-Code, um das Dashboard in Blogs und Webseiten einzubetten:"
+        }
+      }
+    },
     "filter": {
       "incompatibleFilters": "Es werden keine Daten angezeigt, da die Filterkombination nicht miteinander kompatibel ist."
+    },
+    "definitionSelection": {
+      "none": "Keiner",
+      "all": "Alles",
+      "latest": "Neueste",
+      "multiple": "Mehrere",
+      "noDefinition": "Keine Definitionen gefunden",
+      "select": {
+        "process": "Prozess auswählen",
+        "decision": "Entscheidung auswählen"
+      },
+      "version": {
+        "label": "Ausführung",
+        "alwaysLatest": "Immer das Neueste anzeigen",
+        "specific": {
+          "label": "Spezifische Version",
+          "label-plural": "Spezifische Versionen"
+        }
+      },
+      "tenant": {
+        "label": "Mieter",
+        "includeData": "Daten einschließen von"
+      },
+      "versionWarning": "Hinweis: Daten aus älteren Versionen können abweichen, daher können die Berichtsdaten inkonsistent sein."
     },
     "unit": {
       "millis": "Millisekunden",

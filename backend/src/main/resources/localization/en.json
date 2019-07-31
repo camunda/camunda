@@ -65,7 +65,58 @@
   },
   "report": {
     "label": "Report",
-    "label-plural": "Reports"
+    "label-plural": "Reports",
+    "downloadCSV": "Download CSV",
+    "incomplete": "Showing {count} data points in the result. To refine the set of results, edit your set-up above.",
+    "definition": "Process Definition",
+    "view": {
+      "label": "View",
+      "rawData": "Raw Data",
+      "pi": "Process Instance",
+      "fn": "Flow Node",
+      "userTask": "User Task",
+      "count": "Count",
+      "duration": "Duration"
+    },
+    "groupBy": {
+      "label": "Group By",
+      "none": "None",
+      "flowNode": "Flow Nodes",
+      "startDate": "Start Date of Process Instance",
+      "automatic": "Automatic",
+      "endDate": "End Date of Process Instance",
+      "variable": "Variable",
+      "userAssignee": "Assignee",
+      "userGroup": "Candidate Group"
+    },
+    "visualization": {
+      "label": "Visualization",
+      "number": "Number",
+      "bar": "Bar Chart",
+      "line": "Line Chart",
+      "pie": "Pie Chart",
+      "table": "Table",
+      "heat": "Heatmap"
+    },
+    "processPart": {
+      "label": "Process Instance Part",
+      "title": "Set Process Instance Part",
+      "description": "Only regard part between",
+      "selectStart": "Select start",
+      "selectEnd": "Select end",
+      "noPathWarning": "You selected two nodes, but there is no obvious connection between those nodes. Report results may be empty or misleading."
+    },
+    "heatTarget": {
+      "label": "Target Value",
+      "title": "Target Value Comparison",
+      "table": {
+        "activity": "Activity",
+        "value": "Actual Value",
+        "target": "Target Value"
+      },
+      "noChangeWarning": "Please change at least one value",
+      "invalidValue": "All fields should have a numeric value"
+    }
   },
   "dashboard": {
     "label": "Dashboard",
@@ -120,10 +171,19 @@
     }
   },
   "common": {
+    "name": "Name",
+    "edit": "Edit",
+    "delete": "Delete",
     "save": "Save",
-    "cancel": "cancel",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "copy": "Copy",
     "saving": "Saving...",
     "creating": "Creating...",
+    "select": "Select...",
+    "enableAll": "Enable All",
+    "disableAll": "Disable All",
+    "and": "and",
     "entity": {
       "empty": "There are no {label} configured.",
       "create": {
@@ -133,9 +193,14 @@
       },
       "created": "Created",
       "changed": "Last changed",
+      "modified": "Last modified",
       "by": "by",
       "showAll": "Show all...",
-      "showLess": "Show less..."
+      "showLess": "Show less...",
+      "namePlaceholder": {
+        "Report": "Report name",
+        "Dashboard": "dashboard name"
+      }
     },
     "collection": {
       "label": "Collection",
@@ -154,8 +219,51 @@
         "inputLabel": "Add Name"
       }
     },
+    "sharing": {
+      "buttonTitle": "Share",
+      "disabled": "Sharing is disabled per configuration",
+      "popoverTitle": "Enable sharing",
+      "link": {
+        "title": "Link",
+        "description": {
+          "report": "Use the following URL to share the report with people who don't have a Camunda Optimize account:",
+          "dashboard": "Use the following URL to share the dashboard with people who don't have a Camunda Optimize account:"
+        }
+      },
+      "embed": {
+        "title": "Embed",
+        "description": {
+          "report": "Use the following HTML code to embed the report into blogs and web pages:",
+          "dashboard": "Use the following HTML code to embed the dashboard into blogs and web pages:"
+        }
+      }
+    },
     "filter": {
       "incompatibleFilters": "No data is shown since the combination of filters is incompatible with each other"
+    },
+    "definitionSelection": {
+      "none": "None",
+      "all": "All",
+      "latest": "Latest",
+      "multiple": "Multiple",
+      "noDefinition": "No defintions found",
+      "select": {
+        "process": "Select Process",
+        "decision": "Select Decision"
+      },
+      "version": {
+        "label": "Version",
+        "alwaysLatest": "Always display latest",
+        "specific": {
+          "label": "Specific version",
+          "label-plural": "Specific versions"
+        }
+      },
+      "tenant": {
+        "label": "Tenant",
+        "includeData": "Include data from"
+      },
+      "versionWarning": "Note: data from the older versions can deviate, therefore the report data can be inconsistent"
     },
     "unit": {
       "millis": "Milliseconds",

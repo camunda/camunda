@@ -11,6 +11,7 @@ import {DurationHeatmapModal} from './DurationHeatmap';
 import {Button, Icon} from 'components';
 
 import './TargetValueComparison.scss';
+import {t} from 'translation';
 
 export default class TargetValueComparison extends React.Component {
   constructor(props) {
@@ -75,7 +76,7 @@ export default class TargetValueComparison extends React.Component {
     return (
       <div className="TargetValueComparison">
         <Button className="toggleButton" active={this.getConfig().active} onClick={this.toggleMode}>
-          Target Value
+          {t('report.heatTarget.label')}
         </Button>
         <Button className="editButton" onClick={this.openModal}>
           <Icon type="settings" />

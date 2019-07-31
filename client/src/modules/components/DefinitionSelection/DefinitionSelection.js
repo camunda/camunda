@@ -9,12 +9,13 @@ import classnames from 'classnames';
 
 import {InfoMessage, BPMNDiagram, LoadingIndicator, Popover, Typeahead, Labeled} from 'components';
 
-import {loadDefinitions, capitalize} from 'services';
+import {loadDefinitions} from 'services';
 
 import TenantPopover from './TenantPopover';
 import VersionPopover from './VersionPopover';
 
 import './DefinitionSelection.scss';
+import {t} from 'translation';
 
 export default class DefinitionSelection extends React.Component {
   constructor(props) {
@@ -88,24 +89,24 @@ export default class DefinitionSelection extends React.Component {
 
       const definition = this.getDefinitionObject(definitionKey).name;
 
-      let versionString = 'None';
+      let versionString = t('common.definitionSelection.none');
       if (versions.length === 1 && versions[0] === 'all') {
-        versionString = 'All';
+        versionString = t('common.definitionSelection.all');
       } else if (versions.length === 1 && versions[0] === 'latest') {
-        versionString = 'Latest';
+        versionString = t('common.definitionSelection.latest');
       } else if (versions.length === 1) {
         versionString = versions[0];
       } else if (versions.length > 1) {
-        versionString = 'Multiple';
+        versionString = t('common.definitionSelection.multiple');
       }
 
-      let tenant = 'Multiple';
+      let tenant = t('common.definitionSelection.multiple');
       if (selectedTenants.length === 0) {
         tenant = '-';
       } else if (availableTenants.length === 1) {
         tenant = null;
       } else if (selectedTenants.length === availableTenants.length) {
-        tenant = 'All';
+        tenant = t('common.definitionSelection.all');
       } else if (selectedTenants.length === 1) {
         tenant = availableTenants.find(({id}) => id === selectedTenants[0]).name;
       }
@@ -116,7 +117,7 @@ export default class DefinitionSelection extends React.Component {
         return `${definition} : ${versionString}`;
       }
     } else {
-      return `Select ${capitalize(type)}`;
+      return t(`common.definitionSelection.select.${type}`);
     }
   };
 
@@ -145,20 +146,20 @@ export default class DefinitionSelection extends React.Component {
         >
           <div className="selectionPanel">
             <div className="dropdowns">
-              <Labeled className="entry" label="Name">
+              <Labeled className="entry" label={t('common.name')}>
                 <Typeahead
                   className="name"
                   initialValue={this.getDefinitionObject(selectedKey)}
                   disabled={noDefinitions}
-                  placeholder="Select..."
+                  placeholder={t('common.select')}
                   values={availableDefinitions}
                   onSelect={this.changeDefinition}
                   formatter={({name, key}) => name || key}
-                  noValuesMessage="No defintions found"
+                  noValuesMessage={t('common.definitionSelection.noDefinition')}
                 />
               </Labeled>
               <div className="version entry">
-                <Labeled label="Version" />
+                <Labeled label={t('common.definitionSelection.version.label')} />
                 <VersionPopover
                   disabled={!this.hasDefinition()}
                   versions={this.getAvailableVersions(selectedKey)}
@@ -167,7 +168,7 @@ export default class DefinitionSelection extends React.Component {
                 />
               </div>
               <div className="tenant entry">
-                <Labeled label="Tenant" />
+                <Labeled label={t('common.definitionSelection.tenant.label')} />
                 <TenantPopover
                   tenants={this.getAvailableTenants(selectedKey)}
                   selected={this.getSelectedTenants()}
@@ -176,10 +177,7 @@ export default class DefinitionSelection extends React.Component {
               </div>
             </div>
             {displayVersionWarning ? (
-              <InfoMessage>
-                Note: data from the older versions can deviate, therefore the report data can be
-                inconsistent
-              </InfoMessage>
+              <InfoMessage>{t('common.definitionSelection.versionWarning')}</InfoMessage>
             ) : (
               ''
             )}

@@ -7,11 +7,12 @@
 export const view = [
   {key: 'rawData', label: 'Raw Data', group: 'raw', data: {property: 'rawData', entity: null}},
   {
+    key: 'pi',
     label: 'Process Instance',
     group: 'pi',
     options: [
       {
-        key: 'pi_frequency',
+        key: 'pi_count',
         label: 'Count',
         data: {property: 'frequency', entity: 'processInstance'}
       },
@@ -23,11 +24,12 @@ export const view = [
     ]
   },
   {
+    key: 'fn',
     label: 'Flow Node',
     group: 'fn',
     options: [
       {
-        key: 'fn_frequency',
+        key: 'fn_count',
         label: 'Count',
         data: {property: 'frequency', entity: 'flowNode'}
       },
@@ -35,11 +37,12 @@ export const view = [
     ]
   },
   {
+    key: 'userTask',
     label: 'User Task',
     group: 'userTask',
     options: [
       {
-        key: 'userTask_frequency',
+        key: 'userTask_count',
         label: 'Count',
         data: {property: 'frequency', entity: 'userTask'}
       },
@@ -54,8 +57,9 @@ export const view = [
 
 export const groupBy = [
   {key: 'none', label: 'None', group: 'none', data: {type: 'none', value: null}},
-  {key: 'fn_flowNodes', label: 'Flow Nodes', group: 'fn', data: {type: 'flowNodes', value: null}},
+  {key: 'flowNodes', label: 'Flow Nodes', group: 'fn', data: {type: 'flowNodes', value: null}},
   {
+    key: 'startDate',
     label: 'Start Date of Process Instance',
     group: 'date',
     options: [
@@ -72,6 +76,7 @@ export const groupBy = [
     ]
   },
   {
+    key: 'endDate',
     label: 'End Date of Process Instance',
     group: 'date',
     options: [
@@ -87,10 +92,10 @@ export const groupBy = [
       {key: 'endDate_hour', label: 'Hour', data: {type: 'endDate', value: {unit: 'hour'}}}
     ]
   },
-  {label: 'Variable', group: 'variable', options: 'variable'},
-  {key: 'user_assignee', label: 'Assignee', group: 'user', data: {type: 'assignee', value: null}},
+  {key: 'variable', label: 'Variable', group: 'variable', options: 'variable'},
+  {key: 'userAssignee', label: 'Assignee', group: 'user', data: {type: 'assignee', value: null}},
   {
-    key: 'user_group',
+    key: 'userGroup',
     label: 'Candidate Group',
     group: 'user',
     data: {type: 'candidateGroup', value: null}

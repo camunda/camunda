@@ -8,6 +8,7 @@ import React from 'react';
 import {CopyToClipboard, Switch, Icon, LoadingIndicator, Form} from 'components';
 
 import './ShareEntity.scss';
+import {t} from 'translation';
 
 export default class ShareEntity extends React.Component {
   constructor(props) {
@@ -75,17 +76,16 @@ export default class ShareEntity extends React.Component {
     return (
       <Form className="ShareEntity">
         <div className="enable">
-          <div className="enableText">Enable sharing </div>
+          <div className="enableText">{t('common.sharing.popoverTitle')} </div>
           <Switch checked={this.state.isShared} onChange={this.toggleValue} />
         </div>
         <div className={'linkArea' + (this.disabled() ? 'Disabled' : '')}>
           <div className="clipboard">
             <Icon type="link" renderedIn="span" />
-            <span className="label">Link</span>
-            <span className="labelDescription">{`Use the following URL to share the ${
-              this.props.type
-            }
-                with people who don't have a Camunda Optimize account:`}</span>
+            <span className="label">{t('common.sharing.link.title')}</span>
+            <span className="labelDescription">
+              {t(`common.sharing.link.description.${this.props.type}`)}
+            </span>
             <CopyToClipboard
               className="shareLink"
               disabled={this.disabled()}
@@ -94,10 +94,10 @@ export default class ShareEntity extends React.Component {
           </div>
           <div className="clipboard">
             <Icon type="embed" renderedIn="span" />
-            <span className="label">Embed</span>
-            <span className="labelDescription">{`Use the following HTML code to embed the ${
-              this.props.type
-            } into blogs and web pages:`}</span>
+            <span className="label">{t('common.sharing.embed.title')}</span>
+            <span className="labelDescription">
+              {t(`common.sharing.embed.description.${this.props.type}`)}
+            </span>
             <CopyToClipboard
               className="embedLink"
               disabled={this.disabled()}

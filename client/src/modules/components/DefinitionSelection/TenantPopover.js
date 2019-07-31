@@ -9,17 +9,18 @@ import React from 'react';
 import {Popover, ButtonGroup, Button, Switch, Form} from 'components';
 
 import './TenantPopover.scss';
+import {t} from 'translation';
 
 export default function TenantPopover({tenants, selected, onChange}) {
   const allSelected = tenants.length === selected.length;
   const noneSelected = selected.length === 0;
 
-  let label = 'Multiple';
+  let label = t('common.definitionSelection.multiple');
   if (allSelected) {
-    label = 'All';
+    label = t('common.definitionSelection.all');
   }
   if (noneSelected) {
-    label = 'Select...';
+    label = t('common.select');
   }
   if (selected.length === 1 && tenants.length !== 0) {
     label = tenants.find(({id}) => id === selected[0]).name;
@@ -29,10 +30,12 @@ export default function TenantPopover({tenants, selected, onChange}) {
     <Popover className="TenantPopover" disabled={tenants.length < 2} title={label}>
       <Form compact>
         <fieldset>
-          <legend>Include data from</legend>
+          <legend>{t('common.definitionSelection.tenant.includeData')}</legend>
           <ButtonGroup>
-            <Button onClick={() => onChange(tenants.map(({id}) => id))}>Enable All</Button>
-            <Button onClick={() => onChange([])}>Disable All</Button>
+            <Button onClick={() => onChange(tenants.map(({id}) => id))}>
+              {t('common.enableAll')}
+            </Button>
+            <Button onClick={() => onChange([])}>{t('common.disableAll')}</Button>
           </ButtonGroup>
           {tenants.map(tenant => (
             <div key={tenant.id}>

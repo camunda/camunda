@@ -10,15 +10,16 @@ import classnames from 'classnames';
 import {Popover, Input, Form, Badge} from 'components';
 
 import './VersionPopover.scss';
+import {t} from 'translation';
 
 export default function VersionPopover({versions, selected, onChange, disabled}) {
   const specific = usesSpecificVersions(selected);
 
-  let title = 'None';
+  let title = t('common.definitionSelection.none');
   if (selected.length === 1 && selected[0] === 'all') {
-    title = 'All';
+    title = t('common.definitionSelection.all');
   } else if (selected.length === 1 && selected[0] === 'latest') {
-    title = 'Latest : ' + versions[0].version;
+    title = t('common.definitionSelection.latest') + ' : ' + versions[0].version;
   } else if (selected.length) {
     title = selected.join(', ');
   }
@@ -28,7 +29,7 @@ export default function VersionPopover({versions, selected, onChange, disabled})
       <Form compact>
         <div>
           <Input type="radio" checked={selected[0] === 'all'} onChange={() => onChange(['all'])} />{' '}
-          All
+          {t('common.definitionSelection.all')}
         </div>
         <div>
           <Input
@@ -36,11 +37,15 @@ export default function VersionPopover({versions, selected, onChange, disabled})
             checked={selected[0] === 'latest'}
             onChange={() => onChange(['latest'])}
           />{' '}
-          Always display latest
+          {t('common.definitionSelection.version.alwaysLatest')}
         </div>
         <div>
           <Input type="radio" checked={specific} onChange={() => onChange([versions[0].version])} />{' '}
-          Specific version(s)
+          {t(
+            `common.definitionSelection.version.specific.label${
+              versions.length === 1 ? '' : '-plural'
+            }`
+          )}
         </div>
         <div
           className={classnames('specificVersions', {

@@ -31,6 +31,7 @@ import {
 } from 'services';
 
 import './ReportView.scss';
+import {t} from 'translation';
 
 export default class ReportView extends Component {
   state = {
@@ -153,18 +154,18 @@ export default class ReportView extends Component {
                 <Link className="tool-button edit-button" to={`/report/${id}/edit`}>
                   <Button>
                     <Icon type="edit" />
-                    Edit
+                    {t('common.edit')}
                   </Button>
                 </Link>
                 <Button className="tool-button delete-button" onClick={this.showDeleteModal}>
                   <Icon type="delete" />
-                  Delete
+                  {t('common.delete')}
                 </Button>
                 <Popover
                   className="tool-button share-button"
                   icon="share"
-                  title="Share"
-                  tooltip={!sharingEnabled ? 'Sharing is disabled per configuration' : ''}
+                  title={t('common.sharing.buttonTitle')}
+                  tooltip={!sharingEnabled ? t('common.sharing.disabled') : ''}
                   disabled={!sharingEnabled}
                 >
                   <ShareEntity
@@ -182,7 +183,7 @@ export default class ReportView extends Component {
                   >
                     <Button>
                       <Icon type="save" />
-                      Download CSV
+                      {t('report.downloadCSV')}
                     </Button>
                   </a>
                 )}
@@ -190,7 +191,8 @@ export default class ReportView extends Component {
             </div>
             <div className="subHead">
               <div className="metadata">
-                Last modified {moment(lastModified).format('lll')} by {lastModifier}
+                {t('common.entity.modified')} {moment(lastModified).format('lll')}{' '}
+                {t('common.entity.by')} {lastModifier}
               </div>
               <CollectionsDropdown
                 entity={report}

@@ -10,6 +10,7 @@ import {Button, Modal, BPMNDiagram, ClickBehavior, ActionItem, Message} from 'co
 import PartHighlight from './PartHighlight';
 
 import './ProcessPart.scss';
+import {t} from 'translation';
 
 export default class ProcessPart extends React.Component {
   state = {
@@ -31,7 +32,7 @@ export default class ProcessPart extends React.Component {
 
   renderButton() {
     if (!this.props.processPart) {
-      return <Button onClick={this.openModal}>Process Instance Part</Button>;
+      return <Button onClick={this.openModal}>{t('report.processPart.label')}</Button>;
     }
   }
 
@@ -49,11 +50,11 @@ export default class ProcessPart extends React.Component {
               this.props.update(null);
             }}
           >
-            Only regard part between{' '}
+            {t('report.processPart.description')}{' '}
             <span className="FilterList__value">
               {this.renderFlowNodeName(this.props.processPart.start)}
             </span>
-            <span> and </span>
+            <span> {t('common.and')} </span>
             <span className="FilterList__value">
               {this.renderFlowNodeName(this.props.processPart.end)}
             </span>
@@ -82,26 +83,23 @@ export default class ProcessPart extends React.Component {
         size="max"
         className="ProcessPartModal"
       >
-        <Modal.Header>Set Process Instance Part</Modal.Header>
+        <Modal.Header>{t('report.processPart.title')}</Modal.Header>
         <Modal.Content>
           <span>
-            Only regard the process instance part between{' '}
+            {t('report.processPart.description')}{' '}
             <ActionItem
               disabled={!start}
               onClick={() => this.setState({start: null, hasPath: true})}
             >
-              {start ? start.name || start.id : 'Select start'}
-            </ActionItem>{' '}
-            and{' '}
+              {start ? start.name || start.id : t('report.processPart.selectStart')}
+            </ActionItem>
+            <span> {t('common.and')} </span>
             <ActionItem disabled={!end} onClick={() => this.setState({end: null, hasPath: true})}>
-              {end ? end.name || end.id : 'Select end'}
+              {end ? end.name || end.id : t('report.processPart.selectEnd')}
             </ActionItem>
           </span>
           {start && end && !hasPath && (
-            <Message type="warning">
-              You selected two nodes, but there is no obvious connection between those nodes. Report
-              results may be empty or misleading.
-            </Message>
+            <Message type="warning">{t('report.processPart.noPathWarning')}</Message>
           )}
           <div className="diagram-container">
             <BPMNDiagram xml={this.props.xml}>
@@ -115,14 +113,14 @@ export default class ProcessPart extends React.Component {
           </div>
         </Modal.Content>
         <Modal.Actions>
-          <Button onClick={this.closeModal}>Cancel</Button>
+          <Button onClick={this.closeModal}>{t('common.cancel')}</Button>
           <Button
             variant="primary"
             color="blue"
             onClick={this.applyPart}
             disabled={!this.isValid()}
           >
-            Apply
+            {t('common.apply')}
           </Button>
         </Modal.Actions>
       </Modal>

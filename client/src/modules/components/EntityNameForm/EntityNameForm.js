@@ -10,6 +10,7 @@ import {Input, Icon} from 'components';
 import {Link} from 'react-router-dom';
 
 import './EntityNameForm.scss';
+import {t} from 'translation';
 
 export default class EntityNameForm extends Component {
   state = {
@@ -46,7 +47,7 @@ export default class EntityNameForm extends Component {
             onChange={this.updateName}
             value={name || ''}
             className="name-input"
-            placeholder={`${entity} name`}
+            placeholder={t(`common.entity.namePlaceholder.${entity}`)}
             autoComplete="off"
           />
         </div>
@@ -57,7 +58,7 @@ export default class EntityNameForm extends Component {
             onClick={evt => this.props.onSave(evt, name)}
           >
             <Icon type="check" />
-            Save
+            {t('common.save')}
           </button>
           <Link
             disabled={this.props.disabledButtons}
@@ -66,7 +67,7 @@ export default class EntityNameForm extends Component {
             onClick={this.props.onCancel}
           >
             <Icon type="stop" />
-            Cancel
+            {t('common.cancel')}
           </Link>
         </div>
       </div>

@@ -22,6 +22,7 @@ import {addNotification} from 'notifications';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import DecisionControlPanel from './controlPanels/DecisionControlPanel';
 import CombinedReportPanel from './controlPanels/CombinedReportPanel';
+import {t} from 'translation';
 
 export default withErrorHandling(
   class ReportEdit extends Component {
@@ -192,7 +193,8 @@ export default withErrorHandling(
               />
               <div className="subHead">
                 <div className="metadata">
-                  Last modified {moment(lastModified).format('lll')} by {lastModifier}
+                  {t('common.entity.modified')} {moment(lastModified).format('lll')}{' '}
+                  {t('common.entity.by')} {lastModifier}
                 </div>
               </div>
             </div>
@@ -207,15 +209,14 @@ export default withErrorHandling(
 
             {this.showIncompleteResultWarning() && (
               <Message type="warning">
-                Showing {report.result.data.length || Object.keys(report.result.data).length} data
-                points in the result. To refine the set of results, edit your set-up above.
+                {t('report.incomplete', {
+                  count: report.result.data.length || Object.keys(report.result.data).length
+                })}
               </Message>
             )}
 
             {data && data.filter && incompatibleFilters(data.filter) && (
-              <Message type="warning">
-                No data is shown since the combination of filters is incompatible with each other
-              </Message>
+              <Message type="warning">{t('common.filter.incompatibleFilters')}</Message>
             )}
 
             <div className="Report__view">

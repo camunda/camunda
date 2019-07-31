@@ -26,6 +26,7 @@ import {
 import {formatters, numberParser} from 'services';
 
 import './DurationHeatmapModal.scss';
+import {t} from 'translation';
 
 export default class DurationHeatmapModal extends React.Component {
   constructor(props) {
@@ -164,14 +165,14 @@ export default class DurationHeatmapModal extends React.Component {
                 this.updateFocus(id);
               }}
             >
-              <Select.Option value="millis">Milliseconds</Select.Option>
-              <Select.Option value="seconds">Seconds</Select.Option>
-              <Select.Option value="minutes">Minutes</Select.Option>
-              <Select.Option value="hours">Hours</Select.Option>
-              <Select.Option value="days">Days</Select.Option>
-              <Select.Option value="weeks">Weeks</Select.Option>
-              <Select.Option value="months">Months</Select.Option>
-              <Select.Option value="years">Years</Select.Option>
+              <Select.Option value="millis">{t('common.unit.millis')}</Select.Option>
+              <Select.Option value="seconds">{t('common.unit.seconds')}</Select.Option>
+              <Select.Option value="minutes">{t('common.unit.minutes')}</Select.Option>
+              <Select.Option value="hours">{t('common.unit.hours')}</Select.Option>
+              <Select.Option value="days">{t('common.unit.days')}</Select.Option>
+              <Select.Option value="weeks">{t('common.unit.weeks')}</Select.Option>
+              <Select.Option value="months">{t('common.unit.months')}</Select.Option>
+              <Select.Option value="years">{t('common.unit.years')}</Select.Option>
             </Select>
           </div>
         </React.Fragment>
@@ -242,9 +243,9 @@ export default class DurationHeatmapModal extends React.Component {
 
   render() {
     const {open, onClose, report} = this.props;
-    let errorMessage = !this.hasSomethingChanged() ? 'Please change at least one value' : '';
+    let errorMessage = !this.hasSomethingChanged() ? t('report.heatTarget.noChangeWarning') : '';
     if (!this.areAllFieldsNumbers()) {
-      errorMessage += 'All fields should have a numeric value';
+      errorMessage += t('report.heatTarget.invalidValue');
     }
 
     const nodeType = this.getNodeType();
@@ -256,7 +257,7 @@ export default class DurationHeatmapModal extends React.Component {
         onClose={onClose}
         className={classnames('DurationHeatmapModal', 'type-' + nodeType)}
       >
-        <Modal.Header>Target Value Comparison </Modal.Header>
+        <Modal.Header>{t('report.heatTarget.title')} </Modal.Header>
         <Modal.Content className="content-container">
           {this.state.loading && <LoadingIndicator />}
           <div className="diagram-container">
@@ -271,7 +272,11 @@ export default class DurationHeatmapModal extends React.Component {
           </div>
           {!this.state.loading && (
             <Table
-              head={['Activity', 'Actual Value', 'Target Value']}
+              head={[
+                t('report.heatTarget.table.activity'),
+                t('report.heatTarget.table.value'),
+                t('report.heatTarget.table.target')
+              ]}
               body={this.constructTableBody()}
               foot={[]}
               disablePagination
@@ -282,14 +287,14 @@ export default class DurationHeatmapModal extends React.Component {
           )}
         </Modal.Content>
         <Modal.Actions>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t('common.cancel')}</Button>
           <Button
             variant="primary"
             color="blue"
             onClick={this.confirmModal}
             disabled={!this.validChanges()}
           >
-            Apply
+            {t('common.apply')}
           </Button>
         </Modal.Actions>
       </Modal>
