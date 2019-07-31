@@ -12,12 +12,14 @@ import {flatMap} from 'lodash';
 import {themed} from 'modules/theme';
 
 import {STATE} from 'modules/constants';
+import SpinnerSkeleton from 'modules/components/Skeletons';
 
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
 import StateOverlay from './StateOverlay';
 import StatisticOverlay from './StatisticOverlay';
 import PopoverOverlay from './PopoverOverlay';
+
 import {
   getDiagramColors,
   getPopoverPostion,
@@ -254,7 +256,6 @@ class Diagram extends React.PureComponent {
 
   renderFlowNodeStateOverlays = overlayProps => {
     const {flowNodeStateOverlays} = this.props;
-
     if (!flowNodeStateOverlays) {
       return null;
     }
@@ -266,9 +267,8 @@ class Diagram extends React.PureComponent {
 
   renderStatisticsOverlays = overlayProps => {
     const {flowNodesStatistics} = this.props;
-
-    if (!flowNodesStatistics) {
-      return null;
+    if (flowNodesStatistics && flowNodesStatistics.length === 0) {
+      return <SpinnerSkeleton />;
     }
 
     const states = ['active', 'incidents', 'canceled', 'completed'];
