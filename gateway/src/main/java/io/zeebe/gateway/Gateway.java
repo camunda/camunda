@@ -90,7 +90,7 @@ public class Gateway {
     brokerClient = buildBrokerClient();
 
     final LongPollingActivateJobsHandler longPollingHandler =
-        new LongPollingActivateJobsHandler(brokerClient);
+        LongPollingActivateJobsHandler.newBuilder().setBrokerClient(brokerClient).build();
     actorScheduler.submitActor(longPollingHandler);
 
     final EndpointManager endpointManager = new EndpointManager(brokerClient, longPollingHandler);
