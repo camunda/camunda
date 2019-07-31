@@ -8,24 +8,30 @@
 package io.zeebe.engine.processor.workflow.multiinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.groups.Tuple.tuple;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.record.Assertions;
+import io.zeebe.model.bpmn.builder.MultiInstanceLoopCharacteristicsBuilder;
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.JobBatchIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.protocol.record.value.VariableRecordValue;
+import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.test.util.JsonUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.junit.Before;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.assertj.core.groups.Tuple;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,149 +44,377 @@ public class MultiInstanceActivityTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   private static final String PROCESS_ID = "process";
-  private static final String ELEMENT_ID = "mi-activity";
-  private static final String INPUT_COLLECTION = "items";
-  private static final String INPUT_ELEMENT = "item";
+  private static final String ELEMENT_ID = "task";
   private static final String JOB_TYPE = "test";
-  private static final String MESSAGE_NAME = "message";
+  private static final String INPUT_COLLECTION_VARIABLE = "items";
+  private static final String INPUT_ELEMENT_VARIABLE = "item";
+  private static final List<Integer> INPUT_COLLECTION = Arrays.asList(10, 20, 30);
 
-  private static final BpmnModelInstance SERVICE_TASK_WORKFLOW =
-      Bpmn.createExecutableProcess(PROCESS_ID)
-          .startEvent()
-          .serviceTask(
-              ELEMENT_ID,
-              t ->
-                  t.zeebeTaskType(JOB_TYPE)
-                      .multiInstance(
-                          b ->
-                              b.zeebeInputCollection(INPUT_COLLECTION)
-                                  .zeebeInputElement(INPUT_ELEMENT)))
-          .endEvent()
-          .done();
-
-  private static final BpmnModelInstance SUB_PROCESS_WORKFLOW =
-      Bpmn.createExecutableProcess(PROCESS_ID)
-          .startEvent()
-          .subProcess(
-              ELEMENT_ID,
-              s ->
-                  s.multiInstance(
-                      b ->
-                          b.zeebeInputCollection(INPUT_COLLECTION)
-                              .zeebeInputElement(INPUT_ELEMENT)))
-          .embeddedSubProcess()
-          .startEvent()
-          .serviceTask("task", t -> t.zeebeTaskType(JOB_TYPE))
-          .endEvent()
-          .done();
-
-  private static final BpmnModelInstance RECEIVE_TASK_WORKFLOW =
-      Bpmn.createExecutableProcess(PROCESS_ID)
-          .startEvent()
-          .receiveTask(
-              ELEMENT_ID,
-              t ->
-                  t.message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(INPUT_ELEMENT))
-                      .multiInstance(
-                          b ->
-                              b.zeebeInputCollection(INPUT_COLLECTION)
-                                  .zeebeInputElement(INPUT_ELEMENT)))
-          .endEvent()
-          .done();
+  private static final Consumer<MultiInstanceLoopCharacteristicsBuilder> INPUT_VARIABLE_BUILDER =
+      multiInstance(
+          m ->
+              m.zeebeInputCollection(INPUT_COLLECTION_VARIABLE)
+                  .zeebeInputElement(INPUT_ELEMENT_VARIABLE));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
   @Parameterized.Parameter(0)
-  public BpmnModelInstance workflow;
+  public String loopCharacteristics;
 
   @Parameterized.Parameter(1)
-  public BpmnElementType expectedElementType;
+  public Consumer<MultiInstanceLoopCharacteristicsBuilder> miBuilder;
 
-  @Parameterized.Parameters(name = "multi-instance {1}")
+  @Parameterized.Parameter(2)
+  public List<Tuple> expectedLifecycle;
+
+  private static BpmnModelInstance workflow(
+      final Consumer<MultiInstanceLoopCharacteristicsBuilder> builder) {
+    return Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .serviceTask(
+            ELEMENT_ID,
+            t -> t.zeebeTaskType(JOB_TYPE).multiInstance(INPUT_VARIABLE_BUILDER.andThen(builder)))
+        .endEvent()
+        .done();
+  }
+
+  @Parameterized.Parameters(name = "{0} multi-instance")
   public static Object[][] parameters() {
     return new Object[][] {
-      {SERVICE_TASK_WORKFLOW, BpmnElementType.SERVICE_TASK},
-      {SUB_PROCESS_WORKFLOW, BpmnElementType.SUB_PROCESS},
-      {RECEIVE_TASK_WORKFLOW, BpmnElementType.RECEIVE_TASK},
+      {"parallel", multiInstance(m -> m.parallel()), parallelLifecycle()},
+      {"sequential", multiInstance(m -> m.sequential()), sequentialLifecycle()},
     };
   }
 
-  @Before
-  public void init() {
-    ENGINE.deployment().withXmlResource(workflow).deploy();
+  private static Consumer<MultiInstanceLoopCharacteristicsBuilder> multiInstance(
+      final Consumer<MultiInstanceLoopCharacteristicsBuilder> builder) {
+    return builder;
+  }
+
+  private static List<Tuple> parallelLifecycle() {
+    return Arrays.asList(
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  private static List<Tuple> sequentialLifecycle() {
+    return Arrays.asList(
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+        tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
-  public void shouldCreateOneInstanceForEachElement() {
-    // when
-    final List<String> inputCollection = Arrays.asList("a", "b", "c");
-    final int collectionSize = inputCollection.size();
+  public void shouldActivateActivitiesWithLoopCharacteristics() {
+    // given
+    ENGINE.deployment().withXmlResource(workflow(miBuilder)).deploy();
 
+    // when
     final long workflowInstanceKey =
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION, inputCollection)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
             .create();
 
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
     // then
-    final Record<WorkflowInstanceRecordValue> multiInstanceBody =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .withElementId(ELEMENT_ID)
-            .getFirst();
-
-    Assertions.assertThat(multiInstanceBody.getValue())
-        .hasBpmnElementType(BpmnElementType.MULTI_INSTANCE_BODY)
-        .hasFlowScopeKey(workflowInstanceKey);
-
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            RecordingExporter.workflowInstanceRecords()
                 .withWorkflowInstanceKey(workflowInstanceKey)
-                .withElementId(ELEMENT_ID)
-                .skip(1)
-                .limit(collectionSize))
-        .hasSize(collectionSize)
+                .limitToWorkflowInstanceCompleted()
+                .withElementId(ELEMENT_ID))
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSequence(expectedLifecycle);
+  }
+
+  @Test
+  public void shouldActivateActivitiesForEachElement() {
+    // given
+    ENGINE.deployment().withXmlResource(workflow(miBuilder)).deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceCompleted()
+                .withElementId(ELEMENT_ID))
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldCreateOneJobForEachElement() {
+    // given
+    ENGINE.deployment().withXmlResource(workflow(miBuilder)).deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limit(INPUT_COLLECTION.size()))
+        .hasSize(INPUT_COLLECTION.size())
         .extracting(Record::getValue)
-        .extracting(r -> tuple(r.getFlowScopeKey(), r.getBpmnElementType()))
-        .containsOnly(tuple(multiInstanceBody.getKey(), expectedElementType));
+        .extracting(JobRecordValue::getElementId)
+        .containsOnly(ELEMENT_ID);
+  }
+
+  @Test
+  public void shouldCompleteBodyWhenAllJobsAreCompleted() {
+    // given
+    ENGINE.deployment().withXmlResource(workflow(miBuilder)).deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceCompleted()
+                .withElementId(ELEMENT_ID))
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldGoThroughMultiInstanceActivity() {
+    // given
+    ENGINE.deployment().withXmlResource(workflow(miBuilder)).deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SEQUENCE_FLOW, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SEQUENCE_FLOW, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
   public void shouldSetInputElementVariable() {
+    // given
+    ENGINE.deployment().withXmlResource(workflow(miBuilder)).deploy();
+
     // when
-    final List<Integer> inputCollection = Arrays.asList(4, 5, 6);
-    final int collectionSize = inputCollection.size();
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    assertThat(
+            RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED).withType(JOB_TYPE).limit(3))
+        .flatExtracting(r -> r.getValue().getJobs())
+        .extracting(j -> j.getVariables().get(INPUT_ELEMENT_VARIABLE))
+        .containsExactlyElementsOf(INPUT_COLLECTION);
+
+    final List<String> jsonInputCollection =
+        INPUT_COLLECTION.stream().map(JsonUtil::toJson).collect(Collectors.toList());
+
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withName(INPUT_ELEMENT_VARIABLE)
+                .limit(3))
+        .extracting(r -> r.getValue().getValue())
+        .containsExactlyElementsOf(jsonInputCollection);
+  }
+
+  @Test
+  public void shouldNotPropagateInputElementVariable() {
+    ENGINE.deployment().withXmlResource(workflow(miBuilder)).deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    final Record<WorkflowInstanceRecordValue> completedWorkflowInstance =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .filterRootScope()
+            .getFirst();
+
+    assertThat(
+            RecordingExporter.variableRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withScopeKey(workflowInstanceKey)
+                .limit(r -> r.getPosition() < completedWorkflowInstance.getPosition()))
+        .extracting(r -> r.getValue().getName())
+        .contains(INPUT_COLLECTION_VARIABLE)
+        .doesNotContain(INPUT_ELEMENT_VARIABLE);
+  }
+
+  @Test
+  public void shouldCancelJobsOnTermination() {
+    // given
+    ENGINE.deployment().withXmlResource(workflow(miBuilder)).deploy();
 
     final long workflowInstanceKey =
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION, inputCollection)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
             .create();
+
+    completeJobs(workflowInstanceKey, 1);
+
+    // when
+    final Record<JobRecordValue> createdJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .skip(1)
+            .getFirst();
+
+    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
 
     // then
     assertThat(
-            RecordingExporter.variableRecords(VariableIntent.CREATED)
-                .withName(INPUT_ELEMENT)
+            RecordingExporter.jobRecords(JobIntent.CANCELED)
                 .withWorkflowInstanceKey(workflowInstanceKey)
-                .limit(collectionSize))
-        .hasSize(collectionSize)
-        .extracting(Record::getValue)
-        .extracting(VariableRecordValue::getValue)
-        .containsExactly("4", "5", "6");
+                .limit(1))
+        .hasSize(1)
+        .extracting(Record::getKey)
+        .containsExactly(createdJob.getKey());
+  }
+
+  @Test
+  public void shouldTerminateInstancesOnTerminatingBody() {
+    // given
+    ENGINE.deployment().withXmlResource(workflow(miBuilder)).deploy();
+
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    final int completedJobs = INPUT_COLLECTION.size() - 1;
+    completeJobs(workflowInstanceKey, completedJobs);
+
+    // when
+    RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withElementId(ELEMENT_ID)
+        .withElementType(BpmnElementType.SERVICE_TASK)
+        .skip(completedJobs)
+        .exists();
+
+    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceTerminated()
+                .withElementId(ELEMENT_ID))
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSequence(
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_TERMINATED));
   }
 
   @Test
   public void shouldSkipIfCollectionIsEmpty() {
     // when
+    ENGINE.deployment().withXmlResource(workflow(miBuilder)).deploy();
+
     final long workflowInstanceKey =
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION, Collections.emptyList())
+            .withVariable(INPUT_COLLECTION_VARIABLE, Collections.emptyList())
             .create();
 
     // then
@@ -189,12 +423,12 @@ public class MultiInstanceActivityTest {
                 .withWorkflowInstanceKey(workflowInstanceKey)
                 .withElementId(ELEMENT_ID)
                 .limit(4))
-        .extracting(r -> tuple(r.getIntent(), r.getValue().getBpmnElementType()))
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsExactly(
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnElementType.MULTI_INSTANCE_BODY),
-            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.MULTI_INSTANCE_BODY),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnElementType.MULTI_INSTANCE_BODY),
-            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.MULTI_INSTANCE_BODY));
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, WorkflowInstanceIntent.ELEMENT_COMPLETED));
 
     assertThat(
             RecordingExporter.workflowInstanceRecords()
@@ -205,79 +439,93 @@ public class MultiInstanceActivityTest {
   }
 
   @Test
-  public void shouldTerminateInstancesOnTerminatingBody() {
+  public void shouldIgnoreInputElementVariableIfNotDefined() {
     // given
-    final List<String> inputCollection = Arrays.asList("a", "b", "c");
-    final int collectionSize = inputCollection.size();
-    final int elementInstanceCount = collectionSize + 1;
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            workflow(
+                miBuilder.andThen(
+                    m ->
+                        m.zeebeInputCollection(INPUT_COLLECTION_VARIABLE).zeebeInputElement(null))))
+        .deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    assertThat(
+            RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED)
+                .withType(JOB_TYPE)
+                .limit(INPUT_COLLECTION.size()))
+        .flatExtracting(r -> r.getValue().getJobs())
+        .flatExtracting(j -> j.getVariables().keySet())
+        .containsOnly(INPUT_COLLECTION_VARIABLE);
+  }
+
+  @Test
+  public void shouldIterateOverNestedInputCollection() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            workflow(
+                miBuilder.andThen(
+                    m -> m.zeebeInputCollection("nested." + INPUT_COLLECTION_VARIABLE))))
+        .deploy();
 
     final long workflowInstanceKey =
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION, inputCollection)
+            .withVariable(
+                "nested", Collections.singletonMap(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION))
             .create();
 
-    final List<Record<WorkflowInstanceRecordValue>> elementInstances =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .withElementId(ELEMENT_ID)
-            .limit(elementInstanceCount)
-            .asList();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .limit(INPUT_COLLECTION.size())
+        .exists();
 
-    final Record<WorkflowInstanceRecordValue> multiInstanceBody = elementInstances.get(0);
-    final List<Record<WorkflowInstanceRecordValue>> innerInstances = elementInstances.subList(1, 4);
-
-    // when
-    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .withElementId(ELEMENT_ID)
-                .skipUntil(r -> r.getPosition() > innerInstances.get(2).getPosition())
-                .limit(elementInstanceCount * 2))
-        .extracting(r -> tuple(r.getKey(), r.getIntent(), r.getValue().getBpmnElementType()))
-        .containsExactly(
-            tuple(
-                multiInstanceBody.getKey(),
-                WorkflowInstanceIntent.ELEMENT_TERMINATING,
-                BpmnElementType.MULTI_INSTANCE_BODY),
-            tuple(
-                innerInstances.get(0).getKey(),
-                WorkflowInstanceIntent.ELEMENT_TERMINATING,
-                expectedElementType),
-            tuple(
-                innerInstances.get(1).getKey(),
-                WorkflowInstanceIntent.ELEMENT_TERMINATING,
-                expectedElementType),
-            tuple(
-                innerInstances.get(2).getKey(),
-                WorkflowInstanceIntent.ELEMENT_TERMINATING,
-                expectedElementType),
-            tuple(
-                innerInstances.get(0).getKey(),
-                WorkflowInstanceIntent.ELEMENT_TERMINATED,
-                expectedElementType),
-            tuple(
-                innerInstances.get(1).getKey(),
-                WorkflowInstanceIntent.ELEMENT_TERMINATED,
-                expectedElementType),
-            tuple(
-                innerInstances.get(2).getKey(),
-                WorkflowInstanceIntent.ELEMENT_TERMINATED,
-                expectedElementType),
-            tuple(
-                multiInstanceBody.getKey(),
-                WorkflowInstanceIntent.ELEMENT_TERMINATED,
-                BpmnElementType.MULTI_INSTANCE_BODY));
+            RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED)
+                .withType(JOB_TYPE)
+                .limit(INPUT_COLLECTION.size()))
+        .flatExtracting(r -> r.getValue().getJobs())
+        .extracting(j -> j.getVariables().get(INPUT_ELEMENT_VARIABLE))
+        .containsExactlyElementsOf(INPUT_COLLECTION);
+  }
 
-    assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .filterRootScope()
-                .limitToWorkflowInstanceTerminated())
-        .extracting(Record::getIntent)
-        .contains(WorkflowInstanceIntent.ELEMENT_TERMINATED);
+  private void completeJobs(final long workflowInstanceKey, final int count) {
+    IntStream.range(0, count)
+        .forEach(
+            i -> {
+              assertThat(
+                      RecordingExporter.jobRecords(JobIntent.CREATED)
+                          .withWorkflowInstanceKey(workflowInstanceKey)
+                          .skip(i)
+                          .exists())
+                  .describedAs("Expected job %d/%d to be created", (i + 1), count)
+                  .isTrue();
+
+              ENGINE
+                  .jobs()
+                  .withType(JOB_TYPE)
+                  .withMaxJobsToActivate(1)
+                  .activate()
+                  .getValue()
+                  .getJobKeys()
+                  .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
+            });
   }
 }

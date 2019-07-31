@@ -24,7 +24,7 @@ public class MsgPackQueryProcessor {
   private final QueryResults results = new QueryResults();
   private final QueryResult result = new QueryResult();
 
-  public QueryResults process(JsonPathQuery query, DirectBuffer data) {
+  public QueryResults process(final JsonPathQuery query, final DirectBuffer data) {
 
     queryExecutor.init(query.getFilters(), query.getFilterInstances());
 
@@ -39,7 +39,7 @@ public class MsgPackQueryProcessor {
 
     private DirectBuffer data;
 
-    private void wrap(DirectBuffer data) {
+    private void wrap(final DirectBuffer data) {
       this.data = data;
     }
 
@@ -60,7 +60,7 @@ public class MsgPackQueryProcessor {
       }
     }
 
-    private MsgPackToken readToken(int index) {
+    private MsgPackToken readToken(final int index) {
       queryExecutor.moveToResult(index);
 
       reader.wrap(data, queryExecutor.currentResultPosition(), queryExecutor.currentResultLength());
@@ -71,10 +71,11 @@ public class MsgPackQueryProcessor {
   public class QueryResult {
 
     private final UnsafeBuffer resultBuffer = new UnsafeBuffer();
+    private final ArrayResult arrayResult = new ArrayResult();
 
     private MsgPackToken token;
 
-    private void wrap(MsgPackToken token) {
+    private void wrap(final MsgPackToken token) {
       this.token = token;
     }
 
@@ -109,29 +110,72 @@ public class MsgPackQueryProcessor {
       return resultBuffer;
     }
 
-    public int readArray(Consumer<DirectBuffer> elementConsumer) {
+    public ArrayResult getArray() {
       if (!isArray()) {
         throw new RuntimeException(String.format("expected ARRAY but found '%s'", token.getType()));
       }
 
       final int size = token.getSize();
-
-      for (int i = 0; i < size; i++) {
-
-        final int offset = reader.getOffset();
-        reader.skipValue();
-        final int length = reader.getOffset() - offset;
-
-        resultBuffer.wrap(reader.getBuffer(), offset, length);
-
-        elementConsumer.accept(resultBuffer);
-      }
-
-      return size;
+      arrayResult.wrap(size);
+      return arrayResult;
     }
 
     public String getType() {
       return token.getType().name();
+    }
+  }
+
+  public class ArrayResult {
+
+    private final UnsafeBuffer resultBuffer = new UnsafeBuffer();
+
+    private int size;
+    private int currentIndex;
+
+    private void wrap(final int size) {
+      this.size = size;
+      currentIndex = -1;
+    }
+
+    public int size() {
+      return size;
+    }
+
+    public boolean isEmpty() {
+      return size == 0;
+    }
+
+    public DirectBuffer getElement(final int index) {
+      if (index >= size) {
+        throw new IndexOutOfBoundsException(String.format("index: %d, size: %d", index, size));
+
+      } else if (currentIndex > index) {
+        throw new IllegalStateException(
+            String.format("index: %d, current index: %d", index, currentIndex));
+
+      } else if (currentIndex == index) {
+        return resultBuffer;
+      }
+
+      final int skipValues = (index - currentIndex);
+      if (skipValues > 1) {
+        reader.skipValues(skipValues - 1);
+      }
+
+      currentIndex = index;
+
+      final int offset = reader.getOffset();
+      reader.skipValue();
+      final int length = reader.getOffset() - offset;
+
+      resultBuffer.wrap(reader.getBuffer(), offset, length);
+      return resultBuffer;
+    }
+
+    public void forEach(final Consumer<DirectBuffer> consumer) {
+      for (int i = 0; i < size; i++) {
+        consumer.accept(getElement(i));
+      }
     }
   }
 }

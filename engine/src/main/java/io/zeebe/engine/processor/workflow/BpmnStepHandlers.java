@@ -39,6 +39,7 @@ import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayEven
 import io.zeebe.engine.processor.workflow.handlers.gateway.ExclusiveGatewayElementActivatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyActivatedHandler;
 import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyActivatingHandler;
+import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyCompletedHandler;
 import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyCompletingHandler;
 import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyEventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyTerminatingHandler;
@@ -156,6 +157,9 @@ public class BpmnStepHandlers {
     stepHandlers.put(
         BpmnStep.MULTI_INSTANCE_COMPLETING,
         new MultiInstanceBodyCompletingHandler(stepHandlers::get, catchEventSubscriber));
+    stepHandlers.put(
+        BpmnStep.MULTI_INSTANCE_COMPLETED,
+        new MultiInstanceBodyCompletedHandler(stepHandlers::get));
     stepHandlers.put(
         BpmnStep.MULTI_INSTANCE_TERMINATING,
         new MultiInstanceBodyTerminatingHandler(stepHandlers::get, catchEventSubscriber));
