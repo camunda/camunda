@@ -161,7 +161,7 @@ public class Gateway {
 
   public void stop() {
     if (server != null && !server.isShutdown()) {
-      server.shutdown();
+      server.shutdownNow();
       try {
         server.awaitTermination();
       } catch (InterruptedException e) {
