@@ -10,13 +10,17 @@ export class Publisher {
     this.registeredTopics = SUBSCRIPTION_TOPIC;
   }
 
+  printWarning(topic, action) {
+    console.warn(
+      `you just ${
+        action === 'subscribe' ? 'subscribed' : 'published'
+      } to the unregisted topic ${topic}, probably no one is publishing to it`
+    );
+  }
+
   subscribe(obj) {
     return Object.entries(obj).forEach(([topic, callback]) => {
-      if (!this.registeredTopics[topic]) {
-        console.warn(
-          `you just subscribed to the unregisted topic ${topic}, probably no one is publishing to it`
-        );
-      }
+      !this.registeredTopics[topic] && this.printWarning(topic, 'subscribe');
 
       this.subscriptions = this.subscriptions[topic]
         ? {
@@ -39,11 +43,7 @@ export class Publisher {
   }
 
   publish(topic, value) {
-    if (!this.registeredTopics[topic]) {
-      console.warn(
-        `you just published to the unregisted topic ${topic}, probably no one is subscribed to it`
-      );
-    }
+    !this.registeredTopics[topic] && this.printWarning(topic, 'publish');
 
     this.subscriptions[topic] &&
       this.subscriptions[topic].forEach(handle => {
