@@ -15,9 +15,11 @@ import org.junit.rules.RuleChain;
 
 import java.util.Map;
 
+import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 
 public class StatusRestServiceIT {
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -29,13 +31,26 @@ public class StatusRestServiceIT {
     .outerRule(elasticSearchRule).around(engineIntegrationRule).around(embeddedOptimizeRule);
 
   @Test
-  public void getImportStatus() {
-    embeddedOptimizeRule.getRequestExecutor()
+  public void getConnectedStatus() {
+    final StatusWithProgressDto statusWithProgressDto = embeddedOptimizeRule.getRequestExecutor()
       .withoutAuthentication()
       .buildCheckImportStatusRequest()
       .execute(StatusWithProgressDto.class, 200);
+
+    assertThat(statusWithProgressDto.getConnectionStatus().isConnectedToElasticsearch(), is(true));
+    assertThat(statusWithProgressDto.getConnectionStatus().getEngineConnections().size(), is(1));
+    assertThat(statusWithProgressDto.getConnectionStatus().getEngineConnections().get(DEFAULT_ENGINE_ALIAS), is(true));
   }
 
+  @Test
+  public void getImportStatus() {
+    final StatusWithProgressDto statusWithProgressDto = embeddedOptimizeRule.getRequestExecutor()
+      .withoutAuthentication()
+      .buildCheckImportStatusRequest()
+      .execute(StatusWithProgressDto.class, 200);
+
+    assertThat(statusWithProgressDto.getIsImporting().keySet(), contains(DEFAULT_ENGINE_ALIAS));
+  }
 
   @Test
   public void importStatusIsTrueWhenImporting() {

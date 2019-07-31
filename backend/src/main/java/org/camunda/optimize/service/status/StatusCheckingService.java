@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.status;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.engine.ProcessEngineDto;
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
 import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -21,11 +21,9 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -65,27 +63,13 @@ public class StatusCheckingService {
       final String engineEndpoint = configurationService
         .getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias()) + EngineConstantsUtil.VERSION_ENDPOINT;
       try (final Response response = engineContext.getEngineClient()
-        .target(engineEndpoint)
-        .request(MediaType.APPLICATION_JSON)
-        .get()) {
-
-        boolean hasCorrectResponseCode = response.getStatus() == 200;
-        boolean engineIsRunning = engineWithEngineNameIsRunning(
-          response,
-          configurationService.getEngineName(engineContext.getEngineAlias())
-        );
-        isConnected = hasCorrectResponseCode && engineIsRunning;
+        .target(engineEndpoint).request(MediaType.APPLICATION_JSON).get()) {
+        isConnected = response.getStatus() == HttpStatus.SC_OK;
       }
     } catch (Exception ignored) {
       // do nothing
     }
     return isConnected;
-  }
-
-  private boolean engineWithEngineNameIsRunning(Response response, String engineName) {
-    List<ProcessEngineDto> engineNames = response.readEntity(new GenericType<List<ProcessEngineDto>>() {
-    });
-    return engineNames.stream().anyMatch(e -> e.getName().equals(engineName));
   }
 
   private boolean isConnectedToElasticSearch() {
@@ -95,8 +79,8 @@ public class StatusCheckingService {
       ClusterHealthResponse healthResponse = esClient.getHighLevelClient().cluster()
         .health(request, RequestOptions.DEFAULT);
 
-      isConnected =
-        healthResponse.status().getStatus() == 200 && healthResponse.getStatus() != ClusterHealthStatus.RED;
+      isConnected = healthResponse.status().getStatus() == HttpStatus.SC_OK
+        && healthResponse.getStatus() != ClusterHealthStatus.RED;
     } catch (Exception ignored) {
       // do nothing
     }
