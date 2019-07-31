@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.IDENTITY_LINK_TYPE_ASSIGNEE;
+
 @Slf4j
 public class EngineDatabaseRule extends TestWatcher {
   private static final String DATABASE_H2 = "h2";
@@ -424,6 +426,18 @@ public class EngineDatabaseRule extends TestWatcher {
     final PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
     statement.setTimestamp(1, toLocalTimestampWithoutNanos(newEvaluationDateTime));
     statement.setString(2, decisionDefinitionId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  public void changeLinkLogTimestampForLastTwoAssigneeOperations(OffsetDateTime timestamp) throws SQLException {
+    String sql = "UPDATE ACT_HI_IDENTITYLINK " +
+      "SET TIMESTAMP_ = ? WHERE " +
+      "TYPE_ = ? AND " +
+      "ID_ IN (SELECT ID_ FROM ACT_HI_IDENTITYLINK ORDER BY TIMESTAMP_ DESC LIMIT 2)";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(timestamp));
+    statement.setString(2, IDENTITY_LINK_TYPE_ASSIGNEE);
     statement.executeUpdate();
     connection.commit();
   }

@@ -159,9 +159,16 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
 
   private String extractAssignee(List<AssigneeOperationDto> assigneeOps) {
     return assigneeOps.stream()
-      // add, there is no assignee at all
-      // get last added assignee
-      .reduce((first, second) -> second)
+      // get last added assignee. In case the last two operations are add and delete and
+      // both occurred at the same time, then ignore the delete and just take the add. We need to do
+      // that since changing the assignee in tasklist results in those two operations, which will have the
+      // exact same timestamp.
+      .reduce((first, second) -> {
+        boolean sameTimestampAndFirstIsAddOperation = first.getTimestamp().equals(second.getTimestamp()) &&
+          IDENTITY_LINK_OPERATION_ADD.equals(first.getOperationType()) &&
+            !IDENTITY_LINK_OPERATION_ADD.equals(second.getOperationType());
+        return sameTimestampAndFirstIsAddOperation? first: second;
+      })
       .map(this::mapLogEntryToAssignee)
       .orElse(null);
   }
@@ -259,7 +266,12 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
       "if (ctx._source.${userTasksField} != null) {\n" +
         "for (def currentTask : ctx._source.${userTasksField}) {\n" +
           "def assignee = currentTask.${assigneeOperationsField}.stream()\n" +
-          "  .reduce((first, second) -> second)\n" +
+          "  .reduce((first, second) -> { \n" +
+          "    boolean sameTimestampAndFirstIsAddOperation = first.timestamp.equals(second.timestamp) &&" +
+          "      \"${identityLinkOperationAdd}\".equals(first.${assigneeOperationTypeField}) &&" +
+          "      !\"${identityLinkOperationAdd}\".equals(second.${assigneeOperationTypeField});\n" +
+          "     return sameTimestampAndFirstIsAddOperation? first: second;\n" +
+          "})\n" +
           "  .map(logEntry -> {\n" +
           "    if(\"${identityLinkOperationAdd}\".equals(logEntry.${assigneeOperationTypeField})) {\n" +
           "      return logEntry.${assigneeOperationUserIdField};\n" +

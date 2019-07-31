@@ -16,6 +16,7 @@ import org.elasticsearch.search.SearchHit;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -104,6 +105,40 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
             assertThat(candidateGroupOperationDto.getOperationType(), is(IDENTITY_LINK_OPERATION_ADD));
           });
         });
+    }
+  }
+
+  @Test
+  public void changingAssigneeWithIdenticalLinkLogTimestampsResolvesCorrectAssignee() throws Exception {
+    // background: changing the assignee in tasklist results in those two assignee operations, which will have the
+    // exact same timestamp. We need to make sure that the add operation always wins over the delete if the timestamp
+    // is identical.
+
+    // given
+    engineRule.addUser("kermit", "foo");
+    engineRule.grantAllAuthorizations("kermit");
+    ProcessInstanceEngineDto instanceDto = deployAndStartOneUserTaskProcess();
+    engineRule.claimAllRunningUserTasks();
+    engineRule.unclaimAllRunningUserTasks();
+    engineRule.claimAllRunningUserTasks("kermit", "foo", instanceDto.getId());
+    // we need to make sure that the new timestamp is after the first claim, since
+    // otherwise the ordering of the assignee operations won't be correct.
+    OffsetDateTime timestamp = OffsetDateTime.now().plusHours(1);
+    engineDatabaseRule.changeLinkLogTimestampForLastTwoAssigneeOperations(timestamp);
+
+    // when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // then
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    for (SearchHit searchHitFields : idsResp.getHits()) {
+      final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
+        searchHitFields.getSourceAsString(), ProcessInstanceDto.class
+      );
+      persistedProcessInstanceDto.getUserTasks()
+        .forEach(userTask -> assertThat(userTask.getAssignee(), is("kermit")));
     }
   }
 
