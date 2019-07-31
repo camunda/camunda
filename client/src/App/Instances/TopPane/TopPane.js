@@ -15,9 +15,7 @@ import * as Styled from './styled.js';
 export default function TopPane(props) {
   const messages = {
     NoWorkflow: `There is no Workflow selected.\n To see a diagram, select a Workflow in the Filters panel.`,
-    NoVersion: `There is more than one version selected for Workflow "${
-      props.workflowName
-    }".\n To see a diagram, select a single version.`
+    NoVersion: `There is more than one version selected for Workflow "${props.workflowName}".\n To see a diagram, select a single version.`
   };
 
   const renderMessage = message => {
