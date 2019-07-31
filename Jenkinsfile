@@ -93,16 +93,16 @@ String camBpmContainerSpec(String camBpmVersion = CAMBPM_VERSION_LATEST) {
           -XX:+UnlockExperimentalVMOptions
           -XX:+UseCGroupMemoryLimitForHeap
       - name: JAVA_OPTS
-        value: "-Xms512m -Xmx512m -XX:MaxMetaspaceSize=256m"
+        value: "-Xms512m -Xmx1g -XX:MaxMetaspaceSize=256m"
       - name: TZ
         value: Europe/Berlin
     resources:
       limits:
         cpu: 2
-        memory: 1Gi
+        memory: 2Gi
       requests:
         cpu: 2
-        memory: 1Gi
+        memory: 2Gi
     volumeMounts:
     - name: cambpm-config
       mountPath: /camunda/conf/tomcat-users.xml
