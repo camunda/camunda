@@ -7,7 +7,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {Popover, Input, Form, Badge} from 'components';
+import {Popover, LabeledInput, Form, Badge} from 'components';
 
 import './VersionPopover.scss';
 import {t} from 'translation';
@@ -27,26 +27,28 @@ export default function VersionPopover({versions, selected, onChange, disabled})
   return (
     <Popover className="VersionPopover" title={title} disabled={disabled}>
       <Form compact>
-        <div>
-          <Input type="radio" checked={selected[0] === 'all'} onChange={() => onChange(['all'])} />{' '}
-          {t('common.definitionSelection.all')}
-        </div>
-        <div>
-          <Input
-            type="radio"
-            checked={selected[0] === 'latest'}
-            onChange={() => onChange(['latest'])}
-          />{' '}
-          {t('common.definitionSelection.version.alwaysLatest')}
-        </div>
-        <div>
-          <Input type="radio" checked={specific} onChange={() => onChange([versions[0].version])} />{' '}
-          {t(
+        <LabeledInput
+          label={t('common.definitionSelection.all')}
+          type="radio"
+          checked={selected[0] === 'all'}
+          onChange={() => onChange(['all'])}
+        />
+        <LabeledInput
+          label={t('common.definitionSelection.version.alwaysLatest')}
+          type="radio"
+          checked={selected[0] === 'latest'}
+          onChange={() => onChange(['latest'])}
+        />
+        <LabeledInput
+          label={t(
             `common.definitionSelection.version.specific.label${
               versions.length === 1 ? '' : '-plural'
             }`
           )}
-        </div>
+          type="radio"
+          checked={specific}
+          onChange={() => onChange([versions[0].version])}
+        />
         <div
           className={classnames('specificVersions', {
             disabled: !specific
@@ -55,7 +57,13 @@ export default function VersionPopover({versions, selected, onChange, disabled})
           {versions.map(({version, versionTag}) => {
             return (
               <div key={version}>
-                <Input
+                <LabeledInput
+                  label={
+                    <>
+                      {version}
+                      {versionTag && <Badge>{versionTag}</Badge>}
+                    </>
+                  }
                   type="checkbox"
                   checked={selected.includes(version)}
                   disabled={!specific}
@@ -67,8 +75,6 @@ export default function VersionPopover({versions, selected, onChange, disabled})
                     }
                   }}
                 />
-                {version}
-                {versionTag && <Badge>{versionTag}</Badge>}
               </div>
             );
           })}

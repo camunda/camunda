@@ -27,6 +27,8 @@ import ThresholdInput from './ThresholdInput';
 import {formatters, isDurationReport} from 'services';
 import {t} from 'translation';
 
+import './AlertModal.scss';
+
 const newAlert = {
   email: '',
   reportId: '',
@@ -218,7 +220,7 @@ export default function AlertModal(reports) {
       } = this.state;
       const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/setup/configuration/#email`;
       return (
-        <Modal open={this.props.entity} onClose={this.props.onClose}>
+        <Modal open={this.props.entity} onClose={this.props.onClose} className="AlertModal">
           <Modal.Header>
             {this.isInEditingMode() ? t('alert.edit') : t('alert.createNew')}
           </Modal.Header>
@@ -305,19 +307,19 @@ export default function AlertModal(reports) {
                   onChange={({target: {value}}) => this.setState({email: value})}
                 />
               </Form.Group>
-              <Form.Group noSpacing>
-                <label>
-                  <Input
-                    type="checkbox"
-                    checked={fixNotification}
-                    onChange={({target: {checked}}) => this.setState({fixNotification: checked})}
-                  />
-                  {t('alert.form.sendNotification')}
-                </label>
-                <label>
-                  <Input type="checkbox" checked={!!reminder} onChange={this.updateReminder} />
-                  {t('alert.form.reminder')}
-                </label>
+              <Form.Group noSpacing className="notifications">
+                <LabeledInput
+                  label={t('alert.form.sendNotification')}
+                  type="checkbox"
+                  checked={fixNotification}
+                  onChange={({target: {checked}}) => this.setState({fixNotification: checked})}
+                />
+                <LabeledInput
+                  label={t('alert.form.reminder')}
+                  type="checkbox"
+                  checked={!!reminder}
+                  onChange={this.updateReminder}
+                />
               </Form.Group>
               {reminder && (
                 <Form.Group noSpacing>

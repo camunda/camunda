@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Input} from 'components';
+import {LabeledInput} from 'components';
 
 import VersionPopover from './VersionPopover';
 
@@ -22,7 +22,7 @@ it('should call the provided onChange function', () => {
   const node = shallow(<VersionPopover onChange={spy} versions={versions} selected={['3']} />);
 
   node
-    .find(Input)
+    .find(LabeledInput)
     .first()
     .simulate('change', {target: {checked: true}});
 

@@ -1,5 +1,8 @@
 .Labeled .label {
-  font-size: 0.875em;
-  display: block;
-  margin-bottom: 10px;
+  display: inline-block;
+
+  &.before {
+    margin-bottom: 10px;
+    font-size: 0.875em;
+  }
 }

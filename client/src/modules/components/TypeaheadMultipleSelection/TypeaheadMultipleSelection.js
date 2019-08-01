@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {Input, LoadingIndicator} from 'components';
+import {Input, LabeledInput, LoadingIndicator} from 'components';
 import {formatters} from 'services';
 import classnames from 'classnames';
 
@@ -46,10 +46,13 @@ export default class TypeaheadMultipleSelection extends React.Component {
                   })}
                   {...(isDraggable ? dragProps : {})}
                 >
-                  <label>
-                    <Input type="checkbox" checked value={idx} onChange={this.toggleSelected} />
-                    {this.props.format(value)}
-                  </label>
+                  <LabeledInput
+                    label={this.props.format(value)}
+                    type="checkbox"
+                    checked
+                    value={idx}
+                    onChange={this.toggleSelected}
+                  />
                   {this.props.customItemSettings && this.props.customItemSettings(value, idx)}
                 </li>
               );
@@ -116,18 +119,16 @@ export default class TypeaheadMultipleSelection extends React.Component {
             if (!selectedValues.includes(value)) {
               return (
                 <li key={idx} className="TypeaheadMultipleSelection__valueListItem">
-                  <label>
-                    <Input
-                      type="checkbox"
-                      checked={selectedValues.includes(value)}
-                      value={idx}
-                      onChange={this.toggleAvailable}
-                    />
-                    {formatters.getHighlightedText(
+                  <LabeledInput
+                    label={formatters.getHighlightedText(
                       this.props.format(value),
                       this.state.searchQuery
                     )}
-                  </label>
+                    type="checkbox"
+                    checked={selectedValues.includes(value)}
+                    value={idx}
+                    onChange={this.toggleAvailable}
+                  />
                 </li>
               );
             }

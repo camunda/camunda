@@ -36,8 +36,8 @@ it('should still contain selected value after changing the filter', async () => 
   node.instance().props.setFilter('a');
   node.instance().props.toggleValue('asd')();
   node.instance().props.setFilter('f');
-  expect(node).toIncludeText('asd');
-  expect(node).toIncludeText('fefwf');
+  expect(node.find('LabeledInput[label="asd"]')).toExist();
+  expect(node.find('LabeledInput[label="fefwf"]')).toExist();
 });
 
 it('it should not show the unselected value if it does not match the query', async () => {
@@ -70,8 +70,9 @@ it('it should not show the unselected value if it does not match the query', asy
   node.instance().props.toggleValue('asd');
   node.instance().props.setFilter('f');
   node.instance().props.toggleValue('asd');
-  expect(node).toIncludeText('fefwf');
-  expect(node).not.toIncludeText('asd');
+
+  expect(node.find('LabeledInput[label="asd"]')).not.toExist();
+  expect(node.find('LabeledInput[label="fefwf"]')).toExist();
 });
 
 it('should add a value to the list of values when the checkbox is clicked', async () => {
