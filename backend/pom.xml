@@ -356,6 +356,7 @@
         <artifactId>maven-shade-plugin</artifactId>
         <executions>
           <execution>
+            <id>fat-jar</id>
             <phase>package</phase>
             <goals>
               <goal>shade</goal>
@@ -762,6 +763,17 @@
                   <outputDirectory>${project.build.directory}/testPluginsInvalid/missingVersion</outputDirectory>
                   <classifier>test-plugin-missingVersion</classifier>
                 </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-shade-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>fat-jar</id>
+                <!-- skip this overhead in context of integration testing -->
+                <phase>none</phase>
               </execution>
             </executions>
           </plugin>
