@@ -16,7 +16,7 @@ This module runs as follows:
 
 Before runing the module you'll need to build all required artifacts. Run this command from the Optimize root directory:
 ```
-mvn clean install -Dskip.docker -DskipTests -Pproduction,it -pl backend,upgrade,distro
+mvn clean install -Dskip.docker -DskipTests -Pit -pl backend,upgrade,distro
 ```
 
 To run the data upgrade tests you can execute the following command from the `camunda-optimize/qa/upgrade-optimize-data/` directory:

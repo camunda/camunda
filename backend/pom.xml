@@ -387,6 +387,10 @@
     </plugins>
     <resources>
       <resource>
+        <directory>../client/build</directory>
+        <targetPath>webapp</targetPath>
+      </resource>
+      <resource>
         <directory>src/main/java</directory>
         <includes>
           <include>**/*.java</include>
@@ -439,31 +443,6 @@
             </executions>
           </plugin>
         </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <id>production</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <build>
-        <resources>
-          <resource>
-            <directory>${project.build.outputDirectory}/../../../client/build</directory>
-            <targetPath>webapp</targetPath>
-          </resource>
-          <resource>
-            <directory>src/main/java</directory>
-            <includes>
-              <include>**/*.xml</include>
-            </includes>
-          </resource>
-          <resource>
-            <directory>src/main/resources</directory>
-            <filtering>true</filtering>
-          </resource>
-        </resources>
       </build>
     </profile>
 
@@ -787,22 +766,6 @@
             </executions>
           </plugin>
         </plugins>
-        <resources>
-          <resource>
-            <directory>${project.build.outputDirectory}/../../../client/build</directory>
-            <targetPath>webapp</targetPath>
-          </resource>
-          <resource>
-            <directory>src/main/java</directory>
-            <includes>
-              <include>**/*.xml</include>
-            </includes>
-          </resource>
-          <resource>
-            <directory>src/main/resources</directory>
-            <filtering>true</filtering>
-          </resource>
-        </resources>
       </build>
     </profile>
   </profiles>

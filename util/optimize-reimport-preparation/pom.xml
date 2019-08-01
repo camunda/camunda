@@ -105,7 +105,7 @@
                   <arguments>
                     <argument>-f</argument>
                     <argument>backend/pom.xml</argument>
-                    <argument>-Pproduction,it</argument>
+                    <argument>-Pit</argument>
                     <argument>pre-integration-test</argument>
                   </arguments>
                 </configuration>

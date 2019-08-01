@@ -117,7 +117,7 @@
             <artifactId>maven-release-plugin</artifactId>
             <version>2.5.3</version>
             <configuration>
-              <releaseProfiles>production,engine-latest</releaseProfiles>
+              <releaseProfiles>engine-latest</releaseProfiles>
               <localCheckout>true</localCheckout>
             </configuration>
           </plugin>

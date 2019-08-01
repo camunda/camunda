@@ -57,7 +57,7 @@ in order to debug your test locally you have the following options:
 If you just want to run all tests in one command without making additional
 efforts, just run the following:
 ```
-mvn -Pproduction,it clean verify
+mvn -Pit clean verify
 ```
 
 Elasticsearch and the engine are setup automatically through Docker.
@@ -69,7 +69,7 @@ environment manually to step through a failing test case.
 
 Start Tomcat with the engine deployed and Elasticsearch together using the following cmdline:
 ```
-mvn -Pproduction,it pre-integration-test
+mvn -Pit pre-integration-test
 ```
 
 This basically spins up the integration test environment using Docker. Now you should be able to run your tests in your preferred IDE.

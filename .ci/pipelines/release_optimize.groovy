@@ -98,7 +98,7 @@ void runRelease(params) {
   }
 
   sh ("""
-    mvn -DpushChanges=${pushChanges} -DskipTests -Prelease,production,engine-latest release:prepare release:perform \
+    mvn -DpushChanges=${pushChanges} -DskipTests -Prelease,engine-latest release:prepare release:perform \
     -Dtag=${params.RELEASE_VERSION} -DreleaseVersion=${params.RELEASE_VERSION} -DdevelopmentVersion=${params.DEVELOPMENT_VERSION} \
     --settings=settings.xml '-Darguments=--settings=settings.xml -DskipTests -DskipNexusStagingDeployMojo=${skipDeploy} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn' \
     -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn

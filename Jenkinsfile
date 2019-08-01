@@ -213,7 +213,7 @@ pipeline {
       steps {
         retry(2) {
           container('maven') {
-            runMaven('install -Pproduction,docs,engine-latest -Dskip.docker -DskipTests -T\$LIMITS_CPU')
+            runMaven('install -Pdocs,engine-latest -Dskip.docker -DskipTests -T\$LIMITS_CPU')
           }
           stash name: "optimize-stash-client", includes: "client/build/**"
           stash name: "optimize-stash-distro", includes: "m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*-production.tar.gz,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.xml,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.pom"
@@ -506,7 +506,7 @@ void buildNotification(String buildStatus) {
 
 void integrationTestSteps(String engineVersion = 'latest') {
   container('maven') {
-    runMaven("verify -Dskip.docker -Dskip.fe.build -Pproduction,it,engine-${engineVersion} -pl backend -am -T\$LIMITS_CPU")
+    runMaven("verify -Dskip.docker -Dskip.fe.build -Pit,engine-${engineVersion} -pl backend -am -T\$LIMITS_CPU")
   }
 }
 
@@ -520,7 +520,7 @@ void securityTestSteps() {
 void migrationTestSteps() {
   container('maven') {
     sh ("""apt-get update && apt-get install -y jq netcat""")
-    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend -am -Pproduction,engine-latest,it")
+    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend -am -Pengine-latest,it")
     runMaven("install -Dskip.docker -DskipTests -f qa")
     runMaven("verify -Dskip.docker -Dskip.fe.build -pl upgrade")
     runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/upgrade-es-schema-tests -Pupgrade-es-schema-tests")
@@ -531,7 +531,7 @@ void migrationTestSteps() {
 void dataUpgradeTestSteps() {
   container('maven') {
     sh ("""apt-get update && apt-get install -y jq""")
-    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,qa/data-generation -am -Pproduction,engine-7.10")
+    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,qa/data-generation -am -Pengine-latest")
     runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -f qa/upgrade-optimize-data -pl generator -am")
     runMaven("verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-optimize-data -am -Pupgrade-optimize-data")
   }
