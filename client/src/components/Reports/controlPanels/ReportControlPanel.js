@@ -61,7 +61,7 @@ export default class ReportControlPanel extends React.Component {
     const {processDefinitionKey, processDefinitionVersions, tenantIds} = this.props.report.data;
     if (processDefinitionKey && processDefinitionVersions && tenantIds) {
       this.setState({
-        variables: await loadVariables(processDefinitionKey, processDefinitionVersions, tenantIds)
+        variables: await loadVariables({processDefinitionKey, processDefinitionVersions, tenantIds})
       });
     }
   };

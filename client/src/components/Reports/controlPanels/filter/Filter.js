@@ -52,13 +52,10 @@ export default class Filter extends React.Component {
 
   getFilterConfig = type => {
     if (type === 'variable') {
+      const {processDefinitionKey, processDefinitionVersions, tenantIds} = this.props;
       return {
         getVariables: async () =>
-          await loadVariables(
-            this.props.processDefinitionKey,
-            this.props.processDefinitionVersions,
-            this.props.tenantIds
-          ),
+          await loadVariables({processDefinitionKey, processDefinitionVersions, tenantIds}),
         getValues: async (name, type, numResults, valueFilter) =>
           await loadValues(
             this.props.processDefinitionKey,

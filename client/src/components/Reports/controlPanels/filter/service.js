@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {get, post} from 'request';
+import {post} from 'request';
 
 export async function loadValues(
   processDefinitionKey,
@@ -33,7 +33,8 @@ export async function loadValues(
 export async function loadDecisionValues(
   type,
   decisionDefinitionKey,
-  decisionDefinitionVersion,
+  decisionDefinitionVersions,
+  tenantIds,
   variableId,
   variableType,
   resultOffset,
@@ -42,9 +43,10 @@ export async function loadDecisionValues(
 ) {
   const endpoint = type === 'inputVariable' ? 'inputs' : 'outputs';
 
-  const response = await get(`api/decision-variables/${endpoint}/values`, {
+  const response = await post(`api/decision-variables/${endpoint}/values`, {
     decisionDefinitionKey,
-    decisionDefinitionVersion,
+    decisionDefinitionVersions,
+    tenantIds,
     variableId,
     variableType,
     resultOffset,

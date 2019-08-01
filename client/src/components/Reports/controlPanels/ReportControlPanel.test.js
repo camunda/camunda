@@ -100,7 +100,11 @@ it('should load the variables of the process', () => {
     }
   });
 
-  expect(service.loadVariables).toHaveBeenCalledWith('bar', ['ALL'], []);
+  expect(service.loadVariables).toHaveBeenCalledWith({
+    processDefinitionKey: 'bar',
+    processDefinitionVersions: ['ALL'],
+    tenantIds: []
+  });
 });
 
 it('should include variables in the groupby options', () => {

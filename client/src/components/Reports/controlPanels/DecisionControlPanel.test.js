@@ -12,6 +12,13 @@ import {DefinitionSelection} from 'components';
 import DecisionControlPanel from './DecisionControlPanel';
 import ReportSelect from './ReportSelect';
 
+import {loadInputVariables, loadOutputVariables} from './service';
+
+jest.mock('./service', () => ({
+  loadInputVariables: jest.fn().mockReturnValue([]),
+  loadOutputVariables: jest.fn().mockReturnValue([])
+}));
+
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
 
@@ -41,15 +48,14 @@ jest.mock('services', () => {
 const report = {
   data: {
     decisionDefinitionKey: 'aKey',
-    decisionDefinitionVersion: 'aVersion',
+    decisionDefinitionVersions: ['aVersion'],
     tenantIds: [null],
     view: {property: 'rawData'},
     groupBy: {type: 'none', unit: null},
     visualization: 'table',
     filter: [],
     configuration: {
-      xml:
-        '<decision id="aKey"><input id="anId" label="aName"><inputExpression typeRef="string" /></input><input id="anotherId" label="anotherName"><inputExpression typeRef="string" /></input></decision>'
+      xml: 'someXml'
     }
   }
 };
@@ -90,13 +96,19 @@ it('should include variables in the groupby options', () => {
   expect(groupbyDropdown.prop('variables')).toBeDefined();
 });
 
-it('should parse variables from the xml', () => {
-  const node = shallow(<DecisionControlPanel report={report} />);
+it('should retrieve variable names', async () => {
+  shallow(<DecisionControlPanel report={report} />);
 
-  expect(node.state().variables.inputVariable).toEqual([
-    {id: 'anId', name: 'aName', type: 'string'},
-    {id: 'anotherId', name: 'anotherName', type: 'string'}
-  ]);
+  const payload = {
+    decisionDefinitionKey: 'aKey',
+    decisionDefinitionVersions: ['aVersion'],
+    tenantIds: [null]
+  };
+
+  await Promise.resolve();
+
+  expect(loadInputVariables).toHaveBeenCalledWith(payload);
+  expect(loadOutputVariables).toHaveBeenCalledWith(payload);
 });
 
 it('should reset variable groupby on definition change', async () => {

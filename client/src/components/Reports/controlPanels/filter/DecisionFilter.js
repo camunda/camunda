@@ -68,6 +68,7 @@ export default class DecisionFilter extends React.Component {
             type,
             this.props.decisionDefinitionKey,
             this.props.decisionDefinitionVersions,
+            this.props.tenants,
             id,
             varType,
             0,

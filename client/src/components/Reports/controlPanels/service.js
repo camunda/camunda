@@ -6,18 +6,15 @@
 
 import {post} from 'request';
 
-export async function loadVariables(processDefinitionKey, processDefinitionVersions, tenantIds) {
-  const response = await post('api/variables', {
-    processDefinitionKey,
-    processDefinitionVersions,
-    tenantIds,
-    namePrefix: '',
-    sortOrder: 'asc',
-    orderBy: 'name'
-  });
+const loadVariablesFrom = endpoint => async payload => {
+  const response = await post(endpoint, payload);
 
   return await response.json();
-}
+};
+
+export const loadVariables = loadVariablesFrom('api/variables');
+export const loadInputVariables = loadVariablesFrom('api/decision-variables/inputs/names');
+export const loadOutputVariables = loadVariablesFrom('api/decision-variables/outputs/names');
 
 export function isDurationHeatmap({
   view,

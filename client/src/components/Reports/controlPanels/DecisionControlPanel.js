@@ -5,6 +5,8 @@
  */
 
 import React from 'react';
+import equal from 'deep-equal';
+
 import {DefinitionSelection} from 'components';
 import {formatters} from 'services';
 
@@ -14,6 +16,8 @@ import ReportSelect from './ReportSelect';
 import {DecisionFilter} from './filter';
 
 import {reportConfig, loadDecisionDefinitionXml} from 'services';
+import {loadInputVariables, loadOutputVariables} from './service';
+
 const {decision: decisionConfig} = reportConfig;
 
 export default class DecisionControlPanel extends React.Component {
@@ -24,36 +28,35 @@ export default class DecisionControlPanel extends React.Component {
     }
   };
 
-  static getDerivedStateFromProps({
-    report: {
-      data: {
-        configuration: {xml},
-        decisionDefinitionKey
-      }
-    }
-  }) {
-    if (xml) {
-      const definitions = new DOMParser()
-        .parseFromString(xml, 'text/xml')
-        .querySelector(`decision[id="${decisionDefinitionKey}"]`);
-
-      return {
-        variables: {
-          inputVariable: Array.from(definitions.querySelectorAll('input')).map(node => ({
-            id: node.getAttribute('id'),
-            name: node.getAttribute('label'),
-            type: node.querySelector('inputExpression').getAttribute('typeRef')
-          })),
-          outputVariable: Array.from(definitions.querySelectorAll('output')).map(node => ({
-            id: node.getAttribute('id'),
-            name: node.getAttribute('label'),
-            type: node.getAttribute('typeRef')
-          }))
-        }
-      };
-    }
-    return null;
+  componentDidMount() {
+    this.loadVariables();
   }
+
+  componentDidUpdate(prevProps) {
+    const {data} = this.props.report;
+    const {data: prevData} = prevProps.report;
+
+    if (
+      data.decisionDefinitionKey !== prevData.decisionDefinitionKey ||
+      !equal(data.decisionDefinitionVersions, prevData.decisionDefinitionVersions) ||
+      !equal(data.tenantIds, prevData.tenantIds)
+    ) {
+      this.loadVariables();
+    }
+  }
+
+  loadVariables = async () => {
+    const {decisionDefinitionKey, decisionDefinitionVersions, tenantIds} = this.props.report.data;
+    if (decisionDefinitionKey && decisionDefinitionVersions && tenantIds) {
+      const payload = {decisionDefinitionKey, decisionDefinitionVersions, tenantIds};
+      this.setState({
+        variables: {
+          inputVariable: await loadInputVariables(payload),
+          outputVariable: await loadOutputVariables(payload)
+        }
+      });
+    }
+  };
 
   changeDefinition = async (key, versions, tenants) => {
     const {groupBy, filter} = this.props.report.data;
@@ -101,6 +104,7 @@ export default class DecisionControlPanel extends React.Component {
     const {
       decisionDefinitionKey,
       decisionDefinitionVersions,
+      tenantIds,
       filter,
       visualization,
       configuration: {xml}
@@ -115,7 +119,7 @@ export default class DecisionControlPanel extends React.Component {
               type="decision"
               definitionKey={decisionDefinitionKey}
               versions={decisionDefinitionVersions}
-              tenants={data.tenantIds}
+              tenants={tenantIds}
               xml={xml}
               onChange={this.changeDefinition}
             />
@@ -147,6 +151,7 @@ export default class DecisionControlPanel extends React.Component {
               instanceCount={result && result.decisionInstanceCount}
               decisionDefinitionKey={decisionDefinitionKey}
               decisionDefinitionVersions={decisionDefinitionVersions}
+              tenants={tenantIds}
               variables={this.state.variables}
             />
           </li>
