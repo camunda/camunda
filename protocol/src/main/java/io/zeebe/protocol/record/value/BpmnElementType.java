@@ -40,9 +40,10 @@ public enum BpmnElementType {
   EVENT_BASED_GATEWAY,
 
   // Other
-  SEQUENCE_FLOW;
+  SEQUENCE_FLOW,
+  MULTI_INSTANCE_BODY;
 
-  public static BpmnElementType bpmnElementTypeFor(String elementTypeName) {
+  public static BpmnElementType bpmnElementTypeFor(final String elementTypeName) {
     switch (elementTypeName) {
       case "process":
         return BpmnElementType.PROCESS;
