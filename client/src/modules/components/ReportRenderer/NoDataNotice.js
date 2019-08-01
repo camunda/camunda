@@ -7,11 +7,12 @@
 import React from 'react';
 
 import './NoDataNotice.scss';
+import {t} from 'translation';
 
 export default function NoDataNotice({children}) {
   return (
     <div className="NoDataNotice">
-      <h1>No data to display</h1>
+      <h1>{t('report.noDataNotice')}</h1>
       <p>{children}</p>
     </div>
   );

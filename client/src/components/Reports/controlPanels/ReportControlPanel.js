@@ -132,7 +132,7 @@ export default class ReportControlPanel extends React.Component {
       <div className="ReportControlPanel">
         <ul>
           <li className="select">
-            <span className="label">{t('report.definition')}</span>
+            <span className="label">{t('report.definition.process')}</span>
             <DefinitionSelection
               type="process"
               definitionKey={data.processDefinitionKey}

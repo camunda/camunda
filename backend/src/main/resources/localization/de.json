@@ -66,9 +66,10 @@
   "report": {
     "label": "Bericht",
     "label-plural": "Berichte",
+    "new": "Neuer Bericht",
+    "cannotSave": "Bericht \"{name}\" konnte nicht gespeichert werden",
     "downloadCSV": "CSV herunterladen",
     "incomplete": "Anzeigen von {count} Datenpunkten im Ergebnis. Um die Ergebnismenge zu verfeinern, bearbeiten Sie die oben angegebene Einstellung.",
-    "definition": "Prozessdefinition",
     "view": {
       "label": "Aussicht",
       "rawData": "Rohdaten",
@@ -116,7 +117,31 @@
       },
       "noChangeWarning": "Bitte ändern Sie mindestens einen Wert",
       "invalidValue": "Alle Felder sollten einen numerischen Wert haben"
-    }
+    },
+    "invalidCominationError": "Es können keine Daten für die angegebenen Berichteinstellungen angezeigt werden. Bitte wählen Sie eine andere Kombination! ",
+    "noDataNotice": "Keine Daten zum Anzeigen ",
+    "editSetupMessage": "Um diesen Bericht anzuzeigen, bearbeiten Sie Ihre Einstellungen oben. ",
+    "incompleteNotice": {
+      "message": "Um diesen Bericht anzuzeigen, ",
+      "action": "komplettes Setup ... "
+    },
+    "setupNotice": "Richten Sie Ihren Bericht ein ",
+    "editReportMessage": "<p> Wählen Sie oben die Schaltfläche <b> Bearbeiten </b>. </p>",
+    "totalCount": {
+      "instance": "Gesamtanzahl der Instanzen: <b> {count} </b> ",
+      "evaluation": "Gesamtbewertung </br> Anzahl: <b> {count} </b> "
+    },
+    "definition": {
+      "process": "Prozessdefinition"
+    },
+    "noDefintionMessage": {
+      "process": "Wählen Sie oben eine <b> Prozessdefinition </b> aus.",
+      "decision": "Wählen Sie oben eine <b> Entscheidungsdefinition </b> aus."
+    },
+    "combinedEmptyMessage": "Um einen Bericht anzuzeigen, wählen Sie bitte einen oder mehrere Berichte aus der Liste aus. ",
+    "noViewMessage": "Wählen Sie eine Option für die <b> Ansicht </b> oben aus.",
+    "noGroupByMessage": "Wählen Sie aus, nach was Sie <b> gruppieren </b> möchten.",
+    "noVisualizationMessage": "Wählen Sie oben eine Option für die <b> Visualisierung </b> aus."
   },
   "dashboard": {
     "label": "Instrumententafel",
@@ -148,7 +173,8 @@
       "reminderFrequency": "jeden"
     },
     "apply": "Änderungen übernehmen",
-    "create": "Benachrichtigung erstellen"
+    "create": "Benachrichtigung erstellen",
+    "cannotSave": "Alarm \"{name}\" konnte nicht gespeichert werden."
   },
   "analysis": {
     "selectLabel": "Für",

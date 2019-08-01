@@ -21,9 +21,7 @@ import {formatters} from 'services';
 import {isEmpty} from './service';
 
 import './ReportRenderer.scss';
-
-const errorMessage =
-  'Cannot display data for the given report settings. Please choose another combination!';
+import {t} from 'translation';
 
 export default function ReportRenderer(props) {
   const {report, updateReport, isExternal} = props;
@@ -49,13 +47,7 @@ export default function ReportRenderer(props) {
       } else if (updateReport) {
         return <SetupNotice>{somethingMissing}</SetupNotice>;
       } else {
-        return (
-          <SetupNotice>
-            <p>
-              Select the <b>Edit</b> button above.
-            </p>
-          </SetupNotice>
-        );
+        return <SetupNotice dangerouslySetInnerHTML={{__html: t('report.editReportMessage')}} />;
       }
     }
 
@@ -66,24 +58,24 @@ export default function ReportRenderer(props) {
         <div className="ReportRenderer">
           {showNoDataMessage ? (
             <NoDataNotice>
-              {updateReport &&
-                !report.combined &&
-                'To display this report, edit your set-up above.'}
+              {updateReport && !report.combined && t('report.editSetupMessage')}
             </NoDataNotice>
           ) : (
             <>
               <View {...props} />
               {report.data.configuration.showInstanceCount && (
-                <div className="additionalInfo">
-                  Total {isDecision ? 'Evaluation' : 'Instance'}
-                  <br />
-                  Count:
-                  <b>
-                    {formatters.frequency(
-                      report.result.processInstanceCount || report.result.decisionInstanceCount || 0
-                    )}
-                  </b>
-                </div>
+                <div
+                  className="additionalInfo"
+                  dangerouslySetInnerHTML={{
+                    __html: t(`report.totalCount.${isDecision ? 'evaluation' : 'instance'}`, {
+                      count: formatters.frequency(
+                        report.result.processInstanceCount ||
+                          report.result.decisionInstanceCount ||
+                          0
+                      )
+                    })
+                  }}
+                />
               )}
             </>
           )}
@@ -91,7 +83,7 @@ export default function ReportRenderer(props) {
       </ErrorBoundary>
     );
   } else {
-    return <Message type="error">{errorMessage}</Message>;
+    return <Message type="error">{t('report.invalidCominationError')}</Message>;
   }
 }
 
@@ -117,17 +109,13 @@ function containsData(report) {
 function checkCombined(data) {
   const reports = data.reports;
   if (!reports || !reports.length) {
-    return 'To display a report, please select one or more reports from the list.';
+    return t('report.combinedEmptyMessage');
   }
 }
 
 function checkDecisionReport(data) {
   if (isEmpty(data.decisionDefinitionKey) || isEmpty(data.decisionDefinitionVersions)) {
-    return (
-      <p>
-        Select a <b>Decision Definition</b> above.
-      </p>
-    );
+    return <p dangerouslySetInnerHTML={{__html: t('report.noDefintionMessage.decision')}} />;
   } else {
     return checkSingleReport(data);
   }
@@ -135,11 +123,7 @@ function checkDecisionReport(data) {
 
 function checkProcessReport(data) {
   if (isEmpty(data.processDefinitionKey) || isEmpty(data.processDefinitionVersions)) {
-    return (
-      <p>
-        Select a <b>Process Definition</b> above.
-      </p>
-    );
+    return <p dangerouslySetInnerHTML={{__html: t('report.noDefintionMessage.process')}} />;
   } else {
     return checkSingleReport(data);
   }
@@ -147,23 +131,11 @@ function checkProcessReport(data) {
 
 function checkSingleReport(data) {
   if (!data.view) {
-    return (
-      <p>
-        Select an option for <b>View</b> above.
-      </p>
-    );
+    return <p dangerouslySetInnerHTML={{__html: t('report.noViewMessage')}} />;
   } else if (!data.groupBy) {
-    return (
-      <p>
-        Select what to <b>Group By</b> above.
-      </p>
-    );
+    return <p dangerouslySetInnerHTML={{__html: t('report.noGroupByMessage')}} />;
   } else if (!data.visualization) {
-    return (
-      <p>
-        Select an option for <b>Visualization</b> above.
-      </p>
-    );
+    return <p dangerouslySetInnerHTML={{__html: t('report.noVisualizationMessage')}} />;
   } else {
     return;
   }

@@ -17,6 +17,7 @@ import ReportView from './ReportView';
 import newReport from './newReport.json';
 
 import './Report.scss';
+import {t} from 'translation';
 
 export default withErrorHandling(
   class Report extends React.Component {
@@ -44,7 +45,9 @@ export default withErrorHandling(
 
     createReport = () => {
       const now = moment().format('Y-MM-DDTHH:mm:ss.SSSZZ');
-      this.setState({report: {...newReport[this.getId()], lastModified: now, created: now}});
+      this.setState({
+        report: {...newReport[this.getId()], name: t('report.new'), lastModified: now, created: now}
+      });
     };
 
     loadReport = () => {

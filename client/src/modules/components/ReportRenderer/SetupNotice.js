@@ -7,12 +7,13 @@
 import React from 'react';
 
 import './SetupNotice.scss';
+import {t} from 'translation';
 
-export default function SetupNotice({children}) {
+export default function SetupNotice({children, ...props}) {
   return (
     <div className="SetupNotice">
-      <h1>Set-up your Report</h1>
-      {children}
+      <h1>{t('report.setupNotice')}</h1>
+      <div {...props}>{children}</div>
     </div>
   );
 }

@@ -42,7 +42,7 @@ export default withErrorHandling(
         confirmModalVisible: false,
         conflict: null
       });
-      addNotification({text: `Report "${name}" could not be saved.`, type: 'error'});
+      addNotification({text: t('report.cannotSave', {name}), type: 'error'});
     };
 
     saveUpdatedReport = ({endpoint, id, name, data}) => {

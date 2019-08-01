@@ -112,7 +112,7 @@ class Alerts extends React.Component {
         this.loadAlerts();
       },
       () => {
-        addNotification({text: `Alert "${entity.name}" could not be saved.`, type: 'error'});
+        addNotification({text: t('alert.cannotSave', {name: entity.name}), type: 'error'});
       }
     );
   };

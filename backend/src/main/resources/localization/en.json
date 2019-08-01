@@ -66,9 +66,10 @@
   "report": {
     "label": "Report",
     "label-plural": "Reports",
+    "new": "New Report",
+    "cannotSave": "Report \"{name}\" could not be saved",
     "downloadCSV": "Download CSV",
     "incomplete": "Showing {count} data points in the result. To refine the set of results, edit your set-up above.",
-    "definition": "Process Definition",
     "view": {
       "label": "View",
       "rawData": "Raw Data",
@@ -116,7 +117,31 @@
       },
       "noChangeWarning": "Please change at least one value",
       "invalidValue": "All fields should have a numeric value"
-    }
+    },
+    "invalidCominationError": "Cannot display data for the given report settings. Please choose another combination!",
+    "noDataNotice": "No data to display",
+    "editSetupMessage": "To display this report, edit your set-up above.",
+    "incompleteNotice": {
+      "message": "To display this Report,",
+      "action": "complete set-up…"
+    },
+    "setupNotice": "Set-up your Report",
+    "editReportMessage": "<p>Select the <b>Edit</b> button above.</p>",
+    "totalCount": {
+      "instance": "Total Instance</br> Count: <b>{count}</b>",
+      "evaluation": "Total Evaluation</br> Count: <b>{count}</b>"
+    },
+    "definition": {
+      "process": "Process Definition"
+    },
+    "noDefintionMessage": {
+      "process": "Select a <b>Process Definition</b> above.",
+      "decision": "Select a <b>Decision Definition</b> above."
+    },
+    "combinedEmptyMessage": "To display a report, please select one or more reports from the list.",
+    "noViewMessage": "Select an option for <b>View</b> above.",
+    "noGroupByMessage": "Select what to <b>Group By</b> above.",
+    "noVisualizationMessage": "Select an option for <b>Visualization</b> above."
   },
   "dashboard": {
     "label": "Dashboard",
@@ -148,7 +173,8 @@
       "reminderFrequency": "every"
     },
     "apply": "Apply Changes",
-    "create": "Create Alert"
+    "create": "Create Alert",
+    "cannotSave": "Alert \"{name}\" could not be saved."
   },
   "analysis": {
     "selectLabel": "For",

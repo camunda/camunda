@@ -96,7 +96,7 @@ it('should include the instance count if indicated in the config', () => {
   const node = shallow(<ReportRenderer report={report} />);
 
   expect(node.find('.additionalInfo')).toExist();
-  expect(node.find('.additionalInfo').text()).toContain('723');
+  expect(node.find('.additionalInfo').html()).toContain('723');
 });
 
 it('should show an incomplete report notice when inside a dashboard', () => {

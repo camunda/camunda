@@ -2,74 +2,72 @@
 
 exports[`SetupNotice should instruct to add a process definition key if not available 1`] = `
 <SetupNotice>
-  <p>
-    Select a 
-    <b>
-      Process Definition
-    </b>
-     above.
-  </p>
+  <p
+    dangerouslySetInnerHTML={
+      Object {
+        "__html": "Select a <b>Process Definition</b> above.",
+      }
+    }
+  />
 </SetupNotice>
 `;
 
 exports[`SetupNotice should instruct to add a process definition version if not available 1`] = `
 <SetupNotice>
-  <p>
-    Select a 
-    <b>
-      Process Definition
-    </b>
-     above.
-  </p>
+  <p
+    dangerouslySetInnerHTML={
+      Object {
+        "__html": "Select a <b>Process Definition</b> above.",
+      }
+    }
+  />
 </SetupNotice>
 `;
 
 exports[`SetupNotice should instruct to add group by option if not available 1`] = `
 <SetupNotice>
-  <p>
-    Select what to 
-    <b>
-      Group By
-    </b>
-     above.
-  </p>
+  <p
+    dangerouslySetInnerHTML={
+      Object {
+        "__html": "Select what to <b>Group By</b> above.",
+      }
+    }
+  />
 </SetupNotice>
 `;
 
 exports[`SetupNotice should instruct to add view option if not available 1`] = `
 <SetupNotice>
-  <p>
-    Select an option for 
-    <b>
-      View
-    </b>
-     above.
-  </p>
+  <p
+    dangerouslySetInnerHTML={
+      Object {
+        "__html": "Select an option for <b>View</b> above.",
+      }
+    }
+  />
 </SetupNotice>
 `;
 
 exports[`SetupNotice should instruct to add visualization option if not available 1`] = `
 <SetupNotice>
-  <p>
-    Select an option for 
-    <b>
-      Visualization
-    </b>
-     above.
-  </p>
+  <p
+    dangerouslySetInnerHTML={
+      Object {
+        "__html": "Select an option for <b>Visualization</b> above.",
+      }
+    }
+  />
 </SetupNotice>
 `;
 
 exports[`SetupNotice should instruct to click the edit button in report view 1`] = `
-<SetupNotice>
-  <p>
-    Select the 
-    <b>
-      Edit
-    </b>
-     button above.
-  </p>
-</SetupNotice>
+<SetupNotice
+  dangerouslySetInnerHTML={
+    Object {
+      "__html": "<p>Select the <b>Edit</b> button above.</p>",
+    }
+  }
+/>
 `;
 
 exports[`SetupNotice should instruct to select one or more reports if no reports are selected for combined reports 1`] = `

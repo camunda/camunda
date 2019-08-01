@@ -8,14 +8,15 @@ import React from 'react';
 import {Link} from 'react-router-dom';
 
 import './IncompleteReport.scss';
+import {t} from 'translation';
 
 export default function IncompleteReport({id}) {
   return (
     <div className="IncompleteReport">
       <p>
-        To display this Report,
+        {t('report.incompleteNotice.message')}
         <br />
-        <Link to={`/report/${id}/edit`}>complete set-up…</Link>
+        <Link to={`/report/${id}/edit`}>{t('report.incompleteNotice.action')}</Link>
       </p>
     </div>
   );
