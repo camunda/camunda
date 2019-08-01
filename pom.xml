@@ -28,6 +28,8 @@
     <camunda.engine-7.10>7.10.6</camunda.engine-7.10>
     <camunda.model.version>7.11.0</camunda.model.version>
 
+    <surefire-plugin.version>3.0.0-M3</surefire-plugin.version>
+
     <jackson.version>2.9.9</jackson.version>
     <jsonpath.version>2.4.0</jsonpath.version>
     <elasticsearch.version>6.6.2</elasticsearch.version>
@@ -48,6 +50,7 @@
 
     <version.node>v10.15.3</version.node>
     <version.yarn>v1.7.0</version.yarn>
+
     <skip.fe.build>false</skip.fe.build>
 
     <skip.docker>false</skip.docker>
@@ -199,7 +202,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.22.2</version>
+          <version>${surefire-plugin.version}</version>
           <configuration>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
           </configuration>
@@ -207,7 +210,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>2.22.2</version>
+          <version>${surefire-plugin.version}</version>
           <configuration>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
           </configuration>

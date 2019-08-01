@@ -55,10 +55,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
-          <!-- to work around classloading bug on debian https://issues.apache.org/jira/browse/SUREFIRE-1588 -->
-          <useSystemClassLoader>false</useSystemClassLoader>
           <classesDirectory>${project.build.outputDirectory}</classesDirectory>
-          <redirectTestOutputToFile>true</redirectTestOutputToFile>
         </configuration>
         <executions>
           <execution>
