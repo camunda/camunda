@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -22,10 +23,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class LocalizationRestServiceIT {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+  public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   @Rule
-  public RuleChain chain = RuleChain.outerRule(embeddedOptimizeRule);
+  public RuleChain chain = RuleChain.outerRule(engineIntegrationRule).around(embeddedOptimizeRule);
 
   @Test
   public void getEnglishLocale() {
