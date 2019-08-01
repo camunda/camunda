@@ -7,6 +7,8 @@
  */
 package io.zeebe.gateway.api.job;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.zeebe.gateway.api.util.StubbedGateway;
 import io.zeebe.gateway.api.util.StubbedGateway.RequestStub;
 import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
@@ -14,6 +16,8 @@ import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.LongStream;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -84,6 +88,8 @@ public class ActivateJobsStub
     return ELEMENT_INSTANCE_KEY;
   }
 
+  private Map<String, Integer> availableJobs = new HashMap<>();
+
   @Override
   public BrokerResponse<JobBatchRecord> handle(BrokerActivateJobsRequest request) throws Exception {
     final int partitionId = request.getPartitionId();
@@ -106,13 +112,21 @@ public class ActivateJobsStub
         response, partitionId, Protocol.encodePartitionId(partitionId, JOB_BATCH_KEY));
   }
 
+  public void addAvailableJobs(String type, int amount) {
+    availableJobs.put(type, amount);
+  }
+
   private void addJobs(
       JobBatchRecord response,
       int partitionId,
       int amount,
       DirectBuffer type,
       DirectBuffer worker) {
-    LongStream.range(0, amount)
+
+    final int availableAmount = availableJobs.computeIfAbsent(bufferAsString(type), k -> 0);
+    final int jobsToActivate = Math.min(amount, availableAmount);
+    availableJobs.put(bufferAsString(type), availableAmount - jobsToActivate);
+    LongStream.range(0, jobsToActivate)
         .forEach(
             key -> {
               response.jobKeys().add().setValue(Protocol.encodePartitionId(partitionId, key));

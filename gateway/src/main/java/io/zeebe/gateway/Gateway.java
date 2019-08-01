@@ -16,6 +16,8 @@ import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.gateway.impl.configuration.SecurityCfg;
+import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
+import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -41,28 +43,36 @@ public class Gateway {
   private final Function<GatewayCfg, ServerBuilder> serverBuilderFactory;
   private final Function<GatewayCfg, BrokerClient> brokerClientFactory;
   private final GatewayCfg gatewayCfg;
+  private final ActorScheduler actorScheduler;
 
   private Server server;
   private BrokerClient brokerClient;
 
-  public Gateway(GatewayCfg gatewayCfg, AtomixCluster atomixCluster) {
+  public Gateway(
+      GatewayCfg gatewayCfg, AtomixCluster atomixCluster, ActorScheduler actorScheduler) {
     this(
         gatewayCfg,
         cfg -> new BrokerClientImpl(cfg, atomixCluster),
-        DEFAULT_SERVER_BUILDER_FACTORY);
-  }
-
-  public Gateway(GatewayCfg gatewayCfg, Function<GatewayCfg, BrokerClient> brokerClientFactory) {
-    this(gatewayCfg, brokerClientFactory, DEFAULT_SERVER_BUILDER_FACTORY);
+        DEFAULT_SERVER_BUILDER_FACTORY,
+        actorScheduler);
   }
 
   public Gateway(
       GatewayCfg gatewayCfg,
       Function<GatewayCfg, BrokerClient> brokerClientFactory,
-      Function<GatewayCfg, ServerBuilder> serverBuilderFactory) {
+      ActorScheduler actorScheduler) {
+    this(gatewayCfg, brokerClientFactory, DEFAULT_SERVER_BUILDER_FACTORY, actorScheduler);
+  }
+
+  public Gateway(
+      GatewayCfg gatewayCfg,
+      Function<GatewayCfg, BrokerClient> brokerClientFactory,
+      Function<GatewayCfg, ServerBuilder> serverBuilderFactory,
+      ActorScheduler actorScheduler) {
     this.gatewayCfg = gatewayCfg;
     this.brokerClientFactory = brokerClientFactory;
     this.serverBuilderFactory = serverBuilderFactory;
+    this.actorScheduler = actorScheduler;
   }
 
   public GatewayCfg getGatewayCfg() {
@@ -79,7 +89,11 @@ public class Gateway {
 
     brokerClient = buildBrokerClient();
 
-    final EndpointManager endpointManager = new EndpointManager(brokerClient);
+    final LongPollingActivateJobsHandler longPollingHandler =
+        new LongPollingActivateJobsHandler(brokerClient);
+    actorScheduler.submitActor(longPollingHandler);
+
+    final EndpointManager endpointManager = new EndpointManager(brokerClient, longPollingHandler);
 
     final ServerBuilder serverBuilder = serverBuilderFactory.apply(gatewayCfg);
 
@@ -147,7 +161,7 @@ public class Gateway {
 
   public void stop() {
     if (server != null && !server.isShutdown()) {
-      server.shutdown();
+      server.shutdownNow();
       try {
         server.awaitTermination();
       } catch (InterruptedException e) {

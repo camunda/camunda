@@ -12,6 +12,7 @@ import io.zeebe.gateway.Gateway;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.zeebe.gateway.impl.configuration.SecurityCfg;
+import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 import org.junit.After;
 import org.junit.Rule;
@@ -46,7 +47,9 @@ public class SecurityTest {
             cfg.getSecurity().getCertificateChainPath()));
 
     // when
-    gateway = new Gateway(cfg, AtomixCluster.builder().build());
+    gateway =
+        new Gateway(
+            cfg, AtomixCluster.builder().build(), ActorScheduler.newActorScheduler().build());
     gateway.start();
   }
 
@@ -66,7 +69,9 @@ public class SecurityTest {
             cfg.getSecurity().getPrivateKeyPath()));
 
     // when
-    gateway = new Gateway(cfg, AtomixCluster.builder().build());
+    gateway =
+        new Gateway(
+            cfg, AtomixCluster.builder().build(), ActorScheduler.newActorScheduler().build());
     gateway.start();
   }
 
@@ -83,7 +88,9 @@ public class SecurityTest {
             + "Edit the gateway configuration file to provide one or to disable TLS.");
 
     // when
-    gateway = new Gateway(cfg, AtomixCluster.builder().build());
+    gateway =
+        new Gateway(
+            cfg, AtomixCluster.builder().build(), ActorScheduler.newActorScheduler().build());
     gateway.start();
   }
 
@@ -100,7 +107,9 @@ public class SecurityTest {
             + "Edit the gateway configuration file to provide one or to disable TLS.");
 
     // when
-    gateway = new Gateway(cfg, AtomixCluster.builder().build());
+    gateway =
+        new Gateway(
+            cfg, AtomixCluster.builder().build(), ActorScheduler.newActorScheduler().build());
     gateway.start();
   }
 

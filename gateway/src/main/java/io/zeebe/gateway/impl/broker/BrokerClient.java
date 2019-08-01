@@ -25,4 +25,6 @@ public interface BrokerClient extends AutoCloseable {
       Consumer<Throwable> throwableConsumer);
 
   BrokerTopologyManager getTopologyManager();
+
+  void subscribeJobAvailableNotification(String topic, Consumer<String> handler);
 }

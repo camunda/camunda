@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.response.PartitionInfo;
@@ -210,6 +211,28 @@ public class ActivateJobsTest {
         .isTruncated();
     assertThat(RecordingExporter.jobRecords(JobIntent.COMPLETED).limit(numJobs).count())
         .isEqualTo(numJobs);
+  }
+
+  @Test
+  public void shouldWaitUntilJobsAvailable() {
+
+    final String jobType = "foo";
+
+    // given
+    final int expectedJobsCount = 1;
+    final ZeebeFuture<ActivateJobsResponse> responseFuture =
+        client
+            .newActivateJobsCommand()
+            .jobType(jobType)
+            .maxJobsToActivate(expectedJobsCount)
+            .send();
+
+    // when
+    createJobs(jobType, expectedJobsCount);
+
+    // then
+    final ActivateJobsResponse response = responseFuture.join();
+    assertThat(response.getJobs()).hasSize(expectedJobsCount);
   }
 
   private List<Long> createJobs(int amount) {

@@ -7,16 +7,14 @@
  */
 package io.zeebe.gateway.impl.job;
 
-import io.grpc.stub.StreamObserver;
 import io.zeebe.gateway.Loggers;
-import io.zeebe.gateway.RequestMapper;
 import io.zeebe.gateway.ResponseMapper;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public class ActivateJobsHandler {
 
@@ -29,14 +27,18 @@ public class ActivateJobsHandler {
 
   public void activateJobs(
       int partitionsCount,
-      ActivateJobsRequest request,
-      StreamObserver<ActivateJobsResponse> responseObserver) {
+      BrokerActivateJobsRequest request,
+      int maxJobsToActivate,
+      String type,
+      Consumer<ActivateJobsResponse> onResponse,
+      Consumer<Integer> onCompleted) {
     activateJobs(
-        RequestMapper.toActivateJobsRequest(request),
-        partitionIdIteratorForType(request.getType(), partitionsCount),
-        request.getMaxJobsToActivate(),
-        request.getType(),
-        responseObserver);
+        request,
+        partitionIdIteratorForType(type, partitionsCount),
+        maxJobsToActivate,
+        type,
+        onResponse,
+        onCompleted);
   }
 
   private void activateJobs(
@@ -44,8 +46,10 @@ public class ActivateJobsHandler {
       PartitionIdIterator partitionIdIterator,
       int remainingAmount,
       String jobType,
-      StreamObserver<ActivateJobsResponse> responseObserver) {
-    activateJobs(request, partitionIdIterator, remainingAmount, jobType, responseObserver, false);
+      Consumer<ActivateJobsResponse> onResponse,
+      Consumer<Integer> onCompleted) {
+    activateJobs(
+        request, partitionIdIterator, remainingAmount, jobType, onResponse, onCompleted, false);
   }
 
   private void activateJobs(
@@ -53,7 +57,8 @@ public class ActivateJobsHandler {
       PartitionIdIterator partitionIdIterator,
       int remainingAmount,
       String jobType,
-      StreamObserver<ActivateJobsResponse> responseObserver,
+      Consumer<ActivateJobsResponse> onResponse,
+      Consumer<Integer> onCompleted,
       boolean pollPrevPartition) {
 
     if (remainingAmount > 0 && (pollPrevPartition || partitionIdIterator.hasNext())) {
@@ -72,7 +77,7 @@ public class ActivateJobsHandler {
                 ResponseMapper.toActivateJobsResponse(key, response);
             final int jobsCount = grpcResponse.getJobsCount();
             if (jobsCount > 0) {
-              responseObserver.onNext(grpcResponse);
+              onResponse.accept(grpcResponse);
             }
 
             activateJobs(
@@ -80,7 +85,8 @@ public class ActivateJobsHandler {
                 partitionIdIterator,
                 remainingAmount - jobsCount,
                 jobType,
-                responseObserver,
+                onResponse,
+                onCompleted,
                 response.getTruncated());
           },
           error -> {
@@ -89,12 +95,13 @@ public class ActivateJobsHandler {
                 jobType,
                 partitionIdIterator.getCurrentPartitionId(),
                 error);
-            activateJobs(request, partitionIdIterator, remainingAmount, jobType, responseObserver);
+            activateJobs(
+                request, partitionIdIterator, remainingAmount, jobType, onResponse, onCompleted);
           });
     } else {
       // enough jobs activated or no more partitions left to check
       jobTypeToNextPartitionId.put(jobType, partitionIdIterator.getCurrentPartitionId());
-      responseObserver.onCompleted();
+      onCompleted.accept(remainingAmount);
     }
   }
 

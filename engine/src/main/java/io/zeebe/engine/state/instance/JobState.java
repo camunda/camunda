@@ -238,11 +238,6 @@ public class JobState {
         }));
   }
 
-  public void forEachActivatableJobEntry(Consumer<DirectBuffer> callback) {
-    activatableColumnFamily.forEach(
-        (compositeKey, zbNil) -> callback.accept(compositeKey.getFirst().getBuffer()));
-  }
-
   boolean visitJob(
       long jobKey, BiFunction<Long, JobRecord, Boolean> callback, Runnable cleanupRunnable) {
     final JobRecord job = getJob(jobKey);
