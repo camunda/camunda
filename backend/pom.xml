@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>2.6.0-SNAPSHOT</version>
+    <version>2.6.0-alpha1</version>
   </parent>
 
   <artifactId>optimize-backend</artifactId>
@@ -15,8 +14,8 @@
     <jetty.version>9.4.19.v20190610</jetty.version>
     <jersey.version>2.29</jersey.version>
     <skipTests>false</skipTests>
-    <it.test.excludedGroups/>
-    <env.LIMITS_CPU/>
+    <it.test.excludedGroups />
+    <env.LIMITS_CPU />
 
     <skip.unit.tests>${skipTests}</skip.unit.tests>
     <test.argLine>-Xmx1024m</test.argLine>
@@ -373,7 +372,7 @@
                 </filter>
               </filters>
               <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                 <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                   <resource>META-INF/spring.handlers</resource>
                 </transformer>
@@ -631,15 +630,15 @@
                 <configuration>
                   <skip>${skip.docker}</skip>
                   <target name="check-cambpm-is-running" description="Check whether CamBPM is running">
-                    <echo message="Check CamBPM Tomcat is running..."/>
+                    <echo message="Check CamBPM Tomcat is running..." />
                     <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                      <socket server="localhost" port="${tomcat.connector.http.port}"/>
+                      <socket server="localhost" port="${tomcat.connector.http.port}" />
                     </waitfor>
-                    <echo message="CamBPM Tomcat socket is open. Checking for manager app to become available..."/>
+                    <echo message="CamBPM Tomcat socket is open. Checking for manager app to become available..." />
                     <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                      <http url="http://admin:admin@localhost:${tomcat.connector.http.port}/manager/text/list"/>
+                      <http url="http://admin:admin@localhost:${tomcat.connector.http.port}/manager/text/list" />
                     </waitfor>
-                    <echo message="CamBPM Tomcat manager app is running."/>
+                    <echo message="CamBPM Tomcat manager app is running." />
                   </target>
                 </configuration>
                 <goals>
