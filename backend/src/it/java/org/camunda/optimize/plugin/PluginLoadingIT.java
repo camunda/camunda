@@ -14,7 +14,6 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.testplugin.pluginloading.SharedTestPluginVariableDto;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -24,7 +23,6 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -51,13 +49,6 @@ public class PluginLoadingIT {
     pluginProvider = embeddedOptimizeRule.getApplicationContext().getBean(ImportAdapterProvider.class);
   }
 
-  @After
-  public void resetBasePackage() {
-    configurationService.setVariableImportPluginBasePackages(new ArrayList<>());
-    pluginProvider.resetPlugins();
-  }
-
-
   public TemporaryFolder tempFolderRule = new TemporaryFolder();
 
   @Rule
@@ -79,7 +70,7 @@ public class PluginLoadingIT {
     assertThat(optimizeLoadedTest.getId(), is("optimize-class"));
 
     // when
-    pluginProvider.initPlugins();
+    embeddedOptimizeRule.reloadConfiguration();
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
@@ -116,7 +107,7 @@ public class PluginLoadingIT {
     configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
 
     // when
-    pluginProvider.initPlugins();
+    embeddedOptimizeRule.reloadConfiguration();
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
@@ -138,7 +129,7 @@ public class PluginLoadingIT {
     configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
 
     // when
-    pluginProvider.initPlugins();
+    embeddedOptimizeRule.reloadConfiguration();
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
@@ -160,7 +151,7 @@ public class PluginLoadingIT {
     configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
 
     // when
-    pluginProvider.initPlugins();
+    embeddedOptimizeRule.reloadConfiguration();
   }
 
   @Test(expected = RuntimeException.class)
@@ -171,7 +162,7 @@ public class PluginLoadingIT {
     configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
 
     // when
-    pluginProvider.initPlugins();
+    embeddedOptimizeRule.reloadConfiguration();
   }
 
   @Test
@@ -180,7 +171,7 @@ public class PluginLoadingIT {
     configurationService.setPluginDirectory("nonexistingDirectory");
 
     // when
-    pluginProvider.initPlugins();
+    embeddedOptimizeRule.reloadConfiguration();
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
@@ -194,7 +185,7 @@ public class PluginLoadingIT {
     configurationService.setPluginDirectory(newEmptyPluginDirectory.getAbsolutePath());
 
     // when
-    pluginProvider.initPlugins();
+    embeddedOptimizeRule.reloadConfiguration();
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
@@ -209,15 +200,14 @@ public class PluginLoadingIT {
     configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
 
     // when
-    pluginProvider.initPlugins();
+    embeddedOptimizeRule.reloadConfiguration();
 
     // then
     assertThat(pluginProvider.getPlugins().size(), is(0));
 
     // when
     configurationService.setPluginDirectory("target/testPluginsValid");
-    pluginProvider.resetPlugins();
-    pluginProvider.initPlugins();
+    embeddedOptimizeRule.reloadConfiguration();
 
     // then
     assertThat(pluginProvider.getPlugins().size(), is(1));
@@ -234,7 +224,7 @@ public class PluginLoadingIT {
     expectedExceptionRule.expectMessage(buildUnsupportedPluginVersionMessage("invalid_version", Version.VERSION));
 
     // when
-    pluginProvider.initPlugins();
+    embeddedOptimizeRule.reloadConfiguration();
   }
 
   @Test
@@ -247,7 +237,7 @@ public class PluginLoadingIT {
     expectedExceptionRule.expectMessage(buildMissingPluginVersionMessage(Version.VERSION));
 
     // when
-    pluginProvider.initPlugins();
+    embeddedOptimizeRule.reloadConfiguration();
   }
 
 }

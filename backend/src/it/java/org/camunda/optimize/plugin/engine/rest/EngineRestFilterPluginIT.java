@@ -17,14 +17,12 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -54,19 +52,13 @@ public class EngineRestFilterPluginIT {
     configurationService.setPluginDirectory("target/testPluginsValid");
   }
 
-  @After
-  public void resetBasePackage() {
-    configurationService.setEngineRestFilterPluginBasePackages(new ArrayList<>());
-    pluginProvider.resetPlugins();
-  }
-
   @Test
   public void allEventFieldDataOfImportIsAvailableWithCustomAuthentication() throws Exception {
     // given
     configurationService.setEngineRestFilterPluginBasePackages(
       Collections.singletonList("org.camunda.optimize.testplugin.engine.rest")
     );
-    pluginProvider.resetPlugins();
+    embeddedOptimizeRule.reloadConfiguration();
     EngineConfiguration engineConfiguration = embeddedOptimizeRule.getConfigurationService()
       .getConfiguredEngines()
       .get("1");

@@ -31,7 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -66,8 +65,6 @@ public class AuthenticationExtractorPluginIT {
     licenseManager = embeddedOptimizeRule.getApplicationContext().getBean(LicenseManager.class);
     licenseManager.setOptimizeLicense(license);
     configurationService = embeddedOptimizeRule.getConfigurationService();
-    pluginProvider =
-      embeddedOptimizeRule.getApplicationContext().getBean(AuthenticationExtractorProvider.class);
     createKermitUserAndGrantOptimizeAccess();
     configurationService.setPluginDirectory("target/testPluginsValid");
   }
@@ -75,9 +72,6 @@ public class AuthenticationExtractorPluginIT {
   @After
   public void resetBasePackage() {
     licenseManager.resetLicenseFromFile();
-    configurationService.setAuthenticationExtractorPluginBasePackages(new ArrayList<>());
-    pluginProvider.resetPlugins();
-    LocalDateUtil.reset();
   }
 
   private String readLicense() {
@@ -281,7 +275,7 @@ public class AuthenticationExtractorPluginIT {
   private void addAuthenticationExtractorBasePackagesToConfiguration(String... basePackages) {
     List<String> basePackagesList = Arrays.asList(basePackages);
     configurationService.setAuthenticationExtractorPluginBasePackages(basePackagesList);
-    pluginProvider.resetPlugins();
+    embeddedOptimizeRule.reloadConfiguration();
   }
 
 }

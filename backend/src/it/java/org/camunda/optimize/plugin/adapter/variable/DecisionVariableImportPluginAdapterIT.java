@@ -10,20 +10,16 @@ import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.InputInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.OutputInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.plugin.DecisionInputImportAdapterProvider;
-import org.camunda.optimize.plugin.DecisionOutputImportAdapterProvider;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.elasticsearch.action.search.SearchResponse;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -42,23 +38,11 @@ public class DecisionVariableImportPluginAdapterIT {
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   private ConfigurationService configurationService;
-  private DecisionInputImportAdapterProvider inputPluginProvider;
-  private DecisionOutputImportAdapterProvider outputPluginProvider;
 
   @Before
   public void setup() {
     configurationService = embeddedOptimizeRule.getConfigurationService();
-    inputPluginProvider = embeddedOptimizeRule.getApplicationContext().getBean(DecisionInputImportAdapterProvider.class);
-    outputPluginProvider = embeddedOptimizeRule.getApplicationContext().getBean(DecisionOutputImportAdapterProvider.class);
     configurationService.setPluginDirectory("target/testPluginsValid");
-  }
-
-  @After
-  public void resetBasePackage() {
-    configurationService.setDecisionInputImportPluginBasePackages(new ArrayList<>());
-    configurationService.setDecisionOutputImportPluginBasePackages(new ArrayList<>());
-    inputPluginProvider.resetPlugins();
-    outputPluginProvider.resetPlugins();
   }
 
   @Rule
@@ -242,7 +226,7 @@ public class DecisionVariableImportPluginAdapterIT {
       .map(s -> s.replaceFirst("\\.\\w+$", ""))
       .collect(Collectors.toList());
     configurationService.setDecisionInputImportPluginBasePackages(basePackagesList);
-    inputPluginProvider.resetPlugins();
+    embeddedOptimizeRule.reloadConfiguration();
   }
 
   private void addDMNOutputImportPluginBasePackagesToConfiguration(String... basePackages) {
@@ -250,6 +234,6 @@ public class DecisionVariableImportPluginAdapterIT {
       .map(s -> s.replaceFirst("\\.\\w+$", ""))
       .collect(Collectors.toList());
     configurationService.setDecisionOutputImportPluginBasePackages(basePackagesList);
-    outputPluginProvider.resetPlugins();
+    embeddedOptimizeRule.reloadConfiguration();
   }
 }

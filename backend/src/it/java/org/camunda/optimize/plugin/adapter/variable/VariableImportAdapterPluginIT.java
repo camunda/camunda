@@ -11,20 +11,17 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -41,19 +38,11 @@ public class VariableImportAdapterPluginIT {
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   private ConfigurationService configurationService;
-  private ImportAdapterProvider pluginProvider;
 
   @Before
   public void setup() {
     configurationService = embeddedOptimizeRule.getConfigurationService();
-    pluginProvider = embeddedOptimizeRule.getApplicationContext().getBean(ImportAdapterProvider.class);
     configurationService.setPluginDirectory("target/testPluginsValid");
-  }
-
-  @After
-  public void resetBasePackage() {
-    configurationService.setVariableImportPluginBasePackages(new ArrayList<>());
-    pluginProvider.resetPlugins();
   }
 
   @Rule
@@ -218,7 +207,7 @@ public class VariableImportAdapterPluginIT {
   private void addVariableImportPluginBasePackagesToConfiguration(String... basePackages) {
     List<String> basePackagesList = Arrays.asList(basePackages);
     configurationService.setVariableImportPluginBasePackages(basePackagesList);
-    pluginProvider.resetPlugins();
+    embeddedOptimizeRule.reloadConfiguration();
   }
 
 }
