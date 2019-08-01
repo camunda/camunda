@@ -268,7 +268,7 @@ class Diagram extends React.PureComponent {
   renderStatisticsOverlays = overlayProps => {
     const {flowNodesStatistics} = this.props;
     if (flowNodesStatistics && flowNodesStatistics.length === 0) {
-      return <SpinnerSkeleton />;
+      return null;
     }
 
     const states = ['active', 'incidents', 'canceled', 'completed'];
