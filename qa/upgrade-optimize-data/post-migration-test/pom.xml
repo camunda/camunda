@@ -4,7 +4,7 @@
 
   <properties>
     <skipTests>true</skipTests>
-    <upgrade.versions>2.1.0,2.2.0,2.3.0,2.4.0,2.5.0,${project.version}</upgrade.versions>
+    <upgrade.versions>${project.previousVersion},${project.version}</upgrade.versions>
   </properties>
 
   <parent>
@@ -50,156 +50,11 @@
       <id>upgrade-optimize-data</id>
       <build>
         <plugins>
-          <!-- 1. Unpack previous & current Optimize versions, copy optimize data generators with dependencies -->
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-dependency-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>copy-generator-2-1</id>
-                <phase>pre-integration-test</phase>
-                <goals>
-                  <goal>copy</goal>
-                </goals>
-                <configuration>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>org.camunda.optimize</groupId>
-                      <artifactId>generator-2-1</artifactId>
-                      <version>2.5.0-alpha2</version>
-                      <type>jar</type>
-                      <classifier>jar-with-dependencies</classifier>
-                      <overWrite>true</overWrite>
-                      <outputDirectory>${project.build.directory}/generators</outputDirectory>
-                      <destFileName>generator2.1.0.jar</destFileName>
-                    </artifactItem>
-                  </artifactItems>
-                  <overWriteReleases>false</overWriteReleases>
-                  <overWriteSnapshots>true</overWriteSnapshots>
-                </configuration>
-              </execution>
-              <execution>
-                <id>copy-generator-2-2</id>
-                <phase>pre-integration-test</phase>
-                <goals>
-                  <goal>copy</goal>
-                </goals>
-                <configuration>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>org.camunda.optimize</groupId>
-                      <artifactId>generator-2-2</artifactId>
-                      <version>2.5.0-alpha2</version>
-                      <type>jar</type>
-                      <classifier>jar-with-dependencies</classifier>
-                      <overWrite>true</overWrite>
-                      <outputDirectory>${project.build.directory}/generators</outputDirectory>
-                      <destFileName>generator2.2.0.jar</destFileName>
-                    </artifactItem>
-                  </artifactItems>
-                  <overWriteReleases>false</overWriteReleases>
-                  <overWriteSnapshots>true</overWriteSnapshots>
-                </configuration>
-              </execution>
-              <execution>
-                <id>copy-generator-2-3</id>
-                <phase>pre-integration-test</phase>
-                <goals>
-                  <goal>copy</goal>
-                </goals>
-                <configuration>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>org.camunda.optimize</groupId>
-                      <artifactId>generator-2-3</artifactId>
-                      <version>2.5.0-alpha2</version>
-                      <type>jar</type>
-                      <classifier>jar-with-dependencies</classifier>
-                      <overWrite>true</overWrite>
-                      <outputDirectory>${project.build.directory}/generators</outputDirectory>
-                      <destFileName>generator2.3.0.jar</destFileName>
-                    </artifactItem>
-                  </artifactItems>
-                  <overWriteReleases>false</overWriteReleases>
-                  <overWriteSnapshots>true</overWriteSnapshots>
-                </configuration>
-              </execution>
-              <execution>
-                <id>copy-generator-2-4</id>
-                <phase>pre-integration-test</phase>
-                <goals>
-                  <goal>copy</goal>
-                </goals>
-                <configuration>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>org.camunda.optimize</groupId>
-                      <artifactId>generator-2-4</artifactId>
-                      <version>2.5.0-alpha2</version>
-                      <type>jar</type>
-                      <classifier>jar-with-dependencies</classifier>
-                      <overWrite>true</overWrite>
-                      <outputDirectory>${project.build.directory}/generators</outputDirectory>
-                      <destFileName>generator2.4.0.jar</destFileName>
-                    </artifactItem>
-                  </artifactItems>
-                  <overWriteReleases>false</overWriteReleases>
-                  <overWriteSnapshots>true</overWriteSnapshots>
-                </configuration>
-              </execution>
-              <execution>
-                <id>copy-generator-2-5</id>
-                <phase>pre-integration-test</phase>
-                <goals>
-                  <goal>copy</goal>
-                </goals>
-                <configuration>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>org.camunda.optimize</groupId>
-                      <artifactId>generator</artifactId>
-                      <version>2.5.1</version>
-                      <type>jar</type>
-                      <classifier>jar-with-dependencies</classifier>
-                      <overWrite>true</overWrite>
-                      <outputDirectory>${project.build.directory}/generators</outputDirectory>
-                      <destFileName>generator2.5.0.jar</destFileName>
-                    </artifactItem>
-                  </artifactItems>
-                  <overWriteReleases>false</overWriteReleases>
-                  <overWriteSnapshots>true</overWriteSnapshots>
-                </configuration>
-              </execution>
-              <execution>
-                <id>copy-generator-2-6</id>
-                <phase>pre-integration-test</phase>
-                <goals>
-                  <goal>copy</goal>
-                </goals>
-                <configuration>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>org.camunda.optimize</groupId>
-                      <artifactId>generator</artifactId>
-                      <version>${project.version}</version>
-                      <type>jar</type>
-                      <classifier>jar-with-dependencies</classifier>
-                      <overWrite>true</overWrite>
-                      <outputDirectory>${project.build.directory}/generators</outputDirectory>
-                      <destFileName>generator${project.version}.jar</destFileName>
-                    </artifactItem>
-                  </artifactItems>
-                  <overWriteReleases>false</overWriteReleases>
-                  <overWriteSnapshots>true</overWriteSnapshots>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <!-- 2. Start CamBPM and ES through docker-compose -->
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
             <executions>
+              <!-- 1. Start CamBPM and ES through docker-compose -->
               <execution>
                 <id>docker-start</id>
                 <phase>pre-integration-test</phase>
@@ -208,8 +63,7 @@
                 </goals>
                 <configuration>
                   <environmentVariables>
-                    <!--We use 7.10 because Optimize 2.3 only supports engine versions <= 7.10-->
-                    <CAMBPM_VERSION>${camunda.engine-7.10}</CAMBPM_VERSION>
+                    <CAMBPM_VERSION>${camunda.engine.version}</CAMBPM_VERSION>
                     <ES_VERSION>${elasticsearch.test.version}</ES_VERSION>
                   </environmentVariables>
                   <skip>${skip.docker}</skip>
@@ -248,8 +102,45 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
-            <!-- 3. Make sure CamBPM and ES are up and running -->
             <executions>
+              <!-- 2. Unpack previous & current Optimize versions, copy optimize data generators with dependencies -->
+              <execution>
+                <id>download-generators</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>pre-integration-test</phase>
+                <configuration>
+                  <skip>${skip.tests}</skip>
+                  <target name="unpack optimize distributions">
+                    <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
+                    <property environment="env" />
+                    <condition property="maven-settings" value="--settings=settings.xml" else="">
+                      <isset property="env.JENKINS_URL" />
+                    </condition>
+                    <ac:for xmlns:ac="antlib:net.sf.antcontrib" list="${upgrade.versions}" param="currentVersion">
+                      <sequential>
+                        <echo message="Downloading &amp; unpacking Optimize Report Generator @{currentVersion}..." />
+                        <ac:if>
+                          <matches string="@{currentVersion}" pattern="2\.5\.0" />
+                          <ac:then>
+                            <!-- generator for 2.5.0 is broken, a patch version needs to be used -->
+                            <ac:var name="generatorArtifactVersion" value="2.5.1" />
+                          </ac:then>
+                          <ac:else>
+                            <ac:var name="generatorArtifactVersion" value="@{currentVersion}" />
+                          </ac:else>
+                        </ac:if>
+                        <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
+                          <arg value="-c" />
+                          <arg value="mvn dependency:copy ${maven-settings} -f qa/upgrade-optimize-data/post-migration-test/pom.xml -Dartifact=org.camunda.optimize:generator:${generatorArtifactVersion}:jar:jar-with-dependencies -DoutputDirectory=./target/generators -DoverWriteReleases=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
+                        </exec>
+                      </sequential>
+                    </ac:for>
+                  </target>
+                </configuration>
+              </execution>
+              <!-- 3. Make sure CamBPM and ES are up and running -->
               <execution>
                 <id>check-cambpm-is-up</id>
                 <goals>
@@ -292,7 +183,7 @@
                     <echo message="Generating engine data..." />
                     <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="set -o pipefail; mvn clean compile -pl qa/data-generation exec:java -Dexec.args='--numberOfProcessInstances 1000' -B ${maven-settings} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn | sed 's/^/[ENGINE DATA GENERATION]: /'" />
+                      <arg value="set -o pipefail; mvn clean compile -pl qa/data-generation exec:java -Dexec.args='--numberOfProcessInstances 100' -B ${maven-settings} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn | sed 's/^/[ENGINE DATA GENERATION]: /'" />
                     </exec>
                   </target>
                 </configuration>
@@ -348,6 +239,16 @@
 
                     <ac:for xmlns:ac="antlib:net.sf.antcontrib" list="${upgrade.versions}" param="currentVersion">
                       <sequential>
+                        <ac:if>
+                          <matches string="@{currentVersion}" pattern="2\.5\.0" />
+                          <ac:then>
+                            <!-- generator for 2.5.0 is broken, a patch version needs to be used -->
+                            <ac:var name="generatorArtifactVersion" value="2.5.1" />
+                          </ac:then>
+                          <ac:else>
+                            <ac:var name="generatorArtifactVersion" value="@{currentVersion}" />
+                          </ac:else>
+                        </ac:if>
                         <!-- Migrate -->
                         <ac:if>
                           <!-- only if not the first version in the list -->
@@ -392,7 +293,7 @@
                             <echo message="Generating optimize data" />
                             <exec executable="/bin/bash" failonerror="true">
                               <arg value="-c" />
-                              <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator@{currentVersion}.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'" />
+                              <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator-${generatorArtifactVersion}-jar-with-dependencies.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'" />
                             </exec>
                             <echo message="Killing Optimize @{currentVersion}..." />
                             <exec executable="/bin/bash">
@@ -420,7 +321,7 @@
                           <echo message="Generating optimize data" />
                           <exec executable="/bin/bash" failonerror="true">
                             <arg value="-c" />
-                            <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator@{currentVersion}.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'" />
+                            <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator-${generatorArtifactVersion}-jar-with-dependencies.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'" />
                           </exec>
 
                           <echo message="Killing Optimize @{currentVersion}..." />

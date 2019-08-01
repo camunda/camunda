@@ -295,7 +295,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec("7.10.6")
+              yaml integrationTestPodSpec()
             }
           }
           steps {
