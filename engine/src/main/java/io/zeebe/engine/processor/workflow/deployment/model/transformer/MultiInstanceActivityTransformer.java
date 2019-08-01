@@ -21,6 +21,7 @@ import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
+import java.util.Collections;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
@@ -66,13 +67,15 @@ public class MultiInstanceActivityTransformer implements ModelElementTransformer
       multiInstanceBody.bindLifecycleState(
           WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.MULTI_INSTANCE_EVENT_OCCURRED);
 
-      // avoid taking the outgoing sequence flow when inner activity is completed
-      innerActivity.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.ELEMENT_COMPLETED);
-
       // TODO (saig0) - #2855: attach boundary events to the multi-instance body
       innerActivity.getEvents().removeAll(innerActivity.getBoundaryEvents());
       innerActivity.getInterruptingElementIds().clear();
+
+      // attach outgoing sequence flows to the multi-instance body
+      multiInstanceBody
+          .getOutgoing()
+          .addAll(Collections.unmodifiableList(innerActivity.getOutgoing()));
+      innerActivity.getOutgoing().clear();
 
       // replace the inner element with the body
       workflow.addFlowElement(multiInstanceBody);

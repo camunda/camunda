@@ -96,6 +96,8 @@ public class MultiInstanceServiceTaskTest {
     // given
     final List<String> inputCollection = Arrays.asList("a", "b", "c");
 
+    ENGINE.deployment().withXmlResource(WORKFLOW).deploy();
+
     final long workflowInstanceKey =
         ENGINE
             .workflowInstance()
@@ -255,5 +257,64 @@ public class MultiInstanceServiceTaskTest {
         .hasSize(3)
         .extracting(j -> j.getVariables().get(INPUT_ELEMENT))
         .containsExactly(10, 20, 30);
+  }
+
+  @Test
+  public void shouldNotPropagateInputElementVariable() {
+    // given
+    final List<String> inputCollection = Arrays.asList("x1", "x2", "x3");
+
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "task-1",
+                t ->
+                    t.zeebeTaskType("task-1")
+                        .multiInstance(
+                            m ->
+                                m.parallel()
+                                    .zeebeInputCollection(INPUT_COLLECTION)
+                                    .zeebeInputElement(INPUT_ELEMENT)))
+            .serviceTask("task-2", t -> t.zeebeTaskType("task-2"))
+            .done();
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION, inputCollection)
+            .create();
+
+    // when
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withType("task-1")
+                .limit(inputCollection.size()))
+        .hasSize(inputCollection.size());
+
+    ENGINE
+        .jobs()
+        .withType("task-1")
+        .activate()
+        .getValue()
+        .getJobKeys()
+        .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
+
+    // then
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withType("task-2")
+                .exists())
+        .isTrue();
+
+    assertThat(ENGINE.jobs().withType("task-2").activate().getValue().getJobs())
+        .flatExtracting(j -> j.getVariables().keySet())
+        .contains(INPUT_COLLECTION)
+        .doesNotContain(INPUT_ELEMENT);
   }
 }
