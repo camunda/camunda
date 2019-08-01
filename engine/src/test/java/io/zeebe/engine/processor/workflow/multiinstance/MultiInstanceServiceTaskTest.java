@@ -17,6 +17,7 @@ import io.zeebe.model.bpmn.builder.MultiInstanceLoopCharacteristicsBuilder;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -125,7 +126,13 @@ public class MultiInstanceServiceTaskTest {
                 .withWorkflowInstanceKey(workflowInstanceKey)
                 .limitToWorkflowInstanceCompleted()
                 .withElementId(ELEMENT_ID))
-        .hasSize(4);
+        .hasSize(4)
+        .extracting(r -> r.getValue().getBpmnElementType())
+        .containsExactly(
+            BpmnElementType.SERVICE_TASK,
+            BpmnElementType.SERVICE_TASK,
+            BpmnElementType.SERVICE_TASK,
+            BpmnElementType.MULTI_INSTANCE_BODY);
 
     assertThat(
             RecordingExporter.workflowInstanceRecords()

@@ -20,6 +20,7 @@ import io.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Collections;
 import java.util.Optional;
@@ -48,6 +49,8 @@ public class MultiInstanceActivityTransformer implements ModelElementTransformer
       final ExecutableMultiInstanceBody multiInstanceBody =
           new ExecutableMultiInstanceBody(element.getId(), miLoopCharacteristics, innerActivity);
 
+      multiInstanceBody.setElementType(BpmnElementType.MULTI_INSTANCE_BODY);
+
       // configure lifecycle of the body
       multiInstanceBody.bindLifecycleState(
           WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.MULTI_INSTANCE_ACTIVATING);
@@ -71,7 +74,9 @@ public class MultiInstanceActivityTransformer implements ModelElementTransformer
       innerActivity.getEvents().removeAll(innerActivity.getBoundaryEvents());
       innerActivity.getInterruptingElementIds().clear();
 
-      // attach outgoing sequence flows to the multi-instance body
+      // attach incoming and outgoing sequence flows to the multi-instance body
+      innerActivity.getIncoming().forEach(flow -> flow.setTarget(multiInstanceBody));
+
       multiInstanceBody
           .getOutgoing()
           .addAll(Collections.unmodifiableList(innerActivity.getOutgoing()));

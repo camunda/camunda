@@ -133,7 +133,7 @@ public class MultiInstanceActivityTest {
             .getFirst();
 
     Assertions.assertThat(multiInstanceBody.getValue())
-        .hasBpmnElementType(expectedElementType)
+        .hasBpmnElementType(BpmnElementType.MULTI_INSTANCE_BODY)
         .hasFlowScopeKey(workflowInstanceKey);
 
     assertThat(
@@ -189,12 +189,12 @@ public class MultiInstanceActivityTest {
                 .withWorkflowInstanceKey(workflowInstanceKey)
                 .withElementId(ELEMENT_ID)
                 .limit(4))
-        .extracting(Record::getIntent)
+        .extracting(r -> tuple(r.getIntent(), r.getValue().getBpmnElementType()))
         .containsExactly(
-            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-            WorkflowInstanceIntent.ELEMENT_COMPLETING,
-            WorkflowInstanceIntent.ELEMENT_COMPLETED);
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnElementType.MULTI_INSTANCE_BODY),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.MULTI_INSTANCE_BODY),
+            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnElementType.MULTI_INSTANCE_BODY),
+            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.MULTI_INSTANCE_BODY));
 
     assertThat(
             RecordingExporter.workflowInstanceRecords()
@@ -238,16 +238,40 @@ public class MultiInstanceActivityTest {
                 .withElementId(ELEMENT_ID)
                 .skipUntil(r -> r.getPosition() > innerInstances.get(2).getPosition())
                 .limit(elementInstanceCount * 2))
-        .extracting(r -> tuple(r.getKey(), r.getIntent()))
+        .extracting(r -> tuple(r.getKey(), r.getIntent(), r.getValue().getBpmnElementType()))
         .containsExactly(
-            tuple(multiInstanceBody.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(innerInstances.get(0).getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(innerInstances.get(1).getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(innerInstances.get(2).getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(innerInstances.get(0).getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(innerInstances.get(1).getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(innerInstances.get(2).getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(multiInstanceBody.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATED));
+            tuple(
+                multiInstanceBody.getKey(),
+                WorkflowInstanceIntent.ELEMENT_TERMINATING,
+                BpmnElementType.MULTI_INSTANCE_BODY),
+            tuple(
+                innerInstances.get(0).getKey(),
+                WorkflowInstanceIntent.ELEMENT_TERMINATING,
+                expectedElementType),
+            tuple(
+                innerInstances.get(1).getKey(),
+                WorkflowInstanceIntent.ELEMENT_TERMINATING,
+                expectedElementType),
+            tuple(
+                innerInstances.get(2).getKey(),
+                WorkflowInstanceIntent.ELEMENT_TERMINATING,
+                expectedElementType),
+            tuple(
+                innerInstances.get(0).getKey(),
+                WorkflowInstanceIntent.ELEMENT_TERMINATED,
+                expectedElementType),
+            tuple(
+                innerInstances.get(1).getKey(),
+                WorkflowInstanceIntent.ELEMENT_TERMINATED,
+                expectedElementType),
+            tuple(
+                innerInstances.get(2).getKey(),
+                WorkflowInstanceIntent.ELEMENT_TERMINATED,
+                expectedElementType),
+            tuple(
+                multiInstanceBody.getKey(),
+                WorkflowInstanceIntent.ELEMENT_TERMINATED,
+                BpmnElementType.MULTI_INSTANCE_BODY));
 
     assertThat(
             RecordingExporter.workflowInstanceRecords()
