@@ -17,7 +17,10 @@ package zbc
 
 import (
 	"crypto/tls"
+	"errors"
+	"fmt"
 	"google.golang.org/grpc/credentials"
+	"log"
 	"os"
 	"time"
 
@@ -39,6 +42,7 @@ type ZBClientConfig struct {
 	GatewayAddress         string
 	UsePlaintextConnection bool
 	CaCertificatePath      string
+	CredentialsProvider    CredentialsProvider
 }
 
 type ZBError string
@@ -46,8 +50,6 @@ type ZBError string
 func (e ZBError) Error() string {
 	return string(e)
 }
-
-const NonExistingFileError = ZBError("expected file to exist but couldn't find anything at specified path")
 
 func (client *ZBClientImpl) NewTopologyCommand() *commands.TopologyCommand {
 	return commands.NewTopologyCommand(client.gateway, client.requestTimeout)
@@ -109,24 +111,11 @@ func (client *ZBClientImpl) Close() error {
 func NewZBClient(config *ZBClientConfig) (ZBClient, error) {
 	var opts []grpc.DialOption
 
-	if !config.UsePlaintextConnection {
-		var creds credentials.TransportCredentials
-
-		if config.CaCertificatePath == "" {
-			creds = credentials.NewTLS(&tls.Config{})
-		} else if _, err := os.Stat(config.CaCertificatePath); os.IsNotExist(err) {
-			return nil, NonExistingFileError
-		} else {
-			creds, err = credentials.NewClientTLSFromFile(config.CaCertificatePath, "")
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		opts = append(opts, grpc.WithTransportCredentials(creds))
-	} else {
-		opts = append(opts, grpc.WithInsecure())
+	if err := configureConnectionSecurity(config, &opts); err != nil {
+		return nil, err
 	}
+
+	configureCredentialsProvider(config, &opts)
 
 	conn, err := grpc.Dial(config.GatewayAddress, opts...)
 	if err != nil {
@@ -138,4 +127,47 @@ func NewZBClient(config *ZBClientConfig) (ZBClient, error) {
 		requestTimeout: DefaultRequestTimeout,
 		connection:     conn,
 	}, nil
+}
+
+func configureCredentialsProvider(config *ZBClientConfig, opts *[]grpc.DialOption) {
+	if config.CredentialsProvider != nil {
+		if config.UsePlaintextConnection {
+			log.Println("Warning: The configured security level does not guarantee that the credentials will be confidential. If this unintentional, please enable transport security.")
+		}
+
+		callCredentials := &zeebeCallCredentials{credentialsProvider: config.CredentialsProvider}
+		*opts = append(*opts, grpc.WithPerRPCCredentials(callCredentials))
+	}
+}
+
+func configureConnectionSecurity(config *ZBClientConfig, opts *[]grpc.DialOption) error {
+	if !config.UsePlaintextConnection {
+		var creds credentials.TransportCredentials
+
+		if config.CaCertificatePath == "" {
+			creds = credentials.NewTLS(&tls.Config{})
+		} else if _, err := os.Stat(config.CaCertificatePath); os.IsNotExist(err) {
+			return newNoSuchFileError("CA certificate", config.CaCertificatePath)
+		} else {
+			creds, err = credentials.NewClientTLSFromFile(config.CaCertificatePath, "")
+			if err != nil {
+				return err
+			}
+		}
+
+		*opts = append(*opts, grpc.WithTransportCredentials(creds))
+	} else {
+		*opts = append(*opts, grpc.WithInsecure())
+	}
+
+	return nil
+}
+
+func newNoSuchFileError(fileDescription, path string) error {
+	return errors.New(fmt.Sprintf("expected to find %s but there was no such file at '%s'", fileDescription, path))
+}
+
+func newEmptyPathError(fileDescription string) error {
+	return errors.New(fmt.Sprintf("expected valid path to %s but path was empty", fileDescription))
+
 }

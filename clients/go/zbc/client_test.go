@@ -28,6 +28,7 @@ import (
 )
 
 func TestNewZBClientWithTls(t *testing.T) {
+	// given
 	lis, grpcServer := createSecureServer()
 
 	go grpcServer.Serve(lis)
@@ -44,8 +45,10 @@ func TestNewZBClientWithTls(t *testing.T) {
 
 	require.NoError(t, e)
 
+	// when
 	_, err := client.NewTopologyCommand().Send()
 
+	// then
 	require.Error(t, err)
 	if status, ok := status.FromError(err); ok {
 		require.Equal(t, codes.Unimplemented, status.Code())
@@ -53,6 +56,7 @@ func TestNewZBClientWithTls(t *testing.T) {
 }
 
 func TestNewZBClientWithoutTls(t *testing.T) {
+	// given
 	lis, _ := net.Listen("tcp", "0.0.0.0:0")
 
 	grpcServer := grpc.NewServer()
@@ -73,8 +77,10 @@ func TestNewZBClientWithoutTls(t *testing.T) {
 
 	require.NoError(t, e)
 
+	// when
 	_, err := client.NewTopologyCommand().Send()
 
+	// then
 	require.Error(t, err)
 	if status, ok := status.FromError(err); ok {
 		require.Equal(t, codes.Unimplemented, status.Code())
@@ -83,6 +89,7 @@ func TestNewZBClientWithoutTls(t *testing.T) {
 }
 
 func TestNewZBClientWithDefaultRootCa(t *testing.T) {
+	// given
 	lis, grpcServer := createSecureServer()
 
 	go grpcServer.Serve(lis)
@@ -98,8 +105,10 @@ func TestNewZBClientWithDefaultRootCa(t *testing.T) {
 
 	require.NoError(t, e)
 
+	// then
 	_, err := client.NewTopologyCommand().Send()
 
+	// when
 	require.Error(t, err)
 	if status, ok := status.FromError(err); ok {
 		// asserts that an attempt was made to validate the certificate (which fails because it's not installed)
@@ -108,6 +117,7 @@ func TestNewZBClientWithDefaultRootCa(t *testing.T) {
 }
 
 func TestNewZBClientWithPathToNonExistingFile(t *testing.T) {
+	// given
 	lis, grpcServer := createSecureServer()
 
 	go grpcServer.Serve(lis)
@@ -117,12 +127,16 @@ func TestNewZBClientWithPathToNonExistingFile(t *testing.T) {
 	}()
 
 	parts := strings.Split(lis.Addr().String(), ":")
-	_, e := NewZBClient(&ZBClientConfig{
+	wrongPath := "../resources/non.existing"
+
+	//when
+	_, err := NewZBClient(&ZBClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		CaCertificatePath: "../resources/non.existing",
+		CaCertificatePath: wrongPath,
 	})
 
-	require.Equal(t, NonExistingFileError, e)
+	// then
+	require.EqualError(t, err, newNoSuchFileError("CA certificate", wrongPath).Error())
 }
 
 func createSecureServer() (net.Listener, *grpc.Server) {
