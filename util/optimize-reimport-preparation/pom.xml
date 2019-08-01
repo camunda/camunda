@@ -11,6 +11,10 @@
   <artifactId>optimize-reimport-preparation</artifactId>
   <version>2.6.0-SNAPSHOT</version>
 
+  <properties>
+    <skipTests>false</skipTests>
+  </properties>
+
   <dependencies>
 
     <!-- Optimize dependencies -->
@@ -126,8 +130,59 @@
               </execution>
             </executions>
           </plugin>
+          <plugin>
+            <groupId>org.codehaus.cargo</groupId>
+            <artifactId>cargo-maven2-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>start-container</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>redeploy</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <skip>${skipTests}</skip>
+              <!-- Container configuration -->
+              <container>
+                <type>remote</type>
+                <containerId>tomcat8x</containerId>
+              </container>
+              <configuration>
+                <type>runtime</type>
+                <properties>
+                  <cargo.remote.username>admin</cargo.remote.username>
+                  <cargo.remote.password>admin</cargo.remote.password>
+                  <cargo.servlet.port>8080</cargo.servlet.port>
+                </properties>
+              </configuration>
+              <deployer>
+                <type>remote</type>
+              </deployer>
+              <deployables>
+                <deployable>
+                  <groupId>org.camunda.optimize</groupId>
+                  <artifactId>engine-it-plugin</artifactId>
+                  <type>war</type>
+                  <properties>
+                    <context>engine-it-plugin</context>
+                  </properties>
+                </deployable>
+              </deployables>
+            </configuration>
+          </plugin>
         </plugins>
       </build>
+      <dependencies>
+        <dependency>
+          <groupId>org.camunda.optimize</groupId>
+          <artifactId>engine-it-plugin</artifactId>
+          <scope>test</scope>
+          <type>war</type>
+          <version>${project.version}</version>
+        </dependency>
+      </dependencies>
     </profile>
   </profiles>
 
