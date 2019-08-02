@@ -1,6 +1,10 @@
 .DefinitionSelection {
   width: 100%;
 
+  > div > .Popover__dialog {
+    padding: 20px 40px;
+  }
+
   .Popover__button {
     padding-left: 20px;
   }
