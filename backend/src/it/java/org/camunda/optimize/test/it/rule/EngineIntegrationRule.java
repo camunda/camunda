@@ -1172,7 +1172,14 @@ public class EngineIntegrationRule extends TestWatcher {
     DeploymentDto deployment = new DeploymentDto();
     try (CloseableHttpResponse response = EngineIntegrationRule.HTTP_CLIENT.execute(deploymentRequest)) {
       if (response.getStatusLine().getStatusCode() != 200) {
-        throw new RuntimeException("Something really bad happened during deployment, could not create a deployment!");
+        String responseErrorMessage = EntityUtils.toString(response.getEntity(), "UTF-8");
+        String exceptionMessage = String.format(
+          "Something really bad happened during deployment! Expected response code 200 but got [%d]. The following " +
+            "message was given from the engine: \n%s",
+          response.getStatusLine().getStatusCode(),
+          responseErrorMessage
+        );
+        throw new RuntimeException(exceptionMessage);
       }
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       deployment = OBJECT_MAPPER.readValue(responseString, DeploymentDto.class);

@@ -71,7 +71,7 @@ public class DmnModelGenerator {
   }
 
   public DmnModelGenerator addInput(String label, DecisionTypeRef decisionTypeRef) {
-    return addInput(label, "someInputVar", decisionTypeRef);
+    return addInput(label, RandomStringUtils.randomAlphabetic(10), decisionTypeRef);
   }
 
   public DmnModelGenerator addOutput(String label, String camOutputVariable, DecisionTypeRef decisionTypeRef) {
@@ -85,7 +85,7 @@ public class DmnModelGenerator {
   }
 
   public DmnModelGenerator addOutput(String label, DecisionTypeRef decisionTypeRef) {
-    return addOutput(label, RandomStringUtils.random(10), decisionTypeRef);
+    return addOutput(label, RandomStringUtils.randomAlphabetic(10), decisionTypeRef);
   }
 
   public DmnModelInstance build() {
