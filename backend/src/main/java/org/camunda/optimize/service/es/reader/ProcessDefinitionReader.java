@@ -40,7 +40,7 @@ import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToValidVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -78,8 +78,8 @@ public class ProcessDefinitionReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
-    SearchRequest searchRequest = new SearchRequest(PROC_DEF_TYPE)
-      .types(PROC_DEF_TYPE)
+    SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_TYPE)
+      .types(PROCESS_DEFINITION_TYPE)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -129,8 +129,8 @@ public class ProcessDefinitionReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
-    SearchRequest searchRequest = new SearchRequest(PROC_DEF_TYPE)
-      .types(PROC_DEF_TYPE)
+    SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_TYPE)
+      .types(PROCESS_DEFINITION_TYPE)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -164,8 +164,8 @@ public class ProcessDefinitionReader {
       .size(LIST_FETCH_LIMIT)
       .fetchSource(null, fieldsToExclude);
     final SearchRequest searchRequest =
-      new SearchRequest(PROC_DEF_TYPE)
-        .types(PROC_DEF_TYPE)
+      new SearchRequest(PROCESS_DEFINITION_TYPE)
+        .types(PROCESS_DEFINITION_TYPE)
         .source(searchSourceBuilder)
         .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
@@ -198,8 +198,8 @@ public class ProcessDefinitionReader {
       .sort(SortBuilders.scriptSort(script, ScriptSortBuilder.ScriptSortType.NUMBER).order(SortOrder.DESC))
       .size(1);
 
-    SearchRequest searchRequest = new SearchRequest(PROC_DEF_TYPE)
-      .types(PROC_DEF_TYPE)
+    SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_TYPE)
+      .types(PROCESS_DEFINITION_TYPE)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;

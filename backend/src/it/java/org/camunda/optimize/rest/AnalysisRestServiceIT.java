@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -105,11 +105,11 @@ public class AnalysisRestServiceIT {
       .setVersion(PROCESS_DEFINITION_VERSION_1)
       .setEngine(DEFAULT_ENGINE_ALIAS)
       .setBpmn20Xml(readDiagram());
-    elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, PROCESS_DEFINITION_ID, processDefinitionXmlDto);
+    elasticSearchRule.addEntryToElasticsearch(PROCESS_DEFINITION_TYPE, PROCESS_DEFINITION_ID, processDefinitionXmlDto);
 
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_2);
     processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_2);
-    elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
+    elasticSearchRule.addEntryToElasticsearch(PROCESS_DEFINITION_TYPE, PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
 
     final ProcessInstanceDto procInst = new ProcessInstanceDto()
       .setProcessDefinitionId(PROCESS_DEFINITION_ID)

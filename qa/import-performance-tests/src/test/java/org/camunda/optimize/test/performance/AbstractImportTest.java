@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -65,7 +65,7 @@ public abstract class AbstractImportTest {
       logger.info(
         "The Camunda Platform contains {} process definitions. Optimize: {}",
         (engineDatabaseRule.countProcessDefinitions()),
-        elasticSearchRule.getDocumentCountOf(PROC_DEF_TYPE)
+        elasticSearchRule.getDocumentCountOf(PROCESS_DEFINITION_TYPE)
       );
       logger.info(
         "The Camunda Platform contains {} historic process instances. Optimize: {}",
@@ -130,7 +130,7 @@ public abstract class AbstractImportTest {
     assertThat(
       "processDefinitionsCount",
       elasticSearchRule.getDocumentCountOf(
-        PROC_DEF_TYPE
+        PROCESS_DEFINITION_TYPE
       ),
       is(engineDatabaseRule.countProcessDefinitions())
     );

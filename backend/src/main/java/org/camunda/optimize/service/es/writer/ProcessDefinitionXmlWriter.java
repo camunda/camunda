@@ -28,7 +28,7 @@ import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_XML;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.USER_TASK_NAMES;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
 
 @AllArgsConstructor
 @Component
@@ -74,7 +74,9 @@ public class ProcessDefinitionXmlWriter {
       FIELDS_TO_UPDATE,
       processDefinitionDto
     );
-    final UpdateRequest updateRequest = new UpdateRequest(PROC_DEF_TYPE, PROC_DEF_TYPE, processDefinitionDto.getId())
+    final UpdateRequest updateRequest = new UpdateRequest(
+      PROCESS_DEFINITION_TYPE,
+      PROCESS_DEFINITION_TYPE, processDefinitionDto.getId())
       .script(updateScript)
       .upsert(objectMapper.convertValue(processDefinitionDto, Map.class))
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

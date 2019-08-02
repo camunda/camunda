@@ -30,7 +30,7 @@ public class ProcessDefinitionType extends StrictTypeMappingCreator {
 
   @Override
   public String getType() {
-    return ElasticsearchConstants.PROC_DEF_TYPE;
+    return ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
   }
 
   @Override

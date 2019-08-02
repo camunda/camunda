@@ -40,7 +40,7 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EN
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
@@ -77,7 +77,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // then
     allEntriesInElasticsearchHaveAllDataWithCount(PROC_INSTANCE_TYPE, 0L);
-    allEntriesInElasticsearchHaveAllDataWithCount(PROC_DEF_TYPE, 0L);
+    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_TYPE, 0L);
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_TYPE, 0L);
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_TYPE, 0L);
     assertThat(embeddedOptimizeRule.getImportSchedulerFactory().getImportSchedulers().size(), is(greaterThan(0)));
@@ -95,7 +95,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    allEntriesInElasticsearchHaveAllData(PROC_DEF_TYPE, PROCESS_DEFINITION_NULLABLE_FIELDS);
+    allEntriesInElasticsearchHaveAllData(PROCESS_DEFINITION_TYPE, PROCESS_DEFINITION_NULLABLE_FIELDS);
   }
 
   @Test
@@ -109,7 +109,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_DEF_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_DEFINITION_TYPE);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(ProcessDefinitionType.TENANT_ID), is(tenantId));
@@ -127,7 +127,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_DEF_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_DEFINITION_TYPE);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(ProcessDefinitionType.TENANT_ID), is(tenantId));
@@ -146,7 +146,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_DEF_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_DEFINITION_TYPE);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(ProcessDefinitionType.TENANT_ID), is(expectedTenantId));
@@ -263,7 +263,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .setVersion("1")
       .setEngine("1");
 
-    elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, procDef.getId(), procDef);
+    elasticSearchRule.addEntryToElasticsearch(PROCESS_DEFINITION_TYPE, procDef.getId(), procDef);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
@@ -272,7 +272,7 @@ public class ProcessImportIT extends AbstractImportIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex();
     elasticSearchRule.refreshAllOptimizeIndices();
 
-    SearchResponse response = getSearchResponseForAllDocumentsOfType(PROC_DEF_TYPE);
+    SearchResponse response = getSearchResponseForAllDocumentsOfType(PROCESS_DEFINITION_TYPE);
     assertThat(response.getHits().getTotalHits(), is(2L));
     response.getHits().forEach((SearchHit hit) -> {
       Map<String, Object> source = hit.getSourceAsMap();

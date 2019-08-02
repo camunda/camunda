@@ -31,7 +31,7 @@ import java.util.Set;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.ENGINE;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_XML;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -99,8 +99,8 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
       .fetchSource(false)
       .sort(SortBuilders.fieldSort(PROCESS_DEFINITION_ID).order(SortOrder.DESC))
       .size(configurationService.getEngineImportProcessDefinitionXmlMaxPageSize());
-    SearchRequest searchRequest = new SearchRequest(PROC_DEF_TYPE)
-      .types(PROC_DEF_TYPE)
+    SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_TYPE)
+      .types(PROCESS_DEFINITION_TYPE)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 

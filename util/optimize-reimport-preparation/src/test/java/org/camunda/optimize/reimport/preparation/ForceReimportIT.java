@@ -48,7 +48,7 @@ import java.util.Map;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LICENSE_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -113,7 +113,7 @@ public class ForceReimportIT {
     List<String> types = new ArrayList<>();
     types.add(TIMESTAMP_BASED_IMPORT_INDEX_TYPE);
     types.add(IMPORT_INDEX_TYPE);
-    types.add(PROC_DEF_TYPE);
+    types.add(PROCESS_DEFINITION_TYPE);
     types.add(PROC_INSTANCE_TYPE);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()

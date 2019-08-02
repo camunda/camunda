@@ -34,7 +34,7 @@ import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedIm
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_OF_LAST_ENTITY;
 import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -56,7 +56,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshAllOptimizeIndices();
-    SearchResponse searchResponse = performProcessDefinitionSearchRequest(PROC_DEF_TYPE);
+    SearchResponse searchResponse = performProcessDefinitionSearchRequest(PROCESS_DEFINITION_TYPE);
 
     // then
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();
@@ -81,7 +81,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshAllOptimizeIndices();
-    SearchResponse searchResponse = performProcessDefinitionSearchRequest(PROC_DEF_TYPE);
+    SearchResponse searchResponse = performProcessDefinitionSearchRequest(PROCESS_DEFINITION_TYPE);
 
     // then
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();

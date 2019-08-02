@@ -46,7 +46,10 @@ import static org.camunda.optimize.service.engine.importing.DmnModelUtility.pars
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.INPUT_VARIABLE_NAMES;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.OUTPUT_VARIABLE_NAMES;
+import static org.camunda.optimize.service.es.schema.type.report.AbstractReportType.DATA;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
 
 public class UpgradeFrom25To26 implements Upgrade {
 
@@ -92,9 +95,46 @@ public class UpgradeFrom25To26 implements Upgrade {
     return UpgradePlanBuilder.createUpgradePlan()
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
+      .addUpgradeStep(createMultipleDefinitionVersionsForProcessReports())
+      .addUpgradeStep(createMultipleDefinitionVersionsForDecisionReports())
       .addUpgradeStep(createDecisionDefinitionInputVariableNames())
       .addUpgradeStep(createDecisionDefinitionOutputVariableNames())
       .build();
+  }
+
+  private UpgradeStep createMultipleDefinitionVersionsForProcessReports() {
+    return createMultipleDefinitionVersionsForReports(SINGLE_PROCESS_REPORT_TYPE, "processDefinitionVersion");
+  }
+
+  private UpgradeStep createMultipleDefinitionVersionsForDecisionReports() {
+    return createMultipleDefinitionVersionsForReports(SINGLE_DECISION_REPORT_TYPE, "decisionDefinitionVersion");
+  }
+
+  private UpgradeStep createMultipleDefinitionVersionsForReports(String esType, String definitionVersionField) {
+
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("reportDataField", DATA)
+        .put("definitionVersionField", definitionVersionField)
+        .put("definitionVersionsField", definitionVersionField + "s")
+        .build()
+    );
+    String script = substitutor.replace(
+      "String definition = ctx._source.${reportDataField}.${definitionVersionField};\n" +
+      "if (definition != null && !definition.isEmpty()) {\n" +
+        "def list = new ArrayList();\n" +
+        "list.add(definition);\n" +
+        "ctx._source.${reportDataField}.${definitionVersionsField} = list; \n" +
+        "ctx._source.${reportDataField}.remove(\"${definitionVersionField}\");\n" +
+      "}\n"
+    );
+    return new UpdateDataStep(
+      esType,
+      QueryBuilders.matchAllQuery(),
+      script
+    );
+
+
   }
 
   private UpgradeStep createDecisionDefinitionInputVariableNames() {

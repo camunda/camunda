@@ -20,7 +20,7 @@ import org.junit.rules.RuleChain;
 import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
@@ -283,7 +283,7 @@ public class ProcessDefinitionRetrievalIT {
       .setId("aProcDefId")
       .setKey("aProcDefKey")
       .setVersion("aProcDefVersion");
-    elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, "fooId", processDefinitionWithoutXml);
+    elasticSearchRule.addEntryToElasticsearch(PROCESS_DEFINITION_TYPE, "fooId", processDefinitionWithoutXml);
   }
 
 }

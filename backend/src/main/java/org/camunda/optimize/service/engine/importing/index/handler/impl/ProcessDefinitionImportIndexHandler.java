@@ -31,7 +31,7 @@ public class ProcessDefinitionImportIndexHandler extends AllEntitiesBasedImportI
 
   @Override
   protected String getElasticsearchImportIndexType() {
-    return ElasticsearchConstants.PROC_DEF_TYPE;
+    return ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
   }
 
   public void addImportedDefinitions(Collection<ProcessDefinitionEngineDto> definitions) {

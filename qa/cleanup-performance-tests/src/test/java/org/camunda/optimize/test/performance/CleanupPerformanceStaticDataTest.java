@@ -16,7 +16,7 @@ import java.time.Period;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -43,7 +43,7 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
     embeddedOptimizeRule.getConfigurationService()
       .getCleanupServiceConfiguration()
       .setDefaultProcessDataCleanupMode(CleanupMode.VARIABLES);
-    final int countProcessDefinitions = elasticSearchRule.getDocumentCountOf(PROC_DEF_TYPE);
+    final int countProcessDefinitions = elasticSearchRule.getDocumentCountOf(PROCESS_DEFINITION_TYPE);
     final int processInstanceCount = elasticSearchRule.getDocumentCountOf(PROC_INSTANCE_TYPE);
     final int activityCount = elasticSearchRule.getActivityCount();
     final int countDecisionDefinitions = elasticSearchRule.getDocumentCountOf(DECISION_DEFINITION_TYPE);
@@ -78,7 +78,7 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
     );
     assertThat(
       "processDefinitionCount",
-      elasticSearchRule.getDocumentCountOf(PROC_DEF_TYPE),
+      elasticSearchRule.getDocumentCountOf(PROCESS_DEFINITION_TYPE),
       is(countProcessDefinitions)
     );
     assertThat(
@@ -94,7 +94,7 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
     embeddedOptimizeRule.getConfigurationService().getCleanupServiceConfiguration().setDefaultTtl(Period.parse("P0D"));
     embeddedOptimizeRule.getConfigurationService().getCleanupServiceConfiguration()
       .setDefaultProcessDataCleanupMode(CleanupMode.ALL);
-    final int countProcessDefinitions = elasticSearchRule.getDocumentCountOf(PROC_DEF_TYPE);
+    final int countProcessDefinitions = elasticSearchRule.getDocumentCountOf(PROCESS_DEFINITION_TYPE);
     final int countDecisionDefinitions = elasticSearchRule.getDocumentCountOf(DECISION_DEFINITION_TYPE);
     // and run the cleanup
     runCleanupAndAssertFinishedWithinTimeout();
@@ -121,7 +121,7 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
     // and definition data is untouched
     assertThat(
       "processDefinitionCount",
-      elasticSearchRule.getDocumentCountOf(PROC_DEF_TYPE),
+      elasticSearchRule.getDocumentCountOf(PROCESS_DEFINITION_TYPE),
       is(countProcessDefinitions)
     );
     assertThat(

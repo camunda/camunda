@@ -31,7 +31,7 @@ import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_VERSION_TAG;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.TENANT_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
 
 @AllArgsConstructor
 @Component
@@ -82,7 +82,7 @@ public class ProcessDefinitionWriter {
     for (ProcessDefinitionOptimizeDto procDef : procDefs) {
       final String id = procDef.getId();
       final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(FIELDS_TO_UPDATE, procDef);
-      final UpdateRequest request = new UpdateRequest(PROC_DEF_TYPE, PROC_DEF_TYPE, id)
+      final UpdateRequest request = new UpdateRequest(PROCESS_DEFINITION_TYPE, PROCESS_DEFINITION_TYPE, id)
           .script(updateScript)
           .upsert(objectMapper.convertValue(procDef, Map.class))
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

@@ -30,7 +30,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -519,7 +519,7 @@ public class ProcessDefinitionRestServiceIT {
       .setTenantId(tenantId)
       .setEngine(DEFAULT_ENGINE_ALIAS)
       .setBpmn20Xml(key + version + tenantId);
-    elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, expectedDto.getId(), expectedDto);
+    elasticSearchRule.addEntryToElasticsearch(PROCESS_DEFINITION_TYPE, expectedDto.getId(), expectedDto);
     return expectedDto;
   }
 
