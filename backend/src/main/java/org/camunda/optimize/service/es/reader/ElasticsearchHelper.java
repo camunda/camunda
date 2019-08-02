@@ -10,6 +10,8 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.action.search.ClearScrollRequest;
+import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -44,11 +46,9 @@ public class ElasticsearchHelper {
     final List<T> results = new ArrayList<>();
 
     SearchResponse currentScrollResp = initialScrollResponse;
-    while (currentScrollResp != null) {
-      final SearchHits hits = currentScrollResp.getHits();
-      if (hits.getHits().length == 0) {
-        break;
-      }
+    SearchHits hits = currentScrollResp.getHits();
+
+    while (hits != null && hits.getHits().length > 0) {
       results.addAll(mapHits(hits, limit - results.size(), itemClass, objectMapper));
 
       if (hits.getTotalHits() > results.size() && results.size() < limit) {
@@ -56,6 +56,7 @@ public class ElasticsearchHelper {
         scrollRequest.scroll(TimeValue.timeValueSeconds(scrollingTimeout));
         try {
           currentScrollResp = esclient.scroll(scrollRequest, RequestOptions.DEFAULT);
+          hits = currentScrollResp.getHits();
         } catch (IOException e) {
           String reason = String.format(
             "Could not scroll through entries for class [%s].",
@@ -65,11 +66,36 @@ public class ElasticsearchHelper {
           throw new OptimizeRuntimeException(reason, e);
         }
       } else {
-        currentScrollResp = null;
+        hits = null;
       }
     }
+    clearScroll(itemClass, esclient, currentScrollResp.getScrollId());
 
     return results;
+  }
+
+  public static <T> void clearScroll(final Class<T> itemClass, final OptimizeElasticsearchClient esclient,
+                                      final String scrollId) {
+    try {
+      ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+      clearScrollRequest.addScrollId(scrollId);
+      ClearScrollResponse clearScrollResponse = esclient.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
+      boolean succeeded = clearScrollResponse.isSucceeded();
+      if (!succeeded) {
+        String reason = String.format(
+          "Could not clear scroll for class [%s], since Elasticsearch was unable to perform the action!",
+          itemClass.getSimpleName()
+        );
+        log.error(reason);
+      }
+    } catch (IOException e) {
+      String reason = String.format(
+        "Could not close scroll for class [%s].",
+        itemClass.getSimpleName()
+      );
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
   }
 
   public static <T> List<T> mapHits(final SearchHits searchHits,
@@ -83,7 +109,7 @@ public class ElasticsearchHelper {
                                     final Class<T> itemClass,
                                     final ObjectMapper objectMapper) {
     final List<T> results = new ArrayList<>();
-    for (SearchHit hit : searchHits.getHits()) {
+    for (SearchHit hit : searchHits) {
       if (results.size() >= resultLimit) {
         break;
       }

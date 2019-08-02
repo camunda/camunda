@@ -22,6 +22,8 @@ import javax.annotation.PostConstruct;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.clearScroll;
+
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class ScrollBasedImportIndexHandler
   implements ImportIndexHandler<IdSetBasedImportPage, AllEntitiesBasedImportIndexDto> {
@@ -67,6 +69,9 @@ public abstract class ScrollBasedImportIndexHandler
   protected abstract Set<String> performInitialSearchQuery();
 
   private void resetScroll() {
+    if (scrollId != null) {
+      clearScroll(this.getClass(), esClient, scrollId);
+    }
     scrollId = null;
     importIndex = 0L;
   }

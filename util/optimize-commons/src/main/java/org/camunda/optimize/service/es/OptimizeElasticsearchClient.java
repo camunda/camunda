@@ -21,6 +21,8 @@ import org.elasticsearch.action.get.MultiGetRequest;
 import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.ClearScrollRequest;
+import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
@@ -118,6 +120,12 @@ public class OptimizeElasticsearchClient {
     throws IOException {
     // nothing to modify here, still exposing to not force usage of highLevelClient for this common use case
     return highLevelClient.scroll(searchScrollRequest, options);
+  }
+
+  public final ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest, final RequestOptions options)
+    throws IOException {
+    // nothing to modify here, still exposing to not force usage of highLevelClient for this common use case
+    return highLevelClient.clearScroll(clearScrollRequest, options);
   }
 
   public final SearchResponse search(final SearchRequest searchRequest, final RequestOptions options)
