@@ -77,6 +77,12 @@ public interface ZeebeClientBuilder {
    */
   ZeebeClientBuilder caCertificatePath(String certificatePath);
 
+  /**
+   * A custom {@link CredentialsProvider} which will be used to apply authentication credentials to
+   * requests.
+   */
+  ZeebeClientBuilder credentialsProvider(CredentialsProvider credentialsProvider);
+
   /** @return a new {@link ZeebeClient} with the provided configuration options. */
   ZeebeClient build();
 }

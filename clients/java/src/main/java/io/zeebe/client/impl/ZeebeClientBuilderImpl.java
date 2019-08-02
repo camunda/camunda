@@ -21,6 +21,7 @@ import static io.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
 import static io.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 
 import io.zeebe.client.ClientProperties;
+import io.zeebe.client.CredentialsProvider;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.ZeebeClientConfiguration;
@@ -39,6 +40,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   private Duration defaultRequestTimeout = Duration.ofSeconds(20);
   private boolean usePlaintextConnection = false;
   private String certificatePath;
+  private CredentialsProvider credentialsProvider;
 
   @Override
   public String getBrokerContactPoint() {
@@ -88,6 +90,11 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   @Override
   public String getCaCertificatePath() {
     return certificatePath;
+  }
+
+  @Override
+  public CredentialsProvider getCredentialsProvider() {
+    return credentialsProvider;
   }
 
   @Override
@@ -193,6 +200,12 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   @Override
   public ZeebeClientBuilder caCertificatePath(final String certificatePath) {
     this.certificatePath = certificatePath;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder credentialsProvider(CredentialsProvider credentialsProvider) {
+    this.credentialsProvider = credentialsProvider;
     return this;
   }
 
