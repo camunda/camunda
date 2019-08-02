@@ -8,13 +8,17 @@
 package io.zeebe.gateway.impl.job;
 
 import io.grpc.stub.StreamObserver;
+import io.zeebe.gateway.Loggers;
 import io.zeebe.gateway.RequestMapper;
 import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.zeebe.util.sched.ScheduledTimer;
+import org.slf4j.Logger;
 
 public class LongPollingActivateJobsRequest {
+
+  private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private final BrokerActivateJobsRequest request;
   private final StreamObserver<ActivateJobsResponse> responseObserver;
   private final String jobType;
@@ -51,7 +55,11 @@ public class LongPollingActivateJobsRequest {
     if (scheduledTimer != null) {
       scheduledTimer.cancel();
     }
-    responseObserver.onCompleted();
+    try {
+      responseObserver.onCompleted();
+    } catch (Exception e) {
+      LOG.warn("Failed to complete {}", request, e);
+    }
     this.isCompleted = true;
   }
 
@@ -61,7 +69,11 @@ public class LongPollingActivateJobsRequest {
 
   public void onResponse(ActivateJobsResponse grpcResponse) {
     if (!isCompleted) {
-      responseObserver.onNext(grpcResponse);
+      try {
+        responseObserver.onNext(grpcResponse);
+      } catch (Exception e) {
+        LOG.warn("Failed to send response {}", e);
+      }
     }
   }
 

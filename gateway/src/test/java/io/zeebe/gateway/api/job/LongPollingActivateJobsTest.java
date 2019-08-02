@@ -20,6 +20,9 @@ import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.zeebe.gateway.impl.job.LongPollingActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import java.time.Duration;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,16 +30,26 @@ import org.junit.Test;
 public class LongPollingActivateJobsTest extends GatewayTest {
 
   private static final String TYPE = "test";
+  private static final long LONG_POLLING_TIMEOUT = 5000;
+  private static final long PROBE_TIMEOUT = 20000;
+  private static final int FAILED_RESPONSE_THRESHOLD = 3;
   private LongPollingActivateJobsHandler handler;
   private ActivateJobsStub stub;
   private int partitionsCount;
 
   @Before
   public void setup() {
-    handler = new LongPollingActivateJobsHandler(brokerClient);
+    handler =
+        LongPollingActivateJobsHandler.newBuilder()
+            .setBrokerClient(brokerClient)
+            .setLongPollingTimeout(LONG_POLLING_TIMEOUT)
+            .setProbeTimeoutMillis(PROBE_TIMEOUT)
+            .setMinEmptyResponses(FAILED_RESPONSE_THRESHOLD)
+            .build();
     actorSchedulerRule.submitActor(handler);
     stub = spy(new ActivateJobsStub());
     stub.registerWith(gateway);
+    stub.addAvailableJobs(TYPE, 0);
     partitionsCount = brokerClient.getTopologyManager().getTopology().getPartitionsCount();
   }
 
@@ -44,7 +57,6 @@ public class LongPollingActivateJobsTest extends GatewayTest {
   public void shouldBlockRequestsWhenResponseHasNoJobs() {
     // given
     final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
-    stub.addAvailableJobs(TYPE, 0);
 
     // when
     handler.activateJobs(request);
@@ -59,7 +71,6 @@ public class LongPollingActivateJobsTest extends GatewayTest {
     // given
     final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
     final StreamObserver<ActivateJobsResponse> responseSpy = request.getResponseObserver();
-    stub.addAvailableJobs(TYPE, 0);
 
     handler.activateJobs(request);
 
@@ -77,30 +88,18 @@ public class LongPollingActivateJobsTest extends GatewayTest {
   @Test
   public void shouldBlockOnlyAfterForwardingUntilThreshold() throws Exception {
     // when
-    final int threshold = 3;
-    IntStream.range(0, threshold)
-        .forEach(
-            i -> {
-              final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
-              handler.activateJobs(request);
-              waitUntil(() -> request.hasScheduledTimer());
-            });
+    final int amount = FAILED_RESPONSE_THRESHOLD;
+    activateJobsAndWaitUntilBlocked(amount);
 
     // then
-    verify(stub, times(threshold * partitionsCount)).handle(any());
+    verify(stub, times(amount * partitionsCount)).handle(any());
   }
 
   @Test
   public void shouldBlockImmediatelyAfterThreshold() throws Exception {
     // given
-    final int threshold = 3;
-    IntStream.range(0, threshold)
-        .forEach(
-            i -> {
-              final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
-              handler.activateJobs(request);
-              waitUntil(() -> request.hasScheduledTimer());
-            });
+    final int amount = FAILED_RESPONSE_THRESHOLD;
+    activateJobsAndWaitUntilBlocked(amount);
 
     // when
     final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
@@ -108,43 +107,35 @@ public class LongPollingActivateJobsTest extends GatewayTest {
     waitUntil(() -> request.hasScheduledTimer());
 
     // then
-    verify(stub, times(threshold * partitionsCount)).handle(any());
+    verify(stub, times(amount * partitionsCount)).handle(any());
   }
 
   @Test
   public void shouldUnblockAllRequestsWhenJobsAvailable() throws Exception {
     // given
-    final int numRequests = 3;
-    IntStream.range(0, numRequests)
-        .forEach(
-            i -> {
-              final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
-              handler.activateJobs(request);
-              waitUntil(() -> request.hasScheduledTimer());
-            });
+    final int amount = 3;
+    activateJobsAndWaitUntilBlocked(amount);
 
-    verify(stub, times(numRequests * partitionsCount)).handle(any());
+    verify(stub, times(amount * partitionsCount)).handle(any());
 
     // when
     stub.addAvailableJobs(TYPE, 1);
     gateway.notifyJobsAvailable(TYPE);
 
     // then
-    verify(stub, timeout(1000).times(2 * numRequests * partitionsCount)).handle(any());
+    verify(stub, timeout(1000).times(2 * amount * partitionsCount)).handle(any());
   }
 
   @Test
-  public void shouldUnblockAfterRequestTimeout() {
+  public void shouldCompleteAfterRequestTimeout() {
     // given
-
     final LongPollingActivateJobsRequest longPollingRequest = getLongPollingActivateJobsRequest();
-    stub.addAvailableJobs(TYPE, 0);
 
     // when
     handler.activateJobs(longPollingRequest);
     waitUntil(() -> longPollingRequest.hasScheduledTimer());
-    actorClock.addTime(LongPollingActivateJobsHandler.DEFAULT_LONG_POLLING_TIMEOUT);
-    waitUntil(() -> longPollingRequest.isTimedOut(), 200);
+    actorClock.addTime(Duration.ofMillis(LONG_POLLING_TIMEOUT));
+    waitUntil(() -> longPollingRequest.isTimedOut());
 
     // then
     verify(longPollingRequest.getResponseObserver(), times(1)).onCompleted();
@@ -152,18 +143,11 @@ public class LongPollingActivateJobsTest extends GatewayTest {
 
   @Test
   public void shouldCompleteFollowingRequestsAfterTimeout() {
-
-    final LongPollingActivateJobsRequest timeoutRequest1 = getLongPollingActivateJobsRequest();
-    handler.activateJobs(timeoutRequest1);
-    final LongPollingActivateJobsRequest timeoutRequest2 = getLongPollingActivateJobsRequest();
-    handler.activateJobs(timeoutRequest2);
-    final LongPollingActivateJobsRequest timeoutRequest3 = getLongPollingActivateJobsRequest();
-    handler.activateJobs(timeoutRequest3);
-    waitUntil(() -> timeoutRequest3.hasScheduledTimer());
-    actorClock.addTime(LongPollingActivateJobsHandler.DEFAULT_LONG_POLLING_TIMEOUT);
-    waitUntil(() -> timeoutRequest1.isTimedOut(), 200);
-    waitUntil(() -> timeoutRequest2.isTimedOut(), 200);
-    waitUntil(() -> timeoutRequest3.isTimedOut(), 200);
+    // given
+    final List<LongPollingActivateJobsRequest> requests =
+        activateJobsAndWaitUntilBlocked(FAILED_RESPONSE_THRESHOLD);
+    actorClock.addTime(Duration.ofMillis(LONG_POLLING_TIMEOUT));
+    requests.forEach(request -> waitUntil(() -> request.isTimedOut()));
 
     // when
     final LongPollingActivateJobsRequest successRequest = getLongPollingActivateJobsRequest();
@@ -176,11 +160,99 @@ public class LongPollingActivateJobsTest extends GatewayTest {
     verify(successRequest.getResponseObserver(), times(1)).onCompleted();
   }
 
+  @Test
+  public void shouldNotBlockOtherJobTypes() {
+    // given
+    final String otherType = "other-type";
+    stub.addAvailableJobs(otherType, 2);
+    final int threshold = 3;
+    activateJobsAndWaitUntilBlocked(threshold);
+
+    // when
+    final LongPollingActivateJobsRequest otherRequest =
+        getLongPollingActivateJobsRequest(otherType);
+    handler.activateJobs(otherRequest);
+
+    // then
+    verify(otherRequest.getResponseObserver(), timeout(1000).times(1)).onCompleted();
+  }
+
+  @Test
+  public void shouldProbeIfNoNotificationReceived() throws Exception {
+    // given
+    final long probeTimeout = 2000;
+    handler =
+        LongPollingActivateJobsHandler.newBuilder()
+            .setBrokerClient(brokerClient)
+            .setLongPollingTimeout(20000)
+            .setProbeTimeoutMillis(probeTimeout)
+            .build();
+    actorSchedulerRule.submitActor(handler);
+
+    final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
+    handler.activateJobs(request);
+    waitUntil(() -> request.hasScheduledTimer());
+
+    // when
+    actorClock.addTime(Duration.ofMillis(probeTimeout));
+
+    // then
+    verify(stub, timeout(1000).times(2 * partitionsCount)).handle(any());
+  }
+
+  @Test
+  public void shouldProbeNextRequestWhenBlockedRequestsTimedOut() throws Exception {
+    // given
+    final long longPollingTimeout = 2000;
+    final long probeTimeout = 20000;
+    handler =
+        LongPollingActivateJobsHandler.newBuilder()
+            .setBrokerClient(brokerClient)
+            .setLongPollingTimeout(longPollingTimeout)
+            .setProbeTimeoutMillis(probeTimeout)
+            .build();
+    actorSchedulerRule.submitActor(handler);
+
+    final int threshold = 3;
+    final List<LongPollingActivateJobsRequest> requests =
+        activateJobsAndWaitUntilBlocked(threshold);
+
+    actorClock.addTime(Duration.ofMillis(longPollingTimeout));
+    requests.forEach(
+        request -> verify(request.getResponseObserver(), timeout(1000).times(1)).onCompleted());
+
+    // when
+    actorClock.addTime(Duration.ofMillis(probeTimeout));
+    Thread.sleep(100); // Give some time for the periodic probe to execute
+    activateJobsAndWaitUntilBlocked(1);
+
+    // then
+    final int totalRequests = threshold + 1;
+    verify(stub, timeout(1000).times(totalRequests * partitionsCount)).handle(any());
+  }
+
+  private List<LongPollingActivateJobsRequest> activateJobsAndWaitUntilBlocked(int amount) {
+    return IntStream.range(0, amount)
+        .boxed()
+        .map(
+            i -> {
+              final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
+              handler.activateJobs(request);
+              waitUntil(() -> request.hasScheduledTimer());
+              return request;
+            })
+        .collect(Collectors.toList());
+  }
+
   private LongPollingActivateJobsRequest getLongPollingActivateJobsRequest() {
+    return getLongPollingActivateJobsRequest(TYPE);
+  }
+
+  private LongPollingActivateJobsRequest getLongPollingActivateJobsRequest(String jobType) {
     final int maxJobsToActivate = 2;
     final ActivateJobsRequest request =
         ActivateJobsRequest.newBuilder()
-            .setType(TYPE)
+            .setType(jobType)
             .setMaxJobsToActivate(maxJobsToActivate)
             .build();
     final StreamObserver responseSpy = spy(StreamObserver.class);
