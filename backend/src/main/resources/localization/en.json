@@ -1,11 +1,7 @@
 {
-  "app": {
-    "name": "Optimize"
-  },
   "navigation": {
     "homepage": "Dashboards & Reports",
     "analysis": "Analysis",
-    "alerts": "Alerts",
     "logout": "Logout"
   },
   "home": {
@@ -153,7 +149,7 @@
     "createNew": "Create New Alert",
     "newAlert": "New Alert",
     "edit": "Edit Alert",
-    "Delete": "Delete Alert",
+    "delete": "Delete Alert",
     "above": "above",
     "below": "below",
     "description": "Alert <span>{email}</span> when Report <span>{name}</span> has a value <span>{aboveOrBelow} {thresholdValue}</span>",

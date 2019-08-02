@@ -7,15 +7,23 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import App from './App';
-import {init} from 'translation';
+import AppWithErrorHandling from './App';
+import {addNotification} from 'notifications';
+
+jest.mock('notifications', () => ({addNotification: jest.fn(), Notifications: () => <span />}));
+
+const App = AppWithErrorHandling.WrappedComponent;
 
 jest.mock('translation', () => ({
   init: jest.fn()
 }));
 
+const props = {
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
+};
+
 it('should include a header for the Alert page', async () => {
-  const node = shallow(<App />);
+  const node = shallow(<App {...props} />);
   await node.update();
   const content = shallow(node.find('Route').prop('render')({location: {pathname: '/'}}));
 
@@ -24,7 +32,7 @@ it('should include a header for the Alert page', async () => {
 });
 
 it('should not include a header for shared resources', async () => {
-  const node = shallow(<App />);
+  const node = shallow(<App {...props} />);
   await node.update();
   const content = shallow(
     node.find('Route').prop('render')({location: {pathname: '/share/report/3'}})
@@ -35,11 +43,8 @@ it('should not include a header for shared resources', async () => {
 });
 
 it('should show a nofitication error when not able to initilize the translation', async () => {
-  init.mockImplementation(() => {
-    throw 'error';
-  });
-  const node = shallow(<App />);
+  const node = shallow(<App mightFail={(promise, cb, fail) => fail()} />);
   await node.update();
   expect(node.state().error).toBe(true);
-  expect(node.find('Notifications')).toExist();
+  expect(addNotification).toHaveBeenCalled();
 });

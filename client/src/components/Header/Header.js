@@ -28,7 +28,7 @@ export default withRouter(function Header({name, location}) {
           active={['/', '/report/*', '/dashboard/*']}
         />
         <HeaderNav.Item name={t('navigation.analysis')} linksTo="/analysis" active="/analysis" />
-        <HeaderNav.Item name={t('navigation.alerts')} linksTo="/alerts" active="/alerts" />
+        <HeaderNav.Item name={t('alert.label-plural')} linksTo="/alerts" active="/alerts" />
       </HeaderNav>
       <LogoutButton />
     </header>

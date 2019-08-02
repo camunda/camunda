@@ -5,12 +5,16 @@
  */
 
 import {get} from 'request';
+import moment from 'moment';
+import 'moment/locale/de';
 
 let translationObject = {};
 export async function init() {
-  const lang = getLanguage();
-  const response = await get(`api/localization?localeCode=${lang}`);
+  const localeCode = getLanguage();
+  const response = await get(`api/localization`, {localeCode});
   translationObject = await response.json();
+  moment.locale(localeCode);
+  document.documentElement.lang = localeCode;
 }
 
 export function t(key, data) {
@@ -32,11 +36,15 @@ function injectData(template, data) {
   return template.replace(/\{([\w.]*)\}/g, (str, key) => findValue(key, data));
 }
 
-function findValue(key, data) {
+function findValue(key, data = {}) {
   const keys = key.split('.');
-  let v = data[keys.shift()];
-  for (let i = 0, l = keys.length; i < l; i++) {
+  let v = data;
+  for (let i = 0; i < keys.length; i++) {
     v = v[keys[i]];
+    if (typeof v === 'undefined') {
+      const error = `"${keys[i]}" key of "${key}" not found in translation object`;
+      throw error;
+    }
   }
-  return typeof v !== 'undefined' && v !== null ? v : '';
+  return v;
 }

@@ -33,10 +33,11 @@ export default withRouter(
       };
 
       render() {
+        const label = t('navigation.logout');
         return (
           <div className="LogoutButton">
-            <Button onClick={this.logout} title="Log out">
-              {t('navigation.logout')}
+            <Button onClick={this.logout} title={label}>
+              {label}
             </Button>
           </div>
         );

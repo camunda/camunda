@@ -10,14 +10,14 @@ import {shallow} from 'enzyme';
 import EntityNameForm from './EntityNameForm';
 import {Input} from 'components';
 it('should provide name edit input', async () => {
-  const node = await shallow(<EntityNameForm entity="" />);
+  const node = await shallow(<EntityNameForm entity="Report" />);
   node.setState({name: 'test name'});
 
   expect(node.find(Input)).toExist();
 });
 
 it('should provide a link to view mode', async () => {
-  const node = await shallow(<EntityNameForm entity="" />);
+  const node = await shallow(<EntityNameForm entity="Report" />);
 
   expect(node.find('.save-button')).toExist();
   expect(node.find('.cancel-button')).toExist();
@@ -25,7 +25,7 @@ it('should provide a link to view mode', async () => {
 
 it('should invoke save on save button click', async () => {
   const spy = jest.fn();
-  const node = await shallow(<EntityNameForm entity="" onSave={spy} />);
+  const node = await shallow(<EntityNameForm entity="Report" onSave={spy} />);
   node.setState({name: ''});
 
   node.find('.save-button').simulate('click');
@@ -34,14 +34,14 @@ it('should invoke save on save button click', async () => {
 });
 
 it('should disable save button if report name is empty', async () => {
-  const node = await shallow(<EntityNameForm entity="" />);
+  const node = await shallow(<EntityNameForm entity="Report" />);
   node.setState({name: ''});
 
   expect(node.find('.save-button')).toBeDisabled();
 });
 
 it('should update name on input change', async () => {
-  const node = await shallow(<EntityNameForm entity="" />);
+  const node = await shallow(<EntityNameForm entity="Report" />);
   node.setState({name: 'test name'});
 
   const input = 'asdf';
@@ -51,14 +51,14 @@ it('should update name on input change', async () => {
 
 it('should invoke cancel', async () => {
   const spy = jest.fn();
-  const node = await shallow(<EntityNameForm entity="" onCancel={spy} />);
+  const node = await shallow(<EntityNameForm entity="Report" onCancel={spy} />);
 
   await node.find('.cancel-button').simulate('click');
   expect(spy).toHaveBeenCalled();
 });
 
 it('should select the name input field if Report is just created', async () => {
-  const node = await shallow(<EntityNameForm entity="" isNew />);
+  const node = await shallow(<EntityNameForm entity="Report" isNew />);
 
   const input = {focus: jest.fn(), select: jest.fn()};
   node.instance().inputRef(input);

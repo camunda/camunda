@@ -10,6 +10,7 @@ import {shallow} from 'enzyme';
 import ShareEntity from './ShareEntity';
 
 const props = {
+  type: 'report',
   shareEntity: jest.fn(),
   revokeEntitySharing: jest.fn(),
   getSharedEntity: jest.fn()

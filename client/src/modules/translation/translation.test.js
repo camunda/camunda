@@ -31,6 +31,14 @@ it('should inject data into translations that contain variables', async () => {
   expect(t('entity.create', {label: 'report'})).toBe('Create a new report');
 });
 
+it('return an error message if key does not exist', async () => {
+  try {
+    t('entity.nonExistent');
+  } catch (err) {
+    expect(err).toBe('"nonExistent" key of "entity.nonExistent" not found in translation object');
+  }
+});
+
 it('should get the language file depending on the browser language', async () => {
-  expect(request.get.mock.calls[0][0]).toMatch('?localeCode=de');
+  expect(request.get.mock.calls[0][1]).toEqual({localeCode: 'de'});
 });

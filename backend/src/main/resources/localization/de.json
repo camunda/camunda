@@ -1,11 +1,7 @@
 {
-  "app": {
-    "name": "Optimiert"
-  },
   "navigation": {
     "homepage": "Dashboards & Berichte",
     "analysis": "Analyse",
-    "alerts": "Alerts",
     "logout": "Ausloggen"
   },
   "home": {
@@ -153,7 +149,7 @@
     "createNew": "Neuen Alert erstellen",
     "newAlert": "New Alert",
     "edit": "Benachrichtigung bearbeiten",
-    "Delete": "Warnung löschen",
+    "delete": "Warnung löschen",
     "above": "über",
     "below": "unten",
     "description": "Warnung <span> {email} </span>, wenn Bericht <span> {name} </span> einen Wert <span> {aboveOrBelow} {thresholdValue} </span> aufweist",

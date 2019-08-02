@@ -60,13 +60,13 @@ export default withStore(function DashboardItem({
       </div>
       <div className="operations">
         <Link title={t('home.dashboard.edit')} to={`/dashboard/${dashboard.id}/edit`}>
-          <Icon title="Edit Dashboard" type="edit" className="editLink" />
+          <Icon type="edit" className="editLink" />
         </Link>
         <Button
           title={t('home.dashboard.duplicate')}
           onClick={duplicateEntity('dashboard', dashboard, collection)}
         >
-          <Icon type="copy-document" title="Duplicate Dashboard" className="duplicateIcon" />
+          <Icon type="copy-document" className="duplicateIcon" />
         </Button>
         <Button
           title={t('home.dashboard.delete')}

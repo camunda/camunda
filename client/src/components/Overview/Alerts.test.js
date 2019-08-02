@@ -22,6 +22,7 @@ const reports = [
 
 const alert = {
   id: 'alertID',
+  email: 'test@hotmail.com',
   name: 'Some Alert',
   lastModifier: 'Admin',
   lastModified: '2017-11-11T11:11:11.1111+0200',
@@ -65,7 +66,7 @@ it('should format durations with value and unit', async () => {
 
   const newAlert = {
     name: 'New Alert',
-    email: '',
+    email: 'test@hotmail.com',
     reportId: '2',
     thresholdOperator: '>',
     threshold: {
