@@ -9416,15 +9416,12 @@ react-group@^3.0.0:
   dependencies:
     prop-types "^15.6.2"
 
-react-icon-base@2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/react-icon-base/-/react-icon-base-2.1.0.tgz#a196e33fdf1e7aaa1fda3aefbb68bdad9e82a79d"
-
-react-icons@^2.2.7:
-  version "2.2.7"
-  resolved "https://registry.yarnpkg.com/react-icons/-/react-icons-2.2.7.tgz#d7860826b258557510dac10680abea5ca23cf650"
+react-icons@^3.7.0:
+  version "3.7.0"
+  resolved "https://registry.yarnpkg.com/react-icons/-/react-icons-3.7.0.tgz#64fe46231fabfeea27895edeae6c3b78114b8c8f"
+  integrity sha512-7MyPwjIhuyW0D2N3s4DEd0hGPGFf0sK+IIRKhc1FvSpZNVmnUoGvHbmAwzGJU+3my+fvihVWgwU5SDtlAri56Q==
   dependencies:
-    react-icon-base "2.1.0"
+    camelcase "^5.0.0"
 
 react-is@^16.4.0, react-is@^16.6.0, react-is@^16.7.0, react-is@^16.8.1, react-is@^16.8.4:
   version "16.8.6"
@@ -9521,10 +9518,10 @@ react-simple-code-editor@^0.9.7:
   version "0.9.10"
   resolved "https://registry.yarnpkg.com/react-simple-code-editor/-/react-simple-code-editor-0.9.10.tgz#1ab5ea7215687ed918c6d0dae90736cf01890905"
 
-react-styleguidist@^9.1.11:
-  version "9.1.11"
-  resolved "https://registry.yarnpkg.com/react-styleguidist/-/react-styleguidist-9.1.11.tgz#8cf34a001aa4afabdcc2689d60be4f8b966488d6"
-  integrity sha512-RGc79cTku2KvtHyNBe+T5zQ+jl0zP759YmmqfVY+e0kZXYa7s+x2p3MpqAoJpIaCTcbWHyLexcTzhUaG6+oalQ==
+react-styleguidist@^9.1.13:
+  version "9.1.13"
+  resolved "https://registry.yarnpkg.com/react-styleguidist/-/react-styleguidist-9.1.13.tgz#a3aaaa04eac0bc0f4b15a421d1356f5a46cac877"
+  integrity sha512-HD5hpwmVrA9LcQHGBiRpbR6Mh6b4aUvaKe+k51wTIhmX7j6bcQzWQU//qoTnC5IFzXHr00r3rB5y/7qENw3xrQ==
   dependencies:
     "@vxna/mini-html-webpack-template" "^0.1.7"
     acorn "^6.1.1"
@@ -9575,7 +9572,7 @@ react-styleguidist@^9.1.11:
     react-docgen-annotation-resolver "^1.0.0"
     react-docgen-displayname-handler "^2.1.1"
     react-group "^3.0.0"
-    react-icons "^2.2.7"
+    react-icons "^3.7.0"
     react-lifecycles-compat "^3.0.4"
     react-simple-code-editor "^0.9.7"
     recast "^0.17.4"
