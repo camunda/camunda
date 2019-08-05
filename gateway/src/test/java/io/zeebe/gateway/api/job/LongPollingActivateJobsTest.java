@@ -8,6 +8,7 @@
 package io.zeebe.gateway.api.job;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
@@ -81,7 +82,7 @@ public class LongPollingActivateJobsTest extends GatewayTest {
     gateway.notifyJobsAvailable(TYPE);
 
     // then
-    verify(responseSpy, timeout(1000).times(1)).onNext(any());
+    verify(responseSpy, timeout(2000).times(1)).onNext(any());
     verify(responseSpy, times(1)).onCompleted();
   }
 
@@ -123,7 +124,7 @@ public class LongPollingActivateJobsTest extends GatewayTest {
     gateway.notifyJobsAvailable(TYPE);
 
     // then
-    verify(stub, timeout(1000).times(2 * amount * partitionsCount)).handle(any());
+    verify(stub, timeout(2000).times(2 * amount * partitionsCount)).handle(any());
   }
 
   @Test
@@ -156,7 +157,7 @@ public class LongPollingActivateJobsTest extends GatewayTest {
     handler.activateJobs(successRequest);
 
     // then
-    verify(successRequest.getResponseObserver(), timeout(1000).times(1)).onNext(any());
+    verify(successRequest.getResponseObserver(), timeout(2000).times(1)).onNext(any());
     verify(successRequest.getResponseObserver(), times(1)).onCompleted();
   }
 
@@ -174,7 +175,7 @@ public class LongPollingActivateJobsTest extends GatewayTest {
     handler.activateJobs(otherRequest);
 
     // then
-    verify(otherRequest.getResponseObserver(), timeout(1000).times(1)).onCompleted();
+    verify(otherRequest.getResponseObserver(), timeout(2000).times(1)).onCompleted();
   }
 
   @Test
@@ -197,7 +198,7 @@ public class LongPollingActivateJobsTest extends GatewayTest {
     actorClock.addTime(Duration.ofMillis(probeTimeout));
 
     // then
-    verify(stub, timeout(1000).times(2 * partitionsCount)).handle(any());
+    verify(stub, timeout(2000).times(2 * partitionsCount)).handle(any());
   }
 
   @Test
@@ -229,6 +230,90 @@ public class LongPollingActivateJobsTest extends GatewayTest {
     // then
     final int totalRequests = threshold + 1;
     verify(stub, timeout(1000).times(totalRequests * partitionsCount)).handle(any());
+  }
+
+  @Test
+  public void shouldUseRequestSpecificTimeout() {
+    final int requestTimeout = 1000;
+    final ActivateJobsRequest request =
+        ActivateJobsRequest.newBuilder()
+            .setType(TYPE)
+            .setMaxJobsToActivate(1)
+            .setRequestTimeout(requestTimeout)
+            .build();
+    final StreamObserver responseSpy = spy(StreamObserver.class);
+
+    final LongPollingActivateJobsRequest longPollingRequest =
+        new LongPollingActivateJobsRequest(request, responseSpy);
+
+    handler.activateJobs(longPollingRequest);
+    waitUntil(() -> longPollingRequest.hasScheduledTimer());
+    actorClock.addTime(Duration.ofMillis(requestTimeout));
+    waitUntil(() -> longPollingRequest.isTimedOut());
+
+    // then
+    verify(longPollingRequest.getResponseObserver(), times(1)).onCompleted();
+  }
+
+  @Test
+  public void shouldUseLargeRequestTimeout() {
+    // given
+    final long requestTimeout = 50000;
+    final LongPollingActivateJobsRequest shortRequest =
+        new LongPollingActivateJobsRequest(
+            ActivateJobsRequest.newBuilder()
+                .setType(TYPE)
+                .setMaxJobsToActivate(1)
+                .setRequestTimeout(requestTimeout)
+                .build(),
+            spy(StreamObserver.class));
+
+    final long longTimeout = 100000;
+    final LongPollingActivateJobsRequest longRequest =
+        new LongPollingActivateJobsRequest(
+            ActivateJobsRequest.newBuilder()
+                .setType(TYPE)
+                .setMaxJobsToActivate(1)
+                .setRequestTimeout(longTimeout)
+                .build(),
+            spy(StreamObserver.class));
+
+    handler.activateJobs(shortRequest);
+    handler.activateJobs(longRequest);
+    waitUntil(() -> shortRequest.hasScheduledTimer());
+    waitUntil(() -> longRequest.hasScheduledTimer());
+
+    // when
+    actorClock.addTime(Duration.ofMillis(requestTimeout));
+    waitUntil(() -> shortRequest.isTimedOut());
+    stub.addAvailableJobs(TYPE, 2);
+    gateway.notifyJobsAvailable(TYPE);
+
+    // then
+    assertThat(longRequest.isTimedOut()).isFalse();
+    verify(longRequest.getResponseObserver(), timeout(1000).times(1)).onNext(any());
+    verify(longRequest.getResponseObserver(), timeout(1000).times(1)).onCompleted();
+  }
+
+  @Test
+  public void shouldNotBlockWhenNegativeTimeout() {
+    // given
+    final LongPollingActivateJobsRequest request =
+        new LongPollingActivateJobsRequest(
+            ActivateJobsRequest.newBuilder()
+                .setType(TYPE)
+                .setMaxJobsToActivate(1)
+                .setRequestTimeout(-1)
+                .build(),
+            spy(StreamObserver.class));
+
+    // when
+    handler.activateJobs(request);
+    verify(request.getResponseObserver(), timeout(1000).times(1)).onCompleted();
+
+    // then
+    assertThat(request.hasScheduledTimer()).isFalse();
+    assertThat(request.isTimedOut()).isFalse();
   }
 
   private List<LongPollingActivateJobsRequest> activateJobsAndWaitUntilBlocked(int amount) {
