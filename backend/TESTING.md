@@ -62,6 +62,16 @@ mvn -Pit clean verify
 
 Elasticsearch and the engine are setup automatically through Docker.
 
+### Run tests in parallel
+
+Given a powerful machine, tests can be run concurrently using test process forks locally.
+In order to fork multiple test processes the `test.forkCount` jvm property can be provided.
+
+E.g. for running 2 tests processes in parallel do:
+```
+mvn -Pit clean verify -Dtest.forkCount=2
+```
+
 ### Run tests manually
 
 Especially, if you want to debug a test, it can make sense to setup the
