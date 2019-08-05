@@ -18,7 +18,6 @@ import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.rest.dto.ActivityStatisticsDto;
 import org.camunda.operate.rest.dto.SortingDto;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
@@ -429,11 +428,6 @@ public class ListViewReader {
     final ExistsQueryBuilder incidentExists = existsQuery(ERROR_MSG);
 
     return hasChildQuery(ACTIVITIES_JOIN_RELATION,  joinWithAnd(activitiesQuery, activityIdQuery, incidentExists), None);
-  }
-
-  @FunctionalInterface
-  interface StatisticsMapEntryUpdater {
-    void updateMapEntry(ActivityStatisticsDto statistics, Long value);
   }
 
 }

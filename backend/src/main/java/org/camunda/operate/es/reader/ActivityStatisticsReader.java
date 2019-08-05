@@ -15,6 +15,7 @@ import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.rest.dto.ActivityStatisticsDto;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
+import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -68,7 +69,12 @@ public class ActivityStatisticsReader {
 
   @Autowired
   private ListViewTemplate listViewTemplate;
-
+  
+  @FunctionalInterface
+  private interface MapUpdater {
+    void updateMapEntry(ActivityStatisticsDto statistics, Long value);
+  }
+  
   public Collection<ActivityStatisticsDto> getActivityStatistics(ListViewQueryDto query) {
 
     Map<String, ActivityStatisticsDto> statisticsMap = new HashMap<>();
@@ -101,12 +107,12 @@ public class ActivityStatisticsReader {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
       Children activities = searchResponse.getAggregations().get(AGG_ACTIVITIES);
-
-      collectActiveStat(statisticsMap, activities);
-      collectIncidentStat(statisticsMap, activities);
-      collectCancelledStat(statisticsMap, activities);
-      collectCompletedStat(statisticsMap, activities);
-
+      CollectionUtil.asMap(
+          AGG_ACTIVE_ACTIVITIES,     (MapUpdater)ActivityStatisticsDto::setActive,
+          AGG_INCIDENT_ACTIVITIES,   (MapUpdater)ActivityStatisticsDto::setIncidents,
+          AGG_TERMINATED_ACTIVITIES, (MapUpdater)ActivityStatisticsDto::setCanceled,
+          AGG_FINISHED_ACTIVITIES,   (MapUpdater)ActivityStatisticsDto::setCompleted)
+        .forEach((aggName,mapUpdater) -> collectStatisticsFor(statisticsMap, activities, aggName, (MapUpdater)mapUpdater));
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining statistics for activities: %s", e.getMessage());
       logger.error(message, e);
@@ -116,50 +122,17 @@ public class ActivityStatisticsReader {
     return statisticsMap.values();
   }
 
-  private void collectCompletedStat(Map<String, ActivityStatisticsDto> statisticsMap, Children activities) {
-    Filter finishedActivitiesAgg = activities.getAggregations().get(AGG_FINISHED_ACTIVITIES);
-    if (finishedActivitiesAgg != null) {
-      ((Terms) finishedActivitiesAgg.getAggregations().get(AGG_UNIQUE_ACTIVITIES)).getBuckets().stream().forEach(b -> {
-        String activityId = b.getKeyAsString();
-        final Parent aggregation = b.getAggregations().get(AGG_ACTIVITY_TO_WORKFLOW);
-        final long docCount = aggregation.getDocCount();  //number of workflow instances
-        addToMap(statisticsMap, activityId, docCount, ActivityStatisticsDto::setCompleted);
-      });
-    }
-  }
-
-  private void collectIncidentStat(Map<String, ActivityStatisticsDto> statisticsMap, Children activities) {
-    Filter incidentActivitiesAgg = activities.getAggregations().get(AGG_INCIDENT_ACTIVITIES);
+  private void collectStatisticsFor(Map<String, ActivityStatisticsDto> statisticsMap, Children activities,String aggName,MapUpdater mapUpdater) {
+    Filter incidentActivitiesAgg = activities.getAggregations().get(aggName);
     if (incidentActivitiesAgg != null) {
       ((Terms) incidentActivitiesAgg.getAggregations().get(AGG_UNIQUE_ACTIVITIES)).getBuckets().stream().forEach(b -> {
         String activityId = b.getKeyAsString();
         final Parent aggregation = b.getAggregations().get(AGG_ACTIVITY_TO_WORKFLOW);
         final long docCount = aggregation.getDocCount();  //number of workflow instances
-        addToMap(statisticsMap, activityId, docCount, ActivityStatisticsDto::setIncidents);
-      });
-    }
-  }
-
-  private void collectActiveStat(Map<String, ActivityStatisticsDto> statisticsMap, Children activities) {
-    Filter activeActivitiesAgg = activities.getAggregations().get(AGG_ACTIVE_ACTIVITIES);
-    if (activeActivitiesAgg != null) {
-      ((Terms) activeActivitiesAgg.getAggregations().get(AGG_UNIQUE_ACTIVITIES)).getBuckets().stream().forEach(b -> {
-        String activityId = b.getKeyAsString();
-        final Parent aggregation = b.getAggregations().get(AGG_ACTIVITY_TO_WORKFLOW);
-        final long docCount = aggregation.getDocCount();  //number of workflow instances
-        addToMap(statisticsMap, activityId, docCount, ActivityStatisticsDto::setActive);
-      });
-    }
-  }
-
-  private void collectCancelledStat(Map<String, ActivityStatisticsDto> statisticsMap, Children activities) {
-    Filter cancelledActivitiesAgg = activities.getAggregations().get(AGG_TERMINATED_ACTIVITIES);
-    if (cancelledActivitiesAgg != null) {
-      ((Terms) cancelledActivitiesAgg.getAggregations().get(AGG_UNIQUE_ACTIVITIES)).getBuckets().stream().forEach(b -> {
-        String activityId = b.getKeyAsString();
-        final Parent aggregation = b.getAggregations().get(AGG_ACTIVITY_TO_WORKFLOW);
-        final long docCount = aggregation.getDocCount();  //number of workflow instances
-        addToMap(statisticsMap, activityId, docCount, ActivityStatisticsDto::setCanceled);
+        if (statisticsMap.get(activityId) == null) {
+          statisticsMap.put(activityId, new ActivityStatisticsDto(activityId));
+        }
+        mapUpdater.updateMapEntry(statisticsMap.get(activityId), docCount);
       });
     }
   }
@@ -196,13 +169,6 @@ public class ActivityStatisticsReader {
             .subAggregation(parent(AGG_ACTIVITY_TO_WORKFLOW, ACTIVITIES_JOIN_RELATION))
         //we need this to count workflow instances, not the activity instances
     );
-  }
-
-  private void addToMap(Map<String, ActivityStatisticsDto> statisticsMap, String activityId, Long docCount, ListViewReader.StatisticsMapEntryUpdater entryUpdater) {
-    if (statisticsMap.get(activityId) == null) {
-      statisticsMap.put(activityId, new ActivityStatisticsDto(activityId));
-    }
-    entryUpdater.updateMapEntry(statisticsMap.get(activityId), docCount);
   }
 
 }
