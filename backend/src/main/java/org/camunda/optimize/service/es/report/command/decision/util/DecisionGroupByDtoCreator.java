@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.Deci
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByEvaluationDateTimeValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 
 public class DecisionGroupByDtoCreator {
@@ -35,26 +36,32 @@ public class DecisionGroupByDtoCreator {
   }
 
   public static DecisionGroupByDto createGroupDecisionByInputVariable() {
-    return createGroupDecisionByInputVariable(null, null);
+    return createGroupDecisionByInputVariable(null, null, null);
   }
 
-  public static DecisionGroupByDto createGroupDecisionByInputVariable(String variableId, String variableName) {
+  public static DecisionGroupByDto createGroupDecisionByInputVariable(String variableId,
+                                                                      String variableName,
+                                                                      VariableType variableType) {
     DecisionGroupByVariableValueDto groupByValueDto = new DecisionGroupByVariableValueDto();
     groupByValueDto.setId(variableId);
     groupByValueDto.setName(variableName);
+    groupByValueDto.setType(variableType);
     DecisionGroupByInputVariableDto groupByDto = new DecisionGroupByInputVariableDto();
     groupByDto.setValue(groupByValueDto);
     return groupByDto;
   }
 
   public static DecisionGroupByDto createGroupDecisionByOutputVariable() {
-    return createGroupDecisionByOutputVariable(null, null);
+    return createGroupDecisionByOutputVariable(null, null, null);
   }
 
-  public static DecisionGroupByDto createGroupDecisionByOutputVariable(String variableId, String variableName) {
+  public static DecisionGroupByDto createGroupDecisionByOutputVariable(String variableId,
+                                                                       String variableName,
+                                                                       VariableType variableType) {
     DecisionGroupByVariableValueDto groupByValueDto = new DecisionGroupByVariableValueDto();
     groupByValueDto.setId(variableId);
     groupByValueDto.setName(variableName);
+    groupByValueDto.setType(variableType);
     DecisionGroupByOutputVariableDto groupByDto = new DecisionGroupByOutputVariableDto();
     groupByDto.setValue(groupByValueDto);
     return groupByDto;

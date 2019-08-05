@@ -27,7 +27,7 @@ import java.util.List;
 
 /**
  * A generator class to build DMN tables/models in a programmatic way.
- *
+ * <p>
  * Note: do not reuse a generator instance two create different kinds
  * of dmn tables, since the model instance is shared between the generator instances
  * and cloned each time it is passed on.
@@ -72,7 +72,6 @@ public class DmnModelGenerator {
   public static DmnModelGenerator create() {
     return new DmnModelGenerator();
   }
-
 
 
   private static <E extends NamedElement> E generateNamedElement(final Class<E> elementClass,
@@ -123,9 +122,10 @@ public class DmnModelGenerator {
       return this;
     }
 
-    public DecisionGenerator addInput(String label, String camInputVariable, DecisionTypeRef decisionTypeRef) {
+    public DecisionGenerator addInput(String label, String inputIdClause, String camInputVariable,
+                                      DecisionTypeRef decisionTypeRef) {
       Input input = generateElement(Input.class, modelInstance);
-      input.setId("InputClause_" + IdGenerator.getNextId());
+      input.setId(inputIdClause);
       input.setLabel(label);
       InputExpression inputExpression = generateElement(InputExpression.class, modelInstance);
       inputExpression.setTypeRef(decisionTypeRef.getId());
@@ -138,13 +138,18 @@ public class DmnModelGenerator {
       return this;
     }
 
+    public DecisionGenerator addInput(String label, String camInputVariable, DecisionTypeRef decisionTypeRef) {
+      return addInput(label, "InputClause_" + IdGenerator.getNextId(), camInputVariable, decisionTypeRef);
+    }
+
     public DecisionGenerator addInput(String label, DecisionTypeRef decisionTypeRef) {
       return addInput(label, "CamInputVariable_" + IdGenerator.getNextId(), decisionTypeRef);
     }
 
-    public DecisionGenerator addOutput(String label, String camOutputVariable, DecisionTypeRef decisionTypeRef) {
+    public DecisionGenerator addOutput(String label, String outputClauseId, String camOutputVariable,
+                                       DecisionTypeRef decisionTypeRef) {
       Output output = generateElement(Output.class, modelInstance);
-      output.setId("OutputClause_" + IdGenerator.getNextId());
+      output.setId(outputClauseId);
       output.setLabel(label);
       output.setTypeRef(decisionTypeRef.getId());
       output.setName(camOutputVariable);
@@ -152,13 +157,17 @@ public class DmnModelGenerator {
       return this;
     }
 
+    public DecisionGenerator addOutput(String label, String camOutputVariable, DecisionTypeRef decisionTypeRef) {
+      return addOutput(label, "OutputClause_" + IdGenerator.getNextId(), camOutputVariable, decisionTypeRef);
+    }
+
     public DecisionGenerator addOutput(String label, DecisionTypeRef decisionTypeRef) {
       return addOutput(label, "CamOutPutVariable_" + IdGenerator.getNextId(), decisionTypeRef);
     }
 
     public RuleGenerator rule() {
-    return new RuleGenerator(this);
-  }
+      return new RuleGenerator(this);
+    }
 
     private DecisionGenerator addRule(Rule rule) {
       this.rules.add(rule);
@@ -197,7 +206,7 @@ public class DmnModelGenerator {
 
     public RuleGenerator addStringInputEntry(String expression) {
       Text text = modelInstance.newInstance(Text.class);
-      text.setTextContent("\"" + expression + "\"");
+      text.setTextContent(expression);
 
       InputEntry inputEntry = modelInstance.newInstance(InputEntry.class);
       inputEntry.setText(text);
@@ -207,7 +216,7 @@ public class DmnModelGenerator {
 
     public RuleGenerator addStringOutputEntry(String expression) {
       Text text = modelInstance.newInstance(Text.class);
-      text.setTextContent("\"" + expression + "\"");
+      text.setTextContent(expression);
 
       OutputEntry outputEntry = modelInstance.newInstance(OutputEntry.class);
       outputEntry.setText(text);

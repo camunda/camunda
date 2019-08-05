@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.decision.frequency;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import junitparams.JUnitParamsRunner;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
@@ -15,14 +16,19 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.Dec
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.DecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.camunda.optimize.test.util.decision.DecisionTypeRef;
+import org.camunda.optimize.test.util.decision.DmnModelGenerator;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,6 +36,7 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createBooleanOutputVariableFilter;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -463,9 +470,10 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_AUDIT_ID, "audit"
-    );
+    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> result =
+      evaluateDecisionInstanceFrequencyByOutputVariable(
+        decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_AUDIT_ID, "audit"
+      );
 
     // then
     final DecisionGroupByVariableValueDto value = (DecisionGroupByVariableValueDto)
@@ -473,6 +481,104 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     assertThat(value.getName().isPresent(), is(true));
     assertThat(value.getName().get(), is("audit"));
   }
+
+
+  @Test
+  public void dateVariableGroupByWithOneInstance() {
+    // given
+    final String outputClauseId = "outputClauseId";
+    final String camInputVariable = "input";
+    final DecisionDefinitionEngineDto definition = deploySimpleDecisionDefinition(
+      outputClauseId,
+      camInputVariable,
+      DecisionTypeRef.DATE
+    );
+
+    OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
+    engineRule.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now));
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
+      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE
+    ).getResult();
+
+    // then
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData().get(0).getValue(), is(1L));
+  }
+
+  @Test
+  public void dateVariableGroupByWithSeveralInstances() {
+    // given
+    final String outputClauseId = "outputClauseId";
+    final String camInputVariable = "input";
+    final DecisionDefinitionEngineDto definition = deploySimpleDecisionDefinition(
+      outputClauseId,
+      camInputVariable,
+      DecisionTypeRef.DATE
+    );
+
+    OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
+
+    engineRule.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now));
+    engineRule.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now.minusDays(1L)));
+    engineRule.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now.minusDays(1L)));
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
+      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE
+    ).getResult();
+
+    // then
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
+    assertThat(resultData.get(0).getValue(), is(1L));
+    assertThat(resultData.get(resultData.size() - 1).getValue(), is(2L));
+  }
+
+  @Test
+  public void dateVariablesAreSortedDescByDefault() {
+    // given
+    final String outputClauseId = "outputClauseId";
+    final String camInputVariable = "input";
+    final DecisionDefinitionEngineDto definition = deploySimpleDecisionDefinition(
+      outputClauseId,
+      camInputVariable,
+      DecisionTypeRef.DATE
+    );
+
+    OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
+    engineRule.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now));
+    engineRule.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now.minusSeconds(1L)));
+    engineRule.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now.minusSeconds(6L)));
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
+      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE
+    ).getResult();
+
+
+    // then
+    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
+    assertThat(
+      resultKeys,
+      // expect ascending order
+      contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
+    );
+  }
+
 
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() {
@@ -513,7 +619,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     final String decisionDefinitionVersion,
     final String variableId) {
     return evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto, decisionDefinitionVersion, variableId, null
+      decisionDefinitionDto, decisionDefinitionVersion, variableId, null, null
     );
   }
 
@@ -522,14 +628,41 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     final String decisionDefinitionVersion,
     final String variableId,
     final String variableName) {
+    return evaluateDecisionInstanceFrequencyByOutputVariable(
+      decisionDefinitionDto, decisionDefinitionVersion, variableId, variableName, null
+    );
+  }
+
+  private DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
+    final DecisionDefinitionEngineDto decisionDefinitionDto,
+    final String decisionDefinitionVersion,
+    final String variableId,
+    final String variableName,
+    final VariableType variableType) {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
       .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
       .setDecisionDefinitionVersion(decisionDefinitionVersion)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
       .setVariableId(variableId)
       .setVariableName(variableName)
+      .setVariableType(variableType)
       .build();
     return evaluateMapReport(reportData);
   }
 
+
+  private DecisionDefinitionEngineDto deploySimpleDecisionDefinition(final String outputClauseId,
+                                                                     final String camInputVariable,
+                                                                     final DecisionTypeRef type) {
+    final DmnModelGenerator dmnModelGenerator = DmnModelGenerator.create()
+      .decision()
+      .addInput("input", camInputVariable, type)
+      .addOutput("output", outputClauseId, camInputVariable, type)
+      .rule()
+      .addStringInputEntry(camInputVariable)
+      .addStringOutputEntry(camInputVariable)
+      .buildRule()
+      .buildDecision();
+    return engineRule.deployDecisionDefinition(dmnModelGenerator.build());
+  }
 }

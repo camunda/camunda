@@ -68,15 +68,7 @@ public class DecisionVariableHelper {
     }
   }
 
-  public static String getInputVariableIdField() {
-    return getVariableIdField(INPUTS);
-  }
-
-  public static String getOutputVariableIdField() {
-    return getVariableIdField(INPUTS);
-  }
-
-  public static String getVariableIdField(final String variablePath) {
+  public static String getVariableClauseIdField(final String variablePath) {
     return variablePath + "." + VARIABLE_CLAUSE_ID;
   }
 

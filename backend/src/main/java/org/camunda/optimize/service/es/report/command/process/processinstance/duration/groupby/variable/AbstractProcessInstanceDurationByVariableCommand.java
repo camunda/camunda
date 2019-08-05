@@ -41,6 +41,7 @@ import java.util.Optional;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.service.es.report.command.process.util.GroupByDateVariableIntervalSelection.createDateVariableAggregation;
 import static org.camunda.optimize.service.es.report.command.util.IntervalAggregationService.RANGE_AGGREGATION;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DATE_VARIABLES;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabelForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldLabelForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.variableTypeToFieldLabel;
@@ -160,9 +161,12 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
 
     if (VariableType.DATE.equals(variableType)) {
       variableSubAggregation = createDateVariableAggregation(
+        VARIABLES_AGGREGATION,
         variableName,
         nestedVariableNameFieldLabel,
         nestedVariableValueFieldLabel,
+        PROC_INSTANCE_TYPE,
+        DATE_VARIABLES,
         intervalAggregationService,
         esClient,
         setupBaseQuery(getReportData())

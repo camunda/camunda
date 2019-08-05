@@ -33,7 +33,7 @@ import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.INPUTS;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.OUTPUTS;
-import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableIdField;
+import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableMultivalueFields;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
@@ -163,7 +163,7 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
                                                 final VariableType type) {
     final String inputVariableId = sortByField.substring(prefix.length());
     final String variableValuePath = getVariableValueFieldForType(variablePath, type);
-    final String variableIdPath = getVariableIdField(variablePath);
+    final String variableIdPath = getVariableClauseIdField(variablePath);
 
     return SortBuilders
       .fieldSort(variableValuePath)

@@ -241,7 +241,7 @@ public abstract class DecisionVariableQueryFilter implements QueryFilter<Variabl
   }
 
   private String getVariableIdField() {
-    return DecisionVariableHelper.getVariableIdField(getVariablePath());
+    return DecisionVariableHelper.getVariableClauseIdField(getVariablePath());
   }
 
   private Object retrieveValue(OperatorMultipleValuesVariableFilterDataDto dto) {

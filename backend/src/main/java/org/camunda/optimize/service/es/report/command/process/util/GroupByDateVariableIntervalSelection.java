@@ -27,9 +27,7 @@ import java.util.Optional;
 
 import static org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable.AbstractProcessInstanceDurationByVariableCommand.FILTERED_VARIABLES_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable.AbstractProcessInstanceDurationByVariableCommand.NESTED_AGGREGATION;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DATE_VARIABLES;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
@@ -37,15 +35,18 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 public class GroupByDateVariableIntervalSelection {
   private static final String STATS = "stats";
-  public static final String VARIABLES_AGGREGATION = "variables";
   private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
 
-  public static Stats getMinMaxStats(QueryBuilder query, String esType, String field,
+  public static Stats getMinMaxStats(QueryBuilder query,
+                                     String esType,
+                                     String nestedPath,
+                                     String field,
                                      OptimizeElasticsearchClient esClient,
-                                     String nestedVariableNameFieldLabel, String variableName) {
+                                     String nestedVariableNameFieldLabel,
+                                     String variableName) {
 
-    AggregationBuilder aggregationBuilder = nested(NESTED_AGGREGATION, DATE_VARIABLES).subAggregation(filter(
+    AggregationBuilder aggregationBuilder = nested(NESTED_AGGREGATION, nestedPath).subAggregation(filter(
       FILTERED_VARIABLES_AGGREGATION,
       boolQuery()
         .must(
@@ -76,15 +77,19 @@ public class GroupByDateVariableIntervalSelection {
     return ((Nested) response.getAggregations().get(NESTED_AGGREGATION)).getAggregations().get(STATS);
   }
 
-  public static AggregationBuilder createDateVariableAggregation(String variableName,
+  public static AggregationBuilder createDateVariableAggregation(String aggregationName,
+                                                                 String variableName,
                                                                  String nestedVariableNameFieldLabel,
                                                                  String nestedVariableValueFieldLabel,
+                                                                 String esType,
+                                                                 String nestedPath,
                                                                  IntervalAggregationService intervalAggregationService,
                                                                  OptimizeElasticsearchClient esClient,
                                                                  QueryBuilder baseQuery) {
     Stats minMaxStats = getMinMaxStats(
       baseQuery,
-      PROC_INSTANCE_TYPE,
+      esType,
+      nestedPath,
       nestedVariableValueFieldLabel,
       esClient,
       nestedVariableNameFieldLabel,
@@ -102,7 +107,7 @@ public class GroupByDateVariableIntervalSelection {
       aggregationBuilder = optionalAgg.get();
     } else {
       aggregationBuilder = AggregationBuilders
-        .dateHistogram(VARIABLES_AGGREGATION)
+        .dateHistogram(aggregationName)
         .field(nestedVariableValueFieldLabel)
         .interval(1)
         .format(OPTIMIZE_DATE_FORMAT)

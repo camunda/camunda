@@ -10,6 +10,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.Deci
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;
@@ -20,6 +23,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -28,9 +32,13 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableIdField;
+import static org.camunda.optimize.service.es.report.command.process.util.GroupByDateVariableIntervalSelection.createDateVariableAggregation;
+import static org.camunda.optimize.service.es.report.command.util.IntervalAggregationService.RANGE_AGGREGATION;
+import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableStringValueField;
+import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -40,7 +48,7 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
 
   private static final String NESTED_AGGREGATION = "nested";
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
-  private static final String VARIABLE_VALUE_TERMS_AGGREGATION = "variableValueTerms";
+  private static final String VARIABLE_VALUE_AGGREGATION = "variableValues";
 
   private final String variablePath;
 
@@ -61,13 +69,12 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
 
     final BoolQueryBuilder query = setupBaseQuery(reportData);
 
-    DecisionGroupByVariableValueDto groupBy =
-      ((DecisionGroupByDto<DecisionGroupByVariableValueDto>) reportData.getGroupBy()).getValue();
+    DecisionGroupByVariableValueDto groupBy = getVariableGroupByDto();
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .fetchSource(false)
-      .aggregation(createAggregation(groupBy.getId()))
+      .aggregation(createAggregation(groupBy.getId(), groupBy.getType()))
       .size(0);
     SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_TYPE)
       .types(DECISION_INSTANCE_TYPE)
@@ -92,29 +99,58 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
     return new SingleDecisionMapReportResult(mapResultDto, reportDefinition);
   }
 
-  @Override
-  protected void sortResultData(final SingleDecisionMapReportResult evaluationResult) {
-    ((DecisionReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
-      sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
-    );
+  @SuppressWarnings("unchecked")
+  private DecisionGroupByVariableValueDto getVariableGroupByDto() {
+    final DecisionReportDataDto reportData = getReportData();
+    return ((DecisionGroupByDto<DecisionGroupByVariableValueDto>) reportData.getGroupBy()).getValue();
   }
 
-  private AggregationBuilder createAggregation(final String variableId) {
+  @Override
+  protected void sortResultData(final SingleDecisionMapReportResult evaluationResult) {
+    final Optional<SortingDto> sorting = ((DecisionReportDataDto) getReportData()).getParameters().getSorting();
+    if (sorting.isPresent()) {
+      MapResultSortingUtility.sortResultData(sorting.get(), evaluationResult);
+    } else if (VariableType.DATE.equals(getVariableGroupByDto().getType())) {
+      MapResultSortingUtility.sortResultData(new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC), evaluationResult);
+    }
+  }
+
+  private AggregationBuilder createAggregation(final String variableClauseId, VariableType variableType) {
     return AggregationBuilders
       .nested(NESTED_AGGREGATION, variablePath)
       .subAggregation(
         AggregationBuilders
           .filter(
             FILTERED_VARIABLES_AGGREGATION,
-            boolQuery().filter(termQuery(getVariableIdField(variablePath), variableId))
+            boolQuery().filter(termQuery(getVariableClauseIdField(variablePath), variableClauseId))
           )
           .subAggregation(
-            AggregationBuilders
-              .terms(VARIABLE_VALUE_TERMS_AGGREGATION)
-              .size(configurationService.getEsAggregationBucketLimit())
-              .field(getVariableStringValueField(variablePath))
+            createVariableSubAggregation(variableClauseId, variableType)
           )
       );
+  }
+
+  private AggregationBuilder createVariableSubAggregation(final String variableClauseId,
+                                                          final VariableType variableType) {
+    AggregationBuilder variableAggregation = AggregationBuilders
+      .terms(VARIABLE_VALUE_AGGREGATION)
+      .size(configurationService.getEsAggregationBucketLimit())
+      .field(getVariableStringValueField(variablePath));
+
+    if (VariableType.DATE.equals(variableType)) {
+      variableAggregation = createDateVariableAggregation(
+        VARIABLE_VALUE_AGGREGATION,
+        variableClauseId,
+        getVariableClauseIdField(variablePath),
+        getVariableValueFieldForType(variablePath, VariableType.DATE),
+        DECISION_INSTANCE_TYPE,
+        variablePath,
+        intervalAggregationService,
+        esClient,
+        setupBaseQuery(getReportData())
+      );
+    }
+    return variableAggregation;
   }
 
   private DecisionReportMapResultDto mapToReportResult(final SearchResponse response) {
@@ -122,18 +158,27 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
 
     final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
-    final Terms variableTerms = filteredVariables.getAggregations().get(VARIABLE_VALUE_TERMS_AGGREGATION);
+    MultiBucketsAggregation variableTerms = filteredVariables.getAggregations().get(VARIABLE_VALUE_AGGREGATION);
+
+    if (variableTerms == null) {
+      variableTerms = filteredVariables.getAggregations().get(RANGE_AGGREGATION);
+    }
 
     final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
-    for (Terms.Bucket b : variableTerms.getBuckets()) {
+    for (MultiBucketsAggregation.Bucket b : variableTerms.getBuckets()) {
       resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), b.getDocCount()));
     }
 
     resultDto.setData(resultData);
-    resultDto.setIsComplete(variableTerms.getSumOfOtherDocCounts() == 0L);
+    resultDto.setIsComplete(isResultComplete(variableTerms));
     resultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
 
     return resultDto;
+  }
+
+
+  private boolean isResultComplete(MultiBucketsAggregation variableTerms) {
+    return !(variableTerms instanceof Terms) || ((Terms) variableTerms).getSumOfOtherDocCounts() == 0L;
   }
 
 }

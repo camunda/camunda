@@ -34,7 +34,7 @@ import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.INPUTS;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.OUTPUTS;
-import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableIdField;
+import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
 import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
@@ -153,7 +153,7 @@ public class DecisionVariableReader {
                                                                      final String variablePath,
                                                                      final String valueFilter) {
     final BoolQueryBuilder filterQuery = boolQuery()
-      .must(termQuery(getVariableIdField(variablePath), variableId));
+      .must(termQuery(getVariableClauseIdField(variablePath), variableId));
 
     addValueFilter(variablePath, valueFilter, filterQuery);
 

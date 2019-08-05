@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionVi
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByMatchedRuleDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,6 +33,7 @@ public class DecisionReportDataBuilder {
   private List<String> tenantIds = new ArrayList<>(Collections.singleton(null));
   private String variableId;
   private String variableName;
+  private VariableType variableType;
   private GroupByDateUnit dateInterval;
 
   private List<DecisionFilterDto> filter = new ArrayList<>();
@@ -56,12 +58,12 @@ public class DecisionReportDataBuilder {
         break;
       case COUNT_DEC_INST_FREQ_GROUP_BY_INPUT_VARIABLE:
         reportData = createCountFrequencyReportGroupByInputVariable(
-          decisionDefinitionKey, decisionDefinitionVersions, variableId, variableName
+          decisionDefinitionKey, decisionDefinitionVersions, variableId, variableName, variableType
         );
         break;
       case COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE:
         reportData = createCountFrequencyReportGroupByOutputVariable(
-          decisionDefinitionKey, decisionDefinitionVersions, variableId, variableName
+          decisionDefinitionKey, decisionDefinitionVersions, variableId, variableName, variableType
         );
         break;
       case COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE:
@@ -89,7 +91,7 @@ public class DecisionReportDataBuilder {
     this.decisionDefinitionVersions = Lists.newArrayList(decisionDefinitionVersion);
     return this;
   }
-  
+
   public DecisionReportDataBuilder setDecisionDefinitionVersions(List<String> decisionDefinitionVersions) {
     this.decisionDefinitionVersions = decisionDefinitionVersions;
     return this;
@@ -102,6 +104,11 @@ public class DecisionReportDataBuilder {
 
   public DecisionReportDataBuilder setVariableName(String variableName) {
     this.variableName = variableName;
+    return this;
+  }
+
+  public DecisionReportDataBuilder setVariableType(VariableType variableType) {
+    this.variableType = variableType;
     return this;
   }
 
@@ -167,26 +174,28 @@ public class DecisionReportDataBuilder {
   private static DecisionReportDataDto createCountFrequencyReportGroupByInputVariable(String decisionDefinitionKey,
                                                                                       List<String> decisionDefinitionVersions,
                                                                                       String variableId,
-                                                                                      String variableName) {
+                                                                                      String variableName,
+                                                                                      VariableType variableType) {
     final DecisionReportDataDto decisionReportDataDto = new DecisionReportDataDto();
     decisionReportDataDto.setDecisionDefinitionKey(decisionDefinitionKey);
     decisionReportDataDto.setDecisionDefinitionVersions(decisionDefinitionVersions);
     decisionReportDataDto.setVisualization(DecisionVisualization.TABLE);
     decisionReportDataDto.setView(createCountFrequencyView());
-    decisionReportDataDto.setGroupBy(createGroupDecisionByInputVariable(variableId, variableName));
+    decisionReportDataDto.setGroupBy(createGroupDecisionByInputVariable(variableId, variableName, variableType));
     return decisionReportDataDto;
   }
 
   private static DecisionReportDataDto createCountFrequencyReportGroupByOutputVariable(String decisionDefinitionKey,
                                                                                        List<String> decisionDefinitionVersions,
                                                                                        String variableId,
-                                                                                       String variableName) {
+                                                                                       String variableName,
+                                                                                       VariableType variableType) {
     final DecisionReportDataDto decisionReportDataDto = new DecisionReportDataDto();
     decisionReportDataDto.setDecisionDefinitionKey(decisionDefinitionKey);
     decisionReportDataDto.setDecisionDefinitionVersions(decisionDefinitionVersions);
     decisionReportDataDto.setVisualization(DecisionVisualization.TABLE);
     decisionReportDataDto.setView(createCountFrequencyView());
-    decisionReportDataDto.setGroupBy(createGroupDecisionByOutputVariable(variableId, variableName));
+    decisionReportDataDto.setGroupBy(createGroupDecisionByOutputVariable(variableId, variableName, variableType));
     return decisionReportDataDto;
   }
 
