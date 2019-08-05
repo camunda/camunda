@@ -163,6 +163,8 @@ public class UpgradeFrom25To26 implements Upgrade {
       "if (params.${definitionToVarNamesParam}.containsKey(ctx._source.${definitionIdField})) {\n" +
         "ctx._source.${variableNamesFiled} = " +
           "params.${definitionToVarNamesParam}.get(ctx._source.${definitionIdField});" +
+      "} else {\n" +
+        "ctx._source.${variableNamesFiled} = new ArrayList();" +
       "}\n"
     );
     // @formatter:on
@@ -199,7 +201,9 @@ public class UpgradeFrom25To26 implements Upgrade {
             final String id = (String) sourceAsMap.get(DecisionDefinitionType.DECISION_DEFINITION_ID);
             final String key = (String) sourceAsMap.get(DecisionDefinitionType.DECISION_DEFINITION_KEY);
             final String value = (String) sourceAsMap.get(DecisionDefinitionType.DECISION_DEFINITION_XML);
-            result.put(id, extractVariables.apply(parseDmnModel(value), key));
+            if (value != null) {
+              result.put(id, extractVariables.apply(parseDmnModel(value), key));
+            }
           });
 
         if (currentScrollResponse.getHits().getTotalHits() > result.size()) {

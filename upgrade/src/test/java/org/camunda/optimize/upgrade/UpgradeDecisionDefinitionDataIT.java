@@ -37,6 +37,7 @@ public class UpgradeDecisionDefinitionDataIT extends AbstractUpgradeIT {
   private static final String DECISION_DEFINITION_ID = "aDecision:1:dbef181f-af98-11e9-9604-0242ac120003";
   private static final String DECISION_DEFINITION_ID_WITH_MULTIPLE_TABLES =
     "beverages:1:382525ac-b761-11e9-a6ee-0242ac120002";
+  private static final String DECISION_DEFINITION_ID_WITHOUT_XML = "aDecision:2:5404";
 
   @Before
   @Override
@@ -91,6 +92,24 @@ public class UpgradeDecisionDefinitionDataIT extends AbstractUpgradeIT {
     assertThat(processDefinitionById.getOutputVariableNames(), is(notNullValue()));
     assertThat(processDefinitionById.getOutputVariableNames().size(), is(1));
     assertThat(processDefinitionById.getOutputVariableNames().get(0).getName(), is("Beverages"));
+  }
+
+  @Test
+  public void upgradeCanCopeWithDefinitionsThatHaveNoXml() {
+    //given
+    final UpgradePlan upgradePlan = new UpgradeFrom25To26().buildUpgradePlan();
+
+    // when
+    upgradePlan.execute();
+
+    // then
+    final DecisionDefinitionOptimizeDto processDefinitionById = getDecisionDefinitionById(
+      DECISION_DEFINITION_ID_WITHOUT_XML
+    );
+
+    assertThat(processDefinitionById.getInputVariableNames(), is(notNullValue()));
+    assertThat(processDefinitionById.getInputVariableNames().size(), is(0));
+    assertThat(processDefinitionById.getOutputVariableNames().size(), is(0));
   }
 
   @SneakyThrows
