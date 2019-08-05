@@ -38,6 +38,24 @@ public class LocalizationServiceIT {
   }
 
   @Test
+  public void failOnInvalidJsonFileForAvailableLocales() {
+    //given
+    embeddedOptimizeRule.getConfigurationService().getAvailableLocales().add("invalid");
+    OptimizeConfigurationException configurationException = null;
+    try {
+      embeddedOptimizeRule.reloadConfiguration();
+    } catch (OptimizeConfigurationException e) {
+      configurationException = e;
+    } finally {
+      assertThat(configurationException, is(notNullValue()));
+      assertThat(
+        configurationException.getMessage(),
+        containsString(" not a valid JSON file [localization/invalid.json]")
+      );
+    }
+  }
+
+  @Test
   public void failOnFallbackLocaleNotPresentInAvailableLocales() {
     //given
     embeddedOptimizeRule.getConfigurationService().setFallbackLocale("xyz");

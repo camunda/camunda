@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.Optional;
 
 @AllArgsConstructor
@@ -27,6 +29,7 @@ public class LocalizationService implements ConfigurationReloadable {
 
   public static final String LOCALIZATION_PATH = "localization/";
 
+  private final ObjectMapper objectMapper = new ObjectMapper();
   private final ConfigurationService configurationService;
 
   public byte[] getLocalizationFileBytes(final String localeCode) {
@@ -46,10 +49,20 @@ public class LocalizationService implements ConfigurationReloadable {
   public void validateLocaleConfigurationFiles() {
     configurationService.getAvailableLocales().forEach(locale -> {
       final String localeFileName = resolveLocaleFilePath(locale);
-      if (getClass().getClassLoader().getResource(localeFileName) == null) {
+      final URL localizationFile = getClass().getClassLoader().getResource(localeFileName);
+      if (localizationFile == null) {
         throw new OptimizeConfigurationException(
           String.format("File for configured availableLocale is not available [%s].", localeFileName)
         );
+      } else {
+        try {
+          objectMapper.readTree(localizationFile);
+        } catch (IOException e) {
+          throw new OptimizeConfigurationException(
+            String.format("File for configured availableLocale is not a valid JSON file [%s].", localeFileName),
+            e
+          );
+        }
       }
     });
 
