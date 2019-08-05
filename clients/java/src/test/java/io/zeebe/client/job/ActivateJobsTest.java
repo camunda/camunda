@@ -190,8 +190,8 @@ public class ActivateJobsTest extends ClientTest {
     assertThat(request.getTimeout())
         .isEqualTo(client.getConfiguration().getDefaultJobTimeout().toMillis());
     assertThat(request.getWorker()).isEqualTo(client.getConfiguration().getDefaultJobWorkerName());
-
-    rule.verifyDefaultRequestTimeout();
+    assertThat(request.getRequestTimeout())
+        .isEqualTo(client.getConfiguration().getDefaultRequestTimeout().toMillis());
   }
 
   @Test
@@ -220,8 +220,9 @@ public class ActivateJobsTest extends ClientTest {
         .requestTimeout(requestTimeout)
         .send()
         .join();
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
 
     // then
-    rule.verifyRequestTimeout(requestTimeout);
+    assertThat(request.getRequestTimeout()).isEqualTo(requestTimeout.toMillis());
   }
 }
