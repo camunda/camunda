@@ -106,7 +106,7 @@ public class ExecutionStateAggregationUtil {
     // @formatter:off
     return "Long result; " +
       "if (doc[params.durFieldName].empty && !doc[params.refDateFieldName].empty) {" +
-        "result = params.currRequestDateInMs - doc[params.refDateFieldName].date.getMillis() " +
+        "result = params.currRequestDateInMs - doc[params.refDateFieldName].value.getMillis() " +
       "} else { " +
         "result = !doc[params.durFieldName].empty ? doc[params.durFieldName].value : null " +
       "} ";
