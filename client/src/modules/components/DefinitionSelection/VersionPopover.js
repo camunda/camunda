@@ -27,37 +27,39 @@ export default function VersionPopover({versions, selected, onChange, disabled})
   return (
     <Popover className="VersionPopover" title={title} disabled={disabled}>
       <Form compact>
-        <LabeledInput
-          label={t('common.definitionSelection.all')}
-          type="radio"
-          checked={selected[0] === 'all'}
-          onChange={() => onChange(['all'])}
-        />
-        <LabeledInput
-          label={t('common.definitionSelection.version.alwaysLatest')}
-          type="radio"
-          checked={selected[0] === 'latest'}
-          onChange={() => onChange(['latest'])}
-        />
-        <LabeledInput
-          label={t(
-            `common.definitionSelection.version.specific.label${
-              versions.length === 1 ? '' : '-plural'
-            }`
-          )}
-          type="radio"
-          checked={specific}
-          onChange={() => onChange([versions[0].version])}
-        />
-        <div
-          className={classnames('specificVersions', {
-            disabled: !specific
-          })}
-        >
-          {versions.map(({version, versionTag}) => {
-            return (
-              <div key={version}>
+        <Form.Group>
+          <LabeledInput
+            label={t('common.definitionSelection.all')}
+            type="radio"
+            checked={selected[0] === 'all'}
+            onChange={() => onChange(['all'])}
+          />
+          <LabeledInput
+            label={t('common.definitionSelection.version.alwaysLatest')}
+            type="radio"
+            checked={selected[0] === 'latest'}
+            onChange={() => onChange(['latest'])}
+          />
+          <LabeledInput
+            label={t(
+              `common.definitionSelection.version.specific.label${
+                versions.length === 1 ? '' : '-plural'
+              }`
+            )}
+            type="radio"
+            checked={specific}
+            onChange={() => onChange([versions[0].version])}
+          />
+          <Form.Group
+            noSpacing
+            className={classnames('specificVersions', {
+              disabled: !specific
+            })}
+          >
+            {versions.map(({version, versionTag}) => {
+              return (
                 <LabeledInput
+                  key={version}
                   label={
                     <>
                       {version}
@@ -75,10 +77,10 @@ export default function VersionPopover({versions, selected, onChange, disabled})
                     }
                   }}
                 />
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </Form.Group>
+        </Form.Group>
       </Form>
     </Popover>
   );

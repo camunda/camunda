@@ -147,7 +147,8 @@
           font-size: 0.875em;
         }
 
-        > label {
+        > label,
+        > .LabeledInput .label.after {
           display: block;
           padding: 10px 0px;
         }
@@ -201,7 +202,8 @@
         padding: 5px 0 14px 0;
       }
 
-      > label {
+      > label,
+      > .LabeledInput {
         display: block;
         white-space: nowrap;
 

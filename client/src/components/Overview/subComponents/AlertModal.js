@@ -27,8 +27,6 @@ import ThresholdInput from './ThresholdInput';
 import {formatters, isDurationReport} from 'services';
 import {t} from 'translation';
 
-import './AlertModal.scss';
-
 const newAlert = {
   email: '',
   reportId: '',
