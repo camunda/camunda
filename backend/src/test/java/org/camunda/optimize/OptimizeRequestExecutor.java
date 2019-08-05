@@ -148,7 +148,17 @@ public class OptimizeRequestExecutor {
 
     if (queryParams != null && queryParams.size() != 0) {
       for (Map.Entry<String, Object> queryParam : queryParams.entrySet()) {
-        webTarget = webTarget.queryParam(queryParam.getKey(), queryParam.getValue());
+        if (queryParam.getValue() instanceof List) {
+          for (Object p : ((List) queryParam.getValue())) {
+            if (p == null) {
+              webTarget = webTarget.queryParam(queryParam.getKey(), "null");
+            } else {
+              webTarget = webTarget.queryParam(queryParam.getKey(), p);
+            }
+          }
+        } else {
+          webTarget = webTarget.queryParam(queryParam.getKey(), queryParam.getValue());
+        }
       }
     }
 
@@ -717,6 +727,25 @@ public class OptimizeRequestExecutor {
     this.path = "localization";
     this.requestType = GET;
     this.addSingleQueryParam("localeCode", localeCode);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildFlowNodeOutliersRequest(String key, List<String> version, List<String> tenantIds) {
+    this.path = "analysis/flowNodeOutliers";
+    this.requestType = GET;
+    this.addSingleQueryParam("processDefinitionKey", key);
+    this.addSingleQueryParam("processDefinitionVersions", version);
+    this.addSingleQueryParam("tenantIds", tenantIds);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildFlowNodeDurationChartRequest(String key, List<String> version, String flowNodeId, List<String> tenantIds) {
+    this.path = "analysis/durationChart";
+    this.requestType = GET;
+    this.addSingleQueryParam("processDefinitionKey", key);
+    this.addSingleQueryParam("processDefinitionVersions", version);
+    this.addSingleQueryParam("flowNodeId", flowNodeId);
+    this.addSingleQueryParam("tenantIds", tenantIds);
     return this;
   }
 
