@@ -242,7 +242,8 @@
           "edit": "Sammlungsname bearbeiten"
         },
         "createBtn": "Sammlung erstellen",
-        "inputLabel": "Name hinzufügen"
+        "inputLabel": "Name hinzufügen",
+        "defaultName": "Neue Sammlung"
       }
     },
     "sharing": {

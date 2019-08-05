@@ -12,7 +12,7 @@ export default class EditCollectionModal extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      name: props.collection.name || 'New Collection',
+      name: props.collection.name || t('common.collection.modal.defaultName'),
       loading: false
     };
   }

@@ -13,13 +13,14 @@ import './NoEntities.scss';
 import {t} from 'translation';
 
 export default function NoEntities({label, createFunction, link}) {
+  const LinkLabel = t(`common.entity.create.${label}`);
   const createLink = link ? (
     <Link to={link} className="createLink">
-      {t(`common.entity.create.${label}`, {label})}
+      {LinkLabel}
     </Link>
   ) : (
     <Button variant="link" className="createLink" onClick={createFunction}>
-      {t(`common.entity.create.${label}`, {label})}
+      {LinkLabel}
     </Button>
   );
 

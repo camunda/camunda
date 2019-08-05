@@ -242,7 +242,8 @@
           "edit": "Edit Collection name"
         },
         "createBtn": "Create Collection",
-        "inputLabel": "Add Name"
+        "inputLabel": "Add Name",
+        "defaultName": "New Collection"
       }
     },
     "sharing": {
