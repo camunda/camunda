@@ -34,6 +34,7 @@ var client zbc.ZBClient
 
 var addressFlag string
 var caCertPathFlag string
+var credsPathFlag string
 var insecureFlag bool
 
 var rootCmd = &cobra.Command{
@@ -59,11 +60,32 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().StringVar(&addressFlag, "address", "", "Specify the Zeebe addressFlag")
 	rootCmd.PersistentFlags().StringVar(&caCertPathFlag, "certPath", "", "Specify a path to a certificate with which to validate gateway requests")
+	rootCmd.PersistentFlags().StringVar(&credsPathFlag, "credsPath", "", "Specify a path to a Zeebe credentials file")
 	rootCmd.PersistentFlags().BoolVar(&insecureFlag, "insecure", false, "Specify if zbctl should use an unsecured connection")
 }
 
 // initClient will create a client with in the following precedence: address flag, environment variable, default address
 var initClient = func(cmd *cobra.Command, args []string) error {
+	var err error
+
+	address := parseAddress()
+
+	credsProvider, err := parseCredentials()
+	if err != nil {
+		return err
+	}
+
+	client, err = zbc.NewZBClient(&zbc.ZBClientConfig{
+		GatewayAddress:         address,
+		UsePlaintextConnection: insecureFlag,
+		CaCertificatePath:      caCertPathFlag,
+		CredentialsProvider:    credsProvider,
+	})
+
+	return err
+}
+
+func parseAddress() string {
 	address := DefaultAddressHost
 
 	addressEnv := os.Getenv("ZEEBE_ADDRESS")
@@ -74,16 +96,17 @@ var initClient = func(cmd *cobra.Command, args []string) error {
 	if len(addressFlag) > 0 {
 		address = addressFlag
 	}
-
 	address = appendPort(address)
 
-	var err error
-	client, err = zbc.NewZBClient(&zbc.ZBClientConfig{
-		GatewayAddress:         address,
-		UsePlaintextConnection: insecureFlag,
-		CaCertificatePath:      caCertPathFlag,
-	})
-	return err
+	return address
+}
+
+func parseCredentials() (credsProvider zbc.CredentialsProvider, err error) {
+	if credsPathFlag == "" {
+		return nil, nil
+	}
+
+	return zbc.NewZeebeClientCredentialsProvider(credsPathFlag)
 }
 
 func keyArg(key *int64) cobra.PositionalArgs {
