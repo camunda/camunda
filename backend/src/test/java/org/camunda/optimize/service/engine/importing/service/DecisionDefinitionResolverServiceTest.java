@@ -25,16 +25,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class DecisionDefinitionVersionResolverServiceTest {
+public class DecisionDefinitionResolverServiceTest {
 
   @Mock
   private DecisionDefinitionReader decisionDefinitionReader;
 
-  private DecisionDefinitionVersionResolverService underTest;
+  private DecisionDefinitionResolverService underTest;
 
   @Before
   public void init() {
-    this.underTest = new DecisionDefinitionVersionResolverService(decisionDefinitionReader);
+    this.underTest = new DecisionDefinitionResolverService(decisionDefinitionReader);
   }
 
   @Test

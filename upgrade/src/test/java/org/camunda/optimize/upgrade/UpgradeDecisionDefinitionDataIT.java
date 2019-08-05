@@ -35,6 +35,8 @@ public class UpgradeDecisionDefinitionDataIT extends AbstractUpgradeIT {
 
   private static final DecisionDefinitionType DECISION_DEFINITION_TYPE_OBJECT = new DecisionDefinitionType();
   private static final String DECISION_DEFINITION_ID = "aDecision:1:dbef181f-af98-11e9-9604-0242ac120003";
+  private static final String DECISION_DEFINITION_ID_WITH_MULTIPLE_TABLES =
+    "beverages:1:382525ac-b761-11e9-a6ee-0242ac120002";
 
   @Before
   @Override
@@ -67,6 +69,28 @@ public class UpgradeDecisionDefinitionDataIT extends AbstractUpgradeIT {
     assertThat(processDefinitionById.getOutputVariableNames(), is(notNullValue()));
     assertThat(processDefinitionById.getOutputVariableNames().size(), is(1));
     assertThat(processDefinitionById.getOutputVariableNames().get(0).getName(), is("output"));
+  }
+
+  @Test
+  public void decisionDefinitionWithMultipleTablesHasExpectedVariableNames() {
+    //given
+    final UpgradePlan upgradePlan = new UpgradeFrom25To26().buildUpgradePlan();
+
+    // when
+    upgradePlan.execute();
+
+    // then
+    final DecisionDefinitionOptimizeDto processDefinitionById = getDecisionDefinitionById(
+      DECISION_DEFINITION_ID_WITH_MULTIPLE_TABLES
+    );
+
+    assertThat(processDefinitionById.getInputVariableNames(), is(notNullValue()));
+    assertThat(processDefinitionById.getInputVariableNames().size(), is(2));
+    assertThat(processDefinitionById.getInputVariableNames().get(0).getName(), is("Dish"));
+    assertThat(processDefinitionById.getInputVariableNames().get(1).getName(), is("Guests with children"));
+    assertThat(processDefinitionById.getOutputVariableNames(), is(notNullValue()));
+    assertThat(processDefinitionById.getOutputVariableNames().size(), is(1));
+    assertThat(processDefinitionById.getOutputVariableNames().get(0).getName(), is("Beverages"));
   }
 
   @SneakyThrows

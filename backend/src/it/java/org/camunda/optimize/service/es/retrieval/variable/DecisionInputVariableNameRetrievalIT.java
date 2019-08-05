@@ -23,12 +23,13 @@ public class DecisionInputVariableNameRetrievalIT extends DecisionVariableNameRe
     if (varNames.size() > types.size()) {
       types = nCopies(varNames.size(), STRING);
     }
-    DmnModelGenerator dmnModelGenerator = DmnModelGenerator.create();
+    DmnModelGenerator.DecisionGenerator decisionGenerator = DmnModelGenerator.create().decision();
+    decisionGenerator.decisionDefinitionKey(DECISION_KEY);
     for (int i = 0; i < varNames.size(); i++) {
-      dmnModelGenerator = dmnModelGenerator.addInput(varNames.get(i), types.get(i));
+      decisionGenerator = decisionGenerator.addInput(varNames.get(i), types.get(i));
     }
-    dmnModelGenerator = dmnModelGenerator.addOutput("output", STRING);
-    return engineRule.deployDecisionDefinition(dmnModelGenerator.build());
+    decisionGenerator = decisionGenerator.addOutput("output", STRING);
+    return engineRule.deployDecisionDefinition(decisionGenerator.buildDecision().build());
   }
 
   protected List<DecisionVariableNameDto> getVariableNames(DecisionVariableNameRequestDto variableRequestDto) {

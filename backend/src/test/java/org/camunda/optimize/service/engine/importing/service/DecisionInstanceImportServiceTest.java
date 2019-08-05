@@ -35,7 +35,8 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class DecisionInstanceImportServiceTest {
 
-  public static final String VERSION_RESULT = "VERSION";
+  private static final String VERSION_RESULT = "VERSION";
+
   @Mock
   private DecisionInstanceWriter decisionInstanceWriter;
 
@@ -46,7 +47,7 @@ public class DecisionInstanceImportServiceTest {
   private EngineContext engineContext;
 
   @Mock
-  private DecisionDefinitionVersionResolverService decisionDefinitionVersionResolverService;
+  private DecisionDefinitionResolverService decisionDefinitionResolverService;
 
   @Mock
   private DecisionInputImportAdapterProvider decisionInputImportAdapterProvider;
@@ -59,12 +60,12 @@ public class DecisionInstanceImportServiceTest {
   @Before
   public void init() {
     when(engineContext.getEngineAlias()).thenReturn("1");
-    when(decisionDefinitionVersionResolverService.getVersionForDecisionDefinitionId(any()))
+    when(decisionDefinitionResolverService.getVersionForDecisionDefinitionId(any()))
       .thenReturn(Optional.of(VERSION_RESULT));
 
     this.underTest = new DecisionInstanceImportService(
       elasticsearchImportJobExecutor, engineContext, decisionInstanceWriter,
-      decisionDefinitionVersionResolverService, decisionInputImportAdapterProvider, decisionOutputImportAdapterProvider
+      decisionDefinitionResolverService, decisionInputImportAdapterProvider, decisionOutputImportAdapterProvider
     );
   }
 

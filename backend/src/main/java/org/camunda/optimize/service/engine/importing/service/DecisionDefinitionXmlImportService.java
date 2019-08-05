@@ -15,6 +15,8 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.DecisionDefinitionXmlElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.DecisionDefinitionXmlWriter;
+import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,6 +31,7 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final EngineContext engineContext;
   private final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter;
+  private final DecisionDefinitionResolverService decisionDefinitionResolverService;
 
   @Override
   public void executeImport(final List<DecisionDefinitionXmlEngineDto> engineDtoList) {
@@ -70,13 +73,31 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
 
   private DecisionDefinitionOptimizeDto mapEngineEntityToOptimizeEntity(final DecisionDefinitionXmlEngineDto engineEntity) {
     final DmnModelInstance dmnModelInstance = parseDmnModel(engineEntity.getDmnXml());
+    String decisionKey = resolveDecisionDefinitionKey(engineEntity);
     return new DecisionDefinitionOptimizeDto(
       engineEntity.getId(),
       engineEntity.getDmnXml(),
       engineContext.getEngineAlias(),
-      extractInputVariables(dmnModelInstance),
-      extractOutputVariables(dmnModelInstance)
+      extractInputVariables(dmnModelInstance, decisionKey),
+      extractOutputVariables(dmnModelInstance, decisionKey)
     );
+  }
+
+  private String resolveDecisionDefinitionKey(final DecisionDefinitionXmlEngineDto engineEntity) {
+    try {
+      return decisionDefinitionResolverService
+        .getKeyForDecisionDefinitionId(engineEntity.getId())
+        .orElseThrow(() -> {
+          final String message = String.format(
+            "Couldn't obtain key for decisionDefinitionId [%s]. It hasn't been imported yet",
+            engineEntity.getId()
+          );
+          return new OptimizeDecisionDefinitionFetchException(message);
+        });
+    } catch (OptimizeDecisionDefinitionFetchException e) {
+      log.debug("Required Decision Definition not imported yet, skipping current decision xml import cycle.", e);
+      throw new OptimizeRuntimeException(e.getMessage(), e);
+    }
   }
 
 }

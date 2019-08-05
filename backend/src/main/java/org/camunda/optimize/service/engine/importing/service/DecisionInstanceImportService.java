@@ -42,7 +42,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final EngineContext engineContext;
   private final DecisionInstanceWriter decisionInstanceWriter;
-  private final DecisionDefinitionVersionResolverService decisionDefinitionVersionResolverService;
+  private final DecisionDefinitionResolverService decisionDefinitionResolverService;
   private final DecisionInputImportAdapterProvider decisionInputImportAdapterProvider;
   private final DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider;
 
@@ -93,7 +93,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
 
   public DecisionInstanceDto mapEngineEntityToOptimizeEntity(HistoricDecisionInstanceDto engineEntity)
     throws OptimizeDecisionDefinitionFetchException {
-    final DecisionInstanceDto decisionInstanceDto = new DecisionInstanceDto(
+    return new DecisionInstanceDto(
       engineEntity.getId(),
       engineEntity.getProcessDefinitionId(),
       engineEntity.getProcessDefinitionKey(),
@@ -114,7 +114,6 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
       engineContext.getEngineAlias(),
       engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null))
     );
-    return decisionInstanceDto;
   }
 
   private List<OutputInstanceDto> mapDecisionOutputs(HistoricDecisionInstanceDto engineEntity) {
@@ -127,12 +126,10 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
       outputInstanceDtoList = dmnInputImportAdapter.adaptOutputs(outputInstanceDtoList);
     }
 
-    final List<OutputInstanceDto> outputList = outputInstanceDtoList.stream()
+    return outputInstanceDtoList.stream()
       .map(this::mapPluginOutputDtoToOptimizeOutputDto)
       .filter(this::isValidOutputInstanceDto)
       .collect(Collectors.toList());
-
-    return outputList;
   }
 
   private List<InputInstanceDto> mapDecisionInputs(HistoricDecisionInstanceDto engineEntity) {
@@ -146,12 +143,10 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
       inputInstanceDtoList = decisionInputImportAdapter.adaptInputs(inputInstanceDtoList);
     }
 
-    final List<InputInstanceDto> inputList = inputInstanceDtoList.stream()
+    return inputInstanceDtoList.stream()
       .map(this::mapPluginInputDtoToOptimizeInputDto)
       .filter(this::isValidInputInstanceDto)
       .collect(Collectors.toList());
-
-    return inputList;
   }
 
   private InputInstanceDto mapPluginInputDtoToOptimizeInputDto(PluginDecisionInputDto pluginDecisionInputDto) {
@@ -179,7 +174,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
 
   private String resolveDecisionDefinitionVersion(final HistoricDecisionInstanceDto engineEntity)
     throws OptimizeDecisionDefinitionFetchException {
-    return decisionDefinitionVersionResolverService
+    return decisionDefinitionResolverService
       .getVersionForDecisionDefinitionId(engineEntity.getDecisionDefinitionId())
       .orElseThrow(() -> {
         final String message = String.format(

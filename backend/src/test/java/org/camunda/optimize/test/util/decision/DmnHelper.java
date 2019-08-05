@@ -12,10 +12,15 @@ import org.camunda.bpm.model.dmn.DmnModelInstance;
 public class DmnHelper {
 
   public static DmnModelInstance createSimpleDmnModel(final String decisionKey) {
-    return DmnModelGenerator.create()
-      .decisionDefinitionKey(decisionKey)
-      .addOutput("output", DecisionTypeRef.STRING)
+    // @formatter:off
+    return DmnModelGenerator
+      .create()
+        .decision()
+          .decisionDefinitionKey(decisionKey)
+          .addOutput("output", DecisionTypeRef.STRING)
+        .buildDecision()
       .build();
+    // @formatter:on
   }
 
 }

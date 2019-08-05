@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.retrieval.variable;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
@@ -17,6 +18,7 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
+import org.camunda.optimize.test.util.decision.DmnModelGenerator;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -37,7 +39,6 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.test.util.decision.DecisionTypeRef.BOOLEAN;
 import static org.camunda.optimize.test.util.decision.DecisionTypeRef.STRING;
 import static org.camunda.optimize.test.util.decision.DecisionTypeRef.values;
-import static org.camunda.optimize.test.util.decision.DmnModelGenerator.DEFAULT_DECISION_DEFINITION_KEY;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,13 +46,15 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDefinitionIT {
 
+  protected static final String DECISION_KEY = "aDecision";
+
   protected EngineIntegrationRule engineRule = new EngineIntegrationRule();
   protected ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   protected EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
   public void getVariableNames() {
@@ -75,6 +78,41 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
   }
 
   @Test
+  public void getVariableNamesForDefinitionWithMultipleTables() {
+    // given
+    // @formatter:off
+    DmnModelInstance modelInstance = DmnModelGenerator
+      .create()
+        .decision()
+          .decisionDefinitionKey("decision1")
+          .addInput("inputForDecision1", STRING)
+          .addOutput("outputForDecision1", STRING)
+        .buildDecision()
+        .decision()
+          .decisionDefinitionKey("decision2")
+          .addInput("inputForDecision2", STRING)
+          .addOutput("outputForDecision2", STRING)
+        .buildDecision()
+      .build();
+    // @formatter:on
+    DecisionDefinitionEngineDto decisionDefinitionDto =
+      engineRule.deployDecisionDefinition(modelInstance);
+
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    List<DecisionVariableNameDto> variableResponse = getVariableNames("decision2", "1");
+
+    // then
+    assertThat(variableResponse.size(), is(1));
+    assertThat(variableResponse.get(0).getName().endsWith("2"), is(true));
+    assertThat(variableResponse.get(0).getId(), notNullValue());
+    assertThat(variableResponse.get(0).getType(), is(VariableType.STRING));
+  }
+
+  @Test
   public void getVariableNamesSingleBucketFilteredBySingleTenant() {
     // given
     final String tenantId1 = "tenantId1";
@@ -88,7 +126,7 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
 
     // when
     DecisionVariableNameRequestDto variableNameRequestDto = new DecisionVariableNameRequestDto();
-    variableNameRequestDto.setDecisionDefinitionKey(DEFAULT_DECISION_DEFINITION_KEY);
+    variableNameRequestDto.setDecisionDefinitionKey(DECISION_KEY);
     variableNameRequestDto.setDecisionDefinitionVersion(ALL_VERSIONS);
     variableNameRequestDto.setTenantIds(selectedTenants);
     List<DecisionVariableNameDto> variableResponse = getVariableNames(variableNameRequestDto);
@@ -230,7 +268,9 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
         .map(typeRef -> VariableType.getTypeForId(typeRef.getId()))
         .toArray(VariableType[]::new);
     assertThat(variableResponse.size(), is(expectedTypes.length));
-    List<VariableType> actualTypes = variableResponse.stream().map(DecisionVariableNameDto::getType).collect(Collectors.toList());
+    List<VariableType> actualTypes = variableResponse.stream()
+      .map(DecisionVariableNameDto::getType)
+      .collect(Collectors.toList());
     assertThat(actualTypes, containsInAnyOrder(expectedTypes));
   }
 
@@ -252,12 +292,14 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     assertThat(variableResponse.get(1).getType(), is(VariableType.BOOLEAN));
   }
 
+  protected abstract DecisionDefinitionEngineDto deployDecisionsWithVarNames(List<String> varNames,
+                                                                             List<DecisionTypeRef> types);
+
+  protected abstract List<DecisionVariableNameDto> getVariableNames(DecisionVariableNameRequestDto variableRequestDto);
+
   private DecisionDefinitionEngineDto deployDecisionsWithStringVarNames(List<String> varNames) {
     return deployDecisionsWithVarNames(varNames, of(STRING));
   }
-
-  protected abstract DecisionDefinitionEngineDto deployDecisionsWithVarNames(List<String> varNames,
-                                                                             List<DecisionTypeRef> types);
 
   private void deployDecisionsWithStringVarName(String varName) {
     deployDecisionsWithVarNames(of(varName), of(DecisionTypeRef.STRING));
@@ -281,14 +323,12 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     return getVariableNames(key, of(version));
   }
 
-  protected abstract List<DecisionVariableNameDto> getVariableNames(DecisionVariableNameRequestDto variableRequestDto);
-
   private void deployAndStartMultiTenantDecision(final List<String> deployedTenants) {
     deployedTenants.stream()
       .filter(Objects::nonNull)
       .forEach(tenantId -> engineRule.createTenant(tenantId));
     deployedTenants.forEach(tenant -> {
-      String randomVarName = RandomStringUtils.random(10);
+      String randomVarName = RandomStringUtils.randomAlphabetic(10);
       deployDecisionsWithStringVarName(randomVarName);
     });
   }

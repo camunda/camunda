@@ -39,7 +39,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import static org.camunda.optimize.service.engine.importing.DmnModelUtility.parseDmnModel;
@@ -183,7 +183,7 @@ public class UpgradeFrom25To26 implements Upgrade {
     return getDecisionDefinitionVariableNames(DmnModelUtility::extractOutputVariables);
   }
 
-  private Map<String, List<DecisionVariableNameDto>> getDecisionDefinitionVariableNames(Function<DmnModelInstance, List<DecisionVariableNameDto>> extractVariables) {
+  private Map<String, List<DecisionVariableNameDto>> getDecisionDefinitionVariableNames(BiFunction<DmnModelInstance, String, List<DecisionVariableNameDto>> extractVariables) {
     final Map<String, List<DecisionVariableNameDto>> result = new HashMap<>();
     try {
       final TimeValue scrollTimeOut = new TimeValue(configurationService.getElasticsearchScrollTimeout());
@@ -196,9 +196,10 @@ public class UpgradeFrom25To26 implements Upgrade {
         Arrays.stream(currentScrollResponse.getHits().getHits())
           .map(SearchHit::getSourceAsMap)
           .forEach(sourceAsMap -> {
-            final String key = (String) sourceAsMap.get(DecisionDefinitionType.DECISION_DEFINITION_ID);
+            final String id = (String) sourceAsMap.get(DecisionDefinitionType.DECISION_DEFINITION_ID);
+            final String key = (String) sourceAsMap.get(DecisionDefinitionType.DECISION_DEFINITION_KEY);
             final String value = (String) sourceAsMap.get(DecisionDefinitionType.DECISION_DEFINITION_XML);
-            result.put(key, extractVariables.apply(parseDmnModel(value)));
+            result.put(id, extractVariables.apply(parseDmnModel(value), key));
           });
 
         if (currentScrollResponse.getHits().getTotalHits() > result.size()) {

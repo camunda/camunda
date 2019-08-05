@@ -276,10 +276,15 @@ public class DecisionVariableAuthorizationIT {
   }
 
   private DecisionDefinitionEngineDto deploySimpleDecisionDefinition(String tenantId) {
-    DmnModelInstance modelInstance = DmnModelGenerator.create()
-      .addInput("input", "input", DecisionTypeRef.STRING)
-      .addOutput("output", "output", DecisionTypeRef.STRING)
+    // @formatter:off
+    DmnModelInstance modelInstance = DmnModelGenerator
+      .create()
+        .decision()
+          .addInput("input", "input", DecisionTypeRef.STRING)
+          .addOutput("output", "output", DecisionTypeRef.STRING)
+        .buildDecision()
       .build();
+    // @formatter:on
     return engineRule.deployDecisionDefinition(modelInstance, tenantId);
   }
 

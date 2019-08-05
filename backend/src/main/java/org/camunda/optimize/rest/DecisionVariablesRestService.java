@@ -6,8 +6,8 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.security.SessionService;

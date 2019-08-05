@@ -10,6 +10,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.DecisionDefinitionXmlFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.DecisionDefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
+import org.camunda.optimize.service.engine.importing.service.DecisionDefinitionResolverService;
 import org.camunda.optimize.service.engine.importing.service.DecisionDefinitionXmlImportService;
 import org.camunda.optimize.service.es.writer.DecisionDefinitionXmlWriter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,8 +28,11 @@ public class DecisionDefinitionXmlEngineImportMediator
 
   @Autowired
   private DecisionDefinitionXmlWriter decisionDefinitionXmlWriter;
+  @Autowired
+  private DecisionDefinitionResolverService decisionDefinitionResolverService;
 
   private DecisionDefinitionXmlFetcher engineEntityFetcher;
+
 
   public DecisionDefinitionXmlEngineImportMediator(final EngineContext engineContext) {
     super(engineContext);
@@ -40,7 +44,7 @@ public class DecisionDefinitionXmlEngineImportMediator
     engineEntityFetcher = beanFactory.getBean(DecisionDefinitionXmlFetcher.class, engineContext);
 
     importService = new DecisionDefinitionXmlImportService(
-      elasticsearchImportJobExecutor, engineContext, decisionDefinitionXmlWriter
+      elasticsearchImportJobExecutor, engineContext, decisionDefinitionXmlWriter, decisionDefinitionResolverService
     );
   }
 
