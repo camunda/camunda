@@ -12,7 +12,6 @@ import {flatMap} from 'lodash';
 import {themed} from 'modules/theme';
 
 import {STATE} from 'modules/constants';
-import SpinnerSkeleton from 'modules/components/Skeletons';
 
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
