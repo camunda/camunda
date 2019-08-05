@@ -128,8 +128,11 @@ export default class Analysis extends React.Component {
         updates.processDefinitionVersions[0],
         updates.tenantIds[0]
       );
-      changes.gateway = null;
-      changes.endEvent = null;
+
+      if (changes.xml !== this.state.xml) {
+        changes.gateway = null;
+        changes.endEvent = null;
+      }
     } else if (
       !newConfig.processDefinitionKey ||
       !newConfig.processDefinitionVersions ||

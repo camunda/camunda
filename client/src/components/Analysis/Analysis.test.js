@@ -131,6 +131,27 @@ it('should clear the selection when another process definition is selected', asy
   expect(node.state().config.filter).toEqual([]);
 });
 
+it('should not clear the selection when the xml stays the same', async () => {
+  const node = shallow(<Analysis />);
+
+  loadProcessDefinitionXml.mockReturnValue('some xml');
+
+  await node.instance().updateConfig({
+    processDefinitionKey: 'firstKey',
+    processDefinitionVersions: ['2'],
+    tenantIds: []
+  });
+  await node.instance().setState({gateway: 'g', endEvent: 'e'});
+  await node.instance().updateConfig({
+    processDefinitionKey: 'newKey',
+    processDefinitionVersions: ['latest'],
+    tenantIds: []
+  });
+
+  expect(node).toHaveState('gateway', 'g');
+  expect(node).toHaveState('endEvent', 'e');
+});
+
 it('should show a warning message when there are incompatible filters', async () => {
   incompatibleFilters.mockReturnValue(true);
   const node = await mount(<Analysis />);
