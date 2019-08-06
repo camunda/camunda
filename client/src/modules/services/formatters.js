@@ -33,10 +33,21 @@ export function frequency(number, precision) {
       (Math.round((number / digitsFactor) * precisionFactor) / precisionFactor) * digitsFactor;
 
     if (roundedToPrecision >= 10 ** 6) {
-      return intl.format(roundedToPrecision / 10 ** 6) + ' Million';
+      const millions = roundedToPrecision / 10 ** 6;
+      return (
+        intl.format(millions) +
+        ' ' +
+        t(`common.unit.million.label${millions !== 1 ? '-plural' : ''}`)
+      );
     }
+
     if (roundedToPrecision >= 10 ** 3) {
-      return intl.format(roundedToPrecision / 10 ** 3) + ' Thousand';
+      const thousand = roundedToPrecision / 10 ** 3;
+      return (
+        intl.format(thousand) +
+        ' ' +
+        t(`common.unit.thousand.label${thousand !== 1 ? '-plural' : ''}`)
+      );
     }
     return intl.format(roundedToPrecision);
   }

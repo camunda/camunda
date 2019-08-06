@@ -346,6 +346,14 @@
       "year": {
         "label": "year",
         "label-plural": "years"
+      },
+      "thousand": {
+        "label": "thousand",
+        "label-plural": "thousand"
+      },
+      "million": {
+        "label": "million",
+        "label-plural": "million"
       }
     }
   }

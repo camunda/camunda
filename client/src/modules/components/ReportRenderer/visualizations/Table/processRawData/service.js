@@ -45,17 +45,22 @@ function sortHead(head, columnOrder) {
     .filter(onlyNonNestedColumns)
     .sort(byOrder(columnOrder.instanceProps));
 
-  const sortedHeadVariables = sortNested(head, columnOrder, 'Variables', 'variables');
+  const sortedHeadVariables = sortNested(
+    head,
+    columnOrder,
+    t('report.variables.default'),
+    'variables'
+  );
   const sortedHeadInputVariables = sortNested(
     head,
     columnOrder,
-    'Input Variables',
+    t('report.variables.input'),
     'inputVariables'
   );
   const sortedHeadOutputVariables = sortNested(
     head,
     columnOrder,
-    'Output Variables',
+    t('report.variables.output'),
     'outputVariables'
   );
 
@@ -97,9 +102,14 @@ function sortRow(row, head, sortedHead) {
     .filter(belongingToNonNestedColumn(head))
     .map(valueForNewColumnPosition(head, sortedHead));
 
-  const sortedRowVariables = sortNestedRow(row, head, sortedHead, 'Variables');
-  const sortedRowInputVariables = sortNestedRow(row, head, sortedHead, 'Input Variables');
-  const sortedRowOutputVariables = sortNestedRow(row, head, sortedHead, 'Output Variables');
+  const sortedRowVariables = sortNestedRow(row, head, sortedHead, t('report.variables.default'));
+  const sortedRowInputVariables = sortNestedRow(row, head, sortedHead, t('report.variables.input'));
+  const sortedRowOutputVariables = sortNestedRow(
+    row,
+    head,
+    sortedHead,
+    t('report.variables.output')
+  );
 
   return [
     ...sortedRowWithoutVariables,

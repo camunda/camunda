@@ -36,11 +36,11 @@ describe('frequencyFormatter', () => {
 
   it('should use a precision', () => {
     expect(frequencyFormatter(123, 1)).toBe(new Intl.NumberFormat().format(100));
-    expect(frequencyFormatter(12345, 2)).toBe(new Intl.NumberFormat().format(12) + ' Thousand');
-    expect(frequencyFormatter(12345, 9)).toBe(new Intl.NumberFormat().format(12.345) + ' Thousand');
-    expect(frequencyFormatter(12345678, 2)).toBe(new Intl.NumberFormat().format(12) + ' Million');
+    expect(frequencyFormatter(12345, 2)).toBe(new Intl.NumberFormat().format(12) + ' thousand');
+    expect(frequencyFormatter(12345, 9)).toBe(new Intl.NumberFormat().format(12.345) + ' thousand');
+    expect(frequencyFormatter(12345678, 2)).toBe(new Intl.NumberFormat().format(12) + ' million');
     expect(frequencyFormatter(12345678, 4)).toBe(
-      new Intl.NumberFormat().format(12.35) + ' Million'
+      new Intl.NumberFormat().format(12.35) + ' million'
     );
   });
 

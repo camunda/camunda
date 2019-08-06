@@ -11,6 +11,7 @@ import {Button} from 'components';
 import {flatten} from 'services';
 
 import './Table.scss';
+import {t} from 'translation';
 
 const defaultPageSize = 20;
 
@@ -169,7 +170,7 @@ function convertHeaderNameToAccessor(name) {
   const joined = name
     .split(' ')
     .join('')
-    .replace('Variables', 'Variable:');
+    .replace(t('report.variables.default'), t('report.groupBy.variable') + ':');
 
   return joined.charAt(0).toLowerCase() + joined.slice(1);
 }
