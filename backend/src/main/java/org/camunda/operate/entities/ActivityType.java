@@ -24,6 +24,7 @@ public enum ActivityType {
   PARALLEL_GATEWAY,
   EVENT_BASED_GATEWAY,
   SEQUENCE_FLOW,
+  MULTI_INSTANCE_BODY,
   UNKNOWN;
 
   private static final Logger logger = LoggerFactory.getLogger(ActivityType.class);

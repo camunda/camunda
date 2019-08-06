@@ -23,7 +23,7 @@ public class ZeebeClientRule extends ExternalResource {
   protected ZeebeClient client;
 
   public ZeebeClientRule(final EmbeddedBrokerRule brokerRule) {
-    this(brokerRule, config -> {});
+    this(brokerRule, ZeebeClientBuilder::usePlaintext);
   }
 
   public ZeebeClientRule(

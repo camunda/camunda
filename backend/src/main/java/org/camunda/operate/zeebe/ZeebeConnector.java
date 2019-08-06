@@ -32,6 +32,7 @@ public class ZeebeConnector {
       .newClientBuilder()
       .brokerContactPoint(brokerContactPoint)
       .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE)
+      .usePlaintext()
       .build();
   }
 

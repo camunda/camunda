@@ -118,6 +118,7 @@ public class OperateZeebeRule extends TestWatcher {
     properties.put(
       ClientProperties.BROKER_CONTACTPOINT,
       getBrokerConfig().getGateway().getNetwork().toSocketAddress().toString());
+    properties.putIfAbsent(ClientProperties.USE_PLAINTEXT_CONNECTION, true);
 
     return properties;
   }

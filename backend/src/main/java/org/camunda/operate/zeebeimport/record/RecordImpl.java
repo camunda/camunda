@@ -111,6 +111,11 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
     return value;
   }
 
+  @Override
+  public Record<T> clone() {
+    throw new UnsupportedOperationException("Clone not implemented");
+  }
+
   public void setKey(long key) {
     this.key = key;
   }
