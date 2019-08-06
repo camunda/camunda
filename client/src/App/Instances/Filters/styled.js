@@ -28,7 +28,7 @@ export const CollapseButton = styled(BasicCollapseButton)`
 `;
 
 export const Filters = styled.div`
-  padding: 20px 20px 0 20px;
+  padding: 20px 21px 0 19px;
   overflow: auto;
   overflow-x: hidden;
 `;

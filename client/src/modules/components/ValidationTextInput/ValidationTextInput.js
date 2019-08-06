@@ -5,7 +5,7 @@
  */
 
 import React, {useState} from 'react';
-import Input from 'modules/components/Input';
+
 import PropTypes from 'prop-types';
 import * as Styled from './styled';
 
@@ -41,7 +41,12 @@ function ValidationTextInput({
 
   return (
     <Styled.InputContainer>
-      <Input {...props} onChange={handleChange} onBlur={handleBlur} />
+      <Styled.Input
+        {...props}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        isIncomplete={isIncomplete}
+      />
       {isIncomplete && <Styled.WarningIcon>!</Styled.WarningIcon>}
     </Styled.InputContainer>
   );

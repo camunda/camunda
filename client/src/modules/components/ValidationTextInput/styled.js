@@ -6,17 +6,30 @@
 
 import styled from 'styled-components';
 import {Colors} from 'modules/theme';
+import BaseInput from 'modules/components/Input';
+
+import {ReactComponent as Warning} from 'modules/components/Icon/warning-message-icon.svg';
 
 export const InputContainer = styled.div`
   position: relative;
 `;
 
-export const WarningIcon = styled.div`
-  position: absolute;
-  color: ${Colors.incidentsAndErrors};
+export const Input = styled(BaseInput)`
+  ${props =>
+    props.isIncomplete && `border-color: ${Colors.incidentsAndErrors};`}
 
-  // change when icon is there
-  font-weight: bold;
-  right: 3px;
-  top: 7px;
+  &:focus {
+    ${props =>
+      props.isIncomplete &&
+      `box-shadow: 0 0 0 4px #ffafaf, 0 0 0 1px 
+    ${Colors.incidentsAndErrors};`}
+  }
+`;
+
+export const WarningIcon = styled(Warning)`
+  position: absolute;
+  width: 16px;
+  fill: ${Colors.incidentsAndErrors};
+  top: 3px;
+  right: -16px;
 `;

@@ -272,7 +272,7 @@ export default class Filters extends React.Component {
           <CollapsablePanel
             isCollapsed={context.isFiltersCollapsed}
             onCollapse={context.toggleFilters}
-            maxWidth={320}
+            maxWidth={328}
             expandButton={
               <Styled.VerticalButton label="Filters">
                 <Badge type={BADGE_TYPE.FILTERS}>

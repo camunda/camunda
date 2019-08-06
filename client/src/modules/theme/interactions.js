@@ -11,12 +11,8 @@ const focusTransition = 'box-shadow 0.05s ease-out';
 const focusCss = theme => {
   return css`
     box-shadow: ${themeStyle({
-      dark: `0 0 0 1px ${Colors.lightFocusInner}, 0 0 0 4px ${
-        Colors.focusOuter
-      }`,
-      light: `0 0 0 1px ${Colors.darkFocusInner}, 0 0 0 4px ${
-        Colors.focusOuter
-      }`
+      dark: `0 0 0 1px ${Colors.lightFocusInner}, 0 0 0 4px ${Colors.focusOuter}`,
+      light: `0 0 0 1px ${Colors.darkFocusInner}, 0 0 0 4px ${Colors.focusOuter}`
     })};
     outline: none;
 
