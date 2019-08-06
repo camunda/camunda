@@ -21,7 +21,9 @@ public class ExecutableLoopCharacteristics {
   private final Optional<DirectBuffer> inputElement;
 
   public ExecutableLoopCharacteristics(
-      boolean isSequential, JsonPathQuery inputCollection, Optional<DirectBuffer> inputElement) {
+      final boolean isSequential,
+      final JsonPathQuery inputCollection,
+      final Optional<DirectBuffer> inputElement) {
     this.isSequential = isSequential;
     this.inputCollection = inputCollection;
     this.inputElement = inputElement;
@@ -29,6 +31,10 @@ public class ExecutableLoopCharacteristics {
 
   public boolean isSequential() {
     return isSequential;
+  }
+
+  public boolean isParallel() {
+    return !isSequential;
   }
 
   public JsonPathQuery getInputCollection() {

@@ -27,6 +27,8 @@ public class ElementInstance implements DbValue {
   private long jobKey;
   private int activeTokens = 0;
 
+  private int multiInstanceLoopCounter = 0;
+
   ElementInstance() {
     elementRecord = new IndexedRecord();
   }
@@ -110,6 +112,14 @@ public class ElementInstance implements DbValue {
     return activeTokens + getNumberOfActiveElementInstances();
   }
 
+  public int getMultiInstanceLoopCounter() {
+    return multiInstanceLoopCounter;
+  }
+
+  public void incrementMultiInstanceLoopCounter() {
+    multiInstanceLoopCounter += 1;
+  }
+
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
     final int startOffset = offset;
@@ -127,12 +137,15 @@ public class ElementInstance implements DbValue {
 
     offset = readIntoBuffer(buffer, offset, elementRecord);
 
+    multiInstanceLoopCounter = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
+    offset += Integer.BYTES;
+
     assert (offset - startOffset) == length : "End offset differs from length";
   }
 
   @Override
   public int getLength() {
-    return 2 * Long.BYTES + 3 * Integer.BYTES + elementRecord.getLength();
+    return 2 * Long.BYTES + 4 * Integer.BYTES + elementRecord.getLength();
   }
 
   @Override
@@ -152,6 +165,9 @@ public class ElementInstance implements DbValue {
     offset += Long.BYTES;
 
     offset = writeIntoBuffer(buffer, offset, elementRecord);
+
+    buffer.putInt(offset, multiInstanceLoopCounter, ZB_DB_BYTE_ORDER);
+    offset += Integer.BYTES;
 
     assert (offset - startOffset) == getLength() : "End offset differs from getLength()";
   }
@@ -173,6 +189,8 @@ public class ElementInstance implements DbValue {
         + jobKey
         + ", activeTokens="
         + activeTokens
+        + ", multiInstanceLoopCounter="
+        + multiInstanceLoopCounter
         + '}';
   }
 }

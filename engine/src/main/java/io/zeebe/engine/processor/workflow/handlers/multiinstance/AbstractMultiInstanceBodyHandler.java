@@ -16,6 +16,7 @@ import io.zeebe.engine.processor.workflow.handlers.AbstractHandler;
 import io.zeebe.engine.state.instance.VariablesState;
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.Collections;
 import java.util.function.Function;
@@ -24,9 +25,8 @@ import org.agrona.DirectBuffer;
 public abstract class AbstractMultiInstanceBodyHandler
     extends AbstractHandler<ExecutableMultiInstanceBody> {
 
-  private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
-
   private final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup;
+  private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
 
   public AbstractMultiInstanceBodyHandler(
       final WorkflowInstanceIntent nextState,
@@ -62,7 +62,7 @@ public abstract class AbstractMultiInstanceBodyHandler
     return elementId.equals(flowScopeElementId);
   }
 
-  private void handleInnerActivity(final BpmnStepContext<ExecutableMultiInstanceBody> context) {
+  protected void handleInnerActivity(final BpmnStepContext<ExecutableMultiInstanceBody> context) {
     final ExecutableActivity innerActivity = context.getElement().getInnerActivity();
     final BpmnStep innerStep = innerActivity.getStep(context.getState());
 
@@ -87,5 +87,38 @@ public abstract class AbstractMultiInstanceBodyHandler
             context.getKey(), Collections.singleton(variableName));
 
     return queryProcessor.process(inputCollection, variableAsDocument);
+  }
+
+  protected void createInnerInstance(
+      final BpmnStepContext<ExecutableMultiInstanceBody> context,
+      final long bodyInstanceKey,
+      final DirectBuffer item) {
+
+    final ExecutableMultiInstanceBody multiInstanceBody = context.getElement();
+
+    final WorkflowInstanceRecord innerActivityRecord = context.getValue();
+    innerActivityRecord.setFlowScopeKey(bodyInstanceKey);
+
+    final long elementInstanceKey =
+        context
+            .getOutput()
+            .appendNewEvent(
+                WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+                innerActivityRecord,
+                multiInstanceBody.getInnerActivity());
+
+    // need to spawn token for child instance
+    context.getElementInstanceState().spawnToken(bodyInstanceKey);
+
+    // set instance variable
+    final VariablesState variablesState = context.getElementInstanceState().getVariablesState();
+
+    multiInstanceBody
+        .getLoopCharacteristics()
+        .getInputElement()
+        .ifPresent(
+            inputElement ->
+                variablesState.setVariableLocal(
+                    elementInstanceKey, innerActivityRecord.getWorkflowKey(), inputElement, item));
   }
 }

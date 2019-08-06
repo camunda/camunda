@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
+import io.zeebe.msgpack.query.MsgPackQueryProcessor.ArrayResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
 import java.util.ArrayList;
@@ -96,10 +97,29 @@ public class MsgPackQueryProcessorTest {
     assertThat(result).isNotNull();
     assertThat(result.isArray()).isTrue();
 
-    final List<DirectBuffer> array = new ArrayList<>();
-    final int size = result.readArray(element -> array.add(cloneBuffer(element)));
+    final ArrayResult arrayResult = result.getArray();
+    assertThat(arrayResult.size()).isEqualTo(5);
+  }
 
-    assertThat(size).isEqualTo(array.size());
+  @Test
+  public void shouldIterateOverResultArray() {
+    final QueryResults results =
+        processor.process(
+            path("foo"),
+            encodeMsgPack(
+                p -> {
+                  p.packMapHeader(1).packString("foo").packArrayHeader(5);
+                  p.packString("bar");
+                  p.packLong(123L);
+                  p.packBoolean(true);
+                  p.packNil();
+                  p.packMapHeader(2).packString("a").packLong(1).packString("b").packLong(2);
+                }));
+
+    final ArrayResult arrayResult = results.getSingleResult().getArray();
+
+    final List<DirectBuffer> array = new ArrayList<>();
+    arrayResult.forEach(element -> array.add(cloneBuffer(element)));
 
     assertThat(array)
         .hasSize(5)
@@ -108,6 +128,33 @@ public class MsgPackQueryProcessorTest {
             encodeMsgPack(p -> p.packLong(123L)),
             encodeMsgPack(p -> p.packBoolean(true)),
             encodeMsgPack(p -> p.packNil()),
+            encodeMsgPack(
+                p -> p.packMapHeader(2).packString("a").packLong(1).packString("b").packLong(2)));
+  }
+
+  @Test
+  public void shouldGetElementOfArrayResult() {
+    final QueryResults results =
+        processor.process(
+            path("foo"),
+            encodeMsgPack(
+                p -> {
+                  p.packMapHeader(1).packString("foo").packArrayHeader(5);
+                  p.packString("bar");
+                  p.packLong(123L);
+                  p.packBoolean(true);
+                  p.packNil();
+                  p.packMapHeader(2).packString("a").packLong(1).packString("b").packLong(2);
+                }));
+
+    final ArrayResult arrayResult = results.getSingleResult().getArray();
+
+    assertThat(arrayResult.getElement(0)).isEqualTo(encodeMsgPack(p -> p.packString("bar")));
+    assertThat(arrayResult.getElement(1)).isEqualTo(encodeMsgPack(p -> p.packLong(123L)));
+    assertThat(arrayResult.getElement(2)).isEqualTo(encodeMsgPack(p -> p.packBoolean(true)));
+    assertThat(arrayResult.getElement(3)).isEqualTo(encodeMsgPack(p -> p.packNil()));
+    assertThat(arrayResult.getElement(4))
+        .isEqualTo(
             encodeMsgPack(
                 p -> p.packMapHeader(2).packString("a").packLong(1).packString("b").packLong(2)));
   }
@@ -170,9 +217,48 @@ public class MsgPackQueryProcessorTest {
 
     assertThat(results.size()).isEqualTo(1);
 
-    assertThatThrownBy(() -> results.getSingleResult().readArray(item -> {}))
+    assertThatThrownBy(() -> results.getSingleResult().getArray())
         .isInstanceOf(RuntimeException.class)
         .hasMessage("expected ARRAY but found 'STRING'");
+  }
+
+  @Test
+  public void shouldThrowExceptionIfIndexOutOfArray() {
+    final QueryResults results =
+        processor.process(
+            path("foo"),
+            encodeMsgPack(
+                p -> {
+                  p.packMapHeader(1).packString("foo").packArrayHeader(1);
+                  p.packString("bar");
+                }));
+
+    final ArrayResult arrayResult = results.getSingleResult().getArray();
+
+    assertThatThrownBy(() -> arrayResult.getElement(1))
+        .isInstanceOf(IndexOutOfBoundsException.class)
+        .hasMessage("index: 1, size: 1");
+  }
+
+  @Test
+  public void shouldThrowExceptionIfIndexOutOfOrder() {
+    final QueryResults results =
+        processor.process(
+            path("foo"),
+            encodeMsgPack(
+                p -> {
+                  p.packMapHeader(1).packString("foo").packArrayHeader(2);
+                  p.packString("bar");
+                  p.packString("baz");
+                }));
+
+    final ArrayResult arrayResult = results.getSingleResult().getArray();
+
+    arrayResult.getElement(1);
+
+    assertThatThrownBy(() -> arrayResult.getElement(0))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("index: 0, current index: 1");
   }
 
   @Test
@@ -197,7 +283,7 @@ public class MsgPackQueryProcessorTest {
         .containsExactly("STRING", "INTEGER", "BOOLEAN", "NIL", "ARRAY", "MAP");
   }
 
-  private JsonPathQuery path(String path) {
+  private JsonPathQuery path(final String path) {
     return new JsonPathQueryCompiler().compile(path);
   }
 }
