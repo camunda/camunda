@@ -1,0 +1,5 @@
+endpoint:
+  auth:
+    credentials:
+      access_token: expectedToken
+      token_type: Bearer
