@@ -25,12 +25,10 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class JobUpdateRetriesTest {
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final int NEW_RETRIES = 20;
   private static final String PROCESS_ID = "process";
-
   private static String jobType;
-
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

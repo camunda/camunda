@@ -40,6 +40,10 @@ public class ErrorImpl extends RootElementImpl implements Error {
 
   protected static AttributeReference<ItemDefinition> structureRefAttribute;
 
+  public ErrorImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -65,10 +69,6 @@ public class ErrorImpl extends RootElementImpl implements Error {
             .build();
 
     typeBuilder.build();
-  }
-
-  public ErrorImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

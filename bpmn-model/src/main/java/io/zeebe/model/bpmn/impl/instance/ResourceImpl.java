@@ -42,6 +42,10 @@ public class ResourceImpl extends RootElementImpl implements Resource {
   protected static Attribute<String> nameAttribute;
   protected static ChildElementCollection<ResourceParameter> resourceParameterCollection;
 
+  public ResourceImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -64,10 +68,6 @@ public class ResourceImpl extends RootElementImpl implements Resource {
         sequenceBuilder.elementCollection(ResourceParameter.class).build();
 
     typeBuilder.build();
-  }
-
-  public ResourceImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

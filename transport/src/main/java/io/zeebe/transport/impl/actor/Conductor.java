@@ -29,13 +29,11 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
 
   protected final RemoteAddressListImpl remoteAddressList;
   protected final TransportContext transportContext;
-
-  private final List<TransportListener> transportListeners = new ArrayList<>();
-  protected Int2ObjectHashMap<TransportChannel> channels = new Int2ObjectHashMap<>();
-
-  private final ActorContext actorContext;
   protected final AtomicBoolean closing = new AtomicBoolean(false);
   protected final TransportChannelFactory channelFactory;
+  private final List<TransportListener> transportListeners = new ArrayList<>();
+  private final ActorContext actorContext;
+  protected Int2ObjectHashMap<TransportChannel> channels = new Int2ObjectHashMap<>();
 
   public Conductor(ActorContext actorContext, TransportContext context) {
     this.actorContext = actorContext;
@@ -91,13 +89,6 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
         });
   }
 
-  public ActorFuture<Void> interruptAllChannels() {
-    return actor.call(
-        () -> {
-          new ArrayList<>(channels.values()).forEach(TransportChannel::interrupt);
-        });
-  }
-
   @Override
   public void onChannelClosed(TransportChannel ch, boolean wasConnected) {
     actor.run(
@@ -123,6 +114,13 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
                   });
             }
           }
+        });
+  }
+
+  public ActorFuture<Void> interruptAllChannels() {
+    return actor.call(
+        () -> {
+          new ArrayList<>(channels.values()).forEach(TransportChannel::interrupt);
         });
   }
 

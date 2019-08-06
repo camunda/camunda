@@ -7,10 +7,12 @@
  */
 package io.zeebe.engine.processor;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
@@ -18,9 +20,15 @@ import io.zeebe.protocol.record.intent.Intent;
 
 @SuppressWarnings({"rawtypes"})
 public class TypedEventImpl implements TypedRecord {
+  private final int partitionId;
+
   protected LoggedEvent rawEvent;
   protected RecordMetadata metadata;
   protected UnifiedRecordValue value;
+
+  public TypedEventImpl(int partitionId) {
+    this.partitionId = partitionId;
+  }
 
   public void wrap(LoggedEvent rawEvent, RecordMetadata metadata, UnifiedRecordValue value) {
     this.rawEvent = rawEvent;
@@ -28,37 +36,18 @@ public class TypedEventImpl implements TypedRecord {
     this.value = value;
   }
 
-  public int getMaxValueLength() {
-    return this.rawEvent.getMaxValueLength();
-  }
-
   public long getPosition() {
     return rawEvent.getPosition();
   }
 
   @Override
-  public long getKey() {
-    return rawEvent.getKey();
+  public long getSourceRecordPosition() {
+    return rawEvent.getSourceEventPosition();
   }
 
   @Override
-  public UnifiedRecordValue getValue() {
-    return value;
-  }
-
-  @Override
-  public int getRequestStreamId() {
-    return metadata.getRequestStreamId();
-  }
-
-  @Override
-  public long getRequestId() {
-    return metadata.getRequestId();
-  }
-
-  @Override
-  public String toString() {
-    return "TypedEventImpl{" + "metadata=" + metadata + ", value=" + value + '}';
+  public long getTimestamp() {
+    return rawEvent.getTimestamp();
   }
 
   @Override
@@ -68,7 +57,7 @@ public class TypedEventImpl implements TypedRecord {
 
   @Override
   public int getPartitionId() {
-    return Protocol.decodePartitionId(getKey());
+    return partitionId;
   }
 
   @Override
@@ -92,19 +81,44 @@ public class TypedEventImpl implements TypedRecord {
   }
 
   @Override
-  public long getSourceRecordPosition() {
-    return rawEvent.getSourceEventPosition();
+  public long getKey() {
+    return rawEvent.getKey();
   }
 
   @Override
-  public long getTimestamp() {
-    return rawEvent.getTimestamp();
+  public UnifiedRecordValue getValue() {
+    return value;
+  }
+
+  @Override
+  @JsonIgnore
+  public int getRequestStreamId() {
+    return metadata.getRequestStreamId();
+  }
+
+  @Override
+  @JsonIgnore
+  public long getRequestId() {
+    return metadata.getRequestId();
+  }
+
+  @JsonIgnore
+  public int getMaxValueLength() {
+    return this.rawEvent.getMaxValueLength();
   }
 
   @Override
   public String toJson() {
-    final StringBuilder builder = new StringBuilder();
-    value.writeJSON(builder);
-    return builder.toString();
+    return MsgPackConverter.convertJsonSerializableObjectToJson(this);
+  }
+
+  @Override
+  public Record clone() {
+    return CopiedRecords.createCopiedRecord(getPartitionId(), rawEvent);
+  }
+
+  @Override
+  public String toString() {
+    return "TypedEventImpl{" + "metadata=" + metadata + ", value=" + value + '}';
   }
 }

@@ -39,24 +39,6 @@ public class RemoteAddressListImpl implements RemoteAddressList {
     return getByAddress(inetSocketAddress, RemoteAddressImpl.STATE_ACTIVE);
   }
 
-  private synchronized RemoteAddressImpl getByAddress(
-      SocketAddress inetSocketAddress, int stateMask) {
-    final int currSize = size;
-
-    for (int i = 0; i < currSize; i++) {
-      final RemoteAddressImpl remoteAddress = index[i];
-
-      if (remoteAddress != null) {
-        if (remoteAddress.getAddress().equals(inetSocketAddress)
-            && remoteAddress.isInAnyState(stateMask)) {
-          return remoteAddress;
-        }
-      }
-    }
-
-    return null;
-  }
-
   /**
    * Effect: This remote address/stream is never used again; no channel will every be managed for
    * this again; if the underlying socket address is registered again, a new remote address is
@@ -122,6 +104,24 @@ public class RemoteAddressListImpl implements RemoteAddressList {
     }
 
     return result;
+  }
+
+  private synchronized RemoteAddressImpl getByAddress(
+      SocketAddress inetSocketAddress, int stateMask) {
+    final int currSize = size;
+
+    for (int i = 0; i < currSize; i++) {
+      final RemoteAddressImpl remoteAddress = index[i];
+
+      if (remoteAddress != null) {
+        if (remoteAddress.getAddress().equals(inetSocketAddress)
+            && remoteAddress.isInAnyState(stateMask)) {
+          return remoteAddress;
+        }
+      }
+    }
+
+    return null;
   }
 
   public synchronized void setOnAddressAddedConsumer(

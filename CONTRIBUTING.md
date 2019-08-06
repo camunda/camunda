@@ -69,7 +69,7 @@ If you want to work on an issue please follow the following steps:
    git checkout -b 123-adding-bpel-support`
    ```
 1. Follow the [Google Java Format](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides)
-   and [Google Java Style](https://github.com/google/styleguide) while coding.
+   and [Zeebe Code Style](https://github.com/zeebe-io/zeebe/wiki/Code-Style) while coding.
 1. Implement the required changes on your branch and regularly push your
    changes to the origin so that the CI can run on it. Git commit will run a
    pre-commit hook which will check the formatting, style and license headers

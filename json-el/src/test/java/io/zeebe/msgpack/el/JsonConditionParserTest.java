@@ -18,6 +18,8 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class JsonConditionParserTest {
+  @Parameter public String expression;
+
   @Parameters(name = "{index}: expression = {0}")
   public static Iterable<Object[]> data() {
     return Arrays.asList(
@@ -48,8 +50,6 @@ public class JsonConditionParserTest {
           {"foo > 2 && (foo < 4 || bar == 6)"}
         });
   }
-
-  @Parameter public String expression;
 
   @Test
   public void test() {

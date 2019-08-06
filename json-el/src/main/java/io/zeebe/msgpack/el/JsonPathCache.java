@@ -13,17 +13,13 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class JsonPathCache {
   private static final int INITIAL_CAPACITY = 12;
-
-  private int size = 0;
-  private int capacity = INITIAL_CAPACITY;
-
-  private int[] keys = new int[INITIAL_CAPACITY];
-
-  private int[] offsets = new int[INITIAL_CAPACITY];
-  private int[] lengths = new int[INITIAL_CAPACITY];
-
   private final DirectBuffer valueBuffer = new UnsafeBuffer(0, 0);
   private final DirectBuffer bufferView = new UnsafeBuffer(0, 0);
+  private int size = 0;
+  private int capacity = INITIAL_CAPACITY;
+  private int[] keys = new int[INITIAL_CAPACITY];
+  private int[] offsets = new int[INITIAL_CAPACITY];
+  private int[] lengths = new int[INITIAL_CAPACITY];
 
   public void wrap(DirectBuffer buffer) {
     valueBuffer.wrap(buffer);

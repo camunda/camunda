@@ -217,13 +217,13 @@ public class DependenciesTest {
         spy(
             new Service<Object>() {
               @Override
-              public Object get() {
-                return null;
+              public void start(ServiceStartContext startContext) {
+                startContext.async(openFuture);
               }
 
               @Override
-              public void start(ServiceStartContext startContext) {
-                startContext.async(openFuture);
+              public Object get() {
+                return null;
               }
             });
     final Service<Void> mockService1b = mock(Service.class);
@@ -260,13 +260,13 @@ public class DependenciesTest {
         spy(
             new Service<Object>() {
               @Override
-              public Object get() {
-                return null;
+              public void start(ServiceStartContext startContext) {
+                startContext.async(openFuture);
               }
 
               @Override
-              public void start(ServiceStartContext startContext) {
-                startContext.async(openFuture);
+              public Object get() {
+                return null;
               }
             });
     final Service<Void> mockService1b = mock(Service.class);

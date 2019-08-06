@@ -28,6 +28,11 @@ import org.msgpack.core.MessagePacker;
 @RunWith(Parameterized.class)
 public class MsgPackQueryValueFormatsTest {
 
+  @Parameter public CheckedConsumer<MessagePacker> valueWriter;
+
+  // TODO: test different String lastTypeStack (str8, str16, str32)
+  // TODO: test different map and array lastTypeStack
+
   @Parameters
   public static Iterable<Object[]> data() {
     return Arrays.asList(
@@ -48,9 +53,6 @@ public class MsgPackQueryValueFormatsTest {
         });
   }
 
-  // TODO: test different String lastTypeStack (str8, str16, str32)
-  // TODO: test different map and array lastTypeStack
-
   // helping the compiler with recognizing lamdas
   protected static CheckedConsumer<MessagePacker> function(CheckedConsumer<MessagePacker> arg) {
     return arg;
@@ -59,8 +61,6 @@ public class MsgPackQueryValueFormatsTest {
   protected static long longOfLength(int bits) {
     return 1L << (bits - 1);
   }
-
-  @Parameter public CheckedConsumer<MessagePacker> valueWriter;
 
   @Test
   public void testValueQuery() {

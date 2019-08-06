@@ -41,11 +41,6 @@ public class MsgPackUtil {
     return new UnsafeBuffer(bytes);
   }
 
-  @FunctionalInterface
-  public interface CheckedConsumer<T> {
-    void accept(T t) throws Exception;
-  }
-
   public static DirectBuffer asMsgPack(String key, Object value) {
     return asMsgPack(Collections.singletonMap(key, value));
   }
@@ -129,5 +124,10 @@ public class MsgPackUtil {
 
   public static DirectBuffer asMsgPack(String json) {
     return new UnsafeBuffer(asMsgPackReturnArray(json));
+  }
+
+  @FunctionalInterface
+  public interface CheckedConsumer<T> {
+    void accept(T t) throws Exception;
   }
 }

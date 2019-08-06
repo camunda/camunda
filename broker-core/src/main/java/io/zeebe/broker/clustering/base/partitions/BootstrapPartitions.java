@@ -32,11 +32,9 @@ public class BootstrapPartitions implements Service<Void> {
   private final Injector<StorageConfigurationManager> configurationManagerInjector =
       new Injector<>();
   private final BrokerCfg brokerCfg;
-
+  private final Injector<Atomix> atomixInjector = new Injector<>();
   private StorageConfigurationManager configurationManager;
   private ServiceStartContext startContext;
-
-  private final Injector<Atomix> atomixInjector = new Injector<>();
   private Atomix atomix;
 
   public BootstrapPartitions(final BrokerCfg brokerCfg) {
@@ -67,6 +65,11 @@ public class BootstrapPartitions implements Service<Void> {
         });
   }
 
+  @Override
+  public Void get() {
+    return null;
+  }
+
   private void installPartition(RaftPartition partition) {
     final StorageConfiguration configuration =
         configurationManager.createConfiguration(partition.id().id()).join();
@@ -91,11 +94,6 @@ public class BootstrapPartitions implements Service<Void> {
             brokerCfg);
 
     startContext.createService(partitionInstallServiceName, partitionInstallService).install();
-  }
-
-  @Override
-  public Void get() {
-    return null;
   }
 
   public Injector<StorageConfigurationManager> getConfigurationManagerInjector() {

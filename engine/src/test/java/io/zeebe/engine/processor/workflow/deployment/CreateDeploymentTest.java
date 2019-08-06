@@ -38,22 +38,17 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class CreateDeploymentTest {
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
   private static final String PROCESS_ID_2 = "process2";
-
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
-
   private static final BpmnModelInstance WORKFLOW_2 =
       Bpmn.createExecutableProcess(PROCESS_ID_2).startEvent().endEvent().done();
-
   private static final BpmnModelInstance WORKFLOW_V2 =
       Bpmn.createExecutableProcess(PROCESS_ID).startEvent("v2").endEvent().done();
-
   private static final BpmnModelInstance WORKFLOW_2_V2 =
       Bpmn.createExecutableProcess(PROCESS_ID_2).startEvent("v2").endEvent().done();
-
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

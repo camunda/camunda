@@ -212,6 +212,7 @@ import io.zeebe.model.bpmn.impl.instance.di.WaypointImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeHeaderImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeInputImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeIoMappingImpl;
+import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeLoopCharacteristicsImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeOutputImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeSubscriptionImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeTaskDefinitionImpl;
@@ -251,6 +252,13 @@ public class Bpmn {
   /** The {@link Model} */
   private Model bpmnModel;
 
+  /** Register known types of the BPMN model */
+  protected Bpmn() {
+    bpmnModelBuilder = ModelBuilder.createInstance("BPMN Model");
+    doRegisterTypes(bpmnModelBuilder);
+    bpmnModel = bpmnModelBuilder.build();
+  }
+
   /**
    * Allows reading a {@link BpmnModelInstance} from a File.
    *
@@ -258,7 +266,7 @@ public class Bpmn {
    * @return the model read
    * @throws BpmnModelException if the model cannot be read
    */
-  public static BpmnModelInstance readModelFromFile(File file) {
+  public static BpmnModelInstance readModelFromFile(final File file) {
     return INSTANCE.doReadModelFromFile(file);
   }
 
@@ -269,7 +277,7 @@ public class Bpmn {
    * @return the model read
    * @throws ModelParseException if the model cannot be read
    */
-  public static BpmnModelInstance readModelFromStream(InputStream stream) {
+  public static BpmnModelInstance readModelFromStream(final InputStream stream) {
     return INSTANCE.doReadModelFromInputStream(stream);
   }
 
@@ -281,7 +289,7 @@ public class Bpmn {
    * @throws BpmnModelException if the model cannot be written
    * @throws ModelValidationException if the model is not valid
    */
-  public static void writeModelToFile(File file, BpmnModelInstance modelInstance) {
+  public static void writeModelToFile(final File file, final BpmnModelInstance modelInstance) {
     INSTANCE.doWriteModelToFile(file, modelInstance);
   }
 
@@ -294,7 +302,8 @@ public class Bpmn {
    * @throws ModelException if the model cannot be written
    * @throws ModelValidationException if the model is not valid
    */
-  public static void writeModelToStream(OutputStream stream, BpmnModelInstance modelInstance) {
+  public static void writeModelToStream(
+      final OutputStream stream, final BpmnModelInstance modelInstance) {
     INSTANCE.doWriteModelToOutputStream(stream, modelInstance);
   }
 
@@ -305,7 +314,7 @@ public class Bpmn {
    * @param modelInstance the model instance to convert
    * @return the XML string representation of the model instance
    */
-  public static String convertToString(BpmnModelInstance modelInstance) {
+  public static String convertToString(final BpmnModelInstance modelInstance) {
     return INSTANCE.doConvertToString(modelInstance);
   }
 
@@ -315,7 +324,7 @@ public class Bpmn {
    * @param modelInstance the {@link BpmnModelInstance} to validate
    * @throws ModelValidationException if the model is not valid
    */
-  public static void validateModel(BpmnModelInstance modelInstance) {
+  public static void validateModel(final BpmnModelInstance modelInstance) {
     INSTANCE.doValidateModel(modelInstance);
   }
 
@@ -347,7 +356,7 @@ public class Bpmn {
     return process.builder();
   }
 
-  public static ProcessBuilder createProcess(String processId) {
+  public static ProcessBuilder createProcess(final String processId) {
     return createProcess().id(processId);
   }
 
@@ -355,18 +364,11 @@ public class Bpmn {
     return createProcess().executable();
   }
 
-  public static ProcessBuilder createExecutableProcess(String processId) {
+  public static ProcessBuilder createExecutableProcess(final String processId) {
     return createProcess(processId).executable();
   }
 
-  /** Register known types of the BPMN model */
-  protected Bpmn() {
-    bpmnModelBuilder = ModelBuilder.createInstance("BPMN Model");
-    doRegisterTypes(bpmnModelBuilder);
-    bpmnModel = bpmnModelBuilder.build();
-  }
-
-  protected BpmnModelInstance doReadModelFromFile(File file) {
+  protected BpmnModelInstance doReadModelFromFile(final File file) {
     InputStream is = null;
     try {
       is = new FileInputStream(file);
@@ -381,11 +383,11 @@ public class Bpmn {
     }
   }
 
-  protected BpmnModelInstance doReadModelFromInputStream(InputStream is) {
+  protected BpmnModelInstance doReadModelFromInputStream(final InputStream is) {
     return bpmnParser.parseModelFromStream(is);
   }
 
-  protected void doWriteModelToFile(File file, BpmnModelInstance modelInstance) {
+  protected void doWriteModelToFile(final File file, final BpmnModelInstance modelInstance) {
     OutputStream os = null;
     try {
       os = new FileOutputStream(file);
@@ -397,21 +399,22 @@ public class Bpmn {
     }
   }
 
-  protected void doWriteModelToOutputStream(OutputStream os, BpmnModelInstance modelInstance) {
+  protected void doWriteModelToOutputStream(
+      final OutputStream os, final BpmnModelInstance modelInstance) {
     // validate DOM document
     doValidateModel(modelInstance);
     // write XML
     IoUtil.writeDocumentToOutputStream(modelInstance.getDocument(), os);
   }
 
-  protected String doConvertToString(BpmnModelInstance modelInstance) {
+  protected String doConvertToString(final BpmnModelInstance modelInstance) {
     // validate DOM document
     doValidateModel(modelInstance);
     // convert to XML string
     return IoUtil.convertXmlDocumentToString(modelInstance.getDocument());
   }
 
-  protected void doValidateModel(BpmnModelInstance modelInstance) {
+  protected void doValidateModel(final BpmnModelInstance modelInstance) {
     bpmnParser.validateModel(modelInstance.getDocument());
   }
 
@@ -419,7 +422,7 @@ public class Bpmn {
     return bpmnParser.getEmptyModel();
   }
 
-  protected void doRegisterTypes(ModelBuilder bpmnModelBuilder) {
+  protected void doRegisterTypes(final ModelBuilder bpmnModelBuilder) {
     ActivationConditionImpl.registerType(bpmnModelBuilder);
     ActivityImpl.registerType(bpmnModelBuilder);
     ArtifactImpl.registerType(bpmnModelBuilder);
@@ -625,6 +628,7 @@ public class Bpmn {
     ZeebeSubscriptionImpl.registerType(bpmnModelBuilder);
     ZeebeTaskDefinitionImpl.registerType(bpmnModelBuilder);
     ZeebeTaskHeadersImpl.registerType(bpmnModelBuilder);
+    ZeebeLoopCharacteristicsImpl.registerType(bpmnModelBuilder);
   }
 
   /** @return the {@link Model} instance to use */
@@ -632,12 +636,12 @@ public class Bpmn {
     return bpmnModel;
   }
 
-  public ModelBuilder getBpmnModelBuilder() {
-    return bpmnModelBuilder;
+  /** @param bpmnModel the bpmnModel to set */
+  public void setBpmnModel(final Model bpmnModel) {
+    this.bpmnModel = bpmnModel;
   }
 
-  /** @param bpmnModel the bpmnModel to set */
-  public void setBpmnModel(Model bpmnModel) {
-    this.bpmnModel = bpmnModel;
+  public ModelBuilder getBpmnModelBuilder() {
+    return bpmnModelBuilder;
   }
 }

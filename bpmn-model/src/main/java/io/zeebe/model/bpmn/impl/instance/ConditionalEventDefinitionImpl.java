@@ -39,6 +39,10 @@ public class ConditionalEventDefinitionImpl extends EventDefinitionImpl
 
   protected static ChildElement<Condition> conditionChild;
 
+  public ConditionalEventDefinitionImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -60,10 +64,6 @@ public class ConditionalEventDefinitionImpl extends EventDefinitionImpl
     conditionChild = sequenceBuilder.element(Condition.class).required().build();
 
     typeBuilder.build();
-  }
-
-  public ConditionalEventDefinitionImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

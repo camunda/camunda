@@ -28,18 +28,14 @@ import org.mockito.Mock;
 
 public class LeaderLogStreamDeletionTest {
   private static final int PARTITION_ID = 0;
-  private final ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
-  private final ServiceContainerRule serviceContainer = new ServiceContainerRule(actorScheduler);
-
-  @Rule public RuleChain chain = RuleChain.outerRule(actorScheduler).around(serviceContainer);
-
-  @Mock ExporterManagerService mockExporterManagerService;
-  @Mock LogStream mockLogStream = mock(LogStream.class);
-
-  private LeaderLogStreamDeletionService deletionService;
-
   private static final long POSITION_TO_DELETE = 6L;
   private static final long ADDRESS_TO_DELETE = 55L;
+  private final ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
+  private final ServiceContainerRule serviceContainer = new ServiceContainerRule(actorScheduler);
+  @Rule public RuleChain chain = RuleChain.outerRule(actorScheduler).around(serviceContainer);
+  @Mock ExporterManagerService mockExporterManagerService;
+  @Mock LogStream mockLogStream = mock(LogStream.class);
+  private LeaderLogStreamDeletionService deletionService;
 
   @Before
   public void setup() {

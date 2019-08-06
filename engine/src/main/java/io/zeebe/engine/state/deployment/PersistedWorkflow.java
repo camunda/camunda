@@ -20,11 +20,11 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class PersistedWorkflow implements DbValue {
-  int version = -1;
-  long key = -1;
   final UnsafeBuffer bpmnProcessId = new UnsafeBuffer(0, 0);
   final UnsafeBuffer resourceName = new UnsafeBuffer(0, 0);
   final UnsafeBuffer resource = new UnsafeBuffer(0, 0);
+  int version = -1;
+  long key = -1;
 
   public void wrap(DeploymentResource resource, Workflow workflow, long workflowKey) {
     this.resource.wrap(resource.getResourceBuffer());

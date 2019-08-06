@@ -66,26 +66,8 @@ public class ZbLogger implements Logger {
     }
   }
 
-  public void trace(final String format, final int arg) {
-    if (isTraceEnabled) {
-      logger.trace(format, arg);
-    }
-  }
-
   @Override
   public void trace(final String format, final Object arg1, final Object arg2) {
-    if (isTraceEnabled) {
-      logger.trace(format, arg1, arg2);
-    }
-  }
-
-  public void trace(final String format, final int arg1, final Object arg2) {
-    if (isTraceEnabled) {
-      logger.trace(format, arg1, arg2);
-    }
-  }
-
-  public void trace(final String format, final int arg1, final int arg2) {
     if (isTraceEnabled) {
       logger.trace(format, arg1, arg2);
     }
@@ -465,6 +447,24 @@ public class ZbLogger implements Logger {
   public void error(final Marker marker, final String msg, final Throwable t) {
     if (isErrorEnabled) {
       logger.error(marker, msg, t);
+    }
+  }
+
+  public void trace(final String format, final int arg) {
+    if (isTraceEnabled) {
+      logger.trace(format, arg);
+    }
+  }
+
+  public void trace(final String format, final int arg1, final Object arg2) {
+    if (isTraceEnabled) {
+      logger.trace(format, arg1, arg2);
+    }
+  }
+
+  public void trace(final String format, final int arg1, final int arg2) {
+    if (isTraceEnabled) {
+      logger.trace(format, arg1, arg2);
     }
   }
 }

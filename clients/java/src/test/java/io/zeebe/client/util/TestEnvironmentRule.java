@@ -63,7 +63,7 @@ public class TestEnvironmentRule extends ExternalResource {
     final ManagedChannel channel = serverRule.getChannel();
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     clientConfigurator.accept(builder);
-    gatewayStub = spy(ZeebeClientImpl.buildGatewayStub(channel));
+    gatewayStub = spy(ZeebeClientImpl.buildGatewayStub(channel, builder));
     client = new ZeebeClientImpl(builder, channel, gatewayStub);
   }
 

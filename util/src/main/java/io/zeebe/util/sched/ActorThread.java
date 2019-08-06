@@ -38,17 +38,7 @@ import sun.misc.Unsafe;
 @SuppressWarnings("restriction")
 public class ActorThread extends Thread implements Consumer<Runnable> {
   static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
-
-  private volatile ActorThreadState state;
-
   private static final long STATE_OFFSET;
-
-  private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
-
-  public final ManyToManyConcurrentArrayQueue<Runnable> submittedCallbacks =
-      new ManyToManyConcurrentArrayQueue<>(1024 * 24);
-
-  private final ActorClock clock;
 
   static {
     try {
@@ -58,18 +48,19 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     }
   }
 
+  public final ManyToManyConcurrentArrayQueue<Runnable> submittedCallbacks =
+      new ManyToManyConcurrentArrayQueue<>(1024 * 24);
+  protected final ActorTimerQueue timerJobQueue;
+  private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
+  private final ActorClock clock;
   private final int threadId;
 
   private final TaskScheduler taskScheduler;
-
-  protected final ActorTimerQueue timerJobQueue;
-
   private final BoundedArrayQueue<ActorJob> jobs = new BoundedArrayQueue<>(2048);
   private final ActorThreadGroup actorThreadGroup;
-
   protected ActorTaskRunnerIdleStrategy idleStrategy = new ActorTaskRunnerIdleStrategy();
-
   ActorTask currentTask;
+  private volatile ActorThreadState state;
 
   public ActorThread(
       String name,
@@ -85,23 +76,6 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     this.timerJobQueue = timerQueue != null ? timerQueue : new ActorTimerQueue(this.clock);
     this.actorThreadGroup = threadGroup;
     this.taskScheduler = taskScheduler;
-  }
-
-  @Override
-  public void run() {
-    idleStrategy.init();
-
-    while (state == ActorThreadState.RUNNING) {
-      try {
-        doWork();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-    }
-
-    state = ActorThreadState.TERMINATED;
-
-    terminationFuture.complete(null);
   }
 
   private void doWork() {
@@ -152,43 +126,6 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
 
   public void hintWorkAvailable() {
     idleStrategy.hintWorkAvailable();
-  }
-
-  protected class ActorTaskRunnerIdleStrategy {
-    final BackoffIdleStrategy backoff =
-        new BackoffIdleStrategy(100, 100, 1, TimeUnit.MILLISECONDS.toNanos(1));
-    boolean isIdle;
-
-    long idleTimeStart;
-    long busyTimeStart;
-
-    void init() {
-      isIdle = true;
-      idleTimeStart = System.nanoTime();
-    }
-
-    public void hintWorkAvailable() {
-      LockSupport.unpark(ActorThread.this);
-    }
-
-    protected void onIdle() {
-      if (!isIdle) {
-        clock.update();
-        idleTimeStart = clock.getNanoTime();
-        isIdle = true;
-      }
-
-      backoff.idle();
-    }
-
-    protected void onTaskExecuted() {
-      backoff.reset();
-
-      if (isIdle) {
-        busyTimeStart = clock.getNanoTime();
-        isIdle = false;
-      }
-    }
   }
 
   /** Must be called from this thread, schedules a job to be run later. */
@@ -250,6 +187,23 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     }
   }
 
+  @Override
+  public void run() {
+    idleStrategy.init();
+
+    while (state == ActorThreadState.RUNNING) {
+      try {
+        doWork();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+
+    state = ActorThreadState.TERMINATED;
+
+    terminationFuture.complete(null);
+  }
+
   public CompletableFuture<Void> close() {
     if (UNSAFE.compareAndSwapObject(
         this, STATE_OFFSET, ActorThreadState.RUNNING, ActorThreadState.TERMINATING)) {
@@ -257,13 +211,6 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     } else {
       throw new IllegalStateException("Cannot stop runner, not in state 'RUNNING'.");
     }
-  }
-
-  public enum ActorThreadState {
-    NEW,
-    RUNNING,
-    TERMINATING,
-    TERMINATED // runner is not reusable
   }
 
   public ActorJob getCurrentJob() {
@@ -291,5 +238,49 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   @Override
   public void accept(Runnable t) {
     t.run();
+  }
+
+  public enum ActorThreadState {
+    NEW,
+    RUNNING,
+    TERMINATING,
+    TERMINATED // runner is not reusable
+  }
+
+  protected class ActorTaskRunnerIdleStrategy {
+    final BackoffIdleStrategy backoff =
+        new BackoffIdleStrategy(100, 100, 1, TimeUnit.MILLISECONDS.toNanos(1));
+    boolean isIdle;
+
+    long idleTimeStart;
+    long busyTimeStart;
+
+    void init() {
+      isIdle = true;
+      idleTimeStart = System.nanoTime();
+    }
+
+    public void hintWorkAvailable() {
+      LockSupport.unpark(ActorThread.this);
+    }
+
+    protected void onIdle() {
+      if (!isIdle) {
+        clock.update();
+        idleTimeStart = clock.getNanoTime();
+        isIdle = true;
+      }
+
+      backoff.idle();
+    }
+
+    protected void onTaskExecuted() {
+      backoff.reset();
+
+      if (isIdle) {
+        busyTimeStart = clock.getNanoTime();
+        isIdle = false;
+      }
+    }
   }
 }

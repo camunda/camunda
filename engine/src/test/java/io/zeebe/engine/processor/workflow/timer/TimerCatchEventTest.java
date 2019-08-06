@@ -30,18 +30,12 @@ import org.junit.Test;
 
 public class TimerCatchEventTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-
-  @Rule
-  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
-
   private static final BpmnModelInstance SINGLE_TIMER_WORKFLOW =
       Bpmn.createExecutableProcess("SINGLE_TIMER_WORKFLOW")
           .startEvent()
           .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT0.1S"))
           .endEvent()
           .done();
-
   private static final BpmnModelInstance BOUNDARY_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess("BOUNDARY_EVENT_WORKFLOW")
           .startEvent()
@@ -53,7 +47,6 @@ public class TimerCatchEventTest {
           .moveToActivity("task")
           .endEvent("taskEnd")
           .done();
-
   private static final BpmnModelInstance TWO_REPS_CYCLE_WORKFLOW =
       Bpmn.createExecutableProcess("TWO_REPS_CYCLE_WORKFLOW")
           .startEvent()
@@ -65,7 +58,6 @@ public class TimerCatchEventTest {
           .moveToNode("task")
           .endEvent()
           .done();
-
   private static final BpmnModelInstance INFINITE_CYCLE_WORKFLOW =
       Bpmn.createExecutableProcess("INFINITE_CYCLE_WORKFLOW")
           .startEvent()
@@ -77,6 +69,10 @@ public class TimerCatchEventTest {
           .moveToNode("task")
           .endEvent()
           .done();
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @BeforeClass
   public static void init() {

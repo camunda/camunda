@@ -7,6 +7,8 @@
  */
 package io.zeebe.engine.processor.workflow.job;
 
+import io.zeebe.engine.processor.ReadonlyProcessingContext;
+import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
@@ -14,10 +16,13 @@ import io.zeebe.engine.state.instance.JobState;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
+import java.util.function.Consumer;
 
 public class JobEventProcessors {
   public static void addJobProcessors(
-      TypedRecordProcessors typedRecordProcessors, ZeebeState zeebeState) {
+      TypedRecordProcessors typedRecordProcessors,
+      ZeebeState zeebeState,
+      Consumer<String> onJobsAvailableCallback) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
     final JobState jobState = zeebeState.getJobState();
 
@@ -38,6 +43,13 @@ public class JobEventProcessors {
                 jobState,
                 workflowState.getElementInstanceState().getVariablesState(),
                 zeebeState.getKeyGenerator()))
-        .withListener(new JobTimeoutTrigger(jobState));
+        .withListener(new JobTimeoutTrigger(jobState))
+        .withListener(
+            new StreamProcessorLifecycleAware() {
+              @Override
+              public void onRecovered(ReadonlyProcessingContext context) {
+                jobState.setJobsAvailableCallback(onJobsAvailableCallback);
+              }
+            });
   }
 }

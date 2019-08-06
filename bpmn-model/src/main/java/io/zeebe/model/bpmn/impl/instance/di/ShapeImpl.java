@@ -37,6 +37,10 @@ public abstract class ShapeImpl extends NodeImpl implements Shape {
 
   protected static ChildElement<Bounds> boundsChild;
 
+  public ShapeImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -50,10 +54,6 @@ public abstract class ShapeImpl extends NodeImpl implements Shape {
     boundsChild = sequenceBuilder.element(Bounds.class).required().build();
 
     typeBuilder.build();
-  }
-
-  public ShapeImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

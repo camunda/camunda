@@ -38,6 +38,10 @@ public class AssignmentImpl extends BaseElementImpl implements Assignment {
   protected static ChildElement<From> fromChild;
   protected static ChildElement<To> toChild;
 
+  public AssignmentImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -59,10 +63,6 @@ public class AssignmentImpl extends BaseElementImpl implements Assignment {
     toChild = sequenceBuilder.element(To.class).required().build();
 
     typeBuilder.build();
-  }
-
-  public AssignmentImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

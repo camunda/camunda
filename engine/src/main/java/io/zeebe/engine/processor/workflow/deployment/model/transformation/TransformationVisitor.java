@@ -19,12 +19,12 @@ public class TransformationVisitor extends TypeHierarchyVisitor {
 
   private TransformContext context;
 
-  public void setContext(TransformContext context) {
-    this.context = context;
-  }
-
   public TransformContext getContext() {
     return context;
+  }
+
+  public void setContext(TransformContext context) {
+    this.context = context;
   }
 
   public void registerHandler(ModelElementTransformer<?> transformHandler) {

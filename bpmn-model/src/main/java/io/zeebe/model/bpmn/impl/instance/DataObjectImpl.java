@@ -45,6 +45,10 @@ public class DataObjectImpl extends FlowElementImpl implements DataObject {
   protected static Attribute<Boolean> isCollectionAttribute;
   protected static ChildElement<DataState> dataStateChild;
 
+  public DataObjectImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -73,10 +77,6 @@ public class DataObjectImpl extends FlowElementImpl implements DataObject {
     dataStateChild = sequenceBuilder.element(DataState.class).build();
 
     typeBuilder.build();
-  }
-
-  public DataObjectImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

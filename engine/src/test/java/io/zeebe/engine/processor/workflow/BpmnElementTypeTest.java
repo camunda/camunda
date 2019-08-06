@@ -37,22 +37,17 @@ import org.junit.runners.Parameterized.Parameters;
 public class BpmnElementTypeTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-
-  @Rule
-  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
-
   private static final List<BpmnElementTypeScenario> SCENARIOS =
       Arrays.asList(
           new BpmnElementTypeScenario("Process", BpmnElementType.PROCESS) {
             @Override
-            String elementId() {
-              return processId();
+            BpmnModelInstance modelInstance() {
+              return Bpmn.createExecutableProcess(processId()).startEvent().done();
             }
 
             @Override
-            BpmnModelInstance modelInstance() {
-              return Bpmn.createExecutableProcess(processId()).startEvent().done();
+            String elementId() {
+              return processId();
             }
           },
           new BpmnElementTypeScenario("Sub Process", BpmnElementType.SUB_PROCESS) {
@@ -290,15 +285,19 @@ public class BpmnElementTypeTest {
             }
           });
 
-  @Parameters(name = "{0}")
-  public static Collection<Object[]> scenarios() {
-    return SCENARIOS.stream().map(s -> new Object[] {s}).collect(Collectors.toList());
-  }
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   private final BpmnElementTypeScenario scenario;
 
   public BpmnElementTypeTest(BpmnElementTypeScenario scenario) {
     this.scenario = scenario;
+  }
+
+  @Parameters(name = "{0}")
+  public static Collection<Object[]> scenarios() {
+    return SCENARIOS.stream().map(s -> new Object[] {s}).collect(Collectors.toList());
   }
 
   @Test

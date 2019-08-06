@@ -18,6 +18,15 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class JsonPathQueryValidationTest {
+  @Parameter(0)
+  public String jsonPath;
+
+  @Parameter(1)
+  public int expectedInvalidPosition;
+
+  @Parameter(2)
+  public String expectedErrorMessage;
+
   @Parameters
   public static Iterable<Object[]> data() {
     return Arrays.asList(
@@ -29,15 +38,6 @@ public class JsonPathQueryValidationTest {
           {"foo[0]", 3, "Unexpected json-path token SUBSCRIPT_OPERATOR_BEGIN"}
         });
   }
-
-  @Parameter(0)
-  public String jsonPath;
-
-  @Parameter(1)
-  public int expectedInvalidPosition;
-
-  @Parameter(2)
-  public String expectedErrorMessage;
 
   @Test
   public void testCompileInvalidQuery() {

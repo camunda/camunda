@@ -28,6 +28,54 @@ import org.junit.Test;
 public class ActorFrameworkIntegrationTest {
   @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
 
+  @Test
+  public void testOffer() throws InterruptedException {
+    final Dispatcher dispatcher =
+        Dispatchers.create("default")
+            .actorScheduler(actorSchedulerRule.get())
+            .bufferSize(ByteValue.ofMegabytes(10))
+            .build();
+
+    actorSchedulerRule.submitActor(new Consumer(dispatcher));
+    final Producer producer = new Producer(dispatcher);
+    actorSchedulerRule.submitActor(producer);
+
+    producer.latch.await();
+    dispatcher.close();
+  }
+
+  @Test
+  public void testClaim() throws InterruptedException {
+    final Dispatcher dispatcher =
+        Dispatchers.create("default")
+            .actorScheduler(actorSchedulerRule.get())
+            .bufferSize(ByteValue.ofMegabytes(10))
+            .build();
+
+    actorSchedulerRule.submitActor(new Consumer(dispatcher));
+    final ClaimingProducer producer = new ClaimingProducer(dispatcher);
+    actorSchedulerRule.submitActor(producer);
+
+    producer.latch.await();
+    dispatcher.close();
+  }
+
+  @Test
+  public void testClaimAndPeek() throws InterruptedException {
+    final Dispatcher dispatcher =
+        Dispatchers.create("default")
+            .actorScheduler(actorSchedulerRule.get())
+            .bufferSize(ByteValue.ofMegabytes(10))
+            .build();
+
+    actorSchedulerRule.submitActor(new PeekingConsumer(dispatcher));
+    final ClaimingProducer producer = new ClaimingProducer(dispatcher);
+    actorSchedulerRule.submitActor(producer);
+
+    producer.latch.await();
+    dispatcher.close();
+  }
+
   class Consumer extends Actor implements FragmentHandler {
     final Dispatcher dispatcher;
     Subscription subscription;
@@ -71,9 +119,9 @@ public class ActorFrameworkIntegrationTest {
 
   class PeekingConsumer extends Actor implements FragmentHandler {
     final Dispatcher dispatcher;
+    final BlockPeek peek = new BlockPeek();
     Subscription subscription;
     int counter = 0;
-    final BlockPeek peek = new BlockPeek();
     final Runnable processPeek = this::processPeek;
 
     PeekingConsumer(Dispatcher dispatcher) {
@@ -170,9 +218,8 @@ public class ActorFrameworkIntegrationTest {
     final int totalWork = 10_000;
 
     final Dispatcher dispatcher;
-    int counter = 1;
     final ClaimedFragment claim = new ClaimedFragment();
-
+    int counter = 1;
     Runnable produce = this::produce;
 
     ClaimingProducer(Dispatcher dispatcher) {
@@ -197,53 +244,5 @@ public class ActorFrameworkIntegrationTest {
         latch.countDown();
       }
     }
-  }
-
-  @Test
-  public void testOffer() throws InterruptedException {
-    final Dispatcher dispatcher =
-        Dispatchers.create("default")
-            .actorScheduler(actorSchedulerRule.get())
-            .bufferSize(ByteValue.ofMegabytes(10))
-            .build();
-
-    actorSchedulerRule.submitActor(new Consumer(dispatcher));
-    final Producer producer = new Producer(dispatcher);
-    actorSchedulerRule.submitActor(producer);
-
-    producer.latch.await();
-    dispatcher.close();
-  }
-
-  @Test
-  public void testClaim() throws InterruptedException {
-    final Dispatcher dispatcher =
-        Dispatchers.create("default")
-            .actorScheduler(actorSchedulerRule.get())
-            .bufferSize(ByteValue.ofMegabytes(10))
-            .build();
-
-    actorSchedulerRule.submitActor(new Consumer(dispatcher));
-    final ClaimingProducer producer = new ClaimingProducer(dispatcher);
-    actorSchedulerRule.submitActor(producer);
-
-    producer.latch.await();
-    dispatcher.close();
-  }
-
-  @Test
-  public void testClaimAndPeek() throws InterruptedException {
-    final Dispatcher dispatcher =
-        Dispatchers.create("default")
-            .actorScheduler(actorSchedulerRule.get())
-            .bufferSize(ByteValue.ofMegabytes(10))
-            .build();
-
-    actorSchedulerRule.submitActor(new PeekingConsumer(dispatcher));
-    final ClaimingProducer producer = new ClaimingProducer(dispatcher);
-    actorSchedulerRule.submitActor(producer);
-
-    producer.latch.await();
-    dispatcher.close();
   }
 }

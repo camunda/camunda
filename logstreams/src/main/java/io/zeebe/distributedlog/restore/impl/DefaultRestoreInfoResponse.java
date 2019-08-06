@@ -13,13 +13,12 @@ import io.zeebe.distributedlog.restore.snapshot.impl.DefaultSnapshotRestoreInfo;
 import io.zeebe.distributedlog.restore.snapshot.impl.NullSnapshotRestoreInfo;
 
 public class DefaultRestoreInfoResponse implements RestoreInfoResponse {
-  private ReplicationTarget replicationTarget;
-  private SnapshotRestoreInfo snapshotRestoreInfo;
-
   static final DefaultRestoreInfoResponse NONE =
       new DefaultRestoreInfoResponse(ReplicationTarget.NONE);
   private static final NullSnapshotRestoreInfo NULL_SNAPSHOT_RESTORE_INFO =
       new NullSnapshotRestoreInfo();
+  private ReplicationTarget replicationTarget;
+  private SnapshotRestoreInfo snapshotRestoreInfo;
 
   public DefaultRestoreInfoResponse() {
     snapshotRestoreInfo = NULL_SNAPSHOT_RESTORE_INFO;
@@ -46,12 +45,12 @@ public class DefaultRestoreInfoResponse implements RestoreInfoResponse {
     return snapshotRestoreInfo;
   }
 
-  public void setReplicationTarget(ReplicationTarget replicationTarget) {
-    this.replicationTarget = replicationTarget;
-  }
-
   public void setSnapshotRestoreInfo(SnapshotRestoreInfo snapshotRestoreInfo) {
     this.snapshotRestoreInfo = snapshotRestoreInfo;
+  }
+
+  public void setReplicationTarget(ReplicationTarget replicationTarget) {
+    this.replicationTarget = replicationTarget;
   }
 
   public void setSnapshotRestoreInfo(long snapshotId, int numChunks) {

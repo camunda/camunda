@@ -36,7 +36,6 @@ public class DefaultLogReplicationRequestHandlerTest {
       new LogStreamWriterRule(LOG_STREAM_RULE);
   private static final LogStreamReaderRule LOG_STREAM_READER_RULE =
       new LogStreamReaderRule(LOG_STREAM_RULE);
-  private static final List<LoggedEvent> EVENTS = new ArrayList<>();
 
   @ClassRule
   public static final RuleChain CHAIN =
@@ -44,6 +43,8 @@ public class DefaultLogReplicationRequestHandlerTest {
           .around(LOG_STREAM_RULE)
           .around(LOG_STREAM_WRITER_RULE)
           .around(LOG_STREAM_READER_RULE);
+
+  private static final List<LoggedEvent> EVENTS = new ArrayList<>();
 
   @BeforeClass
   public static void prepareLog() {

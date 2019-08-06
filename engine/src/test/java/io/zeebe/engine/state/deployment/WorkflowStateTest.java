@@ -29,12 +29,11 @@ import org.junit.Test;
 
 public class WorkflowStateTest {
 
-  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
-
-  private WorkflowState workflowState;
-  private ZeebeState zeebeState;
   private static final Long FIRST_WORKFLOW_KEY =
       Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 1);
+  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
+  private WorkflowState workflowState;
+  private ZeebeState zeebeState;
 
   @Before
   public void setUp() {

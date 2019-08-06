@@ -39,6 +39,10 @@ public class CallActivityImpl extends ActivityImpl implements CallActivity {
 
   protected static Attribute<String> calledElementAttribute;
 
+  public CallActivityImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -56,10 +60,6 @@ public class CallActivityImpl extends ActivityImpl implements CallActivity {
     calledElementAttribute = typeBuilder.stringAttribute(BPMN_ATTRIBUTE_CALLED_ELEMENT).build();
 
     typeBuilder.build();
-  }
-
-  public CallActivityImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

@@ -63,13 +63,13 @@ import org.junit.rules.TestName;
 
 public class BrokerClientTest {
 
+  private static final int CLIENT_MAX_REQUESTS = 128;
   @Rule public StubBrokerRule broker = new StubBrokerRule();
   @Rule public AutoCloseableRule closeables = new AutoCloseableRule();
   @Rule public ExpectedException exception = ExpectedException.none();
   @Rule public TestName testContext = new TestName();
   private BrokerClient client;
   private ControlledActorClock clock;
-  private static final int CLIENT_MAX_REQUESTS = 128;
 
   @Before
   public void setUp() {
@@ -388,11 +388,6 @@ public class BrokerClientTest {
     builder.register();
   }
 
-  protected enum ConnectionState {
-    CONNECTED,
-    CLOSED
-  }
-
   protected static class LoggingChannelListener implements TransportListener {
 
     List<ConnectionState> connectionState = new CopyOnWriteArrayList<>();
@@ -406,5 +401,10 @@ public class BrokerClientTest {
     public void onConnectionClosed(final RemoteAddress remoteAddress) {
       connectionState.add(ConnectionState.CLOSED);
     }
+  }
+
+  protected enum ConnectionState {
+    CONNECTED,
+    CLOSED
   }
 }

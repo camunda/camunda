@@ -45,27 +45,6 @@ public class SbeRestoreInfoRequest
   }
 
   @Override
-  public void reset() {
-    super.reset();
-    setLatestLocalPosition(latestLocalPositionNullValue());
-    setBackupPosition(backupPositionNullValue());
-  }
-
-  @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
-    super.wrap(buffer, offset, length);
-    setLatestLocalPosition(decoder.latestLocalPosition());
-    setBackupPosition(decoder.backupPosition());
-  }
-
-  @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
-    super.write(buffer, offset);
-    encoder.backupPosition(getBackupPosition());
-    encoder.latestLocalPosition(getLatestLocalPosition());
-  }
-
-  @Override
   public long getLatestLocalPosition() {
     return delegate.getLatestLocalPosition();
   }
@@ -95,5 +74,26 @@ public class SbeRestoreInfoRequest
   @Override
   protected RestoreInfoRequestDecoder getBodyDecoder() {
     return decoder;
+  }
+
+  @Override
+  public void reset() {
+    super.reset();
+    setLatestLocalPosition(latestLocalPositionNullValue());
+    setBackupPosition(backupPositionNullValue());
+  }
+
+  @Override
+  public void write(MutableDirectBuffer buffer, int offset) {
+    super.write(buffer, offset);
+    encoder.backupPosition(getBackupPosition());
+    encoder.latestLocalPosition(getLatestLocalPosition());
+  }
+
+  @Override
+  public void wrap(DirectBuffer buffer, int offset, int length) {
+    super.wrap(buffer, offset, length);
+    setLatestLocalPosition(decoder.latestLocalPosition());
+    setBackupPosition(decoder.backupPosition());
   }
 }

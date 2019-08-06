@@ -7,28 +7,21 @@
  */
 package io.zeebe.engine.processor;
 
-import static io.zeebe.engine.processor.TypedEventRegistry.EVENT_REGISTRY;
-
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.record.ValueType;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.LangUtil;
-import io.zeebe.util.ReflectUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
@@ -45,17 +38,14 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
   // log stream
   private final LogStream logStream;
   private final int partitionId;
-  private ActorCondition onCommitPositionUpdatedCondition;
-
   // snapshotting
   private final ZeebeDb zeebeDb;
-
-  private long snapshotPosition = -1L;
-
   // processing
   private final ProcessingContext processingContext;
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private final LogStreamReader logStreamReader;
+  private ActorCondition onCommitPositionUpdatedCondition;
+  private long snapshotPosition = -1L;
   private ProcessingStateMachine processingStateMachine;
 
   private Phase phase = Phase.REPROCESSING;
@@ -69,13 +59,10 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
     this.typedRecordProcessorFactory = context.getTypedRecordProcessorFactory();
     this.zeebeDb = context.getZeebeDb();
 
-    final EnumMap<ValueType, UnifiedRecordValue> eventCache = new EnumMap<>(ValueType.class);
-    EVENT_REGISTRY.forEach((t, c) -> eventCache.put(t, ReflectUtil.newInstance(c)));
-
     processingContext =
         context
             .getProcessingContext()
-            .eventCache(Collections.unmodifiableMap(eventCache))
+            .eventCache(new RecordValues())
             .actor(actor)
             .abortCondition(this::isClosed);
     this.logStreamReader = processingContext.getLogStreamReader();
@@ -90,29 +77,6 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
   @Override
   public String getName() {
     return "stream-processor";
-  }
-
-  @Override
-  public StreamProcessor get() {
-    return this;
-  }
-
-  @Override
-  public void start(ServiceStartContext startContext) {
-    startContext.async(openAsync(), true);
-  }
-
-  @Override
-  public void stop(ServiceStopContext stopContext) {
-    stopContext.async(closeAsync());
-  }
-
-  public ActorFuture<Void> openAsync() {
-    if (isOpened.compareAndSet(false, true)) {
-      openFuture = new CompletableActorFuture<>();
-      actorScheduler.submitActor(this);
-    }
-    return openFuture;
   }
 
   @Override
@@ -153,6 +117,52 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
       onFailure(e);
       throw e;
     }
+  }
+
+  @Override
+  protected void onActorClosing() {
+    processingContext.getLogStreamReader().close();
+
+    if (onCommitPositionUpdatedCondition != null) {
+      logStream.removeOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
+      onCommitPositionUpdatedCondition = null;
+    }
+  }
+
+  @Override
+  protected void onActorClosed() {
+    closeFuture.complete(null);
+    LOG.debug("Closed stream processor controller {}.", getName());
+  }
+
+  @Override
+  protected void onActorCloseRequested() {
+    if (!isFailed()) {
+      lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onClose);
+    }
+  }
+
+  @Override
+  public void start(ServiceStartContext startContext) {
+    startContext.async(openAsync(), true);
+  }
+
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    stopContext.async(closeAsync());
+  }
+
+  @Override
+  public StreamProcessor get() {
+    return this;
+  }
+
+  public ActorFuture<Void> openAsync() {
+    if (isOpened.compareAndSet(false, true)) {
+      openFuture = new CompletableActorFuture<>();
+      actorScheduler.submitActor(this);
+    }
+    return openFuture;
   }
 
   private void initProcessors() {
@@ -211,29 +221,6 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
       actor.close();
     }
     return closeFuture;
-  }
-
-  @Override
-  protected void onActorCloseRequested() {
-    if (!isFailed()) {
-      lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onClose);
-    }
-  }
-
-  @Override
-  protected void onActorClosing() {
-    processingContext.getLogStreamReader().close();
-
-    if (onCommitPositionUpdatedCondition != null) {
-      logStream.removeOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
-      onCommitPositionUpdatedCondition = null;
-    }
-  }
-
-  @Override
-  protected void onActorClosed() {
-    closeFuture.complete(null);
-    LOG.debug("Closed stream processor controller {}.", getName());
   }
 
   private void onFailure(Throwable throwable) {

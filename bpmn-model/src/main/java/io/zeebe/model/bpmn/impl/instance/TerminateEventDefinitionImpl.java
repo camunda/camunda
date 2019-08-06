@@ -34,6 +34,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
 public class TerminateEventDefinitionImpl extends EventDefinitionImpl
     implements TerminateEventDefinition {
 
+  public TerminateEventDefinitionImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -50,9 +54,5 @@ public class TerminateEventDefinitionImpl extends EventDefinitionImpl
                 });
 
     typeBuilder.build();
-  }
-
-  public TerminateEventDefinitionImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 }

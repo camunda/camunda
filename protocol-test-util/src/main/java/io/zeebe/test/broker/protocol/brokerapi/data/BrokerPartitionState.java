@@ -36,6 +36,11 @@ public class BrokerPartitionState {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(state, partitionId, replicationFactor);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -47,11 +52,6 @@ public class BrokerPartitionState {
     return partitionId == that.partitionId
         && replicationFactor == that.replicationFactor
         && Objects.equals(state, that.state);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(state, partitionId, replicationFactor);
   }
 
   @Override

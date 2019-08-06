@@ -27,6 +27,10 @@ import org.junit.runners.Parameterized.Parameters;
 public class RetryStrategyTest {
 
   @Rule public ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+  @Parameter public Class<RetryStrategy> retryStrategyClass;
+  private RetryStrategy retryStrategy;
+  private ActorControl actorControl;
+  private ActorFuture<Boolean> resultFuture;
 
   @Parameters(name = "{index}: {0}")
   public static Object[][] reprocessingTriggers() {
@@ -34,12 +38,6 @@ public class RetryStrategyTest {
       new Object[] {RecoverableRetryStrategy.class}, new Object[] {AbortableRetryStrategy.class}
     };
   }
-
-  @Parameter public Class<RetryStrategy> retryStrategyClass;
-
-  private RetryStrategy retryStrategy;
-  private ActorControl actorControl;
-  private ActorFuture<Boolean> resultFuture;
 
   @Before
   public void setUp() {

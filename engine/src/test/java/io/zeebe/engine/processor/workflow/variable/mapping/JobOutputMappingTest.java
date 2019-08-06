@@ -38,9 +38,8 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class JobOutputMappingTest {
 
-  private static final String PROCESS_ID = "process";
-
   @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
+  private static final String PROCESS_ID = "process";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -57,6 +56,8 @@ public class JobOutputMappingTest {
 
   @Parameter(3)
   public List<Tuple> expectedScopeVariables;
+
+  private String jobType;
 
   @Parameters(name = "from {0} to activity: {2} and scope: {3}")
   public static Object[][] parameters() {
@@ -140,8 +141,6 @@ public class JobOutputMappingTest {
       },
     };
   }
-
-  private String jobType;
 
   @Before
   public void init() {

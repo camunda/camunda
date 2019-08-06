@@ -7,7 +7,12 @@
  */
 package io.zeebe.logstreams.impl.service;
 
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.*;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderRootService;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamRootServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logWriteBufferServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logWriteBufferSubscriptionServiceName;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.DispatcherBuilder;
@@ -19,7 +24,13 @@ import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.CompositeServiceBuilder;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.ActorConditions;
@@ -70,6 +81,80 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   }
 
   @Override
+  public void stop(final ServiceStopContext stopContext) {
+    // nothing to do
+  }
+
+  @Override
+  public LogStream get() {
+    return this;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public String getLogName() {
+    return logName;
+  }
+
+  @Override
+  public void close() {
+    closeAsync().join();
+  }
+
+  @Override
+  public ActorFuture<Void> closeAsync() {
+    return serviceContainer.removeService(logStreamRootServiceName(logName));
+  }
+
+  @Override
+  public long getCommitPosition() {
+    return commitPosition.get();
+  }
+
+  @Override
+  public void setCommitPosition(final long commitPosition) {
+    this.commitPosition.setOrdered(commitPosition);
+
+    onCommitPositionUpdatedConditions.signalConsumers();
+  }
+
+  @Override
+  public LogStorage getLogStorage() {
+    return logStorage;
+  }
+
+  @Override
+  public Dispatcher getWriteBuffer() {
+    if (writeBuffer == null && writeBufferFuture != null) {
+      writeBuffer = writeBufferFuture.join();
+    }
+    return writeBuffer;
+  }
+
+  @Override
+  public LogStorageAppender getLogStorageAppender() {
+    if (appender == null && appenderFuture != null) {
+      appender = appenderFuture.join();
+    }
+    return appender;
+  }
+
+  @Override
+  public ActorFuture<Void> closeAppender() {
+    appenderFuture = null;
+    writeBufferFuture = null;
+    appender = null;
+    writeBuffer = null;
+
+    final String logName = getLogName();
+    return serviceContext.removeService(logStorageAppenderRootService(logName));
+  }
+
+  @Override
   public ActorFuture<LogStorageAppender> openAppender() {
     final String logName = getLogName();
     final ServiceName<Void> logStorageAppenderRootService = logStorageAppenderRootService(logName);
@@ -117,73 +202,6 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   }
 
   @Override
-  public ActorFuture<Void> closeAppender() {
-    appenderFuture = null;
-    writeBufferFuture = null;
-    appender = null;
-    writeBuffer = null;
-
-    final String logName = getLogName();
-    return serviceContext.removeService(logStorageAppenderRootService(logName));
-  }
-
-  @Override
-  public void stop(final ServiceStopContext stopContext) {
-    // nothing to do
-  }
-
-  @Override
-  public LogStream get() {
-    return this;
-  }
-
-  @Override
-  public int getPartitionId() {
-    return partitionId;
-  }
-
-  @Override
-  public String getLogName() {
-    return logName;
-  }
-
-  @Override
-  public void close() {
-    closeAsync().join();
-  }
-
-  @Override
-  public ActorFuture<Void> closeAsync() {
-    return serviceContainer.removeService(logStreamRootServiceName(logName));
-  }
-
-  @Override
-  public LogStorage getLogStorage() {
-    return logStorage;
-  }
-
-  @Override
-  public Dispatcher getWriteBuffer() {
-    if (writeBuffer == null && writeBufferFuture != null) {
-      writeBuffer = writeBufferFuture.join();
-    }
-    return writeBuffer;
-  }
-
-  @Override
-  public LogStorageAppender getLogStorageAppender() {
-    if (appender == null && appenderFuture != null) {
-      appender = appenderFuture.join();
-    }
-    return appender;
-  }
-
-  @Override
-  public long getCommitPosition() {
-    return commitPosition.get();
-  }
-
-  @Override
   public void delete(long position) {
     final boolean positionNotExist = !reader.seek(position);
     if (positionNotExist) {
@@ -198,13 +216,6 @@ public class LogStreamService implements LogStream, Service<LogStream> {
         "Delete data from log stream until position '{}' (address: '{}').", position, blockAddress);
 
     logStorage.delete(blockAddress);
-  }
-
-  @Override
-  public void setCommitPosition(final long commitPosition) {
-    this.commitPosition.setOrdered(commitPosition);
-
-    onCommitPositionUpdatedConditions.signalConsumers();
   }
 
   @Override

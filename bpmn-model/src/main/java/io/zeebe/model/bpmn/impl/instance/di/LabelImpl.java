@@ -37,6 +37,10 @@ public abstract class LabelImpl extends NodeImpl implements Label {
 
   protected static ChildElement<Bounds> boundsChild;
 
+  public LabelImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -50,10 +54,6 @@ public abstract class LabelImpl extends NodeImpl implements Label {
     boundsChild = sequenceBuilder.element(Bounds.class).build();
 
     typeBuilder.build();
-  }
-
-  public LabelImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

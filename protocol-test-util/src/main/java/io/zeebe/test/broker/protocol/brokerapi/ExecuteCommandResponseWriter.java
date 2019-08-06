@@ -29,11 +29,10 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
   protected Function<ExecuteCommandRequest, Long> keyFunction = r -> r.key();
   protected Function<ExecuteCommandRequest, Integer> partitionIdFunction = r -> r.partitionId();
   protected Function<ExecuteCommandRequest, Map<String, Object>> eventFunction;
-  private Function<ExecuteCommandRequest, Intent> intentFunction = r -> r.intent();
-
   protected long key;
   protected int partitionId;
   protected byte[] value;
+  private Function<ExecuteCommandRequest, Intent> intentFunction = r -> r.intent();
   private RecordType recordType;
   private Intent intent;
   private ValueType valueType;

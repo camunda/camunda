@@ -62,7 +62,7 @@ public class RecordingExporter implements Exporter {
   public void export(final Record record) {
     LOCK.lock();
     try {
-      RECORDS.add(record);
+      RECORDS.add(record.clone());
       IS_EMPTY.signal();
     } finally {
       LOCK.unlock();
@@ -233,6 +233,7 @@ public class RecordingExporter implements Exporter {
           try {
             IS_EMPTY.await(waitTime, TimeUnit.MILLISECONDS);
           } catch (final InterruptedException ignored) {
+            // ignored
           }
           now = System.currentTimeMillis();
         }

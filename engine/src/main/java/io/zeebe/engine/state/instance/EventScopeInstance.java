@@ -36,13 +36,13 @@ public class EventScopeInstance extends UnpackedObject implements DbValue {
     this.wrap(buffer, 0, length);
   }
 
+  public boolean isAccepting() {
+    return acceptingProp.getValue();
+  }
+
   public EventScopeInstance setAccepting(boolean accepting) {
     this.acceptingProp.setValue(accepting);
     return this;
-  }
-
-  public boolean isAccepting() {
-    return acceptingProp.getValue();
   }
 
   public EventScopeInstance addInterrupting(DirectBuffer elementId) {
@@ -61,6 +61,11 @@ public class EventScopeInstance extends UnpackedObject implements DbValue {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(acceptingProp, interruptingProp);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -71,10 +76,5 @@ public class EventScopeInstance extends UnpackedObject implements DbValue {
     final EventScopeInstance that = (EventScopeInstance) o;
     return Objects.equals(acceptingProp, that.acceptingProp)
         && Objects.equals(interruptingProp, that.interruptingProp);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(acceptingProp, interruptingProp);
   }
 }

@@ -11,10 +11,7 @@ import io.zeebe.db.DbContext;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.record.ValueType;
 import io.zeebe.util.sched.ActorControl;
-import java.util.Map;
 import java.util.function.BooleanSupplier;
 
 public class ProcessingContext implements ReadonlyProcessingContext {
@@ -26,7 +23,7 @@ public class ProcessingContext implements ReadonlyProcessingContext {
   private TypedStreamWriter logStreamWriter;
   private CommandResponseWriter commandResponseWriter;
 
-  private Map<ValueType, UnifiedRecordValue> eventCache;
+  private RecordValues recordValues;
   private RecordProcessorMap recordProcessorMap;
   private ZeebeState zeebeState;
   private DbContext dbContext;
@@ -53,8 +50,8 @@ public class ProcessingContext implements ReadonlyProcessingContext {
     return this;
   }
 
-  public ProcessingContext eventCache(Map<ValueType, UnifiedRecordValue> eventCache) {
-    this.eventCache = eventCache;
+  public ProcessingContext eventCache(RecordValues recordValues) {
+    this.recordValues = recordValues;
     return this;
   }
 
@@ -108,8 +105,8 @@ public class ProcessingContext implements ReadonlyProcessingContext {
     return logStreamWriter;
   }
 
-  public Map<ValueType, UnifiedRecordValue> getEventCache() {
-    return eventCache;
+  public RecordValues getRecordValues() {
+    return recordValues;
   }
 
   public RecordProcessorMap getRecordProcessorMap() {

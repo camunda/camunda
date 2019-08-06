@@ -70,16 +70,6 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
   }
 
   @Override
-  public int getLength() {
-    return request.getLength();
-  }
-
-  @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
-    request.write(buffer, offset);
-  }
-
-  @Override
   protected void wrapResponse(DirectBuffer buffer) {
     response.wrap(buffer, 0, buffer.capacity());
   }
@@ -101,6 +91,16 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
       throw new UnsupportedBrokerResponseException(
           request.getValueType().name(), response.getValueType().name());
     }
+  }
+
+  @Override
+  public int getLength() {
+    return request.getLength();
+  }
+
+  @Override
+  public void write(MutableDirectBuffer buffer, int offset) {
+    request.write(buffer, offset);
   }
 
   private boolean isValidValueType() {

@@ -14,6 +14,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.ConditionExpression;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.zeebe.model.bpmn.traversal.ModelWalker;
@@ -146,6 +147,17 @@ public class ZeebeRuntimeValidationTest {
             .endEvent()
             .done(),
         Arrays.asList(expect(ZeebeSubscription.class, "JSON path query is empty"))
+      },
+      {
+        // input collection expression is not supported
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", t -> t.multiInstance(m -> m.zeebeInputCollection("$.foo.bar")))
+            .done(),
+        Arrays.asList(
+            expect(
+                ZeebeLoopCharacteristics.class,
+                "JSON path query is invalid: Unexpected json-path token ROOT_OBJECT"))
       },
     };
   }

@@ -55,11 +55,6 @@ public class NodeInfo {
   }
 
   @Override
-  public String toString() {
-    return String.format("Node{nodeId=%d, commandApi=%s}", nodeId, commandApiAddress);
-  }
-
-  @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
@@ -84,5 +79,10 @@ public class NodeInfo {
     } else {
       return commandApiAddress.equals(other.commandApiAddress);
     }
+  }
+
+  @Override
+  public String toString() {
+    return String.format("Node{nodeId=%d, commandApi=%s}", nodeId, commandApiAddress);
   }
 }

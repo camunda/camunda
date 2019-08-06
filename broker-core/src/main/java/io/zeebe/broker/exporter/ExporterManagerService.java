@@ -38,26 +38,18 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
   public static final String PROCESSOR_NAME = "exporter";
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
-
-  private final ServiceGroupReference<Partition> partitionsGroupReference =
-      ServiceGroupReference.<Partition>create().onAdd(this::startExporter).build();
-
   private final List<ExporterCfg> exporterCfgs;
   private final ExporterRepository exporterRepository;
   private final DataCfg dataCfg;
-
   private ServiceStartContext startContext;
   private ExporterDirector director;
+  private final ServiceGroupReference<Partition> partitionsGroupReference =
+      ServiceGroupReference.<Partition>create().onAdd(this::startExporter).build();
 
   public ExporterManagerService(BrokerCfg brokerCfg) {
     this.dataCfg = brokerCfg.getData();
     this.exporterCfgs = brokerCfg.getExporters();
     this.exporterRepository = new ExporterRepository();
-  }
-
-  @Override
-  public ExporterManagerService get() {
-    return this;
   }
 
   @Override
@@ -71,6 +63,11 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
         throw new RuntimeException("Failed to load exporter with configuration: " + exporterCfg, e);
       }
     }
+  }
+
+  @Override
+  public ExporterManagerService get() {
+    return this;
   }
 
   private void startExporter(ServiceName<Partition> partitionName, Partition partition) {

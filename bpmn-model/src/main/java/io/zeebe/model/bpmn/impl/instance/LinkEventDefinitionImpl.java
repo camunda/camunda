@@ -43,6 +43,10 @@ public class LinkEventDefinitionImpl extends EventDefinitionImpl implements Link
   protected static ElementReferenceCollection<LinkEventDefinition, Source> sourceCollection;
   protected static ElementReference<LinkEventDefinition, Target> targetChild;
 
+  public LinkEventDefinitionImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -74,10 +78,6 @@ public class LinkEventDefinitionImpl extends EventDefinitionImpl implements Link
             .build();
 
     typeBuilder.build();
-  }
-
-  public LinkEventDefinitionImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

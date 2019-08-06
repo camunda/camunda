@@ -19,10 +19,9 @@ import java.util.Map;
 
 public class JsonUtil {
 
+  static final ObjectMapper JSON_MAPPER = new ObjectMapper();
   private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =
       new TypeReference<Map<String, Object>>() {};
-
-  static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
   static {
     JSON_MAPPER.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);

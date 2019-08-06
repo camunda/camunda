@@ -32,6 +32,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public abstract class EventDefinitionImpl extends RootElementImpl implements EventDefinition {
 
+  public EventDefinitionImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -41,9 +45,5 @@ public abstract class EventDefinitionImpl extends RootElementImpl implements Eve
             .abstractType();
 
     typeBuilder.build();
-  }
-
-  public EventDefinitionImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 }

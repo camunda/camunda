@@ -26,6 +26,7 @@ In Java code, instantiate the client as follows:
 ```java
 ZeebeClient client = ZeebeClient.newClientBuilder()
   .brokerContactPoint("127.0.0.1:26500")
+  .usePlaintext()
   .build();
 ```
 

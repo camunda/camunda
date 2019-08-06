@@ -14,8 +14,8 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 
 public class LeaderOpenLogStreamAppenderService implements Service<Void> {
-  private LogStream logStream;
   private final Injector<LogStream> logStreamInjector = new Injector<>();
+  private LogStream logStream;
 
   @Override
   public void start(ServiceStartContext startContext) {

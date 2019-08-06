@@ -26,11 +26,9 @@ import java.util.function.Consumer;
 
 public class TypedCommandWriterImpl implements TypedCommandWriter {
   protected final Consumer<RecordMetadata> noop = m -> {};
-
-  protected RecordMetadata metadata = new RecordMetadata();
   protected final Map<Class<? extends UnpackedObject>, ValueType> typeRegistry;
   protected final LogStream stream;
-
+  protected RecordMetadata metadata = new RecordMetadata();
   protected LogStreamBatchWriter batchWriter;
 
   protected long sourceRecordPosition = -1;

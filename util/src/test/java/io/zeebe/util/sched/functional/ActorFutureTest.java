@@ -435,40 +435,6 @@ public class ActorFutureTest {
     assertThat(futureResult.get()).isEqualTo("foo");
   }
 
-  class BlockedCallActor extends Actor {
-    public void waitOnFuture() {
-      actor.call(
-          () -> {
-            actor.runOnCompletionBlockingCurrentPhase(
-                new CompletableActorFuture<>(),
-                (r, t) -> {
-                  // never called since future is never completed
-                });
-          });
-    }
-
-    public ActorFuture<Integer> call(int returnValue) {
-      return actor.call(() -> returnValue);
-    }
-  }
-
-  class BlockedCallActorWithRunOnCompletion extends Actor {
-    public void waitOnFuture() {
-      actor.call(
-          () -> {
-            actor.runOnCompletion(
-                new CompletableActorFuture<>(),
-                (r, t) -> {
-                  // never called since future is never completed
-                });
-          });
-    }
-
-    public ActorFuture<Integer> call(int returnValue) {
-      return actor.call(() -> returnValue);
-    }
-  }
-
   @Test
   public void shouldReturnCompletedFutureWithNullValue() {
     // given
@@ -690,6 +656,40 @@ public class ActorFutureTest {
     assertThatThrownBy(() -> future.completeExceptionally(message, result))
         .isInstanceOf(NullPointerException.class)
         .hasMessageContaining("Throwable must not be null.");
+  }
+
+  class BlockedCallActor extends Actor {
+    public void waitOnFuture() {
+      actor.call(
+          () -> {
+            actor.runOnCompletionBlockingCurrentPhase(
+                new CompletableActorFuture<>(),
+                (r, t) -> {
+                  // never called since future is never completed
+                });
+          });
+    }
+
+    public ActorFuture<Integer> call(int returnValue) {
+      return actor.call(() -> returnValue);
+    }
+  }
+
+  class BlockedCallActorWithRunOnCompletion extends Actor {
+    public void waitOnFuture() {
+      actor.call(
+          () -> {
+            actor.runOnCompletion(
+                new CompletableActorFuture<>(),
+                (r, t) -> {
+                  // never called since future is never completed
+                });
+          });
+    }
+
+    public ActorFuture<Integer> call(int returnValue) {
+      return actor.call(() -> returnValue);
+    }
   }
 
   class TestActor extends Actor {

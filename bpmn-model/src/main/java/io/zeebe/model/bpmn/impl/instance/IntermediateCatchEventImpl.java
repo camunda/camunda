@@ -35,6 +35,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class IntermediateCatchEventImpl extends CatchEventImpl implements IntermediateCatchEvent {
 
+  public IntermediateCatchEventImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -51,10 +55,6 @@ public class IntermediateCatchEventImpl extends CatchEventImpl implements Interm
                 });
 
     typeBuilder.build();
-  }
-
-  public IntermediateCatchEventImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

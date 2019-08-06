@@ -80,6 +80,11 @@ public class WorkflowInstanceRecord extends UnifiedRecordValue
     return workflowInstanceKeyProp.getValue();
   }
 
+  public WorkflowInstanceRecord setWorkflowInstanceKey(long workflowInstanceKey) {
+    this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
+    return this;
+  }
+
   public WorkflowInstanceRecord setBpmnProcessId(
       DirectBuffer directBuffer, int offset, int length) {
     bpmnProcessIdProp.setValue(directBuffer, offset, length);
@@ -117,13 +122,8 @@ public class WorkflowInstanceRecord extends UnifiedRecordValue
     return this;
   }
 
-  public WorkflowInstanceRecord setBpmnProcessId(String bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
-    return this;
-  }
-
-  public WorkflowInstanceRecord setBpmnProcessId(DirectBuffer directBuffer) {
-    bpmnProcessIdProp.setValue(directBuffer);
+  public WorkflowInstanceRecord setFlowScopeKey(long flowScopeKey) {
+    this.flowScopeKeyProp.setValue(flowScopeKey);
     return this;
   }
 
@@ -136,13 +136,8 @@ public class WorkflowInstanceRecord extends UnifiedRecordValue
     return setElementId(elementId, 0, elementId.capacity());
   }
 
-  public WorkflowInstanceRecord setElementId(DirectBuffer elementId, int offset, int length) {
-    this.elementIdProp.setValue(elementId, offset, length);
-    return this;
-  }
-
-  public WorkflowInstanceRecord setFlowScopeKey(long flowScopeKey) {
-    this.flowScopeKeyProp.setValue(flowScopeKey);
+  public WorkflowInstanceRecord setWorkflowKey(long workflowKey) {
+    this.workflowKeyProp.setValue(workflowKey);
     return this;
   }
 
@@ -151,13 +146,18 @@ public class WorkflowInstanceRecord extends UnifiedRecordValue
     return this;
   }
 
-  public WorkflowInstanceRecord setWorkflowInstanceKey(long workflowInstanceKey) {
-    this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
+  public WorkflowInstanceRecord setBpmnProcessId(String bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
-  public WorkflowInstanceRecord setWorkflowKey(long workflowKey) {
-    this.workflowKeyProp.setValue(workflowKey);
+  public WorkflowInstanceRecord setBpmnProcessId(DirectBuffer directBuffer) {
+    bpmnProcessIdProp.setValue(directBuffer);
+    return this;
+  }
+
+  public WorkflowInstanceRecord setElementId(DirectBuffer elementId, int offset, int length) {
+    this.elementIdProp.setValue(elementId, offset, length);
     return this;
   }
 }

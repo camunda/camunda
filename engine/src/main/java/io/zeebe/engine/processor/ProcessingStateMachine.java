@@ -20,7 +20,6 @@ import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.ErrorIntent;
 import io.zeebe.util.exception.RecoverableException;
 import io.zeebe.util.retry.AbortableRetryStrategy;
@@ -30,7 +29,6 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
-import java.util.Map;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 
@@ -75,10 +73,9 @@ import org.slf4j.Logger;
  */
 public final class ProcessingStateMachine {
 
-  private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
-
   public static final String ERROR_MESSAGE_WRITE_EVENT_ABORTED =
       "Expected to write one or more follow up events for event '{}' without errors, but exception was thrown.";
+  private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_ROLLBACK_ABORTED =
       "Expected to roll back the current transaction for event '{}' successfully, but exception was thrown.";
   private static final String ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED =
@@ -100,40 +97,43 @@ public final class ProcessingStateMachine {
       "Error record was written at {}, we will continue with processing if event was committed. Current commit position is {}.";
 
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
-
+  protected final ZeebeState zeebeState;
+  protected final RecordMetadata metadata = new RecordMetadata();
+  protected final TypedResponseWriterImpl responseWriter;
   private final ActorControl actor;
   private final EventFilter eventFilter;
   private final LogStream logStream;
   private final LogStreamReader logStreamReader;
   private final TypedStreamWriter logStreamWriter;
-
   private final DbContext dbContext;
   private final RetryStrategy writeRetryStrategy;
   private final RetryStrategy sideEffectsRetryStrategy;
   private final RetryStrategy updateStateRetryStrategy;
-
   private final BooleanSupplier shouldProcessNext;
   private final BooleanSupplier abortCondition;
-
-  protected final ZeebeState zeebeState;
-
   private final ErrorRecord errorRecord = new ErrorRecord();
-  protected final RecordMetadata metadata = new RecordMetadata();
-  private final Map<ValueType, UnifiedRecordValue> eventCache;
+  private final RecordValues recordValues;
   private final RecordProcessorMap recordProcessorMap;
-
-  private final TypedEventImpl typedEvent = new TypedEventImpl();
-  protected final TypedResponseWriterImpl responseWriter;
-  private SideEffectProducer sideEffectProducer;
-
+  private final TypedEventImpl typedEvent;
   private final StreamProcessorMetrics metrics;
+
+  // current iteration
+  private SideEffectProducer sideEffectProducer;
+  private LoggedEvent currentEvent;
+  private TypedRecordProcessor<?> currentProcessor;
+  private ZeebeDbTransaction zeebeDbTransaction;
+  private long writtenEventPosition = -1L;
+  private long lastSuccessfulProcessedEventPosition = -1L;
+  private long lastWrittenEventPosition = -1L;
+  private boolean onErrorHandling;
+  private long errorRecordPosition = -1;
 
   public ProcessingStateMachine(ProcessingContext context, BooleanSupplier shouldProcessNext) {
 
     this.actor = context.getActor();
     this.eventFilter = context.getEventFilter();
     this.recordProcessorMap = context.getRecordProcessorMap();
-    this.eventCache = context.getEventCache();
+    this.recordValues = context.getRecordValues();
     this.logStreamReader = context.getLogStreamReader();
     this.logStreamWriter = context.getLogStreamWriter();
     this.logStream = context.getLogStream();
@@ -146,23 +146,13 @@ public final class ProcessingStateMachine {
     this.updateStateRetryStrategy = new RecoverableRetryStrategy(actor);
     this.shouldProcessNext = shouldProcessNext;
 
+    final int partitionId = logStream.getPartitionId();
+    this.typedEvent = new TypedEventImpl(partitionId);
     this.responseWriter =
-        new TypedResponseWriterImpl(context.getCommandResponseWriter(), logStream.getPartitionId());
+        new TypedResponseWriterImpl(context.getCommandResponseWriter(), partitionId);
 
-    this.metrics = new StreamProcessorMetrics(logStream.getPartitionId());
+    this.metrics = new StreamProcessorMetrics(partitionId);
   }
-
-  // current iteration
-  private LoggedEvent currentEvent;
-  private TypedRecordProcessor<?> currentProcessor;
-  private ZeebeDbTransaction zeebeDbTransaction;
-
-  private long writtenEventPosition = -1L;
-  private long lastSuccessfulProcessedEventPosition = -1L;
-  private long lastWrittenEventPosition = -1L;
-
-  private boolean onErrorHandling;
-  private long errorRecordPosition = -1;
 
   private void skipRecord() {
     actor.submit(this::readNextEvent);
@@ -204,9 +194,7 @@ public final class ProcessingStateMachine {
         metadata.getRecordType(), event.getTimestamp(), ActorClock.currentTimeMillis());
 
     try {
-      final UnifiedRecordValue value = eventCache.get(metadata.getValueType());
-      value.reset();
-      event.readValue(value);
+      final UnifiedRecordValue value = recordValues.readRecordValue(event, metadata.getValueType());
       typedEvent.wrap(event, metadata, value);
 
       processInTransaction(typedEvent);

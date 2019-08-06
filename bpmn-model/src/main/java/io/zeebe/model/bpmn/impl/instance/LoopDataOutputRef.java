@@ -30,6 +30,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public class LoopDataOutputRef extends BpmnModelElementInstanceImpl {
 
+  public LoopDataOutputRef(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -44,9 +48,5 @@ public class LoopDataOutputRef extends BpmnModelElementInstanceImpl {
                 });
 
     typeBuilder.build();
-  }
-
-  public LoopDataOutputRef(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 }

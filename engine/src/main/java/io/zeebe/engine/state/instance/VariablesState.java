@@ -70,6 +70,7 @@ public class VariablesState {
   private final KeyGenerator keyGenerator;
 
   private VariableListener listener;
+  private int variableCount = 0;
 
   public VariablesState(
       ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext, KeyGenerator keyGenerator) {
@@ -120,7 +121,12 @@ public class VariablesState {
     }
   }
 
-  void setVariableLocal(
+  public void setVariableLocal(
+      long scopeKey, long workflowKey, DirectBuffer name, DirectBuffer value) {
+    setVariableLocal(scopeKey, workflowKey, name, 0, name.capacity(), value, 0, value.capacity());
+  }
+
+  public void setVariableLocal(
       long scopeKey,
       long workflowKey,
       DirectBuffer name,
@@ -202,12 +208,15 @@ public class VariablesState {
   public void setVariablesFromDocument(long scopeKey, long workflowKey, DirectBuffer document) {
     // 1. index entries in the document
     indexedDocument.index(document);
+    if (!indexedDocument.hasEntries()) {
+      return;
+    }
 
     long currentScope = scopeKey;
     long parentScope;
 
     // 2. overwrite any variables in the scope hierarchy
-    while (indexedDocument.hasEntries() && (parentScope = getParent(currentScope)) > 0) {
+    while ((parentScope = getParent(currentScope)) > 0) {
       final DocumentEntryIterator entryIterator = indexedDocument.iterator();
 
       while (entryIterator.hasNext()) {
@@ -238,22 +247,20 @@ public class VariablesState {
     }
 
     // 3. set remaining variables on top scope
-    if (indexedDocument.hasEntries()) {
-      final DocumentEntryIterator entryIterator = indexedDocument.iterator();
+    final DocumentEntryIterator entryIterator = indexedDocument.iterator();
 
-      while (entryIterator.hasNext()) {
-        entryIterator.next();
+    while (entryIterator.hasNext()) {
+      entryIterator.next();
 
-        setVariableLocal(
-            currentScope,
-            workflowKey,
-            document,
-            entryIterator.getNameOffset(),
-            entryIterator.getNameLength(),
-            document,
-            entryIterator.getValueOffset(),
-            entryIterator.getValueLength());
-      }
+      setVariableLocal(
+          currentScope,
+          workflowKey,
+          document,
+          entryIterator.getNameOffset(),
+          entryIterator.getNameLength(),
+          document,
+          entryIterator.getValueOffset(),
+          entryIterator.getValueLength());
     }
   }
 
@@ -317,8 +324,6 @@ public class VariablesState {
     resultView.wrap(documentResultBuffer, 0, writer.getOffset());
     return resultView;
   }
-
-  private int variableCount = 0;
 
   public DirectBuffer getVariablesLocalAsDocument(long scopeKey) {
 
@@ -465,6 +470,24 @@ public class VariablesState {
     return rootScopeKey;
   }
 
+  public interface VariableListener {
+    void onCreate(
+        long key,
+        long workflowKey,
+        DirectBuffer name,
+        DirectBuffer value,
+        long variableScopeKey,
+        long rootScopeKey);
+
+    void onUpdate(
+        long key,
+        long workflowKey,
+        DirectBuffer name,
+        DirectBuffer value,
+        long variableScopeKey,
+        long rootScopeKey);
+  }
+
   private class IndexedDocument implements Iterable<Void> {
     // variable name offset -> variable value offset
     private final Int2IntHashMap entries = new Int2IntHashMap(-1);
@@ -517,30 +540,6 @@ public class VariablesState {
       return iterator.hasNext();
     }
 
-    public void wrap(DirectBuffer document, EntryIterator iterator) {
-      this.iterator = iterator;
-      this.document = document;
-      this.documentLength = document.capacity();
-    }
-
-    /** excluding string header */
-    public int getNameOffset() {
-      return nameOffset;
-    }
-
-    public int getNameLength() {
-      return nameLength;
-    }
-
-    /** including header */
-    public int getValueOffset() {
-      return valueOffset;
-    }
-
-    public int getValueLength() {
-      return valueLength;
-    }
-
     @Override
     public Void next() {
       iterator.next();
@@ -564,23 +563,29 @@ public class VariablesState {
     public void remove() {
       iterator.remove();
     }
-  }
 
-  public interface VariableListener {
-    void onCreate(
-        long key,
-        long workflowKey,
-        DirectBuffer name,
-        DirectBuffer value,
-        long variableScopeKey,
-        long rootScopeKey);
+    public void wrap(DirectBuffer document, EntryIterator iterator) {
+      this.iterator = iterator;
+      this.document = document;
+      this.documentLength = document.capacity();
+    }
 
-    void onUpdate(
-        long key,
-        long workflowKey,
-        DirectBuffer name,
-        DirectBuffer value,
-        long variableScopeKey,
-        long rootScopeKey);
+    /** excluding string header */
+    public int getNameOffset() {
+      return nameOffset;
+    }
+
+    public int getNameLength() {
+      return nameLength;
+    }
+
+    /** including header */
+    public int getValueOffset() {
+      return valueOffset;
+    }
+
+    public int getValueLength() {
+      return valueLength;
+    }
   }
 }

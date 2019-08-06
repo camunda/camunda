@@ -28,11 +28,11 @@ public class ExportersStateTest {
 
   private final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private ExportersState state;
 
   @Rule
   public final RuleChain chain = RuleChain.outerRule(temporaryFolder).around(autoCloseableRule);
 
+  private ExportersState state;
   private ZeebeDb<ZbColumnFamilies> db;
 
   @Before

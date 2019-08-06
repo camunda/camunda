@@ -58,36 +58,6 @@ public class IncidentRecord extends UnifiedRecordValue
     return this;
   }
 
-  public IncidentRecord setBpmnProcessId(DirectBuffer directBuffer) {
-    bpmnProcessIdProp.setValue(directBuffer, 0, directBuffer.capacity());
-    return this;
-  }
-
-  public IncidentRecord setElementId(DirectBuffer elementId) {
-    this.elementIdProp.setValue(elementId, 0, elementId.capacity());
-    return this;
-  }
-
-  public IncidentRecord setWorkflowKey(long workflowKey) {
-    this.workflowKeyProp.setValue(workflowKey);
-    return this;
-  }
-
-  public IncidentRecord setWorkflowInstanceKey(long workflowInstanceKey) {
-    this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
-    return this;
-  }
-
-  public IncidentRecord setElementInstanceKey(long elementInstanceKey) {
-    this.elementInstanceKeyProp.setValue(elementInstanceKey);
-    return this;
-  }
-
-  public IncidentRecord setVariableScopeKey(long variableScopeKey) {
-    this.variableScopeKeyProp.setValue(variableScopeKey);
-    return this;
-  }
-
   @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
     return bpmnProcessIdProp.getValue();
@@ -118,8 +88,18 @@ public class IncidentRecord extends UnifiedRecordValue
     return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
   }
 
+  public IncidentRecord setBpmnProcessId(DirectBuffer directBuffer) {
+    bpmnProcessIdProp.setValue(directBuffer, 0, directBuffer.capacity());
+    return this;
+  }
+
   public long getWorkflowKey() {
     return workflowKeyProp.getValue();
+  }
+
+  public IncidentRecord setWorkflowKey(long workflowKey) {
+    this.workflowKeyProp.setValue(workflowKey);
+    return this;
   }
 
   @Override
@@ -127,8 +107,18 @@ public class IncidentRecord extends UnifiedRecordValue
     return BufferUtil.bufferAsString(elementIdProp.getValue());
   }
 
+  public IncidentRecord setElementId(DirectBuffer elementId) {
+    this.elementIdProp.setValue(elementId, 0, elementId.capacity());
+    return this;
+  }
+
   public long getElementInstanceKey() {
     return elementInstanceKeyProp.getValue();
+  }
+
+  public IncidentRecord setElementInstanceKey(long elementInstanceKey) {
+    this.elementInstanceKeyProp.setValue(elementInstanceKey);
+    return this;
   }
 
   public long getJobKey() {
@@ -139,8 +129,14 @@ public class IncidentRecord extends UnifiedRecordValue
     return variableScopeKeyProp.getValue();
   }
 
-  public long getWorkflowInstanceKey() {
-    return workflowInstanceKeyProp.getValue();
+  public IncidentRecord setVariableScopeKey(long variableScopeKey) {
+    this.variableScopeKeyProp.setValue(variableScopeKey);
+    return this;
+  }
+
+  public IncidentRecord setJobKey(long jobKey) {
+    this.jobKeyProp.setValue(jobKey);
+    return this;
   }
 
   public IncidentRecord setErrorMessage(DirectBuffer errorMessage) {
@@ -158,8 +154,12 @@ public class IncidentRecord extends UnifiedRecordValue
     return this;
   }
 
-  public IncidentRecord setJobKey(long jobKey) {
-    this.jobKeyProp.setValue(jobKey);
+  public long getWorkflowInstanceKey() {
+    return workflowInstanceKeyProp.getValue();
+  }
+
+  public IncidentRecord setWorkflowInstanceKey(long workflowInstanceKey) {
+    this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
     return this;
   }
 }

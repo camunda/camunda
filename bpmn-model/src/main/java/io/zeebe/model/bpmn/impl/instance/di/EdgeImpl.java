@@ -34,6 +34,10 @@ public abstract class EdgeImpl extends DiagramElementImpl implements Edge {
 
   protected static ChildElementCollection<Waypoint> waypointCollection;
 
+  public EdgeImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -47,10 +51,6 @@ public abstract class EdgeImpl extends DiagramElementImpl implements Edge {
     waypointCollection = sequenceBuilder.elementCollection(Waypoint.class).minOccurs(2).build();
 
     typeBuilder.build();
-  }
-
-  public EdgeImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

@@ -93,74 +93,6 @@ public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements
     return supply(wrappedStream.filter(predicate));
   }
 
-  @Override
-  public S distinct() {
-    return supply(wrappedStream.distinct());
-  }
-
-  @Override
-  public S sorted() {
-    return supply(wrappedStream.sorted());
-  }
-
-  @Override
-  public S sorted(final Comparator<? super T> comparator) {
-    return supply(wrappedStream.sorted(comparator));
-  }
-
-  @Override
-  public S peek(final Consumer<? super T> consumer) {
-    return supply(wrappedStream.peek(consumer));
-  }
-
-  @Override
-  public S limit(final long l) {
-    return supply(wrappedStream.limit(l));
-  }
-
-  @Override
-  public S skip(final long l) {
-    return supply(wrappedStream.skip(l));
-  }
-
-  @Override
-  public S sequential() {
-    return supply(wrappedStream.sequential());
-  }
-
-  @Override
-  public S parallel() {
-    return supply(wrappedStream.parallel());
-  }
-
-  @Override
-  public S unordered() {
-    return supply(wrappedStream.unordered());
-  }
-
-  @Override
-  public S onClose(final Runnable runnable) {
-    return supply(wrappedStream.onClose(runnable));
-  }
-
-  // Generate delegate methods
-
-  public Iterator<T> iterator() {
-    return wrappedStream.iterator();
-  }
-
-  public Spliterator<T> spliterator() {
-    return wrappedStream.spliterator();
-  }
-
-  public boolean isParallel() {
-    return wrappedStream.isParallel();
-  }
-
-  public void close() {
-    wrappedStream.close();
-  }
-
   public <R> Stream<R> map(Function<? super T, ? extends R> mapper) {
     return wrappedStream.map(mapper);
   }
@@ -191,6 +123,38 @@ public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements
 
   public DoubleStream flatMapToDouble(Function<? super T, ? extends DoubleStream> mapper) {
     return wrappedStream.flatMapToDouble(mapper);
+  }
+
+  @Override
+  public S distinct() {
+    return supply(wrappedStream.distinct());
+  }
+
+  @Override
+  public S sorted() {
+    return supply(wrappedStream.sorted());
+  }
+
+  // Generate delegate methods
+
+  @Override
+  public S sorted(final Comparator<? super T> comparator) {
+    return supply(wrappedStream.sorted(comparator));
+  }
+
+  @Override
+  public S peek(final Consumer<? super T> consumer) {
+    return supply(wrappedStream.peek(consumer));
+  }
+
+  @Override
+  public S limit(final long l) {
+    return supply(wrappedStream.limit(l));
+  }
+
+  @Override
+  public S skip(final long l) {
+    return supply(wrappedStream.skip(l));
   }
 
   public void forEach(Consumer<? super T> action) {
@@ -261,5 +225,41 @@ public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements
 
   public Optional<T> findAny() {
     return wrappedStream.findAny();
+  }
+
+  public Iterator<T> iterator() {
+    return wrappedStream.iterator();
+  }
+
+  public Spliterator<T> spliterator() {
+    return wrappedStream.spliterator();
+  }
+
+  public boolean isParallel() {
+    return wrappedStream.isParallel();
+  }
+
+  @Override
+  public S sequential() {
+    return supply(wrappedStream.sequential());
+  }
+
+  @Override
+  public S parallel() {
+    return supply(wrappedStream.parallel());
+  }
+
+  @Override
+  public S unordered() {
+    return supply(wrappedStream.unordered());
+  }
+
+  @Override
+  public S onClose(final Runnable runnable) {
+    return supply(wrappedStream.onClose(runnable));
+  }
+
+  public void close() {
+    wrappedStream.close();
   }
 }

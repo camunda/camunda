@@ -43,13 +43,11 @@ public class DeploymentTransformer {
   private final WorkflowState workflowState;
   private final KeyGenerator keyGenerator;
   private final MessageDigest digestGenerator;
-
+  // process id duplicate checking
+  private final Map<String, String> processIdToResourceName = new HashMap<>();
   // internal changes during processing
   private RejectionType rejectionType;
   private String rejectionReason;
-
-  // process id duplicate checking
-  private final Map<String, String> processIdToResourceName = new HashMap<>();
 
   public DeploymentTransformer(final ZeebeState zeebeState) {
     this.workflowState = zeebeState.getWorkflowState();

@@ -31,15 +31,14 @@ public class ExecuteCommandResponse implements BufferReader, BufferWriter {
 
   private final ExecuteCommandResponseEncoder bodyEncoder = new ExecuteCommandResponseEncoder();
   private final ExecuteCommandResponseDecoder bodyDecoder = new ExecuteCommandResponseDecoder();
-
+  private final DirectBuffer value = new UnsafeBuffer(0, 0);
+  private final DirectBuffer rejectionReason = new UnsafeBuffer(0, 0);
   private int partitionId;
   private long key;
   private RecordType recordType;
   private ValueType valueType;
   private Intent intent;
   private RejectionType rejectionType;
-  private final DirectBuffer value = new UnsafeBuffer(0, 0);
-  private final DirectBuffer rejectionReason = new UnsafeBuffer(0, 0);
 
   public ExecuteCommandResponse() {
     reset();

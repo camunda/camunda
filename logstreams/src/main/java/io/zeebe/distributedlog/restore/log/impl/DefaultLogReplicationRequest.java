@@ -32,10 +32,6 @@ public class DefaultLogReplicationRequest implements LogReplicationRequest {
     return includeFromPosition;
   }
 
-  public void setIncludeFromPosition(boolean includeFromPosition) {
-    this.includeFromPosition = includeFromPosition;
-  }
-
   @Override
   public long getFromPosition() {
     return fromPosition;
@@ -52,6 +48,10 @@ public class DefaultLogReplicationRequest implements LogReplicationRequest {
 
   public void setToPosition(long toPosition) {
     this.toPosition = toPosition;
+  }
+
+  public void setIncludeFromPosition(boolean includeFromPosition) {
+    this.includeFromPosition = includeFromPosition;
   }
 
   @Override

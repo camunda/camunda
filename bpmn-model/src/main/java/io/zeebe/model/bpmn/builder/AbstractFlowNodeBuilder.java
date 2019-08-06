@@ -54,12 +54,12 @@ public abstract class AbstractFlowNodeBuilder<
         B extends AbstractFlowNodeBuilder<B, E>, E extends FlowNode>
     extends AbstractFlowElementBuilder<B, E> {
 
-  private SequenceFlowBuilder currentSequenceFlowBuilder;
-
   protected boolean compensationStarted;
   protected BoundaryEvent compensateBoundaryEvent;
+  private SequenceFlowBuilder currentSequenceFlowBuilder;
 
-  protected AbstractFlowNodeBuilder(BpmnModelInstance modelInstance, E element, Class<?> selfType) {
+  protected AbstractFlowNodeBuilder(
+      final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -71,7 +71,7 @@ public abstract class AbstractFlowNodeBuilder<
     return currentSequenceFlowBuilder;
   }
 
-  public B condition(String name, String condition) {
+  public B condition(final String name, final String condition) {
     if (name != null) {
       getCurrentSequenceFlowBuilder().name(name);
     }
@@ -81,11 +81,11 @@ public abstract class AbstractFlowNodeBuilder<
     return myself;
   }
 
-  public B condition(String condition) {
+  public B condition(final String condition) {
     return condition(null, condition);
   }
 
-  protected void connectTarget(FlowNode target) {
+  protected void connectTarget(final FlowNode target) {
     // check if compensation was started
     if (isBoundaryEventWithStartedCompensation()) {
       // the target activity should be marked for compensation
@@ -105,7 +105,7 @@ public abstract class AbstractFlowNodeBuilder<
     }
   }
 
-  protected void connectTargetWithSequenceFlow(FlowNode target) {
+  protected void connectTargetWithSequenceFlow(final FlowNode target) {
     getCurrentSequenceFlowBuilder().from(element).to(target);
 
     final SequenceFlow sequenceFlow = getCurrentSequenceFlowBuilder().getElement();
@@ -113,7 +113,7 @@ public abstract class AbstractFlowNodeBuilder<
     currentSequenceFlowBuilder = null;
   }
 
-  protected void connectTargetWithAssociation(FlowNode target) {
+  protected void connectTargetWithAssociation(final FlowNode target) {
     final Association association = modelInstance.newInstance(Association.class);
     association.setTarget(target);
     association.setSource(element);
@@ -131,16 +131,16 @@ public abstract class AbstractFlowNodeBuilder<
     }
   }
 
-  public B sequenceFlowId(String sequenceFlowId) {
+  public B sequenceFlowId(final String sequenceFlowId) {
     getCurrentSequenceFlowBuilder().id(sequenceFlowId);
     return myself;
   }
 
-  private <T extends FlowNode> T createTarget(Class<T> typeClass) {
+  private <T extends FlowNode> T createTarget(final Class<T> typeClass) {
     return createTarget(typeClass, null);
   }
 
-  protected <T extends FlowNode> T createTarget(Class<T> typeClass, String identifier) {
+  protected <T extends FlowNode> T createTarget(final Class<T> typeClass, final String identifier) {
     final T target = createSibling(typeClass, identifier);
 
     final BpmnShape targetBpmnShape = createBpmnShape(target);
@@ -151,13 +151,12 @@ public abstract class AbstractFlowNodeBuilder<
   }
 
   protected <T extends AbstractFlowNodeBuilder, F extends FlowNode> T createTargetBuilder(
-      Class<F> typeClass) {
+      final Class<F> typeClass) {
     return createTargetBuilder(typeClass, null);
   }
 
-  @SuppressWarnings("unchecked")
   protected <T extends AbstractFlowNodeBuilder, F extends FlowNode> T createTargetBuilder(
-      Class<F> typeClass, String id) {
+      final Class<F> typeClass, final String id) {
     final AbstractFlowNodeBuilder builder = createTarget(typeClass, id).builder();
 
     if (compensationStarted) {
@@ -172,11 +171,12 @@ public abstract class AbstractFlowNodeBuilder<
     return createTargetBuilder(ServiceTask.class);
   }
 
-  public ServiceTaskBuilder serviceTask(String id) {
+  public ServiceTaskBuilder serviceTask(final String id) {
     return createTargetBuilder(ServiceTask.class, id);
   }
 
-  public ServiceTaskBuilder serviceTask(String id, Consumer<ServiceTaskBuilder> consumer) {
+  public ServiceTaskBuilder serviceTask(
+      final String id, final Consumer<ServiceTaskBuilder> consumer) {
     final ServiceTaskBuilder builder = createTargetBuilder(ServiceTask.class, id);
     consumer.accept(builder);
     return builder;
@@ -186,7 +186,7 @@ public abstract class AbstractFlowNodeBuilder<
     return createTargetBuilder(SendTask.class);
   }
 
-  public SendTaskBuilder sendTask(String id) {
+  public SendTaskBuilder sendTask(final String id) {
     return createTargetBuilder(SendTask.class, id);
   }
 
@@ -194,7 +194,7 @@ public abstract class AbstractFlowNodeBuilder<
     return createTargetBuilder(UserTask.class);
   }
 
-  public UserTaskBuilder userTask(String id) {
+  public UserTaskBuilder userTask(final String id) {
     return createTargetBuilder(UserTask.class, id);
   }
 
@@ -202,7 +202,7 @@ public abstract class AbstractFlowNodeBuilder<
     return createTargetBuilder(BusinessRuleTask.class);
   }
 
-  public BusinessRuleTaskBuilder businessRuleTask(String id) {
+  public BusinessRuleTaskBuilder businessRuleTask(final String id) {
     return createTargetBuilder(BusinessRuleTask.class, id);
   }
 
@@ -210,7 +210,7 @@ public abstract class AbstractFlowNodeBuilder<
     return createTargetBuilder(ScriptTask.class);
   }
 
-  public ScriptTaskBuilder scriptTask(String id) {
+  public ScriptTaskBuilder scriptTask(final String id) {
     return createTargetBuilder(ScriptTask.class, id);
   }
 
@@ -218,15 +218,22 @@ public abstract class AbstractFlowNodeBuilder<
     return createTargetBuilder(ReceiveTask.class);
   }
 
-  public ReceiveTaskBuilder receiveTask(String id) {
+  public ReceiveTaskBuilder receiveTask(final String id) {
     return createTargetBuilder(ReceiveTask.class, id);
+  }
+
+  public ReceiveTaskBuilder receiveTask(
+      final String id, final Consumer<ReceiveTaskBuilder> consumer) {
+    final ReceiveTaskBuilder builder = createTargetBuilder(ReceiveTask.class, id);
+    consumer.accept(builder);
+    return builder;
   }
 
   public ManualTaskBuilder manualTask() {
     return createTargetBuilder(ManualTask.class);
   }
 
-  public ManualTaskBuilder manualTask(String id) {
+  public ManualTaskBuilder manualTask(final String id) {
     return createTargetBuilder(ManualTask.class, id);
   }
 
@@ -234,7 +241,7 @@ public abstract class AbstractFlowNodeBuilder<
     return createTarget(EndEvent.class).builder();
   }
 
-  public EndEventBuilder endEvent(String id) {
+  public EndEventBuilder endEvent(final String id) {
     return createTarget(EndEvent.class, id).builder();
   }
 
@@ -242,7 +249,7 @@ public abstract class AbstractFlowNodeBuilder<
     return createTarget(ParallelGateway.class).builder();
   }
 
-  public ParallelGatewayBuilder parallelGateway(String id) {
+  public ParallelGatewayBuilder parallelGateway(final String id) {
     return createTarget(ParallelGateway.class, id).builder();
   }
 
@@ -258,15 +265,15 @@ public abstract class AbstractFlowNodeBuilder<
     return createTarget(EventBasedGateway.class).builder();
   }
 
-  public EventBasedGatewayBuilder eventBasedGateway(String id) {
+  public EventBasedGatewayBuilder eventBasedGateway(final String id) {
     return createTarget(EventBasedGateway.class, id).builder();
   }
 
-  public ExclusiveGatewayBuilder exclusiveGateway(String id) {
+  public ExclusiveGatewayBuilder exclusiveGateway(final String id) {
     return createTarget(ExclusiveGateway.class, id).builder();
   }
 
-  public InclusiveGatewayBuilder inclusiveGateway(String id) {
+  public InclusiveGatewayBuilder inclusiveGateway(final String id) {
     return createTarget(InclusiveGateway.class, id).builder();
   }
 
@@ -274,12 +281,12 @@ public abstract class AbstractFlowNodeBuilder<
     return createTarget(IntermediateCatchEvent.class).builder();
   }
 
-  public IntermediateCatchEventBuilder intermediateCatchEvent(String id) {
+  public IntermediateCatchEventBuilder intermediateCatchEvent(final String id) {
     return createTarget(IntermediateCatchEvent.class, id).builder();
   }
 
   public IntermediateCatchEventBuilder intermediateCatchEvent(
-      String id, Consumer<IntermediateCatchEventBuilder> builderConsumer) {
+      final String id, final Consumer<IntermediateCatchEventBuilder> builderConsumer) {
     final IntermediateCatchEventBuilder builder =
         createTarget(IntermediateCatchEvent.class, id).builder();
     builderConsumer.accept(builder);
@@ -290,7 +297,7 @@ public abstract class AbstractFlowNodeBuilder<
     return createTarget(IntermediateThrowEvent.class).builder();
   }
 
-  public IntermediateThrowEventBuilder intermediateThrowEvent(String id) {
+  public IntermediateThrowEventBuilder intermediateThrowEvent(final String id) {
     return createTarget(IntermediateThrowEvent.class, id).builder();
   }
 
@@ -298,7 +305,7 @@ public abstract class AbstractFlowNodeBuilder<
     return createTarget(CallActivity.class).builder();
   }
 
-  public CallActivityBuilder callActivity(String id) {
+  public CallActivityBuilder callActivity(final String id) {
     return createTarget(CallActivity.class, id).builder();
   }
 
@@ -306,11 +313,11 @@ public abstract class AbstractFlowNodeBuilder<
     return createTarget(SubProcess.class).builder();
   }
 
-  public SubProcessBuilder subProcess(String id) {
+  public SubProcessBuilder subProcess(final String id) {
     return createTarget(SubProcess.class, id).builder();
   }
 
-  public SubProcessBuilder subProcess(String id, Consumer<SubProcessBuilder> consumer) {
+  public SubProcessBuilder subProcess(final String id, final Consumer<SubProcessBuilder> consumer) {
 
     final SubProcessBuilder builder = createTarget(SubProcess.class, id).builder();
     consumer.accept(builder);
@@ -322,12 +329,12 @@ public abstract class AbstractFlowNodeBuilder<
     return new TransactionBuilder(modelInstance, transaction);
   }
 
-  public TransactionBuilder transaction(String id) {
+  public TransactionBuilder transaction(final String id) {
     final Transaction transaction = createTarget(Transaction.class, id);
     return new TransactionBuilder(modelInstance, transaction);
   }
 
-  private <T extends Gateway> T findLastGateway(Class<T> gatewayType) {
+  private <T extends Gateway> T findLastGateway(final Class<T> gatewayType) {
     FlowNode lastGateway = element;
     while (true) {
       try {
@@ -350,7 +357,7 @@ public abstract class AbstractFlowNodeBuilder<
     return findLastGateway(ExclusiveGateway.class).builder();
   }
 
-  public AbstractFlowNodeBuilder<?, ?> moveToNode(String identifier) {
+  public AbstractFlowNodeBuilder<?, ?> moveToNode(final String identifier) {
     final ModelElementInstance instance = modelInstance.getModelElementById(identifier);
     if (instance instanceof FlowNode) {
       return ((FlowNode) instance).builder();
@@ -359,8 +366,7 @@ public abstract class AbstractFlowNodeBuilder<
     }
   }
 
-  @SuppressWarnings("unchecked")
-  public <T extends AbstractActivityBuilder<?, ?>> T moveToActivity(String identifier) {
+  public <T extends AbstractActivityBuilder<?, ?>> T moveToActivity(final String identifier) {
     final ModelElementInstance instance = modelInstance.getModelElementById(identifier);
     if (instance instanceof Activity) {
       return (T) ((Activity) instance).builder();
@@ -369,7 +375,7 @@ public abstract class AbstractFlowNodeBuilder<
     }
   }
 
-  public AbstractFlowNodeBuilder<?, ?> connectTo(String identifier) {
+  public AbstractFlowNodeBuilder<?, ?> connectTo(final String identifier) {
     final ModelElementInstance target = modelInstance.getModelElementById(identifier);
     if (target == null) {
       throw new BpmnModelException(

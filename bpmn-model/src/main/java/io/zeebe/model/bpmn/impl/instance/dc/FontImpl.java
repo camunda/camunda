@@ -47,6 +47,10 @@ public class FontImpl extends BpmnModelElementInstanceImpl implements Font {
   protected static Attribute<Boolean> isUnderlineAttribute;
   protected static Attribute<Boolean> isStrikeTroughAttribute;
 
+  public FontImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -73,10 +77,6 @@ public class FontImpl extends BpmnModelElementInstanceImpl implements Font {
     isStrikeTroughAttribute = typeBuilder.booleanAttribute(DC_ATTRIBUTE_IS_STRIKE_THROUGH).build();
 
     typeBuilder.build();
-  }
-
-  public FontImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

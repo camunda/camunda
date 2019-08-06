@@ -51,11 +51,11 @@ public class PushDeploymentResponse
   }
 
   @Override
-  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    super.wrap(buffer, offset, length);
+  public void reset() {
+    super.reset();
 
-    partitionId = bodyDecoder.partitionId();
-    deploymentKey = bodyDecoder.deploymentKey();
+    partitionId = PushDeploymentResponseEncoder.partitionIdNullValue();
+    deploymentKey = PushDeploymentResponseEncoder.deploymentKeyNullValue();
   }
 
   @Override
@@ -65,10 +65,11 @@ public class PushDeploymentResponse
     bodyEncoder.partitionId(partitionId).deploymentKey(deploymentKey);
   }
 
-  public void reset() {
-    super.reset();
+  @Override
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    super.wrap(buffer, offset, length);
 
-    partitionId = PushDeploymentResponseEncoder.partitionIdNullValue();
-    deploymentKey = PushDeploymentResponseEncoder.deploymentKeyNullValue();
+    partitionId = bodyDecoder.partitionId();
+    deploymentKey = bodyDecoder.deploymentKey();
   }
 }

@@ -58,12 +58,6 @@ public class BpmnParser extends AbstractModelParser {
   }
 
   @Override
-  protected BpmnModelInstanceImpl createModelInstance(DomDocument document) {
-    return new BpmnModelInstanceImpl(
-        (ModelImpl) Bpmn.INSTANCE.getBpmnModel(), Bpmn.INSTANCE.getBpmnModelBuilder(), document);
-  }
-
-  @Override
   public BpmnModelInstanceImpl parseModelFromStream(InputStream inputStream) {
     return (BpmnModelInstanceImpl) super.parseModelFromStream(inputStream);
   }
@@ -71,5 +65,11 @@ public class BpmnParser extends AbstractModelParser {
   @Override
   public BpmnModelInstanceImpl getEmptyModel() {
     return (BpmnModelInstanceImpl) super.getEmptyModel();
+  }
+
+  @Override
+  protected BpmnModelInstanceImpl createModelInstance(DomDocument document) {
+    return new BpmnModelInstanceImpl(
+        (ModelImpl) Bpmn.INSTANCE.getBpmnModel(), Bpmn.INSTANCE.getBpmnModelBuilder(), document);
   }
 }

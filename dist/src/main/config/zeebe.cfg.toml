@@ -71,6 +71,19 @@
 # Enables the metrics collection in the gateway
 # enabled = false
 
+[gateway.security]
+# Enables TLS authentication between clients and the gateway
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_SECURITY_ENABLED. 
+# enabled = false
+#
+# Sets the path to the certificate chain file
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CERTIFICATE_PATH.
+# certificateChainPath = ""
+#
+# Sets the path to the private key file location
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_PRIVATE_KEY_PATH. 
+# privateKeyPath = ""
+
 [network]
 
 # This section contains the network configuration. Particularly, it allows to

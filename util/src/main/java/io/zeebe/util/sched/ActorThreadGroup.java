@@ -17,11 +17,9 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public abstract class ActorThreadGroup {
   protected final String groupName;
-
-  protected int numOfThreads;
-
   protected final ActorThread[] threads;
   protected final MultiLevelWorkstealingGroup tasks;
+  protected int numOfThreads;
 
   public ActorThreadGroup(
       String groupName, int numOfThreads, int numOfQueuesPerThread, ActorSchedulerBuilder builder) {

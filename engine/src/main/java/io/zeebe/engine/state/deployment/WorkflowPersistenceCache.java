@@ -56,6 +56,7 @@ public class WorkflowPersistenceCache {
 
   private final ColumnFamily<DbString, DbBuffer> digestByIdColumnFamily;
   private final DbBuffer digest;
+  private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
   public WorkflowPersistenceCache(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
     workflowKey = new DbLong();
@@ -129,7 +130,6 @@ public class WorkflowPersistenceCache {
     }
   }
 
-  private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
   // is called on getters, if workflow is not in memory
   private DeployedWorkflow updateInMemoryState(PersistedWorkflow persistedWorkflow) {
 

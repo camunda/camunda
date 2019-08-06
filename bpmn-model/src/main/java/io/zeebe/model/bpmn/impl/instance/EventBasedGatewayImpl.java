@@ -42,6 +42,10 @@ public class EventBasedGatewayImpl extends GatewayImpl implements EventBasedGate
   protected static Attribute<Boolean> instantiateAttribute;
   protected static Attribute<EventBasedGatewayType> eventGatewayTypeAttribute;
 
+  public EventBasedGatewayImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -66,10 +70,6 @@ public class EventBasedGatewayImpl extends GatewayImpl implements EventBasedGate
             .build();
 
     typeBuilder.build();
-  }
-
-  public EventBasedGatewayImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

@@ -59,6 +59,16 @@ public class ErrorRecord extends UnifiedRecordValue implements ErrorRecordValue 
     return stacktraceProp.getValue();
   }
 
+  @Override
+  public String getExceptionMessage() {
+    return BufferUtil.bufferAsString(exceptionMessageProp.getValue());
+  }
+
+  @Override
+  public String getStacktrace() {
+    return BufferUtil.bufferAsString(stacktraceProp.getValue());
+  }
+
   public long getErrorEventPosition() {
     return errorEventPositionProp.getValue();
   }
@@ -70,15 +80,5 @@ public class ErrorRecord extends UnifiedRecordValue implements ErrorRecordValue 
   public ErrorRecord setWorkflowInstanceKey(long workflowInstanceKey) {
     this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
     return this;
-  }
-
-  @Override
-  public String getExceptionMessage() {
-    return BufferUtil.bufferAsString(exceptionMessageProp.getValue());
-  }
-
-  @Override
-  public String getStacktrace() {
-    return BufferUtil.bufferAsString(stacktraceProp.getValue());
   }
 }

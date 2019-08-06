@@ -52,33 +52,6 @@ public class ClientOutputImpl implements ClientOutput {
     }
   }
 
-  private boolean sendTransportMessage(int remoteStreamId, BufferWriter writer) {
-    final int framedMessageLength =
-        TransportHeaderWriter.getFramedMessageLength(writer.getLength());
-    final ByteBuffer allocatedBuffer = requestManager.allocateMessageBuffer(framedMessageLength);
-
-    if (allocatedBuffer != null) {
-      try {
-        final UnsafeBuffer bufferView = new UnsafeBuffer(allocatedBuffer);
-        final TransportHeaderWriter headerWriter = new TransportHeaderWriter();
-        headerWriter.wrapMessage(bufferView, writer, remoteStreamId);
-        final long deadline = ActorClock.currentTimeMillis() + defaultMessageRetryTimeoutInMillis;
-
-        final OutgoingMessage outgoingMessage =
-            new OutgoingMessage(remoteStreamId, bufferView, deadline);
-
-        requestManager.submitMessage(outgoingMessage);
-
-        return true;
-      } catch (RuntimeException e) {
-        requestManager.reclaimMessageBuffer(allocatedBuffer);
-        throw e;
-      }
-    } else {
-      return false;
-    }
-  }
-
   @Override
   public ActorFuture<ClientResponse> sendRequest(Integer nodeId, BufferWriter writer) {
     return sendRequest(nodeId, writer, defaultRequestRetryTimeout);
@@ -120,6 +93,33 @@ public class ClientOutputImpl implements ClientOutput {
       }
     } else {
       return null;
+    }
+  }
+
+  private boolean sendTransportMessage(int remoteStreamId, BufferWriter writer) {
+    final int framedMessageLength =
+        TransportHeaderWriter.getFramedMessageLength(writer.getLength());
+    final ByteBuffer allocatedBuffer = requestManager.allocateMessageBuffer(framedMessageLength);
+
+    if (allocatedBuffer != null) {
+      try {
+        final UnsafeBuffer bufferView = new UnsafeBuffer(allocatedBuffer);
+        final TransportHeaderWriter headerWriter = new TransportHeaderWriter();
+        headerWriter.wrapMessage(bufferView, writer, remoteStreamId);
+        final long deadline = ActorClock.currentTimeMillis() + defaultMessageRetryTimeoutInMillis;
+
+        final OutgoingMessage outgoingMessage =
+            new OutgoingMessage(remoteStreamId, bufferView, deadline);
+
+        requestManager.submitMessage(outgoingMessage);
+
+        return true;
+      } catch (RuntimeException e) {
+        requestManager.reclaimMessageBuffer(allocatedBuffer);
+        throw e;
+      }
+    } else {
+      return false;
     }
   }
 }

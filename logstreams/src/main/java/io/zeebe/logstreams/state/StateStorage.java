@@ -17,13 +17,12 @@ import java.util.stream.Collectors;
 /** Handles how snapshots/databases are stored on the file system. */
 public class StateStorage {
 
+  static final String TMP_SNAPSHOT_DIRECTORY = "tmp/";
   private static final String DEFAULT_RUNTIME_DIRECTORY = "runtime";
   private static final String DEFAULT_SNAPSHOTS_DIRECTORY = "snapshots";
-  static final String TMP_SNAPSHOT_DIRECTORY = "tmp/";
-  private String tmpSuffix = "-tmp";
-
   private final File runtimeDirectory;
   private final File snapshotsDirectory;
+  private String tmpSuffix = "-tmp";
   private File tmpSnapshotDirectory;
 
   public StateStorage(final String rootDirectory) {

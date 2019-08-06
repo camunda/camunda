@@ -37,6 +37,12 @@ import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElem
 import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElementTerminatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayEventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.gateway.ExclusiveGatewayElementActivatingHandler;
+import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyActivatedHandler;
+import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyActivatingHandler;
+import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyCompletedHandler;
+import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyCompletingHandler;
+import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyEventOccurredHandler;
+import io.zeebe.engine.processor.workflow.handlers.multiinstance.MultiInstanceBodyTerminatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.receivetask.ReceiveTaskEventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.seqflow.FlowOutElementCompletedHandler;
 import io.zeebe.engine.processor.workflow.handlers.seqflow.ParallelMergeSequenceFlowTaken;
@@ -51,7 +57,7 @@ import java.util.Map;
 public class BpmnStepHandlers {
   private final Map<BpmnStep, BpmnStepHandler<?>> stepHandlers = new EnumMap<>(BpmnStep.class);
 
-  public BpmnStepHandlers(ZeebeState state, CatchEventBehavior catchEventBehavior) {
+  public BpmnStepHandlers(final ZeebeState state, final CatchEventBehavior catchEventBehavior) {
     final IncidentResolver incidentResolver = new IncidentResolver(state.getIncidentState());
     final CatchEventSubscriber catchEventSubscriber = new CatchEventSubscriber(catchEventBehavior);
 
@@ -141,17 +147,39 @@ public class BpmnStepHandlers {
     stepHandlers.put(
         BpmnStep.PARALLEL_MERGE_SEQUENCE_FLOW_TAKEN, new ParallelMergeSequenceFlowTaken<>());
     stepHandlers.put(BpmnStep.SEQUENCE_FLOW_TAKEN, new SequenceFlowTakenHandler<>());
+
+    stepHandlers.put(
+        BpmnStep.MULTI_INSTANCE_ACTIVATING,
+        new MultiInstanceBodyActivatingHandler(stepHandlers::get));
+    stepHandlers.put(
+        BpmnStep.MULTI_INSTANCE_ACTIVATED,
+        new MultiInstanceBodyActivatedHandler(stepHandlers::get));
+    stepHandlers.put(
+        BpmnStep.MULTI_INSTANCE_COMPLETING,
+        new MultiInstanceBodyCompletingHandler(stepHandlers::get, catchEventSubscriber));
+    stepHandlers.put(
+        BpmnStep.MULTI_INSTANCE_COMPLETED,
+        new MultiInstanceBodyCompletedHandler(stepHandlers::get));
+    stepHandlers.put(
+        BpmnStep.MULTI_INSTANCE_TERMINATING,
+        new MultiInstanceBodyTerminatingHandler(stepHandlers::get, catchEventSubscriber));
+    stepHandlers.put(
+        BpmnStep.MULTI_INSTANCE_EVENT_OCCURRED,
+        new MultiInstanceBodyEventOccurredHandler(stepHandlers::get, catchEventSubscriber));
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public void handle(BpmnStepContext context) {
+  public void handle(final BpmnStepContext context) {
     final ExecutableFlowElement flowElement = context.getElement();
     final WorkflowInstanceIntent state = context.getState();
     final BpmnStep step = flowElement.getStep(state);
 
     if (step != null) {
       final BpmnStepHandler stepHandler = stepHandlers.get(step);
-      assert stepHandler != null : "no step handler configured for step " + step.toString();
+
+      if (stepHandler == null) {
+        throw new IllegalStateException(
+            String.format("Expected BPMN handler for step '%s' but not found.", step));
+      }
       stepHandler.handle(context);
     }
   }

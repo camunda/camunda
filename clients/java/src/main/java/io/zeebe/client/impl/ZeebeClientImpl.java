@@ -16,8 +16,12 @@
 
 package io.zeebe.client.impl;
 
+import io.grpc.CallCredentials;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import io.grpc.netty.GrpcSslContexts;
+import io.grpc.netty.NettyChannelBuilder;
+import io.netty.handler.ssl.SslContext;
+import io.zeebe.client.CredentialsProvider;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.command.ActivateJobsCommandStep1;
@@ -48,6 +52,7 @@ import io.zeebe.client.impl.worker.JobWorkerBuilderImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import java.io.Closeable;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -71,7 +76,7 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   public ZeebeClientImpl(final ZeebeClientConfiguration configuration, ManagedChannel channel) {
-    this(configuration, channel, buildGatewayStub(channel));
+    this(configuration, channel, buildGatewayStub(channel, configuration));
   }
 
   public ZeebeClientImpl(
@@ -103,14 +108,52 @@ public class ZeebeClientImpl implements ZeebeClient {
       throw new RuntimeException("Failed to parse broker contact point", e);
     }
 
-    // TODO: Issue #1134 - https://github.com/zeebe-io/zeebe/issues/1134
-    return ManagedChannelBuilder.forAddress(address.getHost(), address.getPort())
-        .usePlaintext()
-        .build();
+    final NettyChannelBuilder channelBuilder =
+        NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
+
+    configureConnectionSecurity(config, channelBuilder);
+
+    return channelBuilder.build();
   }
 
-  public static GatewayStub buildGatewayStub(ManagedChannel channel) {
-    return GatewayGrpc.newStub(channel);
+  private static CallCredentials buildCallCredentials(ZeebeClientConfiguration config) {
+    final CredentialsProvider customCredentialsProvider = config.getCredentialsProvider();
+
+    if (customCredentialsProvider == null) {
+      return null;
+    }
+
+    return new ZeebeCallCredentials(customCredentialsProvider);
+  }
+
+  private static void configureConnectionSecurity(
+      ZeebeClientConfiguration config, NettyChannelBuilder channelBuilder) {
+    if (!config.isPlaintextConnectionEnabled()) {
+      final String certificatePath = config.getCaCertificatePath();
+      SslContext sslContext = null;
+
+      if (certificatePath != null) {
+        if (certificatePath.isEmpty()) {
+          throw new IllegalArgumentException(
+              "Expected valid certificate path but found empty path instead.");
+        }
+
+        try (FileInputStream certInputStream = new FileInputStream(certificatePath)) {
+          sslContext = GrpcSslContexts.forClient().trustManager(certInputStream).build();
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+
+      channelBuilder.useTransportSecurity().sslContext(sslContext);
+    } else {
+      channelBuilder.usePlaintext();
+    }
+  }
+
+  public static GatewayStub buildGatewayStub(
+      ManagedChannel channel, ZeebeClientConfiguration config) {
+    return GatewayGrpc.newStub(channel).withCallCredentials(buildCallCredentials(config));
   }
 
   private static ScheduledExecutorService buildExecutorService(
@@ -211,13 +254,13 @@ public class ZeebeClientImpl implements ZeebeClient {
         config, asyncStub, jobClient, objectMapper, executorService, closeables);
   }
 
-  private JobClient newJobClient() {
-    return new JobClientImpl(asyncStub, config, objectMapper);
-  }
-
   @Override
   public ActivateJobsCommandStep1 newActivateJobsCommand() {
     return new ActivateJobsCommandImpl(asyncStub, config, objectMapper);
+  }
+
+  private JobClient newJobClient() {
+    return new JobClientImpl(asyncStub, config, objectMapper);
   }
 
   @Override

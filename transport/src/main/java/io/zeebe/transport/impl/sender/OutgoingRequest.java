@@ -118,16 +118,16 @@ public class OutgoingRequest {
     return headerWriter;
   }
 
-  public void setTimerId(long timerId) {
-    this.timerId = timerId;
-  }
-
   public boolean hasTimeoutScheduled() {
     return timerId != -1;
   }
 
   public long getTimerId() {
     return timerId;
+  }
+
+  public void setTimerId(long timerId) {
+    this.timerId = timerId;
   }
 
   public long getLastRequestId() {

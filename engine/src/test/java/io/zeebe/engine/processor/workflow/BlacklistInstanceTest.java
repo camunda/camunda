@@ -47,8 +47,8 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class BlacklistInstanceTest {
 
-  @ClassRule public static ZeebeStateRule zeebeStateRule = new ZeebeStateRule();
   private static final AtomicLong KEY_GENERATOR = new AtomicLong(0);
+  @ClassRule public static ZeebeStateRule zeebeStateRule = new ZeebeStateRule();
 
   @Parameter(0)
   public ValueType recordValueType;
@@ -58,6 +58,8 @@ public class BlacklistInstanceTest {
 
   @Parameter(2)
   public boolean expectedToBlacklist;
+
+  private long workflowInstanceKey;
 
   @Parameters(name = "{0} {1} should blacklist instance {2}")
   public static Object[][] parameters() {
@@ -207,8 +209,6 @@ public class BlacklistInstanceTest {
     };
   }
 
-  private long workflowInstanceKey;
-
   @Before
   public void setup() {
     initMocks(this);
@@ -221,7 +221,7 @@ public class BlacklistInstanceTest {
     final RecordMetadata metadata = new RecordMetadata();
     metadata.intent(recordIntent);
     metadata.valueType(recordValueType);
-    final TypedEventImpl typedEvent = new TypedEventImpl();
+    final TypedEventImpl typedEvent = new TypedEventImpl(1);
     final LoggedEvent loggedEvent = mock(LoggedEvent.class);
     when(loggedEvent.getPosition()).thenReturn(1024L);
 

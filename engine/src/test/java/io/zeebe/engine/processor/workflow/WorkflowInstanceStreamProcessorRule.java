@@ -66,10 +66,8 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
   public static final int VERSION = 1;
   public static final int WORKFLOW_KEY = 123;
   public static final int DEPLOYMENT_KEY = 1;
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
   private final StreamProcessorRule environmentRule;
-
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
   private SubscriptionCommandSender mockSubscriptionCommandSender;
 
   private WorkflowState workflowState;
@@ -110,7 +108,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
               new CatchEventBehavior(zeebeState, mockSubscriptionCommandSender, 1),
               new DueDateTimerChecker(workflowState));
 
-          JobEventProcessors.addJobProcessors(typedRecordProcessors, zeebeState);
+          JobEventProcessors.addJobProcessors(typedRecordProcessors, zeebeState, type -> {});
           typedRecordProcessors.withListener(this);
           return typedRecordProcessors;
         });

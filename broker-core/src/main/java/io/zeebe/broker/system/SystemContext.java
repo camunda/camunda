@@ -40,16 +40,11 @@ public class SystemContext implements AutoCloseable {
       "Node id %s needs to be non negative and smaller then cluster size %s.";
   public static final String REPLICATION_FACTOR_ERROR_MSG =
       "Replication factor %s needs to be larger then zero and not larger then cluster size %s.";
-
-  protected ServiceContainer serviceContainer;
-
   protected final List<Component> components = new ArrayList<>();
-
   protected final BrokerCfg brokerCfg;
-
   protected final List<ActorFuture<?>> requiredStartActions = new ArrayList<>();
   private final List<Closeable> closeablesToReleaseResources = new ArrayList<>();
-
+  protected ServiceContainer serviceContainer;
   protected Map<String, String> diagnosticContext;
   protected ActorScheduler scheduler;
 

@@ -60,9 +60,29 @@ public class MessageSubscriptionRecord extends UnifiedRecordValue
     return BufferUtil.bufferAsString(correlationKeyProp.getValue());
   }
 
+  public MessageSubscriptionRecord setCorrelationKey(DirectBuffer correlationKey) {
+    correlationKeyProp.setValue(correlationKey);
+    return this;
+  }
+
+  public MessageSubscriptionRecord setMessageName(DirectBuffer messageName) {
+    messageNameProp.setValue(messageName);
+    return this;
+  }
+
+  public MessageSubscriptionRecord setElementInstanceKey(long key) {
+    elementInstanceKeyProp.setValue(key);
+    return this;
+  }
+
   @JsonIgnore
   public long getMessageKey() {
     return messageKeyProp.getValue();
+  }
+
+  public MessageSubscriptionRecord setMessageKey(long messageKey) {
+    this.messageKeyProp.setValue(messageKey);
+    return this;
   }
 
   @JsonIgnore
@@ -74,33 +94,13 @@ public class MessageSubscriptionRecord extends UnifiedRecordValue
     return workflowInstanceKeyProp.getValue();
   }
 
-  public MessageSubscriptionRecord setCloseOnCorrelate(boolean closeOnCorrelate) {
-    this.closeOnCorrelateProp.setValue(closeOnCorrelate);
-    return this;
-  }
-
-  public MessageSubscriptionRecord setCorrelationKey(DirectBuffer correlationKey) {
-    correlationKeyProp.setValue(correlationKey);
-    return this;
-  }
-
-  public MessageSubscriptionRecord setElementInstanceKey(long key) {
-    elementInstanceKeyProp.setValue(key);
-    return this;
-  }
-
-  public MessageSubscriptionRecord setMessageKey(long messageKey) {
-    this.messageKeyProp.setValue(messageKey);
-    return this;
-  }
-
-  public MessageSubscriptionRecord setMessageName(DirectBuffer messageName) {
-    messageNameProp.setValue(messageName);
-    return this;
-  }
-
   public MessageSubscriptionRecord setWorkflowInstanceKey(long key) {
     workflowInstanceKeyProp.setValue(key);
+    return this;
+  }
+
+  public MessageSubscriptionRecord setCloseOnCorrelate(boolean closeOnCorrelate) {
+    this.closeOnCorrelateProp.setValue(closeOnCorrelate);
     return this;
   }
 }

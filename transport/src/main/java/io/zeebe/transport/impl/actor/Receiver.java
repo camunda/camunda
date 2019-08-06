@@ -24,6 +24,11 @@ public class Receiver extends Actor {
   }
 
   @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
   protected void onActorStarted() {
     actor.runBlocking(transportPoller::pollBlocking, transportPoller::pollBlockingEnded);
   }
@@ -32,11 +37,6 @@ public class Receiver extends Actor {
   protected void onActorClosing() {
     transportPoller.close();
     transportPoller.clearChannels();
-  }
-
-  @Override
-  public String getName() {
-    return name;
   }
 
   public ActorFuture<Void> removeChannel(TransportChannel c) {

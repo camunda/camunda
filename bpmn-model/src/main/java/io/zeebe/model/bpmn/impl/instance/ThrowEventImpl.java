@@ -48,6 +48,10 @@ public abstract class ThrowEventImpl extends EventImpl implements ThrowEvent {
   protected static ElementReferenceCollection<EventDefinition, EventDefinitionRef>
       eventDefinitionRefCollection;
 
+  public ThrowEventImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -74,10 +78,6 @@ public abstract class ThrowEventImpl extends EventImpl implements ThrowEvent {
             .build();
 
     typeBuilder.build();
-  }
-
-  public ThrowEventImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

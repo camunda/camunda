@@ -31,26 +31,28 @@ public class CommandResponseWriterImpl implements CommandResponseWriter, BufferW
   protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
   protected final ExecuteCommandResponseEncoder responseEncoder =
       new ExecuteCommandResponseEncoder();
-
+  protected final ServerResponse response = new ServerResponse();
+  protected final ServerOutput output;
+  private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
   protected int partitionId = partitionIdNullValue();
   protected long key = keyNullValue();
+  protected BufferWriter valueWriter;
   private RecordType recordType = RecordType.NULL_VAL;
   private ValueType valueType = ValueType.NULL_VAL;
   private short intent = Intent.NULL_VAL;
   private RejectionType rejectionType = RejectionType.NULL_VAL;
 
-  protected BufferWriter valueWriter;
-  private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
-
-  protected final ServerResponse response = new ServerResponse();
-  protected final ServerOutput output;
-
   public CommandResponseWriterImpl(final ServerOutput output) {
     this.output = output;
   }
 
-  public CommandResponseWriterImpl recordType(RecordType recordType) {
-    this.recordType = recordType;
+  public CommandResponseWriterImpl partitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
+
+  public CommandResponseWriterImpl key(final long key) {
+    this.key = key;
     return this;
   }
 
@@ -59,13 +61,13 @@ public class CommandResponseWriterImpl implements CommandResponseWriter, BufferW
     return this;
   }
 
-  public CommandResponseWriterImpl valueType(ValueType valueType) {
-    this.valueType = valueType;
+  public CommandResponseWriterImpl recordType(RecordType recordType) {
+    this.recordType = recordType;
     return this;
   }
 
-  public CommandResponseWriterImpl partitionId(final int partitionId) {
-    this.partitionId = partitionId;
+  public CommandResponseWriterImpl valueType(ValueType valueType) {
+    this.valueType = valueType;
     return this;
   }
 
@@ -76,11 +78,6 @@ public class CommandResponseWriterImpl implements CommandResponseWriter, BufferW
 
   public CommandResponseWriterImpl rejectionReason(DirectBuffer rejectionReason) {
     this.rejectionReason.wrap(rejectionReason);
-    return this;
-  }
-
-  public CommandResponseWriterImpl key(final long key) {
-    this.key = key;
     return this;
   }
 
@@ -99,6 +96,16 @@ public class CommandResponseWriterImpl implements CommandResponseWriter, BufferW
     } finally {
       reset();
     }
+  }
+
+  @Override
+  public int getLength() {
+    return MessageHeaderEncoder.ENCODED_LENGTH
+        + ExecuteCommandResponseEncoder.BLOCK_LENGTH
+        + valueHeaderLength()
+        + valueWriter.getLength()
+        + ExecuteCommandResponseEncoder.rejectionReasonHeaderLength()
+        + rejectionReason.capacity();
   }
 
   @Override
@@ -135,16 +142,6 @@ public class CommandResponseWriterImpl implements CommandResponseWriter, BufferW
 
     responseEncoder.limit(offset);
     responseEncoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
-  }
-
-  @Override
-  public int getLength() {
-    return MessageHeaderEncoder.ENCODED_LENGTH
-        + ExecuteCommandResponseEncoder.BLOCK_LENGTH
-        + valueHeaderLength()
-        + valueWriter.getLength()
-        + ExecuteCommandResponseEncoder.rejectionReasonHeaderLength()
-        + rejectionReason.capacity();
   }
 
   protected void reset() {

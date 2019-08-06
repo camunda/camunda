@@ -11,21 +11,29 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.utils.net.Address;
 import io.prometheus.client.exporter.HTTPServer;
+import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.util.TomlConfigurationReader;
+import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.function.Function;
 
 public class StandaloneGateway {
 
   private final AtomixCluster atomixCluster;
   private final Gateway gateway;
   private final GatewayCfg gatewayCfg;
+  private final ActorScheduler actorScheduler;
 
   public StandaloneGateway(GatewayCfg gatewayCfg) {
     atomixCluster = createAtomixCluster(gatewayCfg.getCluster());
-    gateway = new Gateway(gatewayCfg, atomixCluster);
+    actorScheduler = createActorScheduler(gatewayCfg);
+    final Function<GatewayCfg, BrokerClient> brokerClientFactory =
+        cfg -> new BrokerClientImpl(cfg, atomixCluster, actorScheduler, false);
+    gateway = new Gateway(gatewayCfg, brokerClientFactory, actorScheduler);
     this.gatewayCfg = gatewayCfg;
   }
 
@@ -46,6 +54,19 @@ public class StandaloneGateway {
     return atomixCluster;
   }
 
+  private ActorScheduler createActorScheduler(GatewayCfg configuration) {
+    final ActorScheduler actorScheduler =
+        ActorScheduler.newActorScheduler()
+            .setCpuBoundActorThreadCount(configuration.getThreads().getManagementThreads())
+            .setIoBoundActorThreadCount(0)
+            .setSchedulerName("gateway-scheduler")
+            .build();
+
+    actorScheduler.start();
+
+    return actorScheduler;
+  }
+
   public void run() throws IOException, InterruptedException {
     HTTPServer monitoringServer = null;
     if (gatewayCfg.getMonitoring().isEnabled()) {
@@ -56,6 +77,7 @@ public class StandaloneGateway {
 
     gateway.listenAndServe();
     atomixCluster.stop();
+    actorScheduler.stop();
 
     if (monitoringServer != null) {
       monitoringServer.stop();

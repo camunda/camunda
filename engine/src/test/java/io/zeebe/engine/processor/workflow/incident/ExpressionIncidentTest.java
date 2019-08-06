@@ -38,11 +38,6 @@ import org.junit.Test;
 public class ExpressionIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-
-  @Rule
-  public RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
-
   private static final byte[] VARIABLES;
 
   static {
@@ -56,6 +51,10 @@ public class ExpressionIncidentTest {
     VARIABLES = new byte[buffer.capacity()];
     buffer.getBytes(0, VARIABLES);
   }
+
+  @Rule
+  public RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @BeforeClass
   public static void init() {

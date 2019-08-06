@@ -30,6 +30,10 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public class EventDefinitionRef extends BpmnModelElementInstanceImpl {
 
+  public EventDefinitionRef(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -44,9 +48,5 @@ public class EventDefinitionRef extends BpmnModelElementInstanceImpl {
                 });
 
     typeBuilder.build();
-  }
-
-  public EventDefinitionRef(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 }

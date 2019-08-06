@@ -22,11 +22,9 @@ import org.junit.rules.TemporaryFolder;
 
 public class DbCompositeKeyColumnFamilyTest {
 
-  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
   private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
       DefaultZeebeDbFactory.getDefaultFactory(DefaultColumnFamily.class);
-
+  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
   private ColumnFamily<DbCompositeKey<DbString, DbLong>, DbString> columnFamily;
   private DbString firstKey;
@@ -373,6 +371,30 @@ public class DbCompositeKeyColumnFamilyTest {
     assertThat(values).containsExactly("world", "be good", "string", "as you know");
     assertThat(firstKeyParts).containsExactly("hello", "might", "another", "this is the one");
     assertThat(secondKeyParts).containsExactly(34L, 37426L, 923113L, 255L);
+  }
+
+  @Test
+  public void shouldExistsPrefixTrue() {
+    // given
+    firstKey.wrapString("foo");
+    assertThat(columnFamily.existsPrefix(firstKey)).isFalse();
+
+    // then
+    putKeyValuePair("foo", 12, "baring");
+
+    // then
+    assertThat(columnFamily.existsPrefix(firstKey)).isTrue();
+  }
+
+  @Test
+  public void shouldExistsPrefixFalseWhenDelete() {
+    // given
+    firstKey.wrapString("foo");
+    putKeyValuePair("foo", 12, "baring");
+    columnFamily.delete(compositeKey);
+
+    // then
+    assertThat(columnFamily.existsPrefix(firstKey)).isFalse();
   }
 
   private void putKeyValuePair(String firstKey, long secondKey, String value) {

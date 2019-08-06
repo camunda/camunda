@@ -94,15 +94,15 @@ public class LogStreamPrinter {
     private final Injector<LogStream> logStreamInjector = new Injector<>();
 
     @Override
-    public Object get() {
-      return this;
-    }
-
-    @Override
     public void start(final ServiceStartContext startContext) {
       final LogStream logStream = logStreamInjector.getValue();
 
       printRecords(logStream);
+    }
+
+    @Override
+    public Object get() {
+      return this;
     }
 
     public Injector<LogStream> getLogStreamInjector() {

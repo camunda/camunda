@@ -17,9 +17,8 @@ import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
 
 public class StandaloneBroker {
-  private static String tempFolder;
-
   private static final CountDownLatch WAITING_LATCH = new CountDownLatch(1);
+  private static String tempFolder;
 
   public static void main(final String[] args) throws Exception {
     final Broker broker;

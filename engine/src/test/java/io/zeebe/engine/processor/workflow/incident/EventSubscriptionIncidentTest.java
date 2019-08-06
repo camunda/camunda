@@ -40,11 +40,11 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class EventSubscriptionIncidentTest {
 
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String MESSAGE_NAME_1 = "msg-1";
   private static final String MESSAGE_NAME_2 = "msg-2";
   private static final String CORRELATION_VARIABLE_1 = "key1";
   private static final String CORRELATION_VARIABLE_2 = "key2";
-
   private static final String WF_RECEIVE_TASK_ID = "wf-receive-task";
   private static final BpmnModelInstance WF_RECEIVE_TASK =
       Bpmn.createExecutableProcess(WF_RECEIVE_TASK_ID)
@@ -58,7 +58,6 @@ public class EventSubscriptionIncidentTest {
                       m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_2)))
           .endEvent()
           .done();
-
   private static final String WF_RECEIVE_TASK_2_ID = "wf-receive-task-2";
   private static final BpmnModelInstance WF_RECEIVE_TASK_2 =
       Bpmn.createExecutableProcess(WF_RECEIVE_TASK_2_ID)
@@ -72,7 +71,6 @@ public class EventSubscriptionIncidentTest {
                       m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_1)))
           .endEvent()
           .done();
-
   private static final String WF_EVENT_BASED_GATEWAY_ID = "wf-event-based-gateway";
   private static final BpmnModelInstance WF_EVENT_BASED_GATEWAY =
       Bpmn.createExecutableProcess(WF_EVENT_BASED_GATEWAY_ID)
@@ -92,7 +90,6 @@ public class EventSubscriptionIncidentTest {
                       m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_2)))
           .endEvent()
           .done();
-
   private static final String WF_EVENT_BASED_GATEWAY_2_ID = "wf-event-based-gateway-2";
   private static final BpmnModelInstance WF_EVENT_BASED_GATEWAY_2 =
       Bpmn.createExecutableProcess(WF_EVENT_BASED_GATEWAY_2_ID)
@@ -112,7 +109,6 @@ public class EventSubscriptionIncidentTest {
                       m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey(CORRELATION_VARIABLE_1)))
           .endEvent()
           .done();
-
   private static final String WF_BOUNDARY_EVENT_ID = "wf-boundary-event";
   private static final BpmnModelInstance WF_BOUNDARY_EVENT =
       Bpmn.createExecutableProcess(WF_BOUNDARY_EVENT_ID)
@@ -132,7 +128,6 @@ public class EventSubscriptionIncidentTest {
                       m -> m.name(MESSAGE_NAME_2).zeebeCorrelationKey(CORRELATION_VARIABLE_2)))
           .endEvent()
           .done();
-
   private static final String WF_BOUNDARY_EVENT_2_ID = "wf-boundary-event-2";
   private static final BpmnModelInstance WF_BOUNDARY_EVENT_2 =
       Bpmn.createExecutableProcess(WF_BOUNDARY_EVENT_2_ID)
@@ -153,11 +148,27 @@ public class EventSubscriptionIncidentTest {
           .endEvent()
           .done();
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-
   @Rule
   public RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  @Parameter(0)
+  public String elementType;
+
+  @Parameter(1)
+  public String processId;
+
+  @Parameter(2)
+  public String elementId;
+
+  @Parameter(3)
+  public WorkflowInstanceIntent failureEventIntent;
+
+  @Parameter(4)
+  public WorkflowInstanceIntent resolvedEventIntent;
+
+  private String correlationKey1;
+  private String correlationKey2;
 
   @Parameters(name = "{0}")
   public static Object[][] parameters() {
@@ -207,21 +218,6 @@ public class EventSubscriptionIncidentTest {
     };
   }
 
-  @Parameter(0)
-  public String elementType;
-
-  @Parameter(1)
-  public String processId;
-
-  @Parameter(2)
-  public String elementId;
-
-  @Parameter(3)
-  public WorkflowInstanceIntent failureEventIntent;
-
-  @Parameter(4)
-  public WorkflowInstanceIntent resolvedEventIntent;
-
   @BeforeClass
   public static void deployWorkflows() {
     for (BpmnModelInstance modelInstance :
@@ -235,9 +231,6 @@ public class EventSubscriptionIncidentTest {
       ENGINE.deployment().withXmlResource(modelInstance).deploy();
     }
   }
-
-  private String correlationKey1;
-  private String correlationKey2;
 
   @Before
   public void init() {

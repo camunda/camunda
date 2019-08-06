@@ -23,6 +23,10 @@ public final class RecordToWrite {
   private UnifiedRecordValue unifiedRecordValue;
   private int sourceIndex = -1;
 
+  private RecordToWrite(RecordMetadata recordMetadata) {
+    this.recordMetadata = recordMetadata;
+  }
+
   public static RecordToWrite command() {
     final RecordMetadata recordMetadata = new RecordMetadata();
     return new RecordToWrite(recordMetadata.recordType(RecordType.COMMAND));
@@ -31,10 +35,6 @@ public final class RecordToWrite {
   public static RecordToWrite event() {
     final RecordMetadata recordMetadata = new RecordMetadata();
     return new RecordToWrite(recordMetadata.recordType(RecordType.EVENT));
-  }
-
-  private RecordToWrite(RecordMetadata recordMetadata) {
-    this.recordMetadata = recordMetadata;
   }
 
   public RecordToWrite job(JobIntent intent) {

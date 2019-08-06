@@ -68,6 +68,11 @@ public class EventTrigger extends UnpackedObject implements DbValue {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(getElementId(), getVariables());
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -78,10 +83,5 @@ public class EventTrigger extends UnpackedObject implements DbValue {
     final EventTrigger that = (EventTrigger) o;
     return BufferUtil.equals(getElementId(), that.getElementId())
         && BufferUtil.equals(getVariables(), that.getVariables());
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(getElementId(), getVariables());
   }
 }

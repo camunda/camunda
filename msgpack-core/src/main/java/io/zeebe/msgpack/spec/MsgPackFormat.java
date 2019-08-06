@@ -64,6 +64,15 @@ public enum MsgPackFormat {
   MAP32(MAP),
   NEGFIXINT(INTEGER);
 
+  private static final MsgPackFormat[] FORMAT_TABLE = new MsgPackFormat[256];
+
+  static {
+    // Preparing a look up table for converting byte values into MessageFormat types
+    for (int b = 0; b <= 0xFF; ++b) {
+      FORMAT_TABLE[b] = toMessageFormat((byte) b);
+    }
+  }
+
   protected MsgPackType type;
 
   MsgPackFormat(MsgPackType type) {
@@ -72,15 +81,6 @@ public enum MsgPackFormat {
 
   public MsgPackType getType() {
     return type;
-  }
-
-  private static final MsgPackFormat[] FORMAT_TABLE = new MsgPackFormat[256];
-
-  static {
-    // Preparing a look up table for converting byte values into MessageFormat types
-    for (int b = 0; b <= 0xFF; ++b) {
-      FORMAT_TABLE[b] = toMessageFormat((byte) b);
-    }
   }
 
   /**

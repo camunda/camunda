@@ -33,16 +33,16 @@
     <spotbugs.include>spotbugs/spotbugs-include.xml</spotbugs.include>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>1.0.3</version.agrona>
+    <version.agrona>1.0.6</version.agrona>
     <version.animal-sniffer>1.18</version.animal-sniffer>
-    <version.assertj>3.12.2</version.assertj>
+    <version.assertj>3.13.2</version.assertj>
     <version.atomix>3.2.0-alpha4</version.atomix>
     <version.camunda>7.10.0</version.camunda>
     <version.commons-lang>3.9</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
-    <version.commons-codec>1.12</version.commons-codec>
-    <version.elasticsearch>6.8.1</version.elasticsearch>
+    <version.commons-codec>1.13</version.commons-codec>
+    <version.elasticsearch>6.8.2</version.elasticsearch>
     <version.embedded-elasticsearch>2.10.0</version.embedded-elasticsearch>
     <version.error-prone>2.3.3</version.error-prone>
     <version.grpc>1.22.1</version.grpc>
@@ -53,19 +53,20 @@
     <version.httpasyncclient>4.1.4</version.httpasyncclient>
     <version.httpclient>4.5.9</version.httpclient>
     <version.httpcomponents>4.4.11</version.httpcomponents>
-    <version.jackson>2.9.9</version.jackson>
+    <version.jackson>2.10.0.pr1</version.jackson>
     <version.java-grpc-prometheus>0.3.0</version.java-grpc-prometheus>
     <version.junit>4.12</version.junit>
     <version.log4j>2.12.0</version.log4j>
     <version.mockito>3.0.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.16</version.msgpack>
-    <version.netty>4.1.37.Final</version.netty>
+    <version.netty>4.1.38.Final</version.netty>
+    <version.netty-tcnative>2.0.25.Final</version.netty-tcnative>
     <version.objenesis>3.0.1</version.objenesis>
     <version.prometheus>0.6.0</version.prometheus>
     <version.protobuf>3.9.0</version.protobuf>
-    <version.rocksdbjni>6.0.1</version.rocksdbjni>
-    <version.sbe>1.12.8</version.sbe>
+    <version.rocksdbjni>6.1.1</version.rocksdbjni>
+    <version.sbe>1.13.0</version.sbe>
     <version.scala-parser>1.1.2</version.scala-parser>
     <version.scala>2.13.0</version.scala>
     <version.slf4j>1.7.26</version.slf4j>
@@ -84,16 +85,16 @@
     <plugin.version.fmt>2.9</plugin.version.fmt>
     <plugin.version.license>3.0</plugin.version.license>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
-    <plugin.version.proto-backwards-compatibility>1.0.3</plugin.version.proto-backwards-compatibility>
+    <plugin.version.proto-backwards-compatibility>1.0.5</plugin.version.proto-backwards-compatibility>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.1.0</plugin.version.resources>
-    <plugin.version.scala>4.1.0</plugin.version.scala>
+    <plugin.version.scala>4.1.1</plugin.version.scala>
     <plugin.version.shade>3.2.1</plugin.version.shade>
     <plugin.version.surefire>3.0.0-M3</plugin.version.surefire>
     <plugin.version.versions>2.7</plugin.version.versions>
     <plugin.version.enforcer>3.0.0-M2</plugin.version.enforcer>
     <plugin.version.dependency>3.1.1</plugin.version.dependency>
-    <plugin.version.spotbugs>3.1.12</plugin.version.spotbugs>
+    <plugin.version.spotbugs>3.1.12.2</plugin.version.spotbugs>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.6.2</extension.version.os-maven-plugin>
@@ -329,6 +330,18 @@
         <groupId>io.grpc</groupId>
         <artifactId>grpc-testing</artifactId>
         <version>${version.grpc}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-tcnative-boringssl-static</artifactId>
+        <version>${version.netty-tcnative}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-handler</artifactId>
+        <version>${version.netty}</version>
       </dependency>
 
       <dependency>

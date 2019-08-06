@@ -75,6 +75,16 @@ public class Subscription implements ConsumableChannel {
     return getLimit() > getPosition();
   }
 
+  @Override
+  public void registerConsumer(ActorCondition consumer) {
+    actorConditions.registerConsumer(consumer);
+  }
+
+  @Override
+  public void removeConsumer(ActorCondition consumer) {
+    actorConditions.registerConsumer(consumer);
+  }
+
   protected long getLimit() {
     return limit.get();
   }
@@ -355,16 +365,6 @@ public class Subscription implements ConsumableChannel {
           fragmentCount);
     }
     return blockLength;
-  }
-
-  @Override
-  public void registerConsumer(ActorCondition consumer) {
-    actorConditions.registerConsumer(consumer);
-  }
-
-  @Override
-  public void removeConsumer(ActorCondition consumer) {
-    actorConditions.registerConsumer(consumer);
   }
 
   public int getId() {

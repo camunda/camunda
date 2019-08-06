@@ -14,7 +14,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.time.*;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Map;
@@ -42,15 +43,12 @@ public class ElasticsearchClient {
 
   public static final String INDEX_TEMPLATE_FILENAME_PATTERN = "/zeebe-record-%s-template.json";
   public static final String INDEX_DELIMITER = "_";
-
+  protected final RestHighLevelClient client;
   private final ElasticsearchExporterConfiguration configuration;
   private final Logger log;
-  protected final RestHighLevelClient client;
-  private BulkRequest bulkRequest;
-
-  private ElasticsearchMetrics metrics;
-
   private final DateTimeFormatter formatter;
+  private BulkRequest bulkRequest;
+  private ElasticsearchMetrics metrics;
 
   public ElasticsearchClient(final ElasticsearchExporterConfiguration configuration, Logger log) {
     this.configuration = configuration;

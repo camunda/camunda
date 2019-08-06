@@ -33,9 +33,7 @@ public class ExporterManagerTest {
 
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("process").startEvent().done();
-
-  private ExporterCfg exporterCfg;
-
+  public ExporterCfg exporterCfg;
   public EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule(
           brokerCfg -> {
@@ -45,10 +43,8 @@ public class ExporterManagerTest {
 
             brokerCfg.getExporters().add(exporterCfg);
           });
-
   public CommandApiRule clientRule = new CommandApiRule(brokerRule::getAtomix);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
-
   private PartitionTestClient testClient;
 
   @Before

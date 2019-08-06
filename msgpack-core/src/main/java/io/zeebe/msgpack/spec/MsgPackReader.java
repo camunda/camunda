@@ -42,8 +42,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class MsgPackReader {
   public DirectBuffer buffer = new UnsafeBuffer(0, 0);
-  private int offset;
   protected MsgPackToken token = new MsgPackToken();
+  private int offset;
 
   public MsgPackReader wrap(DirectBuffer buffer, int offset, int length) {
     this.buffer.wrap(buffer, offset, length);
@@ -328,6 +328,7 @@ public class MsgPackReader {
         break;
       case EXTENSION:
       case NEVER_USED:
+      default:
         throw new MsgpackReaderException(
             String.format("Unknown token format '%s'", format.getType().name()));
     }
@@ -451,6 +452,7 @@ public class MsgPackReader {
           offset += 4;
           break;
         case NEVER_USED:
+        default:
           throw new MsgpackReaderException("Encountered 0xC1 \"NEVER_USED\" byte");
       }
 

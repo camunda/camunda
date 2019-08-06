@@ -39,6 +39,18 @@ public class PackedValue extends BaseValue {
   }
 
   @Override
+  public void writeJSON(StringBuilder builder) {
+    builder.append("[packed value (length=");
+    builder.append(length);
+    builder.append(")]");
+  }
+
+  @Override
+  public void write(MsgPackWriter writer) {
+    writer.writeRaw(buffer);
+  }
+
+  @Override
   public void read(MsgPackReader reader) {
     final DirectBuffer buffer = reader.getBuffer();
     final int offset = reader.getOffset();
@@ -49,20 +61,13 @@ public class PackedValue extends BaseValue {
   }
 
   @Override
-  public void write(MsgPackWriter writer) {
-    writer.writeRaw(buffer);
-  }
-
-  @Override
   public int getEncodedLength() {
     return length;
   }
 
   @Override
-  public void writeJSON(StringBuilder builder) {
-    builder.append("[packed value (length=");
-    builder.append(length);
-    builder.append(")]");
+  public int hashCode() {
+    return Objects.hash(buffer, length);
   }
 
   @Override
@@ -76,10 +81,5 @@ public class PackedValue extends BaseValue {
 
     final PackedValue that = (PackedValue) o;
     return length == that.length && Objects.equals(buffer, that.buffer);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(buffer, length);
   }
 }

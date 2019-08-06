@@ -25,6 +25,19 @@ import org.junit.runners.Parameterized.Parameters;
 /** Represents a test class to test the merge documents functionality with help of mappings. */
 @RunWith(Parameterized.class)
 public class MappingMergeParameterizedTest {
+  @Parameter public String sourcePayload;
+
+  @Parameter(1)
+  public String targetPayload;
+
+  @Parameter(2)
+  public Mapping[] mappings;
+
+  @Parameter(3)
+  public String expectedPayload;
+
+  private MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
+
   @Parameters(name = "Test {index}: merge {0} and {1} to {3}")
   public static Iterable<Object[]> parameters() throws Exception {
     return Arrays.asList(
@@ -470,19 +483,6 @@ public class MappingMergeParameterizedTest {
           },
         });
   }
-
-  @Parameter public String sourcePayload;
-
-  @Parameter(1)
-  public String targetPayload;
-
-  @Parameter(2)
-  public Mapping[] mappings;
-
-  @Parameter(3)
-  public String expectedPayload;
-
-  private MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
 
   @Test
   public void performTest() throws Throwable {

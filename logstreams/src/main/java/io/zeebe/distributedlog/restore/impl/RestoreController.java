@@ -106,8 +106,12 @@ public class RestoreController {
                     server, request.getLatestLocalPosition(), request.getBackupPosition()));
         break;
       case NONE:
+      default:
         logger.debug(
-            "Restore server {} reports nothing to replicate for request {}", server, request);
+            "Restore server {} reports {} as restore info for request {}",
+            server,
+            response.getReplicationTarget(),
+            request);
         result.complete(() -> CompletableFuture.completedFuture(request.getLatestLocalPosition()));
         break;
     }

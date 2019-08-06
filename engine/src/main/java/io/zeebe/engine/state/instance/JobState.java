@@ -20,7 +20,9 @@ import io.zeebe.engine.metrics.JobMetrics;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.util.EnsureUtil;
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -52,6 +54,8 @@ public class JobState {
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> deadlinesColumnFamily;
 
   private final JobMetrics metrics;
+
+  private Consumer<String> onJobsAvailableCallback;
 
   public JobState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext, int partitionId) {
 
@@ -91,7 +95,7 @@ public class JobState {
   private void createJob(long key, JobRecord record, DirectBuffer type) {
     resetVariablesAndUpdateJobRecord(key, record);
     updateJobState(State.ACTIVATABLE);
-    makeJobActivatable(type);
+    makeJobActivatable(type, key);
   }
 
   /**
@@ -165,7 +169,7 @@ public class JobState {
     updateJobState(newState);
 
     if (newState == State.ACTIVATABLE) {
-      makeJobActivatable(type);
+      makeJobActivatable(type, key);
     }
 
     removeJobDeadline(deadline);
@@ -183,7 +187,7 @@ public class JobState {
 
     resetVariablesAndUpdateJobRecord(key, updatedValue);
     updateJobState(State.ACTIVATABLE);
-    makeJobActivatable(type);
+    makeJobActivatable(type, key);
   }
 
   public void forEachTimedOutEntry(
@@ -260,6 +264,54 @@ public class JobState {
     return unpackedObjectValue == null ? null : (JobRecord) unpackedObjectValue.getObject();
   }
 
+  public void setJobsAvailableCallback(Consumer<String> onJobsAvailableCallback) {
+    this.onJobsAvailableCallback = onJobsAvailableCallback;
+  }
+
+  private void notifyJobAvailable(DirectBuffer jobType) {
+    if (onJobsAvailableCallback != null) {
+      onJobsAvailableCallback.accept(BufferUtil.bufferAsString(jobType));
+    }
+  }
+
+  private void resetVariablesAndUpdateJobRecord(long key, JobRecord updatedValue) {
+    jobKey.wrapLong(key);
+    // do not persist variables in job state
+    updatedValue.resetVariables();
+    jobRecordToWrite.wrapObject(updatedValue);
+    jobsColumnFamily.put(jobKey, jobRecordToWrite);
+  }
+
+  private void updateJobState(State newState) {
+    jobState.wrapByte(newState.value);
+    statesJobColumnFamily.put(jobKey, jobState);
+  }
+
+  private void makeJobActivatable(DirectBuffer type, long key) {
+    EnsureUtil.ensureNotNullOrEmpty("type", type);
+
+    jobTypeKey.wrapBuffer(type);
+    final boolean firstActivatableJob = !activatableColumnFamily.existsPrefix(jobTypeKey);
+
+    jobKey.wrapLong(key);
+    activatableColumnFamily.put(typeJobKey, DbNil.INSTANCE);
+    if (firstActivatableJob) {
+      notifyJobAvailable(type);
+    }
+  }
+
+  private void makeJobNotActivatable(DirectBuffer type) {
+    EnsureUtil.ensureNotNullOrEmpty("type", type);
+
+    jobTypeKey.wrapBuffer(type);
+    activatableColumnFamily.delete(typeJobKey);
+  }
+
+  private void removeJobDeadline(long deadline) {
+    deadlineKey.wrapLong(deadline);
+    deadlinesColumnFamily.delete(deadlineJobKey);
+  }
+
   public enum State {
     ACTIVATABLE((byte) 0),
     ACTIVATED((byte) 1),
@@ -284,37 +336,5 @@ public class JobState {
           return NOT_FOUND;
       }
     }
-  }
-
-  private void resetVariablesAndUpdateJobRecord(long key, JobRecord updatedValue) {
-    jobKey.wrapLong(key);
-    // do not persist variables in job state
-    updatedValue.resetVariables();
-    jobRecordToWrite.wrapObject(updatedValue);
-    jobsColumnFamily.put(jobKey, jobRecordToWrite);
-  }
-
-  private void updateJobState(State newState) {
-    jobState.wrapByte(newState.value);
-    statesJobColumnFamily.put(jobKey, jobState);
-  }
-
-  private void makeJobActivatable(DirectBuffer type) {
-    EnsureUtil.ensureNotNullOrEmpty("type", type);
-
-    jobTypeKey.wrapBuffer(type);
-    activatableColumnFamily.put(typeJobKey, DbNil.INSTANCE);
-  }
-
-  private void makeJobNotActivatable(DirectBuffer type) {
-    EnsureUtil.ensureNotNullOrEmpty("type", type);
-
-    jobTypeKey.wrapBuffer(type);
-    activatableColumnFamily.delete(typeJobKey);
-  }
-
-  private void removeJobDeadline(long deadline) {
-    deadlineKey.wrapLong(deadline);
-    deadlinesColumnFamily.delete(deadlineJobKey);
   }
 }

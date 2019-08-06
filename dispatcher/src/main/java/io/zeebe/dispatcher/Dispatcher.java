@@ -26,36 +26,28 @@ import org.agrona.DirectBuffer;
 /** Component for sending and receiving messages between different threads. */
 public class Dispatcher extends Actor implements AutoCloseable {
 
+  public static final int MODE_PUB_SUB = 1;
+  public static final int MODE_PIPELINE = 2;
   private static final String ERROR_MESSAGE_CLAIM_FAILED =
       "Expected to claim segment of size %d, but can't claim more then %d bytes.";
   private static final String ERROR_MESSAGE_SUBSCRIPTION_NOT_FOUND =
       "Expected to find subscription with name '%s', but was not registered.";
-
-  public static final int MODE_PUB_SUB = 1;
-  public static final int MODE_PIPELINE = 2;
-
   protected final LogBuffer logBuffer;
   protected final LogBufferAppender logAppender;
 
   protected final AtomicPosition publisherLimit;
   protected final AtomicPosition publisherPosition;
   protected final String[] defaultSubscriptionNames;
-  protected Subscription[] subscriptions;
-
   protected final int maxFrameLength;
   protected final int partitionSize;
-  protected int logWindowLength;
   protected final String name;
-
   protected final int mode;
-
-  protected volatile boolean isClosed = false;
-
-  private ActorCondition dataConsumed;
-
-  private final Runnable backgroundTask = this::runBackgroundTask;
-
+  protected Subscription[] subscriptions;
   private final Runnable onClaimComplete = this::signalSubsciptions;
+  protected int logWindowLength;
+  protected volatile boolean isClosed = false;
+  private final Runnable backgroundTask = this::runBackgroundTask;
+  private ActorCondition dataConsumed;
 
   public Dispatcher(
       LogBuffer logBuffer,
@@ -86,11 +78,6 @@ public class Dispatcher extends Actor implements AutoCloseable {
     return name;
   }
 
-  private void runBackgroundTask() {
-    updatePublisherLimit();
-    logBuffer.cleanPartitions();
-  }
-
   @Override
   protected void onActorStarted() {
     dataConsumed = actor.onCondition("data-consumed", backgroundTask);
@@ -110,6 +97,11 @@ public class Dispatcher extends Actor implements AutoCloseable {
 
     logBuffer.close();
     isClosed = true;
+  }
+
+  private void runBackgroundTask() {
+    updatePublisherLimit();
+    logBuffer.cleanPartitions();
   }
 
   protected void openDefaultSubscriptions() {

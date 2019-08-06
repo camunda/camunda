@@ -18,6 +18,12 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class MappingDiff implements MsgPackDiff {
 
   public static final DirectBuffer CONSTANTS_DOCUMENT;
+  /*
+   * - offset
+   * - length
+   * - sourceDocument (1) or nullDocument (0)
+   */
+  private static final int RESULT_ENTRY_LENGTH = 2 * BitUtil.SIZE_OF_INT + BitUtil.SIZE_OF_BYTE;
 
   static {
     final UnsafeBuffer buffer = new UnsafeBuffer(new byte[2]);
@@ -28,16 +34,9 @@ public class MappingDiff implements MsgPackDiff {
     CONSTANTS_DOCUMENT = buffer;
   }
 
-  /*
-   * - offset
-   * - length
-   * - sourceDocument (1) or nullDocument (0)
-   */
-  private static final int RESULT_ENTRY_LENGTH = 2 * BitUtil.SIZE_OF_INT + BitUtil.SIZE_OF_BYTE;
-
+  private final ExpandableArrayBuffer mappingResults = new ExpandableArrayBuffer();
   private Mapping[] mappings;
   private DirectBuffer document;
-  private final ExpandableArrayBuffer mappingResults = new ExpandableArrayBuffer();
 
   public void init(Mapping[] mappings, DirectBuffer document) {
     this.mappings = mappings;

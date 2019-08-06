@@ -30,6 +30,9 @@ import org.mockito.junit.MockitoRule;
 import org.mockito.quality.Strictness;
 
 public class RestoreSnapshotReplicatorTest {
+  @Rule
+  public final MockitoRule mockitoRule = MockitoJUnit.rule().strictness(Strictness.STRICT_STUBS);
+
   private final ControllableRestoreClient client = new ControllableRestoreClient();
   private final ControllableSnapshotRestoreContext restoreContext =
       new ControllableSnapshotRestoreContext();
@@ -38,10 +41,6 @@ public class RestoreSnapshotReplicatorTest {
       new RestoreSnapshotReplicator(client, restoreContext, snapshotConsumer, Runnable::run);
   private final MemberId server = MemberId.anonymous();
   private final ControllableSnapshotChunk responseChunk = new ControllableSnapshotChunk();
-
-  @Rule
-  public final MockitoRule mockitoRule = MockitoJUnit.rule().strictness(Strictness.STRICT_STUBS);
-
   @Mock private StateStorage stateStorage = mock(StateStorage.class);
 
   @Before
@@ -142,11 +141,11 @@ public class RestoreSnapshotReplicatorTest {
 
   private static final class ControllableSnapshotChunk implements SnapshotChunk {
 
-    private long snapshotId;
     private final int totalCount = 1;
-    private String name;
     private final long checksum = 1;
     private final byte[] content = new byte[0];
+    private long snapshotId;
+    private String name;
 
     public ControllableSnapshotChunk withChunk(long snapshotId, int chunkIdx) {
       this.snapshotId = snapshotId;

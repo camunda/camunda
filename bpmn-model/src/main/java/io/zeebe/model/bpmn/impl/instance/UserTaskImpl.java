@@ -44,6 +44,10 @@ public class UserTaskImpl extends TaskImpl implements UserTask {
   protected static Attribute<String> implementationAttribute;
   protected static ChildElementCollection<Rendering> renderingCollection;
 
+  public UserTaskImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -69,10 +73,6 @@ public class UserTaskImpl extends TaskImpl implements UserTask {
     renderingCollection = sequenceBuilder.elementCollection(Rendering.class).build();
 
     typeBuilder.build();
-  }
-
-  public UserTaskImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

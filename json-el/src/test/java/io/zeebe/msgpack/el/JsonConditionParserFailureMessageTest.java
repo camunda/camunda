@@ -18,6 +18,12 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class JsonConditionParserFailureMessageTest {
+  @Parameter(0)
+  public String expression;
+
+  @Parameter(1)
+  public String errorMessage;
+
   @Parameters(name = "{index}: expression = {0}")
   public static Iterable<Object[]> data() {
     return Arrays.asList(
@@ -38,12 +44,6 @@ public class JsonConditionParserFailureMessageTest {
           {"$.foo < 3", "Unexpected json-path"},
         });
   }
-
-  @Parameter(0)
-  public String expression;
-
-  @Parameter(1)
-  public String errorMessage;
 
   @Test
   public void test() {

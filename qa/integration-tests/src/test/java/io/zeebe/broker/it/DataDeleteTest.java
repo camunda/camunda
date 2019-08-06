@@ -101,14 +101,14 @@ public class DataDeleteTest {
     private Controller controller;
 
     @Override
-    public void export(final Record record) {
-      records.add(record);
-      controller.updateLastExportedRecordPosition(record.getPosition());
+    public void open(final Controller controller) {
+      this.controller = controller;
     }
 
     @Override
-    public void open(final Controller controller) {
-      this.controller = controller;
+    public void export(final Record record) {
+      records.add(record);
+      controller.updateLastExportedRecordPosition(record.getPosition());
     }
   }
 }

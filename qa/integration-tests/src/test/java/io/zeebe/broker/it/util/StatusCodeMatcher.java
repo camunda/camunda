@@ -30,13 +30,13 @@ public class StatusCodeMatcher extends TypeSafeMatcher<ClientStatusException> {
   }
 
   @Override
-  public void describeTo(Description description) {
-    description.appendText("status code to be ").appendValue(expectedCode);
-  }
-
-  @Override
   protected void describeMismatchSafely(
       ClientStatusException item, Description mismatchDescription) {
     mismatchDescription.appendText("was ").appendValue(item.getStatusCode());
+  }
+
+  @Override
+  public void describeTo(Description description) {
+    description.appendText("status code to be ").appendValue(expectedCode);
   }
 }

@@ -31,6 +31,10 @@ public class WorkflowInstanceClient {
     return new WorkflowInstanceCreationClient(environmentRule, bpmnProcessId);
   }
 
+  public ExistingInstanceClient withInstanceKey(long workflowInstanceKey) {
+    return new ExistingInstanceClient(environmentRule, workflowInstanceKey);
+  }
+
   public static class WorkflowInstanceCreationClient {
 
     private final StreamProcessorRule environmentRule;
@@ -70,10 +74,6 @@ public class WorkflowInstanceClient {
           .getValue()
           .getWorkflowInstanceKey();
     }
-  }
-
-  public ExistingInstanceClient withInstanceKey(long workflowInstanceKey) {
-    return new ExistingInstanceClient(environmentRule, workflowInstanceKey);
   }
 
   public static class ExistingInstanceClient {

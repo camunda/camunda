@@ -69,6 +69,10 @@ public class MultiInstanceLoopCharacteristicsImpl extends LoopCharacteristicsImp
       complexBehaviorDefinitionCollection;
   protected static ChildElement<CompletionCondition> completionConditionChild;
 
+  public MultiInstanceLoopCharacteristicsImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -134,10 +138,6 @@ public class MultiInstanceLoopCharacteristicsImpl extends LoopCharacteristicsImp
     completionConditionChild = sequenceBuilder.element(CompletionCondition.class).build();
 
     typeBuilder.build();
-  }
-
-  public MultiInstanceLoopCharacteristicsImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

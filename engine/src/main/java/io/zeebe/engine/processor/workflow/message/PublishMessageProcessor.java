@@ -36,24 +36,21 @@ import org.agrona.collections.LongArrayList;
 
 public class PublishMessageProcessor implements TypedRecordProcessor<MessageRecord> {
 
-  private static final String ALREADY_PUBLISHED_MESSAGE =
-      "Expected to publish a new message with id '%s', but a message with that id was already published";
   public static final String ERROR_START_EVENT_NOT_TRIGGERED_MESSAGE =
       "Expected to trigger event for workflow with key '%d', but could not (either does not exist or is not accepting)";
-
+  private static final String ALREADY_PUBLISHED_MESSAGE =
+      "Expected to publish a new message with id '%s', but a message with that id was already published";
   private final MessageState messageState;
   private final MessageSubscriptionState subscriptionState;
   private final MessageStartEventSubscriptionState startEventSubscriptionState;
   private final SubscriptionCommandSender commandSender;
   private final KeyGenerator keyGenerator;
   private final EventScopeInstanceState scopeEventInstanceState;
-
+  private final LongArrayList correlatedWorkflowInstances = new LongArrayList();
+  private final LongArrayList correlatedElementInstances = new LongArrayList();
   private TypedResponseWriter responseWriter;
   private MessageRecord messageRecord;
   private long messageKey;
-
-  private final LongArrayList correlatedWorkflowInstances = new LongArrayList();
-  private final LongArrayList correlatedElementInstances = new LongArrayList();
 
   public PublishMessageProcessor(
       final MessageState messageState,

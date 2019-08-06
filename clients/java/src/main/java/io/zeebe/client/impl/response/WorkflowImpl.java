@@ -42,11 +42,6 @@ public class WorkflowImpl implements Workflow {
   }
 
   @Override
-  public long getWorkflowKey() {
-    return workflowKey;
-  }
-
-  @Override
   public String getBpmnProcessId() {
     return bpmnProcessId;
   }
@@ -57,8 +52,18 @@ public class WorkflowImpl implements Workflow {
   }
 
   @Override
+  public long getWorkflowKey() {
+    return workflowKey;
+  }
+
+  @Override
   public String getResourceName() {
     return resourceName;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(workflowKey, bpmnProcessId, version, resourceName);
   }
 
   @Override
@@ -74,11 +79,6 @@ public class WorkflowImpl implements Workflow {
         && version == workflow.version
         && Objects.equals(bpmnProcessId, workflow.bpmnProcessId)
         && Objects.equals(resourceName, workflow.resourceName);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(workflowKey, bpmnProcessId, version, resourceName);
   }
 
   @Override

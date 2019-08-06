@@ -27,11 +27,6 @@ public class MsgPackUtil {
     return new UnsafeBuffer(bytes);
   }
 
-  @FunctionalInterface
-  public interface CheckedConsumer<T> {
-    void accept(T t) throws Exception;
-  }
-
   public static byte[] toByte(long value) {
     final UnsafeBuffer buf = new UnsafeBuffer(new byte[8]);
     buf.putLong(0, value, ByteOrder.BIG_ENDIAN);
@@ -48,5 +43,10 @@ public class MsgPackUtil {
     final UnsafeBuffer buf = new UnsafeBuffer(new byte[8]);
     buf.putDouble(0, value, ByteOrder.BIG_ENDIAN);
     return buf.byteArray();
+  }
+
+  @FunctionalInterface
+  public interface CheckedConsumer<T> {
+    void accept(T t) throws Exception;
   }
 }

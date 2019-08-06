@@ -65,6 +65,52 @@ public class BrokerReprocessingTest {
 
   private static final String PROCESS_ID = "process";
   private static final String NULL_VARIABLES = "{}";
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent("start")
+          .serviceTask("task", t -> t.zeebeTaskType("foo"))
+          .endEvent("end")
+          .done();
+  private static final BpmnModelInstance WORKFLOW_TWO_TASKS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent("start")
+          .serviceTask("task1", t -> t.zeebeTaskType("foo"))
+          .serviceTask("task2", t -> t.zeebeTaskType("bar"))
+          .endEvent("end")
+          .done();
+  private static final BpmnModelInstance WORKFLOW_INCIDENT =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent("start")
+          .serviceTask("task", t -> t.zeebeTaskType("test").zeebeInput("foo", "foo"))
+          .endEvent("end")
+          .done();
+  private static final BpmnModelInstance WORKFLOW_MESSAGE =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .intermediateCatchEvent("catch-event")
+          .message(m -> m.name("order canceled").zeebeCorrelationKey("orderId"))
+          .sequenceFlowId("to-end")
+          .endEvent()
+          .done();
+  private static final BpmnModelInstance WORKFLOW_TIMER =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT10S"))
+          .endEvent()
+          .done();
+
+  @Parameter(0)
+  public Consumer<BrokerReprocessingTest> reprocessingTrigger;
+
+  @Parameter(1)
+  public String name;
+
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
+  @Rule public ExpectedException exception = ExpectedException.none();
+  @Rule public Timeout timeout = new Timeout(120, TimeUnit.SECONDS);
+  private Runnable restartAction = () -> {};
 
   @Parameters(name = "{index}: {1}")
   public static Object[][] reprocessingTriggers() {
@@ -78,62 +124,6 @@ public class BrokerReprocessingTest {
       }
     };
   }
-
-  @Parameter(0)
-  public Consumer<BrokerReprocessingTest> reprocessingTrigger;
-
-  @Parameter(1)
-  public String name;
-
-  private static final BpmnModelInstance WORKFLOW =
-      Bpmn.createExecutableProcess(PROCESS_ID)
-          .startEvent("start")
-          .serviceTask("task", t -> t.zeebeTaskType("foo"))
-          .endEvent("end")
-          .done();
-
-  private static final BpmnModelInstance WORKFLOW_TWO_TASKS =
-      Bpmn.createExecutableProcess(PROCESS_ID)
-          .startEvent("start")
-          .serviceTask("task1", t -> t.zeebeTaskType("foo"))
-          .serviceTask("task2", t -> t.zeebeTaskType("bar"))
-          .endEvent("end")
-          .done();
-
-  private static final BpmnModelInstance WORKFLOW_INCIDENT =
-      Bpmn.createExecutableProcess(PROCESS_ID)
-          .startEvent("start")
-          .serviceTask("task", t -> t.zeebeTaskType("test").zeebeInput("foo", "foo"))
-          .endEvent("end")
-          .done();
-
-  private static final BpmnModelInstance WORKFLOW_MESSAGE =
-      Bpmn.createExecutableProcess(PROCESS_ID)
-          .startEvent()
-          .intermediateCatchEvent("catch-event")
-          .message(m -> m.name("order canceled").zeebeCorrelationKey("orderId"))
-          .sequenceFlowId("to-end")
-          .endEvent()
-          .done();
-
-  private static final BpmnModelInstance WORKFLOW_TIMER =
-      Bpmn.createExecutableProcess(PROCESS_ID)
-          .startEvent()
-          .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT10S"))
-          .endEvent()
-          .done();
-
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-
-  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
-
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
-
-  @Rule public ExpectedException exception = ExpectedException.none();
-
-  @Rule public Timeout timeout = new Timeout(120, TimeUnit.SECONDS);
-
-  private Runnable restartAction = () -> {};
 
   @Test
   public void shouldDirectlyRestart() {

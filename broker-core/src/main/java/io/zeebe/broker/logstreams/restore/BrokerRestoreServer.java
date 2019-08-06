@@ -73,6 +73,26 @@ public class BrokerRestoreServer implements RestoreServer {
   }
 
   @Override
+  public CompletableFuture<Void> serve(SnapshotRequestHandler handler) {
+    return communicationService.subscribe(
+        snapshotRequestTopic,
+        SbeSnapshotRestoreRequest::new,
+        r -> handler.onSnapshotRequest(r, logger),
+        SbeSnapshotRestoreResponse::serialize,
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<Void> serve(RestoreInfoRequestHandler handler) {
+    return communicationService.subscribe(
+        restoreInfoTopic,
+        SbeRestoreInfoRequest::new,
+        r -> handler.onRestoreInfoRequest(r, logger),
+        SbeRestoreInfoResponse::serialize,
+        executor);
+  }
+
+  @Override
   public void close() {
     communicationService.unsubscribe(logReplicationTopic);
     communicationService.unsubscribe(restoreInfoTopic);
@@ -95,26 +115,6 @@ public class BrokerRestoreServer implements RestoreServer {
         SbeLogReplicationRequest::new,
         r -> handler.onReplicationRequest(r, logger),
         SbeLogReplicationResponse::serialize,
-        executor);
-  }
-
-  @Override
-  public CompletableFuture<Void> serve(RestoreInfoRequestHandler handler) {
-    return communicationService.subscribe(
-        restoreInfoTopic,
-        SbeRestoreInfoRequest::new,
-        r -> handler.onRestoreInfoRequest(r, logger),
-        SbeRestoreInfoResponse::serialize,
-        executor);
-  }
-
-  @Override
-  public CompletableFuture<Void> serve(SnapshotRequestHandler handler) {
-    return communicationService.subscribe(
-        snapshotRequestTopic,
-        SbeSnapshotRestoreRequest::new,
-        r -> handler.onSnapshotRequest(r, logger),
-        SbeSnapshotRestoreResponse::serialize,
         executor);
   }
 

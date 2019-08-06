@@ -163,13 +163,13 @@ public class WorkflowInstanceSubscriptionState {
     sentTimeColumnFamily.delete(sentTimeCompositeKey);
   }
 
-  @FunctionalInterface
-  public interface WorkflowInstanceSubscriptionVisitor {
-    boolean visit(WorkflowInstanceSubscription subscription);
-  }
-
   private void wrapSubscriptionKeys(long elementInstanceKey, DirectBuffer messageName) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
     this.messageName.wrapBuffer(messageName);
+  }
+
+  @FunctionalInterface
+  public interface WorkflowInstanceSubscriptionVisitor {
+    boolean visit(WorkflowInstanceSubscription subscription);
   }
 }

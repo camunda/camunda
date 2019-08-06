@@ -56,50 +56,17 @@ public class LogBufferDescriptor {
 
   /** Total length of the Partition meta data buffer in bytes. */
   public static final int PARTITION_META_DATA_LENGTH;
-
-  static {
-    int offset = (CACHE_LINE_LENGTH * 2);
-    PARTITION_TAIL_COUNTER_OFFSET = offset;
-
-    offset += (CACHE_LINE_LENGTH * 2);
-    PARTITION_STATUS_OFFSET = offset;
-
-    offset += (CACHE_LINE_LENGTH * 2);
-    PARTITION_META_DATA_LENGTH = offset;
-  }
-
-  // --------------------------------------------
-  // log metadata constants
-
   /** Offset within the log meta data where the current publisher limit is stored. */
   public static final int LOG_PUBLISHER_LIMIT_OFFSET;
 
+  // --------------------------------------------
+  // log metadata constants
   /** Offset within the log meta data where the active Partition id is stored. */
   public static final int LOG_ACTIVE_PARTITION_ID_OFFSET;
-
   /** Offset within the log meta data where the active Partition id is stored. */
   public static final int LOG_INITIAL_PARTITION_ID_OFFSET;
-
   /** Offset within the log meta data which the MTU length is stored; */
   public static final int LOG_MAX_FRAME_LENGTH_OFFSET;
-
-  static {
-    int offset = 0;
-    LOG_PUBLISHER_LIMIT_OFFSET = offset;
-    offset += (CACHE_LINE_LENGTH * 2);
-
-    LOG_ACTIVE_PARTITION_ID_OFFSET = offset;
-    offset += (CACHE_LINE_LENGTH * 2);
-
-    LOG_INITIAL_PARTITION_ID_OFFSET = offset;
-    offset += SIZE_OF_INT;
-
-    LOG_MAX_FRAME_LENGTH_OFFSET = offset;
-    offset += SIZE_OF_INT;
-
-    LOG_META_DATA_LENGTH = offset;
-  }
-
   /**
    * Total length of the log meta data buffer in bytes.
    *
@@ -125,6 +92,34 @@ public class LogBufferDescriptor {
    * </pre>
    */
   public static final int LOG_META_DATA_LENGTH;
+
+  static {
+    int offset = (CACHE_LINE_LENGTH * 2);
+    PARTITION_TAIL_COUNTER_OFFSET = offset;
+
+    offset += (CACHE_LINE_LENGTH * 2);
+    PARTITION_STATUS_OFFSET = offset;
+
+    offset += (CACHE_LINE_LENGTH * 2);
+    PARTITION_META_DATA_LENGTH = offset;
+  }
+
+  static {
+    int offset = 0;
+    LOG_PUBLISHER_LIMIT_OFFSET = offset;
+    offset += (CACHE_LINE_LENGTH * 2);
+
+    LOG_ACTIVE_PARTITION_ID_OFFSET = offset;
+    offset += (CACHE_LINE_LENGTH * 2);
+
+    LOG_INITIAL_PARTITION_ID_OFFSET = offset;
+    offset += SIZE_OF_INT;
+
+    LOG_MAX_FRAME_LENGTH_OFFSET = offset;
+    offset += SIZE_OF_INT;
+
+    LOG_META_DATA_LENGTH = offset;
+  }
 
   /**
    * Calculates the required capacity for a log buffer which can hold up to the provided bytes of

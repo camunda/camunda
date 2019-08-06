@@ -20,10 +20,10 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 public class ZeebeTestRule extends ExternalResource {
-  private final EmbeddedBrokerRule brokerRule;
-  private final ClientRule clientRule;
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+  private final EmbeddedBrokerRule brokerRule;
+  private final ClientRule clientRule;
 
   public ZeebeTestRule() {
     this(EmbeddedBrokerRule.DEFAULT_CONFIG_FILE, Properties::new);
@@ -38,6 +38,8 @@ public class ZeebeTestRule extends ExternalResource {
               final Properties properties = propertiesProvider.get();
               properties.setProperty(
                   ClientProperties.BROKER_CONTACTPOINT, brokerRule.getGatewayAddress().toString());
+              properties.putIfAbsent(ClientProperties.USE_PLAINTEXT_CONNECTION, "");
+
               return properties;
             });
   }
@@ -51,15 +53,15 @@ public class ZeebeTestRule extends ExternalResource {
   }
 
   @Override
-  protected void before() {
-    brokerRule.before();
-    clientRule.before();
-  }
-
-  @Override
   public Statement apply(final Statement base, final Description description) {
     final Statement statement = recordingExporterTestWatcher.apply(base, description);
     return super.apply(statement, description);
+  }
+
+  @Override
+  protected void before() {
+    brokerRule.before();
+    clientRule.before();
   }
 
   @Override

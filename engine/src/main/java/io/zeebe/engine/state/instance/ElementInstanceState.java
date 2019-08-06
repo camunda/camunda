@@ -267,11 +267,6 @@ public class ElementInstanceState {
         && variablesState.isEmpty();
   }
 
-  @FunctionalInterface
-  public interface RecordVisitor {
-    void visitRecord(IndexedRecord indexedRecord);
-  }
-
   private void visitRecords(long scopeKey, Purpose purpose, RecordVisitor visitor) {
     recordParentKey.wrapLong(scopeKey);
     stateKey.wrapByte((byte) purpose.ordinal());
@@ -300,5 +295,10 @@ public class ElementInstanceState {
       return copiedElementInstance;
     }
     return null;
+  }
+
+  @FunctionalInterface
+  public interface RecordVisitor {
+    void visitRecord(IndexedRecord indexedRecord);
   }
 }

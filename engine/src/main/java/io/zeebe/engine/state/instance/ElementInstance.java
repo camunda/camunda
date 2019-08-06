@@ -27,22 +27,25 @@ public class ElementInstance implements DbValue {
   private long jobKey;
   private int activeTokens = 0;
 
+  private int multiInstanceLoopCounter = 0;
+
   ElementInstance() {
-    this.elementRecord = new IndexedRecord();
+    elementRecord = new IndexedRecord();
   }
 
   public ElementInstance(
-      long key,
-      ElementInstance parent,
-      WorkflowInstanceIntent state,
-      WorkflowInstanceRecord value) {
-    this.elementRecord = new IndexedRecord(key, state, value);
+      final long key,
+      final ElementInstance parent,
+      final WorkflowInstanceIntent state,
+      final WorkflowInstanceRecord value) {
+    elementRecord = new IndexedRecord(key, state, value);
     parentKey = parent.getKey();
     parent.childCount++;
   }
 
-  public ElementInstance(long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
-    this.elementRecord = new IndexedRecord(key, state, value);
+  public ElementInstance(
+      final long key, final WorkflowInstanceIntent state, final WorkflowInstanceRecord value) {
+    elementRecord = new IndexedRecord(key, state, value);
   }
 
   public long getKey() {
@@ -53,23 +56,23 @@ public class ElementInstance implements DbValue {
     return elementRecord.getState();
   }
 
-  public void setState(WorkflowInstanceIntent state) {
-    this.elementRecord.setState(state);
+  public void setState(final WorkflowInstanceIntent state) {
+    elementRecord.setState(state);
   }
 
   public WorkflowInstanceRecord getValue() {
     return elementRecord.getValue();
   }
 
-  public void setValue(WorkflowInstanceRecord value) {
-    this.elementRecord.setValue(value);
+  public void setValue(final WorkflowInstanceRecord value) {
+    elementRecord.setValue(value);
   }
 
   public long getJobKey() {
     return jobKey;
   }
 
-  public void setJobKey(long jobKey) {
+  public void setJobKey(final long jobKey) {
     this.jobKey = jobKey;
   }
 
@@ -90,11 +93,11 @@ public class ElementInstance implements DbValue {
   }
 
   public void spawnToken() {
-    this.activeTokens += 1;
+    activeTokens += 1;
   }
 
   public void consumeToken() {
-    this.activeTokens -= 1;
+    activeTokens -= 1;
   }
 
   public int getNumberOfActiveTokens() {
@@ -109,8 +112,16 @@ public class ElementInstance implements DbValue {
     return activeTokens + getNumberOfActiveElementInstances();
   }
 
+  public int getMultiInstanceLoopCounter() {
+    return multiInstanceLoopCounter;
+  }
+
+  public void incrementMultiInstanceLoopCounter() {
+    multiInstanceLoopCounter += 1;
+  }
+
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, int offset, final int length) {
     final int startOffset = offset;
     childCount = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
@@ -126,16 +137,19 @@ public class ElementInstance implements DbValue {
 
     offset = readIntoBuffer(buffer, offset, elementRecord);
 
+    multiInstanceLoopCounter = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
+    offset += Integer.BYTES;
+
     assert (offset - startOffset) == length : "End offset differs from length";
   }
 
   @Override
   public int getLength() {
-    return 2 * Long.BYTES + 3 * Integer.BYTES + elementRecord.getLength();
+    return 2 * Long.BYTES + 4 * Integer.BYTES + elementRecord.getLength();
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, int offset) {
     final int startOffset = offset;
 
     buffer.putInt(offset, childCount, ZB_DB_BYTE_ORDER);
@@ -151,6 +165,9 @@ public class ElementInstance implements DbValue {
     offset += Long.BYTES;
 
     offset = writeIntoBuffer(buffer, offset, elementRecord);
+
+    buffer.putInt(offset, multiInstanceLoopCounter, ZB_DB_BYTE_ORDER);
+    offset += Integer.BYTES;
 
     assert (offset - startOffset) == getLength() : "End offset differs from getLength()";
   }
@@ -172,6 +189,8 @@ public class ElementInstance implements DbValue {
         + jobKey
         + ", activeTokens="
         + activeTokens
+        + ", multiInstanceLoopCounter="
+        + multiInstanceLoopCounter
         + '}';
   }
 }

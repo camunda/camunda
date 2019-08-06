@@ -86,9 +86,13 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
     return this;
   }
 
-  public LogEntryBuilder sourceIndex(int index) {
-    sourceIndex = index;
-    return this;
+  @Override
+  public void reset() {
+    eventBufferOffset = 0;
+    eventLength = 0;
+    eventCount = 0;
+    sourceEventPosition = -1L;
+    resetEvent();
   }
 
   @Override
@@ -99,6 +103,11 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
   @Override
   public LogEntryBuilder key(final long key) {
     this.key = key;
+    return this;
+  }
+
+  public LogEntryBuilder sourceIndex(int index) {
+    sourceIndex = index;
     return this;
   }
 
@@ -270,15 +279,6 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
       lastEventPosition = position;
     }
     return lastEventPosition;
-  }
-
-  @Override
-  public void reset() {
-    eventBufferOffset = 0;
-    eventLength = 0;
-    eventCount = 0;
-    sourceEventPosition = -1L;
-    resetEvent();
   }
 
   private void resetEvent() {

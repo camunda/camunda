@@ -40,6 +40,10 @@ public class ExclusiveGatewayImpl extends GatewayImpl implements ExclusiveGatewa
 
   protected static AttributeReference<SequenceFlow> defaultAttribute;
 
+  public ExclusiveGatewayImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -61,10 +65,6 @@ public class ExclusiveGatewayImpl extends GatewayImpl implements ExclusiveGatewa
             .build();
 
     typeBuilder.build();
-  }
-
-  public ExclusiveGatewayImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

@@ -35,7 +35,7 @@ required = [
 
 [[constraint]]
   name = "google.golang.org/grpc"
-  version = "=1.22.0"
+  version = "=1.22.1"
 
 [[constraint]]
   name = "github.com/golang/mock"

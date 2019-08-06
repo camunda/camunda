@@ -46,22 +46,6 @@ public class SbeRestoreInfoResponse
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
-    super.wrap(buffer, offset, length);
-    delegate.setReplicationTarget(ENUM_CONSTANTS[decoder.replicationTarget()]);
-    delegate.setSnapshotRestoreInfo(decoder.snapshotId(), decoder.numChunks());
-  }
-
-  @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
-    super.write(buffer, offset);
-    encoder.replicationTarget((short) getReplicationTarget().ordinal());
-    final SnapshotRestoreInfo snapshotRestoreInfo = getSnapshotRestoreInfo();
-    encoder.snapshotId(snapshotRestoreInfo.getSnapshotId());
-    encoder.numChunks(snapshotRestoreInfo.getNumChunks());
-  }
-
-  @Override
   public ReplicationTarget getReplicationTarget() {
     return delegate.getReplicationTarget();
   }
@@ -84,6 +68,22 @@ public class SbeRestoreInfoResponse
   @Override
   protected RestoreInfoResponseDecoder getBodyDecoder() {
     return decoder;
+  }
+
+  @Override
+  public void write(MutableDirectBuffer buffer, int offset) {
+    super.write(buffer, offset);
+    encoder.replicationTarget((short) getReplicationTarget().ordinal());
+    final SnapshotRestoreInfo snapshotRestoreInfo = getSnapshotRestoreInfo();
+    encoder.snapshotId(snapshotRestoreInfo.getSnapshotId());
+    encoder.numChunks(snapshotRestoreInfo.getNumChunks());
+  }
+
+  @Override
+  public void wrap(DirectBuffer buffer, int offset, int length) {
+    super.wrap(buffer, offset, length);
+    delegate.setReplicationTarget(ENUM_CONSTANTS[decoder.replicationTarget()]);
+    delegate.setSnapshotRestoreInfo(decoder.snapshotId(), decoder.numChunks());
   }
 
   public static byte[] serialize(RestoreInfoResponse response) {

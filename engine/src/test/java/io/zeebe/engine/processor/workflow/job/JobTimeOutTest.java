@@ -29,10 +29,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class JobTimeOutTest {
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
   private static String jobType;
-
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

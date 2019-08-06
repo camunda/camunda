@@ -13,6 +13,7 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
 
@@ -26,9 +27,9 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
   private final RecordType recordType;
   private final Intent intent;
   private final int partitionId;
-  protected ValueType valueType;
   private final RejectionType rejectionType;
   private final String rejectionReason;
+  protected ValueType valueType;
 
   public CopiedRecord(
       T recordValue,
@@ -50,6 +51,37 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
     this.rejectionType = metadata.getRejectionType();
     this.rejectionReason = metadata.getRejectionReason();
     this.valueType = metadata.getValueType();
+  }
+
+  private CopiedRecord(CopiedRecord<T> copiedRecord) {
+    final UnifiedRecordValue value = copiedRecord.getValue();
+    final byte[] bytes = new byte[value.getLength()];
+    final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
+    value.write(buffer, 0);
+
+    final Class<? extends UnifiedRecordValue> recordValueClass = value.getClass();
+    try {
+      final T recordValue = (T) recordValueClass.newInstance();
+      recordValue.wrap(buffer);
+      this.recordValue = recordValue;
+    } catch (Exception e) {
+      throw new RuntimeException(
+          String.format(
+              "Expected to instantiate %s, but has no default ctor.", recordValueClass.getName()),
+          e);
+    }
+
+    key = copiedRecord.key;
+    position = copiedRecord.position;
+    sourcePosition = copiedRecord.sourcePosition;
+    timestamp = copiedRecord.timestamp;
+
+    this.intent = copiedRecord.intent;
+    this.recordType = copiedRecord.recordType;
+    this.partitionId = copiedRecord.partitionId;
+    this.rejectionType = copiedRecord.rejectionType;
+    this.rejectionReason = copiedRecord.rejectionReason;
+    this.valueType = copiedRecord.valueType;
   }
 
   @Override
@@ -115,5 +147,10 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
   @Override
   public String toString() {
     return toJson();
+  }
+
+  @Override
+  public Record<T> clone() {
+    return new CopiedRecord<>(this);
   }
 }

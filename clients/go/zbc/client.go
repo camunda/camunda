@@ -16,6 +16,9 @@
 package zbc
 
 import (
+	"crypto/tls"
+	"google.golang.org/grpc/credentials"
+	"os"
 	"time"
 
 	"github.com/zeebe-io/zeebe/clients/go/commands"
@@ -31,6 +34,20 @@ type ZBClientImpl struct {
 	requestTimeout time.Duration
 	connection     *grpc.ClientConn
 }
+
+type ZBClientConfig struct {
+	GatewayAddress         string
+	UsePlaintextConnection bool
+	CaCertificatePath      string
+}
+
+type ZBError string
+
+func (e ZBError) Error() string {
+	return string(e)
+}
+
+const NonExistingFileError = ZBError("expected file to exist but couldn't find anything at specified path")
 
 func (client *ZBClientImpl) NewTopologyCommand() *commands.TopologyCommand {
 	return commands.NewTopologyCommand(client.gateway, client.requestTimeout)
@@ -89,14 +106,33 @@ func (client *ZBClientImpl) Close() error {
 	return client.connection.Close()
 }
 
-func NewZBClient(gatewayAddress string) (ZBClient, error) {
+func NewZBClient(config *ZBClientConfig) (ZBClient, error) {
 	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithInsecure())
 
-	conn, err := grpc.Dial(gatewayAddress, opts...)
+	if !config.UsePlaintextConnection {
+		var creds credentials.TransportCredentials
+
+		if config.CaCertificatePath == "" {
+			creds = credentials.NewTLS(&tls.Config{})
+		} else if _, err := os.Stat(config.CaCertificatePath); os.IsNotExist(err) {
+			return nil, NonExistingFileError
+		} else {
+			creds, err = credentials.NewClientTLSFromFile(config.CaCertificatePath, "")
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		opts = append(opts, grpc.WithTransportCredentials(creds))
+	} else {
+		opts = append(opts, grpc.WithInsecure())
+	}
+
+	conn, err := grpc.Dial(config.GatewayAddress, opts...)
 	if err != nil {
 		return nil, err
 	}
+
 	return &ZBClientImpl{
 		gateway:        pb.NewGatewayClient(conn),
 		requestTimeout: DefaultRequestTimeout,

@@ -41,4 +41,13 @@ public interface ZeebeClientConfiguration {
 
   /** @see ZeebeClientBuilder#defaultRequestTimeout(Duration) */
   Duration getDefaultRequestTimeout();
+
+  /** @see ZeebeClientBuilder#usePlaintext() */
+  boolean isPlaintextConnectionEnabled();
+
+  /** @see ZeebeClientBuilder#caCertificatePath(String) */
+  String getCaCertificatePath();
+
+  /** @see ZeebeClientBuilder#credentialsProvider(CredentialsProvider) */
+  CredentialsProvider getCredentialsProvider();
 }

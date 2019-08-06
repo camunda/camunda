@@ -23,6 +23,15 @@ public class JsonConditionInterpreterTest {
 
   private final JsonConditionInterpreter interpreter = new JsonConditionInterpreter();
 
+  @Parameter(0)
+  public String expression;
+
+  @Parameter(1)
+  public DirectBuffer json;
+
+  @Parameter(2)
+  public boolean isFulfilled;
+
   @Parameters(name = "{index}: expression = {0}")
   public static Iterable<Object[]> data() {
     return Arrays.asList(
@@ -84,15 +93,6 @@ public class JsonConditionInterpreterTest {
           {"foo > 5", asMsgPack("foo", Double.NEGATIVE_INFINITY), false},
         });
   }
-
-  @Parameter(0)
-  public String expression;
-
-  @Parameter(1)
-  public DirectBuffer json;
-
-  @Parameter(2)
-  public boolean isFulfilled;
 
   @Test
   public void test() {

@@ -20,13 +20,11 @@ public class RejectCorrelateMessageSubscriptionCommand
       new RejectCorrelateMessageSubscriptionEncoder();
   private final RejectCorrelateMessageSubscriptionDecoder decoder =
       new RejectCorrelateMessageSubscriptionDecoder();
-
+  private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer correlationKey = new UnsafeBuffer(0, 0);
   private int subscriptionPartitionId;
   private long workflowInstanceKey;
   private long messageKey;
-
-  private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
-  private final UnsafeBuffer correlationKey = new UnsafeBuffer(0, 0);
 
   @Override
   protected RejectCorrelateMessageSubscriptionEncoder getBodyEncoder() {
@@ -36,6 +34,16 @@ public class RejectCorrelateMessageSubscriptionCommand
   @Override
   protected RejectCorrelateMessageSubscriptionDecoder getBodyDecoder() {
     return decoder;
+  }
+
+  @Override
+  public void reset() {
+    subscriptionPartitionId =
+        RejectCorrelateMessageSubscriptionDecoder.subscriptionPartitionIdNullValue();
+    workflowInstanceKey = RejectCorrelateMessageSubscriptionDecoder.workflowInstanceKeyNullValue();
+    messageKey = RejectCorrelateMessageSubscriptionDecoder.messageKeyNullValue();
+    messageName.wrap(0, 0);
+    correlationKey.wrap(0, 0);
   }
 
   @Override
@@ -69,16 +77,6 @@ public class RejectCorrelateMessageSubscriptionCommand
 
     decoder.wrapMessageName(messageName);
     decoder.wrapCorrelationKey(correlationKey);
-  }
-
-  @Override
-  public void reset() {
-    subscriptionPartitionId =
-        RejectCorrelateMessageSubscriptionDecoder.subscriptionPartitionIdNullValue();
-    workflowInstanceKey = RejectCorrelateMessageSubscriptionDecoder.workflowInstanceKeyNullValue();
-    messageKey = RejectCorrelateMessageSubscriptionDecoder.messageKeyNullValue();
-    messageName.wrap(0, 0);
-    correlationKey.wrap(0, 0);
   }
 
   public int getSubscriptionPartitionId() {

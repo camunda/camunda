@@ -38,6 +38,10 @@ public abstract class PlaneImpl extends NodeImpl implements Plane {
 
   protected static ChildElementCollection<DiagramElement> diagramElementCollection;
 
+  public PlaneImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -51,10 +55,6 @@ public abstract class PlaneImpl extends NodeImpl implements Plane {
     diagramElementCollection = sequenceBuilder.elementCollection(DiagramElement.class).build();
 
     typeBuilder.build();
-  }
-
-  public PlaneImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

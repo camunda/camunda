@@ -33,11 +33,6 @@ public class DefaultActorClock implements ActorClock {
     return false;
   }
 
-  private void updateNanos() {
-    nanoTime = System.nanoTime();
-    nanosSinceLastMilli = nanoTime - nanoTimeOfLastMilli;
-  }
-
   @Override
   public long getTimeMillis() {
     return timeMillis;
@@ -51,5 +46,10 @@ public class DefaultActorClock implements ActorClock {
   @Override
   public long getNanoTime() {
     return nanoTime;
+  }
+
+  private void updateNanos() {
+    nanoTime = System.nanoTime();
+    nanosSinceLastMilli = nanoTime - nanoTimeOfLastMilli;
   }
 }

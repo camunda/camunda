@@ -32,8 +32,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class ActivityTest {
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
-
   private static final BpmnModelInstance WITHOUT_BOUNDARY_EVENTS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
@@ -42,7 +42,6 @@ public class ActivityTest {
               b -> b.zeebeTaskType("type").zeebeInput("foo", "bar").zeebeOutput("bar", "oof"))
           .endEvent()
           .done();
-
   private static final BpmnModelInstance WITH_BOUNDARY_EVENTS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
@@ -57,8 +56,6 @@ public class ActivityTest {
           .moveToActivity("task")
           .endEvent("taskEnd")
           .done();
-
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

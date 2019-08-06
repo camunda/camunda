@@ -99,14 +99,15 @@ public class ControlledTestExporter implements Exporter {
 
   @Override
   public void export(final Record record) {
+    final Record copiedRecord = record.clone();
     if (onExport != null) {
-      onExport.accept(record);
+      onExport.accept(copiedRecord);
     }
 
-    exportedRecords.add(record);
+    exportedRecords.add(copiedRecord);
 
     if (shouldAutoUpdatePosition) {
-      getController().updateLastExportedRecordPosition(record.getPosition());
+      getController().updateLastExportedRecordPosition(copiedRecord.getPosition());
     }
   }
 }

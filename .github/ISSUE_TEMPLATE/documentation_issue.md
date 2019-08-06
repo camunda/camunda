@@ -1,8 +1,8 @@
 ---
-name: General issue template
-about: General changes to the project
+name: Documentation issue
+about: Changes to the documentation
 title: ''
-labels: 'Type: Maintenance'
+labels: 'Type: Docs'
 assignees: ''
 
 ---

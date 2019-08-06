@@ -33,6 +33,10 @@ public class DataStateImpl extends BaseElementImpl implements DataState {
 
   protected static Attribute<String> nameAttribute;
 
+  public DataStateImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -50,10 +54,6 @@ public class DataStateImpl extends BaseElementImpl implements DataState {
     nameAttribute = typeBuilder.stringAttribute(BPMN_ATTRIBUTE_NAME).build();
 
     typeBuilder.build();
-  }
-
-  public DataStateImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

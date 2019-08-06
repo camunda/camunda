@@ -25,13 +25,11 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 
 public class ExecuteCommandResponse implements BufferReader {
+  protected final ErrorResponse errorResponse;
+  protected final MsgPackHelper msgPackHelper;
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
   private final ExecuteCommandResponseDecoder responseDecoder = new ExecuteCommandResponseDecoder();
   private final DirectBuffer responseBuffer = new UnsafeBuffer();
-  protected final ErrorResponse errorResponse;
-
-  protected final MsgPackHelper msgPackHelper;
-
   protected Map<String, Object> value;
   private int valueLengthOffset;
   private String rejectionReason;

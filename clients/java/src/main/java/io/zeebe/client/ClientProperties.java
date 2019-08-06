@@ -41,4 +41,10 @@ public class ClientProperties {
 
   /** @see ZeebeClientBuilder#defaultRequestTimeout(Duration) */
   public static final String DEFAULT_REQUEST_TIMEOUT = "zeebe.client.requestTimeout";
+
+  /** @see ZeebeClientBuilder#usePlaintext() */
+  public static final String USE_PLAINTEXT_CONNECTION = "zeebe.client.security.plaintext";
+
+  /** @see ZeebeClientBuilder#caCertificatePath(String) */
+  public static final String CA_CERTIFICATE_PATH = "zeebe.client.security.certpath";
 }

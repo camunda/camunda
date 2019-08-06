@@ -37,6 +37,22 @@ public class CloseWorkflowInstanceSubscriptionCommand
   }
 
   @Override
+  public void reset() {
+    subscriptionPartitionId =
+        CloseWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue();
+    workflowInstanceKey = CloseWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue();
+    elementInstanceKey = CloseWorkflowInstanceSubscriptionDecoder.elementInstanceKeyNullValue();
+    messageName.wrap(0, 0);
+  }
+
+  @Override
+  public int getLength() {
+    return super.getLength()
+        + CloseWorkflowInstanceSubscriptionDecoder.messageNameHeaderLength()
+        + messageName.capacity();
+  }
+
+  @Override
   public void write(MutableDirectBuffer buffer, int offset) {
     super.write(buffer, offset);
 
@@ -55,22 +71,6 @@ public class CloseWorkflowInstanceSubscriptionCommand
     workflowInstanceKey = decoder.workflowInstanceKey();
     elementInstanceKey = decoder.elementInstanceKey();
     decoder.wrapMessageName(messageName);
-  }
-
-  @Override
-  public void reset() {
-    subscriptionPartitionId =
-        CloseWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue();
-    workflowInstanceKey = CloseWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue();
-    elementInstanceKey = CloseWorkflowInstanceSubscriptionDecoder.elementInstanceKeyNullValue();
-    messageName.wrap(0, 0);
-  }
-
-  @Override
-  public int getLength() {
-    return super.getLength()
-        + CloseWorkflowInstanceSubscriptionDecoder.messageNameHeaderLength()
-        + messageName.capacity();
   }
 
   public int getSubscriptionPartitionId() {

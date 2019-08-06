@@ -36,7 +36,8 @@ public class EmbeddedGatewayService implements Service<Gateway> {
     final AtomixCluster atomix = atomixClusterInjector.getValue();
     final Function<GatewayCfg, BrokerClient> brokerClientFactory =
         cfg -> new BrokerClientImpl(cfg, atomix, startContext.getScheduler(), false);
-    gateway = new Gateway(configuration.getGateway(), brokerClientFactory);
+    gateway =
+        new Gateway(configuration.getGateway(), brokerClientFactory, startContext.getScheduler());
     startContext.run(this::startGateway);
   }
 
@@ -47,17 +48,17 @@ public class EmbeddedGatewayService implements Service<Gateway> {
     }
   }
 
+  @Override
+  public Gateway get() {
+    return gateway;
+  }
+
   private void startGateway() {
     try {
       gateway.start();
     } catch (final IOException e) {
       throw new RuntimeException("Gateway was not able to start", e);
     }
-  }
-
-  @Override
-  public Gateway get() {
-    return gateway;
   }
 
   public Injector<AtomixCluster> getAtomixClusterInjector() {

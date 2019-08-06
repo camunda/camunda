@@ -39,6 +39,10 @@ public class BpmnLabelImpl extends LabelImpl implements BpmnLabel {
 
   protected static AttributeReference<BpmnLabelStyle> labelStyleAttribute;
 
+  public BpmnLabelImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -60,10 +64,6 @@ public class BpmnLabelImpl extends LabelImpl implements BpmnLabel {
             .build();
 
     typeBuilder.build();
-  }
-
-  public BpmnLabelImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

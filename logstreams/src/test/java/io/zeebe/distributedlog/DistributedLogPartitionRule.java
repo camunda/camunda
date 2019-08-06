@@ -33,17 +33,17 @@ import org.slf4j.LoggerFactory;
 
 public class DistributedLogPartitionRule {
 
+  public static final Logger LOG = LoggerFactory.getLogger("io.zeebe.distributedlog.test");
+  private static long leaderTerm = 0;
   private final ServiceContainer serviceContainer;
   private final int partition;
   private final int nodeId;
-  private LogStream logStream;
-  private BufferedLogStreamReader reader;
   private final LogStreamWriterImpl writer = new LogStreamWriterImpl();
 
   private final RecordMetadata metadata = new RecordMetadata();
-  public static final Logger LOG = LoggerFactory.getLogger("io.zeebe.distributedlog.test");
   private final String logName;
-  private static long leaderTerm = 0;
+  private LogStream logStream;
+  private BufferedLogStreamReader reader;
 
   public DistributedLogPartitionRule(
       ServiceContainer serviceContainer, int nodeId, int partition, Path rootDirectory)

@@ -22,7 +22,8 @@ public class JobWorkerCreator {
 
     final String jobType = "foo";
 
-    final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
+    final ZeebeClientBuilder builder =
+        ZeebeClient.newClientBuilder().brokerContactPoint(broker).usePlaintext();
 
     try (ZeebeClient client = builder.build()) {
 
@@ -45,15 +46,6 @@ public class JobWorkerCreator {
     }
   }
 
-  private static class ExampleJobHandler implements JobHandler {
-    @Override
-    public void handle(final JobClient client, final ActivatedJob job) {
-      // here: business logic that is executed with every job
-      System.out.println(job);
-      client.newCompleteCommand(job.getKey()).send().join();
-    }
-  }
-
   private static void waitUntilSystemInput(final String exitCode) {
     try (Scanner scanner = new Scanner(System.in)) {
       while (scanner.hasNextLine()) {
@@ -62,6 +54,15 @@ public class JobWorkerCreator {
           return;
         }
       }
+    }
+  }
+
+  private static class ExampleJobHandler implements JobHandler {
+    @Override
+    public void handle(final JobClient client, final ActivatedJob job) {
+      // here: business logic that is executed with every job
+      System.out.println(job);
+      client.newCompleteCommand(job.getKey()).send().join();
     }
   }
 }

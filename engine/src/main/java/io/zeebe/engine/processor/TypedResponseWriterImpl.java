@@ -18,14 +18,12 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectProducer {
 
+  private final UnsafeBuffer stringWrapper = new UnsafeBuffer(0, 0);
   protected CommandResponseWriter writer;
+  protected int partitionId;
   private long requestId;
   private int requestStreamId;
-
   private boolean isResponseStaged;
-  protected int partitionId;
-
-  private final UnsafeBuffer stringWrapper = new UnsafeBuffer(0, 0);
 
   public TypedResponseWriterImpl(CommandResponseWriter writer, int partitionId) {
     this.writer = writer;
@@ -82,6 +80,14 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
         eventValue);
   }
 
+  public boolean flush() {
+    if (isResponseStaged) {
+      return writer.tryWriteResponse(requestStreamId, requestId);
+    } else {
+      return true;
+    }
+  }
+
   private void stage(
       RecordType type,
       Intent intent,
@@ -109,13 +115,5 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
 
   public void reset() {
     isResponseStaged = false;
-  }
-
-  public boolean flush() {
-    if (isResponseStaged) {
-      return writer.tryWriteResponse(requestStreamId, requestId);
-    } else {
-      return true;
-    }
   }
 }

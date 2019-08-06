@@ -49,6 +49,10 @@ public class ResourceRoleImpl extends BaseElementImpl implements ResourceRole {
       resourceParameterBindingCollection;
   protected static ChildElement<ResourceAssignmentExpression> resourceAssignmentExpressionChild;
 
+  public ResourceRoleImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -77,10 +81,6 @@ public class ResourceRoleImpl extends BaseElementImpl implements ResourceRole {
         sequenceBuilder.element(ResourceAssignmentExpression.class).build();
 
     typeBuilder.build();
-  }
-
-  public ResourceRoleImpl(ModelTypeInstanceContext instanceContext) {
-    super(instanceContext);
   }
 
   @Override

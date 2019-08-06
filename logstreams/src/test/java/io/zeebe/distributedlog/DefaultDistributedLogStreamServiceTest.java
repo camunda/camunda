@@ -38,16 +38,12 @@ public class DefaultDistributedLogStreamServiceTest {
 
   private static final ServiceName<LogStream> LOG_STREAM_SERVICE_NAME =
       LogStreamServiceNames.logStreamServiceName("raft-atomix-partition-1");
-
+  private static final List<String> MEMBERS = Arrays.asList("1");
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
   private final ServiceContainerRule serviceContainerRule =
       new ServiceContainerRule(actorSchedulerRule);
-
   private final LogInstallRule installRule = new LogInstallRule();
-
-  private static final List<String> MEMBERS = Arrays.asList("1");
-
   private final DistributedLogRule distributedLogRule =
       new DistributedLogRule(serviceContainerRule, 1, 1, 1, MEMBERS, null);
 
@@ -127,13 +123,13 @@ public class DefaultDistributedLogStreamServiceTest {
       LogstreamConfig.putLogStream("1", 1, service.logStreamMock);
     }
 
-    public LogService getService() {
-      return service;
-    }
-
     @Override
     protected void after() {
       serviceContainerRule.get().removeService(LOG_STREAM_SERVICE_NAME);
+    }
+
+    public LogService getService() {
+      return service;
     }
   }
 

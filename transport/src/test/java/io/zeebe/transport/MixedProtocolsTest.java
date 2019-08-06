@@ -23,13 +23,11 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class MixedProtocolsTest {
-  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
-  public AutoCloseableRule closeables = new AutoCloseableRule();
-
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
-
   protected final UnsafeBuffer requestBuffer = new UnsafeBuffer(new byte[1024]);
   protected final DirectBufferWriter bufferWriter = new DirectBufferWriter();
+  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
+  public AutoCloseableRule closeables = new AutoCloseableRule();
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
 
   @Test
   public void shouldEchoMessages() throws InterruptedException, ExecutionException {
@@ -77,9 +75,8 @@ public class MixedProtocolsTest {
    */
   public static class ReverseOrderChannelHandler
       implements ServerMessageHandler, ServerRequestHandler {
-    protected UnsafeBuffer requestResponseMessageBuffer;
-
     protected final ServerResponse response = new ServerResponse();
+    protected UnsafeBuffer requestResponseMessageBuffer;
 
     public ReverseOrderChannelHandler() {
       this.requestResponseMessageBuffer = new UnsafeBuffer(new byte[1024 * 1024]);

@@ -27,37 +27,27 @@ import org.junit.rules.Timeout;
 
 public class DistributedLogTest {
 
-  public ActorSchedulerRule actorSchedulerRule1 = new ActorSchedulerRule();
-  public ActorSchedulerRule actorSchedulerRule2 = new ActorSchedulerRule();
-  public ActorSchedulerRule actorSchedulerRule3 = new ActorSchedulerRule();
-
-  public ServiceContainerRule serviceContainerRule1 = new ServiceContainerRule(actorSchedulerRule1);
-
-  public ServiceContainerRule serviceContainerRule2 = new ServiceContainerRule(actorSchedulerRule2);
-
-  public ServiceContainerRule serviceContainerRule3 = new ServiceContainerRule(actorSchedulerRule3);
-
-  private static final List<String> MEMBERS = Arrays.asList("1", "2", "3");
-
-  public DistributedLogRule node1 =
-      new DistributedLogRule(
-          serviceContainerRule1, 1, NUM_PARTITIONS, REPLICATION_FACTOR, MEMBERS, null);
-
-  public DistributedLogRule node2 =
-      new DistributedLogRule(
-          serviceContainerRule2, 2, 1, 3, MEMBERS, Collections.singletonList(node1.getNode()));
-
-  public DistributedLogRule node3 =
-      new DistributedLogRule(
-          serviceContainerRule3, 3, 1, 3, MEMBERS, Collections.singletonList(node2.getNode()));
-
-  public Timeout timeoutRule = Timeout.seconds(120);
-
   public static final int DEFAULT_RETRIES = 500;
-
+  private static final List<String> MEMBERS = Arrays.asList("1", "2", "3");
   private static final int PARTITION_ID = Protocol.START_PARTITION_ID;
   private static final int NUM_PARTITIONS = 1;
   private static final int REPLICATION_FACTOR = 3;
+  public ActorSchedulerRule actorSchedulerRule1 = new ActorSchedulerRule();
+  public ActorSchedulerRule actorSchedulerRule2 = new ActorSchedulerRule();
+  public ActorSchedulerRule actorSchedulerRule3 = new ActorSchedulerRule();
+  public ServiceContainerRule serviceContainerRule1 = new ServiceContainerRule(actorSchedulerRule1);
+  public ServiceContainerRule serviceContainerRule2 = new ServiceContainerRule(actorSchedulerRule2);
+  public ServiceContainerRule serviceContainerRule3 = new ServiceContainerRule(actorSchedulerRule3);
+  public DistributedLogRule node1 =
+      new DistributedLogRule(
+          serviceContainerRule1, 1, NUM_PARTITIONS, REPLICATION_FACTOR, MEMBERS, null);
+  public DistributedLogRule node2 =
+      new DistributedLogRule(
+          serviceContainerRule2, 2, 1, 3, MEMBERS, Collections.singletonList(node1.getNode()));
+  public DistributedLogRule node3 =
+      new DistributedLogRule(
+          serviceContainerRule3, 3, 1, 3, MEMBERS, Collections.singletonList(node2.getNode()));
+  public Timeout timeoutRule = Timeout.seconds(120);
 
   @Rule
   public RuleChain ruleChain =
@@ -220,11 +210,6 @@ public class DistributedLogTest {
     return event;
   }
 
-  private class Event {
-    String message;
-    long position;
-  }
-
   private void assertEventReplicated(Event event) {
     assertEventReplicated(event, node1);
     assertEventReplicated(event, node2);
@@ -238,5 +223,10 @@ public class DistributedLogTest {
 
   private void assertEventsCount(DistributedLogRule node, int expectedCount) {
     assertThat(node.getCommittedEventsCount(PARTITION_ID)).isEqualTo(expectedCount);
+  }
+
+  private class Event {
+    String message;
+    long position;
   }
 }

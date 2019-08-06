@@ -15,10 +15,13 @@
  */
 package io.zeebe.client.impl;
 
+import static io.zeebe.client.ClientProperties.CA_CERTIFICATE_PATH;
 import static io.zeebe.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE;
 import static io.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
+import static io.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 
 import io.zeebe.client.ClientProperties;
+import io.zeebe.client.CredentialsProvider;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.ZeebeClientConfiguration;
@@ -35,27 +38,13 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   private Duration defaultJobPollInterval = Duration.ofMillis(100);
   private Duration defaultMessageTimeToLive = Duration.ofHours(1);
   private Duration defaultRequestTimeout = Duration.ofSeconds(20);
+  private boolean usePlaintextConnection = false;
+  private String certificatePath;
+  private CredentialsProvider credentialsProvider;
 
   @Override
   public String getBrokerContactPoint() {
     return brokerContactPoint;
-  }
-
-  @Override
-  public ZeebeClientBuilder brokerContactPoint(final String contactPoint) {
-    this.brokerContactPoint = contactPoint;
-    return this;
-  }
-
-  @Override
-  public int getDefaultJobWorkerMaxJobsActive() {
-    return jobWorkerMaxJobsActive;
-  }
-
-  @Override
-  public ZeebeClientBuilder defaultJobWorkerMaxJobsActive(final int maxJobsActive) {
-    this.jobWorkerMaxJobsActive = maxJobsActive;
-    return this;
   }
 
   @Override
@@ -64,9 +53,8 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder numJobWorkerExecutionThreads(final int numSubscriptionThreads) {
-    this.numJobWorkerExecutionThreads = numSubscriptionThreads;
-    return this;
+  public int getDefaultJobWorkerMaxJobsActive() {
+    return jobWorkerMaxJobsActive;
   }
 
   @Override
@@ -85,38 +73,8 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder defaultJobWorkerName(final String workerName) {
-    this.defaultJobWorkerName = workerName;
-    return this;
-  }
-
-  @Override
-  public ZeebeClientBuilder defaultJobTimeout(final Duration timeout) {
-    this.defaultJobTimeout = timeout;
-    return this;
-  }
-
-  @Override
-  public ZeebeClientBuilder defaultJobPollInterval(Duration pollInterval) {
-    defaultJobPollInterval = pollInterval;
-    return this;
-  }
-
-  @Override
-  public ZeebeClientBuilder defaultMessageTimeToLive(final Duration timeToLive) {
-    this.defaultMessageTimeToLive = timeToLive;
-    return this;
-  }
-
-  @Override
   public Duration getDefaultMessageTimeToLive() {
     return defaultMessageTimeToLive;
-  }
-
-  @Override
-  public ZeebeClientBuilder defaultRequestTimeout(Duration requestTimeout) {
-    this.defaultRequestTimeout = requestTimeout;
-    return this;
   }
 
   @Override
@@ -125,10 +83,21 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClient build() {
-    return new ZeebeClientImpl(this);
+  public boolean isPlaintextConnectionEnabled() {
+    return usePlaintextConnection;
   }
 
+  @Override
+  public String getCaCertificatePath() {
+    return certificatePath;
+  }
+
+  @Override
+  public CredentialsProvider getCredentialsProvider() {
+    return credentialsProvider;
+  }
+
+  @Override
   public ZeebeClientBuilder withProperties(final Properties properties) {
     if (properties.containsKey(ClientProperties.BROKER_CONTACTPOINT)) {
       brokerContactPoint(properties.getProperty(ClientProperties.BROKER_CONTACTPOINT));
@@ -164,8 +133,85 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
       defaultRequestTimeout(
           Duration.ofMillis(Long.parseLong(properties.getProperty(DEFAULT_REQUEST_TIMEOUT))));
     }
+    if (properties.containsKey(USE_PLAINTEXT_CONNECTION)) {
+      usePlaintext();
+    }
+    if (properties.containsKey(CA_CERTIFICATE_PATH)) {
+      caCertificatePath(properties.getProperty(CA_CERTIFICATE_PATH));
+    }
 
     return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder brokerContactPoint(final String contactPoint) {
+    this.brokerContactPoint = contactPoint;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder defaultJobWorkerMaxJobsActive(final int maxJobsActive) {
+    this.jobWorkerMaxJobsActive = maxJobsActive;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder numJobWorkerExecutionThreads(final int numSubscriptionThreads) {
+    this.numJobWorkerExecutionThreads = numSubscriptionThreads;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder defaultJobWorkerName(final String workerName) {
+    this.defaultJobWorkerName = workerName;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder defaultJobTimeout(final Duration timeout) {
+    this.defaultJobTimeout = timeout;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder defaultJobPollInterval(Duration pollInterval) {
+    defaultJobPollInterval = pollInterval;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder defaultMessageTimeToLive(final Duration timeToLive) {
+    this.defaultMessageTimeToLive = timeToLive;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder defaultRequestTimeout(Duration requestTimeout) {
+    this.defaultRequestTimeout = requestTimeout;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder usePlaintext() {
+    this.usePlaintextConnection = true;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder caCertificatePath(final String certificatePath) {
+    this.certificatePath = certificatePath;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder credentialsProvider(CredentialsProvider credentialsProvider) {
+    this.credentialsProvider = credentialsProvider;
+    return this;
+  }
+
+  @Override
+  public ZeebeClient build() {
+    return new ZeebeClientImpl(this);
   }
 
   @Override

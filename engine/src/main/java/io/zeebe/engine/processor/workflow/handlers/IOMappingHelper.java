@@ -19,9 +19,10 @@ import org.agrona.DirectBuffer;
 
 public class IOMappingHelper {
 
+  private final MsgPackMergeTool mergeTool = new MsgPackMergeTool(4096);
+
   public <T extends ExecutableFlowNode> void applyOutputMappings(BpmnStepContext<T> context) {
     final VariablesState variablesState = context.getElementInstanceState().getVariablesState();
-    final MsgPackMergeTool mergeTool = context.getMergeTool();
 
     final T element = context.getElement();
     final WorkflowInstanceRecord record = context.getValue();
@@ -60,7 +61,6 @@ public class IOMappingHelper {
 
   public <T extends ExecutableFlowNode> void applyInputMappings(BpmnStepContext<T> context) {
 
-    final MsgPackMergeTool mergeTool = context.getMergeTool();
     final T element = context.getElement();
     final Mapping[] mappings = element.getInputMappings();
 

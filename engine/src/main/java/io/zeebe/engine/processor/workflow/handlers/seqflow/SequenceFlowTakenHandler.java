@@ -24,11 +24,6 @@ public class SequenceFlowTakenHandler<T extends ExecutableSequenceFlow> extends 
   }
 
   @Override
-  protected boolean shouldHandleState(BpmnStepContext<T> context) {
-    return super.shouldHandleState(context) && isElementActive(context.getFlowScopeInstance());
-  }
-
-  @Override
   protected boolean handleState(BpmnStepContext<T> context) {
     final ExecutableSequenceFlow sequenceFlow = context.getElement();
     final ExecutableFlowNode targetNode = sequenceFlow.getTarget();
@@ -39,5 +34,10 @@ public class SequenceFlowTakenHandler<T extends ExecutableSequenceFlow> extends 
         .appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, value, targetNode);
 
     return true;
+  }
+
+  @Override
+  protected boolean shouldHandleState(BpmnStepContext<T> context) {
+    return super.shouldHandleState(context) && isElementActive(context.getFlowScopeInstance());
   }
 }

@@ -90,14 +90,12 @@ public class ProcessBuilderTest {
   public static final String TIMER_DATE = "2011-03-11T12:13:14Z";
   public static final String TIMER_DURATION = "P10D";
   public static final String TIMER_CYCLE = "R3/PT10H";
-
-  @Rule public ExpectedException thrown = ExpectedException.none();
-
-  private BpmnModelInstance modelInstance;
   private static ModelElementType taskType;
   private static ModelElementType gatewayType;
   private static ModelElementType eventType;
   private static ModelElementType processType;
+  @Rule public ExpectedException thrown = ExpectedException.none();
+  private BpmnModelInstance modelInstance;
 
   @BeforeClass
   public static void getElementTypes() {

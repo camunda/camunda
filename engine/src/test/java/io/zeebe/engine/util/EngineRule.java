@@ -11,9 +11,10 @@ import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.engine.processor.CopiedRecords;
 import io.zeebe.engine.processor.ReadonlyProcessingContext;
+import io.zeebe.engine.processor.RecordValues;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
+import io.zeebe.engine.processor.TypedEventImpl;
 import io.zeebe.engine.processor.workflow.EngineProcessors;
 import io.zeebe.engine.processor.workflow.deployment.distribute.DeploymentDistributor;
 import io.zeebe.engine.processor.workflow.deployment.distribute.PendingDeploymentDistribution;
@@ -33,7 +34,8 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.record.CopiedRecord;
+import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
@@ -66,26 +68,12 @@ public final class EngineRule extends ExternalResource {
 
   private static final int PARTITION_ID = Protocol.DEPLOYMENT_PARTITION;
   private static final RecordingExporter RECORDING_EXPORTER = new RecordingExporter();
-
+  protected final StreamProcessorRule environmentRule;
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
-
-  protected final StreamProcessorRule environmentRule;
-
   private final int partitionCount;
   private final boolean explicitStart;
-
-  public static EngineRule singlePartition() {
-    return new EngineRule(1);
-  }
-
-  public static EngineRule multiplePartition(int partitionCount) {
-    return new EngineRule(partitionCount);
-  }
-
-  public static EngineRule explicitStart() {
-    return new EngineRule(1, true);
-  }
+  private Consumer<String> jobsAvailableCallback = type -> {};
 
   private EngineRule(int partitionCount) {
     this(partitionCount, false);
@@ -97,6 +85,18 @@ public final class EngineRule extends ExternalResource {
     environmentRule =
         new StreamProcessorRule(
             PARTITION_ID, partitionCount, DefaultZeebeDbFactory.DEFAULT_DB_FACTORY);
+  }
+
+  public static EngineRule singlePartition() {
+    return new EngineRule(1);
+  }
+
+  public static EngineRule multiplePartition(int partitionCount) {
+    return new EngineRule(partitionCount);
+  }
+
+  public static EngineRule explicitStart() {
+    return new EngineRule(1, true);
   }
 
   @Override
@@ -115,6 +115,11 @@ public final class EngineRule extends ExternalResource {
 
   public void start() {
     startProcessors();
+  }
+
+  public EngineRule withJobsAvailableCallback(Consumer<String> callback) {
+    this.jobsAvailableCallback = callback;
+    return this;
   }
 
   private void startProcessors() {
@@ -138,7 +143,8 @@ public final class EngineRule extends ExternalResource {
                           new SubscriptionCommandSender(
                               currentPartitionId, new PartitionCommandSenderImpl()),
                           new DeploymentDistributionImpl(),
-                          (key, partition) -> {})
+                          (key, partition) -> {},
+                          jobsAvailableCallback)
                       .withListener(new ProcessingExporterTransistor()));
         });
   }
@@ -238,6 +244,47 @@ public final class EngineRule extends ExternalResource {
     environmentRule.writeBatch(records);
   }
 
+  /////////////////////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////// PROCESSOR EXPORTER CROSSOVER ///////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////////
+
+  private static class ProcessingExporterTransistor implements StreamProcessorLifecycleAware {
+
+    private final RecordValues recordValues = new RecordValues();
+    private final RecordMetadata metadata = new RecordMetadata();
+
+    private BufferedLogStreamReader logStreamReader;
+    private TypedEventImpl typedEvent;
+
+    @Override
+    public void onOpen(ReadonlyProcessingContext context) {
+      final int partitionId = context.getLogStream().getPartitionId();
+      typedEvent = new TypedEventImpl(partitionId);
+      final ActorControl actor = context.getActor();
+
+      final ActorCondition onCommitCondition =
+          actor.onCondition("on-commit", this::onNewEventCommitted);
+      final LogStream logStream = context.getLogStream();
+      logStream.registerOnCommitPositionUpdatedCondition(onCommitCondition);
+
+      logStreamReader = new BufferedLogStreamReader(logStream);
+    }
+
+    private void onNewEventCommitted() {
+      while (logStreamReader.hasNext()) {
+        final LoggedEvent rawEvent = logStreamReader.next();
+        metadata.reset();
+        rawEvent.readMetadata(metadata);
+
+        final UnifiedRecordValue recordValue =
+            recordValues.readRecordValue(rawEvent, metadata.getValueType());
+        typedEvent.wrap(rawEvent, metadata, recordValue);
+
+        RECORDING_EXPORTER.export(typedEvent);
+      }
+    }
+  }
+
   private class DeploymentDistributionImpl implements DeploymentDistributor {
 
     private final Map<Long, PendingDeploymentDistribution> pendingDeployments = new HashMap<>();
@@ -284,39 +331,6 @@ public final class EngineRule extends ExternalResource {
 
       handler.apply(bytes);
       return true;
-    }
-  }
-
-  /////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////// PROCESSOR EXPORTER CROSSOVER ///////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////////////////
-
-  private static class ProcessingExporterTransistor implements StreamProcessorLifecycleAware {
-
-    private BufferedLogStreamReader logStreamReader;
-    private int partitionId;
-
-    @Override
-    public void onOpen(ReadonlyProcessingContext context) {
-      partitionId = context.getLogStream().getPartitionId();
-      final ActorControl actor = context.getActor();
-
-      final ActorCondition onCommitCondition =
-          actor.onCondition("on-commit", this::onNewEventCommitted);
-      final LogStream logStream = context.getLogStream();
-      logStream.registerOnCommitPositionUpdatedCondition(onCommitCondition);
-
-      logStreamReader = new BufferedLogStreamReader(logStream);
-    }
-
-    private void onNewEventCommitted() {
-      while (logStreamReader.hasNext()) {
-        final LoggedEvent rawEvent = logStreamReader.next();
-
-        final CopiedRecord typedRecord = CopiedRecords.createCopiedRecord(partitionId, rawEvent);
-
-        RECORDING_EXPORTER.export(typedRecord);
-      }
     }
   }
 }

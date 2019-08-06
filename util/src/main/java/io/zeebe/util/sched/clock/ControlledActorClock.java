@@ -19,14 +19,6 @@ public class ControlledActorClock implements ActorClock {
     reset();
   }
 
-  public void setCurrentTime(long currentTime) {
-    this.currentTime = currentTime;
-  }
-
-  public void setCurrentTime(Instant currentTime) {
-    this.currentTime = currentTime.toEpochMilli();
-  }
-
   public void pinCurrentTime() {
     setCurrentTime(getCurrentTime());
   }
@@ -44,21 +36,16 @@ public class ControlledActorClock implements ActorClock {
     currentOffset = 0;
   }
 
-  @Override
-  public long getTimeMillis() {
-    if (usesPointInTime()) {
-      return currentTime;
-    } else {
-      long now = System.currentTimeMillis();
-      if (usesOffset()) {
-        now = now + currentOffset;
-      }
-      return now;
-    }
-  }
-
   public Instant getCurrentTime() {
     return Instant.ofEpochMilli(getTimeMillis());
+  }
+
+  public void setCurrentTime(long currentTime) {
+    this.currentTime = currentTime;
+  }
+
+  public void setCurrentTime(Instant currentTime) {
+    this.currentTime = currentTime.toEpochMilli();
   }
 
   protected boolean usesPointInTime() {
@@ -72,6 +59,19 @@ public class ControlledActorClock implements ActorClock {
   @Override
   public boolean update() {
     return true;
+  }
+
+  @Override
+  public long getTimeMillis() {
+    if (usesPointInTime()) {
+      return currentTime;
+    } else {
+      long now = System.currentTimeMillis();
+      if (usesOffset()) {
+        now = now + currentOffset;
+      }
+      return now;
+    }
   }
 
   @Override

@@ -40,6 +40,10 @@ public class InclusiveGatewayImpl extends GatewayImpl implements InclusiveGatewa
 
   protected static AttributeReference<SequenceFlow> defaultAttribute;
 
+  public InclusiveGatewayImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
+
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -61,10 +65,6 @@ public class InclusiveGatewayImpl extends GatewayImpl implements InclusiveGatewa
             .build();
 
     typeBuilder.build();
-  }
-
-  public InclusiveGatewayImpl(ModelTypeInstanceContext context) {
-    super(context);
   }
 
   @Override

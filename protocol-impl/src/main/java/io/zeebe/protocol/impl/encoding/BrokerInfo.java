@@ -57,13 +57,12 @@ public class BrokerInfo implements BufferReader, BufferWriter {
 
   private final BrokerInfoEncoder bodyEncoder = new BrokerInfoEncoder();
   private final BrokerInfoDecoder bodyDecoder = new BrokerInfoDecoder();
-
+  private final Map<DirectBuffer, DirectBuffer> addresses = new HashMap<>();
+  private final Map<Integer, PartitionRole> partitionRoles = new HashMap<>();
   private int nodeId;
   private int partitionsCount;
   private int clusterSize;
   private int replicationFactor;
-  private final Map<DirectBuffer, DirectBuffer> addresses = new HashMap<>();
-  private final Map<Integer, PartitionRole> partitionRoles = new HashMap<>();
 
   public BrokerInfo() {
     reset();
@@ -129,14 +128,6 @@ public class BrokerInfo implements BufferReader, BufferWriter {
     return this;
   }
 
-  public BrokerInfo setCommandApiAddress(String address) {
-    return setCommandApiAddress(BufferUtil.wrapString(address));
-  }
-
-  public BrokerInfo setCommandApiAddress(DirectBuffer address) {
-    return addAddress(COMMAND_API_NAME, address);
-  }
-
   public String getCommandApiAddress() {
     final DirectBuffer buffer = addresses.get(COMMAND_API_NAME);
     if (buffer != null) {
@@ -144,6 +135,14 @@ public class BrokerInfo implements BufferReader, BufferWriter {
     } else {
       return null;
     }
+  }
+
+  public BrokerInfo setCommandApiAddress(String address) {
+    return setCommandApiAddress(BufferUtil.wrapString(address));
+  }
+
+  public BrokerInfo setCommandApiAddress(DirectBuffer address) {
+    return addAddress(COMMAND_API_NAME, address);
   }
 
   public Map<Integer, PartitionRole> getPartitionRoles() {

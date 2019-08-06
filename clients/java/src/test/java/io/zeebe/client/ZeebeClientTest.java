@@ -16,12 +16,18 @@
 package io.zeebe.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.util.ClientTest;
+import java.io.FileNotFoundException;
 import java.time.Duration;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class ZeebeClientTest extends ClientTest {
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
   @Test
   public void shouldNotFailIfClosedTwice() {
@@ -46,5 +52,23 @@ public class ZeebeClientTest extends ClientTest {
       assertThat(configuration.getDefaultMessageTimeToLive()).isEqualTo(Duration.ofHours(1));
       assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(20));
     }
+  }
+
+  @Test
+  public void shouldFailIfCertificateDoesNotExist() {
+    assertThatThrownBy(
+            () -> ZeebeClient.newClientBuilder().caCertificatePath("/wrong/path").build())
+        .hasCauseInstanceOf(FileNotFoundException.class);
+  }
+
+  @Test
+  public void shouldFailWithEmptyCertificatePath() {
+    assertThatThrownBy(() -> ZeebeClient.newClientBuilder().caCertificatePath("").build())
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldHaveTlsEnabledByDefault() {
+    assertThat(new ZeebeClientBuilderImpl().isPlaintextConnectionEnabled()).isFalse();
   }
 }

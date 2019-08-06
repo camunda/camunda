@@ -11,22 +11,13 @@ import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 
 public class ExecutableReceiveTask extends ExecutableActivity implements ExecutableCatchEvent {
 
+  private ExecutableMessage message;
+
   public ExecutableReceiveTask(String id) {
     super(id);
 
     getEvents().add(this);
     getInterruptingElementIds().add(this.getId());
-  }
-
-  private ExecutableMessage message;
-
-  @Override
-  public ExecutableMessage getMessage() {
-    return message;
-  }
-
-  public void setMessage(ExecutableMessage message) {
-    this.message = message;
   }
 
   @Override
@@ -40,7 +31,16 @@ public class ExecutableReceiveTask extends ExecutableActivity implements Executa
   }
 
   @Override
+  public ExecutableMessage getMessage() {
+    return message;
+  }
+
+  @Override
   public RepeatingInterval getTimer() {
     return null;
+  }
+
+  public void setMessage(ExecutableMessage message) {
+    this.message = message;
   }
 }

@@ -71,6 +71,14 @@ public class JsonSerializableToJsonTest {
     STACK_TRACE = stringWriter.toString();
   }
 
+  @Parameter public String testName;
+
+  @Parameter(1)
+  public Supplier<JsonSerializable> actualRecordSupplier;
+
+  @Parameter(2)
+  public String expectedJson;
+
   @Parameters(name = "{index}: {0}")
   public static Object[][] records() {
     return new Object[][] {
@@ -657,14 +665,6 @@ public class JsonSerializableToJsonTest {
       },
     };
   }
-
-  @Parameter public String testName;
-
-  @Parameter(1)
-  public Supplier<JsonSerializable> actualRecordSupplier;
-
-  @Parameter(2)
-  public String expectedJson;
 
   @Test
   public void shouldConvertJsonSerializableToJson() {

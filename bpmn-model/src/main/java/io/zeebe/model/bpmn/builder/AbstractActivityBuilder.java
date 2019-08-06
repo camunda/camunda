@@ -35,7 +35,8 @@ public abstract class AbstractActivityBuilder<
         B extends AbstractActivityBuilder<B, E>, E extends Activity>
     extends AbstractFlowNodeBuilder<B, E> implements ZeebeVariablesMappingBuilder<B> {
 
-  protected AbstractActivityBuilder(BpmnModelInstance modelInstance, E element, Class<?> selfType) {
+  protected AbstractActivityBuilder(
+      final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -43,7 +44,7 @@ public abstract class AbstractActivityBuilder<
     return boundaryEvent(null);
   }
 
-  public BoundaryEventBuilder boundaryEvent(String id) {
+  public BoundaryEventBuilder boundaryEvent(final String id) {
     final BoundaryEvent boundaryEvent = createSibling(BoundaryEvent.class, id);
     boundaryEvent.setAttachedTo(element);
 
@@ -53,7 +54,8 @@ public abstract class AbstractActivityBuilder<
     return boundaryEvent.builder();
   }
 
-  public BoundaryEventBuilder boundaryEvent(String id, Consumer<BoundaryEventBuilder> consumer) {
+  public BoundaryEventBuilder boundaryEvent(
+      final String id, final Consumer<BoundaryEventBuilder> consumer) {
     final BoundaryEventBuilder builder = boundaryEvent(id);
     consumer.accept(builder);
     return builder;
@@ -66,7 +68,13 @@ public abstract class AbstractActivityBuilder<
     return miCharacteristics.builder();
   }
 
-  protected double calculateXCoordinate(Bounds boundaryEventBounds) {
+  public B multiInstance(final Consumer<MultiInstanceLoopCharacteristicsBuilder> consumer) {
+    final MultiInstanceLoopCharacteristicsBuilder builder = multiInstance();
+    consumer.accept(builder);
+    return myself;
+  }
+
+  protected double calculateXCoordinate(final Bounds boundaryEventBounds) {
     final BpmnShape attachedToElement = findBpmnShape(element);
 
     double x = 0;
@@ -113,7 +121,7 @@ public abstract class AbstractActivityBuilder<
     return x;
   }
 
-  protected void setBoundaryEventCoordinates(BpmnShape bpmnShape) {
+  protected void setBoundaryEventCoordinates(final BpmnShape bpmnShape) {
     final BpmnShape activity = findBpmnShape(element);
     final Bounds boundaryBounds = bpmnShape.getBounds();
 
@@ -134,7 +142,7 @@ public abstract class AbstractActivityBuilder<
   }
 
   @Override
-  public B zeebeInput(String source, String target) {
+  public B zeebeInput(final String source, final String target) {
     final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
     final ZeebeInput input = createChild(ioMapping, ZeebeInput.class);
     input.setSource(source);
@@ -144,7 +152,7 @@ public abstract class AbstractActivityBuilder<
   }
 
   @Override
-  public B zeebeOutput(String source, String target) {
+  public B zeebeOutput(final String source, final String target) {
     final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
     final ZeebeOutput input = createChild(ioMapping, ZeebeOutput.class);
     input.setSource(source);

@@ -35,10 +35,10 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
 
   private final StateStorage storage;
   private final ZeebeDbFactory zeebeDbFactory;
-  private ZeebeDb db;
   private final ReplicationController replicationController;
-  private DeletionService deletionService = new NoopDeletionService();
   private final int maxSnapshotCount;
+  private ZeebeDb db;
+  private DeletionService deletionService = new NoopDeletionService();
   private volatile SnapshotRestoreInfo snapshotRestoreInfo = new NullSnapshotRestoreInfo();
 
   public StateSnapshotController(final ZeebeDbFactory rocksDbFactory, final StateStorage storage) {
@@ -137,15 +137,6 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
     replicationController.consumeReplicatedSnapshots();
   }
 
-  public void setDeletionService(DeletionService deletionService) {
-    this.deletionService = deletionService;
-  }
-
-  @Override
-  public SnapshotRestoreInfo getLatestSnapshotRestoreInfo() {
-    return snapshotRestoreInfo;
-  }
-
   @Override
   public long recover() throws Exception {
     final File runtimeDirectory = storage.getRuntimeDirectory();
@@ -208,6 +199,51 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
     }
 
     return db;
+  }
+
+  public long getPositionToDelete(int maxSnapshotCount) {
+    return storage.listByPositionDesc().stream()
+        .skip(maxSnapshotCount - 1)
+        .findFirst()
+        .map(f -> Long.parseLong(f.getName()))
+        .orElse(-1L);
+  }
+
+  @Override
+  public int getValidSnapshotsCount() {
+    return storage.list().size();
+  }
+
+  @Override
+  public long getLastValidSnapshotPosition() {
+    return storage.listByPositionDesc().stream()
+        .map(File::getName)
+        .mapToLong(Long::parseLong)
+        .findFirst()
+        .orElse(-1L);
+  }
+
+  @Override
+  public File getLastValidSnapshotDirectory() {
+    final List<File> snapshots = storage.listByPositionDesc();
+    if (snapshots != null && !snapshots.isEmpty()) {
+      return snapshots.get(0);
+    }
+    return null;
+  }
+
+  @Override
+  public File getSnapshotDirectoryFor(long snapshotId) {
+    return storage.getSnapshotDirectoryFor(snapshotId);
+  }
+
+  @Override
+  public SnapshotRestoreInfo getLatestSnapshotRestoreInfo() {
+    return snapshotRestoreInfo;
+  }
+
+  public void setDeletionService(DeletionService deletionService) {
+    this.deletionService = deletionService;
   }
 
   @Override
@@ -275,42 +311,6 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
       FileUtil.deleteFolder(notCompletedSnapshot.toPath());
       LOG.debug("Delete not completed (orphaned) snapshot {}", notCompletedSnapshot);
     }
-  }
-
-  public long getPositionToDelete(int maxSnapshotCount) {
-    return storage.listByPositionDesc().stream()
-        .skip(maxSnapshotCount - 1)
-        .findFirst()
-        .map(f -> Long.parseLong(f.getName()))
-        .orElse(-1L);
-  }
-
-  @Override
-  public int getValidSnapshotsCount() {
-    return storage.list().size();
-  }
-
-  @Override
-  public long getLastValidSnapshotPosition() {
-    return storage.listByPositionDesc().stream()
-        .map(File::getName)
-        .mapToLong(Long::parseLong)
-        .findFirst()
-        .orElse(-1L);
-  }
-
-  @Override
-  public File getLastValidSnapshotDirectory() {
-    final List<File> snapshots = storage.listByPositionDesc();
-    if (snapshots != null && !snapshots.isEmpty()) {
-      return snapshots.get(0);
-    }
-    return null;
-  }
-
-  @Override
-  public File getSnapshotDirectoryFor(long snapshotId) {
-    return storage.getSnapshotDirectoryFor(snapshotId);
   }
 
   @Override

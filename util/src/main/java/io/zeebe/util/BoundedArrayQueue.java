@@ -29,80 +29,15 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P> {
     this.capacity = findNextPositivePowerOfTwo(capacity);
     this.mask = this.capacity - 1;
 
-    head = tail = 0;
+    head = 0;
+    tail = 0;
 
     array = new Object[this.capacity];
   }
 
-  public void clear() {
-    head = tail = 0;
-    for (int i = 0; i < array.length; i++) {
-      array[i] = null;
-    }
-    iterator.reset();
-  }
-
-  public boolean offer(P object) {
-    final int remainingSpace = capacity - size();
-
-    if (remainingSpace > 0) {
-      final int index = (int) (tail & mask);
-
-      array[index] = object;
-
-      ++tail;
-
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  @SuppressWarnings("unchecked")
-  public P poll() {
-    final int size = size();
-
-    Object object = null;
-
-    if (size > 0) {
-      final int index = (int) (head & mask);
-
-      object = array[index];
-      array[index] = null;
-
-      ++head;
-    }
-
-    return (P) object;
-  }
-
-  @SuppressWarnings("unchecked")
-  public P peek() {
-    final int size = size();
-
-    Object object = null;
-
-    if (size > 0) {
-      final int index = (int) (head & mask);
-
-      object = array[index];
-    }
-
-    return (P) object;
-  }
-
+  @Override
   public int size() {
     return (int) (tail - head);
-  }
-
-  public int getCapacity() {
-    return capacity;
-  }
-
-  @Override
-  public Iterator<P> iterator() {
-    iterator.open();
-    return iterator;
   }
 
   @Override
@@ -160,8 +95,45 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P> {
   }
 
   @Override
+  public void clear() {
+    head = 0;
+    tail = 0;
+    for (int i = 0; i < array.length; i++) {
+      array[i] = null;
+    }
+    iterator.reset();
+  }
+
+  public int getCapacity() {
+    return capacity;
+  }
+
+  @Override
+  public Iterator<P> iterator() {
+    iterator.open();
+    return iterator;
+  }
+
+  @Override
   public boolean add(P e) {
     return offer(e);
+  }
+
+  @Override
+  public boolean offer(P object) {
+    final int remainingSpace = capacity - size();
+
+    if (remainingSpace > 0) {
+      final int index = (int) (tail & mask);
+
+      array[index] = object;
+
+      ++tail;
+
+      return true;
+    } else {
+      return false;
+    }
   }
 
   @Override
@@ -176,6 +148,25 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P> {
   }
 
   @Override
+  @SuppressWarnings("unchecked")
+  public P poll() {
+    final int size = size();
+
+    Object object = null;
+
+    if (size > 0) {
+      final int index = (int) (head & mask);
+
+      object = array[index];
+      array[index] = null;
+
+      ++head;
+    }
+
+    return (P) object;
+  }
+
+  @Override
   public P element() {
     final P peek = peek();
 
@@ -184,6 +175,22 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P> {
     }
 
     return peek;
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public P peek() {
+    final int size = size();
+
+    Object object = null;
+
+    if (size > 0) {
+      final int index = (int) (head & mask);
+
+      object = array[index];
+    }
+
+    return (P) object;
   }
 
   class BoundedArrayQueueIterator<U> implements Iterator<U> {
@@ -198,6 +205,11 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P> {
     }
 
     @Override
+    public boolean hasNext() {
+      return iteratorPosition < tail;
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public U next() {
       if (iteratorPosition == tail) {
@@ -209,11 +221,6 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P> {
       ++iteratorPosition;
 
       return (U) object;
-    }
-
-    @Override
-    public boolean hasNext() {
-      return iteratorPosition < tail;
     }
 
     @Override
