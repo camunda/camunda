@@ -1,3 +1,31 @@
+<a name="0.21.0-alpha1"></a>
+## 0.21.0-alpha1 (2019-08-06)
+
+
+#### Features
+
+* **broker:**
+  *  support sequential multi-instance activity ([01c5ad68](https://github.com/zeebe-io/zeebe/commit/01c5ad6829633e0feebaeb3e7fad88deb7c2b185))
+  *  records are not copied for exporters ([493c5719](https://github.com/zeebe-io/zeebe/commit/493c57197e7e638454130ad4ff239e7d43c989e1))
+  *  implement long polling for activate jobs request ([97115919](https://github.com/zeebe-io/zeebe/commit/97115919199c7a85aceabe9c36fa2add6fd4eb95))
+  *  distinguish multi-instance body records ([eb9e2c88](https://github.com/zeebe-io/zeebe/commit/eb9e2c883871c0b7d96d35e06903457e101d9d8b))
+  *  parallel multi-instance sub-process and receive task ([59b2609e](https://github.com/zeebe-io/zeebe/commit/59b2609e218b5770c33d630bcbc596ce44e87914))
+  *  support parallel multi-instance service task ([07c384ca](https://github.com/zeebe-io/zeebe/commit/07c384ca4e722cbb9a8823612d008cb11d272f9d))
+  *  add TLS support to gateway ([fe3359eb](https://github.com/zeebe-io/zeebe/commit/fe3359ebf2472b1ba36069cf1c7dff1d6b3c17c3))
+* **clients/go:**  add TLS support in Go client ([f7d926d5](https://github.com/zeebe-io/zeebe/commit/f7d926d58f48399357f4a0f4db469533120b50a7))
+* **clients/java:**
+  *  support credentials in Java client ([8a803244](https://github.com/zeebe-io/zeebe/commit/8a80324423086f37a373ea8904603323767abb76))
+  *  added TLS support in Java client ([3787442c](https://github.com/zeebe-io/zeebe/commit/3787442c9d8212b68e4c3cf930170494f4075cf8))
+* **clients/zbctl:**  add TLS support to zbctl ([f7d8c460](https://github.com/zeebe-io/zeebe/commit/f7d8c4608894118fcbe538e7c2822fc610dfbbd7))
+
+#### Bug Fixes
+
+* **broker:**
+  *  take outgoing sequence flow after multi-instance ([a4ce2f19](https://github.com/zeebe-io/zeebe/commit/a4ce2f191092b7c781af0b410d6410f3180578c6))
+  *  avoid retrying the wrong deployment ([6fc84612](https://github.com/zeebe-io/zeebe/commit/6fc846129945b988d219cbd144050ebc52b4944f))
+
+
+
 <a name="0.20.0"></a>
 ## 0.20.0 (2019-07-16)
 
