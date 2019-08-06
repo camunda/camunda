@@ -7,7 +7,7 @@
 * **broker:**
   *  support sequential multi-instance activity ([01c5ad68](https://github.com/zeebe-io/zeebe/commit/01c5ad6829633e0feebaeb3e7fad88deb7c2b185))
   *  records are not copied for exporters ([493c5719](https://github.com/zeebe-io/zeebe/commit/493c57197e7e638454130ad4ff239e7d43c989e1))
-  *  implement long polling in the gateway  * an activate job request will be blocked if there are no activatable jobs of the requested type.  * requests will be blocked until a job is available to activate or until a default timeout of 10s. ([97115919](https://github.com/zeebe-io/zeebe/commit/97115919199c7a85aceabe9c36fa2add6fd4eb95))
+  *  implement long polling for activate jobs request ([97115919](https://github.com/zeebe-io/zeebe/commit/97115919199c7a85aceabe9c36fa2add6fd4eb95))
   *  distinguish multi-instance body records ([eb9e2c88](https://github.com/zeebe-io/zeebe/commit/eb9e2c883871c0b7d96d35e06903457e101d9d8b))
   *  parallel multi-instance sub-process and receive task ([59b2609e](https://github.com/zeebe-io/zeebe/commit/59b2609e218b5770c33d630bcbc596ce44e87914))
   *  support parallel multi-instance service task ([07c384ca](https://github.com/zeebe-io/zeebe/commit/07c384ca4e722cbb9a8823612d008cb11d272f9d))
