@@ -8,7 +8,8 @@
   "login": {
     "username": "Nutzername",
     "password": "Passwort",
-    "btn": "Einloggen"
+    "btn": "Einloggen",
+    "error": "Ein Fehler ist aufgetreten. Konnte dich nicht einloggen."
   },
   "home": {
     "search": "Nach Namen filtern ...",

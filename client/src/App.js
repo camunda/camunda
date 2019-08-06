@@ -39,7 +39,10 @@ class App extends React.Component {
   render() {
     if (this.props.error) {
       return (
-        <ErrorPage noLink text={this.props.error.toString()}>
+        <ErrorPage
+          noLink
+          text="Optimize could not be loaded, please make sure the server is running"
+        >
           <Button variant="link" onClick={() => window.location.reload(true)}>
             Reload
           </Button>

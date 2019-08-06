@@ -8,7 +8,8 @@
   "login": {
     "username": "Username",
     "password": "Password",
-    "btn": "Login"
+    "btn": "Login",
+    "error": "An error occurred. Could not log you in."
   },
   "home": {
     "search": "Filter for name...",
