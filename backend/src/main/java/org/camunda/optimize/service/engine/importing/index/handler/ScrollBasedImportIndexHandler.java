@@ -12,6 +12,7 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,11 +70,16 @@ public abstract class ScrollBasedImportIndexHandler
   protected abstract Set<String> performInitialSearchQuery();
 
   private void resetScroll() {
-    if (scrollId != null) {
-      clearScroll(this.getClass(), esClient, scrollId);
-    }
+    String currentScrollId = scrollId;
     scrollId = null;
     importIndex = 0L;
+    if (currentScrollId != null) {
+      try {
+        clearScroll(this.getClass(), esClient, currentScrollId);
+      } catch (ElasticsearchStatusException ex) {
+        logger.warn("Could not clear scroll. The scroll might have already been expired.");
+      }
+    }
   }
 
   protected abstract String getElasticsearchTypeForStoring();
