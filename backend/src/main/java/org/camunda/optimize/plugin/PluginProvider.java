@@ -108,7 +108,6 @@ public abstract class PluginProvider<PluginType> implements ConfigurationReloada
   }
 
   public List<PluginType> getPlugins() {
-    log.warn("Returning plugins {}", registeredPlugins);
     return registeredPlugins;
   }
 
