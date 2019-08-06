@@ -7,28 +7,21 @@
  */
 package io.zeebe.engine.processor;
 
-import static io.zeebe.engine.processor.TypedEventRegistry.EVENT_REGISTRY;
-
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.record.ValueType;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.LangUtil;
-import io.zeebe.util.ReflectUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
@@ -66,13 +59,10 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
     this.typedRecordProcessorFactory = context.getTypedRecordProcessorFactory();
     this.zeebeDb = context.getZeebeDb();
 
-    final EnumMap<ValueType, UnifiedRecordValue> eventCache = new EnumMap<>(ValueType.class);
-    EVENT_REGISTRY.forEach((t, c) -> eventCache.put(t, ReflectUtil.newInstance(c)));
-
     processingContext =
         context
             .getProcessingContext()
-            .eventCache(Collections.unmodifiableMap(eventCache))
+            .eventCache(new RecordValues())
             .actor(actor)
             .abortCondition(this::isClosed);
     this.logStreamReader = processingContext.getLogStreamReader();

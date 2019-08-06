@@ -11,6 +11,7 @@ import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
@@ -109,6 +110,11 @@ public class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecor
 
   @Override
   public String toJson() {
+    throw new UnsupportedOperationException("not yet implemented");
+  }
+
+  @Override
+  public Record<T> clone() {
     throw new UnsupportedOperationException("not yet implemented");
   }
 }

@@ -62,7 +62,7 @@ public class RecordingExporter implements Exporter {
   public void export(final Record record) {
     LOCK.lock();
     try {
-      RECORDS.add(record);
+      RECORDS.add(record.clone());
       IS_EMPTY.signal();
     } finally {
       LOCK.unlock();

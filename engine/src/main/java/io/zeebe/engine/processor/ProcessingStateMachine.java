@@ -20,7 +20,6 @@ import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.ErrorIntent;
 import io.zeebe.util.exception.RecoverableException;
 import io.zeebe.util.retry.AbortableRetryStrategy;
@@ -30,7 +29,6 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
-import java.util.Map;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 
@@ -114,12 +112,13 @@ public final class ProcessingStateMachine {
   private final BooleanSupplier shouldProcessNext;
   private final BooleanSupplier abortCondition;
   private final ErrorRecord errorRecord = new ErrorRecord();
-  private final Map<ValueType, UnifiedRecordValue> eventCache;
+  private final RecordValues recordValues;
   private final RecordProcessorMap recordProcessorMap;
-  private final TypedEventImpl typedEvent = new TypedEventImpl();
+  private final TypedEventImpl typedEvent;
   private final StreamProcessorMetrics metrics;
-  private SideEffectProducer sideEffectProducer;
+
   // current iteration
+  private SideEffectProducer sideEffectProducer;
   private LoggedEvent currentEvent;
   private TypedRecordProcessor<?> currentProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
@@ -134,7 +133,7 @@ public final class ProcessingStateMachine {
     this.actor = context.getActor();
     this.eventFilter = context.getEventFilter();
     this.recordProcessorMap = context.getRecordProcessorMap();
-    this.eventCache = context.getEventCache();
+    this.recordValues = context.getRecordValues();
     this.logStreamReader = context.getLogStreamReader();
     this.logStreamWriter = context.getLogStreamWriter();
     this.logStream = context.getLogStream();
@@ -147,10 +146,12 @@ public final class ProcessingStateMachine {
     this.updateStateRetryStrategy = new RecoverableRetryStrategy(actor);
     this.shouldProcessNext = shouldProcessNext;
 
+    final int partitionId = logStream.getPartitionId();
+    this.typedEvent = new TypedEventImpl(partitionId);
     this.responseWriter =
-        new TypedResponseWriterImpl(context.getCommandResponseWriter(), logStream.getPartitionId());
+        new TypedResponseWriterImpl(context.getCommandResponseWriter(), partitionId);
 
-    this.metrics = new StreamProcessorMetrics(logStream.getPartitionId());
+    this.metrics = new StreamProcessorMetrics(partitionId);
   }
 
   private void skipRecord() {
@@ -193,9 +194,7 @@ public final class ProcessingStateMachine {
         metadata.getRecordType(), event.getTimestamp(), ActorClock.currentTimeMillis());
 
     try {
-      final UnifiedRecordValue value = eventCache.get(metadata.getValueType());
-      value.reset();
-      event.readValue(value);
+      final UnifiedRecordValue value = recordValues.readRecordValue(event, metadata.getValueType());
       typedEvent.wrap(event, metadata, value);
 
       processInTransaction(typedEvent);

@@ -7,14 +7,13 @@
  */
 package io.zeebe.broker.exporter.stream;
 
-import static io.zeebe.engine.processor.TypedEventRegistry.EVENT_REGISTRY;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.exporter.context.ExporterContext;
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.engine.processor.CopiedRecords;
 import io.zeebe.engine.processor.EventFilter;
+import io.zeebe.engine.processor.RecordValues;
+import io.zeebe.engine.processor.TypedEventImpl;
 import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
@@ -22,7 +21,7 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.servicecontainer.Service;
@@ -306,25 +305,28 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
 
   private static class RecordExporter {
 
+    private final RecordValues recordValues = new RecordValues();
     private final RecordMetadata rawMetadata = new RecordMetadata();
     private final List<ExporterContainer> containers;
-    private final int partitionId;
+    private final TypedEventImpl typedEvent;
 
-    private Record record;
     private boolean shouldExport;
     private int exporterIndex;
 
     RecordExporter(List<ExporterContainer> containers, int partitionId) {
       this.containers = containers;
-      this.partitionId = partitionId;
+      typedEvent = new TypedEventImpl(partitionId);
     }
 
     void wrap(LoggedEvent rawEvent) {
       rawEvent.readMetadata(rawMetadata);
 
-      shouldExport = EVENT_REGISTRY.containsKey(rawMetadata.getValueType());
+      final UnifiedRecordValue recordValue =
+          recordValues.readRecordValue(rawEvent, rawMetadata.getValueType());
+
+      shouldExport = recordValue != null;
       if (shouldExport) {
-        record = CopiedRecords.createCopiedRecord(partitionId, rawEvent);
+        typedEvent.wrap(rawEvent, rawMetadata, recordValue);
         exporterIndex = 0;
       }
     }
@@ -342,8 +344,9 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
         final ExporterContainer container = containers.get(exporterIndex);
 
         try {
-          if (container.position < record.getPosition() && container.acceptRecord(rawMetadata)) {
-            container.exporter.export(record);
+          if (container.position < typedEvent.getPosition()
+              && container.acceptRecord(rawMetadata)) {
+            container.exporter.export(typedEvent);
           }
 
           exporterIndex++;
@@ -351,7 +354,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
           container
               .context
               .getLogger()
-              .error("Error on exporting record with key {}", record.getKey(), ex);
+              .error("Error on exporting record with key {}", typedEvent.getKey(), ex);
           return false;
         }
       }
