@@ -70,7 +70,6 @@
   },
   "devDependencies": {
     "ansi-html": "^0.0.7",
-    "camunda-bpm-sdk-js": "camunda/camunda-bpm-sdk-js#7.10",
     "chalk": "^2.4.2",
     "enzyme": "3.10.0",
     "enzyme-adapter-react-16": "1.14.0",

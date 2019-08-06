@@ -32,10 +32,9 @@ services:
     ports:
       - 8080:8080
       - 9092:9092
-    volumes:
+#    volumes:
 #      - "./backend/target/cambpm_logs:/camunda/logs"
-      - "./demo-data/easy-optimize-data-preparation-plugin-1.0.0.jar:/camunda/lib/easy-optimize-data-preparation-plugin-1.0.0.jar"
-      - "./demo-data/bpm-platform.h2.xml:/camunda/conf/bpm-platform.xml"
+
     restart: always
     cpu_count: 1
     mem_limit: 2g

@@ -14,10 +14,8 @@ const opn = require('opn');
 const ansiHTML = require('ansi-html');
 const xml2js = require('xml2js');
 
-const CamundaClient = require('camunda-bpm-sdk-js').Client;
-
-// adjust this number to specify how many parallel connections are used per process definition to create instances
-const connections = 5;
+// adjust for number of process instances to generate
+const numberOfProcessInstances = 5000;
 
 fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) => {
   xml2js.parseString(data, {explicitArray: false}, (err, data) => {
@@ -32,13 +30,15 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
 
     startManagementServer();
 
-    buildBackend().then(startBackend);
-
-    startDocker().then(deployDemoData);
+    buildBackend().then(() => {
+      startBackend();
+      startDocker().then(generateDemoData);
+    });
 
     const logs = {
       backend: [],
-      docker: []
+      docker: [],
+      dataGenerator: []
     };
 
     const connectedSockets = [];
@@ -130,47 +130,26 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
       });
     }
 
-    function deployDemoData() {
-      const data = require('../demo-data');
+    function generateDemoData() {
+      const generateDataProcess = spawn(
+        'mvn',
+        [
+          'clean',
+          'compile',
+          'exec:java',
+          `-Dexec.args="--numberOfProcessInstances ${numberOfProcessInstances}"`
+        ],
+        {
+          cwd: path.resolve(__dirname, '..', '..', './qa/data-generation'),
+          shell: true
+        }
+      );
 
-      const camAPI = new CamundaClient({
-        mock: false,
-        apiUri: 'http://localhost:8080/engine-rest'
-      });
-      const deploymentService = new camAPI.resource('deployment');
-      const processDefinitionService = new camAPI.resource('process-definition');
+      generateDataProcess.stdout.on('data', data => addLog(data, 'dataGenerator'));
+      generateDataProcess.stderr.on('data', data => addLog(data, 'dataGenerator', true));
 
-      Object.keys(data).forEach(entry => {
-        const {definition, instances} = data[entry];
-        deploymentService
-          .create({
-            deploymentName: entry,
-            files: [definition]
-          })
-          .then(resp => {
-            const id = Object.keys(resp.deployedProcessDefinitions)[0];
-
-            function startInstance(idx) {
-              if (!instances[idx]) {
-                return;
-              }
-              processDefinitionService
-                .start({
-                  id,
-                  variables: instances[idx]
-                })
-                .then(() => {
-                  startInstance(idx + connections);
-                })
-                .catch(() => {
-                  startInstance(idx);
-                });
-            }
-            for (let i = 0; i < connections; i++) {
-              startInstance(i);
-            }
-          });
-      });
+      process.on('SIGINT', () => generateDataProcess.kill('SIGINT'));
+      process.on('SIGTERM', () => generateDataProcess.kill('SIGTERM'));
     }
 
     function startManagementServer() {
@@ -216,6 +195,10 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
         logs.docker
           .slice(-400)
           .forEach(entry => ws.send(JSON.stringify({...entry, type: 'docker'})));
+
+        logs.dataGenerator.forEach(entry =>
+          ws.send(JSON.stringify({...entry, type: 'dataGenerator'}))
+        );
 
         ws.on('close', function close() {
           connectedSockets.splice(connectedSockets.indexOf(ws), 1);
