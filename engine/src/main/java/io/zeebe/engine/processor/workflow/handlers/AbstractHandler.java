@@ -24,7 +24,7 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
    *     this state if successfully handled, otherwise will not. Asynchronous handlers should thus
    *     pass null here.
    */
-  public AbstractHandler(WorkflowInstanceIntent nextState) {
+  public AbstractHandler(final WorkflowInstanceIntent nextState) {
     this.nextState = nextState;
   }
 
@@ -35,7 +35,7 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
    * @param context current step context
    */
   @Override
-  public void handle(BpmnStepContext<T> context) {
+  public void handle(final BpmnStepContext<T> context) {
     if (shouldHandleState(context)) {
       final boolean handled = handleState(context);
 
@@ -58,11 +58,11 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
    */
   protected abstract boolean handleState(BpmnStepContext<T> context);
 
-  protected boolean shouldHandleState(BpmnStepContext<T> context) {
+  protected boolean shouldHandleState(final BpmnStepContext<T> context) {
     return true;
   }
 
-  protected boolean isRootScope(BpmnStepContext<T> context) {
+  protected boolean isRootScope(final BpmnStepContext<T> context) {
     return context.getValue().getFlowScopeKey() == -1;
   }
 
@@ -72,16 +72,16 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
    * ELEMENT_ACTIVATING and ELEMENT_ACTIVATED in the same step will transition the element to
    * ACTIVATED, and we shouldn't process the ELEMENT_ACTIVATING in that case).
    */
-  protected boolean isStateSameAsElementState(BpmnStepContext<T> context) {
+  protected boolean isStateSameAsElementState(final BpmnStepContext<T> context) {
     return context.getElementInstance() != null
         && context.getState() == context.getElementInstance().getState();
   }
 
-  protected boolean isElementActive(ElementInstance instance) {
+  protected boolean isElementActive(final ElementInstance instance) {
     return instance != null && instance.isActive();
   }
 
-  protected boolean isElementTerminating(ElementInstance instance) {
+  protected boolean isElementTerminating(final ElementInstance instance) {
     return instance != null && instance.isTerminating();
   }
 
@@ -89,21 +89,21 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
     return nextState != null;
   }
 
-  protected void transitionToNext(BpmnStepContext<T> context) {
-    this.transitionTo(context, nextState);
+  protected void transitionToNext(final BpmnStepContext<T> context) {
+    transitionTo(context, nextState);
   }
 
-  protected void transitionTo(BpmnStepContext<T> context, WorkflowInstanceIntent nextState) {
+  protected void transitionTo(
+      final BpmnStepContext<T> context, final WorkflowInstanceIntent nextState) {
     final ElementInstance elementInstance = context.getElementInstance();
     final WorkflowInstanceIntent state = elementInstance.getState();
 
     assert WorkflowInstanceLifecycle.canTransition(state, nextState)
         : String.format("cannot transition from '%s' to '%s'", state, nextState);
 
-    elementInstance.setState(nextState);
     context.getOutput().appendFollowUpEvent(context.getKey(), nextState, context.getValue());
 
-    // todo: this is an ugly workaround which should be removed once we have a better workflow
+    // TODO: this is an ugly workaround which should be removed once we have a better workflow
     // instance state abstraction: essentially, whenever transitioning to a terminating state, we
     // want to reject any potential event triggers
     // https://github.com/zeebe-io/zeebe/issues/1980
@@ -111,6 +111,5 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
         || nextState == WorkflowInstanceIntent.ELEMENT_TERMINATING) {
       context.getStateDb().getEventScopeInstanceState().shutdownInstance(context.getKey());
     }
-    context.getElementInstanceState().updateInstance(elementInstance);
   }
 }

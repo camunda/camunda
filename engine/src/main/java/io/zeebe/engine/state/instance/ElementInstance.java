@@ -76,6 +76,11 @@ public class ElementInstance implements DbValue {
 
   public void decrementChildCount() {
     childCount--;
+
+    if (childCount < 0) {
+      throw new IllegalStateException(
+          String.format("Expected the child count to be positive but was %d", childCount));
+    }
   }
 
   public boolean canTerminate() {
@@ -96,6 +101,11 @@ public class ElementInstance implements DbValue {
 
   public void consumeToken() {
     activeTokens -= 1;
+
+    if (activeTokens < 0) {
+      throw new IllegalStateException(
+          String.format("Expected the active token count to be positive but was %d", activeTokens));
+    }
   }
 
   public int getNumberOfActiveTokens() {
@@ -107,7 +117,7 @@ public class ElementInstance implements DbValue {
   }
 
   public int getNumberOfActiveExecutionPaths() {
-    return activeTokens + getNumberOfActiveElementInstances();
+    return activeTokens + childCount;
   }
 
   @Override
