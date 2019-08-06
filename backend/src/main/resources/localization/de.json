@@ -2,7 +2,13 @@
   "navigation": {
     "homepage": "Dashboards & Berichte",
     "analysis": "Analyse",
-    "logout": "Ausloggen"
+    "logout": "Ausloggen",
+    "logoutFailed": "Abmeldung fehlgeschlagen"
+  },
+  "login": {
+    "username": "Nutzername",
+    "password": "Passwort",
+    "btn": "Einloggen"
   },
   "home": {
     "search": "Nach Namen filtern ...",

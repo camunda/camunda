@@ -42,9 +42,8 @@ it('should not include a header for shared resources', async () => {
   expect(content.find('Footer')).not.toExist();
 });
 
-it('should show a nofitication error when not able to initilize the translation', async () => {
-  const node = shallow(<App mightFail={(promise, cb, fail) => fail()} />);
-  await node.update();
-  expect(node.state().error).toBe(true);
-  expect(addNotification).toHaveBeenCalled();
+it('should show an error message when it is not possible to initilize the translation', async () => {
+  const node = shallow(<App error="test error message" />);
+
+  expect(node).toMatchSnapshot();
 });

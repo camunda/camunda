@@ -42,8 +42,7 @@ function findValue(key, data = {}) {
   for (let i = 0; i < keys.length; i++) {
     v = v[keys[i]];
     if (typeof v === 'undefined') {
-      const error = `"${keys[i]}" key of "${key}" not found in translation object`;
-      throw error;
+      throw new Error(`"${keys[i]}" key of "${key}" not found in translation object`);
     }
   }
   return v;

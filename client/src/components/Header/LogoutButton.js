@@ -28,7 +28,7 @@ export default withRouter(
             this.props.history.push('/logout');
             this.props.history.replace('/');
           },
-          () => addNotification({text: 'Logout failed.', type: 'error'})
+          () => addNotification({text: t('navigation.logoutFailed'), type: 'error'})
         );
       };
 

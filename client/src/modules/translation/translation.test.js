@@ -35,7 +35,9 @@ it('return an error message if key does not exist', async () => {
   try {
     t('entity.nonExistent');
   } catch (err) {
-    expect(err).toBe('"nonExistent" key of "entity.nonExistent" not found in translation object');
+    expect(err.message).toBe(
+      '"nonExistent" key of "entity.nonExistent" not found in translation object'
+    );
   }
 });
 

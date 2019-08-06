@@ -2,7 +2,13 @@
   "navigation": {
     "homepage": "Dashboards & Reports",
     "analysis": "Analysis",
-    "logout": "Logout"
+    "logout": "Logout",
+    "logoutFailed": "Logout failed."
+  },
+  "login": {
+    "username": "Username",
+    "password": "Password",
+    "btn": "Login"
   },
   "home": {
     "search": "Filter for name...",

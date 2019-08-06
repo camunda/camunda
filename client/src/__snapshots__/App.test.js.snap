@@ -1,0 +1,15 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should show an error message when it is not possible to initilize the translation 1`] = `
+<ErrorPage
+  noLink={true}
+  text="test error message"
+>
+  <ForwardRef(Button)
+    onClick={[Function]}
+    variant="link"
+  >
+    Reload
+  </ForwardRef(Button)>
+</ErrorPage>
+`;

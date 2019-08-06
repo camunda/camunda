@@ -20,35 +20,33 @@ import {
   Sharing
 } from './components';
 
-import {ErrorBoundary, LoadingIndicator} from 'components';
+import {ErrorBoundary, LoadingIndicator, ErrorPage, Button} from 'components';
 
-import {Notifications, addNotification} from 'notifications';
+import {Notifications} from 'notifications';
 
 import {Provider as Theme} from 'theme';
 import {withErrorHandling} from 'HOC';
 
 class App extends React.Component {
   state = {
-    error: false,
     translationLoaded: false
   };
 
   async componentDidMount() {
-    this.props.mightFail(
-      init(),
-      () => this.setState({translationLoaded: true}),
-      () => {
-        this.setState({error: true}, () => {
-          addNotification({
-            text: `Optimize could not be loaded, please make sure the server is running.`,
-            type: 'error'
-          });
-        });
-      }
-    );
+    this.props.mightFail(init(), () => this.setState({translationLoaded: true}));
   }
 
   render() {
+    if (this.props.error) {
+      return (
+        <ErrorPage noLink text={this.props.error.toString()}>
+          <Button variant="link" onClick={() => window.location.reload(true)}>
+            Reload
+          </Button>
+        </ErrorPage>
+      );
+    }
+
     if (!this.state.translationLoaded) {
       return <LoadingIndicator />;
     }
@@ -59,10 +57,6 @@ class App extends React.Component {
           <Route
             path="/"
             render={({location: {pathname}}) => {
-              if (this.state.error) {
-                return;
-              }
-
               const hideHeader = pathname.indexOf('/share') === 0;
 
               return (

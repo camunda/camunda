@@ -11,6 +11,7 @@ import {login} from './service';
 import {Logo, Message, Button, Input, Labeled} from 'components';
 
 import './Login.scss';
+import {t} from 'translation';
 
 export default class Login extends React.Component {
   constructor(props) {
@@ -53,6 +54,8 @@ export default class Login extends React.Component {
 
   render() {
     const {username, password, waitingForServer, error} = this.state;
+    const usernameLabel = t('login.username');
+    const passwordLabel = t('login.password');
 
     return (
       <form className="Login">
@@ -63,10 +66,10 @@ export default class Login extends React.Component {
         {error ? <Message type="error">{error}</Message> : ''}
         <div className="controls">
           <div className="row">
-            <Labeled label="Username">
+            <Labeled label={usernameLabel}>
               <Input
                 type="text"
-                placeholder="Username"
+                placeholder={usernameLabel}
                 value={username}
                 onChange={this.handleInputChange}
                 name="username"
@@ -75,9 +78,9 @@ export default class Login extends React.Component {
             </Labeled>
           </div>
           <div className="row">
-            <Labeled label="Password">
+            <Labeled label={passwordLabel}>
               <Input
-                placeholder="Password"
+                placeholder={passwordLabel}
                 value={password}
                 onChange={this.handleInputChange}
                 type="password"
@@ -94,7 +97,7 @@ export default class Login extends React.Component {
           variant="primary"
           color="blue"
         >
-          Login
+          {t('login.btn')}
         </Button>
       </form>
     );
