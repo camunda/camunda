@@ -7,7 +7,8 @@
 import moment from 'moment';
 
 import {formatters} from 'services';
-import {sortColumns, cockpitLink, noData} from './service';
+import {sortColumns, cockpitLink, getNoDataMessage} from './service';
+import {t} from 'translation';
 
 const {convertCamelToSpaces} = formatters;
 
@@ -29,7 +30,7 @@ export default function processRawData(
     Object.keys(result[0]).length - 1 + Object.keys(result[0].variables).length;
   // If all columns is excluded return a message to enable one
   if (allColumnsLength === excludedColumns.length) {
-    return noData;
+    return getNoDataMessage();
   }
 
   const instanceProps = Object.keys(result[0]).filter(
@@ -64,7 +65,7 @@ export default function processRawData(
   const head = instanceProps.map(convertCamelToSpaces);
 
   if (variableNames.length > 0) {
-    head.push({label: 'Variables', columns: variableNames});
+    head.push({label: t('report.variables.default'), columns: variableNames});
   }
 
   const {sortedHead, sortedBody} = sortColumns(head, body, columnOrder);

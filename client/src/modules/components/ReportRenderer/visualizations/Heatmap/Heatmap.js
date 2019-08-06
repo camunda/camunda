@@ -13,6 +13,7 @@ import {calculateTargetValueHeat} from './service';
 import {formatters, getTooltipText} from 'services';
 
 import './Heatmap.scss';
+import {t} from 'translation';
 
 const Heatmap = ({report, formatter, errorMessage}) => {
   const {
@@ -53,16 +54,19 @@ const Heatmap = ({report, formatter, errorMessage}) => {
           );
           const real = resultObj[id];
 
-          node.innerHTML = `target duration: ${formatters.duration(target)}<br/>`;
+          node.innerHTML = `${t('report.heatTarget.targetDuration')}: ${formatters.duration(
+            target
+          )}<br/>`;
 
           if (typeof real === 'number') {
             const relation = (real / target) * 100;
 
-            node.innerHTML += `actual duration: ${formatters.duration(real)}<br/>${
-              relation < 1 ? '< 1' : Math.round(relation)
-            }% of the target value`;
+            node.innerHTML += t('report.heatTarget.actualDuration', {
+              duration: formatters.duration(real),
+              percentage: relation < 1 ? '< 1' : Math.round(relation)
+            });
           } else {
-            node.innerHTML += `No actual value available.<br/>Cannot compare target and actual value.`;
+            node.innerHTML += t('report.heatTarget.noValueAvailable');
           }
 
           // tooltips don't work well with spaces

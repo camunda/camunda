@@ -286,12 +286,24 @@ export default function AlertModal(reports) {
                         this.setState(update(this.state, {checkInterval: {unit: {$set: value}}}))
                       }
                     >
-                      <Select.Option value="seconds">{t('common.unit.seconds')}</Select.Option>
-                      <Select.Option value="minutes">{t('common.unit.minutes')}</Select.Option>
-                      <Select.Option value="hours">{t('common.unit.hours')}</Select.Option>
-                      <Select.Option value="days">{t('common.unit.days')}</Select.Option>
-                      <Select.Option value="weeks">{t('common.unit.weeks')}</Select.Option>
-                      <Select.Option value="months">{t('common.unit.months')}</Select.Option>
+                      <Select.Option value="seconds">
+                        {t('common.unit.second.label-plural')}
+                      </Select.Option>
+                      <Select.Option value="minutes">
+                        {t('common.unit.minute.label-plural')}
+                      </Select.Option>
+                      <Select.Option value="hours">
+                        {t('common.unit.hour.label-plural')}
+                      </Select.Option>
+                      <Select.Option value="days">
+                        {t('common.unit.day.label-plural')}
+                      </Select.Option>
+                      <Select.Option value="weeks">
+                        {t('common.unit.week.label-plural')}
+                      </Select.Option>
+                      <Select.Option value="months">
+                        {t('common.unit.month.label-plural')}
+                      </Select.Option>
                     </Select>
                   </Form.InputGroup>
                 </Labeled>
@@ -336,11 +348,21 @@ export default function AlertModal(reports) {
                           this.setState(update(this.state, {reminder: {unit: {$set: value}}}))
                         }
                       >
-                        <Select.Option value="minutes">{t('common.unit.minutes')}</Select.Option>
-                        <Select.Option value="hours">{t('common.unit.hours')}</Select.Option>
-                        <Select.Option value="days">{t('common.unit.days')}</Select.Option>
-                        <Select.Option value="weeks">{t('common.unit.weeks')}</Select.Option>
-                        <Select.Option value="months">{t('common.unit.months')}</Select.Option>
+                        <Select.Option value="minutes">
+                          {t('common.unit.minute.label-plural')}
+                        </Select.Option>
+                        <Select.Option value="hours">
+                          {t('common.unit.hour.label-plural')}
+                        </Select.Option>
+                        <Select.Option value="days">
+                          {t('common.unit.day.label-plural')}
+                        </Select.Option>
+                        <Select.Option value="weeks">
+                          {t('common.unit.week.label-plural')}
+                        </Select.Option>
+                        <Select.Option value="months">
+                          {t('common.unit.month.label-plural')}
+                        </Select.Option>
                       </Select>
                     </Form.InputGroup>
                   </Labeled>

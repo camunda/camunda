@@ -6,9 +6,10 @@
 
 import React from 'react';
 import moment from 'moment';
+import {t} from 'translation';
 
 const timeUnits = {
-  millis: {value: 1, abbreviation: 'ms', label: 'millisecond'},
+  millis: {value: 1, abbreviation: 'ms', label: 'milli'},
   seconds: {value: 1000, abbreviation: 's', label: 'second'},
   minutes: {value: 60 * 1000, abbreviation: 'min', label: 'minute'},
   hours: {value: 60 * 60 * 1000, abbreviation: 'h', label: 'hour'},
@@ -70,7 +71,11 @@ export function duration(timeObject, precision) {
           if (!remainingPrecision || currentUnit.abbreviation === 'ms') {
             number = Math.round(remainingTime / currentUnit.value);
           }
-          timeSegments.push(`${number} ${currentUnit.label}${number !== 1 ? 's' : ''}`);
+          timeSegments.push(
+            `${number} ${t(
+              `common.unit.${currentUnit.label}.label${number !== 1 ? '-plural' : ''}`
+            )}`
+          );
           remainingTime -= number * currentUnit.value;
         }
       } else if (remainingTime >= currentUnit.value) {

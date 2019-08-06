@@ -119,7 +119,10 @@
         "target": "Zielwert"
       },
       "noChangeWarning": "Bitte ändern Sie mindestens einen Wert",
-      "invalidValue": "Alle Felder sollten einen numerischen Wert haben"
+      "invalidValue": "Alle Felder sollten einen numerischen Wert haben",
+      "targetDuration": "Zieldauer",
+      "actualDuration": "tatsächliche Dauer: {duration} <br/> {percentage}% des Zielwerts",
+      "noValueAvailable": "Kein aktueller Wert verfügbar. <br/> Soll- und Istwert können nicht verglichen werden."
     },
     "invalidCominationError": "Es können keine Daten für die angegebenen Berichteinstellungen angezeigt werden. Bitte wählen Sie eine andere Kombination! ",
     "noDataNotice": "Keine Daten zum Anzeigen ",
@@ -144,7 +147,23 @@
     "combinedEmptyMessage": "Um einen Bericht anzuzeigen, wählen Sie bitte einen oder mehrere Berichte aus der Liste aus. ",
     "noViewMessage": "Wählen Sie eine Option für die <b> Ansicht </b> oben aus.",
     "noGroupByMessage": "Wählen Sie aus, nach was Sie <b> gruppieren </b> möchten.",
-    "noVisualizationMessage": "Wählen Sie oben eine Option für die <b> Visualisierung </b> aus."
+    "noVisualizationMessage": "Wählen Sie oben eine Option für die <b> Visualisierung </b> aus.",
+    "variables": {
+      "default": "Variablen",
+      "input": "Eingabevariablen",
+      "output": "Ausgabevariablen"
+    },
+    "table": {
+      "noData": {
+        "head": "Keine Daten",
+        "body": "Sie müssen mindestens eine Tabellenspalte aktivieren"
+      },
+      "relativeFrequency": "Relative Frequenz"
+    },
+    "progressBar": {
+      "invalid": "Ungültige Konfiguration",
+      "goal": "Ziel"
+    }
   },
   "dashboard": {
     "label": "Instrumententafel",
@@ -296,14 +315,38 @@
       "versionWarning": "Hinweis: Daten aus älteren Versionen können abweichen, daher können die Berichtsdaten inkonsistent sein."
     },
     "unit": {
-      "millis": "Millisekunden",
-      "seconds": "Sekunden",
-      "minutes": "Minuten",
-      "hours": "Stunden",
-      "days": "Tage",
-      "weeks": "Wochen",
-      "months": "Monate",
-      "years": "Jahre"
+      "milli": {
+        "label": "Millisekunde ",
+        "label-plural": "Millisekunden "
+      },
+      "second": {
+        "label": "Sekunde",
+        "label-plural": "Sekunden "
+      },
+      "minute": {
+        "label": "Minute",
+        "label-plural": "Minuten"
+      },
+      "hour": {
+        "label": "Stunde",
+        "label-plural": "Stunden"
+      },
+      "day": {
+        "label": "Tag",
+        "label-plural": "Tage"
+      },
+      "week": {
+        "label": "Woche",
+        "label-plural": "Wochen"
+      },
+      "month": {
+        "label": "Monat",
+        "label-plural": "Monate "
+      },
+      "year": {
+        "label": "Jahr",
+        "label-plural": "Jahre"
+      }
     }
   }
 }

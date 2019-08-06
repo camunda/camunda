@@ -10,6 +10,7 @@ import classnames from 'classnames';
 import './ProgressBar.scss';
 
 import {numberParser} from 'services';
+import {t} from 'translation';
 const {isNonNegativeNumber} = numberParser;
 
 export default function ProgressBar({min, max, value, formatter, precision}) {
@@ -21,13 +22,15 @@ export default function ProgressBar({min, max, value, formatter, precision}) {
     relative = 0;
     goalPercentage = 0;
     goalExceeded = false;
-    leftLabel = rightLabel = 'Invalid Configuration';
+    leftLabel = rightLabel = t('report.progressBar.invalid');
   } else {
     relative = Math.min(1, Math.max(0, (value - min) / (max - min)));
     goalPercentage = ((max - min) * 100) / (value - min);
     goalExceeded = max < value;
     leftLabel = formatter(min);
-    rightLabel = goalExceeded ? formatter(value, precision) : 'Goal ' + formatter(max);
+    rightLabel = goalExceeded
+      ? formatter(value, precision)
+      : `${t('report.progressBar.goal')} ` + formatter(max);
   }
 
   return (
@@ -40,7 +43,7 @@ export default function ProgressBar({min, max, value, formatter, precision}) {
           }}
         >
           <span className={classnames('goalLabel', {rightSide: goalPercentage > 50})}>
-            Goal {formatter(max)}
+            {t('report.progressBar.goal')} {formatter(max)}
           </span>
         </div>
       )}

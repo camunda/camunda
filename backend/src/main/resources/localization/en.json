@@ -119,7 +119,10 @@
         "target": "Target Value"
       },
       "noChangeWarning": "Please change at least one value",
-      "invalidValue": "All fields should have a numeric value"
+      "invalidValue": "All fields should have a numeric value",
+      "targetDuration": "target duration",
+      "actualDuration": "actual duration: {duration}<br/>{percentage}% of the target value",
+      "noValueAvailable": "No actual value available.<br/>Cannot compare target and actual value."
     },
     "invalidCominationError": "Cannot display data for the given report settings. Please choose another combination!",
     "noDataNotice": "No data to display",
@@ -144,7 +147,23 @@
     "combinedEmptyMessage": "To display a report, please select one or more reports from the list.",
     "noViewMessage": "Select an option for <b>View</b> above.",
     "noGroupByMessage": "Select what to <b>Group By</b> above.",
-    "noVisualizationMessage": "Select an option for <b>Visualization</b> above."
+    "noVisualizationMessage": "Select an option for <b>Visualization</b> above.",
+    "variables": {
+      "default": "Variables",
+      "input": "Input Variables",
+      "output": "Output Variables"
+    },
+    "table": {
+      "noData": {
+        "head": "No Data",
+        "body": "You need to enable at least one table column"
+      },
+      "relativeFrequency": "Relative Frequency "
+    },
+    "progressBar": {
+      "invalid": "Invalid Configuration",
+      "goal": "Goal"
+    }
   },
   "dashboard": {
     "label": "Dashboard",
@@ -296,14 +315,38 @@
       "versionWarning": "Note: data from the older versions can deviate, therefore the report data can be inconsistent"
     },
     "unit": {
-      "millis": "Milliseconds",
-      "seconds": "Seconds",
-      "minutes": "Minutes",
-      "hours": "Hours",
-      "days": "Days",
-      "weeks": "Weeks",
-      "months": "Months",
-      "years": "Years"
+      "milli": {
+        "label": "millisecond",
+        "label-plural": "milliseconds"
+      },
+      "second": {
+        "label": "second",
+        "label-plural": "seconds"
+      },
+      "minute": {
+        "label": "minute",
+        "label-plural": "minutes"
+      },
+      "hour": {
+        "label": "hour",
+        "label-plural": "hours"
+      },
+      "day": {
+        "label": "day",
+        "label-plural": "days"
+      },
+      "week": {
+        "label": "week",
+        "label-plural": "weeks"
+      },
+      "month": {
+        "label": "month",
+        "label-plural": "months"
+      },
+      "year": {
+        "label": "year",
+        "label-plural": "years"
+      }
     }
   }
 }

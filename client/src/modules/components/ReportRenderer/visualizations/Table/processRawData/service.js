@@ -6,8 +6,12 @@
 
 import {flatten} from 'services';
 import React from 'react';
+import {t} from 'translation';
 
-export const noData = {head: ['No Data'], body: [['You need to enable at least one table column']]};
+export const getNoDataMessage = () => ({
+  head: [t('report.table.noData.head')],
+  body: [[t('report.table.noData.body')]]
+});
 
 export function cockpitLink(endpoints, instance, type) {
   const content = instance[type + 'InstanceId'];

@@ -5,7 +5,8 @@
  */
 
 import {formatters} from 'services';
-import {sortColumns, cockpitLink, noData} from './service';
+import {sortColumns, cockpitLink, getNoDataMessage} from './service';
+import {t} from 'translation';
 
 const {convertCamelToSpaces} = formatters;
 
@@ -36,7 +37,7 @@ export default function processDecisionRawData(
   );
 
   if (instanceProps.length + inputVariables.length + outputVariables.length === 0) {
-    return noData;
+    return getNoDataMessage();
   }
 
   const body = result.map(instance => {
@@ -68,7 +69,7 @@ export default function processDecisionRawData(
 
   if (inputVariables.length > 0) {
     head.push({
-      label: 'Input Variables',
+      label: t('report.variables.input'),
       columns: inputVariables.map(key => {
         const {name, id} = result[0].inputVariables[key];
         return {label: name || id, id: key};
@@ -77,7 +78,7 @@ export default function processDecisionRawData(
   }
   if (outputVariables.length > 0) {
     head.push({
-      label: 'Output Variables',
+      label: t('report.variables.output'),
       columns: outputVariables.map(key => {
         const {name, id} = result[0].outputVariables[key];
         return {label: name || id, id: key};

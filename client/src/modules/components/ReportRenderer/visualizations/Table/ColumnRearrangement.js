@@ -10,6 +10,7 @@ import {flatten} from 'services';
 import processRawData from './processRawData';
 
 import './ColumnRearrangement.scss';
+import {t} from 'translation';
 
 export default class ColumnRearrangement extends React.Component {
   render() {
@@ -113,11 +114,11 @@ export default class ColumnRearrangement extends React.Component {
             columnOrder: {
               $set: list.reduce(
                 (orders, entry, idx) => {
-                  if (this.columnGroups[idx] === 'Input Variables') {
+                  if (this.columnGroups[idx] === t('report.variables.input')) {
                     orders.inputVariables.push(entry);
-                  } else if (this.columnGroups[idx] === 'Output Variables') {
+                  } else if (this.columnGroups[idx] === t('report.variables.output')) {
                     orders.outputVariables.push(entry);
-                  } else if (this.columnGroups[idx] === 'Variables') {
+                  } else if (this.columnGroups[idx] === t('report.variables.default')) {
                     orders.variables.push(entry);
                   } else {
                     orders.instanceProps.push(entry);
