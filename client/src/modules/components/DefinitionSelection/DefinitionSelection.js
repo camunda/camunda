@@ -23,6 +23,7 @@ export default class DefinitionSelection extends React.Component {
 
     this.state = {
       availableDefinitions: [],
+      selectedSpecificVersions: this.isSpecificVersion(props.versions) ? props.versions : [],
       loaded: false
     };
   }
@@ -39,8 +40,17 @@ export default class DefinitionSelection extends React.Component {
 
   hasDefinition = () => this.props.definitionKey;
 
-  changeDefinition = ({key}) =>
-    this.props.onChange(key, ['latest'], this.getDefinitionObject(key).tenants.map(({id}) => id));
+  changeDefinition = ({key}) => {
+    const definitionObject = this.getDefinitionObject(key);
+    const latestVersion = [definitionObject.versions[0].version];
+
+    this.setState({selectedSpecificVersions: latestVersion});
+    this.props.onChange(
+      key,
+      latestVersion,
+      definitionObject.tenants.map(({id}) => id)
+    );
+  };
 
   getDefinitionObject = key => this.state.availableDefinitions.find(def => def.key === key);
   canRenderDiagram = () => this.props.renderDiagram && this.props.xml;
@@ -77,8 +87,13 @@ export default class DefinitionSelection extends React.Component {
   getSelectedVersions = () => this.props.versions || [];
 
   changeVersions = versions => {
+    if (this.isSpecificVersion(versions)) {
+      this.setState({selectedSpecificVersions: versions});
+    }
     this.props.onChange(this.props.definitionKey, versions, this.props.tenants);
   };
+
+  isSpecificVersion = versions => versions && versions[0] !== 'latest' && versions[0] !== 'all';
 
   createTitle = () => {
     const {definitionKey, versions, type} = this.props;
@@ -122,7 +137,7 @@ export default class DefinitionSelection extends React.Component {
   };
 
   render() {
-    const {loaded, availableDefinitions} = this.state;
+    const {loaded, availableDefinitions, selectedSpecificVersions} = this.state;
     const noDefinitions = !availableDefinitions || availableDefinitions.length === 0;
     const selectedKey = this.props.definitionKey;
     const versions = this.getSelectedVersions();
@@ -164,6 +179,7 @@ export default class DefinitionSelection extends React.Component {
                   disabled={!this.hasDefinition()}
                   versions={this.getAvailableVersions(selectedKey)}
                   selected={this.getSelectedVersions()}
+                  selectedSpecificVersions={selectedSpecificVersions}
                   onChange={this.changeVersions}
                 />
               </div>

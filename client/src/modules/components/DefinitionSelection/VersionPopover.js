@@ -12,7 +12,13 @@ import {Popover, LabeledInput, Form, Badge} from 'components';
 import './VersionPopover.scss';
 import {t} from 'translation';
 
-export default function VersionPopover({versions, selected, onChange, disabled}) {
+export default function VersionPopover({
+  versions,
+  selected,
+  selectedSpecificVersions = [],
+  onChange,
+  disabled
+}) {
   const specific = usesSpecificVersions(selected);
 
   let title = t('common.definitionSelection.none');
@@ -48,7 +54,7 @@ export default function VersionPopover({versions, selected, onChange, disabled})
             )}
             type="radio"
             checked={specific}
-            onChange={() => onChange([versions[0].version])}
+            onChange={() => onChange(selectedSpecificVersions)}
           />
           <Form.Group
             noSpacing
@@ -67,7 +73,7 @@ export default function VersionPopover({versions, selected, onChange, disabled})
                     </>
                   }
                   type="checkbox"
-                  checked={selected.includes(version)}
+                  checked={selectedSpecificVersions.includes(version)}
                   disabled={!specific}
                   onChange={({target}) => {
                     if (target.checked) {

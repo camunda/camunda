@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {LoadingIndicator, Select} from 'components';
+import {LoadingIndicator} from 'components';
 
 import DefinitionSelection from './DefinitionSelection';
 import VersionPopover from './VersionPopover';
@@ -66,7 +66,20 @@ it('should update to most recent version when key is selected', async () => {
 
   await node.instance().changeDefinition({key: 'foo'});
 
-  expect(spy.mock.calls[0][1]).toEqual(['latest']);
+  expect(spy.mock.calls[0][1]).toEqual(['2']);
+});
+
+it('should store specifically selected versions', async () => {
+  const node = await shallow(<DefinitionSelection {...props} />);
+
+  node.instance().changeVersions(['3', '1']);
+  expect(node.find(VersionPopover).prop('selectedSpecificVersions')).toEqual(['3', '1']);
+
+  node.instance().changeVersions(['latest']);
+  expect(node.find(VersionPopover).prop('selectedSpecificVersions')).toEqual(['3', '1']);
+
+  node.instance().changeVersions(['2']);
+  expect(node.find(VersionPopover).prop('selectedSpecificVersions')).toEqual(['2']);
 });
 
 it('should update definition if versions is changed', async () => {
@@ -272,6 +285,6 @@ describe('tenants', () => {
 
     spy.mockClear();
     node.instance().changeDefinition({key: 'foo'});
-    expect(spy).toHaveBeenCalledWith('foo', ['latest'], ['a', 'b', null]);
+    expect(spy).toHaveBeenCalledWith('foo', ['2'], ['a', 'b', null]);
   });
 });

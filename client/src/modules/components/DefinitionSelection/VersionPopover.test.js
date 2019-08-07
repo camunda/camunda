@@ -61,3 +61,15 @@ it('should construct the label based on the selected versions', () => {
 
   expect(node.find('Popover').prop('title')).toBe('Latest : 3');
 });
+
+it('should check the versions based on the selected specific versions', () => {
+  const node = shallow(
+    <VersionPopover
+      versions={versions}
+      selected={['latest']}
+      selectedSpecificVersions={['3', '1']}
+    />
+  );
+
+  expect(node).toMatchSnapshot();
+});
