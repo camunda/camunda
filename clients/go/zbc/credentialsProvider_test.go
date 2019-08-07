@@ -16,8 +16,8 @@ package zbc
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
 	"google.golang.org/grpc"
@@ -68,7 +68,7 @@ func TestZeebeClientCredentialsProviderWithEmptyPath(t *testing.T) {
 	_, err := NewZeebeClientCredentialsProvider("")
 
 	// then
-	require.EqualError(t, err, newEmptyPathError("Zeebe credentials file").Error())
+	require.Error(t, errors.Cause(err), InvalidPathError)
 }
 
 func TestZeebeClientCredentialsProviderWithWrongPath(t *testing.T) {
@@ -77,7 +77,7 @@ func TestZeebeClientCredentialsProviderWithWrongPath(t *testing.T) {
 	_, err := NewZeebeClientCredentialsProvider(wrongPath)
 
 	// then
-	require.EqualError(t, err, newNoSuchFileError("Zeebe credentials file", wrongPath).Error())
+	require.Error(t, errors.Cause(err), FileNotFoundError)
 }
 
 type CustomCredentialsProvider struct {
