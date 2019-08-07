@@ -29,6 +29,31 @@ test('create and name a report', async t => {
   await t.expect(e.reportRenderer.textContent).contains('Start Date');
 });
 
+test('version selection', async t => {
+  await t.hover(e.report);
+  await t.click(e.editButton);
+
+  await u.selectView(t, 'Process Instance', 'Count');
+
+  await t.click(e.definitionSelection);
+  await t.click(e.versionPopover);
+  await t.click(e.versionAll);
+
+  const allNumber = +(await e.reportNumber.textContent);
+
+  await t.click(e.versionLatest);
+
+  const latestNumber = +(await e.reportNumber.textContent);
+
+  await t.click(e.versionSpecific);
+  await t.click(e.firstVersion);
+
+  const rangeNumber = +(await e.reportNumber.textContent);
+
+  await t.expect(allNumber > rangeNumber).ok();
+  await t.expect(rangeNumber > latestNumber).ok();
+});
+
 test('add a report to a collection', async t => {
   await t.click(e.report);
   await t.click(e.collectionsDropdown);
@@ -235,17 +260,21 @@ test('select which flow nodes to show from the configuration', async t => {
   await t.hover(e.report);
   await t.click(e.editButton);
 
+  await u.selectDefinition(t, 'Lead Qualification');
+
   await t.expect(e.nodeTableCell('received').exists).ok();
 
   await t.click(e.configurationButton);
 
   await t.click(e.showFlowNodes);
 
-  await t.click(e.flowNode('StartEvent_1'));
+  await t.click(e.flowNode('msLeadReceived'));
 
   await t.click(e.primaryModalButton);
 
   await t.expect(e.nodeTableCell('recieved').exists).notOk();
+
+  u.save(t);
 });
 
 test('select to show only running or completed nodes', async t => {
@@ -287,6 +316,8 @@ test('different visualizations', async t => {
   await t.hover(e.report);
   await t.click(e.editButton);
 
+  await u.selectDefinition(t, 'Lead Qualification');
+
   await t.expect(e.reportTable.visible).ok();
 
   await u.selectVisualization(t, 'Bar Chart');
@@ -313,6 +344,8 @@ test('aggregators and reset to default', async t => {
   await t.click(e.editButton);
 
   await u.selectDefinition(t, 'Lead Qualification');
+  await t.click(e.filterButton);
+  await t.click(e.filterOption('Completed Instances Only'));
 
   const avg = await e.reportNumber.textContent;
 
@@ -352,21 +385,21 @@ test('heatmap target values', async t => {
   await u.selectView(t, 'Flow Node', 'Duration');
   await u.selectVisualization(t, 'Heatmap');
 
-  await t.hover(e.flowNode('approveInvoice'));
+  await t.hover(e.flowNode('UserTask_1g1zsp8'));
 
   await t.expect(e.tooltip.textContent).notContains('target\u00A0duration');
 
   await t.click(e.targetValueButton);
-  await t.typeText(e.targetValueInput('Approve Invoice'), '1');
+  await t.typeText(e.targetValueInput('Do Basic Lead Qualification'), '1');
   await t.click(e.primaryModalButton);
 
-  await t.hover(e.flowNode('approveInvoice'));
+  await t.hover(e.flowNode('UserTask_1g1zsp8'));
 
   await t.expect(e.tooltip.textContent).contains('target\u00A0duration:\u00A01h');
 
   await t.click(e.targetValueButton);
 
-  await t.hover(e.flowNode('approveInvoice'));
+  await t.hover(e.flowNode('UserTask_1g1zsp8'));
 
   await t.expect(e.tooltip.textContent).notContains('target\u00A0duration');
 
@@ -446,8 +479,8 @@ test('should be able to distribute candidate group by user task', async t => {
 
   await t.click(e.option('Table'));
 
-  await t.expect(e.reportTable.textContent).contains('Invoice');
-  await t.expect(e.reportTable.textContent).contains('Bank');
+  await t.expect(e.reportTable.textContent).contains('Conduct Discovery Call');
+  await t.expect(e.reportTable.textContent).contains('Research Lead');
 });
 
 test('should be able to select how the time of the user task is calculated', async t => {
@@ -480,24 +513,7 @@ test('show process instance count', async t => {
   await t.click(e.instanceCountSwitch);
 
   await t.expect(e.instanceCount.visible).ok();
-  await t.expect(e.instanceCount.textContent).contains('Total InstanceCount:3');
-});
-
-test('warning about missing datapoints', async t => {
-  await t.hover(e.report);
-  await t.click(e.editButton);
-
-  await u.selectDefinition(t, 'Lead Qualification');
-  await u.selectView(t, 'Process Instance', 'Count');
-  await u.selectGroupby(t, 'Start Date of Process Instance', 'Hour');
-  await u.selectVisualization(t, 'Table');
-
-  await t.expect(e.warning.visible).ok();
-  await t
-    .expect(e.warning.textContent)
-    .contains('To refine the set of results, edit your set-up above.');
-
-  await u.save(t);
+  await t.expect(e.instanceCount.textContent).contains('Total Instance Count:');
 });
 
 test('process parts', async t => {
@@ -510,8 +526,8 @@ test('process parts', async t => {
   const withoutPart = await e.reportNumber.textContent;
 
   await t.click(e.processPartButton);
-  await t.click(e.modalFlowNode('DoBasicLeadQual'));
-  await t.click(e.modalFlowNode('ConductDiscoveryCall'));
+  await t.click(e.modalFlowNode('UserTask_1g1zsp8'));
+  await t.click(e.modalFlowNode('UserTask_0abh7j4'));
 
   await t.click(e.primaryModalButton);
 

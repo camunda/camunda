@@ -20,7 +20,7 @@ test('show the statistics diagram', async t => {
 
   await u.selectDefinition(t, 'Lead Qualification');
 
-  await t.click(Analysis.flowNode('call_right_away'));
+  await t.click(Analysis.flowNode('ExclusiveGateway_0rta6cr'));
   await t.click(Analysis.flowNode('msLeadIsOpp'));
 
   await t.expect(Analysis.statisticsDiagram.visible).ok();
@@ -48,7 +48,7 @@ test('should deselect elements by clicking on the node or on the control panel',
 
   await u.selectDefinition(t, 'Lead Qualification');
 
-  await t.click(Analysis.flowNode('call_right_away'));
+  await t.click(Analysis.flowNode('ExclusiveGateway_0rta6cr'));
   await t.click(Analysis.flowNode('msLeadIsOpp'));
 
   await t.expect(Analysis.gatewayInput.textContent).eql('Call them right away?');

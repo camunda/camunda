@@ -130,14 +130,14 @@ test('add duration filter', async t => {
 
 test('add Flow Node filter', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt');
+  await u.selectDefinition(t, 'Review Case');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Flow Node'));
 
-  await t.click(Report.flowNode('reviewInvoice'));
-  await t.click(Report.flowNode('ServiceTask_1'));
+  await t.click(Report.flowNode('Task_1r94ryf'));
+  await t.click(Report.flowNode('IntermediateCatchEvent_0s996zc'));
 
   await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();
@@ -145,13 +145,13 @@ test('add Flow Node filter', async t => {
 
 test('the filter is visible in the control panel and contains correct information', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt');
+  await u.selectDefinition(t, 'Review Case');
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Flow Node'));
-  await t.click(Report.flowNode('reviewInvoice'));
+  await t.click(Report.flowNode('Task_1r94ryf'));
   await t.click(Report.primaryModalButton);
   const controlPanelFilterText = Report.controlPanelFilter.textContent;
 
   await t.expect(controlPanelFilterText).contains('Executed Flow Node');
-  await t.expect(controlPanelFilterText).contains('Review Invoice');
+  await t.expect(controlPanelFilterText).contains('Send request for payment');
 });
