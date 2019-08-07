@@ -92,6 +92,10 @@ public class OperateTester {
   
   @Autowired
   protected OperationExecutor operationExecutor;
+  
+  public Long getWorkflowInstanceKey() {
+    return workflowInstanceKey;
+  }
 
   public OperateTester setMockMvcTestRule(MockMvcTestRule mockMvcTestRule) {
     this.mockMvcTestRule = mockMvcTestRule;
