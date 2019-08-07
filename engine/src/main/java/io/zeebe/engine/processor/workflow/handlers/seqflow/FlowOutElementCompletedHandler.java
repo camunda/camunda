@@ -11,7 +11,6 @@ import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableSequenceFlow;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementCompletedHandler;
-import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
 
@@ -28,7 +27,7 @@ public class FlowOutElementCompletedHandler<T extends ExecutableFlowNode>
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     final List<ExecutableSequenceFlow> outgoing = context.getElement().getOutgoing();
 
     for (final ExecutableSequenceFlow flow : outgoing) {
@@ -38,12 +37,15 @@ public class FlowOutElementCompletedHandler<T extends ExecutableFlowNode>
     return super.handleState(context);
   }
 
-  private void takeSequenceFlow(BpmnStepContext<T> context, ExecutableSequenceFlow flow) {
+  private void takeSequenceFlow(
+      final BpmnStepContext<T> context, final ExecutableSequenceFlow flow) {
     context
         .getOutput()
         .appendNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, context.getValue(), flow);
-    final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
-    flowScopeInstance.spawnToken();
-    context.getStateDb().getElementInstanceState().updateInstance(flowScopeInstance);
+
+    context
+        .getStateDb()
+        .getElementInstanceState()
+        .spawnToken(context.getFlowScopeInstance().getKey());
   }
 }

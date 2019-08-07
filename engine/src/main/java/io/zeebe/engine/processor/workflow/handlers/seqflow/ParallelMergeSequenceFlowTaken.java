@@ -25,7 +25,7 @@ public class ParallelMergeSequenceFlowTaken<T extends ExecutableSequenceFlow>
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     final ElementInstance scopeInstance = context.getFlowScopeInstance();
     final EventOutput eventOutput = context.getOutput();
     final ExecutableSequenceFlow sequenceFlow = context.getElement();
@@ -44,26 +44,27 @@ public class ParallelMergeSequenceFlowTaken<T extends ExecutableSequenceFlow>
             scopeInstance.consumeToken();
           });
 
+      scopeInstance.spawnToken();
+      context.getStateDb().getElementInstanceState().updateInstance(scopeInstance);
+
       context
           .getOutput()
           .appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, context.getValue(), gateway);
-      scopeInstance.spawnToken();
-      context.getStateDb().getElementInstanceState().updateInstance(scopeInstance);
     }
 
     return true;
   }
 
   @Override
-  protected boolean shouldHandleState(BpmnStepContext<T> context) {
+  protected boolean shouldHandleState(final BpmnStepContext<T> context) {
     return super.shouldHandleState(context) && isElementActive(context.getFlowScopeInstance());
   }
 
   /** @return the records that can be merged */
   private List<IndexedRecord> getMergeableRecords(
-      BpmnStepContext<T> context,
-      ExecutableFlowNode parallelGateway,
-      ElementInstance scopeInstance) {
+      final BpmnStepContext<T> context,
+      final ExecutableFlowNode parallelGateway,
+      final ElementInstance scopeInstance) {
     final List<ExecutableSequenceFlow> incomingFlows = parallelGateway.getIncoming();
     final List<IndexedRecord> mergingRecords = new ArrayList<>(incomingFlows.size());
 

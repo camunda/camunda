@@ -12,7 +12,6 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCat
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementActivatedHandler;
 import io.zeebe.engine.state.deployment.WorkflowState;
-import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.IndexedRecord;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -23,18 +22,18 @@ public class ContainerElementActivatedHandler<T extends ExecutableFlowElementCon
     extends ElementActivatedHandler<T> {
   private final WorkflowState workflowState;
 
-  public ContainerElementActivatedHandler(WorkflowState workflowState) {
+  public ContainerElementActivatedHandler(final WorkflowState workflowState) {
     this(null, workflowState);
   }
 
   public ContainerElementActivatedHandler(
-      WorkflowInstanceIntent nextState, WorkflowState workflowState) {
+      final WorkflowInstanceIntent nextState, final WorkflowState workflowState) {
     super(nextState);
     this.workflowState = workflowState;
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     if (!super.handleState(context)) {
       return false;
     }
@@ -51,13 +50,14 @@ public class ContainerElementActivatedHandler<T extends ExecutableFlowElementCon
       publishDeferredRecord(context);
     }
 
-    final ElementInstance elementInstance = context.getElementInstance();
-    elementInstance.spawnToken();
-    context.getStateDb().getElementInstanceState().updateInstance(elementInstance);
+    context
+        .getStateDb()
+        .getElementInstanceState()
+        .spawnToken(context.getElementInstance().getKey());
     return true;
   }
 
-  private void publishDeferredRecord(BpmnStepContext<T> context) {
+  private void publishDeferredRecord(final BpmnStepContext<T> context) {
     final IndexedRecord deferredRecord = getDeferredRecord(context);
     context
         .getOutput()
@@ -66,7 +66,7 @@ public class ContainerElementActivatedHandler<T extends ExecutableFlowElementCon
   }
 
   private void activateNoneStartEvent(
-      BpmnStepContext<T> context, ExecutableCatchEventElement firstStartEvent) {
+      final BpmnStepContext<T> context, final ExecutableCatchEventElement firstStartEvent) {
     final WorkflowInstanceRecord value = context.getValue();
 
     value.setElementId(firstStartEvent.getId());
@@ -75,7 +75,7 @@ public class ContainerElementActivatedHandler<T extends ExecutableFlowElementCon
     context.getOutput().appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, value);
   }
 
-  private IndexedRecord getDeferredRecord(BpmnStepContext<T> context) {
+  private IndexedRecord getDeferredRecord(final BpmnStepContext<T> context) {
     final long wfInstanceKey = context.getValue().getWorkflowInstanceKey();
     final List<IndexedRecord> deferredRecords =
         context.getElementInstanceState().getDeferredRecords(wfInstanceKey);

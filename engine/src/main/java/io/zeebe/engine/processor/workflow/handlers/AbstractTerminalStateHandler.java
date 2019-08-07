@@ -38,8 +38,7 @@ public class AbstractTerminalStateHandler<T extends ExecutableFlowElement>
   protected boolean handleState(final BpmnStepContext<T> context) {
     final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
     if (flowScopeInstance != null) {
-      flowScopeInstance.consumeToken();
-      context.getStateDb().getElementInstanceState().updateInstance(flowScopeInstance);
+      context.getStateDb().getElementInstanceState().consumeToken(flowScopeInstance.getKey());
     }
 
     return true;
@@ -55,9 +54,9 @@ public class AbstractTerminalStateHandler<T extends ExecutableFlowElement>
       context
           .getOutput()
           .appendFollowUpEvent(record.getKey(), record.getState(), record.getValue());
-      flowScopeInstance.spawnToken();
+
+      context.getStateDb().getElementInstanceState().spawnToken(flowScopeInstance.getKey());
     }
-    context.getStateDb().getElementInstanceState().updateInstance(flowScopeInstance);
   }
 
   protected boolean isLastActiveExecutionPathInScope(final BpmnStepContext<T> context) {
