@@ -21,7 +21,14 @@ export {getDiagramElementsBetween} from './diagramServices';
 export {flatten} from './tableServices';
 export {default as getTooltipText} from './getTooltipText';
 export {toggleEntityCollection, getEntitiesCollections} from './collectionService';
-export {loadEntity, loadEntities, createEntity, updateEntity, deleteEntity} from './entityService';
+export {
+  loadEntity,
+  loadEntities,
+  createEntity,
+  updateEntity,
+  deleteEntity,
+  copyReport
+} from './entityService';
 
 export {evaluateReport, isDurationReport} from './reportService';
 

@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
@@ -25,11 +26,11 @@ import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
-import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -500,6 +501,78 @@ public class ReportRestServiceIT {
 
     // then
     assertThat(response.getStatus(), is(200));
+  }
+
+  @Test
+  public void copySingleReport() {
+    SingleProcessReportDefinitionDto single = constructProcessReportWithFakePD();
+    String id = createAndStoreDefaultProcessReportDefinition(single.getData());
+    engineIntegrationRule.addUser("john", "john");
+    engineIntegrationRule.grantAllAuthorizations("john");
+
+    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
+      .buildCopyReportRequest(id)
+      .withUserAuthentication("john", "john")
+      .execute(IdDto.class, 200);
+
+    ReportDefinitionDto oldReport = getReport(id);
+    ReportDefinitionDto report = getReport(copyId.getId());
+    assertThat(report.getData().toString(), is(oldReport.getData().toString()));
+    assertThat(oldReport.getName() + " – Copy", is(report.getName()));
+    assertThat(report.getLastModifier(), is("john"));
+  }
+
+  @Test
+  public void copyCombinedReport() {
+    CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReport();
+
+    engineIntegrationRule.addUser("john", "john");
+    engineIntegrationRule.grantAllAuthorizations("john");
+
+    IdDto id = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateCombinedReportRequest()
+      .execute(IdDto.class, 200);
+
+    embeddedOptimizeRule.getRequestExecutor()
+      .buildUpdateCombinedProcessReportRequest(id.getId(), new CombinedReportDefinitionDto(combined), true)
+      .execute();
+
+    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
+      .buildCopyReportRequest(id.getId())
+      .withUserAuthentication("john", "john")
+      .execute(IdDto.class, 200);
+
+    ReportDefinitionDto oldReport = getReport(id.getId());
+    ReportDefinitionDto report = getReport(copyId.getId());
+    assertThat(report.getData().toString(), is(oldReport.getData().toString()));
+    assertThat(oldReport.getName() + " – Copy", is(report.getName()));
+    assertThat(report.getLastModifier(), is("john"));
+  }
+
+  @Test
+  public void copyDecisionReport() {
+    DecisionReportDataDto decisionReportData = DecisionReportDataBuilder
+      .create()
+      .setDecisionDefinitionKey(RANDOM_KEY)
+      .setDecisionDefinitionVersion(RANDOM_VERSION)
+      .setReportDataType(DecisionReportDataType.RAW_DATA)
+      .build();
+    String id = createAndStoreDefaultDecisionReportDefinition(decisionReportData);
+
+    engineIntegrationRule.addUser("john", "john");
+    engineIntegrationRule.grantAllAuthorizations("john");
+
+    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
+      .buildCopyReportRequest(id)
+      .withUserAuthentication("john", "john")
+      .execute(IdDto.class, 200);
+
+    ReportDefinitionDto oldReport = getReport(id);
+    ReportDefinitionDto report = getReport(copyId.getId());
+    assertThat(report.getData().toString(), is(oldReport.getData().toString()));
+    assertThat(oldReport.getName() + " – Copy", is(report.getName()));
+    assertThat(report.getLastModifier(), is("john"));
   }
 
   @Test

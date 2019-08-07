@@ -13,7 +13,8 @@ import {
   updateEntity,
   checkDeleteConflict,
   getEntitiesCollections,
-  toggleEntityCollection
+  toggleEntityCollection,
+  copyReport
 } from 'services';
 import {withErrorHandling} from 'HOC';
 
@@ -128,12 +129,7 @@ class OverviewStore extends Component {
     };
 
     if (type === 'report') {
-      const {combined, reportType} = copy;
-      this.props.mightFail(
-        createEntity(`report/${reportType}/${combined ? 'combined' : 'single'}`, copy),
-        applyCollections,
-        this.showError
-      );
+      this.props.mightFail(copyReport(copy.id), applyCollections, this.showError);
     } else {
       this.props.mightFail(createEntity(type, copy), applyCollections, this.showError);
     }

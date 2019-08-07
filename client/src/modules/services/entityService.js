@@ -39,6 +39,12 @@ export async function createEntity(type, initialValues, options = {}) {
   return json.id;
 }
 
+export async function copyReport(id) {
+  const response = await post(`/api/report/${id}/copy`);
+  const json = await response.json();
+  return json.id;
+}
+
 export async function updateEntity(type, id, data, options = {}) {
   return await put(`api/${type}/${id}`, data, options);
 }

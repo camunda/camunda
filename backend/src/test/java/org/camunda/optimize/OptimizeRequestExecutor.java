@@ -749,6 +749,12 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildCopyReportRequest(String id) {
+    this.path = "report/" + id + "/copy";
+    this.requestType = POST;
+    return this;
+  }
+
   private Entity getBody(Object entity) {
     try {
       return entity == null ? Entity.json("") : Entity.json(objectMapper.writeValueAsString(entity));

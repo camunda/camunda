@@ -10,7 +10,13 @@ import {shallow} from 'enzyme';
 import {addNotification} from 'notifications';
 
 import {StoreProvider} from './OverviewStore';
-import {checkDeleteConflict, toggleEntityCollection, loadEntities, createEntity} from 'services';
+import {
+  checkDeleteConflict,
+  toggleEntityCollection,
+  loadEntities,
+  createEntity,
+  copyReport
+} from 'services';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -20,6 +26,7 @@ jest.mock('services', () => {
     createEntity: jest.fn(),
     loadEntities: jest.fn(),
     deleteEntity: jest.fn(),
+    copyReport: jest.fn(),
     getEntitiesCollections: jest.fn().mockReturnValue({}),
     checkDeleteConflict: jest.fn().mockReturnValue([]),
     toggleEntityCollection: jest.fn().mockReturnValue(jest.fn())
@@ -86,7 +93,7 @@ it('should reload the list after duplication', async () => {
 });
 
 it('should add the entity to the collection that was duplicated from', async () => {
-  createEntity.mockReturnValueOnce('newReport');
+  copyReport.mockReturnValueOnce('newReport');
   const node = shallow(<OverviewStore {...props} />);
 
   await node.instance().duplicateEntity('report', processReport, collection)({

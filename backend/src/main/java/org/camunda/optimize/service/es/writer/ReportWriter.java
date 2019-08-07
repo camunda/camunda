@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -70,6 +71,10 @@ public class ReportWriter {
   private final OptimizeElasticsearchClient esClient;
 
   public IdDto createNewCombinedReport(final String userId) {
+    return createNewCombinedReport(userId, new CombinedReportDataDto(), DEFAULT_REPORT_NAME);
+  }
+
+  public IdDto createNewCombinedReport(final String userId, CombinedReportDataDto reportData, String reportName) {
     log.debug("Writing new combined report to Elasticsearch");
     final String id = IdGenerator.getNextId();
     final CombinedReportDefinitionDto reportDefinitionDto = new CombinedReportDefinitionDto();
@@ -79,8 +84,8 @@ public class ReportWriter {
     reportDefinitionDto.setLastModified(now);
     reportDefinitionDto.setOwner(userId);
     reportDefinitionDto.setLastModifier(userId);
-    reportDefinitionDto.setName(DEFAULT_REPORT_NAME);
-    reportDefinitionDto.setData(new CombinedReportDataDto());
+    reportDefinitionDto.setName(reportName);
+    reportDefinitionDto.setData(reportData);
 
     try {
       IndexRequest request = new IndexRequest(COMBINED_REPORT_TYPE, COMBINED_REPORT_TYPE, id)
@@ -106,7 +111,12 @@ public class ReportWriter {
     }
   }
 
+
   public IdDto createNewSingleProcessReport(final String userId) {
+    return createNewSingleProcessReport(userId, new ProcessReportDataDto(), DEFAULT_REPORT_NAME);
+  }
+
+  public IdDto createNewSingleProcessReport(final String userId, ProcessReportDataDto reportData, String reportName) {
     log.debug("Writing new single report to Elasticsearch");
 
     final String id = IdGenerator.getNextId();
@@ -117,8 +127,8 @@ public class ReportWriter {
     reportDefinitionDto.setLastModified(now);
     reportDefinitionDto.setOwner(userId);
     reportDefinitionDto.setLastModifier(userId);
-    reportDefinitionDto.setName(DEFAULT_REPORT_NAME);
-    reportDefinitionDto.setData(new ProcessReportDataDto());
+    reportDefinitionDto.setName(reportName);
+    reportDefinitionDto.setData(reportData);
 
     try {
       IndexRequest request = new IndexRequest(SINGLE_PROCESS_REPORT_TYPE, SINGLE_PROCESS_REPORT_TYPE, id)
@@ -145,6 +155,11 @@ public class ReportWriter {
   }
 
   public IdDto createNewSingleDecisionReport(final String userId) {
+    return createNewSingleDecisionReport(userId, new DecisionReportDataDto(), DEFAULT_REPORT_NAME);
+  }
+
+
+  public IdDto createNewSingleDecisionReport(final String userId, DecisionReportDataDto reportData, String reportName) {
     log.debug("Writing new single report to Elasticsearch");
 
     final String id = IdGenerator.getNextId();
@@ -155,7 +170,8 @@ public class ReportWriter {
     reportDefinitionDto.setLastModified(now);
     reportDefinitionDto.setOwner(userId);
     reportDefinitionDto.setLastModifier(userId);
-    reportDefinitionDto.setName(DEFAULT_REPORT_NAME);
+    reportDefinitionDto.setName(reportName);
+    reportDefinitionDto.setData(reportData);
 
     try {
       IndexRequest request = new IndexRequest(SINGLE_DECISION_REPORT_TYPE, SINGLE_DECISION_REPORT_TYPE, id)

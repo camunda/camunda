@@ -58,6 +58,40 @@ public class ReportService {
   private final ReportAuthorizationService authorizationService;
   private final ReportRelationService reportRelationService;
 
+  public IdDto copyReport(String reportId, String userId) {
+    ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
+    if (!reportDefinition.getCombined()) {
+      switch (reportDefinition.getReportType()) {
+        case PROCESS:
+          SingleProcessReportDefinitionDto singleProcessReportDefinitionDto =
+            (SingleProcessReportDefinitionDto) reportDefinition;
+          return reportWriter.createNewSingleProcessReport(
+            userId,
+            singleProcessReportDefinitionDto.getData(),
+            singleProcessReportDefinitionDto.getName() + " – Copy"
+          );
+        case DECISION:
+          SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto =
+            (SingleDecisionReportDefinitionDto) reportDefinition;
+          return reportWriter.createNewSingleDecisionReport(
+            userId,
+            singleDecisionReportDefinitionDto.getData(),
+            singleDecisionReportDefinitionDto.getName() + " – Copy"
+          );
+        default:
+          throw new IllegalStateException("Unsupported reportType: " + reportDefinition.getReportType());
+      }
+    } else {
+      CombinedReportDefinitionDto combinedReportDefinition =
+        (CombinedReportDefinitionDto) reportDefinition;
+      return reportWriter.createNewCombinedReport(
+        userId,
+        combinedReportDefinition.getData(),
+        reportDefinition.getName() + " – Copy"
+      );
+    }
+  }
+
   public ConflictResponseDto getReportDeleteConflictingItemsWithAuthorizationCheck(String userId, String reportId) {
     ReportDefinitionDto currentReportVersion = getReportWithAuthorizationCheck(reportId, userId);
     return new ConflictResponseDto(getConflictedItemsForDeleteReport(currentReportVersion));

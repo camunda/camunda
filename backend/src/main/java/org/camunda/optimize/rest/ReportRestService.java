@@ -90,6 +90,15 @@ public class ReportRestService {
     return reportService.createNewCombinedProcessReport(userId);
   }
 
+  @POST
+  @Path("/{id}/copy")
+  @Produces(MediaType.APPLICATION_JSON)
+  public IdDto copyReport(@Context ContainerRequestContext requestContext,
+                         @PathParam("id") String id) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return reportService.copyReport(id, userId);
+  }
+
   /**
    * Updates the given fields of a single process report to the given id.
    */
