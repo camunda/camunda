@@ -39,6 +39,8 @@ import java.util.concurrent.ScheduledExecutorService;
 public class JobWorkerBuilderImpl
     implements JobWorkerBuilderStep1, JobWorkerBuilderStep2, JobWorkerBuilderStep3 {
 
+  private static final Duration DEADLINE_OFFSET = Duration.ofSeconds(10);
+
   private final GatewayStub gatewayStub;
   private final JobClient jobClient;
   private final ZeebeObjectMapper objectMapper;
@@ -144,15 +146,17 @@ public class JobWorkerBuilderImpl
             .setType(jobType)
             .setTimeout(timeout)
             .setWorker(workerName)
-            .setMaxJobsToActivate(maxJobsActive);
+            .setMaxJobsToActivate(maxJobsActive)
+            .setRequestTimeout(requestTimeout.toMillis());
 
     if (fetchVariables != null) {
       requestBuilder.addAllFetchVariable(fetchVariables);
     }
 
+    final Duration deadline = requestTimeout.plus(DEADLINE_OFFSET);
+
     final JobRunnableFactory jobRunnableFactory = new JobRunnableFactory(jobClient, handler);
-    final JobPoller jobPoller =
-        new JobPoller(gatewayStub, requestBuilder, objectMapper, requestTimeout);
+    final JobPoller jobPoller = new JobPoller(gatewayStub, requestBuilder, objectMapper, deadline);
 
     final JobWorkerImpl jobWorker =
         new JobWorkerImpl(

@@ -22,6 +22,7 @@ import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -60,7 +61,8 @@ public class GrpcClientRule extends ExternalResource {
 
   @Override
   public void before() {
-    final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder();
+    final ZeebeClientBuilder builder =
+        ZeebeClient.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(10));
     configurator.accept(builder);
     client = builder.build();
   }

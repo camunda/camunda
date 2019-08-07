@@ -14,6 +14,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.zeebe.util.sched.ScheduledTimer;
+import java.time.Duration;
 import org.slf4j.Logger;
 
 public class LongPollingActivateJobsRequest {
@@ -23,6 +24,7 @@ public class LongPollingActivateJobsRequest {
   private final StreamObserver<ActivateJobsResponse> responseObserver;
   private final String jobType;
   private final int maxJobsToActivate;
+  private final Duration longPollingTimeout;
 
   private ScheduledTimer scheduledTimer;
   private boolean isTimedOut;
@@ -34,18 +36,22 @@ public class LongPollingActivateJobsRequest {
         RequestMapper.toActivateJobsRequest(request),
         responseObserver,
         request.getType(),
-        request.getMaxJobsToActivate());
+        request.getMaxJobsToActivate(),
+        request.getRequestTimeout());
   }
 
   private LongPollingActivateJobsRequest(
       BrokerActivateJobsRequest request,
       StreamObserver<ActivateJobsResponse> responseObserver,
       String jobType,
-      int maxJobstoActivate) {
+      int maxJobstoActivate,
+      long longPollingTimeout) {
     this.request = request;
     this.responseObserver = responseObserver;
     this.jobType = jobType;
     this.maxJobsToActivate = maxJobstoActivate;
+    this.longPollingTimeout =
+        longPollingTimeout == 0 ? null : Duration.ofMillis(longPollingTimeout);
   }
 
   public void complete() {
@@ -108,5 +114,16 @@ public class LongPollingActivateJobsRequest {
 
   public boolean isTimedOut() {
     return isTimedOut;
+  }
+
+  public Duration getLongPollingTimeout(Duration defaultTimeout) {
+    if (longPollingTimeout == null) {
+      return defaultTimeout;
+    }
+    return this.longPollingTimeout;
+  }
+
+  public boolean isLongPollingDisabled() {
+    return longPollingTimeout != null && longPollingTimeout.isNegative();
   }
 }

@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 public class ActivateJobsCommandImpl
     implements ActivateJobsCommandStep1, ActivateJobsCommandStep2, ActivateJobsCommandStep3 {
 
+  private static final Duration DEADLINE_OFFSET = Duration.ofSeconds(10);
   private final GatewayStub asyncStub;
   private final ZeebeObjectMapper objectMapper;
   private final Builder builder;
@@ -46,8 +47,7 @@ public class ActivateJobsCommandImpl
     this.asyncStub = asyncStub;
     this.objectMapper = objectMapper;
     builder = ActivateJobsRequest.newBuilder();
-    requestTimeout = config.getDefaultRequestTimeout();
-
+    requestTimeout(config.getDefaultRequestTimeout());
     timeout(config.getDefaultJobTimeout());
     workerName(config.getDefaultJobWorkerName());
   }
@@ -94,6 +94,7 @@ public class ActivateJobsCommandImpl
 
   @Override
   public FinalCommandStep<ActivateJobsResponse> requestTimeout(Duration requestTimeout) {
+    builder.setRequestTimeout(requestTimeout.toMillis());
     this.requestTimeout = requestTimeout;
     return this;
   }
@@ -108,7 +109,7 @@ public class ActivateJobsCommandImpl
         future = new ZeebeStreamingClientFutureImpl<>(response, response::addResponse);
 
     asyncStub
-        .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
+        .withDeadlineAfter(requestTimeout.plus(DEADLINE_OFFSET).toMillis(), TimeUnit.MILLISECONDS)
         .activateJobs(request, future);
     return future;
   }
