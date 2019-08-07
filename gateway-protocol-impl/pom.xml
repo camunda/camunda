@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Gateway Protocol Implementation</name>
@@ -25,6 +27,11 @@
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-gateway-protocol</artifactId>
@@ -83,6 +90,18 @@
           <protoSourceRoot>${proto.dir}</protoSourceRoot>
         </configuration>
       </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <failOnWarning>true</failOnWarning>
+          <ignoredDependencies>
+            <!-- Used by generated GRPC code -->
+            <ignoredDependency>javax.annotation:javax.annotation-api</ignoredDependency>
+          </ignoredDependencies>
+        </configuration>
+      </plugin>
     </plugins>
 
   </build>
@@ -120,7 +139,10 @@
                 </goals>
                 <configuration>
                   <tasks>
-                    <copy file="${project.build.directory}/generated-sources/protobuf/go/gateway.pb.go" tofile="${maven.multiModuleProjectDirectory}/clients/go/pb/gateway.pb.go" failonerror="true" />
+                    <copy
+                      file="${project.build.directory}/generated-sources/protobuf/go/gateway.pb.go"
+                      tofile="${maven.multiModuleProjectDirectory}/clients/go/pb/gateway.pb.go"
+                      failonerror="true"/>
                   </tasks>
                 </configuration>
               </execution>
