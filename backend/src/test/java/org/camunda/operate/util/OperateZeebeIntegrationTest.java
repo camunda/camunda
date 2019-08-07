@@ -135,8 +135,6 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   @Autowired
   protected OperateProperties operateProperties;
 
-  private JobWorker jobWorker;
-
   private String workerName;
 
   @Autowired
@@ -166,10 +164,6 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   public void after() {
     workflowCache.clearCache();
     importPositionHolder.clearCache();
-    if (jobWorker != null && jobWorker.isOpen()) {
-      jobWorker.close();
-      jobWorker = null;
-    }
   }
 
   public OperateZeebeIntegrationTest() {
@@ -190,14 +184,6 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
   public String getWorkerName() {
     return workerName;
-  }
-
-  public JobWorker getJobWorker() {
-    return jobWorker;
-  }
-
-  public void setJobWorker(JobWorker jobWorker) {
-    this.jobWorker = jobWorker;
   }
 
   public Long failTaskWithNoRetriesLeft(String taskName, long workflowInstanceKey, String errorMessage) {
@@ -224,9 +210,8 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   }
 
   protected void completeTask(long workflowInstanceKey, String activityId, String payload) {
-    JobWorker jobWorker = ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), payload);
+    ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), payload);
     elasticsearchTestRule.processAllRecordsAndWait(activityIsCompletedCheck, workflowInstanceKey, activityId);
-    jobWorker.close();
   }
   
   protected void postUpdateVariableOperation(Long workflowInstanceKey, String newVarName, String newVarValue) throws Exception {

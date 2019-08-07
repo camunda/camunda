@@ -53,9 +53,9 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
     String processId = "prWithSubprocess";
     deployWorkflow("subProcess.bpmn");
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
-    ZeebeTestUtil.completeTask(zeebeClient, "taskA", getWorkerName(), null, 3);
+    ZeebeTestUtil.completeTask(zeebeClient, "taskA", getWorkerName(), null);
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskB");
-    ZeebeTestUtil.completeTask(zeebeClient, "taskB", getWorkerName(), null, 3);
+    ZeebeTestUtil.completeTask(zeebeClient, "taskB", getWorkerName(), null);
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskC");
     ZeebeTestUtil.failTask(zeebeClient, "taskC", getWorkerName(), 3, "some error");
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
@@ -111,7 +111,7 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
     String processId = "prWithSubprocess";
     deployWorkflow("subProcess.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
-    ZeebeTestUtil.completeTask(zeebeClient, "taskA", getWorkerName(), null, 3);
+    ZeebeTestUtil.completeTask(zeebeClient, "taskA", getWorkerName(), null);
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskB");
     ZeebeTestUtil.failTask(zeebeClient, "taskB", getWorkerName(), 3, "some error");
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);

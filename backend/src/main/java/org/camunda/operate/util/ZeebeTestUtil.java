@@ -5,22 +5,25 @@
  */
 package org.camunda.operate.util;
 
+import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.command.ClientException;
+import io.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.zeebe.client.api.command.CreateWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.command.DeployWorkflowCommandStep1;
-import io.zeebe.client.api.command.FailJobCommandStep1;
-import io.zeebe.client.api.command.FinalCommandStep;
+import io.zeebe.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
+import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.response.DeploymentEvent;
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
 import io.zeebe.client.api.worker.JobClient;
-import io.zeebe.client.api.worker.JobHandler;
-import io.zeebe.client.api.worker.JobWorker;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.model.bpmn.BpmnModelInstance;
 
 public abstract class ZeebeTestUtil {
 
@@ -106,108 +109,47 @@ public abstract class ZeebeTestUtil {
 
   }
 
-  public static JobWorker completeTask(ZeebeClient client, String jobType, String workerName, String payload) {
-    return client.newWorker()
-      .jobType(jobType)
-      .handler((jobClient, job) -> {
-        if (payload == null) {
-          jobClient.newCompleteCommand(job.getKey()).send().join();
-        } else {
-          jobClient.newCompleteCommand(job.getKey()).variables(payload).send().join();
-        }
-        logger.debug("Complete task command was sent to Zeebe for jobKey [{}]", job.getKey());
-      })
-      .name(workerName)
-      .timeout(Duration.ofSeconds(2))
-      .open();
+  public static void completeTask(ZeebeClient client, String jobType, String workerName, String payload) {
+    completeTask(client, jobType, workerName, payload, 1);
   }
-
   public static void completeTask(ZeebeClient client, String jobType, String workerName, String payload, int count) {
-    final int[] countCompleted = { 0 };
-    JobWorker jobWorker = client.newWorker()
-      .jobType(jobType)
-      .handler((jobClient, job) -> {
-        if (payload == null) {
-          jobClient.newCompleteCommand(job.getKey()).variables(job.getVariables()).send().join();
-        } else {
-          jobClient.newCompleteCommand(job.getKey()).variables(payload).send().join();
-        }
-        logger.debug("Complete task command was sent to Zeebe for jobKey [{}]", job.getKey());
-        countCompleted[0]++;
-      })
-      .name(workerName)
-      .timeout(Duration.ofSeconds(2))
-      .open();
-    int attemptsCount = 0;
-    while(countCompleted[0] < count && attemptsCount < 3) {
-      try {
-        Thread.sleep(200);
-      } catch (InterruptedException e) {
+    handleTasks(client, jobType, workerName, count, (jobClient, job) -> {
+      CompleteJobCommandStep1 command = jobClient.newCompleteCommand(job.getKey());
+      if (payload != null) {
+        command.variables(payload);
       }
-      attemptsCount++;
-    }
-    jobWorker.close();
+      command.send().join();
+    });
   }
 
-  /**
-   * Returns jobKey.
-   * @param client
-   * @param jobType
-   * @param workerName
-   * @param numberOfFailures
-   * @return
-   */
   public static Long failTask(ZeebeClient client, String jobType, String workerName, int numberOfFailures, String errorMessage) {
-    final FailJobHandler jobHandler = new FailJobHandler(numberOfFailures, errorMessage);
-    JobWorker jobWorker = client.newWorker()
-      .jobType(jobType)
-      .handler(jobHandler)
-      .name(workerName)
-      .timeout(Duration.ofSeconds(2))
-      .open();
-    //wait till job will fail 3 times
-    while (jobHandler.failuresCount < jobHandler.numberOfFailures) {
-      try {
-        Thread.sleep(100L);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
+    return handleTasks(client, jobType, workerName, numberOfFailures, ((jobClient, job) -> {
+      FailJobCommandStep2 failCommand = jobClient.newFailCommand(job.getKey())
+          .retries(job.getRetries() - 1);
+      if (errorMessage != null) {
+        failCommand.errorMessage(errorMessage);
       }
-    }
-    jobWorker.close();
-    return jobHandler.getJobKey();
+      failCommand.send().join();
+    })).get(0);
   }
 
-  private static class FailJobHandler implements JobHandler {
-
-    private int numberOfFailures;
-
-    private int failuresCount = 0;
-
-    private Long jobKey;
-
-    private String errorMessage;
-
-    public FailJobHandler(int numberOfFailures, String errorMessage) {
-      this.numberOfFailures = numberOfFailures;
-      this.errorMessage = errorMessage;
+  private static List<Long> handleTasks(ZeebeClient client, String jobType, String workerName, int jobCount, BiConsumer<JobClient, ActivatedJob> jobHandler) {
+    final List<Long> jobKeys = new ArrayList<>();
+    while (jobKeys.size() < jobCount) {
+      client.newActivateJobsCommand()
+          .jobType(jobType)
+          .maxJobsToActivate(jobCount - jobKeys.size())
+          .workerName(workerName)
+          .timeout(Duration.ofSeconds(2))
+          .send()
+          .join()
+          .getJobs()
+          .forEach(job -> {
+            jobHandler.accept(client, job);
+            jobKeys.add(job.getKey());
+          });
     }
-
-    @Override
-    public void handle(JobClient client, ActivatedJob job) {
-      this.jobKey = job.getKey();
-      if (failuresCount < numberOfFailures) {
-        FinalCommandStep failCmd = client.newFailCommand(job.getKey()).retries(job.getRetries() - 1);
-        if (errorMessage != null) {
-          failCmd = ((FailJobCommandStep1.FailJobCommandStep2)failCmd).errorMessage(errorMessage);
-        }
-        failCmd.send().join();
-        failuresCount++;
-      }
-    }
-
-    public Long getJobKey() {
-      return jobKey;
-    }
+    return jobKeys;
   }
 
   public static void resolveIncident(ZeebeClient client, Long jobKey, Long incidentKey) {

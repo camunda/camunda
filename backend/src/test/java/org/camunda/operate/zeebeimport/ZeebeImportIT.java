@@ -260,7 +260,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //when update retries
     ZeebeTestUtil.resolveIncident(zeebeClient, jobKey, incidentKey);
-    setJobWorker(ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), "{}"));
+    ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), "{}");
 
     processAllEvents(20, ImportValueType.WORKFLOW_INSTANCE);
     processAllEvents(2, ImportValueType.INCIDENT);
