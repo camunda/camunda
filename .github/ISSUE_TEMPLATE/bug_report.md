@@ -22,6 +22,17 @@ A clear and concise description of what you expected to happen.
 **Log/Stacktrace**
 If possible add the full stacktrace or Zeebe log which contains the issue. 
 
+<details><summary>Full Stacktrace</summary>
+ <p>
+
+```
+<STACKTRACE>
+```
+
+</p>
+</details>
+
+
 **Environment:**
  - OS: [e.g. Linux]
  - Zeebe Version: [e.g. 0.20.0]
