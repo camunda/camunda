@@ -16,15 +16,21 @@
 package io.zeebe.client;
 
 import io.grpc.Metadata;
-import io.zeebe.client.impl.ZeebeClientCredentialsProvider;
+import io.zeebe.client.impl.OAuthCredentialsProvider;
+import io.zeebe.client.impl.OAuthCredentialsProviderBuilder;
 
 public interface CredentialsProvider {
 
   /**
    * Adds credentials to the headers. For an example of this, see {@link
-   * ZeebeClientCredentialsProvider#applyCredentials(Metadata)}
+   * OAuthCredentialsProvider#applyCredentials(Metadata)}
    *
    * @param headers gRPC headers to be modified
    */
   void applyCredentials(Metadata headers);
+
+  /** @return a builder to configure and create a new {@link OAuthCredentialsProvider}. */
+  static OAuthCredentialsProviderBuilder newCredentialsProviderBuilder() {
+    return new OAuthCredentialsProviderBuilder();
+  }
 }
