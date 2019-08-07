@@ -26,6 +26,7 @@ const (
 	DefaultJobTimeout     = time.Duration(5 * time.Minute)
 	DefaultJobTimeoutInMs = int64(DefaultJobTimeout / time.Millisecond)
 	DefaultJobWorkerName  = "default"
+	RequestTimeoutOffset  = 10 * time.Second
 )
 
 type DispatchActivateJobsCommand interface {
@@ -46,6 +47,7 @@ type ActivateJobsCommandStep3 interface {
 	Timeout(time.Duration) ActivateJobsCommandStep3
 	WorkerName(string) ActivateJobsCommandStep3
 	FetchVariables(...string) ActivateJobsCommandStep3
+	RequestTimeout(time.Duration) ActivateJobsCommandStep3
 }
 
 type ActivateJobsCommand struct {
@@ -76,6 +78,12 @@ func (cmd *ActivateJobsCommand) WorkerName(workerName string) ActivateJobsComman
 
 func (cmd *ActivateJobsCommand) FetchVariables(fetchVariables ...string) ActivateJobsCommandStep3 {
 	cmd.request.FetchVariable = fetchVariables
+	return cmd
+}
+
+func (cmd *ActivateJobsCommand) RequestTimeout(timeout time.Duration) ActivateJobsCommandStep3 {
+	cmd.request.RequestTimeout = int64(timeout / time.Millisecond)
+	cmd.requestTimeout = timeout + RequestTimeoutOffset
 	return cmd
 }
 
@@ -111,8 +119,9 @@ func NewActivateJobsCommand(gateway pb.GatewayClient, requestTimeout time.Durati
 		request: &pb.ActivateJobsRequest{
 			Timeout: DefaultJobTimeoutInMs,
 			Worker:  DefaultJobWorkerName,
+			RequestTimeout: int64(requestTimeout / time.Millisecond),
 		},
 		gateway:        gateway,
-		requestTimeout: requestTimeout,
+		requestTimeout: requestTimeout + RequestTimeoutOffset,
 	}
 }
