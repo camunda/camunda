@@ -90,7 +90,8 @@ abstract class AbstractDefinitionService {
   private List<DefinitionAvailableVersionsWithTenants> mapToAvailableDefinitionVersionsWithTenants(
     final Map<String, Map<String, InternalDefinitionWithTenants>> byKeyMap) {
 
-    return byKeyMap.entrySet().stream()
+    return byKeyMap.entrySet()
+      .stream()
       .map(byKeyEntry -> {
         final String definitionName = byKeyEntry.getValue().values().iterator().next().getName();
         final List<DefinitionVersions> versions = byKeyEntry.getValue().values().stream()
@@ -112,8 +113,8 @@ abstract class AbstractDefinitionService {
 
         return definitionVersionsWithTenants;
       })
-      // just to ensure consistent ordering
-      .sorted(Comparator.comparing(DefinitionAvailableVersionsWithTenants::getKey))
+      // sort by name case insensitive
+      .sorted(Comparator.comparing(a -> a.getName() == null ? a.getKey().toLowerCase() : a.getName().toLowerCase()))
       .collect(Collectors.toList());
   }
 

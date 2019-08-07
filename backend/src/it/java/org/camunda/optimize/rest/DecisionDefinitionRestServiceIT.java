@@ -336,6 +336,30 @@ public class DecisionDefinitionRestServiceIT {
   }
 
   @Test
+  public void testDefinitionSorting() {
+    createDecisionDefinitionDto("z", "1", null, "a");
+    createDecisionDefinitionDto("x", "1", null, "b");
+    createDecisionDefinitionsForKey("c", 1);
+    createDecisionDefinitionsForKey("D", 1);
+    createDecisionDefinitionsForKey("e", 1);
+    createDecisionDefinitionsForKey("F", 1);
+
+
+    // when
+    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildGetDecisionDefinitionVersionsWithTenants()
+      .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
+
+    assertThat(definitions.get(0).getKey(), is("z"));
+    assertThat(definitions.get(1).getKey(), is("x"));
+    assertThat(definitions.get(2).getKey(), is("c"));
+    assertThat(definitions.get(3).getKey(), is("D"));
+    assertThat(definitions.get(4).getKey(), is("e"));
+    assertThat(definitions.get(5).getKey(), is("F"));
+  }
+
+  @Test
   public void testGetDecisionDefinitionVersionsWithTenants_sharedAndTenantDefinitionWithSameKeyAndVersion() {
     //given
     final String tenantId1 = "tenant1";
@@ -509,11 +533,16 @@ public class DecisionDefinitionRestServiceIT {
     return createDecisionDefinitionDto(key, null);
   }
 
+
   private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(String key, final String tenantId) {
     return createDecisionDefinitionDto(key, "1", tenantId);
   }
 
   private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(String key, String version,final String tenantId) {
+    return createDecisionDefinitionDto(key, version, tenantId, null);
+  }
+
+  private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(String key, String version,final String tenantId, String name) {
     DecisionDefinitionOptimizeDto decisionDefinitionDto = new DecisionDefinitionOptimizeDto()
       .setId("id-" + key + "-version-" + version + "-" + tenantId)
       .setKey(key)
@@ -521,6 +550,7 @@ public class DecisionDefinitionRestServiceIT {
       .setVersionTag(VERSION_TAG)
       .setTenantId(tenantId)
       .setEngine(DEFAULT_ENGINE_ALIAS)
+      .setName(name)
       .setDmn10Xml("id-" + key + "-version-" + version + "-" + tenantId);
     addDecisionDefinitionToElasticsearch(decisionDefinitionDto);
     return decisionDefinitionDto;
