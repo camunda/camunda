@@ -253,7 +253,9 @@ pipeline {
             }
           }
           steps {
-            integrationTestSteps()
+            retry(2) {
+              integrationTestSteps()
+            }
           }
           post {
             always {
@@ -271,7 +273,9 @@ pipeline {
             }
           }
           steps {
-            integrationTestSteps()
+            retry(2) {
+              integrationTestSteps()
+            }
           }
           post {
             always {
@@ -289,7 +293,9 @@ pipeline {
             }
           }
           steps {
-            integrationTestSteps()
+            retry(2) {
+              integrationTestSteps()
+            }
           }
           post {
             always {
@@ -307,7 +313,9 @@ pipeline {
             }
           }
           steps {
-            integrationTestSteps()
+            retry(2) {
+              integrationTestSteps()
+            }
           }
           post {
             always {
@@ -325,7 +333,9 @@ pipeline {
             }
           }
           steps {
-            integrationTestSteps()
+            retry(2) {
+              integrationTestSteps()
+            }
           }
           post {
             always {
@@ -343,7 +353,9 @@ pipeline {
             }
           }
           steps {
-            integrationTestSteps()
+            retry(2) {
+              integrationTestSteps()
+            }
           }
           post {
             always {
@@ -367,7 +379,9 @@ pipeline {
           }
 
           steps {
-            integrationTestStepsAWS()
+            retry(2) {
+              integrationTestStepsAWS()
+            }
           }
           post {
             always {

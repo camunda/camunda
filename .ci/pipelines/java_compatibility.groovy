@@ -154,7 +154,9 @@ pipeline {
             }
           }
           steps {
-            integrationTestSteps()
+            retry(2) {
+              integrationTestSteps()
+            }
           }
           post {
             always {
@@ -172,7 +174,9 @@ pipeline {
             }
           }
           steps {
-            integrationTestSteps()
+            retry(2) {
+              integrationTestSteps()
+            }
           }
           post {
             always {
