@@ -247,8 +247,8 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
         responseContext.hasEntity() ? serializeBodyCappedToMaxSize(responseContext.getEntityStream()) : ""
       );
     });
-    client.property(ClientProperties.CONNECT_TIMEOUT, 10000);
-    client.property(ClientProperties.READ_TIMEOUT, 10000);
+    client.property(ClientProperties.CONNECT_TIMEOUT, IntegrationTestConfigurationUtil.getHttpTimeoutMillis());
+    client.property(ClientProperties.READ_TIMEOUT, IntegrationTestConfigurationUtil.getHttpTimeoutMillis());
     client.property(ClientProperties.FOLLOW_REDIRECTS, Boolean.FALSE);
     return client;
   }

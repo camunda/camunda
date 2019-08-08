@@ -59,4 +59,8 @@ public class IntegrationTestConfigurationUtil {
   public static int getSmtpPort() {
     return Integer.parseInt(System.getProperty("smtpTestPort", "6666"));
   }
+
+  public static int getHttpTimeoutMillis() {
+    return Integer.parseInt(System.getProperty("httpTestTimeout", "10000"));
+  }
 }
