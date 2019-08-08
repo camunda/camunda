@@ -30,6 +30,7 @@ const (
 	DefaultJobWorkerConcurrency   = 4
 	DefaultJobWorkerPollInterval  = 100 * time.Millisecond
 	DefaultJobWorkerPollThreshold = 0.3
+	RequestTimeoutOffset          = 10 * time.Second
 )
 
 type JobWorkerBuilder struct {
@@ -61,6 +62,8 @@ type JobWorkerBuilderStep3 interface {
 	Name(string) JobWorkerBuilderStep3
 	// Set the duration no other worker should work on job activated by this worker
 	Timeout(time.Duration) JobWorkerBuilderStep3
+	// Set the timeout for the request
+	RequestTimeout(time.Duration) JobWorkerBuilderStep3
 	// Set the maximum number of jobs which will be activated for this worker at the
 	// same time.
 	MaxJobsActive(int) JobWorkerBuilderStep3
@@ -93,6 +96,12 @@ func (builder *JobWorkerBuilder) Name(name string) JobWorkerBuilderStep3 {
 
 func (builder *JobWorkerBuilder) Timeout(timeout time.Duration) JobWorkerBuilderStep3 {
 	builder.request.Timeout = int64(timeout / time.Millisecond)
+	return builder
+}
+
+func (builder *JobWorkerBuilder) RequestTimeout(timeout time.Duration) JobWorkerBuilderStep3 {
+	builder.request.RequestTimeout = int64(timeout / time.Millisecond)
+	builder.requestTimeout = timeout + RequestTimeoutOffset
 	return builder
 }
 
@@ -182,7 +191,8 @@ func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient, re
 		request: pb.ActivateJobsRequest{
 			Timeout: commands.DefaultJobTimeoutInMs,
 			Worker:  commands.DefaultJobWorkerName,
+			RequestTimeout: int64(requestTimeout / time.Millisecond),
 		},
-		requestTimeout: requestTimeout,
+		requestTimeout: requestTimeout + RequestTimeoutOffset,
 	}
 }

@@ -21,6 +21,7 @@ import (
     "github.com/zeebe-io/zeebe/clients/go/commands"
     "github.com/zeebe-io/zeebe/clients/go/entities"
     "github.com/zeebe-io/zeebe/clients/go/worker"
+    "github.com/zeebe-io/zeebe/clients/go/zbc"
     "io"
     "log"
     "os/exec"
@@ -29,13 +30,14 @@ import (
 )
 
 var (
-    createWorkerHandlerFlag       string
-    createWorkerNameFlag          string
-    createWorkerTimeoutFlag       time.Duration
-    createWorkerMaxJobsActiveFlag int
-    createWorkerConcurrencyFlag   int
-    createWorkerPollIntervalFlag  time.Duration
-    createWorkerPollThresholdFlag float64
+    createWorkerHandlerFlag        string
+    createWorkerNameFlag           string
+    createWorkerTimeoutFlag        time.Duration
+    createWorkerRequestTimeoutFlag time.Duration
+    createWorkerMaxJobsActiveFlag  int
+    createWorkerConcurrencyFlag    int
+    createWorkerPollIntervalFlag   time.Duration
+    createWorkerPollThresholdFlag  float64
 
     createWorkerHandlerArgs []string
 )
@@ -59,6 +61,7 @@ If the handler exits with an none zero exit code the job will be failed, the han
             Handler(handle).
             Name(createWorkerNameFlag).
             Timeout(createWorkerTimeoutFlag).
+            RequestTimeout(createWorkerRequestTimeoutFlag).
             MaxJobsActive(createWorkerMaxJobsActiveFlag).
             Concurrency(createWorkerConcurrencyFlag).
             PollInterval(createWorkerPollIntervalFlag).
@@ -138,6 +141,7 @@ func init() {
 
     createWorkerCmd.Flags().StringVar(&createWorkerNameFlag, "name", DefaultJobWorkerName, "Specify the worker name")
     createWorkerCmd.Flags().DurationVar(&createWorkerTimeoutFlag, "timeout", commands.DefaultJobTimeout, "Specify the duration no other worker should work on job activated by this worker")
+    createWorkerCmd.Flags().DurationVar(&createWorkerRequestTimeoutFlag, "requestTimeout", zbc.DefaultRequestTimeout, "Specify the timeout for a request")
     createWorkerCmd.Flags().IntVar(&createWorkerMaxJobsActiveFlag, "maxJobsActive", worker.DefaultJobWorkerMaxJobActive, "Specify the maximum number of jobs which will be activated for this worker at the same time")
     createWorkerCmd.Flags().IntVar(&createWorkerConcurrencyFlag, "concurrency", worker.DefaultJobWorkerConcurrency, "Specify the maximum number of concurrent spawned goroutines to complete jobs")
     createWorkerCmd.Flags().DurationVar(&createWorkerPollIntervalFlag, "pollInterval", worker.DefaultJobWorkerPollInterval, "Specify the maximal interval between polling for new jobs")

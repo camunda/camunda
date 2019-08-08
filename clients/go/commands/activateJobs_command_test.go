@@ -38,6 +38,7 @@ func TestActivateJobsCommand(t *testing.T) {
 		MaxJobsToActivate: 5,
 		Timeout:           DefaultJobTimeoutInMs,
 		Worker:            DefaultJobWorkerName,
+		RequestTimeout:    int64(utils.DefaultTestTimeout / time.Millisecond),
 	}
 
 	response1 := &pb.ActivateJobsResponse{
@@ -140,6 +141,7 @@ func TestActivateJobsCommandWithTimeout(t *testing.T) {
 		MaxJobsToActivate: 5,
 		Timeout:           60 * 1000,
 		Worker:            DefaultJobWorkerName,
+		RequestTimeout:    int64(utils.DefaultTestTimeout / time.Millisecond),
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
@@ -168,6 +170,7 @@ func TestActivateJobsCommandWithWorkerName(t *testing.T) {
 		MaxJobsToActivate: 5,
 		Timeout:           DefaultJobTimeoutInMs,
 		Worker:            "bar",
+		RequestTimeout:    int64(utils.DefaultTestTimeout / time.Millisecond),
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
@@ -198,7 +201,8 @@ func TestActivateJobsCommandWithFetchVariables(t *testing.T) {
 		MaxJobsToActivate: 5,
 		Worker:            DefaultJobWorkerName,
 		Timeout:           DefaultJobTimeoutInMs,
-		FetchVariable:     fetchVariables,
+		FetchVariable:     fetchVariables,		
+		RequestTimeout:    int64(utils.DefaultTestTimeout / time.Millisecond),
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
