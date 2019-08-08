@@ -13,7 +13,7 @@ pipelineJob('cleanup-data-performance') {
   parameters {
     stringParam('BRANCH', 'master', 'Branch to use for performance tests.')
     choiceParam('SQL_DUMP', ['optimize_large_data-performance.sqlc', 'optimize_large_data-stage.sqlc'])
-    stringParam('CLEANUP_TIMEOUT_MINUTES', '60', 'Time limit for a cleanup run to finish')
+    stringParam('CLEANUP_TIMEOUT_MINUTES', '120', 'Time limit for a cleanup run to finish')
   }
 
   triggers {
