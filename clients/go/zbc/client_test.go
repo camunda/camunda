@@ -16,6 +16,7 @@ package zbc
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
 	"google.golang.org/grpc"
@@ -136,7 +137,7 @@ func TestNewZBClientWithPathToNonExistingFile(t *testing.T) {
 	})
 
 	// then
-	require.EqualError(t, err, newNoSuchFileError("CA certificate", wrongPath).Error())
+	require.Error(t, errors.Cause(err), FileNotFoundError)
 }
 
 func createSecureServer() (net.Listener, *grpc.Server) {

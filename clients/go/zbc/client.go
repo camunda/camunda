@@ -17,8 +17,8 @@ package zbc
 
 import (
 	"crypto/tls"
-	"errors"
 	"fmt"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/credentials"
 	"log"
 	"os"
@@ -44,6 +44,9 @@ type ZBClientConfig struct {
 	CaCertificatePath      string
 	CredentialsProvider    CredentialsProvider
 }
+
+const FileNotFoundError = ZBError("file not found")
+const InvalidPathError = ZBError("invalid path")
 
 type ZBError string
 
@@ -147,7 +150,7 @@ func configureConnectionSecurity(config *ZBClientConfig, opts *[]grpc.DialOption
 		if config.CaCertificatePath == "" {
 			creds = credentials.NewTLS(&tls.Config{})
 		} else if _, err := os.Stat(config.CaCertificatePath); os.IsNotExist(err) {
-			return newNoSuchFileError("CA certificate", config.CaCertificatePath)
+			return fileNotFoundError("CA certificate", config.CaCertificatePath)
 		} else {
 			creds, err = credentials.NewClientTLSFromFile(config.CaCertificatePath, "")
 			if err != nil {
@@ -163,11 +166,11 @@ func configureConnectionSecurity(config *ZBClientConfig, opts *[]grpc.DialOption
 	return nil
 }
 
-func newNoSuchFileError(fileDescription, path string) error {
-	return errors.New(fmt.Sprintf("expected to find %s but there was no such file at '%s'", fileDescription, path))
+func fileNotFoundError(fileDescription, path string) error {
+	return errors.Wrap(FileNotFoundError, fmt.Sprintf("expected to find %s but there was no such file at path '%s'", fileDescription, path))
 }
 
-func newEmptyPathError(fileDescription string) error {
-	return errors.New(fmt.Sprintf("expected valid path to %s but path was empty", fileDescription))
+func invalidPathError(fileDescription string) error {
+	return errors.Wrap(FileNotFoundError, fmt.Sprintf("expected valid path to %s but path was empty", fileDescription))
 
 }

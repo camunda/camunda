@@ -92,11 +92,11 @@ func (provider *ZeebeClientCredentialsProvider) ApplyCredentials(headers map[str
 // Creates a ZeebeClientCredentialsProvider with a path to the Zeebe credentials YAML file.
 func NewZeebeClientCredentialsProvider(zeebeCredentialsPath string) (*ZeebeClientCredentialsProvider, error) {
 	if zeebeCredentialsPath == "" {
-		return nil, newEmptyPathError("Zeebe credentials file")
+		return nil, invalidPathError("Zeebe credentials file")
 	}
 
 	if _, err := os.Stat(zeebeCredentialsPath); err != nil {
-		return nil, newNoSuchFileError("Zeebe credentials file", zeebeCredentialsPath)
+		return nil, fileNotFoundError("Zeebe credentials file", zeebeCredentialsPath)
 
 	}
 
