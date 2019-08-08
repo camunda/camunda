@@ -51,7 +51,7 @@ public class EngineImportIndexHandlerProvider {
 
     try (ScanResult scanResult = new ClassGraph()
       .enableClassInfo()
-      .whitelistPackages("org.camunda.optimize.service.engine.importing.index.handler")
+      .whitelistPackages(ImportIndexHandler.class.getPackage().getName())
       .scan()) {
 
       scanResult.getSubclasses(TimestampBasedImportIndexHandler.class.getName())
