@@ -16,6 +16,7 @@ const xml2js = require('xml2js');
 
 // adjust for number of process instances to generate
 const numberOfProcessInstances = 5000;
+let dataGenerationComplete = false;
 
 fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) => {
   xml2js.parseString(data, {explicitArray: false}, (err, data) => {
@@ -148,12 +149,22 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
       generateDataProcess.stdout.on('data', data => addLog(data, 'dataGenerator'));
       generateDataProcess.stderr.on('data', data => addLog(data, 'dataGenerator', true));
 
+      generateDataProcess.on('exit', () => {
+        dataGenerationComplete = true;
+      });
+
       process.on('SIGINT', () => generateDataProcess.kill('SIGINT'));
       process.on('SIGTERM', () => generateDataProcess.kill('SIGTERM'));
     }
 
     function startManagementServer() {
       const server = http.createServer(function(request, response) {
+        if (request.url === '/api/dataGenerationComplete') {
+          response.writeHead(200, {'Content-Type': 'text/plain'});
+          response.end(dataGenerationComplete.toString(), 'utf-8');
+          return;
+        }
+
         var filePath = __dirname + '/managementServer' + request.url;
         if (request.url === '/') {
           filePath += 'index.html';

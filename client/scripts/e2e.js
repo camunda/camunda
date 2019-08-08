@@ -65,20 +65,31 @@ function checkPort(number) {
 }
 
 async function waitForData() {
-  const resp = await fetch('http://localhost:8090/api/status');
-  const status = await resp.json();
+  const generatorResponse = await fetch('http://localhost:8100/api/dataGenerationComplete');
+  const status = await generatorResponse.text();
 
-  const {
-    connectionStatus: {engineConnections, connectedToElasticsearch},
-    isImporting
-  } = status;
-
-  if (connectedToElasticsearch && engineConnections['camunda-bpm'] && !isImporting['camunda-bpm']) {
-    console.log(chalk.green.bold('Data Available! Starting tests.'));
-    clearInterval(dataInterval);
-    startTest();
+  if (status === 'false') {
+    console.log('Still generating data');
   } else {
-    console.log('Waiting for data');
+    const resp = await fetch('http://localhost:8090/api/status');
+    const status = await resp.json();
+
+    const {
+      connectionStatus: {engineConnections, connectedToElasticsearch},
+      isImporting
+    } = status;
+
+    if (
+      connectedToElasticsearch &&
+      engineConnections['camunda-bpm'] &&
+      !isImporting['camunda-bpm']
+    ) {
+      console.log(chalk.green.bold('Data Available! Starting tests.'));
+      clearInterval(dataInterval);
+      startTest();
+    } else {
+      console.log('Waiting for data import');
+    }
   }
 }
 
