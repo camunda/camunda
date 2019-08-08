@@ -33,6 +33,7 @@
     <additionalparam>-Xdoclint:none</additionalparam>
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
     <spotbugs.include>spotbugs/spotbugs-include.xml</spotbugs.include>
+    <spotbugs.exclude>spotbugs/spotbugs-exclude.xml</spotbugs.exclude>
 
     <!-- EXTERNAL LIBS -->
     <version.agrona>1.0.6</version.agrona>
@@ -1018,6 +1019,7 @@
               <threshold>Low</threshold>
               <xmlOutput>true</xmlOutput>
               <includeFilterFile>${spotbugs.include}</includeFilterFile>
+              <excludeFilterFile>${spotbugs.exclude}</excludeFilterFile>
             </configuration>
             <executions>
               <execution>
