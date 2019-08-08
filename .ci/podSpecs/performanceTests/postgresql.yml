@@ -19,9 +19,9 @@ spec:
     spec:
       automountServiceAccountToken: false
       nodeSelector:
-        cloud.google.com/gke-nodepool: slaves-ssd
+        cloud.google.com/gke-nodepool: slaves-ssd-stable
       tolerations:
-        - key: "slaves-ssd"
+        - key: "slaves-ssd-stable"
           operator: "Exists"
           effect: "NoSchedule"
       volumes:
@@ -67,7 +67,7 @@ spec:
           subPath: gcloud
       - name: postgresql
         image: postgres:11.2
-        args: ["-c", "log_statement=none", "-c", "wal_buffers=32MB", "-c", "checkpoint_timeout=600", "-c", "max_wal_size=30GB"]
+        args: ["-c", "max_connections=200", "-c", "effective_cache_size=4GB", "-c", "shared_buffers=2GB", "-c", "synchronous_commit=off", "-c", "log_statement=none", "-c", "wal_buffers=32MB", "-c", "checkpoint_timeout=600", "-c", "max_wal_size=30GB"]
         env:
         - name: POD_IP
           valueFrom: {fieldRef: {fieldPath: status.podIP}}
@@ -100,7 +100,7 @@ spec:
         resources:
           limits:
             cpu: 8
-            memory: 2Gi
+            memory: 10Gi
           requests:
             cpu: 8
-            memory: 2Gi
+            memory: 5Gi

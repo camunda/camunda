@@ -19,9 +19,9 @@ spec:
     spec:
       automountServiceAccountToken: false
       nodeSelector:
-        cloud.google.com/gke-nodepool: slaves-ssd
+        cloud.google.com/gke-nodepool: slaves-ssd-stable
       tolerations:
-        - key: "slaves-ssd"
+        - key: "slaves-ssd-stable"
           operator: "Exists"
           effect: "NoSchedule"
       volumes:
@@ -107,7 +107,7 @@ spec:
               cpu: 8
             requests:
               cpu: 8
-              memory: "10Gi"
+              memory: "16Gi"
           ports:
             - containerPort: 9200
               name: http

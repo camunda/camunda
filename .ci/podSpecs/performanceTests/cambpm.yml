@@ -40,6 +40,12 @@ spec:
               value: "camunda"
             - name: DB_PASSWORD
               value: "camunda"
+            - name: DB_CONN_MAXACTIVE
+              value: "200"
+            - name: DB_CONN_MAXIDLE
+              value: "100"
+            - name: DB_CONN_MINIDLE
+              value: "50"
             - name: DB_URL
               value: "jdbc:postgresql://postgres:5432/engine"
           ports:
