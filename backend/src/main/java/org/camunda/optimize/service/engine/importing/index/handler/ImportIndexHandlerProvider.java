@@ -86,7 +86,7 @@ public class ImportIndexHandlerProvider {
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getCompletedProcessInstanceImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(CompletedProcessInstanceImportIndexHandler.class);
     }
     return result;
   }
@@ -96,7 +96,7 @@ public class ImportIndexHandlerProvider {
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getCompletedActivityImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(CompletedActivityInstanceImportIndexHandler.class);
     }
     return result;
   }
@@ -106,7 +106,7 @@ public class ImportIndexHandlerProvider {
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getRunningActivityImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(RunningActivityInstanceImportIndexHandler.class);
     }
     return result;
   }
@@ -116,7 +116,7 @@ public class ImportIndexHandlerProvider {
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getRunningProcessInstanceImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(RunningProcessInstanceImportIndexHandler.class);
     }
     return result;
   }
@@ -126,7 +126,7 @@ public class ImportIndexHandlerProvider {
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getVariableUpdateInstanceImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(VariableUpdateInstanceImportIndexHandler.class);
     }
     return result;
   }
@@ -136,7 +136,7 @@ public class ImportIndexHandlerProvider {
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getProcessDefinitionImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(ProcessDefinitionImportIndexHandler.class);
     }
     return result;
   }
@@ -146,7 +146,7 @@ public class ImportIndexHandlerProvider {
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getCompletedUserTaskInstanceImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(CompletedUserTaskInstanceImportIndexHandler.class);
     }
     return result;
   }
@@ -156,7 +156,7 @@ public class ImportIndexHandlerProvider {
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getRunningUserTaskInstanceImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(RunningUserTaskInstanceImportIndexHandler.class);
     }
     return result;
   }
@@ -166,7 +166,7 @@ public class ImportIndexHandlerProvider {
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getUserOperationLogImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(UserOperationLogInstanceImportIndexHandler.class);
     }
     return result;
   }
@@ -176,7 +176,7 @@ public class ImportIndexHandlerProvider {
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getIdentityLinkLogImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(IdentityLinkLogImportIndexHandler.class);
     }
     return result;
   }
@@ -203,7 +203,7 @@ public class ImportIndexHandlerProvider {
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getProcessDefinitionXmlImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(ProcessDefinitionXmlImportIndexHandler.class);
     }
     return result;
   }
@@ -213,7 +213,7 @@ public class ImportIndexHandlerProvider {
       engineAlias);
     DecisionDefinitionImportIndexHandler result = null;
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getDecisionDefinitionImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(DecisionDefinitionImportIndexHandler.class);
     }
     return result;
   }
@@ -223,7 +223,7 @@ public class ImportIndexHandlerProvider {
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getDecisionDefinitionXmlImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(DecisionDefinitionXmlImportIndexHandler.class);
     }
     return result;
   }
@@ -233,7 +233,7 @@ public class ImportIndexHandlerProvider {
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getDecisionInstanceImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(DecisionInstanceImportIndexHandler.class);
     }
     return result;
   }
@@ -243,7 +243,7 @@ public class ImportIndexHandlerProvider {
       .get(engineAlias);
     TenantImportIndexHandler result = null;
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getTenantImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(TenantImportIndexHandler.class);
     }
     return result;
   }
