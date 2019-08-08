@@ -266,4 +266,15 @@ public class ListViewQueryDto {
     result = 31 * result + (variable != null ? variable.hashCode() : 0);
     return result;
   }
+  
+  public static ListViewQueryDto createAll() {
+    ListViewQueryDto q = new ListViewQueryDto();
+    q.setRunning(true);
+    q.setActive(true);
+    q.setIncidents(true);
+    q.setFinished(true);
+    q.setCompleted(true);
+    q.setCanceled(true);
+    return q;
+  }
 }

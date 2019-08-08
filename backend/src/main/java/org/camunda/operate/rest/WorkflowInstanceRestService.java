@@ -81,6 +81,7 @@ public class WorkflowInstanceRestService {
 
   @ApiOperation("Query workflow instances by different parameters")
   @PostMapping
+  @Timed(value = Metrics.OPERATE_NAMESPACE+"query",extraTags = {"name","workflowinstances"},description = "How long does it take to retrieve the workflowinstances by query.")
   public ListViewResponseDto queryWorkflowInstances(
       @RequestBody ListViewRequestDto workflowInstanceRequest,
       @RequestParam("firstResult") Integer firstResult,   //required

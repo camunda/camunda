@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import static org.apache.lucene.search.join.ScoreMode.None;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITY_ID;
@@ -70,6 +71,7 @@ import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
 import static org.elasticsearch.join.query.JoinQueryBuilders.hasChildQuery;
 
 @Component
@@ -269,9 +271,9 @@ public class ListViewReader {
   }
 
   private QueryBuilder createErrorMessageQuery(String errorMessage) {
-    return hasChildQuery(ACTIVITIES_JOIN_RELATION,  termQuery(ERROR_MSG, errorMessage), None);
+    return hasChildQuery(ACTIVITIES_JOIN_RELATION,  wildcardQuery(ERROR_MSG, "*"+errorMessage+"*"), None);
   }
-
+  
   private QueryBuilder createIdsQuery(List<String> ids) {
     return termsQuery(ListViewTemplate.ID, ids);
   }

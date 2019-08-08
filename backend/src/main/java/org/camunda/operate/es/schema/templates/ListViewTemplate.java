@@ -91,7 +91,8 @@ public class ListViewTemplate extends AbstractTemplateCreator {
         .field("type", "long")
       .endObject()
       .startObject(ERROR_MSG)
-        .field("type", "keyword")
+        .field("type", "keyword") // search_as_you_type ?
+        .field("normalizer","case_insensitive")
       .endObject()
       .startObject(INCIDENT_JOB_KEY)
         .field("type", "keyword")
