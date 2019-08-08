@@ -31,9 +31,8 @@ public class ServerTransportService implements Service<ServerTransport> {
 
   protected final String readableName;
   protected final InetSocketAddress bindAddress;
-  private final ByteValue sendBufferSize;
-
   protected ServerTransport serverTransport;
+  private final ByteValue sendBufferSize;
 
   public ServerTransportService(
       String readableName, InetSocketAddress bindAddress, ByteValue sendBufferSize) {

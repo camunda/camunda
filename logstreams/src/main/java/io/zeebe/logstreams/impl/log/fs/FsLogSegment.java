@@ -43,8 +43,8 @@ public class FsLogSegment {
       "Expected to allocate new segment of size %d, but not enough space available (%d)";
   private static final String ERROR_MSG_INSUFFICIENT_CAPACITY =
       "Expected to append block with size %d, but actual capacity is insufficient %d.";
-  private final String fileName;
   protected volatile short state;
+  private final String fileName;
   private FileChannel fileChannel;
   private final Rater rater =
       new Rater(

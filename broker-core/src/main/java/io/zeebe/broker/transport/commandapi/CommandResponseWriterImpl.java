@@ -33,10 +33,10 @@ public class CommandResponseWriterImpl implements CommandResponseWriter, BufferW
       new ExecuteCommandResponseEncoder();
   protected final ServerResponse response = new ServerResponse();
   protected final ServerOutput output;
-  private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
   protected int partitionId = partitionIdNullValue();
   protected long key = keyNullValue();
   protected BufferWriter valueWriter;
+  private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
   private RecordType recordType = RecordType.NULL_VAL;
   private ValueType valueType = ValueType.NULL_VAL;
   private short intent = Intent.NULL_VAL;

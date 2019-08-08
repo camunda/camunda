@@ -53,15 +53,11 @@ public class ActivateJobsTest {
   private static final Map<String, Object> CUSTOM_HEADERS = Collections.singletonMap("foo", "bar");
   private static final Map<String, Object> VARIABLES = Collections.singletonMap("hello", "world");
   private static final int PARTITION_COUNT = 3;
-
+  @Rule public Timeout timeout = Timeout.seconds(120);
   private final EmbeddedBrokerRule embeddedBrokerRule =
       new EmbeddedBrokerRule(setPartitionCount(PARTITION_COUNT));
   public GrpcClientRule clientRule = new GrpcClientRule(embeddedBrokerRule);
-
   @Rule public RuleChain ruleChain = RuleChain.outerRule(embeddedBrokerRule).around(clientRule);
-
-  @Rule public Timeout timeout = Timeout.seconds(120);
-
   private ZeebeClient client;
 
   @Before

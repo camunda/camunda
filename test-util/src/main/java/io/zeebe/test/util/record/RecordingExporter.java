@@ -51,12 +51,10 @@ import java.util.stream.StreamSupport;
 
 public class RecordingExporter implements Exporter {
 
+  public static long maxWait = Duration.ofSeconds(5).toMillis();
   private static final List<Record<?>> RECORDS = new CopyOnWriteArrayList<>();
-
   private static final Lock LOCK = new ReentrantLock();
   private static final Condition IS_EMPTY = LOCK.newCondition();
-
-  public static long maxWait = Duration.ofSeconds(5).toMillis();
 
   @Override
   public void export(final Record record) {

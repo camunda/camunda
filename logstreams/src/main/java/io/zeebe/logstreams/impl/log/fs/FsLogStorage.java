@@ -39,8 +39,8 @@ public class FsLogStorage implements LogStorage {
       "Expected to append block with smaller block size then %d, but actual block size was %d.";
 
   protected final FsLogStorageConfiguration config;
-  private final ReadResultProcessor defaultReadResultProcessor = (buffer, readResult) -> readResult;
   protected volatile int state = STATE_CREATED;
+  private final ReadResultProcessor defaultReadResultProcessor = (buffer, readResult) -> readResult;
   /** Readable log segments */
   private FsLogSegments logSegments;
 

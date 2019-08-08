@@ -85,10 +85,10 @@ public class WorkflowInstanceStreamProcessorTest {
           .moveToActivity("task1")
           .endEvent("end")
           .done();
+  @Rule public Timeout timeoutRule = new Timeout(2, TimeUnit.MINUTES);
   private final StreamProcessorRule envRule = new StreamProcessorRule();
   private final WorkflowInstanceStreamProcessorRule streamProcessorRule =
       new WorkflowInstanceStreamProcessorRule(envRule);
-  @Rule public Timeout timeoutRule = new Timeout(2, TimeUnit.MINUTES);
   @Rule public RuleChain chain = RuleChain.outerRule(envRule).around(streamProcessorRule);
 
   @Test

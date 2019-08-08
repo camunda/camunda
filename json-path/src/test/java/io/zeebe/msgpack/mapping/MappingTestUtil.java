@@ -30,6 +30,7 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class MappingTestUtil {
   public static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+  public static Path jsonDocumentPath;
   protected static final String NODE_JSON_OBJECT_KEY = "jsonObject";
   protected static final String NODE_TEST_ATTR_KEY = "testAttr";
   protected static final String NODE_STRING_KEY = "string";
@@ -49,11 +50,8 @@ public class MappingTestUtil {
   protected static final Map<String, Object> JSON_PAYLOAD = new HashMap<>();
   protected static final ObjectMapper MSGPACK_MAPPER = new ObjectMapper(new MessagePackFactory());
   protected static final byte[] MSG_PACK_BYTES;
-
   private static final MutableDirectBuffer WRITE_BUFFER = new UnsafeBuffer(new byte[256]);
   private static final MsgPackWriter WRITER = new MsgPackWriter();
-
-  public static Path jsonDocumentPath;
 
   static {
     JSON_MAPPER.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);

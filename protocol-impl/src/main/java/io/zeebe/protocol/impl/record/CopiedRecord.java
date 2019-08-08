@@ -17,19 +17,17 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
 
+  protected ValueType valueType;
   private final T recordValue;
-
   private final long key;
   private final long position;
   private final long sourcePosition;
   private final long timestamp;
-
   private final RecordType recordType;
   private final Intent intent;
   private final int partitionId;
   private final RejectionType rejectionType;
   private final String rejectionReason;
-  protected ValueType valueType;
 
   public CopiedRecord(
       T recordValue,
@@ -145,12 +143,12 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
   }
 
   @Override
-  public String toString() {
-    return toJson();
+  public Record<T> clone() {
+    return new CopiedRecord<>(this);
   }
 
   @Override
-  public Record<T> clone() {
-    return new CopiedRecord<>(this);
+  public String toString() {
+    return toJson();
   }
 }

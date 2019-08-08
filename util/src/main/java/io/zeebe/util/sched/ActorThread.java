@@ -51,15 +51,14 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   public final ManyToManyConcurrentArrayQueue<Runnable> submittedCallbacks =
       new ManyToManyConcurrentArrayQueue<>(1024 * 24);
   protected final ActorTimerQueue timerJobQueue;
+  protected ActorTaskRunnerIdleStrategy idleStrategy = new ActorTaskRunnerIdleStrategy();
+  ActorTask currentTask;
   private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
   private final ActorClock clock;
   private final int threadId;
-
   private final TaskScheduler taskScheduler;
   private final BoundedArrayQueue<ActorJob> jobs = new BoundedArrayQueue<>(2048);
   private final ActorThreadGroup actorThreadGroup;
-  protected ActorTaskRunnerIdleStrategy idleStrategy = new ActorTaskRunnerIdleStrategy();
-  ActorTask currentTask;
   private volatile ActorThreadState state;
 
   public ActorThread(

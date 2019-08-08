@@ -31,9 +31,9 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
   protected final TransportContext transportContext;
   protected final AtomicBoolean closing = new AtomicBoolean(false);
   protected final TransportChannelFactory channelFactory;
+  protected Int2ObjectHashMap<TransportChannel> channels = new Int2ObjectHashMap<>();
   private final List<TransportListener> transportListeners = new ArrayList<>();
   private final ActorContext actorContext;
-  protected Int2ObjectHashMap<TransportChannel> channels = new Int2ObjectHashMap<>();
 
   public Conductor(ActorContext actorContext, TransportContext context) {
     this.actorContext = actorContext;

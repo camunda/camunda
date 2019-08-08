@@ -36,13 +36,11 @@ import org.junit.Test;
 
 public class VariableStateTest {
 
+  @ClassRule public static ZeebeStateRule stateRule = new ZeebeStateRule();
   private static final long WORKFLOW_KEY = 123;
   private static final AtomicLong PARENT_KEY = new AtomicLong(0);
   private static final AtomicLong CHILD_KEY = new AtomicLong(1);
   private static final AtomicLong SECOND_CHILD_KEY = new AtomicLong(2);
-
-  @ClassRule public static ZeebeStateRule stateRule = new ZeebeStateRule();
-
   private static ElementInstanceState elementInstanceState;
   private static VariablesState variablesState;
   private static RecordingVariableListener listener;

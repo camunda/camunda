@@ -21,8 +21,6 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class JsonConditionInterpreterTest {
 
-  private final JsonConditionInterpreter interpreter = new JsonConditionInterpreter();
-
   @Parameter(0)
   public String expression;
 
@@ -31,6 +29,8 @@ public class JsonConditionInterpreterTest {
 
   @Parameter(2)
   public boolean isFulfilled;
+
+  private final JsonConditionInterpreter interpreter = new JsonConditionInterpreter();
 
   @Parameters(name = "{index}: expression = {0}")
   public static Iterable<Object[]> data() {

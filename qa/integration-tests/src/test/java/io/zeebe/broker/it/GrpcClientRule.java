@@ -30,9 +30,8 @@ import org.junit.rules.ExternalResource;
 
 public class GrpcClientRule extends ExternalResource {
 
-  private final Consumer<ZeebeClientBuilder> configurator;
-
   protected ZeebeClient client;
+  private final Consumer<ZeebeClientBuilder> configurator;
 
   public GrpcClientRule(final EmbeddedBrokerRule brokerRule) {
     this(brokerRule, config -> {});

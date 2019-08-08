@@ -20,11 +20,10 @@ import io.zeebe.protocol.record.intent.Intent;
 
 @SuppressWarnings({"rawtypes"})
 public class TypedEventImpl implements TypedRecord {
-  private final int partitionId;
-
   protected LoggedEvent rawEvent;
   protected RecordMetadata metadata;
   protected UnifiedRecordValue value;
+  private final int partitionId;
 
   public TypedEventImpl(int partitionId) {
     this.partitionId = partitionId;
