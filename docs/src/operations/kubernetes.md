@@ -6,6 +6,6 @@ Zeebe needs to be deployed as a [StatefulSet](https://kubernetes.io/docs/concept
 
 In the [zeebe-kubernetes](https://github.com/zeebe-io/zeebe-kubernetes) repository you will find example Kubernetes manifests to configure a three broker cluster with the Elastic Search exporter and the Operate preview. Examples are provided for provisioning storage on Google Cloud Platform, and Microsoft Azure.
 
-There are many ways that you can provision and configure a Kubernetes cluster. And there are a number of architectural choices you need to make: will your workers run in the Kubernetes cluster of external to it?
+There are many ways that you can provision and configure a Kubernetes cluster. And there are a number of architectural choices you need to make: will your workers run in the Kubernetes cluster or external to it?
  
 You will need to configure your Kubernetes cluster and modify this to suit the architecture you are building.
