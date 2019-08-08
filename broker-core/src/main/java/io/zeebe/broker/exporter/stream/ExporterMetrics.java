@@ -16,7 +16,7 @@ public class ExporterMetrics {
           .namespace("zeebe")
           .name("exporter_events_total")
           .help("Number of events processed by exporter")
-          .labelNames("action", "partition")
+          .labelNames("action", "partition", "valueType")
           .register();
 
   private final String partitionIdLabel;
@@ -25,15 +25,15 @@ public class ExporterMetrics {
     partitionIdLabel = String.valueOf(partitionId);
   }
 
-  private void event(String action) {
-    EXPORTER_EVENTS.labels(action, partitionIdLabel).inc();
+  private void event(String action, String valueType) {
+    EXPORTER_EVENTS.labels(action, partitionIdLabel, valueType).inc();
   }
 
-  public void eventExported() {
-    event("exported");
+  public void eventExported(String valueType) {
+    event("exported", valueType);
   }
 
-  public void eventSkipped() {
-    event("skipped");
+  public void eventSkipped(String valueType) {
+    event("skipped", valueType);
   }
 }
