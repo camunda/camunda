@@ -20,7 +20,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-
+import java.util.function.BiConsumer;
 import org.camunda.operate.data.AbstractDataGenerator;
 import org.camunda.operate.data.util.NameGenerator;
 import org.camunda.operate.util.ZeebeTestUtil;
@@ -283,6 +283,8 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     jobWorkers.add(progressAlwaysFailingTask());
 
+    jobWorkers.addAll(progressMultiInstanceTasks());
+
     //start more instances after 1 minute
     scheduler.schedule(() ->
         startWorkflowInstances(3)
@@ -318,6 +320,34 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       .name("operate")
       .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
       .open();
+  }
+
+  private List<JobWorker> progressMultiInstanceTasks() {
+    Random random = new Random();
+    JobHandler handler = (c, j) -> {
+      if (random.nextBoolean()) {
+        c.newCompleteCommand(j.getKey()).send().join();
+      }
+      else {
+        c.newFailCommand(j.getKey()).retries(0).send().join();
+      }
+    };
+
+    List<JobWorker> workers = new ArrayList<>();
+    workers.add(client.newWorker()
+        .jobType("filter")
+        .handler(handler)
+        .open());
+    workers.add(client.newWorker()
+        .jobType("map")
+        .handler(handler)
+        .open());
+    workers.add(client.newWorker()
+        .jobType("reduce")
+        .handler(handler)
+        .open());
+
+    return workers;
   }
 
   private void cancelSomeInstances() {
@@ -567,6 +597,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     ZeebeTestUtil.deployWorkflow(client, "usertest/registerPassenger_v_1.bpmn");
 
+    ZeebeTestUtil.deployWorkflow(client, "usertest/multiInstance.bpmn");
   }
 
   protected void startWorkflowInstances(int version) {
@@ -574,6 +605,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     for (int i = 0; i < instancesCount; i++) {
       if (version < 2) {
         workflowInstanceKeys.add(startLoanProcess());
+        workflowInstanceKeys.add(startMultiInstanceProcess());
       }
       if (version < 3) {
         workflowInstanceKeys.add(startOrderProcess());
@@ -642,6 +674,10 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         + "  ],\n"
         + "  \"otherInfo\": null\n"
         + "}");
+  }
+
+  private long startMultiInstanceProcess() {
+    return ZeebeTestUtil.startWorkflowInstance(client, "multiInstanceProcess", "{\"items\": [1, 2, 3]}");
   }
 
   protected void deployVersion2() {
