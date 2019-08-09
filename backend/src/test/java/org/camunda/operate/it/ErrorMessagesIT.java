@@ -84,7 +84,7 @@ public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
   
   // OPE-619
   @Test
-  public void testFilterErrorMessagesBySubstringAndIgnoreCase() throws Exception {
+  public void testFilterErrorMessagesBySubstring() throws Exception {
     // Given
     String errorMessageToFind =        "   Find me by query only a substring  ";
     String anotherErrorMessageToFind = "   Unexpected error while executing query 'all_users'";
@@ -102,9 +102,13 @@ public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
     assertSearchResults(searchForErrorMessages("by query only a"), 1, workflowInstanceKey);
     // 3. case should find two one results , because 'query' is in both error messages 
     assertSearchResults(searchForErrorMessages("query"), 2, workflowInstanceKey, anotherWorkflowInstanceKey);
-    // 4. case (ignore lower/upper case) should find one result because 'Find' is in only one errorMessage 
+    // 4. case (ignore lower/upper characters) should find one result because 'Find' is in only one errorMessage 
     assertSearchResults(searchForErrorMessages("find"), 1, workflowInstanceKey);
     assertSearchResults(searchForErrorMessages("Find"), 1, workflowInstanceKey);
+    // 5. case use wildcard query when searchstring contains the wildcard character
+    assertSearchResults(searchForErrorMessages("que"), 0, workflowInstanceKey);
+    assertSearchResults(searchForErrorMessages("que*"), 2, workflowInstanceKey);
+    assertSearchResults(searchForErrorMessages("*user*"), 1, workflowInstanceKey);
   }
   
   protected void assertSearchResults(ListViewResponseDto results,int count,String ...workflowInstanceKeys) {

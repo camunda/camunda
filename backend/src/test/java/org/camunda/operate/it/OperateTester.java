@@ -220,7 +220,7 @@ public class OperateTester {
   }
   
   public OperateTester cancelWorkflowInstanceOperation() throws Exception {
-    final ListViewQueryDto workflowInstanceQuery = createAllQuery();
+    final ListViewQueryDto workflowInstanceQuery = ListViewQueryDto.createAll();
     workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
     
     BatchOperationRequestDto batchOperationDto = new BatchOperationRequestDto();
@@ -241,17 +241,6 @@ public class OperateTester {
     return this;
   }
   
-  protected ListViewQueryDto createAllQuery() {
-    ListViewQueryDto query = new ListViewQueryDto();
-    query.setRunning(true);
-    query.setActive(true);
-    query.setIncidents(true);
-    query.setFinished(true);
-    query.setCanceled(true);
-    query.setCompleted(true);
-    return query;
-  }
-
   public OperateTester operationIsCompleted() {
     executeOneBatch();
     processAllRecordsAndWait(operationsByWorkflowInstanceAreCompletedCheck, workflowInstanceKey);

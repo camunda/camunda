@@ -33,7 +33,9 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.ExistsQueryBuilder;
+import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
@@ -71,11 +73,12 @@ import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
 import static org.elasticsearch.join.query.JoinQueryBuilders.hasChildQuery;
 
 @Component
 public class ListViewReader {
+
+  private static final String WILD_CARD = "*";
 
   private static final Logger logger = LoggerFactory.getLogger(ListViewReader.class);
 
@@ -270,8 +273,20 @@ public class ListViewReader {
     return rangeQueryBuilder;
   }
 
+  private QueryBuilder createErrorMessageAsAndMatchQuery(String errorMessage) {
+    return hasChildQuery(ACTIVITIES_JOIN_RELATION,QueryBuilders.matchQuery(ERROR_MSG, errorMessage).operator(Operator.AND), None);
+  }
+  
+  private QueryBuilder createErrorMessageAsWildcardQuery(String errorMessage) {
+    return hasChildQuery(ACTIVITIES_JOIN_RELATION,QueryBuilders.wildcardQuery(ERROR_MSG, errorMessage), None);
+  }
+  
   private QueryBuilder createErrorMessageQuery(String errorMessage) {
-    return hasChildQuery(ACTIVITIES_JOIN_RELATION,  wildcardQuery(ERROR_MSG, "*"+errorMessage+"*"), None);
+    if(errorMessage.contains(WILD_CARD)) {
+      return createErrorMessageAsWildcardQuery(errorMessage);
+    }else {
+      return createErrorMessageAsAndMatchQuery(errorMessage);
+    }
   }
   
   private QueryBuilder createIdsQuery(List<String> ids) {

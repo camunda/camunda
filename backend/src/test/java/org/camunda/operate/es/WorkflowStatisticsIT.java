@@ -148,13 +148,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
   }
 
   private ListViewRequestDto createGetAllWorkflowInstancesQuery(Long workflowKey) {
-    ListViewQueryDto q = new ListViewQueryDto();
-    q.setRunning(true);
-    q.setActive(true);
-    q.setIncidents(true);
-    q.setFinished(true);
-    q.setCompleted(true);
-    q.setCanceled(true);
+    ListViewQueryDto q = ListViewQueryDto.createAll();
     if (workflowKey != null) {
       q.setWorkflowIds(CollectionUtil.toSafeListOfStrings(workflowKey));
     }

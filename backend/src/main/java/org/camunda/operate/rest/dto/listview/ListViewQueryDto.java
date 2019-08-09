@@ -268,13 +268,18 @@ public class ListViewQueryDto {
   }
   
   public static ListViewQueryDto createAll() {
-    ListViewQueryDto q = new ListViewQueryDto();
-    q.setRunning(true);
-    q.setActive(true);
-    q.setIncidents(true);
-    q.setFinished(true);
-    q.setCompleted(true);
-    q.setCanceled(true);
-    return q;
+    ListViewQueryDto query = createAllRunning();
+    query.setFinished(true);
+    query.setCompleted(true);
+    query.setCanceled(true);
+    return query;
+  }
+  
+  public static ListViewQueryDto createAllRunning() {
+    ListViewQueryDto query = new ListViewQueryDto();
+    query.setRunning(true);
+    query.setActive(true);
+    query.setIncidents(true);
+    return query;
   }
 }

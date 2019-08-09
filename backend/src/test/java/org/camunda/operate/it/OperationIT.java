@@ -120,7 +120,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     }
 
     //when
-    final ListViewQueryDto allRunningQuery = createAllRunningQuery();
+    final ListViewQueryDto allRunningQuery = ListViewQueryDto.createAllRunning();
     final MvcResult mvcResult = postBatchOperationWithOKResponse(allRunningQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //then
@@ -213,7 +213,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //no workflow instances
 
     //when
-    final MvcResult mvcResult = postBatchOperationWithOKResponse(createAllRunningQuery(), OperationType.CANCEL_WORKFLOW_INSTANCE);
+    final MvcResult mvcResult = postBatchOperationWithOKResponse(ListViewQueryDto.createAllRunning(), OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //then
     final OperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<OperationResponseDto>() {});
@@ -477,7 +477,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //when
     //we call CANCEL_WORKFLOW_INSTANCE operation on instance
-    final ListViewQueryDto workflowInstanceQuery = createAllQuery();
+    final ListViewQueryDto workflowInstanceQuery = ListViewQueryDto.createAll();
     workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
     postBatchOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
@@ -554,7 +554,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     failTaskWithNoRetriesLeft("taskA", workflowInstanceKey, "Some error");
 
     //when we call CANCEL_WORKFLOW_INSTANCE and then RESOLVE_INCIDENT operation on one instance
-    final ListViewQueryDto workflowInstanceQuery = createAllQuery();
+    final ListViewQueryDto workflowInstanceQuery = ListViewQueryDto.createAll();
     workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
     postOperationWithOKResponse(workflowInstanceKey, new OperationRequestDto(OperationType.CANCEL_WORKFLOW_INSTANCE));  //#1
     executeOneBatch();
@@ -628,7 +628,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //when
     //we call CANCEL_WORKFLOW_INSTANCE operation on instance
-    final ListViewQueryDto workflowInstanceQuery = createAllQuery();
+    final ListViewQueryDto workflowInstanceQuery = ListViewQueryDto.createAll();
     workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
     postBatchOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
@@ -665,7 +665,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //when
     //we call CANCEL_WORKFLOW_INSTANCE operation on instance
-    final ListViewQueryDto workflowInstanceQuery = createAllQuery();
+    final ListViewQueryDto workflowInstanceQuery = ListViewQueryDto.createAll();
     workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
     postBatchOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
@@ -697,7 +697,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     }
 
     //when
-    final MvcResult mvcResult = postBatchOperation(createAllRunningQuery(), OperationType.RESOLVE_INCIDENT, HttpStatus.SC_BAD_REQUEST);
+    final MvcResult mvcResult = postBatchOperation(ListViewQueryDto.createAllRunning(), OperationType.RESOLVE_INCIDENT, HttpStatus.SC_BAD_REQUEST);
 
     final String expectedErrorMsg = String
       .format("Too many workflow instances are selected for batch operation. Maximum possible amount: %s", operateProperties.getBatchOperationMaxSize());
@@ -727,15 +727,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {
     });
   }
-
-  private ListViewQueryDto createAllRunningQuery() {
-    ListViewQueryDto query = new ListViewQueryDto();
-    query.setRunning(true);
-    query.setActive(true);
-    query.setIncidents(true);
-    return query;
-  }
-
+  
   private String query(int firstResult, int maxResults) {
     return String.format("%s?firstResult=%d&maxResults=%d", QUERY_INSTANCES_URL, firstResult, maxResults);
   }
