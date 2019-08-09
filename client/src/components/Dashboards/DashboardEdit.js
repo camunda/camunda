@@ -10,6 +10,7 @@ import update from 'immutability-helper';
 import {evaluateReport} from 'services';
 
 import {DashboardRenderer, EntityNameForm} from 'components';
+import {t} from 'translation';
 
 import {AddButton} from './AddButton';
 import {Grid} from './Grid';
@@ -83,7 +84,8 @@ export default class DashboardEdit extends React.Component {
           />
           <div className="subHead">
             <div className="metadata">
-              Last modified {moment(lastModified).format('lll')} by {lastModifier}
+              {t('common.entity.modified')} {moment(lastModified).format('lll')}{' '}
+              {t('common.entity.by')} {lastModifier}
             </div>
           </div>
         </div>

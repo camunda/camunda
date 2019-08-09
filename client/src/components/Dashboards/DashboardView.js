@@ -31,6 +31,7 @@ import {
 } from 'components';
 
 import {themed} from 'theme';
+import {t} from 'translation';
 
 import {getSharedDashboard, shareDashboard, revokeDashboardSharing} from './service';
 
@@ -89,13 +90,10 @@ export default themed(
 
     getShareTooltip = () => {
       if (!this.props.sharingEnabled) {
-        return 'Sharing is disabled per configuration';
+        return t('common.sharing.disabled');
       }
       if (!this.props.isAuthorizedToShare) {
-        return (
-          'You are not authorized to share the dashboard, ' +
-          " because you don't have access to all reports on the dashboard!"
-        );
+        return t('dashboard.cannotShare');
       }
       return '';
     };
@@ -176,17 +174,17 @@ export default themed(
                       >
                         <Button>
                           <Icon type="edit" />
-                          Edit
+                          {t('common.edit')}
                         </Button>
                       </Link>
                       <Button onClick={this.showDeleteModal} className="tool-button delete-button">
                         <Icon type="delete" />
-                        Delete
+                        {t('common.delete')}
                       </Button>
                       <Popover
                         className="tool-button share-button"
                         icon="share"
-                        title="Share"
+                        title={t('common.sharing.buttonTitle')}
                         disabled={!sharingEnabled || !isAuthorizedToShare}
                         tooltip={this.getShareTooltip()}
                       >
@@ -202,37 +200,56 @@ export default themed(
                   )}
                   {fullScreenActive && (
                     <Button onClick={this.props.toggleTheme} className="tool-button theme-toggle">
-                      Toggle Theme
+                      {t('dashboard.toggleTheme')}
                     </Button>
                   )}
                   <Button
                     onClick={() => this.changeFullScreen(!this.state.fullScreenActive)}
                     className="tool-button fullscreen-button"
                   >
-                    <Icon type={fullScreenActive ? 'exit-fullscreen' : 'fullscreen'} />
-                    {fullScreenActive ? ' Leave' : ' Enter'} Fullscreen
+                    <Icon type={fullScreenActive ? 'exit-fullscreen' : 'fullscreen'} />{' '}
+                    {t(
+                      fullScreenActive ? 'dashboard.leaveFullscreen' : 'dashboard.enterFullscreen'
+                    )}
                   </Button>
                   <Dropdown
                     label={
                       <React.Fragment>
-                        <AutoRefreshIcon interval={autoRefreshInterval} /> Auto Refresh
+                        <AutoRefreshIcon interval={autoRefreshInterval} />{' '}
+                        {t('dashboard.autoRefresh')}
                       </React.Fragment>
                     }
                     active={!!autoRefreshInterval}
                   >
-                    {this.autoRefreshOption(null, 'Off')}
-                    {this.autoRefreshOption(1 * 60 * 1000, '1 Minute')}
-                    {this.autoRefreshOption(5 * 60 * 1000, '5 Minutes')}
-                    {this.autoRefreshOption(10 * 60 * 1000, '10 Minutes')}
-                    {this.autoRefreshOption(15 * 60 * 1000, '15 Minutes')}
-                    {this.autoRefreshOption(30 * 60 * 1000, '30 Minutes')}
-                    {this.autoRefreshOption(60 * 60 * 1000, '60 Minutes')}
+                    {this.autoRefreshOption(null, t('common.off'))}
+                    {this.autoRefreshOption(1 * 60 * 1000, '1 ' + t('common.unit.minute.label'))}
+                    {this.autoRefreshOption(
+                      5 * 60 * 1000,
+                      '5 ' + t('common.unit.minute.label-plural')
+                    )}
+                    {this.autoRefreshOption(
+                      10 * 60 * 1000,
+                      '10 ' + t('common.unit.minute.label-plural')
+                    )}
+                    {this.autoRefreshOption(
+                      15 * 60 * 1000,
+                      '15 ' + t('common.unit.minute.label-plural')
+                    )}
+                    {this.autoRefreshOption(
+                      30 * 60 * 1000,
+                      '30 ' + t('common.unit.minute.label-plural')
+                    )}
+                    {this.autoRefreshOption(
+                      60 * 60 * 1000,
+                      '60 ' + t('common.unit.minute.label-plural')
+                    )}
                   </Dropdown>
                 </div>
               </div>
               <div className="subHead">
                 <div className="metadata">
-                  Last modified {moment(lastModified).format('lll')} by {lastModifier}
+                  {t('common.entity.modified')} {moment(lastModified).format('lll')}{' '}
+                  {t('common.entity.by')} {lastModifier}
                 </div>
                 <CollectionsDropdown
                   entity={{id}}

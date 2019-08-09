@@ -18,6 +18,7 @@ import {
 } from 'components';
 
 import {loadEntities} from 'services';
+import {t} from 'translation';
 
 export default class ReportModal extends React.Component {
   state = {
@@ -73,29 +74,29 @@ export default class ReportModal extends React.Component {
         onClose={this.props.close}
         onConfirm={!isInvalid ? this.addReport : undefined}
       >
-        <Modal.Header>Add a Report</Modal.Header>
+        <Modal.Header>{t('dashboard.addButton.addReport')}</Modal.Header>
         <Modal.Content>
           <Form>
             <ButtonGroup>
               <Button onClick={() => this.setExternal(false)} active={!external}>
-                Select Report
+                {t('dashboard.addButton.selectReport')}
               </Button>
               <Button onClick={() => this.setExternal(true)} active={external}>
-                Add External Source
+                {t('dashboard.addButton.addExternal')}
               </Button>
             </ButtonGroup>
             {!external && (
               <Form.Group>
                 {!loading && (
-                  <Labeled label="Add Report">
+                  <Labeled label={t('dashboard.addButton.addReportLabel')}>
                     <Typeahead
                       initialValue={selectedReport}
                       disabled={noReports}
-                      placeholder="Select a Report"
+                      placeholder={t('dashboard.addButton.selectReportPlaceholder')}
                       values={availableReports}
                       onSelect={this.selectReport}
                       formatter={({name}) => this.truncate(name, 74)}
-                      noValuesMessage="No Reports have been created"
+                      noValuesMessage={t('dashboard.addButton.noReports')}
                     />
                   </Labeled>
                 )}
@@ -104,7 +105,7 @@ export default class ReportModal extends React.Component {
             )}
             {external && (
               <Form.Group>
-                <Labeled label="External URL">
+                <Labeled label={t('dashboard.addButton.externalUrl')}>
                   <Input
                     name="externalInput"
                     className="externalInput"
@@ -122,9 +123,9 @@ export default class ReportModal extends React.Component {
           </Form>
         </Modal.Content>
         <Modal.Actions>
-          <Button onClick={this.props.close}>Cancel</Button>
+          <Button onClick={this.props.close}>{t('common.cancel')}</Button>
           <Button variant="primary" color="blue" onClick={this.addReport} disabled={isInvalid}>
-            Add Report
+            {t('dashboard.addButton.addReportLabel')}
           </Button>
         </Modal.Actions>
       </Modal>

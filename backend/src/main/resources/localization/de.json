@@ -167,7 +167,23 @@
   },
   "dashboard": {
     "label": "Instrumententafel",
-    "label-plural": "Dashboards"
+    "label-plural": "Dashboards",
+    "new": "Neues Dashboard",
+    "cannotSave": "Dashboard \"{name}\" konnte nicht gespeichert werden",
+    "cannotShare": "Sie können dieses Dashboard nicht teilen, da Sie nicht Zugriff auf alle Reports auf diesem Dashboard haben",
+    "toggleTheme": "Design umschalten",
+    "enterFullscreen": "Vollbildmodus aktivieren",
+    "leaveFullscreen": "Vollbildmodus verlassen",
+    "autoRefresh": "Auto-Aktualisieren",
+    "addButton": {
+      "addReport": "Einen Report hinzufügen",
+      "selectReport": "Report auswählen",
+      "addExternal": "Externe Quelle hinzufügen",
+      "addReportLabel": "Report hinzufügen",
+      "selectReportPlaceholder": "Einen Report auswählen",
+      "noReports": "Es wurden keine Reports erstellt",
+      "externalUrl": "Externe URL"
+    }
   },
   "alert": {
     "label": "Alarm",
@@ -232,6 +248,8 @@
     "enableAll": "Alles aktivieren",
     "disableAll": "Alle deaktivieren",
     "and": "und",
+    "off": "Aus",
+    "you": "Sie",
     "entity": {
       "empty": "Es ist keine {label} konfiguriert.",
       "create": {

@@ -29,6 +29,7 @@ services:
     container_name: cambpm
     environment:
       - TZ=Europe/Berlin
+      - JAVA_OPTS=-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m
     ports:
       - 8080:8080
       - 9092:9092

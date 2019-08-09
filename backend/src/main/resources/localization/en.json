@@ -167,7 +167,23 @@
   },
   "dashboard": {
     "label": "Dashboard",
-    "label-plural": "Dashboards"
+    "label-plural": "Dashboards",
+    "new": "New Dashboard",
+    "cannotSave": "Dashboard \"{name}\" could not be saved",
+    "cannotShare": "You are not authorized to share the dashboard, because you don't have access to all reports on the dashboard!",
+    "toggleTheme": "Toggle Theme",
+    "enterFullscreen": "Enter Fullscreen",
+    "leaveFullscreen": "Leave Fullscreen",
+    "autoRefresh": "Auto Refresh",
+    "addButton": {
+      "addReport": "Add a Report",
+      "selectReport": "Select Report",
+      "addExternal": "Add External Source",
+      "addReportLabel": "Add Report",
+      "selectReportPlaceholder": "Select a Report",
+      "noReports": "No reports have been created",
+      "externalUrl": "External URL"
+    }
   },
   "alert": {
     "label": "Alert",
@@ -232,6 +248,8 @@
     "enableAll": "Enable All",
     "disableAll": "Disable All",
     "and": "and",
+    "off": "Off",
+    "you": "You",
     "entity": {
       "empty": "There are no {label} configured.",
       "create": {

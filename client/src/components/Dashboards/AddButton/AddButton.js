@@ -7,6 +7,7 @@
 import React from 'react';
 
 import {Button, DashboardObject} from 'components';
+import {t} from 'translation';
 
 import {getOccupiedTiles} from '../service';
 
@@ -58,7 +59,7 @@ export default class AddButton extends React.Component {
       <DashboardObject tileDimensions={this.props.tileDimensions} {...position}>
         <Button className="AddButton" onClick={this.openModal}>
           <div className="AddButton__symbol" />
-          <div className="AddButton__text">Add a Report</div>
+          <div className="AddButton__text">{t('dashboard.addButton.addReport')}</div>
         </Button>
         {this.state.open && <ReportModal close={this.closeModal} confirm={this.addReport} />}
       </DashboardObject>

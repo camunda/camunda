@@ -14,6 +14,7 @@ import {loadEntity, deleteEntity, updateEntity, createEntity} from 'services';
 import {ErrorPage, LoadingIndicator} from 'components';
 
 import {addNotification} from 'notifications';
+import {t} from 'translation';
 
 import {isAuthorizedToShareDashboard, isSharingEnabled} from './service';
 
@@ -56,9 +57,9 @@ export default withErrorHandling(
     createDashboard = () => {
       this.setState({
         loaded: true,
-        name: 'New Dashboard',
+        name: t('dashboard.new'),
         lastModified: moment().format('Y-MM-DDTHH:mm:ss.SSSZZ'),
-        lastModifier: 'You',
+        lastModifier: t('common.you'),
         reports: [],
         isAuthorizedToShare: true
       });
@@ -110,7 +111,7 @@ export default withErrorHandling(
           });
         },
         () => {
-          addNotification({text: `Dashboard "${name}" could not be saved.`, type: 'error'});
+          addNotification({text: t('dashboard.cannotSave', {name}), type: 'error'});
         }
       );
     };
@@ -121,7 +122,7 @@ export default withErrorHandling(
           createEntity('dashboard'),
           id => this.updateDashboard(id, name, reports),
           () => {
-            addNotification({text: `Dashboard "${name}" could not be saved.`, type: 'error'});
+            addNotification({text: t('dashboard.cannotSave', {name}), type: 'error'});
           }
         );
       } else {
