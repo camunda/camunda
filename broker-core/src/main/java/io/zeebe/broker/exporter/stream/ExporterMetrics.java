@@ -8,6 +8,7 @@
 package io.zeebe.broker.exporter.stream;
 
 import io.prometheus.client.Counter;
+import io.zeebe.protocol.record.ValueType;
 
 public class ExporterMetrics {
 
@@ -25,15 +26,15 @@ public class ExporterMetrics {
     partitionIdLabel = String.valueOf(partitionId);
   }
 
-  private void event(String action, String valueType) {
-    EXPORTER_EVENTS.labels(action, partitionIdLabel, valueType).inc();
+  private void event(String action, ValueType valueType) {
+    EXPORTER_EVENTS.labels(action, partitionIdLabel, valueType.name()).inc();
   }
 
-  public void eventExported(String valueType) {
+  public void eventExported(ValueType valueType) {
     event("exported", valueType);
   }
 
-  public void eventSkipped(String valueType) {
+  public void eventSkipped(ValueType valueType) {
     event("skipped", valueType);
   }
 }

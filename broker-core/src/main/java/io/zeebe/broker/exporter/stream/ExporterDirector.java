@@ -231,8 +231,10 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     actor.submit(this::readNextEvent);
   }
 
-  private void skipRecord(String valueType) {
-    metrics.eventSkipped(valueType);
+  private void skipRecord(LoggedEvent currentEvent) {
+    final RecordMetadata metadata = new RecordMetadata();
+    currentEvent.readMetadata(metadata);
+    metrics.eventSkipped(metadata.getValueType());
     actor.submit(this::readNextEvent);
   }
 
@@ -243,9 +245,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
         inExportingPhase = true;
         exportEvent(currentEvent);
       } else {
-        final RecordMetadata metadata = new RecordMetadata();
-        currentEvent.readMetadata(metadata);
-        skipRecord(metadata.getValueType().toString());
+        skipRecord(currentEvent);
       }
     }
   }
@@ -274,7 +274,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
                   LOG.error(ERROR_MESSAGE_EXPORTING_ABORTED, event, throwable);
                   onFailure();
                 } else {
-                  metrics.eventExported(recordExporter.getTypedEvent().getValueType().toString());
+                  metrics.eventExported(recordExporter.getTypedEvent().getValueType());
                   inExportingPhase = false;
                   actor.submit(this::readNextEvent);
                 }
@@ -364,7 +364,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
       return true;
     }
 
-    public TypedEventImpl getTypedEvent() {
+    TypedEventImpl getTypedEvent() {
       return typedEvent;
     }
   }
