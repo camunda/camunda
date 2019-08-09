@@ -13,6 +13,8 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntityUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -433,6 +435,37 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetRolesToCollectionRequest(final String id) {
+    this.path = "collection/" + id + "/role/";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildAddRoleToCollectionRequest(final String id,
+                                                                 final CollectionRoleDto roleDto) {
+    this.path = "collection/" + id + "/role/";
+    this.requestType = POST;
+    this.body = getBody(roleDto);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildUpdateRoleToCollectionRequest(final String id,
+                                                                    final String roleEntryId,
+                                                                    final CollectionRoleUpdateDto updateDto) {
+    this.path = "collection/" + id + "/role/" + roleEntryId;
+    this.requestType = PUT;
+    this.body = getBody(updateDto);
+    return this;
+  }
+
+
+  public OptimizeRequestExecutor buildDeleteRoleToCollectionRequest(final String id,
+                                                                    final String roleEntryId) {
+    this.path = "collection/" + id + "/role/" + roleEntryId;
+    this.requestType = DELETE;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetDashboardRequest(String id) {
     this.path = "dashboard/" + id;
     this.requestType = GET;
@@ -730,7 +763,8 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildFlowNodeOutliersRequest(String key, List<String> version, List<String> tenantIds) {
+  public OptimizeRequestExecutor buildFlowNodeOutliersRequest(String key, List<String> version,
+                                                              List<String> tenantIds) {
     this.path = "analysis/flowNodeOutliers";
     this.requestType = GET;
     this.addSingleQueryParam("processDefinitionKey", key);
@@ -739,7 +773,8 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildFlowNodeDurationChartRequest(String key, List<String> version, String flowNodeId, List<String> tenantIds) {
+  public OptimizeRequestExecutor buildFlowNodeDurationChartRequest(String key, List<String> version,
+                                                                   String flowNodeId, List<String> tenantIds) {
     this.path = "analysis/durationChart";
     this.requestType = GET;
     this.addSingleQueryParam("processDefinitionKey", key);

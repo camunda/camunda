@@ -7,8 +7,10 @@ package org.camunda.optimize.service.collection;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
@@ -19,6 +21,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
+import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.relations.DashboardReferencingService;
 import org.camunda.optimize.service.relations.ReportReferencingService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -80,18 +83,26 @@ public class CollectionService implements ReportReferencingService, DashboardRef
     return collectionReader.getCollection(collectionId);
   }
 
-  public void removeEntityFromAllCollections(String entityId) {
-    collectionWriter.removeEntityFromAllCollections(entityId);
-  }
-
   public void deleteCollection(String collectionId) {
     collectionWriter.deleteCollection(collectionId);
   }
 
-  public List<SimpleCollectionDefinitionDto> findFirstCollectionsForEntity(String entityId) {
-    return collectionReader.findFirstCollectionsForEntity(entityId);
+  public CollectionRoleDto addRoleToCollection(final String collectionId, final CollectionRoleDto roleDto, final String userId)
+    throws OptimizeConflictException {
+    return collectionWriter.addRoleToCollection(collectionId, roleDto, userId);
   }
 
+  public void updateRoleOfCollection(final String collectionId,
+                                     final String roleEntryId,
+                                     final CollectionRoleUpdateDto roleUpdateDto,
+                                     final String userId) throws OptimizeConflictException {
+    collectionWriter.updateRoleInCollection(collectionId, roleEntryId, roleUpdateDto, userId);
+  }
+
+  public void removeRoleFromCollection(String collectionId, String roleEntryId, String userId)
+    throws OptimizeConflictException {
+    collectionWriter.removeRoleFromCollection(collectionId, roleEntryId, userId);
+  }
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForDashboardDelete(final DashboardDefinitionDto definition) {
@@ -135,6 +146,14 @@ public class CollectionService implements ReportReferencingService, DashboardRef
   @Override
   public void handleReportUpdated(final String id, final ReportDefinitionDto updateDefinition) {
     //NOOP
+  }
+
+  private void removeEntityFromAllCollections(String entityId) {
+    collectionWriter.removeEntityFromAllCollections(entityId);
+  }
+
+  private List<SimpleCollectionDefinitionDto> findFirstCollectionsForEntity(String entityId) {
+    return collectionReader.findFirstCollectionsForEntity(entityId);
   }
 
   private Set<ConflictedItemDto> mapCollectionsToConflictingItems(List<SimpleCollectionDefinitionDto> collections) {

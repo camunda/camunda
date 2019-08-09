@@ -37,8 +37,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
-import static org.camunda.optimize.service.es.schema.type.CollectionType.DATA;
-import static org.camunda.optimize.service.es.schema.type.CollectionType.NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
@@ -134,7 +132,8 @@ public class CollectionReader {
     if (collectionDefinitionDto.getData() != null) {
       final CollectionDataDto<String> collectionData = collectionDefinitionDto.getData();
       final CollectionDataDto<CollectionEntity> resolvedCollectionData = new CollectionDataDto<>();
-      resolvedCollectionData.setConfiguration(collectionDefinitionDto.getData().getConfiguration());
+      resolvedCollectionData.setConfiguration(collectionData.getConfiguration());
+      resolvedCollectionData.setRoles(collectionData.getRoles());
       resolvedCollectionData.setEntities(
         collectionData.getEntities()
           .stream()
@@ -153,7 +152,7 @@ public class CollectionReader {
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(QueryBuilders.matchAllQuery())
-      .sort(NAME, SortOrder.ASC)
+      .sort(SimpleCollectionDefinitionDto.Fields.name.name(), SortOrder.ASC)
       .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(COLLECTION_TYPE)
       .types(COLLECTION_TYPE)
@@ -182,7 +181,7 @@ public class CollectionReader {
 
     final QueryBuilder getCollectionByEntityIdQuery = QueryBuilders.boolQuery()
       .filter(QueryBuilders.nestedQuery(
-        DATA,
+        SimpleCollectionDefinitionDto.Fields.data.name(),
         QueryBuilders.termQuery("data.entities", entityId),
         ScoreMode.None
       ));

@@ -83,9 +83,7 @@ public class DashboardWriter {
     }
 
     log.debug("Dashboard with id [{}] has successfully been created.", id);
-    IdDto idDto = new IdDto();
-    idDto.setId(id);
-    return idDto;
+    return new IdDto(id);
   }
 
   public void updateDashboard(DashboardDefinitionUpdateDto dashboard, String id) {

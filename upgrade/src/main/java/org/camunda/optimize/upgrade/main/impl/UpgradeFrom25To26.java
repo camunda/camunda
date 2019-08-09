@@ -10,6 +10,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
+import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRole;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
 import org.camunda.optimize.service.engine.importing.DmnModelUtility;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -47,6 +50,7 @@ import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.INPUT_VARIABLE_NAMES;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.OUTPUT_VARIABLE_NAMES;
 import static org.camunda.optimize.service.es.schema.type.report.AbstractReportType.DATA;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
@@ -99,6 +103,7 @@ public class UpgradeFrom25To26 implements Upgrade {
       .addUpgradeStep(createMultipleDefinitionVersionsForDecisionReports())
       .addUpgradeStep(createDecisionDefinitionInputVariableNames())
       .addUpgradeStep(createDecisionDefinitionOutputVariableNames())
+      .addUpgradeStep(createDefaultManagerRoleForCollections())
       .build();
   }
 
@@ -133,7 +138,6 @@ public class UpgradeFrom25To26 implements Upgrade {
       QueryBuilders.matchAllQuery(),
       script
     );
-
 
   }
 
@@ -219,5 +223,32 @@ public class UpgradeFrom25To26 implements Upgrade {
       throw new UpgradeRuntimeException(errorMessage, e);
     }
     return result;
+  }
+
+  private UpgradeStep createDefaultManagerRoleForCollections() {
+
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("collectionOwnerField", BaseCollectionDefinitionDto.Fields.owner.name())
+        .put("collectionDataField", BaseCollectionDefinitionDto.Fields.data.name())
+        .put("collectionDataRolesField", CollectionDataDto.Fields.roles.name())
+        .put("managerRole", CollectionRole.MANAGER.name())
+        .build()
+    );
+    String script = substitutor.replace(
+      // @formatter:off
+      "String owner = ctx._source.${collectionOwnerField};\n" +
+        "def identity = [ \"id\": owner, \"type\": \"USER\" ];\n" +
+        "def roleEntry = [ \"id\": \"USER:\" + owner, \"identity\": identity, \"role\": \"${managerRole}\"];\n" +
+        "ctx._source.${collectionDataField}.${collectionDataRolesField} = new ArrayList();\n" +
+        "ctx._source.${collectionDataField}.${collectionDataRolesField}.add(roleEntry);\n"
+      // @formatter:on
+    );
+    return new UpdateDataStep(
+      COLLECTION_TYPE,
+      QueryBuilders.matchAllQuery(),
+      script
+    );
+
   }
 }

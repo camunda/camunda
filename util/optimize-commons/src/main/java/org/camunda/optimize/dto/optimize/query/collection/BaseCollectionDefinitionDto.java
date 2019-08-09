@@ -6,17 +6,20 @@
 package org.camunda.optimize.dto.optimize.query.collection;
 
 import lombok.Data;
+import lombok.experimental.FieldNameConstants;
 
 import java.time.OffsetDateTime;
 
 @Data
+@FieldNameConstants(asEnum = true)
 public class BaseCollectionDefinitionDto<DATA_TYPE> {
 
-  protected String id;
-  protected String name;
-  protected OffsetDateTime lastModified;
-  protected OffsetDateTime created;
-  protected String owner;
-  protected String lastModifier;
-  protected CollectionDataDto<DATA_TYPE> data = new CollectionDataDto<>();
+  private String id;
+  private String name;
+  private OffsetDateTime lastModified;
+  private OffsetDateTime created;
+  private String owner;
+  private String lastModifier;
+  private CollectionDataDto<DATA_TYPE> data = new CollectionDataDto<>();
+
 }

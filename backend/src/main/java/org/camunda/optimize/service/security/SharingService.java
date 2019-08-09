@@ -56,9 +56,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
 
     return existing
       .map(share -> {
-        IdDto idDto = new IdDto();
-        idDto.setId(share.getId());
-        return idDto;
+        return new IdDto(share.getId());
       })
       .orElseGet(() -> createNewReportShare(createSharingDto));
   }
@@ -111,9 +109,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
 
   private IdDto createNewReportShare(ReportShareDto createSharingDto) {
     String result = sharingWriter.saveReportShare(createSharingDto).getId();
-    IdDto id = new IdDto();
-    id.setId(result);
-    return id;
+    return new IdDto(result);
   }
 
   public IdDto crateNewDashboardShare(DashboardShareDto createSharingDto, String userId) {
@@ -130,9 +126,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
         return sharingWriter.saveDashboardShare(createSharingDto).getId();
       });
 
-    IdDto id = new IdDto();
-    id.setId(result);
-    return id;
+    return new IdDto(result);
   }
 
   private void addReportInformation(DashboardShareDto createSharingDto) {

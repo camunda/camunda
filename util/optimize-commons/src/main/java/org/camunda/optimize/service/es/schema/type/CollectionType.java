@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.es.schema.type;
 
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.service.es.schema.StrictTypeMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
@@ -18,18 +22,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 public class CollectionType extends StrictTypeMappingCreator {
 
   public static final int VERSION = 1;
-
-  public static final String ID = "id";
-  public static final String NAME = "name";
-  public static final String LAST_MODIFIED = "lastModified";
-  public static final String CREATED = "created";
-  public static final String OWNER = "owner";
-  public static final String LAST_MODIFIER = "lastModifier";
-
-  public static final String DATA = "data";
-
-  public static final String ENTITIES = "entities";
-  public static final String CONFIGURATION = "configuration";
 
   @Override
   public String getType() {
@@ -45,24 +37,24 @@ public class CollectionType extends StrictTypeMappingCreator {
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     XContentBuilder newBuilder = xContentBuilder
-    .startObject(ID)
+    .startObject(BaseCollectionDefinitionDto.Fields.id.name())
       .field("type", "keyword")
     .endObject()
-    .startObject(NAME)
+    .startObject(BaseCollectionDefinitionDto.Fields.name.name())
       .field("type", "keyword")
     .endObject()
-    .startObject(LAST_MODIFIED)
+    .startObject(BaseCollectionDefinitionDto.Fields.lastModified.name())
       .field("type", "date")
       .field("format", OPTIMIZE_DATE_FORMAT)
     .endObject()
-    .startObject(CREATED)
+    .startObject(BaseCollectionDefinitionDto.Fields.created.name())
       .field("type", "date")
       .field("format", OPTIMIZE_DATE_FORMAT)
     .endObject()
-    .startObject(OWNER)
+    .startObject(BaseCollectionDefinitionDto.Fields.owner.name())
       .field("type", "keyword")
     .endObject()
-    .startObject(LAST_MODIFIER)
+    .startObject(BaseCollectionDefinitionDto.Fields.lastModifier.name())
       .field("type", "keyword")
     .endObject();
     newBuilder = addDataField(newBuilder);
@@ -70,16 +62,46 @@ public class CollectionType extends StrictTypeMappingCreator {
      // @formatter:on
   }
 
-  protected XContentBuilder addDataField(XContentBuilder xContentBuilder) throws IOException {
+  private XContentBuilder addDataField(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
-    return xContentBuilder.
-      startObject(DATA)
+    final XContentBuilder contentBuilder = xContentBuilder.
+      startObject(BaseCollectionDefinitionDto.Fields.data.name())
         .field("type", "nested")
         .startObject("properties")
-          .startObject(CONFIGURATION)
+          .startObject(CollectionDataDto.Fields.configuration.name())
             .field("enabled", false)
           .endObject()
-          .startObject(ENTITIES)
+          .startObject(CollectionDataDto.Fields.entities.name())
+            .field("type", "keyword")
+          .endObject();
+          addRolesField(contentBuilder)
+        .endObject()
+      .endObject();
+    // @formatter:on
+    return contentBuilder;
+  }
+
+  private XContentBuilder addRolesField(final XContentBuilder xContentBuilder) throws IOException {
+    // @formatter:off
+    return xContentBuilder.
+      startObject(CollectionDataDto.Fields.roles.name())
+        .field("type", "nested")
+        .startObject("properties")
+          .startObject(CollectionRoleDto.Fields.id.name())
+              .field("type", "keyword")
+          .endObject()
+          .startObject(CollectionRoleDto.Fields.identity.name())
+            .field("type", "object")
+            .startObject("properties")
+              .startObject(IdentityDto.Fields.id.name())
+                .field("type", "keyword")
+              .endObject()
+              .startObject(IdentityDto.Fields.type.name())
+                .field("type", "keyword")
+              .endObject()
+            .endObject()
+          .endObject()
+          .startObject(CollectionRoleDto.Fields.role.name())
             .field("type", "keyword")
           .endObject()
         .endObject()

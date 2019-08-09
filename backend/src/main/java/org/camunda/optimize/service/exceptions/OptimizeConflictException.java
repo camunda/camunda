@@ -10,7 +10,11 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import java.util.Set;
 
 public class OptimizeConflictException extends OptimizeException {
-  private final Set<ConflictedItemDto> conflictedItems;
+  private Set<ConflictedItemDto> conflictedItems;
+
+  public OptimizeConflictException(final String message) {
+    super(message);
+  }
 
   public OptimizeConflictException(Set<ConflictedItemDto> conflictedItems) {
     super("Operation cannot be executed as other entities would be affected.");

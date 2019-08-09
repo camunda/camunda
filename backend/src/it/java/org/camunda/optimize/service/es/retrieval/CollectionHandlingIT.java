@@ -6,10 +6,13 @@
 package org.camunda.optimize.service.es.retrieval;
 
 import com.google.common.collect.ImmutableList;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntityUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRole;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
@@ -19,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -35,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -44,12 +49,13 @@ import static org.junit.Assert.assertEquals;
 
 public class CollectionHandlingIT {
 
+  public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(engineIntegrationRule).around(embeddedOptimizeRule);
 
   @Test
   public void collectionIsWrittenToElasticsearch() throws IOException {
@@ -81,6 +87,15 @@ public class CollectionHandlingIT {
     assertThat(collection.getData().getEntities(), notNullValue());
     assertThat(collection.getData().getEntities().size(), is(0));
     assertThat(collection.getData().getConfiguration(), notNullValue());
+    // author is automatically added as manager
+    assertThat(collection.getData().getRoles(), notNullValue());
+    assertThat(collection.getData().getRoles().size(), is(1));
+    final CollectionRoleDto roleDto = collection.getData().getRoles().get(0);
+    assertThat(roleDto.getId(), is(notNullValue()));
+    assertThat(roleDto.getIdentity(), is(notNullValue()));
+    assertThat(roleDto.getIdentity().getId(), is(DEFAULT_USERNAME));
+    assertThat(roleDto.getIdentity().getType(), is(IdentityType.USER));
+    assertThat(roleDto.getRole(), is(CollectionRole.MANAGER));
   }
 
   @Test
@@ -335,7 +350,6 @@ public class CollectionHandlingIT {
     report = (ReportDefinitionDto) collection2.getData().getEntities().get(0);
     assertThat(report.getId(), is(reportId));
   }
-
 
   @Test
   public void updateCollectionWithEntityIdThatDoesNotExists() {

@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.query.collection;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
+import lombok.experimental.FieldNameConstants;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,8 +15,11 @@ import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
+@FieldNameConstants(asEnum = true)
 public class CollectionDataDto<DATA_TYPE> {
 
   protected Object configuration = new HashMap<>();
+  private List<CollectionRoleDto> roles = new ArrayList<>();
+
   protected List<DATA_TYPE> entities = new ArrayList<>();
 }

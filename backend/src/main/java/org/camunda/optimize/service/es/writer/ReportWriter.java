@@ -101,9 +101,7 @@ public class ReportWriter {
       }
 
       log.debug("Report with id [{}] has successfully been created.", id);
-      IdDto idDto = new IdDto();
-      idDto.setId(id);
-      return idDto;
+      return new IdDto(id);
     } catch (IOException e) {
       String errorMessage = "Was not able to insert combined report.!";
       log.error(errorMessage, e);
@@ -144,9 +142,7 @@ public class ReportWriter {
       }
 
       log.debug("Single process report with id [{}] has successfully been created.", id);
-      IdDto idDto = new IdDto();
-      idDto.setId(id);
-      return idDto;
+      return new IdDto(id);
     } catch (IOException e) {
       String errorMessage = "Was not able to insert single process report.";
       log.error(errorMessage, e);
@@ -187,9 +183,7 @@ public class ReportWriter {
       }
 
       log.debug("Single decision report with id [{}] has successfully been created.", id);
-      IdDto idDto = new IdDto();
-      idDto.setId(id);
-      return idDto;
+      return new IdDto(id);
     } catch (IOException e) {
       String errorMessage = "Was not able to insert single decision report.";
       log.error(errorMessage, e);

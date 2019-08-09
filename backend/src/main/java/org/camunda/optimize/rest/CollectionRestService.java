@@ -8,11 +8,14 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntityUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.collection.CollectionService;
+import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
@@ -70,7 +73,6 @@ public class CollectionRestService {
     collectionService.updatePartialCollection(collectionId, userId, updatedCollection);
   }
 
-
   /**
    * Adds entity to collection (if it wasn't already contained before)
    *
@@ -105,6 +107,49 @@ public class CollectionRestService {
     collectionService.removeEntityFromCollection(collectionId, entityId, userId);
   }
 
+  @GET
+  @Path("/{id}/role/")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public List<CollectionRoleDto> getRoles(@Context ContainerRequestContext requestContext,
+                       @PathParam("id") String collectionId){
+    return  collectionService.getCollectionDefinition(collectionId).getData().getRoles();
+  }
+
+  @POST
+  @Path("/{id}/role/")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public IdDto addRole(@Context ContainerRequestContext requestContext,
+                       @PathParam("id") String collectionId,
+                       @NotNull CollectionRoleDto roleDtoRequest) throws OptimizeConflictException {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    CollectionRoleDto collectionRoleDto = collectionService.addRoleToCollection(collectionId, roleDtoRequest, userId);
+    return new IdDto(collectionRoleDto.getId());
+  }
+
+  @PUT
+  @Path("/{id}/role/{roleEntryId}")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public void updateRole(@Context ContainerRequestContext requestContext,
+                         @PathParam("id") String collectionId,
+                         @PathParam("roleEntryId") String roleEntryId,
+                         @NotNull CollectionRoleUpdateDto roleUpdateDto) throws OptimizeConflictException {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    //
+    collectionService.updateRoleOfCollection(collectionId, roleEntryId, roleUpdateDto, userId);
+  }
+
+  @DELETE
+  @Path("/{id}/role/{roleEntryId}")
+  @Produces(MediaType.APPLICATION_JSON)
+  public void removeRole(@Context ContainerRequestContext requestContext,
+                         @PathParam("id") String collectionId,
+                         @PathParam("roleEntryId") String roleEntryId) throws OptimizeConflictException {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    collectionService.removeRoleFromCollection(collectionId, roleEntryId, userId);
+  }
 
   /**
    * Get a list of all available entity collections with their entities being resolved
@@ -115,7 +160,6 @@ public class CollectionRestService {
   public List<ResolvedCollectionDefinitionDto> getAllResolvedCollections(@Context UriInfo uriInfo) {
     return collectionService.getAllResolvedCollections(uriInfo.getQueryParameters());
   }
-
 
   /**
    * Retrieve the collection to the specified id.

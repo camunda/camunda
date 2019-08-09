@@ -210,9 +210,7 @@ public class AlertService implements ReportReferencingService {
   public IdDto createAlert(AlertCreationDto toCreate, String userId) {
     validateAlert(toCreate, userId);
     String alertId = this.createAlertForUser(toCreate, userId).getId();
-    IdDto result = new IdDto();
-    result.setId(alertId);
-    return result;
+    return new IdDto(alertId);
   }
 
   private void validateAlert(AlertCreationDto toCreate, String userId) {
