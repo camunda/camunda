@@ -145,10 +145,10 @@ export default class StringInput extends React.Component {
               toggleValue={this.toggleValue}
               loading={this.state.loading ? 1 : 0}
               labels={{
-                available: 'common.filter.variableModal.multiSelect.available',
-                selected: 'common.filter.variableModal.multiSelect.selected',
-                search: 'common.filter.variableModal.multiSelect.search',
-                empty: 'common.filter.variableModal.multiSelect.empty'
+                available: t('common.filter.variableModal.multiSelect.available'),
+                selected: t('common.filter.variableModal.multiSelect.selected'),
+                search: t('common.filter.variableModal.multiSelect.search'),
+                empty: t('common.filter.variableModal.multiSelect.empty')
               }}
             />
             {!this.state.valuesAreComplete && (

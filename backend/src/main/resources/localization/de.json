@@ -329,7 +329,10 @@
         "endDate": "Enddatum",
         "duration": "Dauer",
         "variable": "Variabel",
-        "flowNode": "Durchflussknoten"
+        "flowNode": "Durchflussknoten",
+        "evaluationDateTime": "Bewertungsdatum Uhrzeit",
+        "inputVariable": "Eingangsvariable",
+        "outputVariable": "Ausgabevariable"
       },
       "list": {
         "operators": {
@@ -347,7 +350,8 @@
         "running": "Nur laufende Prozessinstanzen",
         "completed": "Nur abgeschlossene Prozessinstanzen",
         "canceled": "Nur abgebrochene Prozessinstanzen",
-        "nonCanceled": "Nur nicht abgebrochene Prozessinstanzen"
+        "nonCanceled": "Nur nicht abgebrochene Prozessinstanzen",
+        "executedFlowNode": "Ausgeführtes Flow Node"
       },
       "instanceCount": {
         "label": "{count} Instanz im aktuellen Filter",
@@ -363,7 +367,8 @@
         "selectDates": "Wählen Sie Start- und Enddatum aus, nach dem gefiltert werden soll:",
         "includeInstances": {
           "startDate": "Nur Prozessinstanzen berücksichtigen, die gestartet wurden:",
-          "endDate": "Nur Prozessinstanzen einbeziehen, die beendet wurden:"
+          "endDate": "Nur Prozessinstanzen einbeziehen, die beendet wurden:",
+          "evaluationDateTime": "Nur ausgewertete Prozessinstanzen einbeziehen:"
         },
         "inLast": "In der letzten",
         "invalidInput": "Bitte geben Sie einen Zahlenwert ein",

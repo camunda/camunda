@@ -10,6 +10,7 @@ import {TypeaheadMultipleSelection, Popover, ColorPicker} from 'components';
 import {Configuration} from './Configuration';
 
 import './CombinedReportPanel.scss';
+import {t} from 'translation';
 
 export default class CombinedReportPanel extends React.Component {
   constructor(props) {
@@ -199,10 +200,10 @@ export default class CombinedReportPanel extends React.Component {
           setFilter={evt => this.setState({searchQuery: evt.target.value})}
           toggleValue={this.update}
           labels={{
-            available: 'report.combined.multiSelect.available',
-            selected: 'report.combined.multiSelect.selected',
-            search: 'report.combined.multiSelect.search',
-            empty: 'report.combined.multiSelect.empty'
+            available: t('report.combined.multiSelect.available'),
+            selected: t('report.combined.multiSelect.selected'),
+            search: t('report.combined.multiSelect.search'),
+            empty: t('report.combined.multiSelect.empty')
           }}
           loading={false}
           onOrderChange={this.updateReportsOrder}

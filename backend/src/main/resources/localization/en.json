@@ -329,7 +329,10 @@
         "endDate": "End Date",
         "duration": "Duration",
         "variable": "Variable",
-        "flowNode": "Flow Node"
+        "flowNode": "Flow Node",
+        "evaluationDateTime": "Evaluation Date Time",
+        "inputVariable": "Input Variable",
+        "outputVariable": "Output Variable"
       },
       "list": {
         "operators": {
@@ -347,7 +350,8 @@
         "running": "Running Process Instances Only",
         "completed": "Completed Process Instances Only",
         "canceled": "Canceled Process Instances Only",
-        "nonCanceled": "Non Canceled Process Instances Only"
+        "nonCanceled": "Non Canceled Process Instances Only",
+        "executedFlowNode": "Executed Flow Node"
       },
       "instanceCount": {
         "label": "{count} instance in current filter",
@@ -363,7 +367,8 @@
         "selectDates": "Select start and end dates to filter by:",
         "includeInstances": {
           "startDate": "Only include process instances started:",
-          "endDate": "Only include process instances ended:"
+          "endDate": "Only include process instances ended:",
+          "evaluationDateTime": "Only include process instances evaluated:"
         },
         "inLast": "In the last",
         "invalidInput": "Please enter a numeric value",

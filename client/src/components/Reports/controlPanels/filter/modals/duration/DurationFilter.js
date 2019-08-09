@@ -43,7 +43,11 @@ export default class DurationFilter extends React.Component {
         onConfirm={isValidInput ? this.createFilter : undefined}
         className="DurationFilter"
       >
-        <Modal.Header>Add Duration Filter</Modal.Header>
+        <Modal.Header>
+          {t('common.filter.modalHeader', {
+            type: t(`common.filter.types.duration`)
+          })}
+        </Modal.Header>
         <Modal.Content>
           <Message type="warning">{t('common.filter.durationModal.onlyCompletedWarning')}</Message>
           <p className="description">{t('common.filter.durationModal.includeInstance')} </p>

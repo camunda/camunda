@@ -140,19 +140,19 @@ export default class DecisionFilter extends React.Component {
           className="Filter__dropdown"
         >
           <Dropdown.Option onClick={this.openNewFilterModal('evaluationDateTime')}>
-            Evaluation Date Time
+            {t('common.filter.types.evaluationDateTime')}
           </Dropdown.Option>
           <Dropdown.Option
             disabled={this.definitionIsNotSelected()}
             onClick={this.openNewFilterModal('inputVariable')}
           >
-            Input Variable
+            {t('common.filter.types.inputVariable')}
           </Dropdown.Option>
           <Dropdown.Option
             disabled={this.definitionIsNotSelected()}
             onClick={this.openNewFilterModal('outputVariable')}
           >
-            Output Variable
+            {t('common.filter.types.outputVariable')}
           </Dropdown.Option>
         </Dropdown>
         {this.props.instanceCount !== undefined && (

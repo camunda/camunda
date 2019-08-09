@@ -74,7 +74,7 @@ export default class NodeFilter extends React.Component {
     return (
       <div className="preview">
         <span>{t('common.filter.nodeModal.previewLabel')}</span>{' '}
-        <span className="parameterName">Executed Flow Node</span>
+        <span className="parameterName">{t('common.filter.list.executedFlowNode')}</span>
         {this.createOperator(
           this.state.operator === 'in'
             ? t('common.filter.list.operators.is')
@@ -102,7 +102,11 @@ export default class NodeFilter extends React.Component {
         className="NodeFilter"
         size="max"
       >
-        <Modal.Header>Add Flow Node Filter</Modal.Header>
+        <Modal.Header>
+          {t('common.filter.modalHeader', {
+            type: t(`common.filter.types.flowNode`)
+          })}
+        </Modal.Header>
         <Modal.Content className="modalContent">
           {this.createPreviewList()}
           <ButtonGroup>

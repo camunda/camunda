@@ -27,7 +27,7 @@ export default class TypeaheadMultipleSelection extends React.Component {
     return (
       values.length > 0 && (
         <div className="TypeaheadMultipleSelection__labeled-valueList">
-          <p>{t(this.props.labels.selected)}</p>
+          <p>{this.props.labels.selected || t('common.multiSelect.selected')}</p>
           <div
             onDragOver={isDraggable ? this.dragOver : undefined}
             className="TypeaheadMultipleSelection__values-sublist"
@@ -114,7 +114,7 @@ export default class TypeaheadMultipleSelection extends React.Component {
   mapAvaliableValues = (availableValues, selectedValues) => {
     return (
       <div className="TypeaheadMultipleSelection__labeled-valueList">
-        <p>{t(this.props.labels.available)}</p>
+        <p>{this.props.labels.available || t('common.multiSelect.available')}</p>
         <div className="TypeaheadMultipleSelection__values-sublist">
           {availableValues.map((value, idx) => {
             if (!selectedValues.includes(value)) {
@@ -149,7 +149,7 @@ export default class TypeaheadMultipleSelection extends React.Component {
       <div className="TypeaheadMultipleSelection__labeled-input">
         <Input
           className="TypeaheadMultipleSelection__input"
-          placeholder={t(this.props.labels.search)}
+          placeholder={this.props.labels.search || t('common.multiSelect.search')}
           onChange={e => {
             this.setState({searchQuery: e.target.value});
             return this.props.setFilter(e);
@@ -168,9 +168,9 @@ export default class TypeaheadMultipleSelection extends React.Component {
           </div>
           <div className="TypeaheadMultipleSelection__valueList">
             <div className="TypeaheadMultipleSelection__labeled-valueList">
-              <p>{t(this.props.labels.available)} </p>
+              <p>{this.props.labels.available || t('common.multiSelect.available')} </p>
               <li className="TypeaheadMultipleSelection__no-items">
-                {loading ? '' : t(this.props.labels.empty)}
+                {loading ? '' : this.props.labels.empty || t('common.multiSelect.empty')}
               </li>
             </div>
           </div>
@@ -193,9 +193,9 @@ export default class TypeaheadMultipleSelection extends React.Component {
 TypeaheadMultipleSelection.defaultProps = {
   format: v => v,
   labels: {
-    available: 'common.multiSelect.available',
-    selected: 'common.multiSelect.selected',
-    search: 'common.multiSelect.search',
-    empty: 'common.multiSelect.empty'
+    available: '',
+    selected: '',
+    search: '',
+    empty: ''
   }
 };

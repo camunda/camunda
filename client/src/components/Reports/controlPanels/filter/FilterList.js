@@ -8,7 +8,6 @@ import React from 'react';
 import moment from 'moment';
 
 import {ActionItem} from 'components';
-import {formatters} from 'services';
 
 import './FilterList.scss';
 import {t} from 'translation';
@@ -77,7 +76,7 @@ export default class FilterList extends React.Component {
                 className="FilterList__action-item"
               >
                 <span className="FilterList__parameter-name">
-                  {formatters.camelCaseToLabel(filter.type)}{' '}
+                  {t(`common.filter.types.${filter.type}`)}{' '}
                 </span>
                 <span
                   dangerouslySetInnerHTML={{
@@ -202,7 +201,9 @@ export default class FilterList extends React.Component {
                 }}
                 className="FilterList__action-item"
               >
-                <span className="FilterList__parameter-name">Executed Flow Node</span>
+                <span className="FilterList__parameter-name">
+                  {t('common.filter.list.executedFlowNode')}
+                </span>
                 {this.createOperator(
                   operator === 'in'
                     ? t('common.filter.list.operators.is')
@@ -246,7 +247,9 @@ export default class FilterList extends React.Component {
                 }}
                 className="FilterList__action-item"
               >
-                <span className="FilterList__parameter-name">Duration</span>
+                <span className="FilterList__parameter-name">
+                  {t('common.filter.types.duration')}
+                </span>
                 {operator === '<' && this.createOperator(t('common.filter.list.operators.less'))}
                 {operator === '>' && this.createOperator(t('common.filter.list.operators.more'))}
                 <span className="highlighted">
