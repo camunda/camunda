@@ -398,7 +398,7 @@ export default class Filters extends React.Component {
             <Styled.ResetButtonContainer>
               <Button
                 title="Reset filters"
-                disabled={isEqual(this.props.filter, {
+                disabled={isEqual(this.state.filter, {
                   ...DEFAULT_FILTER_CONTROLLED_VALUES,
                   ...DEFAULT_FILTER
                 })}

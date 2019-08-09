@@ -1183,6 +1183,7 @@ describe('Filters', () => {
 
       field.simulate('change', {target});
 
+      // TODO(paddy): maybe it's possible to use act() instead of setTimeout from React 16.9
       setTimeout(() => {
         // then
         expect(field.length).toEqual(1);
@@ -1314,6 +1315,33 @@ describe('Filters', () => {
       // then
       expect(ResetButtonNode).toHaveLength(1);
       expect(ResetButtonNode.prop('disabled')).toBe(true);
+    });
+
+    it('should render the reset filters button after changing input', () => {
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflows={workflows}
+              {...mockProps}
+              filter={{...DEFAULT_FILTER_CONTROLLED_VALUES, ...DEFAULT_FILTER}}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
+      );
+
+      const errorMessageInput = node.find('input[name="errorMessage"]');
+
+      // when
+      errorMessageInput.simulate('change', {
+        target: {value: 'abc', name: 'errorMessage'}
+      });
+
+      const ResetButtonNode = node.find(Button);
+      ResetButtonNode.simulate('click');
+
+      // then
+      expect(mockProps.onFilterReset).toHaveBeenCalled();
     });
 
     it('should reset all fields', async () => {

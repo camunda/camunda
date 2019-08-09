@@ -17,13 +17,10 @@ export default function VariableFilterInput({
   const [name, setName] = useState('');
   const [value, setValue] = useState('');
 
-  useEffect(
-    () => {
-      setName(variable.name);
-      setValue(variable.value);
-    },
-    [variable]
-  );
+  useEffect(() => {
+    setName(variable.name);
+    setValue(variable.value);
+  }, [variable]);
 
   function handleBlur() {
     if (!name || !value) {

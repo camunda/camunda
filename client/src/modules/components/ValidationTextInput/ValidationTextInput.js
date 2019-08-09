@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 
 import PropTypes from 'prop-types';
 import * as Styled from './styled';
@@ -14,9 +14,15 @@ function ValidationTextInput({
   onChange,
   isComplete,
   onFilterChange,
+  name,
+  value,
   ...props
 }) {
   const [isIncomplete, setIsIncomplete] = useState(false);
+
+  useEffect(() => {
+    setIsIncomplete(!isComplete(value));
+  }, [name, value]);
 
   const handleChange = async event => {
     const {value} = event.target;
@@ -43,6 +49,8 @@ function ValidationTextInput({
     <Styled.InputContainer>
       <Styled.Input
         {...props}
+        name={name}
+        value={value}
         onChange={handleChange}
         onBlur={handleBlur}
         isIncomplete={isIncomplete}
