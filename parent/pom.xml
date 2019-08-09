@@ -25,6 +25,9 @@
   </licenses>
 
   <properties>
+
+    <version.java>11</version.java>
+
     <!-- Zeebe Community License v1.0 header -->
     <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
 
@@ -557,7 +560,7 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${plugin.version.compiler}</version>
           <configuration>
-            <release>11</release>
+            <release>${version.java}</release>
           </configuration>
         </plugin>
 

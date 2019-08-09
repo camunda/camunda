@@ -22,16 +22,12 @@
   </licenses>
 
   <properties>
+    <version.java>8</version.java>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
     <proto.dir>${project.build.directory}/proto</proto.dir>
   </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>javax.annotation</groupId>
-      <artifactId>javax.annotation-api</artifactId>
-    </dependency>
-
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-gateway-protocol</artifactId>
@@ -90,20 +86,7 @@
           <protoSourceRoot>${proto.dir}</protoSourceRoot>
         </configuration>
       </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <configuration>
-          <failOnWarning>true</failOnWarning>
-          <ignoredDependencies>
-            <!-- Used by generated GRPC code -->
-            <ignoredDependency>javax.annotation:javax.annotation-api</ignoredDependency>
-          </ignoredDependencies>
-        </configuration>
-      </plugin>
     </plugins>
-
   </build>
 
   <profiles>
