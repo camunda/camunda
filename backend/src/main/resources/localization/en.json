@@ -163,6 +163,14 @@
     "progressBar": {
       "invalid": "Invalid Configuration",
       "goal": "Goal"
+    },
+    "combined": {
+      "multiSelect": {
+        "available": "Available reports",
+        "selected": "Selected reports",
+        "search": "Search for reports",
+        "empty": "No reports found"
+      }
     }
   },
   "dashboard": {
@@ -250,6 +258,12 @@
     "and": "and",
     "off": "Off",
     "you": "You",
+    "multiSelect": {
+      "available": "Available items",
+      "selected": "Selected items",
+      "search": "Search for items",
+      "empty": "No items found"
+    },
     "entity": {
       "empty": "There are no {label} configured.",
       "create": {
@@ -306,6 +320,98 @@
       }
     },
     "filter": {
+      "types": {
+        "running": "Running Instances Only",
+        "completed": "Completed Instances Only",
+        "canceled": "Canceled Instances Only",
+        "nonCanceled": "Non Canceled Instances Only",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "duration": "Duration",
+        "variable": "Variable",
+        "flowNode": "Flow Node"
+      },
+      "list": {
+        "operators": {
+          "between": "is between",
+          "more": "is more than",
+          "less": "is less than",
+          "greater": "is greater than",
+          "lessAgo": "is less than <span class='highlighted'>{duration}</span> ago",
+          "is": "is",
+          "not": "is not",
+          "neither": "is neither",
+          "nor": "nor",
+          "or": "or"
+        },
+        "running": "Running Process Instances Only",
+        "completed": "Completed Process Instances Only",
+        "canceled": "Canceled Process Instances Only",
+        "nonCanceled": "Non Canceled Process Instances Only"
+      },
+      "instanceCount": {
+        "label": "{count} instance in current filter",
+        "label-plural": "{count} instances in current filter"
+      },
+      "modalHeader": "Add {type} Filter",
+      "addFilter": "Add Filter",
+      "editFilter": "Edit Filter",
+      "dateModal": {
+        "endDateWarning": "Reports with an active End Date Filter will only show completed instances.",
+        "fixedDate": "Fixed Date",
+        "relativeDate": "Relative Date",
+        "selectDates": "Select start and end dates to filter by:",
+        "includeInstances": {
+          "startDate": "Only include process instances started:",
+          "endDate": "Only include process instances ended:"
+        },
+        "inLast": "In the last",
+        "invalidInput": "Please enter a numeric value",
+        "buttons": {
+          "today": "Today",
+          "yesterday": "Yesterday",
+          "past7": "Past 7 days",
+          "past30": "Past 30 days",
+          "lastWeek": "Last Week",
+          "lastMonth": "Last Month",
+          "lastYear": "Last Year",
+          "thisWeek": "This Week",
+          "thisMonth": "This Month",
+          "thisYear": "This Year"
+        },
+        "to": "to",
+        "invalidDate": "Please enter a valid date"
+      },
+      "variableModal": {
+        "inputLabel": "Variable Name",
+        "inputPlaceholder": "Select or search for a variable here",
+        "noVariables": "No variables found",
+        "loadMore": "Load More",
+        "bool": {
+          "isTrue": "is true",
+          "isFalse": "is false"
+        },
+        "enterValue": "Enter value",
+        "addValue": "Add Value",
+        "multiSelect": {
+          "available": "Available values",
+          "selected": "Selected values",
+          "search": "Search for values",
+          "empty": "No values found"
+        }
+      },
+      "durationModal": {
+        "onlyCompletedWarning": "Reports with an active Duration Filter will only show completed instances.",
+        "includeInstance": "Only include process instances that ran for...",
+        "moreThan": "more than",
+        "lessThan": "less than",
+        "invalidInput": "Please enter a positive numeric value"
+      },
+      "nodeModal": {
+        "executed": "was executed",
+        "notExecuted": "was not executed",
+        "previewLabel": "This is the filter you are about to create: "
+      },
       "incompatibleFilters": "No data is shown since the combination of filters is incompatible with each other"
     },
     "definitionSelection": {

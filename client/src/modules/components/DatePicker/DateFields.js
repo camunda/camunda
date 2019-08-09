@@ -12,6 +12,7 @@ import moment from 'moment';
 import {isDateValid} from './service';
 
 import './DateFields.scss';
+import {t} from 'translation';
 
 export default class DateFields extends React.PureComponent {
   constructor(props) {
@@ -74,7 +75,7 @@ export default class DateFields extends React.PureComponent {
             date={startDate}
             error={!startDateValid}
           />
-          <span className="DateFields__divider">to</span>
+          <span className="DateFields__divider">{t('common.filter.dateModal.to')}</span>
           <DateInput
             className={classnames('DateInput__end', {
               'DateInput__start--highlight': this.isFieldSelected('endDate')

@@ -163,6 +163,14 @@
     "progressBar": {
       "invalid": "Ungültige Konfiguration",
       "goal": "Ziel"
+    },
+    "combined": {
+      "multiSelect": {
+        "available": "Verfügbare Berichte",
+        "selected": "Ausgewählte Berichte",
+        "search": "Suche nach Berichten",
+        "empty": "Keine Berichte gefunden"
+      }
     }
   },
   "dashboard": {
@@ -250,6 +258,12 @@
     "and": "und",
     "off": "Aus",
     "you": "Sie",
+    "multiSelect": {
+      "available": "Verfügbare Artikel",
+      "selected": "Ausgewählte Elemente",
+      "search": "Nach Artikeln suchen",
+      "empty": "Keine Artikel gefunden"
+    },
     "entity": {
       "empty": "Es ist keine {label} konfiguriert.",
       "create": {
@@ -306,6 +320,98 @@
       }
     },
     "filter": {
+      "types": {
+        "running": "Nur laufende Instanzen",
+        "completed": "Nur erledigte Instanzen",
+        "canceled": "Nur gelöschte Instanzen",
+        "nonCanceled": "Nur nicht stornierte Instanzen",
+        "startDate": "Startdatum",
+        "endDate": "Enddatum",
+        "duration": "Dauer",
+        "variable": "Variabel",
+        "flowNode": "Durchflussknoten"
+      },
+      "list": {
+        "operators": {
+          "between": "liegt zwischen",
+          "more": "ist mehr als",
+          "less": "ist weniger als",
+          "greater": "ist größer als",
+          "lessAgo": "liegt vor weniger als <span class='highlighted'>{duration}</span>",
+          "is": "ist",
+          "not": "ist nicht",
+          "neither": "ist weder",
+          "nor": "noch",
+          "or": "oder"
+        },
+        "running": "Nur laufende Prozessinstanzen",
+        "completed": "Nur abgeschlossene Prozessinstanzen",
+        "canceled": "Nur abgebrochene Prozessinstanzen",
+        "nonCanceled": "Nur nicht abgebrochene Prozessinstanzen"
+      },
+      "instanceCount": {
+        "label": "{count} Instanz im aktuellen Filter",
+        "label-plural": "{count} Instanzen im aktuellen Filter"
+      },
+      "modalHeader": "Hinzufügen {type} Filter",
+      "addFilter": "Filter hinzufügen",
+      "editFilter": "Filter bearbeiten",
+      "dateModal": {
+        "endDateWarning": "Berichte mit einem aktiven Enddatumsfilter zeigen nur abgeschlossene Instanzen an.",
+        "fixedDate": "Festes Datum",
+        "relativeDate": "Relatives Datum",
+        "selectDates": "Wählen Sie Start- und Enddatum aus, nach dem gefiltert werden soll:",
+        "includeInstances": {
+          "startDate": "Nur Prozessinstanzen berücksichtigen, die gestartet wurden:",
+          "endDate": "Nur Prozessinstanzen einbeziehen, die beendet wurden:"
+        },
+        "inLast": "In der letzten",
+        "invalidInput": "Bitte geben Sie einen Zahlenwert ein",
+        "buttons": {
+          "today": "Heute",
+          "yesterday": "Gestern",
+          "past7": "Letzte 7 Tage",
+          "past30": "Letzte 30 Tage",
+          "lastWeek": "Letzte Woche",
+          "lastMonth": "Letzter Monat",
+          "lastYear": "Letztes Jahr",
+          "thisWeek": "Diese Woche",
+          "thisMonth": "Diesen Monat",
+          "thisYear": "Dieses Jahr"
+        },
+        "to": "bis",
+        "invalidDate": "Bitte geben Sie ein gültiges Datum ein"
+      },
+      "variableModal": {
+        "inputLabel": "Variablenname",
+        "inputPlaceholder": "Hier können Sie eine Variable auswählen oder suchen",
+        "noVariables": "Keine Variablen gefunden",
+        "loadMore": "Mehr laden",
+        "bool": {
+          "isTrue": "ist wahr",
+          "isFalse": "ist falsch"
+        },
+        "enterValue": "Wert eingeben",
+        "addValue": "Wert hinzufügen",
+        "multiSelect": {
+          "available": "Verfügbare Werte",
+          "selected": "Ausgewählte Werte",
+          "search": "Suche nach Werten",
+          "empty": "Keine Werte gefunden"
+        }
+      },
+      "durationModal": {
+        "onlyCompletedWarning": "Berichte mit einem aktiven Laufzeitfilter zeigen nur abgeschlossene Instanzen an.",
+        "includeInstance": "Berücksichtigen Sie nur Prozessinstanzen, die gelaufen sind für....",
+        "moreThan": "mehr als",
+        "lessThan": "weniger als",
+        "invalidInput": "Bitte gib einen positiven Zahlenwert ein"
+      },
+      "nodeModal": {
+        "executed": "wurde ausgeführt",
+        "notExecuted": "wurde nicht ausgeführt",
+        "previewLabel": "Dies ist der Filter, den du erstellen möchtest: "
+      },
       "incompatibleFilters": "Es werden keine Daten angezeigt, da die Filterkombination nicht miteinander kompatibel ist."
     },
     "definitionSelection": {

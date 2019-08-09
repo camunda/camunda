@@ -18,22 +18,20 @@ jest.mock('components', () => {
 });
 
 it('should contain a button', () => {
-  const node = mount(<DateButton dateLabel={DateButton.TODAY} />);
+  const node = mount(<DateButton dateLabel="today" />);
 
   expect(node.find('button')).toExist();
 });
 
 it('should set label on element', () => {
-  const node = mount(<DateButton dateLabel={DateButton.TODAY} />);
+  const node = mount(<DateButton dateLabel="today" />);
 
-  expect(node).toIncludeText(DateButton.TODAY);
+  expect(node).toIncludeText('Today');
 });
 
 it('should set dates on click', () => {
   const spy = jest.fn();
-  const node = mount(
-    <DateButton format="YYYY-MM-DD" dateLabel={DateButton.TODAY} setDates={spy} />
-  );
+  const node = mount(<DateButton format="YYYY-MM-DD" dateLabel="today" setDates={spy} />);
 
   const today = moment();
 

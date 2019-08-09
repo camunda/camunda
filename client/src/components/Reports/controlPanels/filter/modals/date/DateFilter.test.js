@@ -23,26 +23,26 @@ jest.mock('services', () => {
 });
 
 it('should contain a modal', () => {
-  const node = shallow(<DateFilter />);
+  const node = shallow(<DateFilter filterType="startDate" />);
 
   expect(node.find('Modal')).toExist();
 });
 
 it('should contain a Date Picker', () => {
-  const node = shallow(<DateFilter />);
+  const node = shallow(<DateFilter filterType="startDate" />);
 
   expect(node.find('DatePicker')).toExist();
 });
 
 it('should pass the onDateChangeFunction to the DatePicker', () => {
-  const node = shallow(<DateFilter />);
+  const node = shallow(<DateFilter filterType="startDate" />);
 
   expect(node.find('DatePicker')).toHaveProp('onDateChange');
 });
 
 it('should contain a button to abort the filter creation', () => {
   const spy = jest.fn();
-  const node = shallow(<DateFilter close={spy} addFilter={jest.fn()} />);
+  const node = shallow(<DateFilter filterType="startDate" close={spy} addFilter={jest.fn()} />);
 
   const abortButton = node
     .find(Modal.Actions)
@@ -56,7 +56,7 @@ it('should contain a button to abort the filter creation', () => {
 
 it('should have a create filter button', () => {
   const spy = jest.fn();
-  const node = shallow(<DateFilter addFilter={spy} />);
+  const node = shallow(<DateFilter filterType="startDate" addFilter={spy} />);
   node.setState({
     validDate: true
   });
@@ -71,13 +71,13 @@ it('should have a create filter button', () => {
 });
 
 it('should allow switching between static date and dynamic date mode', () => {
-  const node = shallow(<DateFilter />);
+  const node = shallow(<DateFilter filterType="startDate" />);
 
   expect(node.find('ButtonGroup')).toMatchSnapshot();
 });
 
 it('should disable the add filter button when dynamic value is not valid', () => {
-  const node = shallow(<DateFilter />);
+  const node = shallow(<DateFilter filterType="startDate" />);
 
   node.instance().setDynamicValue({target: {value: 'asd'}});
 
@@ -93,7 +93,7 @@ it('shoud show a warning message if the modal is for end date filter', () => {
 it('shoud make difference between start and end date filter modals', () => {
   const endDateModal = shallow(<DateFilter filterType="endDate" />);
 
-  expect(endDateModal.find(Modal.Header).dive()).toIncludeText('Add endDate Filter');
+  expect(endDateModal.find(Modal.Header).dive()).toIncludeText('Add End Date Filter');
 
   endDateModal.instance().setState({
     mode: 'dynamic'
@@ -104,7 +104,7 @@ it('shoud make difference between start and end date filter modals', () => {
       .find(Modal.Header)
       .dive()
       .text()
-  ).toBe('Add endDate Filter');
+  ).toBe('Add End Date Filter');
 
   const startDateModal = shallow(<DateFilter filterType="startDate" />);
 
@@ -113,7 +113,7 @@ it('shoud make difference between start and end date filter modals', () => {
       .find(Modal.Header)
       .dive()
       .text()
-  ).toBe('Add startDate Filter');
+  ).toBe('Add Start Date Filter');
 
   startDateModal.instance().setState({
     mode: 'dynamic'

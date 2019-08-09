@@ -10,6 +10,7 @@ import {Modal, Button, Input, Select, ErrorMessage, Message, Form} from 'compone
 import {numberParser} from 'services';
 
 import './DurationFilter.scss';
+import {t} from 'translation';
 
 export default class DurationFilter extends React.Component {
   constructor(props) {
@@ -44,44 +45,56 @@ export default class DurationFilter extends React.Component {
       >
         <Modal.Header>Add Duration Filter</Modal.Header>
         <Modal.Content>
-          <Message type="warning">
-            Reports with an active Duration Filter will only show completed instances.
-          </Message>
-          <p className="description">Only include process instances that ran for... </p>
+          <Message type="warning">{t('common.filter.durationModal.onlyCompletedWarning')}</Message>
+          <p className="description">{t('common.filter.durationModal.includeInstance')} </p>
           <Form horizontal>
             <Form.Group noSpacing>
               <div>
                 <Select value={operator} onChange={this.setOperator}>
-                  <Select.Option value=">">more than</Select.Option>
-                  <Select.Option value="<">less than</Select.Option>
+                  <Select.Option value=">">
+                    {t('common.filter.durationModal.moreThan')}
+                  </Select.Option>
+                  <Select.Option value="<">
+                    {t('common.filter.durationModal.lessThan')}
+                  </Select.Option>
                 </Select>
               </div>
               <Form.InputGroup>
                 <Input isInvalid={!isValidInput} value={value} onChange={this.setValue} />
                 <Select value={unit} onChange={this.setUnit}>
-                  <Select.Option value="millis">Milliseconds</Select.Option>
-                  <Select.Option value="seconds">Seconds</Select.Option>
-                  <Select.Option value="minutes">Minutes</Select.Option>
-                  <Select.Option value="hours">Hours</Select.Option>
-                  <Select.Option value="days">Days</Select.Option>
-                  <Select.Option value="weeks">Weeks</Select.Option>
-                  <Select.Option value="months">Months</Select.Option>
-                  <Select.Option value="years">Years</Select.Option>
+                  <Select.Option value="millis">
+                    {t('common.unit.milli.label-plural')}
+                  </Select.Option>
+                  <Select.Option value="seconds">
+                    {t('common.unit.second.label-plural')}
+                  </Select.Option>
+                  <Select.Option value="minutes">
+                    {t('common.unit.minute.label-plural')}
+                  </Select.Option>
+                  <Select.Option value="hours">{t('common.unit.hour.label-plural')}</Select.Option>
+                  <Select.Option value="days">{t('common.unit.day.label-plural')}</Select.Option>
+                  <Select.Option value="weeks">{t('common.unit.week.label-plural')}</Select.Option>
+                  <Select.Option value="months">
+                    {t('common.unit.month.label-plural')}
+                  </Select.Option>
+                  <Select.Option value="years">{t('common.unit.year.label-plural')}</Select.Option>
                 </Select>
               </Form.InputGroup>
-              {!isValidInput && <ErrorMessage>Please enter a positive numeric value</ErrorMessage>}
+              {!isValidInput && (
+                <ErrorMessage>{t('common.filter.durationModal.invalidInput')}</ErrorMessage>
+              )}
             </Form.Group>
           </Form>
         </Modal.Content>
         <Modal.Actions>
-          <Button onClick={this.props.close}>Cancel</Button>
+          <Button onClick={this.props.close}>{t('common.cancel')}</Button>
           <Button
             variant="primary"
             color="blue"
             disabled={!isValidInput}
             onClick={this.createFilter}
           >
-            {this.props.filterData ? 'Edit ' : 'Add '}Filter
+            {this.props.filterData ? t('common.filter.editFilter') : t('common.filter.addFilter')}
           </Button>
         </Modal.Actions>
       </Modal>

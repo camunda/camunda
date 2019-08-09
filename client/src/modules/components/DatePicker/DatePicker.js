@@ -44,26 +44,13 @@ export default class DatePicker extends React.Component {
         </div>
         <div className="DatePicker__buttons">
           <ButtonGroup className="DatePicker__buttonRow">
-            {this.getDateButtons([
-              DateButton.TODAY,
-              DateButton.YESTERDAY,
-              DateButton.PAST7,
-              DateButton.PAST30
-            ])}
+            {this.getDateButtons(['today', 'yesterday', 'past7', 'past30'])}
           </ButtonGroup>
           <ButtonGroup className="DatePicker__buttonRow">
-            {this.getDateButtons([
-              DateButton.THIS_WEEK,
-              DateButton.THIS_MONTH,
-              DateButton.THIS_YEAR
-            ])}
+            {this.getDateButtons(['lastWeek', 'lastMonth', 'lastYear'])}
           </ButtonGroup>
           <ButtonGroup className="DatePicker__buttonRow">
-            {this.getDateButtons([
-              DateButton.LAST_WEEK,
-              DateButton.LAST_MONTH,
-              DateButton.LAST_YEAR
-            ])}
+            {this.getDateButtons(['thisWeek', 'thisMonth', 'thisYear'])}
           </ButtonGroup>
         </div>
       </React.Fragment>

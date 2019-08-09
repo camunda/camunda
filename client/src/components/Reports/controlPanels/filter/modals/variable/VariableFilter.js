@@ -12,9 +12,8 @@ import {NumberInput} from './number';
 import {StringInput} from './string';
 import {DateInput} from './date';
 
-import {formatters} from 'services';
-
 import './VariableFilter.scss';
+import {t} from 'translation';
 
 export default class VariableFilter extends React.Component {
   state = {
@@ -80,16 +79,20 @@ export default class VariableFilter extends React.Component {
 
     return (
       <Modal open={true} onClose={this.props.close} className="VariableFilter__modal">
-        <Modal.Header>Add {formatters.camelCaseToLabel(this.props.filterType)} Filter</Modal.Header>
+        <Modal.Header>
+          {t('common.filter.modalHeader', {
+            type: t(`common.filter.types.${this.props.filterType}`)
+          })}
+        </Modal.Header>
         <Modal.Content>
-          <Labeled className="LabeledTypeahead" label="Variable Name">
+          <Labeled className="LabeledTypeahead" label={t('common.filter.variableModal.inputLabel')}>
             <Typeahead
               initialValue={selectedVariable}
               values={variables}
               onSelect={this.selectVariable}
               formatter={this.getVariableName}
-              placeholder="Select or search for a variable here"
-              noValuesMessage="No variables found"
+              placeholder={t('common.filter.variableModal.inputPlaceholder')}
+              noValuesMessage={t('common.filter.variableModal.noVariables')}
             />
           </Labeled>
           <ValueInput
@@ -101,14 +104,14 @@ export default class VariableFilter extends React.Component {
           />
         </Modal.Content>
         <Modal.Actions>
-          <Button onClick={this.props.close}>Cancel</Button>
+          <Button onClick={this.props.close}>{t('common.cancel')}</Button>
           <Button
             variant="primary"
             color="blue"
             disabled={!this.state.valid}
             onClick={this.createFilter}
           >
-            {this.props.filterData ? 'Edit ' : 'Add '}Filter
+            {this.props.filterData ? t('common.filter.editFilter') : t('common.filter.addFilter')}
           </Button>
         </Modal.Actions>
       </Modal>

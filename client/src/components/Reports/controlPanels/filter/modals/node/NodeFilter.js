@@ -8,6 +8,7 @@ import React from 'react';
 import {Modal, ButtonGroup, Button, BPMNDiagram, ClickBehavior} from 'components';
 
 import './NodeFilter.scss';
+import {t} from 'translation';
 
 export default class NodeFilter extends React.Component {
   constructor(props) {
@@ -61,21 +62,25 @@ export default class NodeFilter extends React.Component {
             {' '}
             <span className="previewItemValue">{selectedNode.name || selectedNode.id}</span>{' '}
             {idx < this.state.selectedNodes.length - 1 &&
-              this.createOperator(this.state.operator === 'in' ? 'or' : 'nor')}
+              this.createOperator(
+                this.state.operator === 'in'
+                  ? t('common.filter.list.operators.or')
+                  : t('common.filter.list.operators.nor')
+              )}
           </span>
         </li>
       );
     });
     return (
       <div className="preview">
-        <span>This is the filter you are about to create: </span>{' '}
+        <span>{t('common.filter.nodeModal.previewLabel')}</span>{' '}
         <span className="parameterName">Executed Flow Node</span>
         {this.createOperator(
           this.state.operator === 'in'
-            ? 'is'
+            ? t('common.filter.list.operators.is')
             : this.state.selectedNodes.length > 1
-            ? 'is neither'
-            : 'is not'
+            ? t('common.filter.list.operators.neither')
+            : t('common.filter.list.operators.not')
         )}
         <ul className="previewList">{previewList}</ul>
       </div>
@@ -105,13 +110,13 @@ export default class NodeFilter extends React.Component {
               active={this.state.operator === 'in'}
               onClick={() => this.setState({operator: 'in'})}
             >
-              was executed
+              {t('common.filter.nodeModal.executed')}
             </Button>
             <Button
               active={this.state.operator === 'not in'}
               onClick={() => this.setState({operator: 'not in'})}
             >
-              was not executed
+              {t('common.filter.nodeModal.notExecuted')}
             </Button>
           </ButtonGroup>
           {this.props.xml && (
@@ -127,14 +132,14 @@ export default class NodeFilter extends React.Component {
           )}
         </Modal.Content>
         <Modal.Actions>
-          <Button onClick={this.props.close}>Cancel</Button>
+          <Button onClick={this.props.close}>{t('common.cancel')}</Button>
           <Button
             variant="primary"
             color="blue"
             disabled={!this.isNodeSelected()}
             onClick={this.createFilter}
           >
-            {this.props.filterData ? 'Edit ' : 'Add '}Filter
+            {this.props.filterData ? t('common.filter.editFilter') : t('common.filter.addFilter')}
           </Button>
         </Modal.Actions>
       </Modal>

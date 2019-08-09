@@ -15,6 +15,7 @@ import FilterList from './FilterList';
 import './Filter.scss';
 
 import {loadDecisionValues, filterIncompatibleExistingFilters} from './service';
+import {t} from 'translation';
 
 export default class DecisionFilter extends React.Component {
   state = {
@@ -133,7 +134,11 @@ export default class DecisionFilter extends React.Component {
           deleteFilter={this.deleteFilter}
           variables={this.props.variables}
         />
-        <Dropdown label="Add Filter" id="ControlPanel__filters" className="Filter__dropdown">
+        <Dropdown
+          label={t('common.filter.addFilter')}
+          id="ControlPanel__filters"
+          className="Filter__dropdown"
+        >
           <Dropdown.Option onClick={this.openNewFilterModal('evaluationDateTime')}>
             Evaluation Date Time
           </Dropdown.Option>

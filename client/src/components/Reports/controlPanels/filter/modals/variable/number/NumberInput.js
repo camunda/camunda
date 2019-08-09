@@ -9,6 +9,7 @@ import React from 'react';
 import {ButtonGroup, Button, Input} from 'components';
 
 import './NumberInput.scss';
+import {t} from 'translation';
 
 export default class NumberInput extends React.Component {
   static defaultFilter = {operator: 'in', values: ['']};
@@ -71,16 +72,16 @@ export default class NumberInput extends React.Component {
         <div className="VariableFilter__buttonRow">
           <ButtonGroup>
             <Button onClick={this.setOperator('in')} active={operator === 'in'}>
-              is
+              {t('common.filter.list.operators.is')}
             </Button>
             <Button onClick={this.setOperator('not in')} active={operator === 'not in'}>
-              is not
+              {t('common.filter.list.operators.not')}
             </Button>
             <Button onClick={this.setOperator('<')} active={operator === '<'}>
-              is less than
+              {t('common.filter.list.operators.less')}
             </Button>
             <Button onClick={this.setOperator('>')} active={operator === '>'}>
-              is greater than
+              {t('common.filter.list.operators.greater')}
             </Button>
           </ButtonGroup>
         </div>
@@ -94,7 +95,7 @@ export default class NumberInput extends React.Component {
                     value={value}
                     data-idx={idx}
                     onChange={this.changeValue}
-                    placeholder="Enter value"
+                    placeholder={t('common.filter.variableModal.enterValue')}
                   />
                   {values.length > 1 && (
                     <Button
@@ -113,7 +114,7 @@ export default class NumberInput extends React.Component {
             {!onlyOneValueAllowed && (
               <li className="NumberInput__valueListButton">
                 <Button onClick={this.addValue} className="NumberInput__addValueButton">
-                  Add Value
+                  {t('common.filter.variableModal.addValue')}
                 </Button>
               </li>
             )}

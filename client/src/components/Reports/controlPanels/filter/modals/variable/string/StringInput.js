@@ -10,6 +10,7 @@ import debounce from 'debounce';
 import {ButtonGroup, Button, TypeaheadMultipleSelection, LoadingIndicator} from 'components';
 
 import './StringInput.scss';
+import {t} from 'translation';
 
 const valuesToLoad = 10;
 
@@ -128,10 +129,10 @@ export default class StringInput extends React.Component {
         <div className="VariableFilter__buttonRow">
           <ButtonGroup>
             <Button onClick={this.setOperator('in')} active={operator === 'in'}>
-              is
+              {t('common.filter.list.operators.is')}
             </Button>
             <Button onClick={this.setOperator('not in')} active={operator === 'not in'}>
-              is not
+              {t('common.filter.list.operators.not')}
             </Button>
           </ButtonGroup>
         </div>
@@ -143,7 +144,12 @@ export default class StringInput extends React.Component {
               setFilter={this.setValueFilter}
               toggleValue={this.toggleValue}
               loading={this.state.loading ? 1 : 0}
-              label="values"
+              labels={{
+                available: 'common.filter.variableModal.multiSelect.available',
+                selected: 'common.filter.variableModal.multiSelect.selected',
+                search: 'common.filter.variableModal.multiSelect.search',
+                empty: 'common.filter.variableModal.multiSelect.empty'
+              }}
             />
             {!this.state.valuesAreComplete && (
               <Button
@@ -151,7 +157,11 @@ export default class StringInput extends React.Component {
                 onClick={this.loadMore}
                 disabled={this.state.loading}
               >
-                {this.state.loading ? <LoadingIndicator small /> : 'Load More'}
+                {this.state.loading ? (
+                  <LoadingIndicator small />
+                ) : (
+                  t('common.filter.variableModal.loadMore')
+                )}
               </Button>
             )}
           </div>

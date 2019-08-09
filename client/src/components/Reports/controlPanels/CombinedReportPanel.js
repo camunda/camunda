@@ -198,7 +198,12 @@ export default class CombinedReportPanel extends React.Component {
           selectedValues={selectedReports}
           setFilter={evt => this.setState({searchQuery: evt.target.value})}
           toggleValue={this.update}
-          label="reports"
+          labels={{
+            available: 'report.combined.multiSelect.available',
+            selected: 'report.combined.multiSelect.selected',
+            search: 'report.combined.multiSelect.search',
+            empty: 'report.combined.multiSelect.empty'
+          }}
           loading={false}
           onOrderChange={this.updateReportsOrder}
           format={v => v.name}

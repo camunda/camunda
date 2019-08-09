@@ -51,11 +51,11 @@ export default class ProcessPart extends React.Component {
             }}
           >
             {t('report.processPart.description')}{' '}
-            <span className="FilterList__value">
+            <span className="highlighted">
               {this.renderFlowNodeName(this.props.processPart.start)}
             </span>
             <span> {t('common.and')} </span>
-            <span className="FilterList__value">
+            <span className="highlighted">
               {this.renderFlowNodeName(this.props.processPart.end)}
             </span>
           </ActionItem>

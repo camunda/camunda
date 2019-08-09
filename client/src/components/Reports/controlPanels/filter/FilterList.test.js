@@ -275,7 +275,7 @@ it('should display a rolling date filter', () => {
 
   const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()} />);
 
-  expect(node).toIncludeText('Start Date less than 18 hours ago');
+  expect(node).toIncludeText('Start Date is less than 18 hours ago');
 });
 
 it('should display an end date filter', () => {

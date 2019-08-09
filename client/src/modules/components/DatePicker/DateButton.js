@@ -10,12 +10,13 @@ import moment from 'moment';
 import './DateButton.scss';
 
 import {Button} from 'components';
+import {t} from 'translation';
 
 export default class DateButton extends React.Component {
   render() {
     return (
       <Button onClick={this.setDate} className="DateButton">
-        {this.props.dateLabel}
+        {t(`common.filter.dateModal.buttons.${this.props.dateLabel}`)}
       </Button>
     );
   }
@@ -39,21 +40,21 @@ function getDateRange(type) {
   const today = new Date();
 
   switch (type) {
-    case DateButton.TODAY:
+    case 'today':
       return {start: today, end: today};
-    case DateButton.YESTERDAY:
+    case 'yesterday':
       return {start: new Date(now - DAY), end: new Date(now - DAY)};
-    case DateButton.PAST7:
+    case 'past7':
       return {start: new Date(now - 6 * DAY), end: today};
-    case DateButton.PAST30:
+    case 'past30':
       return {start: new Date(now - 29 * DAY), end: today};
-    case DateButton.LAST_WEEK: {
+    case 'lastWeek': {
       return {
         start: new Date(now - 7 * DAY - (today.getDay() - 1) * DAY),
         end: new Date(now - today.getDay() * DAY)
       };
     }
-    case DateButton.LAST_MONTH: {
+    case 'lastMonth': {
       const start = new Date();
       const end = new Date();
 
@@ -62,7 +63,7 @@ function getDateRange(type) {
       end.setDate(0);
       return {start, end};
     }
-    case DateButton.LAST_YEAR: {
+    case 'lastYear': {
       const start = new Date();
       const end = new Date();
 
@@ -73,13 +74,13 @@ function getDateRange(type) {
       end.setDate(0);
       return {start, end};
     }
-    case DateButton.THIS_WEEK: {
+    case 'thisWeek': {
       return {
         start: new Date(now - (today.getDay() - 1) * DAY),
         end: new Date(now - today.getDay() * DAY + 7 * DAY)
       };
     }
-    case DateButton.THIS_MONTH: {
+    case 'thisMonth': {
       const start = new Date();
       const end = new Date();
 
@@ -89,7 +90,7 @@ function getDateRange(type) {
       end.setDate(0);
       return {start, end};
     }
-    case DateButton.THIS_YEAR: {
+    case 'thisYear': {
       const start = new Date();
       const end = new Date();
 
@@ -104,14 +105,3 @@ function getDateRange(type) {
       return null;
   }
 }
-
-DateButton.TODAY = 'Today';
-DateButton.YESTERDAY = 'Yesterday';
-DateButton.PAST7 = 'Past 7 days';
-DateButton.PAST30 = 'Past 30 days';
-DateButton.LAST_WEEK = 'Last Week';
-DateButton.LAST_MONTH = 'Last Month';
-DateButton.LAST_YEAR = 'Last Year';
-DateButton.THIS_WEEK = 'This Week';
-DateButton.THIS_MONTH = 'This Month';
-DateButton.THIS_YEAR = 'This Year';

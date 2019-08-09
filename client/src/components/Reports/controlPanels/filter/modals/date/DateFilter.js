@@ -19,8 +19,8 @@ import {
   Message,
   Labeled
 } from 'components';
-import {formatters} from 'services';
 import './DateFilter.scss';
+import {t} from 'translation';
 
 export default class DateFilter extends React.Component {
   constructor(props) {
@@ -105,14 +105,14 @@ export default class DateFilter extends React.Component {
         onConfirm={mode === 'dynamic' && validDate ? this.createFilter : undefined}
         className="DateFilter"
       >
-        <Modal.Header>{`Add ${formatters.camelCaseToLabel(
-          this.props.filterType
-        )} Filter`}</Modal.Header>
+        <Modal.Header>
+          {t('common.filter.modalHeader', {
+            type: t(`common.filter.types.${this.props.filterType}`)
+          })}
+        </Modal.Header>
         <Modal.Content>
           {this.props.filterType === 'endDate' && (
-            <Message type="warning">
-              Reports with an active End Date Filter will only show completed instances.
-            </Message>
+            <Message type="warning">{t('common.filter.dateModal.endDateWarning')}</Message>
           )}
           <ButtonGroup>
             <Button
@@ -120,30 +120,29 @@ export default class DateFilter extends React.Component {
               name="button-static"
               active={mode === 'static'}
             >
-              Fixed Date
+              {t('common.filter.dateModal.fixedDate')}
             </Button>
             <Button
               onClick={() => this.setMode('dynamic')}
               name="button-dynamic"
               active={mode === 'dynamic'}
             >
-              Relative Date
+              {t('common.filter.dateModal.relativeDate')}
             </Button>
           </ButtonGroup>
           {mode === 'static' && (
             <React.Fragment>
-              <label className="tip">Select start and end dates to filter by:</label>
+              <label className="tip">{t('common.filter.dateModal.selectDates')}</label>
               <DatePicker onDateChange={this.onDateChange} initialDates={{startDate, endDate}} />
             </React.Fragment>
           )}
           {mode === 'dynamic' && (
             <Form horizontal>
               <p className="tip">
-                Only include process instances
-                {this.props.filterType === 'startDate' ? ' started:' : ' ended:'}
+                {t(`common.filter.dateModal.includeInstances.${this.props.filterType}`)}
               </p>
               <Form.Group noSpacing>
-                <Labeled label="In the last">
+                <Labeled label={t('common.filter.dateModal.inLast')}>
                   <Form.InputGroup>
                     <Input
                       value={dynamicValue}
@@ -152,24 +151,38 @@ export default class DateFilter extends React.Component {
                     />
 
                     <Select value={dynamicUnit} onChange={this.setDynamicUnit}>
-                      <Select.Option value="minutes">Minutes</Select.Option>
-                      <Select.Option value="hours">Hours</Select.Option>
-                      <Select.Option value="days">Days</Select.Option>
-                      <Select.Option value="weeks">Weeks</Select.Option>
-                      <Select.Option value="months">Months</Select.Option>
-                      <Select.Option value="years">Years</Select.Option>
+                      <Select.Option value="minutes">
+                        {t('common.unit.minute.label-plural')}
+                      </Select.Option>
+                      <Select.Option value="hours">
+                        {t('common.unit.hour.label-plural')}
+                      </Select.Option>
+                      <Select.Option value="days">
+                        {t('common.unit.day.label-plural')}
+                      </Select.Option>
+                      <Select.Option value="weeks">
+                        {t('common.unit.week.label-plural')}
+                      </Select.Option>
+                      <Select.Option value="months">
+                        {t('common.unit.month.label-plural')}
+                      </Select.Option>
+                      <Select.Option value="years">
+                        {t('common.unit.year.label-plural')}
+                      </Select.Option>
                     </Select>
                   </Form.InputGroup>
                 </Labeled>
-                {!validDate && <ErrorMessage>Please enter a numeric value</ErrorMessage>}
+                {!validDate && (
+                  <ErrorMessage>{t('common.filter.dateModal.invalidInput')}</ErrorMessage>
+                )}
               </Form.Group>
             </Form>
           )}
         </Modal.Content>
         <Modal.Actions>
-          <Button onClick={this.props.close}>Cancel</Button>
+          <Button onClick={this.props.close}>{t('common.cancel')}</Button>
           <Button variant="primary" color="blue" disabled={!validDate} onClick={this.createFilter}>
-            {this.props.filterData ? 'Edit ' : 'Add '}Filter
+            {this.props.filterData ? t('common.filter.editFilter') : t('common.filter.addFilter')}
           </Button>
         </Modal.Actions>
       </Modal>

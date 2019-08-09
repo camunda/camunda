@@ -15,6 +15,7 @@ import './Filter.scss';
 
 import {loadValues, filterIncompatibleExistingFilters} from './service';
 import {loadVariables} from '../service';
+import {t} from 'translation';
 
 export default class Filter extends React.Component {
   state = {
@@ -141,43 +142,51 @@ export default class Filter extends React.Component {
           data={this.props.data}
           deleteFilter={this.deleteFilter}
         />
-        <Dropdown label="Add Filter" id="ControlPanel__filters" className="Filter__dropdown">
+        <Dropdown
+          label={t('common.filter.addFilter')}
+          id="ControlPanel__filters"
+          className="Filter__dropdown"
+        >
           <Dropdown.Option onClick={this.filterByInstancesOnly('runningInstancesOnly')}>
-            Running Instances Only
+            {t('common.filter.types.running')}
           </Dropdown.Option>
           <Dropdown.Option onClick={this.filterByInstancesOnly('completedInstancesOnly')}>
-            Completed Instances Only
+            {t('common.filter.types.completed')}
           </Dropdown.Option>
           <Dropdown.Option onClick={this.filterByInstancesOnly('canceledInstancesOnly')}>
-            Canceled Instances Only
+            {t('common.filter.types.canceled')}
           </Dropdown.Option>
           <Dropdown.Option onClick={this.filterByInstancesOnly('nonCanceledInstancesOnly')}>
-            Non Canceled Instances Only
+            {t('common.filter.types.nonCanceled')}
           </Dropdown.Option>
           <Dropdown.Option onClick={this.openNewFilterModal('startDate')}>
-            Start Date
+            {t('common.filter.types.startDate')}
           </Dropdown.Option>
-          <Dropdown.Option onClick={this.openNewFilterModal('endDate')}>End Date</Dropdown.Option>
+          <Dropdown.Option onClick={this.openNewFilterModal('endDate')}>
+            {t('common.filter.types.endDate')}
+          </Dropdown.Option>
           <Dropdown.Option onClick={this.openNewFilterModal('processInstanceDuration')}>
-            Duration
+            {t('common.filter.types.duration')}
           </Dropdown.Option>
           <Dropdown.Option
             disabled={this.processDefinitionIsNotSelected()}
             onClick={this.openNewFilterModal('variable')}
           >
-            Variable
+            {t('common.filter.types.variable')}
           </Dropdown.Option>
           <Dropdown.Option
             disabled={this.processDefinitionIsNotSelected()}
             onClick={this.openNewFilterModal('executedFlowNodes')}
           >
-            Flow Node
+            {t('common.filter.types.flowNode')}
           </Dropdown.Option>
         </Dropdown>
         {this.props.instanceCount !== undefined && (
           <span className="instanceCount">
-            {this.props.instanceCount} instance{this.props.instanceCount !== 1 && 's'} in current
-            filter
+            {t(
+              `common.filter.instanceCount.label${this.props.instanceCount !== 1 ? '-plural' : ''}`,
+              {count: this.props.instanceCount}
+            )}
           </span>
         )}
         <FilterModal

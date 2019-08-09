@@ -11,6 +11,7 @@ import {ActionItem} from 'components';
 import {formatters} from 'services';
 
 import './FilterList.scss';
+import {t} from 'translation';
 
 export default class FilterList extends React.Component {
   createOperator = name => {
@@ -48,16 +49,14 @@ export default class FilterList extends React.Component {
                 className="FilterList__action-item"
               >
                 <span className="FilterList__parameter-name">
-                  {formatters.camelCaseToLabel(filter.type)}
+                  {t(`common.filter.types.${filter.type}`)}
                 </span>
-                {this.createOperator('is between')}
-                <span className="FilterList__value">
+                {this.createOperator(t('common.filter.list.operators.between'))}
+                <span className="highlighted">
                   {moment(filter.data.start).format('YYYY-MM-DD')}
                 </span>
-                {this.createOperator('and')}
-                <span className="FilterList__value">
-                  {moment(filter.data.end).format('YYYY-MM-DD')}
-                </span>
+                {this.createOperator(t('common.and'))}
+                <span className="highlighted">{moment(filter.data.end).format('YYYY-MM-DD')}</span>
               </ActionItem>
             </li>
           );
@@ -78,14 +77,18 @@ export default class FilterList extends React.Component {
                 className="FilterList__action-item"
               >
                 <span className="FilterList__parameter-name">
-                  {formatters.camelCaseToLabel(filter.type)}
+                  {formatters.camelCaseToLabel(filter.type)}{' '}
                 </span>
-                {this.createOperator('less than')}
-                <span className="FilterList__value">
-                  {value.toString()} {unit.slice(0, -1)}
-                  {value > 1 && 's'}
-                </span>
-                {this.createOperator('ago')}
+                <span
+                  dangerouslySetInnerHTML={{
+                    __html: t('common.filter.list.operators.lessAgo', {
+                      duration:
+                        value.toString() +
+                        ' ' +
+                        t(`common.unit.${unit.slice(0, -1)}.label${value !== 1 ? '-plural' : ''}`)
+                    })
+                  }}
+                />
               </ActionItem>
             </li>
           );
@@ -111,12 +114,10 @@ export default class FilterList extends React.Component {
                   <span className="FilterList__parameter-name">
                     {this.getVariableName(filter.type, name)}
                   </span>
-                  {this.createOperator('is between')}
-                  <span className="FilterList__value">
-                    {moment(data.start).format('YYYY-MM-DD')}
-                  </span>
-                  {this.createOperator('and')}
-                  <span className="FilterList__value">{moment(data.end).format('YYYY-MM-DD')}</span>
+                  {this.createOperator(t('common.filter.list.operators.between'))}
+                  <span className="highlighted">{moment(data.start).format('YYYY-MM-DD')}</span>
+                  {this.createOperator(t('common.and'))}
+                  <span className="highlighted">{moment(data.end).format('YYYY-MM-DD')}</span>
                 </ActionItem>
               </li>
             );
@@ -137,8 +138,8 @@ export default class FilterList extends React.Component {
                   <span className="FilterList__parameter-name">
                     {this.getVariableName(filter.type, name)}
                   </span>
-                  {this.createOperator('is')}
-                  <span className="FilterList__value">{data.value.toString()}</span>
+                  {this.createOperator(t('common.filter.list.operators.is'))}
+                  <span className="highlighted">{data.value.toString()}</span>
                 </ActionItem>
               </li>
             );
@@ -160,21 +161,23 @@ export default class FilterList extends React.Component {
                   <span className="FilterList__parameter-name">
                     {this.getVariableName(filter.type, name)}
                   </span>
-                  {(operator === 'in' || operator === '=') && this.createOperator('is')}
+                  {(operator === 'in' || operator === '=') &&
+                    this.createOperator(t('common.filter.list.operators.is'))}
                   {operator === 'not in' &&
                     (values.length === 1
-                      ? this.createOperator('is not')
-                      : this.createOperator('is neither'))}
-                  {operator === '<' && this.createOperator('is less than')}
-                  {operator === '>' && this.createOperator('is greater than')}
+                      ? this.createOperator(t('common.filter.list.operators.not'))
+                      : this.createOperator(t('common.filter.list.operators.neither')))}
+                  {operator === '<' && this.createOperator(t('common.filter.list.operators.less'))}
+                  {operator === '>' &&
+                    this.createOperator(t('common.filter.list.operators.greater'))}
                   {values.map((value, idx) => {
                     return (
                       <span key={idx}>
-                        <span className="FilterList__value">{value.toString()}</span>
+                        <span className="highlighted">{value.toString()}</span>
                         {idx < values.length - 1 &&
                           (operator === 'not in'
-                            ? this.createOperator('nor')
-                            : this.createOperator('or'))}
+                            ? this.createOperator(t('common.filter.list.operators.nor'))
+                            : this.createOperator(t('common.filter.list.operators.or')))}
                       </span>
                     );
                   })}
@@ -201,18 +204,26 @@ export default class FilterList extends React.Component {
               >
                 <span className="FilterList__parameter-name">Executed Flow Node</span>
                 {this.createOperator(
-                  operator === 'in' ? 'is' : values.length > 1 ? 'is neither' : 'is not'
+                  operator === 'in'
+                    ? t('common.filter.list.operators.is')
+                    : values.length > 1
+                    ? t('common.filter.list.operators.neither')
+                    : t('common.filter.list.operators.not')
                 )}
                 {values.map((value, idx) => {
                   return (
                     <span key={idx}>
-                      <span className="FilterList__value">
+                      <span className="highlighted">
                         {flowNodes
                           ? flowNodes[value.toString()] || value.toString()
                           : value.toString()}
                       </span>
                       {idx < values.length - 1 &&
-                        this.createOperator(operator === 'in' ? 'or' : 'nor')}
+                        this.createOperator(
+                          operator === 'in'
+                            ? t('common.filter.list.operators.or')
+                            : t('common.filter.list.operators.nor')
+                        )}
                     </span>
                   );
                 })}
@@ -236,11 +247,11 @@ export default class FilterList extends React.Component {
                 className="FilterList__action-item"
               >
                 <span className="FilterList__parameter-name">Duration</span>
-                {operator === '<' && this.createOperator('is less than')}
-                {operator === '>' && this.createOperator('is more than')}
-                <span className="FilterList__value">
-                  {value.toString()} {unit.slice(0, -1)}
-                  {value > 1 && 's'}
+                {operator === '<' && this.createOperator(t('common.filter.list.operators.less'))}
+                {operator === '>' && this.createOperator(t('common.filter.list.operators.more'))}
+                <span className="highlighted">
+                  {value.toString()}{' '}
+                  {t(`common.unit.${unit.slice(0, -1)}.label${value !== 1 ? '-plural' : ''}`)}
                 </span>
               </ActionItem>
             </li>
@@ -255,7 +266,9 @@ export default class FilterList extends React.Component {
                 }}
                 className="FilterList__action-item"
               >
-                <span className="FilterList__parameter-name">Running Process Instances Only</span>
+                <span className="FilterList__parameter-name">
+                  {t('common.filter.list.running')}
+                </span>
               </ActionItem>
             </li>
           );
@@ -269,7 +282,9 @@ export default class FilterList extends React.Component {
                 }}
                 className="FilterList__action-item"
               >
-                <span className="FilterList__parameter-name">Completed Process Instances Only</span>
+                <span className="FilterList__parameter-name">
+                  {t('common.filter.list.completed')}
+                </span>
               </ActionItem>
             </li>
           );
@@ -283,7 +298,9 @@ export default class FilterList extends React.Component {
                 }}
                 className="FilterList__action-item"
               >
-                <span className="FilterList__parameter-name">Canceled Process Instances Only</span>
+                <span className="FilterList__parameter-name">
+                  {t('common.filter.list.canceled')}
+                </span>
               </ActionItem>
             </li>
           );
@@ -298,7 +315,7 @@ export default class FilterList extends React.Component {
                 className="FilterList__action-item"
               >
                 <span className="FilterList__parameter-name">
-                  Non Canceled Process Instances Only
+                  {t('common.filter.list.nonCanceled')}
                 </span>
               </ActionItem>
             </li>
@@ -309,7 +326,7 @@ export default class FilterList extends React.Component {
       if (i < this.props.data.length - 1) {
         list.push(
           <li className="FilterList__itemConnector" key={'connector_' + i}>
-            and
+            {t('common.and')}
           </li>
         );
       }
