@@ -21,18 +21,17 @@ function ValidationTextInput({
   const [isIncomplete, setIsIncomplete] = useState(false);
 
   useEffect(() => {
-    setIsIncomplete(!isComplete(value));
-  }, [name, value]);
+    if (isComplete(value)) setIsIncomplete(false);
+  }, [value]);
 
   const handleChange = async event => {
     const {value} = event.target;
+
     onChange(event);
 
-    if (isComplete(value)) {
-      setIsIncomplete(false);
-      await onFilterChange();
-    } else {
-      await onFilterChange();
+    await onFilterChange();
+
+    if (!isComplete(value)) {
       setIsIncomplete(true);
     }
   };
