@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Gateway Protocol Implementation</name>
@@ -20,6 +22,7 @@
   </licenses>
 
   <properties>
+    <version.java>8</version.java>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
     <proto.dir>${project.build.directory}/proto</proto.dir>
   </properties>
@@ -84,7 +87,6 @@
         </configuration>
       </plugin>
     </plugins>
-
   </build>
 
   <profiles>
@@ -120,7 +122,10 @@
                 </goals>
                 <configuration>
                   <tasks>
-                    <copy file="${project.build.directory}/generated-sources/protobuf/go/gateway.pb.go" tofile="${maven.multiModuleProjectDirectory}/clients/go/pb/gateway.pb.go" failonerror="true" />
+                    <copy
+                      file="${project.build.directory}/generated-sources/protobuf/go/gateway.pb.go"
+                      tofile="${maven.multiModuleProjectDirectory}/clients/go/pb/gateway.pb.go"
+                      failonerror="true"/>
                   </tasks>
                 </configuration>
               </execution>
