@@ -53,7 +53,7 @@ spec:
         readOnly: true
   containers:
     - name: maven
-      image: maven:3.5.3-jdk-8
+      image: maven:3.6.1-jdk-11
       command: ["cat"]
       tty: true
       env:
@@ -61,10 +61,6 @@ spec:
           valueFrom:
             resourceFieldRef:
               resource: limits.cpu
-        - name: JAVA_TOOL_OPTIONS
-          value: |
-            -XX:+UnlockExperimentalVMOptions
-            -XX:+UseCGroupMemoryLimitForHeap
       resources:
         limits:
           cpu: 4
@@ -112,10 +108,6 @@ spec:
     - name: zeebe
       image: camunda/zeebe:SNAPSHOT
       env:
-        - name: JAVA_TOOL_OPTIONS
-          value: |
-            -XX:+UnlockExperimentalVMOptions
-            -XX:+UseCGroupMemoryLimitForHeap
       volumeMounts:
         - name: zeebe-configuration
           mountPath: /usr/local/zeebe/conf/zeebe.cfg.toml

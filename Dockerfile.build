@@ -14,7 +14,7 @@ RUN cd client && yarn build
 ### BACKEND BUILD
 #####################################
 # For consistency with .ci/pipeline/release.groovy, we are not using alpine
-FROM maven:3.5.3-jdk-8 AS be-build
+FROM maven:3.6.1-jdk-11 AS be-build
 WORKDIR /usr/src/app/
 COPY --from=fe-build /build/client client/
 COPY pom.xml .
@@ -25,7 +25,7 @@ RUN mvn clean install -P -docker,skipFrontendBuild -DskipTests=true
 #####################################
 ### DISTRO BUILD
 #####################################
-FROM openjdk:8u191-jre-alpine3.9
+FROM openjdk:11-jre
 COPY --from=be-build /usr/src/app/webapp/target/*-exec.jar /usr/app/camunda-operate.jar
 EXPOSE 8080
 ENV JAVA_OPTS=""

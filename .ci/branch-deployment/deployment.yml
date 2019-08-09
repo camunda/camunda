@@ -44,8 +44,6 @@ spec:
         env:
         - name: JAVA_OPTS
           value: |
-            -XX:+UnlockExperimentalVMOptions
-            -XX:+UseCGroupMemoryLimitForHeap
             -XX:MaxRAMFraction=1
         - name: SPRING_PROFILES_ACTIVE
           value: "dev-data"
@@ -126,8 +124,6 @@ spec:
             value: 0.0.0.0
           - name: JAVA_TOOL_OPTIONS
             value: |
-              -XX:+UnlockExperimentalVMOptions
-              -XX:+UseCGroupMemoryLimitForHeap
               -Xms512m
               -Xmx512m
         ports:

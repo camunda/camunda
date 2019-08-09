@@ -5,7 +5,7 @@
 def static NODE_POOL() { return "slaves-stable" }
 // We can't use maven-alpine because 'frontend-maven-plugin' is incompatible
 // Issue: https://github.com/eirslett/frontend-maven-plugin/issues/633
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.5.3-jdk-8" }
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-11" }
 def static OPERATE_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-operate" }
 
 String getGitCommitMsg() {
@@ -89,8 +89,6 @@ spec:
             resource: limits.cpu
       - name: JAVA_TOOL_OPTIONS
         value: |
-          -XX:+UnlockExperimentalVMOptions
-          -XX:+UseCGroupMemoryLimitForHeap
           -XX:MaxRAMFraction=\$(LIMITS_CPU)
     resources:
       limits:

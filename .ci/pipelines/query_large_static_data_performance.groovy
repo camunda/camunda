@@ -53,7 +53,7 @@ spec:
         readOnly: true
   containers:
     - name: maven
-      image: maven:3.5.3-jdk-8
+      image: maven:3.6.1-jdk-11
       command: ["cat"]
       tty: true
       env:
@@ -61,10 +61,6 @@ spec:
           valueFrom:
             resourceFieldRef:
               resource: limits.cpu
-        - name: JAVA_TOOL_OPTIONS
-          value: |
-            -XX:+UnlockExperimentalVMOptions
-            -XX:+UseCGroupMemoryLimitForHeap
       resources:
         limits:
           cpu: 2
@@ -122,10 +118,6 @@ spec:
     - name: operate
       image: gcr.io/ci-30-162810/camunda-operate:latest
       env:
-        - name: JAVA_TOOL_OPTIONS
-          value: |
-            -XX:+UnlockExperimentalVMOptions
-            -XX:+UseCGroupMemoryLimitForHeap
         - name: camunda.operate.operationExecutor.executorEnabled
           value: false
         - name: camunda.operate.batchOperationMaxSize
