@@ -20,7 +20,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 import org.camunda.operate.data.AbstractDataGenerator;
 import org.camunda.operate.data.util.NameGenerator;
 import org.camunda.operate.util.ZeebeTestUtil;

@@ -37,7 +37,6 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.worker.JobWorker;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;
@@ -283,17 +282,6 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
         .andReturn();
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     return mvcResult;
-  }
-  
-  protected ListViewQueryDto createAllQuery() {
-    ListViewQueryDto query = new ListViewQueryDto();
-    query.setRunning(true);
-    query.setActive(true);
-    query.setIncidents(true);
-    query.setFinished(true);
-    query.setCanceled(true);
-    query.setCompleted(true);
-    return query;
   }
 
   protected BatchOperationRequestDto createBatchOperationDto(OperationType operationType, ListViewQueryDto query) {
