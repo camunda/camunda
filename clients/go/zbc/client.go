@@ -46,7 +46,7 @@ type ZBClientConfig struct {
 }
 
 const FileNotFoundError = ZBError("file not found")
-const InvalidPathError = ZBError("invalid path")
+const InvalidArgumentError = ZBError("invalid argument")
 
 type ZBError string
 
@@ -170,7 +170,6 @@ func fileNotFoundError(fileDescription, path string) error {
 	return errors.Wrap(FileNotFoundError, fmt.Sprintf("expected to find %s but there was no such file at path '%s'", fileDescription, path))
 }
 
-func invalidPathError(fileDescription string) error {
-	return errors.Wrap(FileNotFoundError, fmt.Sprintf("expected valid path to %s but path was empty", fileDescription))
-
+func invalidArgumentError(argument, errorReason string) error {
+	return errors.Wrap(InvalidArgumentError, fmt.Sprintf("expected to find valid %s but found error: %s", argument, errorReason))
 }
