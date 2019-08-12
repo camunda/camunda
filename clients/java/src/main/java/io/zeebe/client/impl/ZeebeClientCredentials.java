@@ -28,6 +28,11 @@ public class ZeebeClientCredentials {
   @JsonProperty("token_type")
   private String tokenType;
 
+  @JsonProperty("scope")
+  private String scope;
+
+  public ZeebeClientCredentials() {}
+
   public String getAccessToken() {
     return accessToken;
   }
