@@ -108,4 +108,8 @@ public abstract class CollectionUtil {
     return result;
   }
 
+  public static boolean isNotEmpty(Collection aCollection) {
+    return aCollection!=null && !aCollection.isEmpty();
+  }
+
 }

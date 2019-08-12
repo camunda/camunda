@@ -48,6 +48,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.apache.lucene.search.join.ScoreMode.None;
@@ -181,96 +183,86 @@ public class ListViewReader {
   }
 
   public QueryBuilder createQueryFragment(ListViewQueryDto query) {
-    final QueryBuilder runningFinishedQuery = createRunningFinishedQuery(query);
-
-    final QueryBuilder activityIdQuery = createActivityIdQuery(query);
-
-    QueryBuilder idsQuery = null;
-    if (query.getIds() != null && !query.getIds().isEmpty()) {
-      idsQuery = createIdsQuery(query.getIds());
-    }
-
-    QueryBuilder errorMessageQuery = null;
-    if (query.getErrorMessage() != null) {
-      errorMessageQuery = createErrorMessageQuery(query.getErrorMessage());
-    }
-
-    QueryBuilder createDateQuery = null;
-    if (query.getStartDateAfter() != null || query.getStartDateBefore() != null) {
-      createDateQuery = createStartDateQuery(query);
-    }
-
-    QueryBuilder endDateQuery = null;
-    if (query.getEndDateAfter() != null || query.getEndDateBefore() != null) {
-      endDateQuery = createEndDateQuery(query);
-    }
-
-    QueryBuilder workflowKeyQuery = null;
-    if (query.getWorkflowIds() != null && !query.getWorkflowIds().isEmpty()) {
-      workflowKeyQuery = termsQuery(ListViewTemplate.WORKFLOW_KEY,query.getWorkflowIds());
-    }
-
-    QueryBuilder bpmnProcessIdQuery = null;
-    if (query.getBpmnProcessId() != null) {
-      bpmnProcessIdQuery = createBpmnProcessIdQuery(query.getBpmnProcessId(), query.getWorkflowVersion());
-    }
-
-    QueryBuilder excludeIdsQuery = null;
-    if (query.getExcludeIds() != null && !query.getExcludeIds().isEmpty()) {
-      excludeIdsQuery = createExcludeIdsQuery(query.getExcludeIds());
-    }
-
-    QueryBuilder variablesQuery = null;
-    if (query.getVariable() != null) {
-      variablesQuery = createVariablesQuery(query.getVariable());
-    }
-
-    return joinWithAnd(runningFinishedQuery, activityIdQuery, idsQuery, errorMessageQuery, createDateQuery, endDateQuery, workflowKeyQuery, bpmnProcessIdQuery, excludeIdsQuery, variablesQuery);
+    return joinWithAnd(
+        createRunningFinishedQuery(query),
+        createActivityIdQuery(query),
+        createIdsQuery(query),  
+        createErrorMessageQuery(query),
+        createStartDateQuery(query),
+        createEndDateQuery(query),
+        createWorkflowKeysQuery(query),
+        createBpmnProcessIdQuery(query),
+        createExcludeIdsQuery(query),
+        createVariablesQuery(query)
+    );
   }
 
-  private QueryBuilder createBpmnProcessIdQuery(String bpmnProcessId, Integer workflowVersion) {
-    final TermQueryBuilder bpmnProcessIdQ = termQuery(ListViewTemplate.BPMN_PROCESS_ID, bpmnProcessId);
-    TermQueryBuilder versionQ = null;
-    if (workflowVersion != null) {
-      versionQ = termQuery(ListViewTemplate.WORKFLOW_VERSION, workflowVersion);
+  private QueryBuilder createWorkflowKeysQuery(ListViewQueryDto query) {
+    if (CollectionUtil.isNotEmpty(query.getWorkflowIds())) {
+      return termsQuery(ListViewTemplate.WORKFLOW_KEY,query.getWorkflowIds());
     }
-    return joinWithAnd(bpmnProcessIdQ, versionQ);
+    return null;
   }
 
-  private QueryBuilder createVariablesQuery(VariablesQueryDto variablesQuery) {
-    if (variablesQuery.getName() == null) {
-      throw new InvalidRequestException("Variables query must provide not-null variable name.");
+  private QueryBuilder createBpmnProcessIdQuery(ListViewQueryDto query) {
+    if (!StringUtils.isEmpty(query.getBpmnProcessId())) {
+      final TermQueryBuilder bpmnProcessIdQ = termQuery(ListViewTemplate.BPMN_PROCESS_ID, query.getBpmnProcessId());
+      TermQueryBuilder versionQ = null;
+      if (query.getWorkflowVersion() != null) {
+        versionQ = termQuery(ListViewTemplate.WORKFLOW_VERSION, query.getWorkflowVersion());
+      }
+      return joinWithAnd(bpmnProcessIdQ, versionQ);
     }
-    return hasChildQuery(VARIABLES_JOIN_RELATION,  joinWithAnd(termQuery(VAR_NAME, variablesQuery.getName()), termQuery(VAR_VALUE, variablesQuery.getValue())), None);
+    return null;
   }
 
-  private QueryBuilder createExcludeIdsQuery(List<String> excludeIds) {
-    return boolQuery().mustNot(termsQuery(ListViewTemplate.ID, excludeIds));
+  private QueryBuilder createVariablesQuery(ListViewQueryDto query) {
+    VariablesQueryDto variablesQuery = query.getVariable();
+    if (variablesQuery != null && !StringUtils.isEmpty(variablesQuery.getName())) {
+      if (variablesQuery.getName() == null) {
+        throw new InvalidRequestException("Variables query must provide not-null variable name.");
+      }
+      return hasChildQuery(VARIABLES_JOIN_RELATION,  joinWithAnd(termQuery(VAR_NAME, variablesQuery.getName()), termQuery(VAR_VALUE, variablesQuery.getValue())), None);
+    }
+    return null;
+  }
+
+  private QueryBuilder createExcludeIdsQuery(ListViewQueryDto query) {
+    if (CollectionUtil.isNotEmpty(query.getExcludeIds())) {
+      return boolQuery().mustNot(termsQuery(ListViewTemplate.ID, query.getExcludeIds()));
+    }
+    return null;
   }
 
   private QueryBuilder createEndDateQuery(ListViewQueryDto query) {
-    final RangeQueryBuilder rangeQueryBuilder = rangeQuery(ListViewTemplate.END_DATE);
-    if (query.getEndDateAfter() != null) {
-      rangeQueryBuilder.gte(dateTimeFormatter.format(query.getEndDateAfter()));
+    if (query.getEndDateAfter() != null || query.getEndDateBefore() != null) {
+      final RangeQueryBuilder rangeQueryBuilder = rangeQuery(ListViewTemplate.END_DATE);
+      if (query.getEndDateAfter() != null) {
+        rangeQueryBuilder.gte(dateTimeFormatter.format(query.getEndDateAfter()));
+      }
+      if (query.getEndDateBefore() != null) {
+        rangeQueryBuilder.lt(dateTimeFormatter.format(query.getEndDateBefore()));
+      }
+      rangeQueryBuilder.format(operateProperties.getElasticsearch().getDateFormat());
+      return rangeQueryBuilder;
     }
-    if (query.getEndDateBefore() != null) {
-      rangeQueryBuilder.lt(dateTimeFormatter.format(query.getEndDateBefore()));
-    }
-    rangeQueryBuilder.format(operateProperties.getElasticsearch().getDateFormat());
-    return rangeQueryBuilder;
+    return null;
   }
 
   private QueryBuilder createStartDateQuery(ListViewQueryDto query) {
-    final RangeQueryBuilder rangeQueryBuilder = rangeQuery(ListViewTemplate.START_DATE);
-    if (query.getStartDateAfter() != null) {
-      rangeQueryBuilder.gte(dateTimeFormatter.format(query.getStartDateAfter()));
-    }
-    if (query.getStartDateBefore() != null) {
-      rangeQueryBuilder.lt(dateTimeFormatter.format(query.getStartDateBefore()));
-    }
-    rangeQueryBuilder.format(operateProperties.getElasticsearch().getDateFormat());
+    if (query.getStartDateAfter() != null || query.getStartDateBefore() != null) {
+      final RangeQueryBuilder rangeQueryBuilder = rangeQuery(ListViewTemplate.START_DATE);
+      if (query.getStartDateAfter() != null) {
+        rangeQueryBuilder.gte(dateTimeFormatter.format(query.getStartDateAfter()));
+      }
+      if (query.getStartDateBefore() != null) {
+        rangeQueryBuilder.lt(dateTimeFormatter.format(query.getStartDateBefore()));
+      }
+      rangeQueryBuilder.format(operateProperties.getElasticsearch().getDateFormat());
 
-    return rangeQueryBuilder;
+      return rangeQueryBuilder;
+    }
+    return null;
   }
 
   private QueryBuilder createErrorMessageAsAndMatchQuery(String errorMessage) {
@@ -281,16 +273,23 @@ public class ListViewReader {
     return hasChildQuery(ACTIVITIES_JOIN_RELATION,QueryBuilders.wildcardQuery(ERROR_MSG, errorMessage), None);
   }
   
-  private QueryBuilder createErrorMessageQuery(String errorMessage) {
-    if(errorMessage.contains(WILD_CARD)) {
-      return createErrorMessageAsWildcardQuery(errorMessage);
-    }else {
-      return createErrorMessageAsAndMatchQuery(errorMessage);
+  private QueryBuilder createErrorMessageQuery(ListViewQueryDto query) {
+    String errorMessage = query.getErrorMessage();
+    if (!StringUtils.isEmpty(errorMessage)) {
+      if(errorMessage.contains(WILD_CARD)) {
+        return createErrorMessageAsWildcardQuery(errorMessage);
+      }else {
+        return createErrorMessageAsAndMatchQuery(errorMessage);
+      }
     }
+    return null;
   }
   
-  private QueryBuilder createIdsQuery(List<String> ids) {
-    return termsQuery(ListViewTemplate.ID, ids);
+  private QueryBuilder createIdsQuery(ListViewQueryDto query) {
+    if (CollectionUtil.isNotEmpty(query.getIds())) {
+      return termsQuery(ListViewTemplate.ID, query.getIds());
+    }
+    return null;
   }
 
   private Set<Long> findInstancesWithIncidents(List<Long> workflowInstanceKeys) {
@@ -377,7 +376,7 @@ public class ListViewReader {
   }
 
   private QueryBuilder createActivityIdQuery(ListViewQueryDto query) {
-    if (query.getActivityId() == null) {
+    if (StringUtils.isEmpty(query.getActivityId())) {
       return null;
     }
     QueryBuilder activeActivityIdQuery = null;
