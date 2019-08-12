@@ -20,7 +20,7 @@
 
     <version.zeebe>0.21.0-alpha1</version.zeebe>
     <version.elasticsearch>6.8.2</version.elasticsearch>
-    <version.spring.boot>2.1.6.RELEASE</version.spring.boot>
+    <version.spring.boot>2.1.7.RELEASE</version.spring.boot>
 
     <version.swagger>2.9.2</version.swagger>
     <version.javax.json>1.1.4</version.javax.json>
