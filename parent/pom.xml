@@ -26,8 +26,6 @@
 
   <properties>
 
-    <version.java>11</version.java>
-
     <!-- Zeebe Community License v1.0 header -->
     <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
 
@@ -562,6 +560,25 @@
           <configuration>
             <release>${version.java}</release>
           </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>${plugin.version.javadoc}</version>
+          <configuration>
+            <source>${version.java}</source>
+            <quiet>true</quiet>
+            <additionalOptions>-Xdoclint:none</additionalOptions>
+          </configuration>
+          <executions>
+            <execution>
+              <id>attach-javadocs</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
 
         <!-- LICENSE PLUGIN -->
