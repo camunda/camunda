@@ -28,6 +28,25 @@ spec:
         requests:
           cpu: 8
           memory: 32Gi
+    - name: maven-jdk8
+      image: maven:3.6.0-jdk-8
+      command: ["cat"]
+      tty: true
+      env:
+        - name: LIMITS_CPU
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        - name: JAVA_TOOL_OPTIONS
+          value: |
+            -XX:+UseContainerSupport
+      resources:
+        limits:
+          cpu: 2
+          memory: 4Gi
+        requests:
+          cpu: 2
+          memory: 4Gi
     - name: golang
       image: golang:1.12.2
       command: ["cat"]

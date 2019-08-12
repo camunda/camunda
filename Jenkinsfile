@@ -28,9 +28,14 @@ pipeline {
         stage('Prepare') {
             steps {
                 checkout scm
+
                 container('maven') {
                     sh '.ci/scripts/distribution/prepare.sh'
                 }
+                container('maven-jdk8') {
+                    sh '.ci/scripts/distribution/prepare.sh'
+                }
+
             }
         }
 
@@ -62,6 +67,13 @@ pipeline {
                     steps {
                         container('maven') {
                             sh '.ci/scripts/distribution/test-java.sh'
+                        }
+                    }
+                }
+                stage('Unit 8 (Java 8)') {
+                    steps {
+                        container('maven-jdk8') {
+                            sh '.ci/scripts/distribution/test-java8.sh'
                         }
                     }
                 }
