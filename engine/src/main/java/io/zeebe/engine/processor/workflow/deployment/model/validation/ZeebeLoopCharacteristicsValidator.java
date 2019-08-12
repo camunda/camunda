@@ -8,6 +8,7 @@
 package io.zeebe.engine.processor.workflow.deployment.model.validation;
 
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
+import java.util.Optional;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -16,7 +17,7 @@ public class ZeebeLoopCharacteristicsValidator
 
   private final ZeebeExpressionValidator expressionValidator;
 
-  public ZeebeLoopCharacteristicsValidator(ZeebeExpressionValidator expressionValidator) {
+  public ZeebeLoopCharacteristicsValidator(final ZeebeExpressionValidator expressionValidator) {
     this.expressionValidator = expressionValidator;
   }
 
@@ -27,7 +28,12 @@ public class ZeebeLoopCharacteristicsValidator
 
   @Override
   public void validate(
-      ZeebeLoopCharacteristics element, ValidationResultCollector validationResultCollector) {
+      final ZeebeLoopCharacteristics element,
+      final ValidationResultCollector validationResultCollector) {
     expressionValidator.validateJsonPath(element.getInputCollection(), validationResultCollector);
+
+    Optional.ofNullable(element.getOutputElement())
+        .filter(e -> !e.isEmpty())
+        .ifPresent(e -> expressionValidator.validateJsonPath(e, validationResultCollector));
   }
 }

@@ -73,7 +73,9 @@ public class VariablesState {
   private int variableCount = 0;
 
   public VariablesState(
-      ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext, KeyGenerator keyGenerator) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final DbContext dbContext,
+      final KeyGenerator keyGenerator) {
     this.keyGenerator = keyGenerator;
 
     parentKey = new DbLong();
@@ -95,7 +97,7 @@ public class VariablesState {
   }
 
   public void setVariablesLocalFromDocument(
-      long scopeKey, long workflowKey, DirectBuffer document) {
+      final long scopeKey, final long workflowKey, final DirectBuffer document) {
     reader.wrap(document, 0, document.capacity());
 
     final int variables = reader.readMapHeader();
@@ -122,19 +124,33 @@ public class VariablesState {
   }
 
   public void setVariableLocal(
-      long scopeKey, long workflowKey, DirectBuffer name, DirectBuffer value) {
+      final long scopeKey,
+      final long workflowKey,
+      final DirectBuffer name,
+      final DirectBuffer value) {
     setVariableLocal(scopeKey, workflowKey, name, 0, name.capacity(), value, 0, value.capacity());
   }
 
   public void setVariableLocal(
-      long scopeKey,
-      long workflowKey,
-      DirectBuffer name,
-      int nameOffset,
-      int nameLength,
-      DirectBuffer value,
-      int valueOffset,
-      int valueLength) {
+      final long scopeKey,
+      final long workflowKey,
+      final DirectBuffer name,
+      final DirectBuffer value,
+      final int valueOffset,
+      final int valueLength) {
+    setVariableLocal(
+        scopeKey, workflowKey, name, 0, name.capacity(), value, valueOffset, valueLength);
+  }
+
+  public void setVariableLocal(
+      final long scopeKey,
+      final long workflowKey,
+      final DirectBuffer name,
+      final int nameOffset,
+      final int nameLength,
+      final DirectBuffer value,
+      final int valueOffset,
+      final int valueLength) {
 
     newVariable.reset();
     newVariable.setValue(value, valueOffset, valueLength);
@@ -178,15 +194,15 @@ public class VariablesState {
   }
 
   private boolean hasVariableLocal(
-      long scopeKey, DirectBuffer name, int nameOffset, int nameLength) {
+      final long scopeKey, final DirectBuffer name, final int nameOffset, final int nameLength) {
     this.scopeKey.wrapLong(scopeKey);
     variableNameView.wrap(name, nameOffset, nameLength);
-    this.variableName.wrapBuffer(variableNameView);
+    variableName.wrapBuffer(variableNameView);
 
     return variablesColumnFamily.exists(scopeKeyVariableNameKey);
   }
 
-  public DirectBuffer getVariableLocal(long scopeKey, DirectBuffer name) {
+  public DirectBuffer getVariableLocal(final long scopeKey, final DirectBuffer name) {
     final VariableInstance variable = getVariableLocal(scopeKey, name, 0, name.capacity());
 
     if (variable != null) {
@@ -197,15 +213,16 @@ public class VariablesState {
   }
 
   private VariableInstance getVariableLocal(
-      long scopeKey, DirectBuffer name, int nameOffset, int nameLength) {
+      final long scopeKey, final DirectBuffer name, final int nameOffset, final int nameLength) {
     this.scopeKey.wrapLong(scopeKey);
     variableNameView.wrap(name, nameOffset, nameLength);
-    this.variableName.wrapBuffer(variableNameView);
+    variableName.wrapBuffer(variableNameView);
 
     return variablesColumnFamily.get(scopeKeyVariableNameKey);
   }
 
-  public void setVariablesFromDocument(long scopeKey, long workflowKey, DirectBuffer document) {
+  public void setVariablesFromDocument(
+      final long scopeKey, final long workflowKey, final DirectBuffer document) {
     // 1. index entries in the document
     indexedDocument.index(document);
     if (!indexedDocument.hasEntries()) {
@@ -264,14 +281,14 @@ public class VariablesState {
     }
   }
 
-  private long getParent(long childKey) {
+  private long getParent(final long childKey) {
     this.childKey.wrapLong(childKey);
 
     final DbLong parentKey = childParentColumnFamily.get(this.childKey);
     return parentKey != null ? parentKey.getValue() : NO_PARENT;
   }
 
-  public DirectBuffer getVariablesAsDocument(long scopeKey) {
+  public DirectBuffer getVariablesAsDocument(final long scopeKey) {
 
     collectedVariables.clear();
     writer.wrap(documentResultBuffer, 0);
@@ -299,7 +316,8 @@ public class VariablesState {
     return resultView;
   }
 
-  public DirectBuffer getVariablesAsDocument(long scopeKey, Collection<DirectBuffer> names) {
+  public DirectBuffer getVariablesAsDocument(
+      final long scopeKey, final Collection<DirectBuffer> names) {
 
     variablesToCollect.clear();
     variablesToCollect.addAll(names);
@@ -325,7 +343,7 @@ public class VariablesState {
     return resultView;
   }
 
-  public DirectBuffer getVariablesLocalAsDocument(long scopeKey) {
+  public DirectBuffer getVariablesLocalAsDocument(final long scopeKey) {
 
     writer.wrap(documentResultBuffer, 0);
 
@@ -355,10 +373,10 @@ public class VariablesState {
    * the scope hierarchy.
    */
   private void visitVariables(
-      long scopeKey,
-      Predicate<DbString> filter,
-      BiConsumer<DbString, VariableInstance> variableConsumer,
-      BooleanSupplier completionCondition) {
+      final long scopeKey,
+      final Predicate<DbString> filter,
+      final BiConsumer<DbString, VariableInstance> variableConsumer,
+      final BooleanSupplier completionCondition) {
     long currentScope = scopeKey;
 
     boolean completed;
@@ -381,10 +399,10 @@ public class VariablesState {
    * @return true if the completion condition was met
    */
   private boolean visitVariablesLocal(
-      long scopeKey,
-      Predicate<DbString> variableFilter,
-      BiConsumer<DbString, VariableInstance> variableConsumer,
-      BooleanSupplier completionCondition) {
+      final long scopeKey,
+      final Predicate<DbString> variableFilter,
+      final BiConsumer<DbString, VariableInstance> variableConsumer,
+      final BooleanSupplier completionCondition) {
     this.scopeKey.wrapLong(scopeKey);
 
     variablesColumnFamily.whileEqualPrefix(
@@ -401,14 +419,14 @@ public class VariablesState {
     return false;
   }
 
-  public void createScope(long childKey, long parentKey) {
+  public void createScope(final long childKey, final long parentKey) {
     this.childKey.wrapLong(childKey);
     this.parentKey.wrapLong(parentKey);
 
     childParentColumnFamily.put(this.childKey, this.parentKey);
   }
 
-  public void removeScope(long scopeKey) {
+  public void removeScope(final long scopeKey) {
     this.scopeKey.wrapLong(scopeKey);
 
     removeAllVariables(scopeKey);
@@ -416,7 +434,7 @@ public class VariablesState {
     childParentColumnFamily.delete(this.scopeKey);
   }
 
-  public void removeAllVariables(long scopeKey) {
+  public void removeAllVariables(final long scopeKey) {
     visitVariablesLocal(
         scopeKey,
         dbString -> true,
@@ -424,20 +442,20 @@ public class VariablesState {
         () -> false);
   }
 
-  public void setTemporaryVariables(long scopeKey, DirectBuffer variables) {
+  public void setTemporaryVariables(final long scopeKey, final DirectBuffer variables) {
     this.scopeKey.wrapLong(scopeKey);
     temporaryVariables.wrapBuffer(variables);
     temporaryVariableStoreColumnFamily.put(this.scopeKey, temporaryVariables);
   }
 
-  public DirectBuffer getTemporaryVariables(long scopeKey) {
+  public DirectBuffer getTemporaryVariables(final long scopeKey) {
     this.scopeKey.wrapLong(scopeKey);
     final DbBuffer variables = temporaryVariableStoreColumnFamily.get(this.scopeKey);
 
     return variables == null ? null : variables.getValue();
   }
 
-  public void removeTemporaryVariables(long scopeKey) {
+  public void removeTemporaryVariables(final long scopeKey) {
     this.scopeKey.wrapLong(scopeKey);
     temporaryVariableStoreColumnFamily.delete(this.scopeKey);
   }
@@ -448,7 +466,7 @@ public class VariablesState {
         && temporaryVariableStoreColumnFamily.isEmpty();
   }
 
-  public void setListener(VariableListener listener) {
+  public void setListener(final VariableListener listener) {
     if (this.listener != null) {
       throw new IllegalStateException("variable listener is already set");
     }
@@ -456,7 +474,7 @@ public class VariablesState {
     this.listener = listener;
   }
 
-  private long getRootScopeKey(long scopeKey) {
+  private long getRootScopeKey(final long scopeKey) {
     long rootScopeKey = scopeKey;
     long currentScopeKey = scopeKey;
 
@@ -494,7 +512,7 @@ public class VariablesState {
     private final DocumentEntryIterator iterator = new DocumentEntryIterator();
     private DirectBuffer document;
 
-    public void index(DirectBuffer document) {
+    public void index(final DirectBuffer document) {
       this.document = document;
       entries.clear();
       final int documentLength = document.capacity();
@@ -564,10 +582,10 @@ public class VariablesState {
       iterator.remove();
     }
 
-    public void wrap(DirectBuffer document, EntryIterator iterator) {
+    public void wrap(final DirectBuffer document, final EntryIterator iterator) {
       this.iterator = iterator;
       this.document = document;
-      this.documentLength = document.capacity();
+      documentLength = document.capacity();
     }
 
     /** excluding string header */

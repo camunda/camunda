@@ -30,11 +30,14 @@ public class ZeebeLoopCharacteristicsImpl extends BpmnModelElementInstanceImpl
   private static Attribute<String> inputCollectionAttribute;
   private static Attribute<String> inputElementAttribute;
 
-  public ZeebeLoopCharacteristicsImpl(ModelTypeInstanceContext instanceContext) {
+  private static Attribute<String> outputCollectionAttribute;
+  private static Attribute<String> outputElementAttribute;
+
+  public ZeebeLoopCharacteristicsImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ZeebeLoopCharacteristics.class, ZeebeConstants.ELEMENT_LOOP_CHARACTERISTICS)
@@ -54,6 +57,18 @@ public class ZeebeLoopCharacteristicsImpl extends BpmnModelElementInstanceImpl
             .namespace(BpmnModelConstants.ZEEBE_NS)
             .build();
 
+    outputCollectionAttribute =
+        typeBuilder
+            .stringAttribute(ZeebeConstants.ATTRIBUTE_OUTPUT_COLLECTION)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
+            .build();
+
+    outputElementAttribute =
+        typeBuilder
+            .stringAttribute(ZeebeConstants.ATTRIBUTE_OUTPUT_ELEMENT)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
+            .build();
+
     typeBuilder.build();
   }
 
@@ -63,7 +78,7 @@ public class ZeebeLoopCharacteristicsImpl extends BpmnModelElementInstanceImpl
   }
 
   @Override
-  public void setInputCollection(String inputCollection) {
+  public void setInputCollection(final String inputCollection) {
     inputCollectionAttribute.setValue(this, inputCollection);
   }
 
@@ -73,7 +88,27 @@ public class ZeebeLoopCharacteristicsImpl extends BpmnModelElementInstanceImpl
   }
 
   @Override
-  public void setInputElement(String inputElement) {
+  public void setInputElement(final String inputElement) {
     inputElementAttribute.setValue(this, inputElement);
+  }
+
+  @Override
+  public String getOutputCollection() {
+    return outputCollectionAttribute.getValue(this);
+  }
+
+  @Override
+  public void setOutputCollection(final String outputCollection) {
+    outputCollectionAttribute.setValue(this, outputCollection);
+  }
+
+  @Override
+  public String getOutputElement() {
+    return outputElementAttribute.getValue(this);
+  }
+
+  @Override
+  public void setOutputElement(final String outputElement) {
+    outputElementAttribute.setValue(this, outputElement);
   }
 }

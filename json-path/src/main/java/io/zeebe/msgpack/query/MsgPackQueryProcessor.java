@@ -120,6 +120,11 @@ public class MsgPackQueryProcessor {
       return arrayResult;
     }
 
+    public DirectBuffer getValue() {
+      resultBuffer.wrap(reader.getBuffer());
+      return resultBuffer;
+    }
+
     public String getType() {
       return token.getType().name();
     }

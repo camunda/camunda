@@ -29,9 +29,9 @@ public class AbstractMultiInstanceLoopCharacteristicsBuilder<
     extends AbstractBaseElementBuilder<B, MultiInstanceLoopCharacteristics> {
 
   protected AbstractMultiInstanceLoopCharacteristicsBuilder(
-      BpmnModelInstance modelInstance,
-      MultiInstanceLoopCharacteristics element,
-      Class<?> selfType) {
+      final BpmnModelInstance modelInstance,
+      final MultiInstanceLoopCharacteristics element,
+      final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -61,7 +61,7 @@ public class AbstractMultiInstanceLoopCharacteristicsBuilder<
    * @param expression the cardinality expression
    * @return the builder object
    */
-  public B cardinality(String expression) {
+  public B cardinality(final String expression) {
     final LoopCardinality cardinality = getCreateSingleChild(LoopCardinality.class);
     cardinality.setTextContent(expression);
 
@@ -74,7 +74,7 @@ public class AbstractMultiInstanceLoopCharacteristicsBuilder<
    * @param expression the completion condition expression
    * @return the builder object
    */
-  public B completionCondition(String expression) {
+  public B completionCondition(final String expression) {
     final CompletionCondition condition = getCreateSingleChild(CompletionCondition.class);
     condition.setTextContent(expression);
 
@@ -86,22 +86,35 @@ public class AbstractMultiInstanceLoopCharacteristicsBuilder<
    *
    * @return the parent activity builder
    */
-  @SuppressWarnings({"rawtypes", "unchecked"})
   public <T extends AbstractActivityBuilder> T multiInstanceDone() {
     return (T) ((Activity) element.getParentElement()).builder();
   }
 
-  public B zeebeInputCollection(String inputCollection) {
+  public B zeebeInputCollection(final String inputCollection) {
     final ZeebeLoopCharacteristics characteristics =
         getCreateSingleExtensionElement(ZeebeLoopCharacteristics.class);
     characteristics.setInputCollection(inputCollection);
     return myself;
   }
 
-  public B zeebeInputElement(String inputElement) {
+  public B zeebeInputElement(final String inputElement) {
     final ZeebeLoopCharacteristics characteristics =
         getCreateSingleExtensionElement(ZeebeLoopCharacteristics.class);
     characteristics.setInputElement(inputElement);
+    return myself;
+  }
+
+  public B zeebeOutputCollection(final String outputCollection) {
+    final ZeebeLoopCharacteristics characteristics =
+        getCreateSingleExtensionElement(ZeebeLoopCharacteristics.class);
+    characteristics.setOutputCollection(outputCollection);
+    return myself;
+  }
+
+  public B zeebeOutputElement(final String outputElement) {
+    final ZeebeLoopCharacteristics characteristics =
+        getCreateSingleExtensionElement(ZeebeLoopCharacteristics.class);
+    characteristics.setOutputElement(outputElement);
     return myself;
   }
 }

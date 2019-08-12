@@ -11,13 +11,16 @@ import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.BpmnStepHandler;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
-import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.msgpack.query.MsgPackQueryProcessor.ArrayResult;
+import io.zeebe.msgpack.spec.MsgPackWriter;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 
 public class MultiInstanceBodyActivatedHandler extends AbstractMultiInstanceBodyHandler {
+
+  private final ExpandableArrayBuffer variableBuffer = new ExpandableArrayBuffer();
+  private final MsgPackWriter variableWriter = new MsgPackWriter();
 
   public MultiInstanceBodyActivatedHandler(
       final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup) {
@@ -28,25 +31,53 @@ public class MultiInstanceBodyActivatedHandler extends AbstractMultiInstanceBody
   protected boolean handleMultiInstanceBody(
       final BpmnStepContext<ExecutableMultiInstanceBody> context) {
 
-    final ArrayResult array = readInputCollectionVariable(context).getSingleResult().getArray();
+    final var loopCharacteristics = context.getElement().getLoopCharacteristics();
+    final var array = readInputCollectionVariable(context).getSingleResult().getArray();
+
+    loopCharacteristics
+        .getOutputCollection()
+        .ifPresent(variableName -> initializeOutputCollection(context, variableName, array.size()));
+
     if (array.isEmpty()) {
       // complete the multi-instance body immediately
       return true;
     }
 
-    if (context.getElement().getLoopCharacteristics().isSequential()) {
-
-      final DirectBuffer item = array.getElement(0);
-      createInnerInstance(context, context.getKey(), item);
-
-      final ElementInstance elementInstance = context.getElementInstance();
-      elementInstance.incrementMultiInstanceLoopCounter();
-      context.getElementInstanceState().updateInstance(elementInstance);
+    if (loopCharacteristics.isSequential()) {
+      final var firstItem = array.getElement(0);
+      createInnerInstance(context, context.getKey(), firstItem);
 
     } else {
       array.forEach(item -> createInnerInstance(context, context.getKey(), item));
     }
 
     return false;
+  }
+
+  private void initializeOutputCollection(
+      final BpmnStepContext<ExecutableMultiInstanceBody> context,
+      final DirectBuffer variableName,
+      final int size) {
+
+    variableWriter.wrap(variableBuffer, 0);
+
+    // initialize the array with nil
+    variableWriter.writeArrayHeader(size);
+    for (var i = 0; i < size; i++) {
+      variableWriter.writeNil();
+    }
+
+    final var length = variableWriter.getOffset();
+
+    context
+        .getElementInstanceState()
+        .getVariablesState()
+        .setVariableLocal(
+            context.getKey(),
+            context.getValue().getWorkflowKey(),
+            variableName,
+            variableBuffer,
+            0,
+            length);
   }
 }

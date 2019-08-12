@@ -20,6 +20,7 @@ import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.junit.Test;
@@ -157,6 +158,33 @@ public class MsgPackQueryProcessorTest {
         .isEqualTo(
             encodeMsgPack(
                 p -> p.packMapHeader(2).packString("a").packLong(1).packString("b").packLong(2)));
+  }
+
+  @Test
+  public void shouldGetSingleResultValue() {
+    final var data =
+        encodeMsgPack(
+            p -> {
+              p.packMapHeader(6);
+              p.packString("string").packString("foo");
+              p.packString("integer").packLong(123);
+              p.packString("boolean").packBoolean(true);
+              p.packString("nil").packNil();
+              p.packString("array").packArrayHeader(1).packString("x");
+              p.packString("map").packMapHeader(1).packString("y").packString("z");
+            });
+
+    final Function<String, DirectBuffer> getValue =
+        entry -> processor.process(path(entry), data).getSingleResult().getValue();
+
+    assertThat(getValue.apply("string")).isEqualTo(encodeMsgPack(p -> p.packString("foo")));
+    assertThat(getValue.apply("integer")).isEqualTo(encodeMsgPack(p -> p.packLong(123)));
+    assertThat(getValue.apply("boolean")).isEqualTo(encodeMsgPack(p -> p.packBoolean(true)));
+    assertThat(getValue.apply("nil")).isEqualTo(encodeMsgPack(p -> p.packNil()));
+    assertThat(getValue.apply("array"))
+        .isEqualTo(encodeMsgPack(p -> p.packArrayHeader(1).packString("x")));
+    assertThat(getValue.apply("map"))
+        .isEqualTo(encodeMsgPack(p -> p.packMapHeader(1).packString("y").packString("z")));
   }
 
   @Test

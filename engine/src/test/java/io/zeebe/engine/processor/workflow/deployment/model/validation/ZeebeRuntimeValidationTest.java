@@ -159,10 +159,28 @@ public class ZeebeRuntimeValidationTest {
                 ZeebeLoopCharacteristics.class,
                 "JSON path query is invalid: Unexpected json-path token ROOT_OBJECT"))
       },
+      {
+        // output element expression is not supported
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.multiInstance(
+                        m ->
+                            m.zeebeInputCollection("foo")
+                                .zeebeOutputCollection("bar")
+                                .zeebeOutputElement("$.b")))
+            .done(),
+        Arrays.asList(
+            expect(
+                ZeebeLoopCharacteristics.class,
+                "JSON path query is invalid: Unexpected json-path token ROOT_OBJECT"))
+      },
     };
   }
 
-  private static ValidationResults validate(BpmnModelInstance model) {
+  private static ValidationResults validate(final BpmnModelInstance model) {
     final ModelWalker walker = new ModelWalker(model);
     final ValidationVisitor visitor = new ValidationVisitor(ZeebeRuntimeValidators.VALIDATORS);
     walker.walk(visitor);
@@ -236,7 +254,8 @@ public class ZeebeRuntimeValidationTest {
     fail(sb.toString());
   }
 
-  private static void describeUnmatchedResults(StringBuilder sb, List<ValidationResult> results) {
+  private static void describeUnmatchedResults(
+      final StringBuilder sb, final List<ValidationResult> results) {
     sb.append("Unmatched results:\n");
     results.forEach(
         e -> {
@@ -246,7 +265,7 @@ public class ZeebeRuntimeValidationTest {
   }
 
   private static void describeUnmatchedExpectations(
-      StringBuilder sb, List<ExpectedValidationResult> expectations) {
+      final StringBuilder sb, final List<ExpectedValidationResult> expectations) {
     sb.append("Unmatched expectations:\n");
     expectations.forEach(
         e -> {

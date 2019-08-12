@@ -37,6 +37,8 @@ public class ZeebeLoopCharacteristicsTest extends BpmnModelElementInstanceTest {
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Arrays.asList(
         new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "inputCollection", false, true),
-        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "inputElement", false, false));
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "inputElement", false, false),
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "outputCollection", false, false),
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "outputElement", false, false));
   }
 }
