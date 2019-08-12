@@ -56,3 +56,16 @@ the generation to the standard output stream while operation is running.
 Be aware that the progress is just an estimate and might vary depending
 on the number of process definition deployed and process instances
 started.
+
+### Tenant scenarios
+
+3 Process definitions contain distinct tenant scenarios.
+
+```
+BookRequest - 1 tenant specific definition (tenant: library) & no shared definition
+HiringProcess - 5 tenant specific definitions (tenants: hr, engineering, sales, support, csm) & no shared definition
+InvoiceData - 2 tenant specific definitions (tenants: sales, engineering) & shared definition
+
+```
+
+
