@@ -18,36 +18,33 @@ import java.util.Comparator;
 import java.util.List;
 
 import static java.util.Comparator.naturalOrder;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 public class DefinitionAvailableVersionsWithTenants {
 
-  private static final String VERSION_ORDER = String.join(LATEST_VERSION, " ", ALL_VERSIONS);
-  
   @NonNull
   private String key;
   private String name;
   @NonNull
-  private List<DefinitionVersions> versions;
-  private List<TenantDto> tenants;
+  private List<DefinitionVersionWithTenants> versions;
+  @NonNull
+  private List<TenantDto> allTenants;
 
   public void sort() {
     versions.sort(
       Comparator.comparing(
-        DefinitionVersions::getVersion, (o1, o2) -> {
+        DefinitionVersionWithTenants::getVersion,
+        (o1, o2) -> {
           if (StringUtils.isNumeric(o1) && StringUtils.isNumeric(o2)) {
             return Long.valueOf(o1).compareTo(Long.valueOf(o2));
           } else {
-            // ensures that the order is numeric values, latest and then all versions
-            return Integer.compare(VERSION_ORDER.indexOf(o1), VERSION_ORDER.indexOf(o2));
+            return o1.toLowerCase().compareTo(o2.toLowerCase());
           }
         }
       ).reversed()
     );
-    tenants.sort(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())));
+    allTenants.sort(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())));
   }
 }

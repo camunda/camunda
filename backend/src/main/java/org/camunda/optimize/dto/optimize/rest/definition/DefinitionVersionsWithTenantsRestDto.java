@@ -23,6 +23,19 @@ public class DefinitionVersionsWithTenantsRestDto {
   private String key;
   private String name;
   @NonNull
-  private List<DefinitionVersionsRestDto> versions;
-  private List<TenantRestDto> tenants;
+  private List<DefinitionVersionWithTenantsRestDto> versions;
+  @NonNull
+  private List<TenantRestDto> allTenants;
+
+  // to be removed with OPT-2574
+  @Deprecated
+  public List<TenantRestDto> getTenants() {
+    return allTenants;
+  }
+
+  // to be removed with OPT-2574
+  @Deprecated
+  public void setTenants(final List<TenantRestDto> tenants) {
+    // noop
+  }
 }

@@ -10,10 +10,10 @@ import lombok.Data;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersions;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionWithTenants;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static java.util.Comparator.naturalOrder;
 
 @AllArgsConstructor
 abstract class AbstractDefinitionService {
@@ -33,27 +31,27 @@ abstract class AbstractDefinitionService {
     final String userId,
     final List<? extends DefinitionOptimizeDto> definitions) {
 
-    final Map<String, Map<String, InternalDefinitionWithTenants>> byKeyMap = groupDefinitionsByKeyAndVersion(
+    final Map<String, Map<String, InternalDefinitionVersionWithTenants>> byKeyMap = groupDefinitionsByKeyAndVersion(
       userId, definitions
     );
 
     return mapToAvailableDefinitionVersionsWithTenants(byKeyMap);
   }
 
-  private Map<String, Map<String, InternalDefinitionWithTenants>> groupDefinitionsByKeyAndVersion(
+  private Map<String, Map<String, InternalDefinitionVersionWithTenants>> groupDefinitionsByKeyAndVersion(
     final String userId,
     final List<? extends DefinitionOptimizeDto> definitions) {
 
-    final Map<String, Map<String, InternalDefinitionWithTenants>> byKeyMap = new HashMap<>();
+    final Map<String, Map<String, InternalDefinitionVersionWithTenants>> byKeyMap = new HashMap<>();
     for (DefinitionOptimizeDto process : definitions) {
       final String definitionKey = process.getKey();
       byKeyMap.putIfAbsent(definitionKey, new HashMap<>());
 
       final String version = process.getVersion();
-      final Map<String, InternalDefinitionWithTenants> byVersionMap = byKeyMap.get(definitionKey);
+      final Map<String, InternalDefinitionVersionWithTenants> byVersionMap = byKeyMap.get(definitionKey);
       byVersionMap.putIfAbsent(
         process.getVersion(),
-        new InternalDefinitionWithTenants(
+        new InternalDefinitionVersionWithTenants(
           definitionKey,
           process.getName(),
           process.getVersion(),
@@ -88,27 +86,28 @@ abstract class AbstractDefinitionService {
   }
 
   private List<DefinitionAvailableVersionsWithTenants> mapToAvailableDefinitionVersionsWithTenants(
-    final Map<String, Map<String, InternalDefinitionWithTenants>> byKeyMap) {
+    final Map<String, Map<String, InternalDefinitionVersionWithTenants>> byKeyMap) {
 
-    return byKeyMap.entrySet()
-      .stream()
+    return byKeyMap.entrySet().stream()
       .map(byKeyEntry -> {
         final String definitionName = byKeyEntry.getValue().values().iterator().next().getName();
-        final List<DefinitionVersions> versions = byKeyEntry.getValue().values().stream()
-          .map(internalDto -> new DefinitionVersions(
-            internalDto.key, internalDto.name, internalDto.version, internalDto.versionTag
+        final Set<TenantDto> allVersionsTenants = new HashSet<>();
+        final List<DefinitionVersionWithTenants> versions = byKeyEntry.getValue().values().stream()
+          .map(internalDto -> new DefinitionVersionWithTenants(
+            internalDto.key,
+            internalDto.name,
+            internalDto.version,
+            internalDto.versionTag,
+            new ArrayList<>(internalDto.tenants)
           ))
-          .collect(Collectors.toList());
-        final List<TenantDto> tenants = byKeyEntry.getValue().values().stream()
-          .map(InternalDefinitionWithTenants::getTenants)
-          .flatMap(Collection::stream)
-          .collect(Collectors.toSet())
-          .stream()
-          .sorted(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())))
+          .peek(DefinitionVersionWithTenants::sort)
+          .peek(definitionWithTenants -> allVersionsTenants.addAll(definitionWithTenants.getTenants()))
           .collect(Collectors.toList());
 
         final DefinitionAvailableVersionsWithTenants definitionVersionsWithTenants =
-          new DefinitionAvailableVersionsWithTenants(byKeyEntry.getKey(), definitionName, versions, tenants);
+          new DefinitionAvailableVersionsWithTenants(
+            byKeyEntry.getKey(), definitionName, versions, new ArrayList<>(allVersionsTenants)
+          );
         definitionVersionsWithTenants.sort();
 
         return definitionVersionsWithTenants;
@@ -120,7 +119,7 @@ abstract class AbstractDefinitionService {
 
   @AllArgsConstructor
   @Data
-  private static final class InternalDefinitionWithTenants {
+  private static final class InternalDefinitionVersionWithTenants {
     private String key;
     private String name;
     private String version;
