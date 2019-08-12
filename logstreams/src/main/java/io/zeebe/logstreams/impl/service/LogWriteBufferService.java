@@ -19,10 +19,9 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 
 public class LogWriteBufferService implements Service<Dispatcher> {
-  private final Injector<LogStorage> logStorageInjector = new Injector<>();
-
   protected DispatcherBuilder dispatcherBuilder;
   protected Dispatcher dispatcher;
+  private final Injector<LogStorage> logStorageInjector = new Injector<>();
 
   public LogWriteBufferService(DispatcherBuilder builder) {
     this.dispatcherBuilder = builder;

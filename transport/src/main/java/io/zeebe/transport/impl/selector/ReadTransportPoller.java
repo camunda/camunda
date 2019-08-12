@@ -24,8 +24,8 @@ public class ReadTransportPoller extends TransportPoller {
   protected final List<TransportChannel> channels = new ArrayList<>();
   protected final List<TransportChannel> channelsToAdd = new ArrayList<>();
   protected final ToIntFunction<SelectionKey> processKeyFn = this::processKey;
-  private final ActorControl actor;
   protected final Runnable pollNow = this::pollNow;
+  private final ActorControl actor;
 
   public ReadTransportPoller(ActorControl actor) {
     this.actor = actor;

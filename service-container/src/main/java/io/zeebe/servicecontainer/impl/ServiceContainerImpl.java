@@ -35,8 +35,8 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer {
       new ConcurrentQueueChannel<>(new ManyToOneConcurrentLinkedQueue<>());
   protected final ActorScheduler actorScheduler;
   protected final AtomicBoolean isOpenend = new AtomicBoolean(false);
-  private final CompletableActorFuture<Void> containerCloseFuture = new CompletableActorFuture<>();
   protected ContainerState state = ContainerState.NEW;
+  private final CompletableActorFuture<Void> containerCloseFuture = new CompletableActorFuture<>();
 
   public ServiceContainerImpl(ActorScheduler scheduler) {
     actorScheduler = scheduler;

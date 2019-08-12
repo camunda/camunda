@@ -142,6 +142,8 @@
 
     <module name="ModifierOrder"/>
 
+    <module name="DeclarationOrder" />
+
     <module name="CustomImportOrder">
       <property name="sortImportsInGroupAlphabetically" value="true"/>
       <property name="separateLineBetweenGroups" value="true"/>

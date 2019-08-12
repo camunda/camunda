@@ -69,10 +69,6 @@ public class CommandApiMessageHandlerTest {
     JOB_EVENT = buffer.byteArray();
   }
 
-  protected final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 1024]);
-  protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-  protected final ExecuteCommandRequestEncoder commandRequestEncoder =
-      new ExecuteCommandRequestEncoder();
   public TemporaryFolder tempFolder = new TemporaryFolder();
   public ActorSchedulerRule agentRunnerService = new ActorSchedulerRule();
   public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(agentRunnerService);
@@ -81,6 +77,10 @@ public class CommandApiMessageHandlerTest {
   public RuleChain ruleChain =
       RuleChain.outerRule(tempFolder).around(agentRunnerService).around(serviceContainerRule);
 
+  protected final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 1024]);
+  protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+  protected final ExecuteCommandRequestEncoder commandRequestEncoder =
+      new ExecuteCommandRequestEncoder();
   protected BufferingServerOutput serverOutput;
   private LogStream logStream;
   private CommandApiMessageHandler messageHandler;

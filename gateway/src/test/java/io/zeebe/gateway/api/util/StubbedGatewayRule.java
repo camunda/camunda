@@ -13,9 +13,9 @@ import org.junit.rules.ExternalResource;
 
 public class StubbedGatewayRule extends ExternalResource {
 
-  private final ActorSchedulerRule actorSchedulerRule;
   protected StubbedGateway gateway;
   protected GatewayBlockingStub client;
+  private final ActorSchedulerRule actorSchedulerRule;
 
   public StubbedGatewayRule(ActorSchedulerRule actorSchedulerRule) {
     this.actorSchedulerRule = actorSchedulerRule;

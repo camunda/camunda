@@ -24,10 +24,9 @@ import java.util.Collection;
 public class ClientTransportService implements Service<ClientTransport> {
 
   protected final Collection<IntTuple<SocketAddress>> defaultEndpoints;
+  protected ClientTransport transport;
   private final String name;
   private final ByteValue messageBufferSize;
-
-  protected ClientTransport transport;
 
   public ClientTransportService(
       String name,

@@ -43,11 +43,10 @@ public class SystemContext implements AutoCloseable {
   protected final List<Component> components = new ArrayList<>();
   protected final BrokerCfg brokerCfg;
   protected final List<ActorFuture<?>> requiredStartActions = new ArrayList<>();
-  private final List<Closeable> closeablesToReleaseResources = new ArrayList<>();
   protected ServiceContainer serviceContainer;
   protected Map<String, String> diagnosticContext;
   protected ActorScheduler scheduler;
-
+  private final List<Closeable> closeablesToReleaseResources = new ArrayList<>();
   private Duration closeTimeout;
 
   public SystemContext(String configFileLocation, final String basePath, final ActorClock clock) {

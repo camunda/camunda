@@ -29,15 +29,13 @@ public class StubBrokerRule extends ExternalResource {
   public static final int TEST_PARTITION_ID = DEPLOYMENT_PARTITION;
   protected final int nodeId;
   protected final SocketAddress socketAddress;
-  private final ControlledActorClock clock = new ControlledActorClock();
-  private final int partitionCount;
   protected ActorScheduler scheduler;
   protected ServerTransport transport;
-
   protected StubResponseChannelHandler channelHandler;
   protected MsgPackHelper msgPackHelper;
-
   protected AtomicReference<Topology> currentTopology = new AtomicReference<>();
+  private final ControlledActorClock clock = new ControlledActorClock();
+  private final int partitionCount;
 
   public StubBrokerRule() {
     this(0);

@@ -43,9 +43,9 @@ public class Dispatcher extends Actor implements AutoCloseable {
   protected final String name;
   protected final int mode;
   protected Subscription[] subscriptions;
-  private final Runnable onClaimComplete = this::signalSubsciptions;
   protected int logWindowLength;
   protected volatile boolean isClosed = false;
+  private final Runnable onClaimComplete = this::signalSubsciptions;
   private final Runnable backgroundTask = this::runBackgroundTask;
   private ActorCondition dataConsumed;
 
