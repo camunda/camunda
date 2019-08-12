@@ -14,6 +14,10 @@
     <relativePath>../bom</relativePath>
   </parent>
 
+  <properties>
+    <version.java>8</version.java>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
