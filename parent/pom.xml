@@ -73,7 +73,7 @@
     <version.sbe>1.13.0</version.sbe>
     <version.scala-parser>1.1.2</version.scala-parser>
     <version.scala>2.13.0</version.scala>
-    <version.slf4j>1.7.27</version.slf4j>
+    <version.slf4j>1.7.28</version.slf4j>
     <version.snakeyaml>1.24</version.snakeyaml>
     <version.streamex>0.6.8</version.streamex>
     <version.toml>0.7.2</version.toml>
