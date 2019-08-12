@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.data.generation.generators.impl;
 
+import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
@@ -32,6 +33,11 @@ public class InvoiceDataGenerator extends DataGenerator {
     super.deployAdditionalDiagrams();
     DmnModelInstance dmnModelInstance = readDmnTableAsInstance(DMN_DIAGRAM);
     engineClient.deployDecisionAndGetId(dmnModelInstance, tenants);
+  }
+
+  @Override
+  protected void generateTenants() {
+    this.tenants = Lists.newArrayList(null, "sales", "engineering");
   }
 
   @Override

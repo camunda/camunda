@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +47,7 @@ public abstract class DataGenerator implements Runnable {
 
   public DataGenerator(SimpleEngineClient engineClient) {
     generateVersionNumber();
+    generateTenants();
     this.engineClient = engineClient;
   }
 
@@ -74,8 +76,10 @@ public abstract class DataGenerator implements Runnable {
     logger.info("Start {}...", getClass().getSimpleName());
     final BpmnModelInstance instance = retrieveDiagram();
     try {
+      this.tenants.stream()
+        .filter(Objects::nonNull)
+        .forEach(tenantId -> engineClient.createTenantAndRandomlyAuthorizeUsersToIt(tenantId));
       createMessageEventCorrelater();
-      generateTenantsList();
       List<String> processDefinitionIds = engineClient.deployProcesses(instance, nVersions, tenants);
       deployAdditionalDiagrams();
       List<Integer> processInstanceSizePerDefinition = createProcessInstanceSizePerDefinition();
@@ -87,15 +91,8 @@ public abstract class DataGenerator implements Runnable {
     }
   }
 
-  private void generateTenantsList() {
-    int max = ThreadLocalRandom.current().nextInt(1, 5);
-    for (int i = 1; i <= max; i++) {
-      if (i == 4) {
-        tenants.add(null);
-        continue;
-      }
-      tenants.add("tenant" + i);
-    }
+  protected void generateTenants() {
+    this.tenants = Collections.singletonList(null);
   }
 
   protected void deployAdditionalDiagrams() {

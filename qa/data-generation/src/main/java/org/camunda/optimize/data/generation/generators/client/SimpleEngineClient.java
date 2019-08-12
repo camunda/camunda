@@ -87,32 +87,39 @@ public class SimpleEngineClient {
     javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(DATE_TIME_FORMATTER));
   }
 
-  public void initializeTenants() {
-    for (int i = 1; i <= 3; i ++) {
-      HttpPost createTenantPost = new HttpPost(engineRestEndpoint + "/tenant/create");
-      try {
-        log.info("Creating tenant " + i);
-        createTenantPost.setEntity(new StringEntity("{\"id\": \"tenant" + i + "\", \"name\": \"tenant"+ i +"\"}"));
-        createTenantPost.addHeader("Content-Type", "application/json");
-        client.execute(createTenantPost);
-        for (String user : users) {
-          String body = "{\"type\" : 0,\n" +
-            " \"permissions\": [\"ALL\"],\n" +
-            " \"userId\": \"user\",\n" +
-            " \"groupId\": null,\n" +
-            " \"resourceType\": 0,\n" +
-            " \"resourceId\": \"*\"}";
-          HttpPost authPost = new HttpPost(engineRestEndpoint + "/authorization/create");
-          authPost.setEntity(new StringEntity(body));
-          authPost.addHeader("Content-Type", "application/json");
-          client.execute(authPost);
-          if (ThreadLocalRandom.current().nextBoolean()) {
-            HttpPut userTenantPut = new HttpPut(engineRestEndpoint + "/tenant/tenant" + i + "/user-members/" + user);
-            client.execute(userTenantPut);
+  @SneakyThrows
+  public void initializeDefaultUsers() {
+    for (String user : users) {
+      String body = "{\"type\" : 0,\n" +
+        " \"permissions\": [\"ALL\"],\n" +
+        " \"userId\": \"user\",\n" +
+        " \"groupId\": null,\n" +
+        " \"resourceType\": 0,\n" +
+        " \"resourceId\": \"*\"}";
+      HttpPost authPost = new HttpPost(engineRestEndpoint + "/authorization/create");
+      authPost.setEntity(new StringEntity(body));
+      authPost.addHeader("Content-Type", "application/json");
+
+      try (CloseableHttpResponse createUser = client.execute(authPost)) {
+        log.info("Created user {}.", user);
+      }
+    }
+  }
+
+  @SneakyThrows
+  public void createTenantAndRandomlyAuthorizeUsersToIt(final String tenantId) {
+    HttpPost createTenantPost = new HttpPost(engineRestEndpoint + "/tenant/create");
+    createTenantPost.setEntity(new StringEntity("{\"id\": \"" + tenantId + "\", \"name\": \"" + tenantId + "\"}"));
+    createTenantPost.addHeader("Content-Type", "application/json");
+    try (CloseableHttpResponse tenantCreatedResponse = client.execute(createTenantPost)) {
+      log.info("Created tenant {}.", tenantId);
+      for (String user : users) {
+        if (ThreadLocalRandom.current().nextBoolean()) {
+          HttpPut userTenantPut = new HttpPut(engineRestEndpoint + "/tenant/" + tenantId + "/user-members/" + user);
+          try (CloseableHttpResponse userAuthorizationResponse = client.execute(userTenantPut)) {
+            log.info("Authorized user {} to tenant {}.", user, tenantId);
           }
         }
-      } catch (Exception e) {
-        e.printStackTrace();
       }
     }
   }

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.data.generation.generators.impl;
 
+import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
 import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
@@ -22,6 +23,11 @@ public class BookRequestDataGenerator extends DataGenerator {
 
   protected BpmnModelInstance retrieveDiagram() {
     return readProcessDiagramAsInstance(DIAGRAM);
+  }
+
+  @Override
+  protected void generateTenants() {
+    this.tenants = Lists.newArrayList("library");
   }
 
   @Override
