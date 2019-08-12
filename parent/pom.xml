@@ -60,7 +60,7 @@
     <version.jackson>2.10.0.pr1</version.jackson>
     <version.java-grpc-prometheus>0.3.0</version.java-grpc-prometheus>
     <version.junit>4.12</version.junit>
-    <version.log4j>2.12.0</version.log4j>
+    <version.log4j>2.12.1</version.log4j>
     <version.mockito>3.0.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.16</version.msgpack>
