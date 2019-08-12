@@ -69,7 +69,7 @@ describe('InstancesPollContext', () => {
     expect(compProps.polling.removeIds).toBeDefined();
   });
 
-  it('should start polling when ids are added', async () => {
+  it.skip('should start polling when ids are added', async () => {
     // given
     function FooComp() {
       return <div>foo</div>;
