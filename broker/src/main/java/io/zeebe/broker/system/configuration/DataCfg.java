@@ -21,8 +21,6 @@ public class DataCfg implements ConfigurationEntry {
 
   private String snapshotPeriod = "15m";
 
-  private String snapshotReplicationPeriod = "5m";
-
   private String raftSegmentSize;
 
   private int maxSnapshots = 3;
@@ -61,14 +59,6 @@ public class DataCfg implements ConfigurationEntry {
     this.snapshotPeriod = snapshotPeriod;
   }
 
-  public String getSnapshotReplicationPeriod() {
-    return snapshotReplicationPeriod;
-  }
-
-  public void setSnapshotReplicationPeriod(String snapshotReplicationPeriod) {
-    this.snapshotReplicationPeriod = snapshotReplicationPeriod;
-  }
-
   public int getMaxSnapshots() {
     return maxSnapshots;
   }
@@ -96,12 +86,11 @@ public class DataCfg implements ConfigurationEntry {
         + ", snapshotPeriod='"
         + snapshotPeriod
         + '\''
-        + ", snapshotReplicationPeriod='"
-        + snapshotReplicationPeriod
+        + ", raftSegmentSize='"
+        + raftSegmentSize
         + '\''
-        + ", maxSnapshots='"
+        + ", maxSnapshots="
         + maxSnapshots
-        + '\''
         + '}';
   }
 }
