@@ -65,6 +65,17 @@ describe('Filters/service', () => {
       expect(sanitizedFilter).toEqual({});
     });
 
+    it('should return empty object when variable is not set', () => {
+      const {
+        variable,
+        ...filterWithoutVariable
+      } = DEFAULT_FILTER_CONTROLLED_VALUES;
+
+      const sanitizedFilter = sanitizeFilter(filterWithoutVariable);
+
+      expect(sanitizedFilter).toEqual({});
+    });
+
     it('should return empty object when date is incomplete', () => {
       const sanitizedFilter = sanitizeFilter({
         ...DEFAULT_FILTER_CONTROLLED_VALUES,

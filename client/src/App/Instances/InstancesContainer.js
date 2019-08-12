@@ -16,8 +16,7 @@ import {
   SORT_ORDER,
   DEFAULT_MAX_RESULTS,
   DEFAULT_FIRST_ELEMENT,
-  PAGE_TITLE,
-  DEFAULT_FILTER_CONTROLLED_VALUES
+  PAGE_TITLE
 } from 'modules/constants';
 import {
   fetchWorkflowInstancesStatistics,
@@ -381,10 +380,7 @@ class InstancesContainer extends Component {
     return (
       <Instances
         {...this.state}
-        filter={{
-          ...DEFAULT_FILTER_CONTROLLED_VALUES,
-          ...decodeFields(this.state.filter)
-        }}
+        filter={decodeFields(this.state.filter)}
         onFilterChange={this.setFilterFromInput}
         onFilterReset={this.handleFilterReset}
         onFirstElementChange={this.handleFirstElementChange}

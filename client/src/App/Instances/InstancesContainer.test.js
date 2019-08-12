@@ -21,8 +21,7 @@ import {
   DEFAULT_FIRST_ELEMENT,
   DEFAULT_MAX_RESULTS,
   SORT_ORDER,
-  INCIDENTS_FILTER,
-  DEFAULT_FILTER_CONTROLLED_VALUES
+  INCIDENTS_FILTER
 } from 'modules/constants';
 import {
   mockResolvedAsyncFn,
@@ -44,7 +43,6 @@ jest.mock(
 
 // props mocks
 const fullFilterWithoutWorkflow = {
-  ...DEFAULT_FILTER_CONTROLLED_VALUES,
   active: true,
   incidents: true,
   completed: true,
@@ -56,7 +54,6 @@ const fullFilterWithoutWorkflow = {
 };
 
 const fullFilterWithWorkflow = {
-  ...DEFAULT_FILTER_CONTROLLED_VALUES,
   active: true,
   incidents: true,
   completed: true,
@@ -292,7 +289,6 @@ describe('InstancesContainer', () => {
     );
 
     expect(InstancesNode.prop('filter')).toEqual({
-      ...DEFAULT_FILTER_CONTROLLED_VALUES,
       ...DEFAULT_FILTER
     });
     expect(InstancesNode.props().diagramModel).toEqual({});
@@ -340,11 +336,12 @@ describe('InstancesContainer', () => {
   });
 
   it('should pass data to Instances for full filter, with all versions', async () => {
+    const {activityId, version, ...rest} = fullFilterWithWorkflow;
     const node = mount(
       <InstancesContainerWrapped
         {...localStorageProps}
         {...getRouterProps({
-          ...fullFilterWithWorkflow,
+          ...rest,
           version: 'all'
         })}
       />
@@ -358,8 +355,7 @@ describe('InstancesContainer', () => {
 
     expect(InstancesNode.prop('filter')).toEqual(
       decodeFields({
-        ...fullFilterWithWorkflow,
-        activityId: '',
+        ...rest,
         version: 'all'
       })
     );
@@ -577,7 +573,6 @@ describe('InstancesContainer', () => {
         const {activityId, ...filterWithoutActivityId} = fullFilterWithWorkflow;
         const validFilterWithVersionAll = {
           ...filterWithoutActivityId,
-          activityId: '',
           version: 'all'
         };
         const node = mount(

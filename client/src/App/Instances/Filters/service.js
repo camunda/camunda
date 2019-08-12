@@ -60,6 +60,7 @@ export function isDateComplete(date) {
 }
 
 function sanitizeVariable(variable) {
+  if (!variable) return;
   return variable.name === '' && variable.value === '' ? '' : variable;
 }
 

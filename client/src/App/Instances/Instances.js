@@ -7,7 +7,10 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 
-import {DEFAULT_FILTER} from 'modules/constants';
+import {
+  DEFAULT_FILTER,
+  DEFAULT_FILTER_CONTROLLED_VALUES
+} from 'modules/constants';
 import {isEmpty} from 'lodash';
 
 import Diagram from 'modules/components/Diagram';
@@ -112,7 +115,10 @@ export default class Instances extends Component {
                     <Filters
                       selectableFlowNodes={selectableFlowNodes}
                       groupedWorkflows={this.props.groupedWorkflows}
-                      filter={this.props.filter}
+                      filter={{
+                        ...DEFAULT_FILTER_CONTROLLED_VALUES,
+                        ...this.props.filter
+                      }}
                       filterCount={this.props.filterCount}
                       onFilterReset={() =>
                         this.props.onFilterReset(DEFAULT_FILTER)
