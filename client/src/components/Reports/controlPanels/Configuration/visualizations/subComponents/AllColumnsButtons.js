@@ -8,12 +8,13 @@ import React from 'react';
 
 import {ButtonGroup, Button} from 'components';
 import './AllColumnsButtons.scss';
+import {t} from 'translation';
 
 export default function AllColumnsButtons({enableAll, disableAll}) {
   return (
     <ButtonGroup className="AllColumnsButtons">
-      <Button onClick={enableAll}>Enable All</Button>
-      <Button onClick={disableAll}>Disable All</Button>
+      <Button onClick={enableAll}>{t('common.enableAll')}</Button>
+      <Button onClick={disableAll}>{t('common.disableAll')}</Button>
     </ButtonGroup>
   );
 }

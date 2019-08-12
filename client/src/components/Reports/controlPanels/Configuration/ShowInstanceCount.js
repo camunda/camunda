@@ -7,6 +7,7 @@
 import React from 'react';
 
 import {Form, Switch} from 'components';
+import {t} from 'translation';
 
 export default function ShowInstanceCount({configuration, onChange, label}) {
   return (
@@ -16,7 +17,7 @@ export default function ShowInstanceCount({configuration, onChange, label}) {
           checked={!!configuration.showInstanceCount}
           onChange={({target: {checked}}) => onChange({showInstanceCount: {$set: checked}})}
         />
-        Show {label} Count
+        {t(`report.config.showCount.${label}`)}
       </label>
     </Form.Group>
   );

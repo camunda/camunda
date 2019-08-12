@@ -35,6 +35,7 @@
       padding: 10px 0;
       font-weight: bold;
       font-size: 0.875em;
+      margin-top: 0;
     }
 
     > * {
@@ -186,6 +187,7 @@
 
       > label {
         display: block;
+        white-space: nowrap;
       }
     }
 

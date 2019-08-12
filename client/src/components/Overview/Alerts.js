@@ -78,7 +78,7 @@ class Alerts extends React.Component {
       return;
     }
     const report = this.state.reports.find(({id}) => reportId === id);
-    const aboveOrBelow = thresholdOperator === '<' ? t('alert.below') : t('alert.above');
+    const aboveOrBelow = thresholdOperator === '<' ? t('common.below') : t('common.above');
     const thresholdValue = isDurationReport(report) ? duration(threshold) : frequency(threshold);
     return (
       <span

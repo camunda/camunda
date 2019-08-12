@@ -9,6 +9,7 @@ import React from 'react';
 import {Form, LabeledInput, ErrorMessage, Select} from 'components';
 
 import {formatters, numberParser} from 'services';
+import {t} from 'translation';
 
 const {isNonNegativeNumber} = numberParser;
 const {convertDurationToSingleNumber} = formatters;
@@ -26,7 +27,7 @@ export default function DurationTargetInput({baseline, target, disabled, onChang
     <>
       <Form.InputGroup className="DurationTargetInput">
         <LabeledInput
-          label="Baseline"
+          label={t('report.config.goal.baseline')}
           type="number"
           min="0"
           value={baseline.value}
@@ -42,10 +43,10 @@ export default function DurationTargetInput({baseline, target, disabled, onChang
           {selectionOptions()}
         </Select>
       </Form.InputGroup>
-      {baselineInvalid && <ErrorMessage>Must be a non-negative number</ErrorMessage>}
+      {baselineInvalid && <ErrorMessage>{t('report.config.goal.invalidInput')}</ErrorMessage>}
       <Form.InputGroup>
         <LabeledInput
-          label="Target"
+          label={t('report.config.goal.target')}
           type="number"
           min="0"
           value={target.value}
@@ -61,8 +62,8 @@ export default function DurationTargetInput({baseline, target, disabled, onChang
           {selectionOptions()}
         </Select>
       </Form.InputGroup>
-      {targetInvalid && <ErrorMessage>Must be a non-negative number</ErrorMessage>}
-      {tooLow && <ErrorMessage>Target must be greater than baseline</ErrorMessage>}
+      {targetInvalid && <ErrorMessage>{t('report.config.goal.invalidInput')}</ErrorMessage>}
+      {tooLow && <ErrorMessage>{t('report.config.goal.lessThanTargetError')}</ErrorMessage>}
     </>
   );
 }
@@ -70,14 +71,14 @@ export default function DurationTargetInput({baseline, target, disabled, onChang
 function selectionOptions() {
   return (
     <>
-      <Select.Option value="millis">Milliseconds</Select.Option>
-      <Select.Option value="seconds">Seconds</Select.Option>
-      <Select.Option value="minutes">Minutes</Select.Option>
-      <Select.Option value="hours">Hours</Select.Option>
-      <Select.Option value="days">Days</Select.Option>
-      <Select.Option value="weeks">Weeks</Select.Option>
-      <Select.Option value="months">Months</Select.Option>
-      <Select.Option value="years">Years</Select.Option>
+      <Select.Option value="millis">{t('common.unit.milli.label-plural')}</Select.Option>
+      <Select.Option value="seconds">{t('common.unit.second.label-plural')}</Select.Option>
+      <Select.Option value="minutes">{t('common.unit.minute.label-plural')}</Select.Option>
+      <Select.Option value="hours">{t('common.unit.hour.label-plural')}</Select.Option>
+      <Select.Option value="days">{t('common.unit.day.label-plural')}</Select.Option>
+      <Select.Option value="weeks">{t('common.unit.week.label-plural')}</Select.Option>
+      <Select.Option value="months">{t('common.unit.month.label-plural')}</Select.Option>
+      <Select.Option value="years">{t('common.unit.year.label-plural')}</Select.Option>
     </>
   );
 }

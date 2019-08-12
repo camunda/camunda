@@ -9,6 +9,7 @@ import React, {Component} from 'react';
 import {Modal, Button, BPMNDiagram, ClickBehavior} from 'components';
 
 import './NodeSelectionModal.scss';
+import {t} from 'translation';
 
 export default class NodeSelectionModal extends Component {
   constructor(props) {
@@ -72,15 +73,15 @@ export default class NodeSelectionModal extends Component {
         className="NodeSelectionModal"
         size="max"
       >
-        <Modal.Header>Show Flow Nodes</Modal.Header>
+        <Modal.Header>{t('report.config.visibleNodes.modal.title')}</Modal.Header>
         <Modal.Content className="modalContent">
           <div className="diagramActions">
-            <p>Selected nodes appear in the visualization.</p>
+            <p>{t('report.config.visibleNodes.modal.description')}</p>
             <Button disabled={this.isAllSelected()} onClick={this.selectAll}>
-              Select All
+              {t('common.selectAll')}
             </Button>
             <Button disabled={!this.isNodeSelected()} onClick={this.deselectAll}>
-              Deselect All
+              {t('common.deselectAll')}
             </Button>
           </div>
           <div className="diagramContainer">
@@ -94,14 +95,14 @@ export default class NodeSelectionModal extends Component {
           </div>
         </Modal.Content>
         <Modal.Actions>
-          <Button onClick={this.props.onClose}>Cancel</Button>
+          <Button onClick={this.props.onClose}>{t('common.cancel')}</Button>
           <Button
             variant="primary"
             color="blue"
             disabled={!this.isNodeSelected()}
             onClick={this.applyConfiguration}
           >
-            Apply
+            {t('common.apply')}
           </Button>
         </Modal.Actions>
       </Modal>

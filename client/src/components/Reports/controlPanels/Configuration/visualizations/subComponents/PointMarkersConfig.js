@@ -6,17 +6,18 @@
 
 import React from 'react';
 import {Switch} from 'components';
+import {t} from 'translation';
 
 export default function PointMarkersConfig({configuration, onChange}) {
   return (
     <fieldset className="PointMarkersConfig">
-      <legend>Line points</legend>
+      <legend>{t('report.config.pointMarkers.legend')}</legend>
       <label>
         <Switch
           checked={!configuration.pointMarkers}
           onChange={({target: {checked}}) => onChange({pointMarkers: {$set: !checked}})}
         />
-        Disable point markers
+        {t('report.config.pointMarkers.disableMarkers')}
       </label>
     </fieldset>
   );

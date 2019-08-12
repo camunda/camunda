@@ -11,13 +11,14 @@ import {formatters} from 'services';
 import AllColumnsButtons from './AllColumnsButtons';
 
 import './ColumnSelection.scss';
+import {t} from 'translation';
 
 const {convertCamelToSpaces} = formatters;
 
 const labels = {
-  var: 'Variable: ',
-  inp: 'Input Variable: ',
-  out: 'Output Variable: '
+  var: 'variable',
+  inp: 'inputVariable',
+  out: 'outputVariable'
 };
 
 export default function ColumnSelection({report, onChange}) {
@@ -40,7 +41,7 @@ export default function ColumnSelection({report, onChange}) {
 
   return (
     <fieldset className="ColumnSelection">
-      <legend>Table columns to include</legend>
+      <legend>{t('report.config.includeTableColumn')}</legend>
       <AllColumnsButtons
         enableAll={() => onChange({excludedColumns: {$set: []}})}
         disableAll={() => onChange({excludedColumns: {$set: allColumns}})}
@@ -55,7 +56,7 @@ export default function ColumnSelection({report, onChange}) {
           } else if (prefix === 'out') {
             name = columns.outputVariables[name].name;
           }
-          prefix = labels[prefix];
+          prefix = t(`common.filter.types.${labels[prefix]}`) + ': ';
         } else {
           prefix = '';
           name = convertCamelToSpaces(column);

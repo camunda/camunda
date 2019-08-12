@@ -7,6 +7,7 @@
 import React from 'react';
 
 import {Select} from 'components';
+import {t} from 'translation';
 
 export default function AggregationType({
   report: {
@@ -18,15 +19,15 @@ export default function AggregationType({
   if (type && type.toLowerCase().includes('duration')) {
     return (
       <fieldset className="AggregationType">
-        <legend>Aggregation</legend>
+        <legend>{t('report.config.aggregation.legend')}</legend>
         <Select
           value={data.configuration.aggregationType}
           onChange={value => onChange({aggregationType: {$set: value}}, true)}
         >
-          <Select.Option value="min">Minimum</Select.Option>
-          <Select.Option value="avg">Average</Select.Option>
-          <Select.Option value="median">Median</Select.Option>
-          <Select.Option value="max">Maximum</Select.Option>
+          <Select.Option value="min">{t('report.config.aggregation.minimum')}</Select.Option>
+          <Select.Option value="avg">{t('report.config.aggregation.average')}</Select.Option>
+          <Select.Option value="median">{t('report.config.aggregation.median')}</Select.Option>
+          <Select.Option value="max">{t('report.config.aggregation.maximum')}</Select.Option>
         </Select>
       </fieldset>
     );

@@ -84,7 +84,6 @@
     },
     "groupBy": {
       "label": "Gruppiere nach",
-      "none": "Keiner",
       "flowNode": "Flow Nodes",
       "startDate": "Startdatum der Prozessinstanz",
       "automatic": "Automatisch",
@@ -171,6 +170,75 @@
         "search": "Suche nach Berichten",
         "empty": "Keine Berichte gefunden"
       }
+    },
+    "config": {
+      "buttonTooltip": "Konfigurationsoptionen",
+      "reset": "Zurücksetzen auf Standardwerte",
+      "showCount": {
+        "instance": "Instanzanzahl anzeigen",
+        "evaluation": "Zeige Bewertungszahl"
+      },
+      "aggregation": {
+        "legend": "Anhäufung",
+        "minimum": "Minimum",
+        "average": "Durchschnittlich",
+        "median": "Median",
+        "maximum": "Maximal"
+      },
+      "userTaskDuration": {
+        "legend": "Dauer der Benutzeraufgabe Zeit",
+        "idle": "Leerlauf",
+        "work": "Arbeit",
+        "total": "Summe"
+      },
+      "userTaskDistributedBy": "Verteilt durch",
+      "nodeStatus": {
+        "legend": "Flow Node Status",
+        "running": "läuft",
+        "completed": "Abgeschlossen"
+      },
+      "visibleNodes": {
+        "legend": "Ausgewählte Knoten, die angezeigt werden sollen",
+        "btn": "Flow Nodes anzeigen....",
+        "modal": {
+          "title": "Flow Nodes anzeigen",
+          "description": "Ausgewählte Knoten erscheinen in der Visualisierung."
+        }
+      },
+      "colorPicker": {
+        "legend": "Farbe"
+      },
+      "tooltips": {
+        "legend": "Tooltips",
+        "showRelative": "Relativen Wert anzeigen",
+        "showAbsolute": "Absolutwert anzeigen"
+      },
+      "axisLabels": {
+        "legend": "Achsenbeschriftungen",
+        "xAxis": "X-Achsenbeschriftung",
+        "yAxis": "Y-Achsenbeschriftung"
+      },
+      "goal": {
+        "legend": "Ziel",
+        "goalValue": "Zielwert",
+        "baseline": "Grundlinie",
+        "target": "Ziel",
+        "invalidInput": "Muss eine nicht-negative Zahl sein",
+        "lessThanTargetError": "Ziel muss größer als die Grundlinie sein"
+      },
+      "pointMarkers": {
+        "legend": "Linienpunkte",
+        "disableMarkers": "Punktmarkierungen deaktivieren"
+      },
+      "limitPrecision": {
+        "legend": "Präzision begrenzen",
+        "numberOf": {
+          "digits": "Anzahl der Ziffern",
+          "units": "Anzahl der Einheiten"
+        }
+      },
+      "includeTableColumn": "Tabellenspalten, die mit",
+      "showGradientBars": "Gradientenbalken anzeigen"
     }
   },
   "dashboard": {
@@ -200,8 +268,6 @@
     "newAlert": "New Alert",
     "edit": "Benachrichtigung bearbeiten",
     "delete": "Warnung löschen",
-    "above": "über",
-    "below": "unten",
     "description": "Warnung <span> {email} </span>, wenn Bericht <span> {name} </span> einen Wert <span> {aboveOrBelow} {thresholdValue} </span> aufweist",
     "emailWarning": "Der E-Mail-Benachrichtigungsdienst ist nicht konfiguriert. Optimize kann Sie nicht über kritische Werte informieren. Lesen Sie in der <a href='{docsLink}'> Dokumentation zum Optimieren </a> nach, wie Sie den Benachrichtigungsdienst aktivieren.",
     "form": {
@@ -255,9 +321,15 @@
     "select": "Wählen...",
     "enableAll": "Alles aktivieren",
     "disableAll": "Alle deaktivieren",
+    "selectAll": "Wählen Sie Alle",
+    "deselectAll": "Alle abwählen",
     "and": "und",
     "off": "Aus",
     "you": "Sie",
+    "none": "Keiner",
+    "all": "Alles",
+    "above": "über",
+    "below": "unten",
     "multiSelect": {
       "available": "Verfügbare Artikel",
       "selected": "Ausgewählte Elemente",
@@ -420,8 +492,6 @@
       "incompatibleFilters": "Es werden keine Daten angezeigt, da die Filterkombination nicht miteinander kompatibel ist."
     },
     "definitionSelection": {
-      "none": "Keiner",
-      "all": "Alles",
       "latest": "Neueste",
       "multiple": "Mehrere",
       "noDefinition": "Keine Definitionen gefunden",

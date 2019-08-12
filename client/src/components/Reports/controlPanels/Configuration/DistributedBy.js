@@ -7,6 +7,7 @@
 import React from 'react';
 
 import {Select} from 'components';
+import {t} from 'translation';
 
 export default function DistributedBy({
   report: {
@@ -17,7 +18,7 @@ export default function DistributedBy({
   if (groupBy && ['assignee', 'candidateGroup'].includes(groupBy.type)) {
     return (
       <fieldset className="DistributedBy">
-        <legend>Distributed By</legend>
+        <legend>{t('report.config.userTaskDistributedBy')}</legend>
         <Select
           value={configuration.distributedBy}
           onChange={value => {
@@ -31,8 +32,8 @@ export default function DistributedBy({
             }
           }}
         >
-          <Select.Option value="none">None</Select.Option>
-          <Select.Option value="userTask">User Task</Select.Option>
+          <Select.Option value="none">{t('common.none')}</Select.Option>
+          <Select.Option value="userTask">{t('report.view.userTask')}</Select.Option>
         </Select>
       </fieldset>
     );

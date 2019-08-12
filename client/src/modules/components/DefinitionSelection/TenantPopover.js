@@ -17,7 +17,7 @@ export default function TenantPopover({tenants, selected, onChange}) {
 
   let label = t('common.definitionSelection.multiple');
   if (allSelected) {
-    label = t('common.definitionSelection.all');
+    label = t('common.all');
   }
   if (noneSelected) {
     label = t('common.select');

@@ -10,6 +10,7 @@ import {Switch, LabeledInput} from 'components';
 
 import CountTargetInput from './subComponents/CountTargetInput';
 import DurationTargetInput from './subComponents/DurationTargetInput';
+import {t} from 'translation';
 
 export default function NumberConfig({report, onChange}) {
   const {configuration} = report.data;
@@ -27,11 +28,11 @@ export default function NumberConfig({report, onChange}) {
             checked={precisionSet}
             onChange={evt => onChange({precision: {$set: evt.target.checked ? 1 : null}})}
           />
-          Limit Precision
+          {t('report.config.limitPrecision.legend')}
         </legend>
         <LabeledInput
           className="precision"
-          label={`No. of ${countOperation ? ' digits' : ' units'}`}
+          label={t(`report.config.limitPrecision.numberOf.${countOperation ? 'digits' : 'units'}`)}
           disabled={typeof configuration.precision !== 'number'}
           onChange={() => {}}
           onKeyDown={evt => {
@@ -49,7 +50,7 @@ export default function NumberConfig({report, onChange}) {
             checked={goalSet}
             onChange={evt => onChange({targetValue: {active: {$set: evt.target.checked}}})}
           />
-          Goal
+          {t('report.config.goal.legend')}
         </legend>
         {countOperation ? (
           <CountTargetInput

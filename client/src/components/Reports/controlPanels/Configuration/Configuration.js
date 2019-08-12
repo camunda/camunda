@@ -16,6 +16,7 @@ import NodeStatus from './NodeStatus';
 import DistributedBy from './DistributedBy';
 
 import './Configuration.scss';
+import {t} from 'translation';
 
 function convertToChangeset(config) {
   return Object.keys(config).reduce(
@@ -92,7 +93,7 @@ export default class Configuration extends React.Component {
     return (
       <li className="Configuration">
         <Popover
-          tooltip="Configuration Options"
+          tooltip={t('report.config.buttonTooltip')}
           title={<Icon type="settings" />}
           disabled={!type || disabledComponent}
         >
@@ -101,7 +102,7 @@ export default class Configuration extends React.Component {
               <ShowInstanceCount
                 configuration={report.data.configuration}
                 onChange={this.updateConfiguration}
-                label={report.reportType === 'decision' ? 'Evaluation' : 'Instance'}
+                label={report.reportType === 'decision' ? 'evaluation' : 'instance'}
               />
             )}
             <AggregationType report={report} onChange={this.updateConfiguration} />
@@ -112,7 +113,7 @@ export default class Configuration extends React.Component {
             <VisibleNodesFilter report={report} onChange={this.updateConfiguration} />
           </Form>
           <Button className="resetButton" onClick={this.resetToDefaults}>
-            Reset to Defaults
+            {t('report.config.reset')}
           </Button>
         </Popover>
       </li>

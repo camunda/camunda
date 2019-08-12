@@ -7,6 +7,7 @@
 import React from 'react';
 import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection';
 import {isDurationReport} from 'services';
+import {t} from 'translation';
 
 export default function PieChartConfig({onChange, report}) {
   const {
@@ -15,7 +16,7 @@ export default function PieChartConfig({onChange, report}) {
 
   return (
     <fieldset>
-      <legend>Tooltips</legend>
+      <legend>{t('report.config.tooltips.legend')}</legend>
       <RelativeAbsoluteSelection
         hideRelative={isDurationReport(report)}
         absolute={configuration.alwaysShowAbsolute}

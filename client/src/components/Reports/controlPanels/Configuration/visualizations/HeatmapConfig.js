@@ -6,6 +6,7 @@
 
 import React from 'react';
 import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection';
+import {t} from 'translation';
 
 export default function HeatmapConfig(props) {
   const {
@@ -14,7 +15,7 @@ export default function HeatmapConfig(props) {
   } = props;
   return (
     <fieldset>
-      <legend>Tooltips</legend>
+      <legend>{t('report.config.tooltips.legend')}</legend>
       <RelativeAbsoluteSelection
         hideRelative={data.view.property !== 'frequency'}
         absolute={data.configuration.alwaysShowAbsolute}

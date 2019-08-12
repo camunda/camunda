@@ -259,8 +259,8 @@ export default function AlertModal(reports) {
                     value={thresholdOperator}
                     onChange={value => this.setState({thresholdOperator: value})}
                   >
-                    <Select.Option value=">">{t('alert.above')}</Select.Option>
-                    <Select.Option value="<">{t('alert.below')}</Select.Option>
+                    <Select.Option value=">">{t('common.above')}</Select.Option>
+                    <Select.Option value="<">{t('common.below')}</Select.Option>
                   </Select>
                   <ThresholdInput
                     id="value-input"

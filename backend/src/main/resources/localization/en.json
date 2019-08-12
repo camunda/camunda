@@ -84,7 +84,6 @@
     },
     "groupBy": {
       "label": "Group By",
-      "none": "None",
       "flowNode": "Flow Nodes",
       "startDate": "Start Date of Process Instance",
       "automatic": "Automatic",
@@ -171,6 +170,75 @@
         "search": "Search for reports",
         "empty": "No reports found"
       }
+    },
+    "config": {
+      "buttonTooltip": "Configuration Options",
+      "reset": "Reset to Defaults",
+      "showCount": {
+        "instance": "Show Instance Count",
+        "evaluation": "Show Evaluation Count"
+      },
+      "aggregation": {
+        "legend": "Aggregation",
+        "minimum": "Minimum",
+        "average": "Average",
+        "median": "Median",
+        "maximum": "Maximum"
+      },
+      "userTaskDuration": {
+        "legend": "User Task Duration Time",
+        "idle": "Idle",
+        "work": "Work",
+        "total": "Total"
+      },
+      "userTaskDistributedBy": "Distributed By",
+      "nodeStatus": {
+        "legend": "Flow Node Status",
+        "running": "Running",
+        "completed": "Completed"
+      },
+      "visibleNodes": {
+        "legend": "Selected nodes to display",
+        "btn": "Show Flow Nodes...",
+        "modal": {
+          "title": "Show Flow Nodes",
+          "description": "Selected nodes appear in the visualization."
+        }
+      },
+      "colorPicker": {
+        "legend": "Color"
+      },
+      "tooltips": {
+        "legend": "Tooltips",
+        "showRelative": "Show Relative Value",
+        "showAbsolute": "Show Absolute Value"
+      },
+      "axisLabels": {
+        "legend": "Axis Labels",
+        "xAxis": "X Axis Label",
+        "yAxis": "Y Axis Label"
+      },
+      "goal": {
+        "legend": "Goal",
+        "goalValue": "Goal value",
+        "baseline": "Baseline",
+        "target": "Target",
+        "invalidInput": "Must be a non-negative number",
+        "lessThanTargetError": "Target must be greater than baseline"
+      },
+      "pointMarkers": {
+        "legend": "Line points",
+        "disableMarkers": "Disable point markers"
+      },
+      "limitPrecision": {
+        "legend": "Limit Precision",
+        "numberOf": {
+          "digits": "No. of digits",
+          "units": "No. of units"
+        }
+      },
+      "includeTableColumn": "Table columns to include",
+      "showGradientBars": "Show Gradient Bars"
     }
   },
   "dashboard": {
@@ -200,8 +268,6 @@
     "newAlert": "New Alert",
     "edit": "Edit Alert",
     "delete": "Delete Alert",
-    "above": "above",
-    "below": "below",
     "description": "Alert <span>{email}</span> when Report <span>{name}</span> has a value <span>{aboveOrBelow} {thresholdValue}</span>",
     "emailWarning": "The email notification service is not configured. Optimize won't be able to inform you about critical values. Please check out the <a href='{docsLink}'>Optimize documentation</a> on how to enable the notification service.",
     "form": {
@@ -255,9 +321,15 @@
     "select": "Select...",
     "enableAll": "Enable All",
     "disableAll": "Disable All",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
     "and": "and",
     "off": "Off",
     "you": "You",
+    "none": "None",
+    "all": "All",
+    "above": "above",
+    "below": "below",
     "multiSelect": {
       "available": "Available items",
       "selected": "Selected items",
@@ -420,8 +492,6 @@
       "incompatibleFilters": "No data is shown since the combination of filters is incompatible with each other"
     },
     "definitionSelection": {
-      "none": "None",
-      "all": "All",
       "latest": "Latest",
       "multiple": "Multiple",
       "noDefinition": "No defintions found",

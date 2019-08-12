@@ -21,9 +21,9 @@ export default function VersionPopover({
 }) {
   const specific = usesSpecificVersions(selected);
 
-  let title = t('common.definitionSelection.none');
+  let title = t('common.none');
   if (selected.length === 1 && selected[0] === 'all') {
-    title = t('common.definitionSelection.all');
+    title = t('common.all');
   } else if (selected.length === 1 && selected[0] === 'latest') {
     title = t('common.definitionSelection.latest') + ' : ' + versions[0].version;
   } else if (selected.length) {
@@ -35,7 +35,7 @@ export default function VersionPopover({
       <Form compact>
         <Form.Group>
           <LabeledInput
-            label={t('common.definitionSelection.all')}
+            label={t('common.all')}
             type="radio"
             checked={selected[0] === 'all'}
             onChange={() => onChange(['all'])}

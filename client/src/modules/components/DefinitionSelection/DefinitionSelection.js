@@ -45,11 +45,7 @@ export default class DefinitionSelection extends React.Component {
     const latestVersion = [definitionObject.versions[0].version];
 
     this.setState({selectedSpecificVersions: latestVersion});
-    this.props.onChange(
-      key,
-      latestVersion,
-      definitionObject.tenants.map(({id}) => id)
-    );
+    this.props.onChange(key, latestVersion, definitionObject.tenants.map(({id}) => id));
   };
 
   getDefinitionObject = key => this.state.availableDefinitions.find(def => def.key === key);
@@ -104,9 +100,9 @@ export default class DefinitionSelection extends React.Component {
 
       const definition = this.getDefinitionObject(definitionKey).name;
 
-      let versionString = t('common.definitionSelection.none');
+      let versionString = t('common.none');
       if (versions.length === 1 && versions[0] === 'all') {
-        versionString = t('common.definitionSelection.all');
+        versionString = t('common.all');
       } else if (versions.length === 1 && versions[0] === 'latest') {
         versionString = t('common.definitionSelection.latest');
       } else if (versions.length === 1) {
@@ -121,7 +117,7 @@ export default class DefinitionSelection extends React.Component {
       } else if (availableTenants.length === 1) {
         tenant = null;
       } else if (selectedTenants.length === availableTenants.length) {
-        tenant = t('common.definitionSelection.all');
+        tenant = t('common.all');
       } else if (selectedTenants.length === 1) {
         tenant = availableTenants.find(({id}) => id === selectedTenants[0]).name;
       }

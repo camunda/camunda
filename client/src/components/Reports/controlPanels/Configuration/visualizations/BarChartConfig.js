@@ -10,6 +10,7 @@ import ChartTargetInput from './subComponents/ChartTargetInput';
 import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection';
 import {isDurationReport} from 'services';
 import './BarChartConfig.scss';
+import {t} from 'translation';
 
 export default function BarChartConfig({onChange, report}) {
   const {
@@ -25,7 +26,7 @@ export default function BarChartConfig({onChange, report}) {
     <div className="BarChartConfig">
       {!combined && (
         <fieldset className="colorSection">
-          <legend>Color</legend>
+          <legend>{t('report.config.colorPicker.legend')}</legend>
           <ColorPicker
             selectedColor={configuration.color}
             onChange={color => onChange({color: {$set: color}})}
@@ -33,7 +34,7 @@ export default function BarChartConfig({onChange, report}) {
         </fieldset>
       )}
       <fieldset>
-        <legend>Tooltips</legend>
+        <legend>{t('report.config.tooltips.legend')}</legend>
         <RelativeAbsoluteSelection
           hideRelative={durationReport || combinedNumberReport}
           absolute={configuration.alwaysShowAbsolute}
@@ -48,15 +49,15 @@ export default function BarChartConfig({onChange, report}) {
         />
       </fieldset>
       <fieldset>
-        <legend>Axis Labels</legend>
+        <legend>{t('report.config.axisLabels.legend')}</legend>
         <Input
-          placeholder="X Axis Label"
+          placeholder={t('report.config.axisLabels.xAxis')}
           type="text"
           value={configuration.xLabel}
           onChange={({target: {value}}) => onChange({xLabel: {$set: value}})}
         />
         <Input
-          placeholder="Y Axis Label"
+          placeholder={t('report.config.axisLabels.yAxis')}
           type="text"
           value={configuration.yLabel}
           onChange={({target: {value}}) => onChange({yLabel: {$set: value}})}
@@ -68,7 +69,7 @@ export default function BarChartConfig({onChange, report}) {
             checked={configuration.targetValue.active}
             onChange={({target: {checked}}) => onChange({targetValue: {active: {$set: checked}}})}
           />
-          Goal
+          {t('report.config.goal.legend')}
         </legend>
         <ChartTargetInput {...{onChange, report}} />
       </fieldset>

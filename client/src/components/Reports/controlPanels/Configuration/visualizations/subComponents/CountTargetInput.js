@@ -9,6 +9,7 @@ import React from 'react';
 import {Form, LabeledInput, ErrorMessage} from 'components';
 
 import {numberParser} from 'services';
+import {t} from 'translation';
 const {isNonNegativeNumber} = numberParser;
 
 export default function CountTargetInput({baseline, target, disabled, onChange}) {
@@ -18,29 +19,31 @@ export default function CountTargetInput({baseline, target, disabled, onChange})
   const tooLow = !baselineInvalid && !targetInvalid && parseFloat(target) <= parseFloat(baseline);
 
   return (
-    <Form.InputGroup className="CountTargetInput">
-      <LabeledInput
-        label="Baseline"
-        type="number"
-        min="0"
-        value={baseline}
-        disabled={disabled}
-        isInvalid={baselineInvalid}
-        onChange={evt => onChange('baseline', evt.target.value)}
-      >
-        {baselineInvalid && <ErrorMessage>Must be a non-negative number</ErrorMessage>}
-      </LabeledInput>
-      <LabeledInput
-        label="Target"
-        type="number"
-        min="0"
-        value={target}
-        disabled={disabled}
-        isInvalid={targetInvalid || tooLow}
-        onChange={evt => onChange('target', evt.target.value)}
-      />
-      {targetInvalid && <ErrorMessage>Must be a non-negative number</ErrorMessage>}
-      {tooLow && <ErrorMessage>Target must be greater than baseline</ErrorMessage>}
-    </Form.InputGroup>
+    <>
+      <Form.InputGroup className="CountTargetInput">
+        <LabeledInput
+          label={t('report.config.goal.baseline')}
+          type="number"
+          min="0"
+          value={baseline}
+          disabled={disabled}
+          isInvalid={baselineInvalid}
+          onChange={evt => onChange('baseline', evt.target.value)}
+        />
+        <LabeledInput
+          label={t('report.config.goal.target')}
+          type="number"
+          min="0"
+          value={target}
+          disabled={disabled}
+          isInvalid={targetInvalid || tooLow}
+          onChange={evt => onChange('target', evt.target.value)}
+        />
+      </Form.InputGroup>
+      {(targetInvalid || baselineInvalid) && (
+        <ErrorMessage>{t('report.config.goal.invalidInput')}</ErrorMessage>
+      )}
+      {tooLow && <ErrorMessage>{t('report.config.goal.lessThanTargetError')}</ErrorMessage>}
+    </>
   );
 }

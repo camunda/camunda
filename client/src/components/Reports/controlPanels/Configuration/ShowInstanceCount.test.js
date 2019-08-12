@@ -10,7 +10,9 @@ import {shallow} from 'enzyme';
 import ShowInstanceCount from './ShowInstanceCount';
 
 it('should contain a switch that is checked if instance count is shown', () => {
-  const node = shallow(<ShowInstanceCount configuration={{showInstanceCount: true}} />);
+  const node = shallow(
+    <ShowInstanceCount label="instance" configuration={{showInstanceCount: true}} />
+  );
 
   expect(node.find('Switch').prop('checked')).toBe(true);
 
@@ -23,7 +25,7 @@ it('should call the onChange method when toggling the switch', () => {
   const spy = jest.fn();
 
   const node = shallow(
-    <ShowInstanceCount configuration={{showInstanceCount: true}} onChange={spy} />
+    <ShowInstanceCount label="instance" configuration={{showInstanceCount: true}} onChange={spy} />
   );
 
   node.find('Switch').simulate('change', {target: {checked: false}});

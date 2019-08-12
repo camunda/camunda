@@ -7,6 +7,7 @@
 import React from 'react';
 
 import {Select} from 'components';
+import {t} from 'translation';
 
 export default function NodeStatus({
   report: {
@@ -17,14 +18,14 @@ export default function NodeStatus({
   if (groupBy && ['flowNodes', 'assignee', 'candidateGroup'].includes(groupBy.type)) {
     return (
       <fieldset className="NodeStatus">
-        <legend>Flow Node Status</legend>
+        <legend>{t('report.config.nodeStatus.legend')}</legend>
         <Select
           value={configuration.flowNodeExecutionState}
           onChange={value => onChange({flowNodeExecutionState: {$set: value}}, true)}
         >
-          <Select.Option value="running">Running</Select.Option>
-          <Select.Option value="completed">Completed</Select.Option>
-          <Select.Option value="all">All</Select.Option>
+          <Select.Option value="running">{t('report.config.nodeStatus.running')}</Select.Option>
+          <Select.Option value="completed">{t('report.config.nodeStatus.completed')}</Select.Option>
+          <Select.Option value="all">{t('common.all')}</Select.Option>
         </Select>
       </fieldset>
     );

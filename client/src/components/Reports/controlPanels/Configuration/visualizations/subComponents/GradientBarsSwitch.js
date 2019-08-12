@@ -7,6 +7,7 @@
 import React from 'react';
 
 import {Switch} from 'components';
+import {t} from 'translation';
 
 export default function GradientBarsSwitch({configuration, onChange}) {
   return (
@@ -15,7 +16,7 @@ export default function GradientBarsSwitch({configuration, onChange}) {
         checked={!!configuration.showGradientBars}
         onChange={({target: {checked}}) => onChange({showGradientBars: {$set: checked}})}
       />
-      Show Gradient Bars
+      {t('report.config.showGradientBars')}
     </label>
   );
 }

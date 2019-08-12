@@ -9,6 +9,7 @@ import React from 'react';
 import {Button} from 'components';
 import NodeSelectionModal from './NodeSelectionModal';
 import './VisibleNodesFilter.scss';
+import {t} from 'translation';
 
 export default class VisibleNodesFilter extends React.Component {
   state = {
@@ -24,8 +25,8 @@ export default class VisibleNodesFilter extends React.Component {
       return (
         <div className="VisibleNodesFilter">
           <fieldset>
-            <legend>Selected nodes to display</legend>
-            <Button onClick={this.open}>Show Flow Nodes...</Button>
+            <legend>{t('report.config.visibleNodes.legend')}</legend>
+            <Button onClick={this.open}>{t('report.config.visibleNodes.btn')}</Button>
           </fieldset>
           {this.state.open && <NodeSelectionModal {...this.props} onClose={this.close} />}
         </div>
