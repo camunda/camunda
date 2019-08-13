@@ -18,7 +18,7 @@ import {
   BADGE_TYPE
 } from 'modules/constants';
 import {CollapsablePanelConsumer} from 'modules/contexts/CollapsablePanelContext';
-import {isEqual, isEmpty, sortBy} from 'lodash';
+import {isEqual, isEmpty} from 'lodash';
 
 import * as Styled from './styled';
 import {
@@ -26,7 +26,8 @@ import {
   getOptionsForWorkflowVersion,
   addAllVersionsOption,
   getLastVersionOfWorkflow,
-  isDateComplete
+  isDateComplete,
+  sortAndModify
 } from './service';
 
 import {ALL_VERSIONS_OPTION, DEBOUNCE_DELAY} from './constants';
@@ -75,12 +76,12 @@ export default class Filters extends React.Component {
   };
 
   componentDidMount = async () => {
-    this.updateFilter();
+    this.setFilterFromProps();
   };
 
   componentDidUpdate = (prevProps, prevState) => {
     if (!isEqual(prevProps.filter, this.props.filter)) {
-      this.updateFilter();
+      this.setFilterFromProps();
     }
   };
 
@@ -92,6 +93,11 @@ export default class Filters extends React.Component {
 
   resetTimer = () => {
     clearTimeout(this.timer);
+  };
+
+  waitForTimer = async fct => {
+    await this.timeout();
+    fct();
   };
 
   timeout = () => {
@@ -115,50 +121,37 @@ export default class Filters extends React.Component {
     );
   };
 
-  updateFilter = () => {
+  // debounced fields will not be overwritten, if there is text inside
+  sanitizeDebouncedFilter = filter => {
+    return {
+      ...Object.entries(filter).forEach(([key, value]) => {
+        const currentValue = this.state.filter[key];
+        const newValue = currentValue === '' ? value : currentValue;
+
+        return {[key]: newValue};
+      })
+    };
+  };
+
+  propagateFilter = () => {
+    this.props.onFilterChange(this.state.filter);
+  };
+
+  setFilterFromProps = () => {
     const {
-      active,
-      canceled,
-      incidents,
-      completed,
-      workflow,
-      activityId,
       errorMessage,
       startDate,
       endDate,
-      version,
-      ids
+      // fields that are evaluated immediately will be overwritten by props
+      ...immediateFilter
     } = this.props.filter;
 
-    // fields that are evaluated immediately will be overwritten by props
-    const immediateFilter = {
-      active,
-      canceled,
-      incidents,
-      completed,
-      workflow,
-      activityId,
-      version,
-      ids
-    };
-
-    let debouncedFilter = {errorMessage, startDate, endDate};
-
-    // debounced fields will not be overwritten, if there is text inside
-    const sanitizedDebouncedFilter = {};
-    Object.entries(debouncedFilter).forEach(([key, value]) => {
-      const currentValue = this.state.filter[key];
-      const newValue = currentValue === '' ? value : currentValue;
-
-      sanitizedDebouncedFilter[key] = newValue;
-    });
+    const debouncedFilter = {errorMessage, startDate, endDate};
+    const sanitizedDebouncedFilter = this.sanitizeDebouncedFilter(
+      debouncedFilter
+    );
 
     this.setFilterState({...immediateFilter, ...sanitizedDebouncedFilter});
-  };
-
-  handleFilterChangeDebounced = async () => {
-    await this.timeout();
-    this.handleFilterChange();
   };
 
   handleWorkflowNameChange = event => {
@@ -168,7 +161,7 @@ export default class Filters extends React.Component {
 
     this.setFilterState(
       {workflow: value, version, activityId: ''},
-      this.handleFilterChange
+      this.propagateFilter
     );
   };
 
@@ -179,22 +172,10 @@ export default class Filters extends React.Component {
       return;
     }
 
-    this.setFilterState(
-      {version: value, activityId: ''},
-      this.handleFilterChange
-    );
+    this.setFilterState({version: value, activityId: ''}, this.propagateFilter);
   };
 
-  handleActivityIdChange = event => {
-    this.handleInputChange(event, this.handleFilterChange);
-  };
-
-  handleFilterChange = () => {
-    this.props.onFilterChange(this.state.filter);
-  };
-
-  // handler for controlled inputs
-  handleInputChange = (event, callback) => {
+  handleControlledInputChange = (event, callback) => {
     const {value, name} = event.target;
 
     this.setFilterState(
@@ -205,53 +186,11 @@ export default class Filters extends React.Component {
     );
   };
 
-  handleCheckboxChange = status => {
-    this.setFilterState(status, this.handleFilterChange);
-  };
-
   onFilterReset = () => {
     this.setFilterState(
       {...DEFAULT_FILTER_CONTROLLED_VALUES, ...DEFAULT_FILTER},
       this.props.onFilterReset
     );
-  };
-
-  sortByFlowNodeLabel = flowNodes => {
-    return sortBy(flowNodes, flowNode => flowNode.label.toLowerCase());
-  };
-
-  addValueAndLabel = bpmnElement => {
-    return {
-      ...bpmnElement,
-      value: bpmnElement.id,
-      label: bpmnElement.name
-        ? bpmnElement.name
-        : 'Unnamed' + bpmnElement.$type.split(':')[1].replace(/([A-Z])/g, ' $1')
-    };
-  };
-
-  sortAndModify = bpmnElements => {
-    if (bpmnElements.length < 1) {
-      return [];
-    }
-
-    const named = [];
-    const unnamed = [];
-
-    bpmnElements.forEach(bpmnElement => {
-      const enhancedElement = this.addValueAndLabel(bpmnElement);
-
-      if (enhancedElement.name) {
-        named.push(enhancedElement);
-      } else {
-        unnamed.push(enhancedElement);
-      }
-    });
-
-    return [
-      ...this.sortByFlowNodeLabel(named),
-      ...this.sortByFlowNodeLabel(unnamed)
-    ];
   };
 
   render() {
@@ -322,8 +261,8 @@ export default class Filters extends React.Component {
                       value={this.state.filter.ids}
                       name="ids"
                       placeholder="Instance Id(s) separated by space or comma"
-                      onBlur={this.handleFilterChange}
-                      onChange={this.handleInputChange}
+                      onBlur={this.propagateFilter}
+                      onChange={this.handleControlledInputChange}
                     />
                   </Styled.Field>
                   <Styled.Field>
@@ -331,8 +270,10 @@ export default class Filters extends React.Component {
                       value={this.state.filter.errorMessage}
                       name="errorMessage"
                       placeholder="Error Message"
-                      onChange={this.handleInputChange}
-                      onFilterChange={this.handleFilterChangeDebounced}
+                      onChange={this.handleControlledInputChange}
+                      onFilterChange={() =>
+                        this.waitForTimer(this.propagateFilter)
+                      }
                     />
                   </Styled.Field>
                   <Styled.Field>
@@ -340,9 +281,11 @@ export default class Filters extends React.Component {
                       value={this.state.filter.startDate}
                       name="startDate"
                       placeholder="Start Date yyyy-mm-dd hh:mm:ss"
-                      onChange={this.handleInputChange}
+                      onChange={this.handleControlledInputChange}
                       isComplete={isDateComplete}
-                      onFilterChange={this.handleFilterChangeDebounced}
+                      onFilterChange={() =>
+                        this.waitForTimer(this.propagateFilter)
+                      }
                     />
                   </Styled.Field>
                   <Styled.Field>
@@ -350,9 +293,11 @@ export default class Filters extends React.Component {
                       value={this.state.filter.endDate}
                       name="endDate"
                       placeholder="End Date yyyy-mm-dd hh:mm:ss"
-                      onChange={this.handleInputChange}
+                      onChange={this.handleControlledInputChange}
                       isComplete={isDateComplete}
-                      onFilterChange={this.handleFilterChangeDebounced}
+                      onFilterChange={() =>
+                        this.waitForTimer(this.propagateFilter)
+                      }
                     />
                   </Styled.Field>
                   <Styled.Field>
@@ -364,10 +309,13 @@ export default class Filters extends React.Component {
                       }
                       name="activityId"
                       placeholder="Flow Node"
-                      options={this.sortAndModify(
-                        this.props.selectableFlowNodes
-                      )}
-                      onChange={this.handleActivityIdChange}
+                      options={sortAndModify(this.props.selectableFlowNodes)}
+                      onChange={event =>
+                        this.handleControlledInputChange(
+                          event,
+                          this.propagateFilter
+                        )
+                      }
                     />
                   </Styled.Field>
                   <Styled.Field>
@@ -382,7 +330,9 @@ export default class Filters extends React.Component {
                       active,
                       incidents
                     }}
-                    onChange={this.handleCheckboxChange}
+                    onChange={status =>
+                      this.setFilterState(status, this.propagateFilter)
+                    }
                   />
                   <Styled.CheckboxGroup
                     type={FILTER_TYPES.FINISHED}
@@ -390,7 +340,9 @@ export default class Filters extends React.Component {
                       completed,
                       canceled
                     }}
-                    onChange={this.handleCheckboxChange}
+                    onChange={status =>
+                      this.setFilterState(status, this.propagateFilter)
+                    }
                   />
                 </Fragment>
               </Styled.Filters>
