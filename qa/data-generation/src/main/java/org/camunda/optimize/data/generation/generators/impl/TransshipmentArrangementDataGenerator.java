@@ -17,8 +17,8 @@ public class TransshipmentArrangementDataGenerator extends DataGenerator {
 
   private static final String DIAGRAM = "diagrams/transshipment-arrangement.bpmn";
 
-  public TransshipmentArrangementDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public TransshipmentArrangementDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

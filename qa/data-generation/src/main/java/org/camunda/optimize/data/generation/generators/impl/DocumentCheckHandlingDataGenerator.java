@@ -19,8 +19,8 @@ public class DocumentCheckHandlingDataGenerator extends DataGenerator {
 
   private static final String DIAGRAM = "diagrams/document-check-handling.bpmn";
 
-  public DocumentCheckHandlingDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public DocumentCheckHandlingDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

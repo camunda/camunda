@@ -16,11 +16,8 @@ public class ExtendedOrderDataGenerator extends DataGenerator {
 
   private static final String DIAGRAM = "diagrams/extended-order-process.bpmn";
 
-  private static final int nVersions = 20;
-  private static final int totalInstanceCount = 5000;
-
-  public ExtendedOrderDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public ExtendedOrderDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

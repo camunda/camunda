@@ -19,8 +19,8 @@ public class DmnTableDataGenerator extends DataGenerator {
   private static final String DIAGRAM_THAT_CALLS_DMN = "diagrams/dmn-table-process.bpmn";
   private static final String DMN_DIAGRAM = "diagrams/decide-dish.dmn";
 
-  public DmnTableDataGenerator(SimpleEngineClient simpleEngineClient) {
-    super(simpleEngineClient);
+  public DmnTableDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

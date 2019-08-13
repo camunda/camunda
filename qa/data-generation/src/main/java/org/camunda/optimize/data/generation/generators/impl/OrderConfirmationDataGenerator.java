@@ -17,8 +17,8 @@ public class OrderConfirmationDataGenerator extends DataGenerator {
 
   private static final String DIAGRAM = "diagrams/order-confirmation.bpmn";
 
-  public OrderConfirmationDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public OrderConfirmationDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

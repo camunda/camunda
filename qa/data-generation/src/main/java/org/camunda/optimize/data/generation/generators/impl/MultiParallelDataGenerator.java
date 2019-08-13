@@ -17,8 +17,8 @@ public class MultiParallelDataGenerator extends DataGenerator {
 
   private static final String DIAGRAM = "diagrams/multi-parallel.bpmn";
 
-  public MultiParallelDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public MultiParallelDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

@@ -17,8 +17,8 @@ public class LeadQualificationDataGenerator extends DataGenerator {
 
   private static final String DIAGRAM = "diagrams/lead-qualification.bpmn";
 
-  public LeadQualificationDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public LeadQualificationDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

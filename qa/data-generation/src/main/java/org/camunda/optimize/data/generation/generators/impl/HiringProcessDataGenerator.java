@@ -27,8 +27,8 @@ public class HiringProcessDataGenerator extends DataGenerator {
   private static String[] allVariableNames = {TASK_AUTOMATICALLY_ASSIGNED, TASK_SCREEN_PROCEED, TASK_PHONE_PROCEED,
     TASK_ONSITE_INTERVIEW, TASK_MAKE_OFFER, TASK_OFFER_ACCEPTED};
 
-  public HiringProcessDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public HiringProcessDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

@@ -17,8 +17,8 @@ public class BookRequestDataGenerator extends DataGenerator {
 
   private static final String DIAGRAM = "diagrams/book-request.bpmn";
 
-  public BookRequestDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public BookRequestDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

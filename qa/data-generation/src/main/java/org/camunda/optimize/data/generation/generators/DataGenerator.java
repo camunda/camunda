@@ -45,8 +45,8 @@ public abstract class DataGenerator implements Runnable {
   protected SimpleEngineClient engineClient;
   private AtomicInteger startedInstanceCount = new AtomicInteger(0);
 
-  public DataGenerator(SimpleEngineClient engineClient) {
-    generateVersionNumber();
+  public DataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    this.nVersions = nVersions == null ? generateVersionNumber() : nVersions;
     generateTenants();
     this.engineClient = engineClient;
   }
@@ -67,8 +67,8 @@ public abstract class DataGenerator implements Runnable {
     this.instanceCountToGenerate += numberOfInstancesToAdd;
   }
 
-  private void generateVersionNumber() {
-    nVersions = ThreadLocalRandom.current().nextInt(5, 25);
+  private int generateVersionNumber() {
+    return ThreadLocalRandom.current().nextInt(5, 25);
   }
 
   @Override

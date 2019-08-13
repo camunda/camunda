@@ -17,8 +17,8 @@ public class ReviewCaseDataGenerator extends DataGenerator {
 
   private static final String DIAGRAM = "diagrams/review-case.bpmn";
 
-  public ReviewCaseDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public ReviewCaseDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

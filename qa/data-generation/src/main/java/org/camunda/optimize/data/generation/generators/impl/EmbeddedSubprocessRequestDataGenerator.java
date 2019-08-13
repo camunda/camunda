@@ -16,8 +16,8 @@ public class EmbeddedSubprocessRequestDataGenerator extends DataGenerator {
 
   private static final String DIAGRAM = "diagrams/embedded-subprocess.bpmn";
 
-  public EmbeddedSubprocessRequestDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public EmbeddedSubprocessRequestDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

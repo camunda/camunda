@@ -17,8 +17,8 @@ public class ProcessRequestDataGenerator extends DataGenerator {
 
   private static final String DIAGRAM = "diagrams/process-request.bpmn";
 
-  public ProcessRequestDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public ProcessRequestDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

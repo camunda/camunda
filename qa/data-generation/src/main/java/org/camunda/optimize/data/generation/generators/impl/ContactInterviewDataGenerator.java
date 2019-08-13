@@ -16,10 +16,9 @@ public class ContactInterviewDataGenerator extends DataGenerator {
 
   private static final String DIAGRAM = "diagrams/contact-interview.bpmn";
 
-  public ContactInterviewDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public ContactInterviewDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
-
   protected BpmnModelInstance retrieveDiagram() {
     return readProcessDiagramAsInstance(DIAGRAM);
   }

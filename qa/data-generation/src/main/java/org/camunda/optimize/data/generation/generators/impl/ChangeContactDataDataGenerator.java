@@ -16,8 +16,8 @@ public class ChangeContactDataDataGenerator extends DataGenerator {
 
   private static final String DIAGRAM = "diagrams/change-contact-data.bpmn";
 
-  public ChangeContactDataDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public ChangeContactDataDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

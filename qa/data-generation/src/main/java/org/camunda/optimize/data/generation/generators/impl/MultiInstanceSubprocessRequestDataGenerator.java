@@ -16,8 +16,8 @@ public class MultiInstanceSubprocessRequestDataGenerator extends DataGenerator {
 
   private static final String DIAGRAM = "diagrams/multi-instance.bpmn";
 
-  public MultiInstanceSubprocessRequestDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public MultiInstanceSubprocessRequestDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

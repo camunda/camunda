@@ -17,8 +17,8 @@ public class BranchAnalysisDataGenerator extends DataGenerator {
   private static final String CALLER_DIAGRAM = "diagrams/call-branch-analysis.bpmn";
   private static final String CALLEE_DIAGRAM = "diagrams/branch_analysis_process.bpmn";
 
-  public BranchAnalysisDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public BranchAnalysisDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   @Override

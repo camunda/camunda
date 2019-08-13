@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.data.generation;
 
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfoList;
+import io.github.classgraph.ScanResult;
+import org.camunda.optimize.data.generation.generators.DataGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,13 +23,16 @@ public class Main {
   private long numberOfProcessInstancesToGenerate;
   private String engineRestEndpoint;
   private boolean removeDeployments;
+  private HashMap<String, Integer> definitions;
 
   private Main(long numberOfProcessInstancesToGenerate,
                String engineRestEndpoint,
-               boolean removeDeployments) {
+               boolean removeDeployments,
+               HashMap<String, Integer> definitions) {
     this.numberOfProcessInstancesToGenerate = numberOfProcessInstancesToGenerate;
     this.engineRestEndpoint = engineRestEndpoint;
     this.removeDeployments = removeDeployments;
+    this.definitions = definitions;
   }
 
   public static void main(String[] args) {
@@ -35,9 +42,24 @@ public class Main {
       Long.parseLong(arguments.get("numberOfProcessInstances"));
     String engineRestEndpoint = arguments.get("engineRest");
     boolean removeDeployments = Boolean.parseBoolean(arguments.get("removeDeployments"));
-
-    Main main = new Main(numberOfProcessInstancesToGenerate, engineRestEndpoint, removeDeployments);
+    HashMap<String, Integer> definitions = parseDefinitions(arguments.get("definitions"));
+    Main main = new Main(numberOfProcessInstancesToGenerate, engineRestEndpoint, removeDeployments, definitions);
     main.generateData();
+  }
+
+  public static HashMap<String, Integer> parseDefinitions(String definitions) {
+    HashMap<String, Integer> res = new HashMap<>();
+    String[] defs = definitions.split(",");
+    for (String def : defs) {
+      String[] strings = def.split(":");
+      String key = strings[0] + "DataGenerator";
+      if (strings.length == 1) {
+        res.put(key, null);
+      } else {
+        res.put(key, Integer.parseInt(strings[1]));
+      }
+    }
+    return res;
   }
 
   private static Map<String, String> extractArguments(String[] args) {
@@ -65,6 +87,19 @@ public class Main {
     arguments.put("numberOfProcessInstances", String.valueOf(100_000));
     arguments.put("engineRest", "http://localhost:8080/engine-rest");
     arguments.put("removeDeployments", "true");
+    arguments.put("definitions", getDefaultDefinitions());
+  }
+
+  public static String getDefaultDefinitions() {
+    try (ScanResult scanResult = new ClassGraph()
+      .enableClassInfo()
+      .whitelistPackages(DataGenerator.class.getPackage().getName())
+      .scan()) {
+      ClassInfoList subclasses = scanResult.getSubclasses(DataGenerator.class.getName());
+      return subclasses.stream()
+        .map(c -> c.getSimpleName().replace("DataGenerator", ""))
+        .reduce("", (a, b) -> a + b + ":,", (a, b) -> a + b);
+    }
   }
 
   private static String stripLeadingHyphens(String str) {
@@ -82,7 +117,7 @@ public class Main {
 
   private void generateData() {
     DataGenerationExecutor dataGenerationExecutor =
-      new DataGenerationExecutor(numberOfProcessInstancesToGenerate, engineRestEndpoint, removeDeployments);
+      new DataGenerationExecutor(numberOfProcessInstancesToGenerate, engineRestEndpoint, removeDeployments, definitions);
     dataGenerationExecutor.executeDataGeneration();
     dataGenerationExecutor.awaitDataGenerationTermination();
     logger.info("Finished data generation!");

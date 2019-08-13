@@ -20,8 +20,8 @@ public class InvoiceDataGenerator extends DataGenerator {
   private static final String DIAGRAM = "diagrams/invoice.bpmn";
   private static final String DMN_DIAGRAM = "diagrams/invoiceBusinessDecisions.dmn";
 
-  public InvoiceDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public InvoiceDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

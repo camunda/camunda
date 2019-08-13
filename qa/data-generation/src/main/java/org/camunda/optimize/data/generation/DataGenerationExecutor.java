@@ -5,28 +5,10 @@
  */
 package org.camunda.optimize.data.generation;
 
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ScanResult;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
 import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
-import org.camunda.optimize.data.generation.generators.impl.AuthorizationArrangementDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.BookRequestDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.BranchAnalysisDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.ChangeContactDataDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.ContactInterviewDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.DmnTableDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.DocumentCheckHandlingDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.EmbeddedSubprocessRequestDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.ExportInsuranceDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.ExtendedOrderDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.HiringProcessDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.InvoiceDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.LeadQualificationDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.MultiInstanceSubprocessRequestDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.MultiParallelDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.OrderConfirmationDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.PickUpHandlingDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.ProcessRequestDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.ReviewCaseDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.TransshipmentArrangementDataGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +16,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -52,6 +35,8 @@ public class DataGenerationExecutor {
   private String engineRestEndpoint;
   private boolean removeDeployments;
   private SimpleEngineClient engineClient;
+  private HashMap<String, Integer> definitions;
+
 
   private List<DataGenerator> dataGenerators;
   private ThreadPoolExecutor importExecutor;
@@ -61,10 +46,12 @@ public class DataGenerationExecutor {
 
   public DataGenerationExecutor(final long totalInstanceCount,
                                 final String engineRestEndpoint,
-                                final boolean removeDeployments) {
+                                final boolean removeDeployments,
+                                HashMap<String, Integer> definitions) {
     this.totalInstanceCount = totalInstanceCount;
     this.engineRestEndpoint = engineRestEndpoint;
     this.removeDeployments = removeDeployments;
+    this.definitions = definitions;
   }
 
   private void init() {
@@ -84,26 +71,22 @@ public class DataGenerationExecutor {
 
   private void initGenerators(SimpleEngineClient engineClient) {
     dataGenerators = new ArrayList<>();
-    dataGenerators.add(new BranchAnalysisDataGenerator(engineClient));
-    dataGenerators.add(new BookRequestDataGenerator(engineClient));
-    dataGenerators.add(new EmbeddedSubprocessRequestDataGenerator(engineClient));
-    dataGenerators.add(new MultiInstanceSubprocessRequestDataGenerator(engineClient));
-    dataGenerators.add(new HiringProcessDataGenerator(engineClient));
-    dataGenerators.add(new ExtendedOrderDataGenerator(engineClient));
-    dataGenerators.add(new ContactInterviewDataGenerator(engineClient));
-    dataGenerators.add(new DmnTableDataGenerator(engineClient));
-    dataGenerators.add(new LeadQualificationDataGenerator(engineClient));
-    dataGenerators.add(new InvoiceDataGenerator(engineClient));
-    dataGenerators.add(new OrderConfirmationDataGenerator(engineClient));
-    dataGenerators.add(new MultiParallelDataGenerator(engineClient));
-    dataGenerators.add(new TransshipmentArrangementDataGenerator(engineClient));
-    dataGenerators.add(new PickUpHandlingDataGenerator(engineClient));
-    dataGenerators.add(new AuthorizationArrangementDataGenerator(engineClient));
-    dataGenerators.add(new ChangeContactDataDataGenerator(engineClient));
-    dataGenerators.add(new ProcessRequestDataGenerator(engineClient));
-    dataGenerators.add(new ExportInsuranceDataGenerator(engineClient));
-    dataGenerators.add(new DocumentCheckHandlingDataGenerator(engineClient));
-    dataGenerators.add(new ReviewCaseDataGenerator(engineClient));
+    try (ScanResult scanResult = new ClassGraph()
+      .enableClassInfo()
+      .whitelistPackages(DataGenerator.class.getPackage().getName())
+      .scan()) {
+      scanResult.getSubclasses(DataGenerator.class.getName()).stream()
+        .filter(g -> definitions.keySet().contains(g.getSimpleName()))
+        .forEach(s -> {
+        try {
+          dataGenerators.add((DataGenerator) s.loadClass()
+            .getConstructor(SimpleEngineClient.class, Integer.class)
+            .newInstance(engineClient, definitions.get(s.getSimpleName())));
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      });
+    }
     setInstanceNumberToGenerateForEachGenerator();
   }
 

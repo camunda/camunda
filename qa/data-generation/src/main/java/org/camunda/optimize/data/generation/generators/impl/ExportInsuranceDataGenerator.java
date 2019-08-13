@@ -17,8 +17,8 @@ public class ExportInsuranceDataGenerator extends DataGenerator {
 
   private static final String DIAGRAM = "diagrams/export-insurance.bpmn";
 
-  public ExportInsuranceDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public ExportInsuranceDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

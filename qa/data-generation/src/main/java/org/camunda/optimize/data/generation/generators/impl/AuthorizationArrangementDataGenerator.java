@@ -17,8 +17,8 @@ public class AuthorizationArrangementDataGenerator extends DataGenerator {
 
   private static final String DIAGRAM = "diagrams/authorization-arrangement.bpmn";
 
-  public AuthorizationArrangementDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public AuthorizationArrangementDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {

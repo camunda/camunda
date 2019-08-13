@@ -6,17 +6,22 @@
 package org.camunda.optimize.test.performance;
 
 import org.camunda.optimize.data.generation.DataGenerationExecutor;
+import org.camunda.optimize.data.generation.Main;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.junit.Test;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import static org.camunda.optimize.data.generation.Main.getDefaultDefinitions;
+import static org.camunda.optimize.data.generation.Main.parseDefinitions;
 
 public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
 
@@ -71,10 +76,12 @@ public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
     return executor.submit(() -> {
       //given I have data in the data
       final OffsetDateTime beforeDataGeneration = OffsetDateTime.now();
+      HashMap<String, Integer> definitions = parseDefinitions(getDefaultDefinitions());
       final DataGenerationExecutor dataGenerationExecutor = new DataGenerationExecutor(
         totalInstanceCount,
         configurationService.getEngineRestApiEndpointOfCustomEngine("camunda-bpm"),
-        false
+        false,
+        definitions
       );
       dataGenerationExecutor.executeDataGeneration();
       dataGenerationExecutor.awaitDataGenerationTermination();

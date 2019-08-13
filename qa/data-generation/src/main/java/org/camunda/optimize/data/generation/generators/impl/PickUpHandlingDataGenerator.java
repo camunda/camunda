@@ -17,8 +17,8 @@ public class PickUpHandlingDataGenerator extends DataGenerator {
 
   private static final String DIAGRAM = "diagrams/pick-up-handling.bpmn";
 
-  public PickUpHandlingDataGenerator(SimpleEngineClient engineClient) {
-    super(engineClient);
+  public PickUpHandlingDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+    super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {
