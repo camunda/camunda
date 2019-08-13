@@ -277,7 +277,7 @@ public class ListViewReader {
     String errorMessage = query.getErrorMessage();
     if (!StringUtils.isEmpty(errorMessage)) {
       if(errorMessage.contains(WILD_CARD)) {
-        return createErrorMessageAsWildcardQuery(errorMessage);
+        return createErrorMessageAsWildcardQuery(errorMessage.toLowerCase());
       }else {
         return createErrorMessageAsAndMatchQuery(errorMessage);
       }

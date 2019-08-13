@@ -105,6 +105,8 @@ public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
     // 4. case (ignore lower/upper characters) should find one result because 'Find' is in only one errorMessage 
     assertSearchResults(searchForErrorMessages("find"), 1, workflowInstanceKey);
     assertSearchResults(searchForErrorMessages("Find"), 1, workflowInstanceKey);
+    assertSearchResults(searchForErrorMessages("*Find*"), 1, workflowInstanceKey);
+    assertSearchResults(searchForErrorMessages("*find*"), 1, workflowInstanceKey);
     // 5. case use wildcard query when searchstring contains the wildcard character
     assertSearchResults(searchForErrorMessages("que"), 0, workflowInstanceKey);
     assertSearchResults(searchForErrorMessages("que*"), 2, workflowInstanceKey);
