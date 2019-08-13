@@ -7,40 +7,42 @@
 import React from 'react';
 
 import {Button, Modal, LoadingIndicator} from 'components';
+import {t} from 'translation';
 
 export default function ConfirmationModal(props) {
   const {entityName, loading, conflict, ...modalProps} = props;
-  const operation = conflict ? conflict.type : 'Delete';
+  const operation = conflict ? conflict.type : 'delete';
   return (
     <Modal open {...modalProps}>
-      <Modal.Header>
-        {operation} {entityName}
-      </Modal.Header>
+      <Modal.Header>{t(`common.confirmationModal.title.${operation}`, {entityName})}</Modal.Header>
       <Modal.Content>
         {!loading && conflict && conflict.items.length > 0 && (
           <div>
             <p>
-              The following item{conflict.items.length === 1 ? '' : 's'} will be affected by your
-              action:
+              {t(
+                `common.confirmationModal.description.label${
+                  conflict.items.length === 1 ? '' : '-plural'
+                }`
+              )}
             </p>
             {conflict.items.map(item => (
               <li key={item.id}>
                 {item.type === 'alert'
-                  ? `"${item.name}" will be deleted from alerts`
-                  : `"${entityName}" will also be removed from the ${item.type.replace(
-                      '_',
-                      ' '
-                    )}: "${item.name}"`}
+                  ? t('common.confirmationModal.affectedMessage.alerts', {item: item.name})
+                  : t(`common.confirmationModal.affectedMessage.${item.type}`, {
+                      item: entityName,
+                      container: item.name
+                    })}
               </li>
             ))}
           </div>
         )}
         {props.children}
-        {loading ? <LoadingIndicator /> : <p>Are you sure you want to proceed?</p>}
+        {loading ? <LoadingIndicator /> : <p>{t('common.confirmationModal.areYouSure')}</p>}
       </Modal.Content>
       <Modal.Actions>
         <Button disabled={loading} className="close" onClick={modalProps.onClose}>
-          Close
+          {t('common.cancel')}
         </Button>
         <Button
           disabled={loading}
@@ -49,7 +51,7 @@ export default function ConfirmationModal(props) {
           className="confirm"
           onClick={modalProps.onConfirm}
         >
-          {operation}
+          {t(`common.${operation}`)}
         </Button>
       </Modal.Actions>
     </Modal>

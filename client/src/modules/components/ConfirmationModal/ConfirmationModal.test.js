@@ -108,10 +108,10 @@ it('should show conflict information if conflict prop is set', async () => {
     entityName: testEntity.name,
     onConfirm: () => {},
     onClose: () => {},
-    conflict: {type: 'Save', items: [{id: '1', name: 'testAlert', type: 'entityType'}]}
+    conflict: {type: 'save', items: [{id: '1', name: 'test report', type: 'combined_report'}]}
   };
   const node = shallow(<ConfirmationModal {...props} />);
 
-  expect(node.find('li')).toIncludeText('testAlert');
+  expect(node.find('li')).toIncludeText('test report');
   expect(node.find(Button).at(1)).toIncludeText('Save');
 });

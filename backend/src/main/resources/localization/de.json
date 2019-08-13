@@ -11,6 +11,12 @@
     "btn": "Einloggen",
     "error": "Ein Fehler ist aufgetreten. Konnte dich nicht einloggen."
   },
+  "footer": {
+    "importing": "importiert...",
+    "connected": "Ist verbunden",
+    "notConnected": "ist nicht verbunden ",
+    "rightsReserved": "Alle Rechte vorbehalten"
+  },
   "home": {
     "search": "Nach Namen filtern ...",
     "createBtn": {
@@ -312,7 +318,7 @@
     "name": "Name",
     "edit": "Bearbeiten",
     "delete": "Löschen",
-    "save": "Sparen",
+    "save": "Speichern",
     "apply": "Verwenden",
     "cancel": "Abbrechen",
     "copy": "Kopieren",
@@ -512,6 +518,23 @@
         "includeData": "Daten einschließen von"
       },
       "versionWarning": "Hinweis: Daten aus älteren Versionen können abweichen, daher können die Berichtsdaten inkonsistent sein."
+    },
+    "confirmationModal": {
+      "title": {
+        "delete": "{entityName} löschen",
+        "save": "{entityName} speichern"
+      },
+      "description": {
+        "label": "Das folgende Element ist von Ihrer Aktion betroffen:",
+        "label-plural": "Die folgenden Elemente sind von Ihrer Aktion betroffen:"
+      },
+      "affectedMessage": {
+        "alerts": "\"{item}\" wird aus den Benachrichtigungen gelöscht",
+        "combined_report": "\"{item}\" wird aus dem kombinierten Bericht: \"{container}\" entfernt",
+        "dashboard": "\"{item}\" wird aus dem Dashboard: \"{container}\" entfernt",
+        "collection": "\"{item}\" wird aus der Sammlung: \"{container}\" entfernt"
+      },
+      "areYouSure": "Sind Sie sicher, dass Sie fortfahren möchten?"
     },
     "unit": {
       "milli": {

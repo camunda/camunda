@@ -58,7 +58,7 @@ export default class ReportView extends Component {
     if (response && response.conflictedItems && response.conflictedItems.length) {
       conflictState = {
         conflict: {
-          type: 'Delete',
+          type: 'delete',
           items: response.conflictedItems
         }
       };

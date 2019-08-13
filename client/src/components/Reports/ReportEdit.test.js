@@ -182,7 +182,7 @@ it('should set conflict state when conflict happens on save button click', async
   node.instance().save({});
   await node.update();
 
-  expect(node.state().conflict.type).toEqual('Save');
+  expect(node.state().conflict.type).toEqual('save');
   expect(node.state().conflict.items).toEqual(conflictedItems);
 });
 

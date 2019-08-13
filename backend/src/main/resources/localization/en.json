@@ -11,6 +11,12 @@
     "btn": "Login",
     "error": "An error occurred. Could not log you in."
   },
+  "footer": {
+    "importing": "is importing...",
+    "connected": "is connected",
+    "notConnected": "is not connected",
+    "rightsReserved": "All Rights Reserved"
+  },
   "home": {
     "search": "Filter for name...",
     "createBtn": {
@@ -512,6 +518,23 @@
         "includeData": "Include data from"
       },
       "versionWarning": "Note: data from the older versions can deviate, therefore the report data can be inconsistent"
+    },
+    "confirmationModal": {
+      "title": {
+        "delete": "Delete {entityName}",
+        "save": "Save {entityName}"
+      },
+      "description": {
+        "label": "The following item will be affected by your action:",
+        "label-plural": "The following items will be affected by your action:"
+      },
+      "affectedMessage": {
+        "alerts": "\"{item}\" will be deleted from Alerts",
+        "combined_report": "\"{item}\" will be removed from the Combined Report: \"{container}\"",
+        "dashboard": "\"{item}\" will be removed from the Dashboard: \"{container}\"",
+        "collection": "\"{item}\" will be removed from the Collection: \"{container}\""
+      },
+      "areYouSure": "Are you sure you want to proceed?"
     },
     "unit": {
       "milli": {

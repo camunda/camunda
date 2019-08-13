@@ -264,7 +264,7 @@ export default themed(
               open={confirmModalVisible}
               onClose={this.closeConfirmModal}
               onConfirm={this.props.deleteDashboard}
-              conflict={{type: 'Delete', items: conflicts}}
+              conflict={{type: 'delete', items: conflicts}}
               entityName={name}
               loading={deleteLoading}
             />

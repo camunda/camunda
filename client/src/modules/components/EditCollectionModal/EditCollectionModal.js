@@ -55,12 +55,7 @@ export default class EditCollectionModal extends Component {
           </Form>
         </Modal.Content>
         <Modal.Actions>
-          <Button
-            className="cancel"
-            variant="primary"
-            onClick={onClose}
-            disabled={this.state.loading}
-          >
+          <Button className="cancel" onClick={onClose} disabled={this.state.loading}>
             {t('common.cancel')}
           </Button>
           <Button

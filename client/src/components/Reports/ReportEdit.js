@@ -62,7 +62,7 @@ export default withErrorHandling(
               confirmModalVisible: true,
               saveLoading: false,
               conflict: {
-                type: 'Save',
+                type: 'save',
                 items: conflictData.conflictedItems
               }
             });

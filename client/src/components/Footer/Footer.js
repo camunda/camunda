@@ -8,6 +8,7 @@ import React from 'react';
 
 import './Footer.scss';
 import {getOptimizeVersion} from 'services';
+import {t} from 'translation';
 
 export default class Footer extends React.Component {
   constructor(props) {
@@ -52,14 +53,14 @@ export default class Footer extends React.Component {
 
     if (connectionStatus) {
       if (isImporting) {
-        title = key + ' is importing ... ';
+        title = key + ' ' + t('footer.importing');
         className += ' is-in-progress';
       } else {
         className += ' is-connected';
-        title = key + ' is connected';
+        title = key + ' ' + t('footer.connected');
       }
     } else {
-      title = key + ' is not connected';
+      title = key + ' ' + t('footer.notConnected');
     }
 
     return (
@@ -86,7 +87,7 @@ export default class Footer extends React.Component {
             {this.renderListElement('Elasticsearch', connectedToElasticsearch, false)}
           </ul>
           <div className="Footer__colophon">
-            © Camunda Services GmbH {new Date().getFullYear()}, All Rights Reserved. |{' '}
+            © Camunda Services GmbH {new Date().getFullYear()}, {t('footer.rightsReserved')} |{' '}
             {optimizeVersion}
           </div>
         </div>

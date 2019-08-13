@@ -142,7 +142,7 @@ it('should set conflict state when conflict happens on delete button click', asy
   const node = shallow(<ReportView report={report} />);
 
   await node.find('.delete-button').prop('onClick')();
-  expect(node.state().conflict.type).toEqual('Delete');
+  expect(node.state().conflict.type).toEqual('delete');
   expect(node.state().conflict.items).toEqual(conflictedItems);
 });
 
