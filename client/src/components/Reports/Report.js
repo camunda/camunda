@@ -46,7 +46,13 @@ export default withErrorHandling(
     createReport = () => {
       const now = moment().format('Y-MM-DDTHH:mm:ss.SSSZZ');
       this.setState({
-        report: {...newReport[this.getId()], name: t('report.new'), lastModified: now, created: now}
+        report: {
+          ...newReport[this.getId()],
+          name: t('report.new'),
+          lastModified: now,
+          created: now,
+          lastModifier: t('common.you')
+        }
       });
     };
 

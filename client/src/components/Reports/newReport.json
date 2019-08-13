@@ -2,7 +2,6 @@
   "new": {
     "id": "new",
     "owner": "You",
-    "lastModifier": "You",
     "data": {
       "configuration": {
         "color": "#1991c8",
@@ -83,7 +82,6 @@
     },
     "id": "new-combined",
     "owner": "You",
-    "lastModifier": "You",
     "data": {
       "configuration": {
         "pointMarkers": true,
@@ -115,7 +113,6 @@
   "new-decision": {
     "id": "new-decision",
     "owner": "You",
-    "lastModifier": "You",
     "data": {
       "configuration": {
         "color": "#1991c8",
