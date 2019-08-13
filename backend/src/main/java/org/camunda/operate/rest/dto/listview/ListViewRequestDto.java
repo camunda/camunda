@@ -6,9 +6,11 @@
 package org.camunda.operate.rest.dto.listview;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.camunda.operate.rest.dto.SortingDto;
 import org.camunda.operate.rest.exception.InvalidRequestException;
+import org.camunda.operate.util.CollectionUtil;
 
 public class ListViewRequestDto {
 
@@ -31,7 +33,12 @@ public class ListViewRequestDto {
   public ListViewRequestDto() {
   }
 
+  public ListViewRequestDto(ListViewQueryDto query) {
+    this(Arrays.asList(query));
+  }
+
   public ListViewRequestDto(List<ListViewQueryDto> queries) {
+    this();
     this.queries = queries;
   }
 
@@ -42,9 +49,26 @@ public class ListViewRequestDto {
   public List<ListViewQueryDto> getQueries() {
     return queries;
   }
+  
+  public boolean hasQueries() {
+    return CollectionUtil.isNotEmpty(queries);
+  }
+  
+  public boolean hasExactOneQuery() {
+    return CollectionUtil.isNotEmpty(queries) && queries.size() == 1;
+  }
+  
+  public ListViewQueryDto queryAt(int index) {
+    return queries.get(index);
+  }
 
   public void setQueries(List<ListViewQueryDto> queries) {
     this.queries = queries;
+  }
+  
+  public ListViewRequestDto addQuery(ListViewQueryDto aQuery) {
+    this.queries.add(aQuery);
+    return this;
   }
 
   public SortingDto getSorting() {
@@ -57,7 +81,7 @@ public class ListViewRequestDto {
     }
     this.sorting = sorting;
   }
-
+  
   @Override
   public boolean equals(Object o) {
     if (this == o)

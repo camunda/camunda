@@ -58,144 +58,162 @@ public class ListViewQueryDto {
     return running;
   }
 
-  public void setRunning(boolean running) {
+  public ListViewQueryDto setRunning(boolean running) {
     this.running = running;
+    return this;
   }
 
   public boolean isCompleted() {
     return completed;
   }
 
-  public void setCompleted(boolean completed) {
+  public ListViewQueryDto setCompleted(boolean completed) {
     this.completed = completed;
+    return this;
   }
 
   public boolean isIncidents() {
     return incidents;
   }
 
-  public void setIncidents(boolean incidents) {
+  public ListViewQueryDto setIncidents(boolean incidents) {
     this.incidents = incidents;
+    return this;
   }
 
   public boolean isActive() {
     return active;
   }
 
-  public void setActive(boolean active) {
+  public ListViewQueryDto setActive(boolean active) {
     this.active = active;
+    return this;
   }
 
   public boolean isFinished() {
     return finished;
   }
 
-  public void setFinished(boolean finished) {
+  public ListViewQueryDto setFinished(boolean finished) {
     this.finished = finished;
+    return this;
   }
 
   public boolean isCanceled() {
     return canceled;
   }
 
-  public void setCanceled(boolean canceled) {
+  public ListViewQueryDto setCanceled(boolean canceled) {
     this.canceled = canceled;
+    return this;
   }
 
   public List<String> getIds() {
     return ids;
   }
 
-  public void setIds(List<String> ids) {
+  public ListViewQueryDto setIds(List<String> ids) {
     this.ids = ids;
+    return this;
   }
 
   public String getErrorMessage() {
     return errorMessage;
   }
 
-  public void setErrorMessage(String errorMessage) {
+  public ListViewQueryDto setErrorMessage(String errorMessage) {
     this.errorMessage = errorMessage;
+    return this;
   }
 
   public String getActivityId() {
     return activityId;
   }
 
-  public void setActivityId(String activityId) {
+  public ListViewQueryDto setActivityId(String activityId) {
     this.activityId = activityId;
+    return this;
   }
 
   public OffsetDateTime getStartDateAfter() {
     return startDateAfter;
   }
 
-  public void setStartDateAfter(OffsetDateTime startDateAfter) {
+  public ListViewQueryDto setStartDateAfter(OffsetDateTime startDateAfter) {
     this.startDateAfter = startDateAfter;
+    return this;
   }
 
   public OffsetDateTime getStartDateBefore() {
     return startDateBefore;
   }
 
-  public void setStartDateBefore(OffsetDateTime startDateBefore) {
+  public ListViewQueryDto setStartDateBefore(OffsetDateTime startDateBefore) {
     this.startDateBefore = startDateBefore;
+    return this;
   }
 
   public OffsetDateTime getEndDateAfter() {
     return endDateAfter;
   }
 
-  public void setEndDateAfter(OffsetDateTime endDateAfter) {
+  public ListViewQueryDto setEndDateAfter(OffsetDateTime endDateAfter) {
     this.endDateAfter = endDateAfter;
+    return this;
   }
 
   public OffsetDateTime getEndDateBefore() {
     return endDateBefore;
   }
 
-  public void setEndDateBefore(OffsetDateTime endDateBefore) {
+  public ListViewQueryDto setEndDateBefore(OffsetDateTime endDateBefore) {
     this.endDateBefore = endDateBefore;
+    return this;
   }
 
   public List<String> getWorkflowIds() {
     return workflowIds;
   }
 
-  public void setWorkflowIds(List<String> workflowIds) {
+  public ListViewQueryDto setWorkflowIds(List<String> workflowIds) {
     this.workflowIds = workflowIds;
+    return this;
   }
 
   public String getBpmnProcessId() {
     return bpmnProcessId;
   }
 
-  public void setBpmnProcessId(String bpmnProcessId) {
+  public ListViewQueryDto setBpmnProcessId(String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
+    return this;
   }
 
   public Integer getWorkflowVersion() {
     return workflowVersion;
   }
 
-  public void setWorkflowVersion(Integer workflowVersion) {
+  public ListViewQueryDto setWorkflowVersion(Integer workflowVersion) {
     this.workflowVersion = workflowVersion;
+    return this;
   }
 
   public List<String> getExcludeIds() {
     return excludeIds;
   }
 
-  public void setExcludeIds(List<String> excludeIds) {
+  public ListViewQueryDto setExcludeIds(List<String> excludeIds) {
     this.excludeIds = excludeIds;
+    return this;
   }
 
   public VariablesQueryDto getVariable() {
     return variable;
   }
 
-  public void setVariable(VariablesQueryDto variable) {
+  public ListViewQueryDto setVariable(VariablesQueryDto variable) {
     this.variable = variable;
+    return this;
   }
 
   @Override
@@ -281,5 +299,12 @@ public class ListViewQueryDto {
     query.setActive(true);
     query.setIncidents(true);
     return query;
+  }
+  
+  public ListViewQueryDto setAllRunning() {
+    return 
+        setRunning(true).
+        setActive(true).
+        setIncidents(true);
   }
 }

@@ -60,10 +60,10 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
     createData(workflowKey);
 
-    final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(workflowKey);
-    query.getQueries().get(0).setActivityId("taskA");
+    final ListViewRequestDto queryRequest = createGetAllWorkflowInstancesQuery(workflowKey);
+    queryRequest.queryAt(0).setActivityId("taskA");
 
-    final List<ActivityStatisticsDto> activityStatisticsDtos = getActivityStatistics(query);
+    final List<ActivityStatisticsDto> activityStatisticsDtos = getActivityStatistics(queryRequest);
     assertThat(activityStatisticsDtos).hasSize(1);
     assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("taskA")).allMatch(ai->
       ai.getActive().equals(2L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(0L)
@@ -84,10 +84,10 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
     String bpmnProcessId = "demoProcess";
 
-    final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(null);
-    query.getQueries().get(0).setBpmnProcessId(bpmnProcessId);
+    final ListViewRequestDto queryRequest = createGetAllWorkflowInstancesQuery(null);
+    queryRequest.queryAt(0).setBpmnProcessId(bpmnProcessId);
 
-    MvcResult mvcResult = postRequestThatShouldFail(QUERY_WORKFLOW_STATISTICS_URL, query);
+    MvcResult mvcResult = postRequestThatShouldFail(QUERY_WORKFLOW_STATISTICS_URL, queryRequest);
 
     assertThat(mvcResult.getResolvedException().getMessage()).contains("Exactly one workflow must be specified in the request");
   }
@@ -99,7 +99,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     createData(workflowKey);
 
     final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(workflowKey);
-    query.getQueries().get(0).setWorkflowIds(CollectionUtil.toSafeListOfStrings(workflowKey, WORKFLOW_KEY_OTHER_PROCESS));
+    query.queryAt(0).setWorkflowIds(CollectionUtil.toSafeListOfStrings(workflowKey, WORKFLOW_KEY_OTHER_PROCESS));
 
     MvcResult mvcResult = postRequestThatShouldFail(QUERY_WORKFLOW_STATISTICS_URL, query);
 
@@ -111,11 +111,12 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
   public void testFailStatisticsWithWorkflowKeyAndBpmnProcessId() throws Exception {
     Long workflowKey = 1L;
     String bpmnProcessId = "demoProcess";
-    final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(workflowKey);
-    query.getQueries().get(0).setBpmnProcessId(bpmnProcessId);
-    query.getQueries().get(0).setWorkflowVersion(1);
+    final ListViewRequestDto queryRequest = createGetAllWorkflowInstancesQuery(workflowKey);
+    queryRequest.queryAt(0)
+      .setBpmnProcessId(bpmnProcessId)
+      .setWorkflowVersion(1);
 
-    MvcResult mvcResult = postRequestThatShouldFail(QUERY_WORKFLOW_STATISTICS_URL,query);
+    MvcResult mvcResult = postRequestThatShouldFail(QUERY_WORKFLOW_STATISTICS_URL,queryRequest);
 
     assertThat(mvcResult.getResolvedException().getMessage()).contains("Exactly one workflow must be specified in the request");
   }
@@ -139,8 +140,9 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
     createData(workflowKey);
 
-    final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(workflowKey);
-    query.getQueries().add(new ListViewQueryDto());
+    final ListViewRequestDto query = 
+       createGetAllWorkflowInstancesQuery(workflowKey)
+      .addQuery(new ListViewQueryDto());
     
     MvcResult mvcResult = postRequestThatShouldFail(QUERY_WORKFLOW_STATISTICS_URL, query);
 
@@ -152,9 +154,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     if (workflowKey != null) {
       q.setWorkflowIds(CollectionUtil.toSafeListOfStrings(workflowKey));
     }
-    ListViewRequestDto request = new ListViewRequestDto();
-    request.getQueries().add(q);
-    return request;
+    return new ListViewRequestDto().addQuery(q);
   }
 
   private void getStatisticsAndAssert(ListViewRequestDto query) throws Exception {

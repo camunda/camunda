@@ -713,7 +713,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
   private ListViewResponseDto getWorkflowInstances(ListViewQueryDto query) throws Exception {
     ListViewRequestDto request = new ListViewRequestDto();
-    request.getQueries().add(query);
+    request.addQuery(query);
     MockHttpServletRequestBuilder getWorkflowInstancesRequest =
       post(query(0, 100)).content(mockMvcTestRule.json(request))
         .contentType(mockMvcTestRule.getContentType());

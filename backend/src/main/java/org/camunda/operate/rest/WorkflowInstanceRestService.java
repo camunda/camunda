@@ -148,18 +148,18 @@ public class WorkflowInstanceRestService {
   @ApiOperation("Get activity instance statistics")
   @PostMapping(path = "/statistics")
   public Collection<ActivityStatisticsDto> getStatistics(@RequestBody ListViewRequestDto workflowInstanceRequest) {
-    final List<ListViewQueryDto> queries = workflowInstanceRequest.getQueries();
-    if (queries.size() != 1) {
+    if (!workflowInstanceRequest.hasExactOneQuery()) {
       throw new InvalidRequestException("Exactly one query must be specified in the request.");
     }
-    final List<Long> workflowKeys = CollectionUtil.toSafeListOfLongs(queries.get(0).getWorkflowIds());
-    final String bpmnProcessId = queries.get(0).getBpmnProcessId();
-    final Integer workflowVersion = queries.get(0).getWorkflowVersion();
+    ListViewQueryDto query = workflowInstanceRequest.queryAt(0);
+    final List<Long> workflowKeys = CollectionUtil.toSafeListOfLongs(query.getWorkflowIds());
+    final String bpmnProcessId = query.getBpmnProcessId();
+    final Integer workflowVersion = query.getWorkflowVersion();
 
     if ( (workflowKeys != null && workflowKeys.size() == 1) == (bpmnProcessId != null && workflowVersion != null) ) {
       throw new InvalidRequestException("Exactly one workflow must be specified in the request (via workflowIds or bpmnProcessId/version).");
     }
-    return activityStatisticsReader.getActivityStatistics(queries.get(0));
+    return activityStatisticsReader.getActivityStatistics(query);
   }
   
   @ApiOperation("Get workflow instance core statistics (aggregations)")

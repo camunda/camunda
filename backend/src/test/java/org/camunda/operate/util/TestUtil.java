@@ -227,11 +227,9 @@ public abstract class TestUtil {
   }
 
   public static ListViewRequestDto createWorkflowInstanceQuery(Consumer<ListViewQueryDto> filtersSupplier) {
-    ListViewRequestDto request = new ListViewRequestDto();
     ListViewQueryDto query = new ListViewQueryDto();
     filtersSupplier.accept(query);
-    request.getQueries().add(query);
-    return request;
+    return new ListViewRequestDto().addQuery(query);
   }
 
   public static ListViewRequestDto createGetAllWorkflowInstancesQuery() {
@@ -248,14 +246,14 @@ public abstract class TestUtil {
 
   public static ListViewRequestDto createGetAllWorkflowInstancesQuery(Consumer<ListViewQueryDto> filtersSupplier) {
     final ListViewRequestDto workflowInstanceQuery = createGetAllWorkflowInstancesQuery();
-    filtersSupplier.accept(workflowInstanceQuery.getQueries().get(0));
+    filtersSupplier.accept(workflowInstanceQuery.queryAt(0));
 
     return workflowInstanceQuery;
   }
 
   public static ListViewRequestDto createGetAllFinishedQuery(Consumer<ListViewQueryDto> filtersSupplier) {
     final ListViewRequestDto workflowInstanceQuery = createGetAllFinishedQuery();
-    filtersSupplier.accept(workflowInstanceQuery.getQueries().get(0));
+    filtersSupplier.accept(workflowInstanceQuery.queryAt(0));
     return workflowInstanceQuery;
   }
 
