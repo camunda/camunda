@@ -123,14 +123,14 @@ export default class Filters extends React.Component {
 
   // debounced fields will not be overwritten, if there is text inside
   sanitizeDebouncedFilter = filter => {
-    return {
-      ...Object.entries(filter).forEach(([key, value]) => {
-        const currentValue = this.state.filter[key];
-        const newValue = currentValue === '' ? value : currentValue;
+    let sanitizedDebouncedFilter = {};
+    Object.entries(filter).forEach(([key, value]) => {
+      const currentValue = this.state.filter[key];
+      const newValue = currentValue === '' ? value : currentValue;
 
-        return {[key]: newValue};
-      })
-    };
+      sanitizedDebouncedFilter[key] = newValue;
+    });
+    return sanitizedDebouncedFilter;
   };
 
   propagateFilter = () => {

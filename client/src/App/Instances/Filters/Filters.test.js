@@ -88,7 +88,7 @@ describe('Filters', () => {
     expect(FilterNodes.at(1).prop('filter')).toEqual({completed, canceled});
   });
 
-  describe.skip('errorMessage filter', () => {
+  describe('errorMessage filter', () => {
     it('should render an errorMessage field', done => {
       // given
       const node = mount(
@@ -210,12 +210,13 @@ describe('Filters', () => {
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
+      const instance = node.instance();
 
       //when
-      node.instance().handleControlledInputChange({
+      instance.handleControlledInputChange({
         target: {value: errorMessage, name: 'errorMessage'}
       });
-      node.instance().handleFilterChangeDebounced();
+      instance.waitForTimer(instance.propagateFilter);
 
       setTimeout(() => {
         // then
@@ -237,12 +238,13 @@ describe('Filters', () => {
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
+      const instance = node.instance();
 
       //when
-      node.instance().handleControlledInputChange({
+      instance.handleControlledInputChange({
         target: {value: emptyErrorMessage, name: 'errorMessage'}
       });
-      node.instance().handleFilterChangeDebounced();
+      instance.waitForTimer(instance.propagateFilter);
 
       setTimeout(() => {
         // then
@@ -255,7 +257,7 @@ describe('Filters', () => {
     });
   });
 
-  describe.skip('ids filter', () => {
+  describe('ids filter', () => {
     it('should render an ids field', () => {
       // given
       const node = mount(
@@ -354,7 +356,7 @@ describe('Filters', () => {
       instance.handleControlledInputChange({
         target: {value: instanceIds, name: 'ids'}
       });
-      instance.handleFilterChange();
+      instance.propagateFilter();
 
       // then
       expect(mockProps.onFilterChange).toHaveBeenCalledWith({
@@ -380,7 +382,7 @@ describe('Filters', () => {
       instance.handleControlledInputChange({
         target: {value: emptyInstanceIds, name: 'ids'}
       });
-      instance.handleFilterChange();
+      instance.propagateFilter();
 
       // then
       expect(mockProps.onFilterChange).toHaveBeenCalledWith({
@@ -742,7 +744,7 @@ describe('Filters', () => {
     });
   });
 
-  describe.skip('selectable FlowNode filter', () => {
+  describe('selectable FlowNode filter', () => {
     it('should exist and be disabled by default', () => {
       // given
       const node = mount(
@@ -1031,14 +1033,14 @@ describe('Filters', () => {
           name: 'activityId'
         }
       });
-      instance.handleFilterChange();
+      instance.propagateFilter();
 
       // then
       expect(node.state().filter.activityId).toEqual(activityId);
     });
   });
 
-  describe.skip('startDate filter', () => {
+  describe('startDate filter', () => {
     it('should exist', done => {
       // given
       const target = {value: '1084-10-08', name: 'startDate'};
@@ -1128,7 +1130,7 @@ describe('Filters', () => {
       instance.handleControlledInputChange({
         target: {value: '2009-01-25', name: 'startDate'}
       });
-      instance.handleFilterChange();
+      instance.propagateFilter();
       node.update();
 
       // then
@@ -1152,7 +1154,7 @@ describe('Filters', () => {
       instance.handleControlledInputChange({
         target: {value: '', name: 'startDate'}
       });
-      instance.handleFilterChange();
+      instance.propagateFilter();
       node.update();
 
       // then
@@ -1163,7 +1165,7 @@ describe('Filters', () => {
     });
   });
 
-  describe.skip('endDate filter', () => {
+  describe('endDate filter', () => {
     it('should exist', done => {
       // given
       const target = {value: '1984-10-08', name: 'endDate'};
@@ -1258,7 +1260,7 @@ describe('Filters', () => {
       instance.handleControlledInputChange({
         target: {value: '2009-01-25', name: 'endDate'}
       });
-      instance.handleFilterChange();
+      instance.propagateFilter();
       node.update();
 
       // then
