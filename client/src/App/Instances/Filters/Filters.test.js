@@ -115,7 +115,6 @@ describe('Filters', () => {
         expect(field.prop('placeholder')).toEqual('Error Message');
         expect(field.prop('value')).toEqual('');
         expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-          ...DEFAULT_FILTER_CONTROLLED_VALUES,
           errorMessage: 'asd'
         });
 
@@ -221,14 +220,13 @@ describe('Filters', () => {
       setTimeout(() => {
         // then
         expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-          ...DEFAULT_FILTER_CONTROLLED_VALUES,
           errorMessage
         });
         done();
       }, DEBOUNCE_DELAY * 2);
     });
 
-    it('should call onFilterChange with empty error message', done => {
+    it('should call onFilterChange with empty object', done => {
       // given
       const emptyErrorMessage = '';
       const node = shallow(
@@ -248,10 +246,7 @@ describe('Filters', () => {
 
       setTimeout(() => {
         // then
-        expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-          ...DEFAULT_FILTER_CONTROLLED_VALUES,
-          errorMessage: ''
-        });
+        expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
         done();
       }, DEBOUNCE_DELAY * 2);
     });
@@ -285,10 +280,7 @@ describe('Filters', () => {
       expect(field.prop('placeholder')).toEqual(
         'Instance Id(s) separated by space or comma'
       );
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        ...DEFAULT_FILTER_CONTROLLED_VALUES,
-        ids: ''
-      });
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
     });
 
     it('should initialize the field with empty value', () => {
@@ -360,12 +352,11 @@ describe('Filters', () => {
 
       // then
       expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        ...DEFAULT_FILTER_CONTROLLED_VALUES,
         ids: instanceIds
       });
     });
 
-    it('should call onFilterChange with an empty array', () => {
+    it('should call onFilterChange with an empty object', () => {
       // given
       // user blurs without writing
       const emptyInstanceIds = '';
@@ -385,10 +376,7 @@ describe('Filters', () => {
       instance.propagateFilter();
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        ...DEFAULT_FILTER_CONTROLLED_VALUES,
-        ids: ''
-      });
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
     });
   });
 
@@ -418,12 +406,7 @@ describe('Filters', () => {
       expect(field.length).toEqual(1);
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Workflow');
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        ...DEFAULT_FILTER_CONTROLLED_VALUES,
-        workflow: '',
-        activityId: '',
-        version: ''
-      });
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
     });
 
     it('should render the value from this.props.filter.workflow', () => {
@@ -710,15 +693,13 @@ describe('Filters', () => {
 
       // then
       expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        ...DEFAULT_FILTER_CONTROLLED_VALUES,
         workflow: 'demoProcess',
-        version: '3',
-        activityId: ''
+        version: '3'
       });
     });
 
     it('should call onFilterChange when all workflow versions are selected', async () => {
-      const value = groupedWorkflowsMock[0].bpmnProcessId;
+      const workflowName = groupedWorkflowsMock[0].bpmnProcessId;
       const node = shallow(
         <Filters
           groupedWorkflows={workflows}
@@ -729,18 +710,17 @@ describe('Filters', () => {
 
       //when
       // select workflowName, the version is set to the latest
-      node.instance().handleWorkflowNameChange({target: {value: value}});
+      node.instance().handleWorkflowNameChange({target: {value: workflowName}});
       node.update();
       node
         .instance()
         .handleWorkflowVersionChange({target: {value: ALL_VERSIONS_OPTION}});
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalled();
-      expect(mockProps.onFilterChange.mock.calls[0][0].version).toEqual('3');
-      expect(mockProps.onFilterChange.mock.calls[0][0].activityId).toBe('');
-      expect(mockProps.onFilterChange.mock.calls[1][0].version).toEqual('all');
-      expect(mockProps.onFilterChange.mock.calls[1][0].activityId).toBe('');
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+        version: ALL_VERSIONS_OPTION,
+        workflow: workflowName
+      });
     });
   });
 
@@ -771,10 +751,7 @@ describe('Filters', () => {
       expect(field.props().placeholder).toEqual('Flow Node');
       expect(field.props().disabled).toBe(true);
       expect(field.props().options.length).toBe(0);
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        ...DEFAULT_FILTER_CONTROLLED_VALUES,
-        activityId: ''
-      });
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
     });
 
     it('should render the value from this.props.filter.activityId', () => {
@@ -1070,7 +1047,6 @@ describe('Filters', () => {
         );
         expect(field.props().value).toEqual('');
         expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-          ...DEFAULT_FILTER_CONTROLLED_VALUES,
           startDate: '1084-10-08'
         });
         done();
@@ -1158,10 +1134,7 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        ...DEFAULT_FILTER_CONTROLLED_VALUES,
-        startDate: ''
-      });
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
     });
   });
 
@@ -1197,7 +1170,6 @@ describe('Filters', () => {
         );
         expect(field.props().value).toEqual('');
         expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-          ...DEFAULT_FILTER_CONTROLLED_VALUES,
           endDate: '1984-10-08'
         });
         done();

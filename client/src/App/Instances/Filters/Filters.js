@@ -27,7 +27,8 @@ import {
   addAllVersionsOption,
   getLastVersionOfWorkflow,
   isDateComplete,
-  sortAndModify
+  sortAndModify,
+  sanitizeFilter
 } from './service';
 
 import {ALL_VERSIONS_OPTION, DEBOUNCE_DELAY} from './constants';
@@ -134,7 +135,7 @@ export default class Filters extends React.Component {
   };
 
   propagateFilter = () => {
-    this.props.onFilterChange(this.state.filter);
+    this.props.onFilterChange(sanitizeFilter(this.state.filter));
   };
 
   setFilterFromProps = () => {

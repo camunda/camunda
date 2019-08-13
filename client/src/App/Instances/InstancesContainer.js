@@ -34,8 +34,6 @@ import {formatGroupedWorkflows} from 'modules/utils/instance';
 import Instances from './Instances';
 import {parseQueryString, decodeFields, fetchDiagramModel} from './service';
 
-import {sanitizeFilter} from './Filters/service';
-
 class InstancesContainer extends Component {
   static propTypes = {
     getStateLocally: PropTypes.func.isRequired,
@@ -302,13 +300,11 @@ class InstancesContainer extends Component {
   };
 
   setFilterFromInput = async filter => {
-    const sanitizedFilter = sanitizeFilter(filter);
-
-    if (isEqual(this.state.filter, sanitizedFilter)) {
+    if (isEqual(this.state.filter, filter)) {
       return;
     }
 
-    await this.setFilter(sanitizedFilter);
+    await this.setFilter(filter);
   };
 
   setFilter = async filter => {
