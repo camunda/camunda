@@ -49,6 +49,34 @@ mvn clean compile exec:java -Dexec.args="--timeoutInHours 16"
 mvn clean compile exec:java -Dexec.args="--removeDeployments true"
 ```
 
+* specify process definitions and number of version to deploy (default value includes all of the 20 processes, so an example value is displayed)  
+List comma separated definitions specifying the number of versions to deploy after a colon. Random number of versions is deployed if the number is not specified explicitly.
+
+```
+mvn clean compile exec:java -Dexec.args="--definitions Invoice:10,ChangeContactData:,BookRequest:5"
+```
+Availible processes are:  
+* BranchAnalysis  
+* BookRequest  
+* EmbeddedSubprocessRequest  
+* MultiInstanceSubprocessRequest  
+* HiringProcess  
+* ExtendedOrder  
+* ContactInterview  
+* DmnTable  
+* LeadQualification  
+* Invoice  
+* OrderConfirmation  
+* MultiParallel  
+* TransshipmentArrangement  
+* PickUpHandling  
+* AuthorizationArrangement  
+* ChangeContactData  
+* ProcessRequest  
+* ExportInsurance  
+* DocumentCheckHandling  
+* ReviewCase  
+
 ### Data generation progress
 
 Once the data generation is started, it will print out the progress of
