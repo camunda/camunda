@@ -16,24 +16,27 @@ const {
 } = reportConfig(process);
 
 it('should get a label for a simple visualization', () => {
-  expect(getLabelFor(visualization, 'heat')).toBe('Heatmap');
+  expect(getLabelFor('visualization', visualization, 'heat')).toBe('Heatmap');
 });
 
 it('should get a label for a complex view', () => {
-  expect(getLabelFor(view, {entity: 'processInstance', property: 'frequency'})).toBe(
+  expect(getLabelFor('view', view, {entity: 'processInstance', property: 'frequency'})).toBe(
     'Process Instance: Count'
   );
 });
 
 it('should get a label for group by variables', () => {
-  expect(getLabelFor(groupBy, {type: 'variable', value: {name: 'aName', type: 'String'}})).toBe(
-    'Variable: aName'
-  );
+  expect(
+    getLabelFor('groupBy', groupBy, {type: 'variable', value: {name: 'aName', type: 'String'}})
+  ).toBe('Variable: aName');
 });
 
 it('should get a label for group by variables for dmn', () => {
   expect(
-    getLabelFor(decision.groupBy, {type: 'inputVariable', value: {id: 'anId', name: 'aName'}})
+    getLabelFor('groupBy', decision.groupBy, {
+      type: 'inputVariable',
+      value: {id: 'anId', name: 'aName'}
+    })
   ).toBe('Input Variable: aName');
 });
 

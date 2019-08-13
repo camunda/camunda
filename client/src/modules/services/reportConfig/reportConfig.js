@@ -5,32 +5,41 @@
  */
 
 import equal from 'deep-equal';
-import {convertCamelToSpaces} from '../formatters';
+import {t} from 'translation';
 
 export default function reportConfig({view, groupBy, visualization, combinations}) {
   /**
    * Construct a String representing the entry. Suitable for displaying to the user
    *
-   * @param type One of the type arrays of the reportConfig service (view, groupBy, visualization)
+   * @param type type of the menu (View, GroupBy, Visualization)
+   * @param menu One of the type arrays of the reportConfig service (view, groupBy, visualization)
    * @param data One data entry of the type array. This corresponds to the payload sent to the backend
+   * @param subOption defines whethet the data entry we are searching for is a sub option or not
    */
-  const getLabelFor = (type, data) => {
+  const getLabelFor = (type, menu, data, subOption = false) => {
     // special case: variables
     if (data && data.type && data.type.toLowerCase().includes('variable')) {
-      return convertCamelToSpaces(data.type) + ': ' + data.value.name;
+      return t(`report.${type}.${data.type}`) + ': ' + data.value.name;
     }
 
-    for (let i = 0; i < type.length; i++) {
-      const entry = type[i];
+    for (let i = 0; i < menu.length; i++) {
+      const entry = menu[i];
 
       if (equal(entry.data, data, {strict: true})) {
-        return entry.label;
+        let key;
+
+        if (subOption) {
+          key = entry.key.split('_')[1];
+        } else {
+          key = entry.key;
+        }
+        return t(`report.${type}.${key}`);
       }
 
       if (Array.isArray(entry.options)) {
-        const sublabel = getLabelFor(entry.options, data);
-        if (sublabel) {
-          return `${entry.label}: ${sublabel}`;
+        const subLabel = getLabelFor(type, entry.options, data, true);
+        if (subLabel) {
+          return t(`report.${type}.${entry.key}`) + ': ' + subLabel;
         }
       }
     }

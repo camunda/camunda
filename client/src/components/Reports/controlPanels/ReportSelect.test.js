@@ -22,10 +22,10 @@ jest.mock('services', () => {
       process: {
         getLabelFor: jest.fn().mockReturnValue('foo'),
         options: {
-          view: [{data: 'foo', label: 'viewfoo'}],
+          view: [{key: 'rawData', data: 'foo', label: 'viewfoo'}],
           groupBy: [
-            {data: 'foo', label: 'groupbyfoo'},
-            {options: 'inputVariable', label: 'Input Variable'}
+            {key: 'none', data: 'foo', label: 'groupbyfoo'},
+            {key: 'variable', options: 'inputVariable', label: 'Input Variable'}
           ],
           visualization: [{data: 'foo', label: 'visualizationfoo'}]
         },

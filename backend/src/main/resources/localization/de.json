@@ -94,17 +94,28 @@
       "fn": "Flow Node",
       "userTask": "User Task",
       "count": "Anzahl",
-      "duration": "Dauer"
+      "duration": "Dauer",
+      "evaluationCount": "Bewertungszahl"
     },
     "groupBy": {
       "label": "Gruppiere nach",
-      "flowNode": "Flow Nodes",
+      "none": "Keiner",
+      "flowNodes": "Flow Nodes",
       "startDate": "Startdatum der Prozessinstanz",
       "automatic": "Automatisch",
       "endDate": "Enddatum der Prozessinstanz",
       "variable": "Variable",
       "userAssignee": "Beauftragter",
-      "userGroup": "Kandidatengruppe"
+      "userGroup": "Kandidatengruppe",
+      "evaluationDate": "Bewertungstag",
+      "rules": "Regeln",
+      "inputVariable": "Eingabevariable",
+      "outputVariable": "Ausgabevariable",
+      "year": "Jahr",
+      "month": "Monat",
+      "week": "Woche",
+      "day": "Tag",
+      "hour": "Stunde"
     },
     "visualization": {
       "label": "Visualisierung",
@@ -151,7 +162,8 @@
       "evaluation": "Gesamtbewertung </br> Anzahl: <b> {count} </b> "
     },
     "definition": {
-      "process": "Prozessdefinition"
+      "process": "Prozessdefinition",
+      "decision": "Entscheidungsdefinition"
     },
     "noDefintionMessage": {
       "process": "Wählen Sie oben eine <b> Prozessdefinition </b> aus.",

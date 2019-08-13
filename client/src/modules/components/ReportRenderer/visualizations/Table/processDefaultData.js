@@ -22,8 +22,8 @@ export default function processDefaultData({formatter = v => v, report}) {
   const instanceCount = result.processInstanceCount || result.decisionInstanceCount || 0;
   const config = reportConfig[reportType];
   const labels = [
-    config.getLabelFor(config.options.groupBy, groupBy),
-    config.getLabelFor(config.options.view, view)
+    config.getLabelFor('groupBy', config.options.groupBy, groupBy),
+    config.getLabelFor('view', config.options.view, view)
   ];
 
   if (view.entity === 'userTask' && groupBy.type === 'flowNodes') {

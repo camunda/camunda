@@ -11,6 +11,7 @@ import {reportConfig} from 'services';
 import equal from 'deep-equal';
 
 import './ReportSelect.scss';
+import {t} from 'translation';
 
 export default function ReportSelect({
   type,
@@ -38,12 +39,12 @@ export default function ReportSelect({
       className="ReportSelect"
       disabled={disabled}
     >
-      {options.map(({key, data, label, options}, idx) => {
+      {options.map(({key, data, options}, idx) => {
         if (options) {
           return (
             <Select.Submenu
               key={idx}
-              label={label}
+              label={t(`report.${field}.${key}`)}
               disabled={options.every(({data}) => !config.isAllowed(report, ...previous, data))}
             >
               {options.map(({key, data, label}, idx) => {
@@ -53,7 +54,7 @@ export default function ReportSelect({
                     value={key}
                     disabled={!config.isAllowed(report, ...previous, data)}
                   >
-                    {label}
+                    {key.includes('variable') ? label : t(`report.${field}.${key.split('_')[1]}`)}
                   </Select.Option>
                 );
               })}
@@ -66,7 +67,7 @@ export default function ReportSelect({
               value={key}
               disabled={!config.isAllowed(report, ...previous, data)}
             >
-              {label}
+              {t(`report.${field}.${key}`)}
             </Select.Option>
           );
         }

@@ -5,53 +5,67 @@
  */
 
 export const view = [
-  {key: 'rawData', label: 'Raw Data', group: 'raw', data: {property: 'rawData'}},
+  {key: 'rawData', group: 'raw', data: {property: 'rawData'}},
   {
-    key: 'count_frequency',
-    label: 'Evaluation Count',
+    key: 'evaluationCount',
     group: 'count',
     data: {property: 'frequency'}
   }
 ];
 
 export const groupBy = [
-  {key: 'none', label: 'None', group: 'none', data: {type: 'none', value: null}},
+  {key: 'none', group: 'none', data: {type: 'none', value: null}},
   {
-    key: 'rule_matchedRule',
-    label: 'Rules',
+    key: 'rules',
     group: 'rule',
     data: {type: 'matchedRule', value: null}
   },
   {
-    label: 'Evaluation Date',
+    key: 'evaluationDate',
     group: 'date',
     options: [
       {
-        key: 'date_automatic',
-        label: 'Automatic',
+        key: 'evaluationDate_automatic',
+
         data: {type: 'evaluationDateTime', value: {unit: 'automatic'}}
       },
-      {key: 'date_year', label: 'Year', data: {type: 'evaluationDateTime', value: {unit: 'year'}}},
       {
-        key: 'date_month',
-        label: 'Month',
+        key: 'evaluationDate_year',
+
+        data: {type: 'evaluationDateTime', value: {unit: 'year'}}
+      },
+      {
+        key: 'evaluationDate_month',
+
         data: {type: 'evaluationDateTime', value: {unit: 'month'}}
       },
-      {key: 'date_week', label: 'Week', data: {type: 'evaluationDateTime', value: {unit: 'week'}}},
-      {key: 'date_day', label: 'Day', data: {type: 'evaluationDateTime', value: {unit: 'day'}}},
-      {key: 'date_hour', label: 'Hour', data: {type: 'evaluationDateTime', value: {unit: 'hour'}}}
+      {
+        key: 'evaluationDate_week',
+
+        data: {type: 'evaluationDateTime', value: {unit: 'week'}}
+      },
+      {
+        key: 'evaluationDate_day',
+
+        data: {type: 'evaluationDateTime', value: {unit: 'day'}}
+      },
+      {
+        key: 'evaluationDate_hour',
+
+        data: {type: 'evaluationDateTime', value: {unit: 'hour'}}
+      }
     ]
   },
-  {label: 'Input Variable', group: 'variable', options: 'inputVariable'},
-  {label: 'Output Variable', group: 'variable', options: 'outputVariable'}
+  {key: 'inputVariable', group: 'variable', options: 'inputVariable'},
+  {key: 'outputVariable', group: 'variable', options: 'outputVariable'}
 ];
 
 export const visualization = [
-  {key: 'number', label: 'Number', group: 'number', data: 'number'},
-  {key: 'table', label: 'Table', group: 'table', data: 'table'},
-  {key: 'bar', label: 'Bar Chart', group: 'chart', data: 'bar'},
-  {key: 'line', label: 'Line Chart', group: 'chart', data: 'line'},
-  {key: 'pie', label: 'Pie Chart', group: 'chart', data: 'pie'}
+  {key: 'number', group: 'number', data: 'number'},
+  {key: 'table', group: 'table', data: 'table'},
+  {key: 'bar', group: 'chart', data: 'bar'},
+  {key: 'line', group: 'chart', data: 'line'},
+  {key: 'pie', group: 'chart', data: 'pie'}
 ];
 
 export const combinations = {

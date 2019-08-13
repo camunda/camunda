@@ -8,7 +8,6 @@ import React from 'react';
 import equal from 'deep-equal';
 
 import {DefinitionSelection} from 'components';
-import {formatters} from 'services';
 
 import {Configuration} from './Configuration';
 import ReportSelect from './ReportSelect';
@@ -17,6 +16,7 @@ import {DecisionFilter} from './filter';
 
 import {reportConfig, loadDecisionDefinitionXml} from 'services';
 import {loadInputVariables, loadOutputVariables} from './service';
+import {t} from 'translation';
 
 const {decision: decisionConfig} = reportConfig;
 
@@ -114,7 +114,7 @@ export default class DecisionControlPanel extends React.Component {
       <div className="DecisionControlPanel ReportControlPanel">
         <ul>
           <li className="select">
-            <span className="label">Decision Definition</span>
+            <span className="label">{t('report.definition.decision')}</span>
             <DefinitionSelection
               type="decision"
               definitionKey={decisionDefinitionKey}
@@ -131,7 +131,7 @@ export default class DecisionControlPanel extends React.Component {
 
             return (
               <li className="select" key={field}>
-                <span className="label">{formatters.convertCamelToSpaces(field)}</span>
+                <span className="label">{t(`report.${field}.label`)}</span>
                 <ReportSelect
                   type="decision"
                   field={field}

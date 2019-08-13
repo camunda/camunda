@@ -8,6 +8,7 @@ import {get} from 'request';
 
 import {reportConfig, formatters} from 'services';
 import {getRelativeValue} from '../service';
+import {t} from 'translation';
 
 const {
   options: {view, groupBy},
@@ -34,7 +35,7 @@ export function getFormattedLabels(
         label: reportsNames[i],
         columns: [
           ...(displayAbsoluteValue ? reportLabels.slice(1) : []),
-          ...(displayRelativeValue ? ['Relative Frequency'] : [])
+          ...(displayRelativeValue ? [t('report.table.relativeFrequency')] : [])
         ]
       }
     ],
@@ -80,8 +81,8 @@ export function getCombinedTableProps(reportResult, reports) {
     const {data, result, name} = report;
 
     // build 2d array of all labels
-    const viewLabel = getLabelFor(view, data.view);
-    const groupByLabel = getLabelFor(groupBy, data.groupBy);
+    const viewLabel = getLabelFor('view', view, data.view);
+    const groupByLabel = getLabelFor('groupBy', groupBy, data.groupBy);
     const labels = [...prevReport.labels, [groupByLabel, viewLabel]];
 
     // 2d array of all names
