@@ -79,7 +79,7 @@
     "glob": "^7.1.4",
     "http-proxy-middleware": "^0.19.1",
     "husky": "^2.3.0",
-    "jest-enzyme": "^7.0.2",
+    "jest-enzyme": "^7.1.0",
     "jest-junit": "^7.0.0",
     "js-yaml": "^3.13.1",
     "license-checker": "^25.0.1",
