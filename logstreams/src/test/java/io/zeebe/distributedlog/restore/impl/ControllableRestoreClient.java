@@ -22,12 +22,11 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public class ControllableRestoreClient implements RestoreClient {
+  public List<LogReplicationRequest> requestLog = new ArrayList<>();
   private final Map<Long, CompletableFuture<LogReplicationResponse>> logReplicationRequests =
       new HashMap<>();
-
   private final Map<Integer, CompletableFuture<SnapshotRestoreResponse>>
       snapshotReplicationRequests = new HashMap<>();
-  public List<LogReplicationRequest> requestLog = new ArrayList<>();
 
   @Override
   public CompletableFuture<SnapshotRestoreResponse> requestSnapshotChunk(

@@ -32,10 +32,7 @@ public class LogStreamReaderTest {
   private static final UnsafeBuffer EVENT_VALUE = new UnsafeBuffer(getBytes("test"));
   private static final UnsafeBuffer BIG_EVENT_VALUE =
       new UnsafeBuffer(new byte[BufferedLogStreamReader.DEFAULT_INITIAL_BUFFER_CAPACITY * 2]);
-  private final Random random = new Random();
-
   @Rule public ExpectedException expectedException = ExpectedException.none();
-
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
   public LogStreamRule logStreamRule = new LogStreamRule(temporaryFolder);
   public LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
@@ -45,6 +42,7 @@ public class LogStreamReaderTest {
   public RuleChain ruleChain =
       RuleChain.outerRule(temporaryFolder).around(logStreamRule).around(readerRule).around(writer);
 
+  private final Random random = new Random();
   private LogStreamReader reader;
   private long eventKey;
 

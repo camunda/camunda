@@ -43,11 +43,11 @@ public class BrokerClientImpl implements BrokerClient {
   protected final ActorScheduler actorScheduler;
   protected final ClientTransport transport;
   protected final BrokerTopologyManagerImpl topologyManager;
+  protected boolean isClosed;
   private final AtomixCluster atomixCluster;
   private final boolean ownsActorScheduler;
   private final Dispatcher dataFrameReceiveBuffer;
   private final BrokerRequestManager requestManager;
-  protected boolean isClosed;
   private Subscription jobAvailableSubscription;
 
   public BrokerClientImpl(final GatewayCfg configuration, final AtomixCluster atomixCluster) {

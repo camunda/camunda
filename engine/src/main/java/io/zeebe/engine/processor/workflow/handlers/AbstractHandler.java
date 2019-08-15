@@ -24,7 +24,7 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
    *     this state if successfully handled, otherwise will not. Asynchronous handlers should thus
    *     pass null here.
    */
-  public AbstractHandler(final WorkflowInstanceIntent nextState) {
+  public AbstractHandler(WorkflowInstanceIntent nextState) {
     this.nextState = nextState;
   }
 
@@ -35,7 +35,7 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
    * @param context current step context
    */
   @Override
-  public void handle(final BpmnStepContext<T> context) {
+  public void handle(BpmnStepContext<T> context) {
     if (shouldHandleState(context)) {
       final boolean handled = handleState(context);
 
@@ -44,7 +44,9 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
       }
     } else {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.debug(
-          "Skipping record {} due to step guard; in-memory element is {}",
+          "Skipping record [key: {}, intent: {}, value: {}] due to step guard; in-memory element is {}",
+          context.getKey(),
+          context.getState(),
           context.getValue(),
           context.getElementInstance());
     }
@@ -58,11 +60,11 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
    */
   protected abstract boolean handleState(BpmnStepContext<T> context);
 
-  protected boolean shouldHandleState(final BpmnStepContext<T> context) {
+  protected boolean shouldHandleState(BpmnStepContext<T> context) {
     return true;
   }
 
-  protected boolean isRootScope(final BpmnStepContext<T> context) {
+  protected boolean isRootScope(BpmnStepContext<T> context) {
     return context.getValue().getFlowScopeKey() == -1;
   }
 
@@ -72,16 +74,16 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
    * ELEMENT_ACTIVATING and ELEMENT_ACTIVATED in the same step will transition the element to
    * ACTIVATED, and we shouldn't process the ELEMENT_ACTIVATING in that case).
    */
-  protected boolean isStateSameAsElementState(final BpmnStepContext<T> context) {
+  protected boolean isStateSameAsElementState(BpmnStepContext<T> context) {
     return context.getElementInstance() != null
         && context.getState() == context.getElementInstance().getState();
   }
 
-  protected boolean isElementActive(final ElementInstance instance) {
+  protected boolean isElementActive(ElementInstance instance) {
     return instance != null && instance.isActive();
   }
 
-  protected boolean isElementTerminating(final ElementInstance instance) {
+  protected boolean isElementTerminating(ElementInstance instance) {
     return instance != null && instance.isTerminating();
   }
 
@@ -89,8 +91,8 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
     return nextState != null;
   }
 
-  protected void transitionToNext(final BpmnStepContext<T> context) {
-    transitionTo(context, nextState);
+  protected void transitionToNext(BpmnStepContext<T> context) {
+    this.transitionTo(context, nextState);
   }
 
   protected void transitionTo(

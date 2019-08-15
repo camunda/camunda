@@ -62,11 +62,12 @@ public class StreamProcessorRule implements TestRule {
     this(PARTITION_ID);
   }
 
-  public StreamProcessorRule(int partitionId) {
+  public StreamProcessorRule(final int partitionId) {
     this(partitionId, 1, DefaultZeebeDbFactory.DEFAULT_DB_FACTORY);
   }
 
-  public StreamProcessorRule(int startPartitionId, int partitionCount, ZeebeDbFactory dbFactory) {
+  public StreamProcessorRule(
+      final int startPartitionId, final int partitionCount, final ZeebeDbFactory dbFactory) {
     this.startPartitionId = startPartitionId;
     this.partitionCount = partitionCount;
 
@@ -83,15 +84,15 @@ public class StreamProcessorRule implements TestRule {
   }
 
   @Override
-  public Statement apply(Statement base, Description description) {
+  public Statement apply(final Statement base, final Description description) {
     return chain.apply(base, description);
   }
 
-  public LogStream getLogStream(int partitionId) {
+  public LogStream getLogStream(final int partitionId) {
     return streams.getLogStream(getLogName(partitionId));
   }
 
-  public StreamProcessor startTypedStreamProcessor(StreamProcessorTestFactory factory) {
+  public StreamProcessor startTypedStreamProcessor(final StreamProcessorTestFactory factory) {
     return startTypedStreamProcessor(
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
@@ -99,12 +100,12 @@ public class StreamProcessorRule implements TestRule {
         });
   }
 
-  public StreamProcessor startTypedStreamProcessor(TypedRecordProcessorFactory factory) {
+  public StreamProcessor startTypedStreamProcessor(final TypedRecordProcessorFactory factory) {
     return startTypedStreamProcessor(startPartitionId, factory);
   }
 
   public StreamProcessor startTypedStreamProcessor(
-      int partitionId, TypedRecordProcessorFactory factory) {
+      final int partitionId, final TypedRecordProcessorFactory factory) {
     return streams.startStreamProcessor(
         getLogName(partitionId),
         zeebeDbFactory,
@@ -114,11 +115,15 @@ public class StreamProcessorRule implements TestRule {
         }));
   }
 
-  public void closeStreamProcessor(int partitionId) throws Exception {
-    streams.closeProcessor(getLogName(partitionId));
+  public void closeStreamProcessor(final int partitionId) {
+    try {
+      streams.closeProcessor(getLogName(partitionId));
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  public void closeStreamProcessor() throws Exception {
+  public void closeStreamProcessor() {
     closeStreamProcessor(startPartitionId);
   }
 
@@ -126,7 +131,7 @@ public class StreamProcessorRule implements TestRule {
     return streams.getLogStream(getLogName(startPartitionId)).getCommitPosition();
   }
 
-  public StateSnapshotController getStateSnapshotController(int partitionId) {
+  public StateSnapshotController getStateSnapshotController(final int partitionId) {
     return streams.getStateSnapshotController(getLogName(partitionId));
   }
 
@@ -158,12 +163,12 @@ public class StreamProcessorRule implements TestRule {
     }
   }
 
-  public long writeWorkflowInstanceEvent(WorkflowInstanceIntent intent) {
+  public long writeWorkflowInstanceEvent(final WorkflowInstanceIntent intent) {
     return writeWorkflowInstanceEvent(intent, 1);
   }
 
   public long writeWorkflowInstanceEventWithSource(
-      WorkflowInstanceIntent intent, int instanceKey, long sourceEventPosition) {
+      final WorkflowInstanceIntent intent, final int instanceKey, final long sourceEventPosition) {
     return streams
         .newRecord(getLogName(startPartitionId))
         .event(workflowInstance(instanceKey))
@@ -173,7 +178,8 @@ public class StreamProcessorRule implements TestRule {
         .write();
   }
 
-  public long writeWorkflowInstanceEvent(WorkflowInstanceIntent intent, int instanceKey) {
+  public long writeWorkflowInstanceEvent(
+      final WorkflowInstanceIntent intent, final int instanceKey) {
     return streams
         .newRecord(getLogName(startPartitionId))
         .event(workflowInstance(instanceKey))
@@ -182,7 +188,7 @@ public class StreamProcessorRule implements TestRule {
         .write();
   }
 
-  public long writeEvent(long key, Intent intent, UnpackedObject value) {
+  public long writeEvent(final long key, final Intent intent, final UnpackedObject value) {
     return streams
         .newRecord(getLogName(startPartitionId))
         .recordType(RecordType.EVENT)
@@ -192,7 +198,7 @@ public class StreamProcessorRule implements TestRule {
         .write();
   }
 
-  public long writeEvent(Intent intent, UnpackedObject value) {
+  public long writeEvent(final Intent intent, final UnpackedObject value) {
     return streams
         .newRecord(getLogName(startPartitionId))
         .recordType(RecordType.EVENT)
@@ -201,11 +207,12 @@ public class StreamProcessorRule implements TestRule {
         .write();
   }
 
-  public long writeBatch(RecordToWrite... recordToWrites) {
+  public long writeBatch(final RecordToWrite... recordToWrites) {
     return streams.writeBatch(getLogName(startPartitionId), recordToWrites);
   }
 
-  public long writeCommandOnPartition(int partition, Intent intent, UnpackedObject value) {
+  public long writeCommandOnPartition(
+      final int partition, final Intent intent, final UnpackedObject value) {
     return streams
         .newRecord(getLogName(partition))
         .recordType(RecordType.COMMAND)
@@ -215,7 +222,7 @@ public class StreamProcessorRule implements TestRule {
   }
 
   public long writeCommandOnPartition(
-      int partition, long key, Intent intent, UnpackedObject value) {
+      final int partition, final long key, final Intent intent, final UnpackedObject value) {
     return streams
         .newRecord(getLogName(partition))
         .key(key)
@@ -225,7 +232,7 @@ public class StreamProcessorRule implements TestRule {
         .write();
   }
 
-  public long writeCommand(long key, Intent intent, UnpackedObject value) {
+  public long writeCommand(final long key, final Intent intent, final UnpackedObject value) {
     return streams
         .newRecord(getLogName(startPartitionId))
         .recordType(RecordType.COMMAND)
@@ -235,7 +242,7 @@ public class StreamProcessorRule implements TestRule {
         .write();
   }
 
-  public long writeCommand(Intent intent, UnpackedObject value) {
+  public long writeCommand(final Intent intent, final UnpackedObject value) {
     return streams
         .newRecord(getLogName(startPartitionId))
         .recordType(RecordType.COMMAND)
@@ -244,7 +251,7 @@ public class StreamProcessorRule implements TestRule {
         .write();
   }
 
-  private static String getLogName(int partitionId) {
+  private static String getLogName(final int partitionId) {
     return STREAM_NAME + partitionId;
   }
 
@@ -258,7 +265,7 @@ public class StreamProcessorRule implements TestRule {
     private final int startPartitionId;
     private final int partitionCount;
 
-    SetupRule(int startPartitionId, int partitionCount) {
+    SetupRule(final int startPartitionId, final int partitionCount) {
       this.startPartitionId = startPartitionId;
       this.partitionCount = partitionCount;
     }
@@ -279,7 +286,7 @@ public class StreamProcessorRule implements TestRule {
   private class FailedTestRecordPrinter extends TestWatcher {
 
     @Override
-    protected void failed(Throwable e, Description description) {
+    protected void failed(final Throwable e, final Description description) {
       LOG.info("Test failed, following records where exported:");
       printAllRecords();
     }

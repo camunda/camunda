@@ -38,6 +38,9 @@
     <option name="JD_KEEP_EMPTY_EXCEPTION" value="false" />
     <option name="JD_KEEP_EMPTY_RETURN" value="false" />
   </JavaCodeStyleSettings>
+  <MarkdownNavigatorCodeStyleSettings>
+    <option name="RIGHT_MARGIN" value="72" />
+  </MarkdownNavigatorCodeStyleSettings>
   <XML>
     <option name="XML_ALIGN_ATTRIBUTES" value="false" />
     <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true" />
@@ -120,54 +123,6 @@
             <match>
               <AND>
                 <FIELD>true</FIELD>
-                <FINAL>true</FINAL>
-                <PUBLIC>true</PUBLIC>
-                <STATIC>true</STATIC>
-              </AND>
-            </match>
-          </rule>
-        </section>
-        <section>
-          <rule>
-            <match>
-              <AND>
-                <FIELD>true</FIELD>
-                <FINAL>true</FINAL>
-                <PROTECTED>true</PROTECTED>
-                <STATIC>true</STATIC>
-              </AND>
-            </match>
-          </rule>
-        </section>
-        <section>
-          <rule>
-            <match>
-              <AND>
-                <FIELD>true</FIELD>
-                <FINAL>true</FINAL>
-                <PACKAGE_PRIVATE>true</PACKAGE_PRIVATE>
-                <STATIC>true</STATIC>
-              </AND>
-            </match>
-          </rule>
-        </section>
-        <section>
-          <rule>
-            <match>
-              <AND>
-                <FIELD>true</FIELD>
-                <FINAL>true</FINAL>
-                <PRIVATE>true</PRIVATE>
-                <STATIC>true</STATIC>
-              </AND>
-            </match>
-          </rule>
-        </section>
-        <section>
-          <rule>
-            <match>
-              <AND>
-                <FIELD>true</FIELD>
                 <PUBLIC>true</PUBLIC>
                 <STATIC>true</STATIC>
               </AND>
@@ -213,50 +168,6 @@
               <AND>
                 <INITIALIZER_BLOCK>true</INITIALIZER_BLOCK>
                 <STATIC>true</STATIC>
-              </AND>
-            </match>
-          </rule>
-        </section>
-        <section>
-          <rule>
-            <match>
-              <AND>
-                <FIELD>true</FIELD>
-                <FINAL>true</FINAL>
-                <PUBLIC>true</PUBLIC>
-              </AND>
-            </match>
-          </rule>
-        </section>
-        <section>
-          <rule>
-            <match>
-              <AND>
-                <FIELD>true</FIELD>
-                <FINAL>true</FINAL>
-                <PROTECTED>true</PROTECTED>
-              </AND>
-            </match>
-          </rule>
-        </section>
-        <section>
-          <rule>
-            <match>
-              <AND>
-                <FIELD>true</FIELD>
-                <FINAL>true</FINAL>
-                <PACKAGE_PRIVATE>true</PACKAGE_PRIVATE>
-              </AND>
-            </match>
-          </rule>
-        </section>
-        <section>
-          <rule>
-            <match>
-              <AND>
-                <FIELD>true</FIELD>
-                <FINAL>true</FINAL>
-                <PRIVATE>true</PRIVATE>
               </AND>
             </match>
           </rule>

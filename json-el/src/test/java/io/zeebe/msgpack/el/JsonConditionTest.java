@@ -19,8 +19,8 @@ import org.junit.rules.ExpectedException;
 
 public class JsonConditionTest {
 
-  private final JsonConditionInterpreter interpreter = new JsonConditionInterpreter();
   @Rule public ExpectedException thrown = ExpectedException.none();
+  private final JsonConditionInterpreter interpreter = new JsonConditionInterpreter();
 
   @Test
   public void shouldEvaluateConditionWithLiteral() {

@@ -20,17 +20,17 @@ import java.util.List;
 public class ContainerElementTerminatingHandler<T extends ExecutableFlowElementContainer>
     extends ActivityElementTerminatingHandler<T> {
 
-  public ContainerElementTerminatingHandler(CatchEventSubscriber catchEventSubscriber) {
-    this(null, catchEventSubscriber);
+  public ContainerElementTerminatingHandler(final CatchEventSubscriber catchEventSubscriber) {
+    this(WorkflowInstanceIntent.ELEMENT_TERMINATED, catchEventSubscriber);
   }
 
   public ContainerElementTerminatingHandler(
-      WorkflowInstanceIntent nextState, CatchEventSubscriber catchEventSubscriber) {
+      final WorkflowInstanceIntent nextState, final CatchEventSubscriber catchEventSubscriber) {
     super(nextState, catchEventSubscriber);
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     if (!super.handleState(context)) {
       return false;
     }
@@ -42,17 +42,24 @@ public class ContainerElementTerminatingHandler<T extends ExecutableFlowElementC
     final List<ElementInstance> children =
         elementInstanceState.getChildren(elementInstance.getKey());
 
-    if (children.isEmpty()) {
-      transitionTo(context, WorkflowInstanceIntent.ELEMENT_TERMINATED);
-    } else {
-      for (final ElementInstance child : children) {
-        if (child.canTerminate()) {
-          output.appendFollowUpEvent(
-              child.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, child.getValue());
-        }
+    int terminatedChildInstances = 0;
+
+    for (final ElementInstance child : children) {
+      if (child.canTerminate()) {
+        output.appendFollowUpEvent(
+            child.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, child.getValue());
+
+        terminatedChildInstances += 1;
       }
     }
 
-    return true;
+    // child tokens are not consumed when the flow scope is terminating
+    final int zombies =
+        context.getElementInstance().getNumberOfActiveTokens() - terminatedChildInstances;
+    for (int z = 0; z < zombies; z++) {
+      context.getElementInstanceState().consumeToken(context.getKey());
+    }
+
+    return terminatedChildInstances == 0;
   }
 }

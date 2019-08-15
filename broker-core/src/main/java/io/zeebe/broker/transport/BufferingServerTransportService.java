@@ -29,9 +29,8 @@ public class BufferingServerTransportService implements Service<BufferingServerT
 
   protected final String readableName;
   protected final InetSocketAddress bindAddress;
-  private final ByteValue sendBufferSize;
-
   protected BufferingServerTransport serverTransport;
+  private final ByteValue sendBufferSize;
 
   public BufferingServerTransportService(
       String readableName, InetSocketAddress bindAddress, ByteValue sendBufferSize) {

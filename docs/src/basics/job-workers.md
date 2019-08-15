@@ -39,6 +39,17 @@ On requesting jobs, the following properties can be set:
 * **MaxJobsToActivate**: The maximum number of jobs which should be activated by this request.
 * **FetchVariables**: A list of variables names which are required. If the list is empty, all variables of the workflow instance are requested.
 
+#### Long polling
+
+When there are no jobs available, a request for jobs can be immediately completed.
+This leads to the situation that the workers repeatedly send the requests until a job is available. 
+This is expensive in terms of resource usage because both the client and the server is performing a lot of unproductive work. 
+To better utilize the resources, Zeebe employs *long polling* for job requests.
+With *long polling*, a request is queued  when there are no jobs available.
+The request is completed when at least one job is available or after a specified duration.
+A worker can also specify a **RequestTimeout** which is the duration for which the request is queued.
+The default timeout is 10 seconds.
+
 ## Job Queueing
 
 Zeebe decouples creation of jobs from performing the work on them. It is always possible to create jobs at the highest possible rate, regardless of whether or not there's a worker available to work on them. This is possible because Zeebe queues jobs until workers request them. If no job worker is currently requesting jobs, jobs remain queued. Because workers request jobs from the broker, the workers have control over the rate at which they take on new jobs.

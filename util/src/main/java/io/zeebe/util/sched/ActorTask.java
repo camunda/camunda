@@ -39,21 +39,15 @@ public class ActorTask {
 
   public final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
   final Actor actor;
+  ActorJob currentJob;
+  boolean shouldYield;
+  volatile TaskSchedulingState schedulingState = null;
+  volatile long stateCount = 0;
   private final CompletableActorFuture<Void> jobClosingTaskFuture = new CompletableActorFuture<>();
   private final CompletableActorFuture<Void> startingFuture = new CompletableActorFuture<>();
   private final CompletableActorFuture<Void> jobStartingTaskFuture = new CompletableActorFuture<>();
-  volatile TaskSchedulingState schedulingState = null;
-  volatile long stateCount = 0;
-  ActorJob currentJob;
-  boolean shouldYield;
   private ActorExecutor actorExecutor;
   private ActorThreadGroup actorThreadGroup;
-  /**
-   * jobs that are submitted to this task externally. A job is submitted "internally" if it is
-   * submitted from a job within the same actor while the task is in RUNNING state.
-   */
-  private volatile Queue<ActorJob> submittedJobs = new ClosedQueue();
-
   private Deque<ActorJob> fastLaneJobs = new ClosedQueue();
   private ActorLifecyclePhase lifecyclePhase = ActorLifecyclePhase.CLOSED;
   private ActorSubscription[] subscriptions = new ActorSubscription[0];
@@ -61,6 +55,11 @@ public class ActorTask {
    * the priority class of the task. Only set if the task is scheduled as non-blocking, CPU-bound
    */
   private int priority = ActorPriority.REGULAR.getPriorityClass();
+  /**
+   * jobs that are submitted to this task externally. A job is submitted "internally" if it is
+   * submitted from a job within the same actor while the task is in RUNNING state.
+   */
+  private volatile Queue<ActorJob> submittedJobs = new ClosedQueue();
 
   public ActorTask(Actor actor) {
     this.actor = actor;

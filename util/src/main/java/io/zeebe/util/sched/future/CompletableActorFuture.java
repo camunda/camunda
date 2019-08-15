@@ -40,12 +40,12 @@ public class CompletableActorFuture<V> implements ActorFuture<V> {
     }
   }
 
-  private final ManyToOneConcurrentLinkedQueue<ActorTask> blockedTasks =
-      new ManyToOneConcurrentLinkedQueue<>();
-  private final ReentrantLock completionLock = new ReentrantLock();
   protected V value;
   protected String failure;
   protected Throwable failureCause;
+  private final ManyToOneConcurrentLinkedQueue<ActorTask> blockedTasks =
+      new ManyToOneConcurrentLinkedQueue<>();
+  private final ReentrantLock completionLock = new ReentrantLock();
   private volatile int state = CLOSED;
   private Condition isDoneCondition;
 

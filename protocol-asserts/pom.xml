@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Protocol AssertJ Assertions</name>
@@ -12,6 +14,10 @@
     <relativePath>../parent</relativePath>
   </parent>
 
+  <properties>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>
@@ -21,6 +27,11 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
     </dependency>
   </dependencies>
 
@@ -101,6 +112,18 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <failOnWarning>true</failOnWarning>
+          <ignoredDependencies>
+            <!-- Used by generated Assert code -->
+            <ignoredDependency>javax.annotation:javax.annotation-api</ignoredDependency>
+          </ignoredDependencies>
+        </configuration>
       </plugin>
     </plugins>
   </build>

@@ -30,11 +30,11 @@ public class RecordMetadata implements BufferWriter, BufferReader {
 
   protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-  private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
   protected RecordMetadataEncoder encoder = new RecordMetadataEncoder();
   protected RecordMetadataDecoder decoder = new RecordMetadataDecoder();
   protected long requestId;
   protected ValueType valueType = ValueType.NULL_VAL;
+  private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
   private RecordType recordType = RecordType.NULL_VAL;
   private short intentValue = Intent.NULL_VAL;
   private Intent intent = null;

@@ -212,18 +212,6 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
             transaction.delete(columnFamilyHandle, context.getKeyBufferArray(), key.getLength()));
   }
 
-  boolean existsPrefix(
-      long columnFamilyHandle,
-      DbContext context,
-      DbKey keyPrefix,
-      DbKey keyInstance,
-      DbValue valueInstance) {
-    context.wrapValueView(new byte[0]);
-    whileEqualPrefix(
-        columnFamilyHandle, context, keyPrefix, keyInstance, valueInstance, (key, value) -> false);
-    return !context.isValueViewEmpty();
-  }
-
   ////////////////////////////////////////////////////////////////////
   //////////////////////////// ITERATION /////////////////////////////
   ////////////////////////////////////////////////////////////////////

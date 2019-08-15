@@ -291,13 +291,12 @@ public class JobState {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
 
     jobTypeKey.wrapBuffer(type);
-    final boolean firstActivatableJob = !activatableColumnFamily.existsPrefix(jobTypeKey);
 
     jobKey.wrapLong(key);
     activatableColumnFamily.put(typeJobKey, DbNil.INSTANCE);
-    if (firstActivatableJob) {
-      notifyJobAvailable(type);
-    }
+
+    // always notify
+    notifyJobAvailable(type);
   }
 
   private void makeJobNotActivatable(DirectBuffer type) {

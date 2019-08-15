@@ -43,6 +43,7 @@ public class ActivateJobsStub
       new UnsafeBuffer(MsgPackConverter.convertToMsgPack(CUSTOM_HEADERS));
   public static final DirectBuffer VARIABLES_MSGPACK =
       new UnsafeBuffer(MsgPackConverter.convertToMsgPack(VARIABLES));
+  private Map<String, Integer> availableJobs = new HashMap<>();
 
   public long getJobBatchKey() {
     return JOB_BATCH_KEY;
@@ -87,8 +88,6 @@ public class ActivateJobsStub
   public long getElementInstanceKey() {
     return ELEMENT_INSTANCE_KEY;
   }
-
-  private Map<String, Integer> availableJobs = new HashMap<>();
 
   @Override
   public BrokerResponse<JobBatchRecord> handle(BrokerActivateJobsRequest request) throws Exception {
