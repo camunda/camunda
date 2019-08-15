@@ -14,11 +14,13 @@ import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.MultiInstanceLoopCharacteristicsBuilder;
+import io.zeebe.model.bpmn.builder.zeebe.MessageBuilder;
 import io.zeebe.model.bpmn.instance.ServiceTask;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -29,6 +31,7 @@ import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -43,15 +46,21 @@ import org.junit.runners.Parameterized;
 public class MultiInstanceActivityTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
   private static final String PROCESS_ID = "process";
   private static final String ELEMENT_ID = "task";
   private static final String JOB_TYPE = "test";
+
   private static final String INPUT_COLLECTION_VARIABLE = "items";
   private static final String INPUT_ELEMENT_VARIABLE = "item";
   private static final List<Integer> INPUT_COLLECTION = List.of(10, 20, 30);
   private static final String OUTPUT_COLLECTION_VARIABLE = "results";
   private static final String OUTPUT_ELEMENT_VARIABLE = "result";
   private static final List<Integer> OUTPUT_COLLECTION = List.of(11, 22, 33);
+
+  private static final String MESSAGE_CORRELATION_KEY_VARIABLE = "correlationKey";
+  private static final String MESSAGE_CORRELATION_KEY = "key-123";
+  private static final String MESSAGE_NAME = "message";
 
   private static final Consumer<MultiInstanceLoopCharacteristicsBuilder> INPUT_VARIABLE_BUILDER =
       multiInstance(
@@ -60,6 +69,9 @@ public class MultiInstanceActivityTest {
                   .zeebeInputElement(INPUT_ELEMENT_VARIABLE)
                   .zeebeOutputCollection(OUTPUT_COLLECTION_VARIABLE)
                   .zeebeOutputElement(OUTPUT_ELEMENT_VARIABLE));
+
+  private static final Consumer<MessageBuilder> MESSAGE_BUILDER =
+      m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(MESSAGE_CORRELATION_KEY_VARIABLE);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -802,6 +814,185 @@ public class MultiInstanceActivityTest {
             tuple(workflowInstanceKey, "1"),
             tuple(workflowInstanceKey, "2"),
             tuple(workflowInstanceKey, "3"));
+  }
+
+  @Test
+  public void shouldTriggerInterruptingBoundaryEvent() {
+    // given
+    final ServiceTask task = workflow(miBuilder).getModelElementById(ELEMENT_ID);
+    final var workflow =
+        task.builder()
+            .boundaryEvent("boundary-event", b -> b.cancelActivity(true).message(MESSAGE_BUILDER))
+            .sequenceFlowId("to-canceled")
+            .endEvent("canceled")
+            .done();
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(
+                Map.of(
+                    INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION,
+                    MESSAGE_CORRELATION_KEY_VARIABLE, MESSAGE_CORRELATION_KEY))
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size() - 1);
+
+    // when
+    ENGINE
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey(MESSAGE_CORRELATION_KEY)
+        .withTimeToLive(0)
+        .publish();
+
+    // then
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limit(4))
+        .extracting(Record::getIntent)
+        .containsExactly(
+            MessageSubscriptionIntent.OPEN,
+            MessageSubscriptionIntent.OPENED,
+            MessageSubscriptionIntent.CORRELATE,
+            MessageSubscriptionIntent.CORRELATED);
+
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(
+            r ->
+                tuple(
+                    r.getValue().getElementId(), r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(
+                ELEMENT_ID,
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(
+                ELEMENT_ID,
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(
+                ELEMENT_ID,
+                BpmnElementType.SERVICE_TASK,
+                WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(
+                ELEMENT_ID,
+                BpmnElementType.SERVICE_TASK,
+                WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                ELEMENT_ID,
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                "to-canceled",
+                BpmnElementType.SEQUENCE_FLOW,
+                WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("canceled", BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+
+    assertThat(
+            RecordingExporter.records()
+                .limitToWorkflowInstance(workflowInstanceKey)
+                .variableRecords()
+                .withScopeKey(workflowInstanceKey))
+        .extracting(r -> r.getValue().getName())
+        .doesNotContain(OUTPUT_COLLECTION_VARIABLE);
+  }
+
+  @Test
+  public void shouldTriggerNonInterruptingBoundaryEvent() {
+    // given
+    final ServiceTask task = workflow(miBuilder).getModelElementById(ELEMENT_ID);
+    final var workflow =
+        task.builder()
+            .boundaryEvent("boundary-event", b -> b.cancelActivity(false).message(MESSAGE_BUILDER))
+            .sequenceFlowId("to-notified")
+            .endEvent("notified")
+            .done();
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(
+                Map.of(
+                    INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION,
+                    MESSAGE_CORRELATION_KEY_VARIABLE, MESSAGE_CORRELATION_KEY))
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size() - 1);
+
+    // when
+    ENGINE
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey(MESSAGE_CORRELATION_KEY)
+        .withTimeToLive(0)
+        .publish();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limit(r -> r.getValue().getBpmnElementType() == BpmnElementType.END_EVENT))
+        .extracting(
+            r ->
+                tuple(
+                    r.getValue().getElementId(), r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(
+                ELEMENT_ID,
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(
+                "to-notified",
+                BpmnElementType.SEQUENCE_FLOW,
+                WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(
+                "notified", BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING));
+
+    // and
+    completeJobs(workflowInstanceKey, 1);
+
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limit(6))
+        .extracting(Record::getIntent)
+        .containsExactly(
+            MessageSubscriptionIntent.OPEN,
+            MessageSubscriptionIntent.OPENED,
+            MessageSubscriptionIntent.CORRELATE,
+            MessageSubscriptionIntent.CORRELATED,
+            MessageSubscriptionIntent.CLOSE,
+            MessageSubscriptionIntent.CLOSED);
+
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(
+            r ->
+                tuple(
+                    r.getValue().getElementId(), r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple("notified", BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                ELEMENT_ID, BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                ELEMENT_ID,
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   private void completeJobs(final long workflowInstanceKey, final int count) {

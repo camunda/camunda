@@ -11,19 +11,17 @@ import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.BpmnStepHandler;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
-import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.function.Function;
 
 public class MultiInstanceBodyEventOccurredHandler extends AbstractMultiInstanceBodyHandler {
 
-  private final CatchEventSubscriber catchEventSubscriber;
+  private final BpmnStepHandler eventHandler;
 
   public MultiInstanceBodyEventOccurredHandler(
-      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup,
-      final CatchEventSubscriber catchEventSubscriber) {
-    super(WorkflowInstanceIntent.ELEMENT_COMPLETED, innerHandlerLookup);
-    this.catchEventSubscriber = catchEventSubscriber;
+      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup) {
+    super(null, innerHandlerLookup);
+
+    eventHandler = innerHandlerLookup.apply(BpmnStep.ACTIVITY_EVENT_OCCURRED);
   }
 
   @Override
@@ -34,7 +32,7 @@ public class MultiInstanceBodyEventOccurredHandler extends AbstractMultiInstance
   @Override
   protected boolean handleMultiInstanceBody(
       final BpmnStepContext<ExecutableMultiInstanceBody> context) {
-    // TODO (saig0) - #2855: handle occurred boundary events
+    eventHandler.handle(context);
     return true;
   }
 }
