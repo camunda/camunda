@@ -17,6 +17,14 @@
     "notConnected": "is not connected",
     "rightsReserved": "All Rights Reserved"
   },
+  "license": {
+    "licensedFor": "Licensed for",
+    "validUntil": "Valid until",
+    "redirectMessage": "You will be redirected to login page shortly. <a href=\"./\">Click here to go to login page immediately</a>",
+    "licenseKey": "License Key",
+    "enterLicense": "Please enter license key",
+    "submit": "Submit"
+  },
   "home": {
     "search": "Filter for name...",
     "createBtn": {

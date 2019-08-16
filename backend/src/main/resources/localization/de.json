@@ -17,6 +17,14 @@
     "notConnected": "ist nicht verbunden ",
     "rightsReserved": "Alle Rechte vorbehalten"
   },
+  "license": {
+    "licensedFor": "Lizenziert für ",
+    "validUntil": "Gültig bis",
+    "redirectMessage": "Sie werden in Kürze zur Anmeldeseite weitergeleitet. <a href=\"./\"> Klicken Sie hier, um sofort zur Anmeldeseite zu gelangen </a> ",
+    "licenseKey": "Lizenzschlüssel",
+    "enterLicense": "Bitte geben Sie den Lizenzschlüssel ein ",
+    "submit": "Einreichen"
+  },
   "home": {
     "search": "Nach Namen filtern ...",
     "createBtn": {
