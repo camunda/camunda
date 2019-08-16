@@ -58,3 +58,24 @@ services:
     volumes:
       - ./config/zeebe.cfg.toml:/usr/local/zeebe/conf/zeebe.cfg.toml
 
+  generator:
+    container_name: generator
+    environment:
+      - SPRING_CONFIG_LOCATION=file:/application.properties
+    image: menski/zeebe-test-data-generator:latest
+    ports:
+      - 9090:9090
+    restart: always
+    volumes:
+      - ./config/generator.properties:/application.properties
+  generator:
+    container_name: generator
+    environment:
+      - SPRING_CONFIG_LOCATION=file:/application.properties
+    image: menski/zeebe-test-data-generator:latest
+    ports:
+      - 9090:9090
+    restart: always
+    volumes:
+      - ./config/generator.properties:/application.properties
+
