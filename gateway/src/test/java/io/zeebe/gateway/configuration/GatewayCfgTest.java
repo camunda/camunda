@@ -15,6 +15,7 @@ import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEW
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CONTACT_POINT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_HOST;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MANAGEMENT_THREADS;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MAX_MESSAGE_SIZE;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MONITORING_ENABLED;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MONITORING_HOST;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MONITORING_PORT;
@@ -22,7 +23,6 @@ import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEW
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_PRIVATE_KEY_PATH;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_REQUEST_TIMEOUT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_SECURITY_ENABLED;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_TRANSPORT_BUFFER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -49,7 +49,7 @@ public class GatewayCfgTest {
     CUSTOM_CFG
         .getCluster()
         .setContactPoint("foobar:1234")
-        .setTransportBuffer("4K")
+        .setMaxMessageSize("4K")
         .setRequestTimeout("123h")
         .setClusterName("testCluster")
         .setMemberId("testMember")
@@ -93,7 +93,7 @@ public class GatewayCfgTest {
     setEnv(ENV_GATEWAY_HOST, "zeebe");
     setEnv(ENV_GATEWAY_PORT, "5432");
     setEnv(ENV_GATEWAY_CONTACT_POINT, "broker:432");
-    setEnv(ENV_GATEWAY_TRANSPORT_BUFFER, "12G");
+    setEnv(ENV_GATEWAY_MAX_MESSAGE_SIZE, "1G");
     setEnv(ENV_GATEWAY_MANAGEMENT_THREADS, "32");
     setEnv(ENV_GATEWAY_REQUEST_TIMEOUT, "43m");
     setEnv(ENV_GATEWAY_CLUSTER_NAME, "envCluster");
@@ -122,7 +122,7 @@ public class GatewayCfgTest {
     expected
         .getCluster()
         .setContactPoint("broker:432")
-        .setTransportBuffer("12G")
+        .setMaxMessageSize("1G")
         .setRequestTimeout("43m")
         .setClusterName("envCluster")
         .setMemberId("envMember")
@@ -134,9 +134,9 @@ public class GatewayCfgTest {
         .getSecurity()
         .setEnabled(true)
         .setPrivateKeyPath(
-            this.getClass().getClassLoader().getResource("security/test-server.key.pem").getPath())
+            getClass().getClassLoader().getResource("security/test-server.key.pem").getPath())
         .setCertificateChainPath(
-            this.getClass().getClassLoader().getResource("security/test-chain.cert.pem").getPath());
+            getClass().getClassLoader().getResource("security/test-chain.cert.pem").getPath());
 
     // when
     final GatewayCfg gatewayCfg = readCustomConfig();
@@ -145,7 +145,7 @@ public class GatewayCfgTest {
     assertThat(gatewayCfg).isEqualTo(expected);
   }
 
-  private void setEnv(String key, String value) {
+  private void setEnv(final String key, final String value) {
     environment.put(key, value);
   }
 
@@ -161,7 +161,7 @@ public class GatewayCfgTest {
     return readConfig(CUSTOM_CFG_FILENAME);
   }
 
-  private GatewayCfg readConfig(String filename) {
+  private GatewayCfg readConfig(final String filename) {
     try (InputStream inputStream = GatewayCfgTest.class.getResourceAsStream(filename)) {
       if (inputStream != null) {
         final GatewayCfg gatewayCfg = TomlConfigurationReader.read(inputStream, GatewayCfg.class);
@@ -170,7 +170,7 @@ public class GatewayCfgTest {
       } else {
         throw new AssertionError("Unable to find configuration file: " + filename);
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new AssertionError("Failed to read configuration from file: " + filename, e);
     }
   }

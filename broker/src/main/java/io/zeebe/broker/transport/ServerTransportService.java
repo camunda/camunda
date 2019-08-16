@@ -26,40 +26,52 @@ import org.slf4j.Logger;
 public class ServerTransportService implements Service<ServerTransport> {
   public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
-  protected final Injector<ServerRequestHandler> requestHandlerInjector = new Injector<>();
-  protected final Injector<ServerMessageHandler> messageHandlerInjector = new Injector<>();
+  // max message size * factor = transport buffer size
+  // - note that this factor is randomly chosen, feel free to change it
+  private static final int TRANSPORT_BUFFER_FACTOR = 16;
 
-  protected final String readableName;
-  protected final InetSocketAddress bindAddress;
-  protected ServerTransport serverTransport;
-  private final ByteValue sendBufferSize;
+  private final Injector<ServerRequestHandler> requestHandlerInjector = new Injector<>();
+  private final Injector<ServerMessageHandler> messageHandlerInjector = new Injector<>();
+
+  private final String readableName;
+  private final InetSocketAddress bindAddress;
+
+  private final ByteValue maxMessageSize;
+
+  private ServerTransport serverTransport;
 
   public ServerTransportService(
-      String readableName, InetSocketAddress bindAddress, ByteValue sendBufferSize) {
+      final String readableName,
+      final InetSocketAddress bindAddress,
+      final ByteValue maxMessageSize) {
     this.readableName = readableName;
     this.bindAddress = bindAddress;
-    this.sendBufferSize = sendBufferSize;
+    this.maxMessageSize = maxMessageSize;
   }
 
   @Override
-  public void start(ServiceStartContext serviceContext) {
+  public void start(final ServiceStartContext serviceContext) {
     final ActorScheduler scheduler = serviceContext.getScheduler();
     final ServerRequestHandler requestHandler = requestHandlerInjector.getValue();
     final ServerMessageHandler messageHandler = messageHandlerInjector.getValue();
+
+    final ByteValue transportBufferSize =
+        ByteValue.ofBytes(maxMessageSize.toBytes() * TRANSPORT_BUFFER_FACTOR);
 
     serverTransport =
         Transports.newServerTransport()
             .name(readableName)
             .bindAddress(bindAddress)
             .scheduler(scheduler)
-            .messageMemoryPool(new NonBlockingMemoryPool(sendBufferSize))
+            .messageMemoryPool(new NonBlockingMemoryPool(transportBufferSize))
+            .messageMaxLength(maxMessageSize)
             .build(messageHandler, requestHandler);
 
     LOG.info("Bound {} to {}", readableName, bindAddress);
   }
 
   @Override
-  public void stop(ServiceStopContext serviceStopContext) {
+  public void stop(final ServiceStopContext serviceStopContext) {
     serviceStopContext.async(serverTransport.closeAsync());
   }
 

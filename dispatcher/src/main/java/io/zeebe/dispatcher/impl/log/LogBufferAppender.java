@@ -22,14 +22,17 @@ import static org.agrona.UnsafeAccess.UNSAFE;
 
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.ClaimedFragmentBatch;
+import io.zeebe.dispatcher.Loggers;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
 
 public class LogBufferAppender {
   public static final int RESULT_PADDING_AT_END_OF_PARTITION = -2;
   public static final int RESULT_END_OF_PARTITION = -1;
 
-  @SuppressWarnings("restriction")
+  private static final Logger LOG = Loggers.DISPATCHER_LOGGER;
+
   public int appendFrame(
       final LogBufferPartition partition,
       final int activePartitionId,
@@ -59,20 +62,19 @@ public class LogBufferAppender {
       // commit the message
       buffer.putIntOrdered(lengthOffset(frameOffset), framedLength);
     } else {
-      newTail = onEndOfPartition(partition, frameOffset);
+      newTail = onEndOfPartition(partition, frameOffset, activePartitionId);
     }
 
     return newTail;
   }
 
-  @SuppressWarnings("restriction")
   public int claim(
       final LogBufferPartition partition,
       final int activePartitionId,
       final ClaimedFragment claim,
       final int length,
       final int streamId,
-      Runnable onComplete) {
+      final Runnable onComplete) {
     final int partitionSize = partition.getPartitionSize();
     final int framedMessageLength = framedLength(length);
     final int alignedFrameLength = alignedLength(framedMessageLength);
@@ -94,7 +96,7 @@ public class LogBufferAppender {
       claim.wrap(buffer, frameOffset, framedMessageLength, onComplete);
       // Do not commit the message
     } else {
-      newTail = onEndOfPartition(partition, frameOffset);
+      newTail = onEndOfPartition(partition, frameOffset, activePartitionId);
     }
 
     return newTail;
@@ -123,20 +125,25 @@ public class LogBufferAppender {
       final UnsafeBuffer buffer = partition.getDataBuffer();
       // all fragment data are written using the claimed batch
       batch.wrap(buffer, activePartitionId, frameOffset, alignedFrameLength, onComplete);
+
     } else {
-      newTail = onEndOfPartition(partition, frameOffset);
+      newTail = onEndOfPartition(partition, frameOffset, activePartitionId);
     }
 
     return newTail;
   }
 
-  @SuppressWarnings("restriction")
-  protected int onEndOfPartition(final LogBufferPartition partition, final int partitionOffset) {
+  protected int onEndOfPartition(
+      final LogBufferPartition partition, final int partitionOffset, final int activePartitionId) {
     int newTail = RESULT_END_OF_PARTITION;
 
     final int padLength = partition.getPartitionSize() - partitionOffset;
 
     if (padLength >= HEADER_LENGTH) {
+      LOG.trace(
+          "The claimed size doesn't fit into the partition {}, fill the rest with padding",
+          activePartitionId);
+
       // this message tripped the end of the partition, fill buffer with padding
       final UnsafeBuffer buffer = partition.getDataBuffer();
       buffer.putIntOrdered(lengthOffset(partitionOffset), -padLength);
@@ -145,6 +152,9 @@ public class LogBufferAppender {
       buffer.putIntOrdered(lengthOffset(partitionOffset), padLength);
 
       newTail = RESULT_PADDING_AT_END_OF_PARTITION;
+
+    } else {
+      LOG.trace("The claimed size doesn't fit into the partition {}", activePartitionId);
     }
 
     return newTail;

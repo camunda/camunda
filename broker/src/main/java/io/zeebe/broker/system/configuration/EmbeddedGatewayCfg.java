@@ -17,7 +17,8 @@ public class EmbeddedGatewayCfg extends GatewayCfg implements ConfigurationEntry
   private boolean enable = true;
 
   @Override
-  public void init(BrokerCfg globalConfig, String brokerBase, Environment environment) {
+  public void init(
+      final BrokerCfg globalConfig, final String brokerBase, final Environment environment) {
     environment.getBool(ENV_EMBED_GATEWAY).ifPresent(this::setEnable);
 
     // configure gateway based on broker network settings
@@ -35,13 +36,15 @@ public class EmbeddedGatewayCfg extends GatewayCfg implements ConfigurationEntry
 
     // configure embedded gateway based on broker config
     getNetwork().setPort(getNetwork().getPort() + (networkCfg.getPortOffset() * 10));
+
+    getCluster().setMaxMessageSize(networkCfg.getMaxMessageSize().toString());
   }
 
   public boolean isEnable() {
     return enable;
   }
 
-  public EmbeddedGatewayCfg setEnable(boolean enable) {
+  public EmbeddedGatewayCfg setEnable(final boolean enable) {
     this.enable = enable;
     return this;
   }

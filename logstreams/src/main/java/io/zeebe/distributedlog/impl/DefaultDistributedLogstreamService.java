@@ -152,7 +152,8 @@ public class DefaultDistributedLogstreamService
 
     return LogStreams.createFsLogStream(partitionId)
         .logDirectory(logDirectory.getAbsolutePath())
-        .logSegmentSize((int) config.getLogSegmentSize())
+        .logSegmentSize(config.getLogSegmentSize())
+        .maxFragmentSize(config.getMaxFragmentSize())
         .logName(logServiceName)
         .serviceContainer(serviceContainer)
         .build()

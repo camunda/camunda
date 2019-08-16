@@ -13,6 +13,7 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.util.StringUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
@@ -43,12 +44,12 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
     this.sourcePosition = sourcePosition;
     this.timestamp = timestamp;
 
-    this.intent = metadata.getIntent();
-    this.recordType = metadata.getRecordType();
+    intent = metadata.getIntent();
+    recordType = metadata.getRecordType();
     this.partitionId = partitionId;
-    this.rejectionType = metadata.getRejectionType();
-    this.rejectionReason = metadata.getRejectionReason();
-    this.valueType = metadata.getValueType();
+    rejectionType = metadata.getRejectionType();
+    rejectionReason = metadata.getRejectionReason();
+    valueType = metadata.getValueType();
   }
 
   private CopiedRecord(CopiedRecord<T> copiedRecord) {
@@ -74,12 +75,12 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
     sourcePosition = copiedRecord.sourcePosition;
     timestamp = copiedRecord.timestamp;
 
-    this.intent = copiedRecord.intent;
-    this.recordType = copiedRecord.recordType;
-    this.partitionId = copiedRecord.partitionId;
-    this.rejectionType = copiedRecord.rejectionType;
-    this.rejectionReason = copiedRecord.rejectionReason;
-    this.valueType = copiedRecord.valueType;
+    intent = copiedRecord.intent;
+    recordType = copiedRecord.recordType;
+    partitionId = copiedRecord.partitionId;
+    rejectionType = copiedRecord.rejectionType;
+    rejectionReason = copiedRecord.rejectionReason;
+    valueType = copiedRecord.valueType;
   }
 
   @Override
@@ -149,6 +150,6 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
 
   @Override
   public String toString() {
-    return toJson();
+    return StringUtil.limitString(toJson(), 1024);
   }
 }

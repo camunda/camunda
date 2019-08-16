@@ -109,7 +109,7 @@ public class RecordMetadata implements BufferWriter, BufferReader {
     if (rejectionReason.capacity() > 0) {
       encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
     } else {
-      buffer.putShort(offset, (short) 0);
+      buffer.putInt(offset, 0);
     }
   }
 

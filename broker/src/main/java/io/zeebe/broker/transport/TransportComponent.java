@@ -14,7 +14,6 @@ import static io.zeebe.broker.transport.TransportServiceNames.COMMAND_API_SERVER
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.NetworkCfg;
-import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.transport.commandapi.CommandApiMessageHandlerService;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
@@ -41,7 +40,7 @@ public class TransportComponent implements Component {
             context,
             serviceContainer,
             COMMAND_API_SERVER_NAME,
-            networkCfg.getCommandApi(),
+            networkCfg,
             COMMAND_API_MESSAGE_HANDLER,
             COMMAND_API_MESSAGE_HANDLER);
 
@@ -60,18 +59,18 @@ public class TransportComponent implements Component {
       final SystemContext systemContext,
       final ServiceContainer serviceContainer,
       final String name,
-      final SocketBindingCfg socketBindingCfg,
+      final NetworkCfg networkCfg,
       final ServiceName<? extends ServerRequestHandler> requestHandlerService,
       final ServiceName<? extends ServerMessageHandler> messageHandlerService) {
 
-    final SocketAddress bindAddr = socketBindingCfg.toSocketAddress();
+    final SocketAddress bindAddr = networkCfg.getCommandApi().toSocketAddress();
 
     return createServerTransport(
         systemContext,
         serviceContainer,
         name,
         bindAddr.toInetSocketAddress(),
-        new ByteValue(socketBindingCfg.getSendBufferSize()),
+        networkCfg.getMaxMessageSize(),
         requestHandlerService,
         messageHandlerService);
   }
@@ -81,11 +80,11 @@ public class TransportComponent implements Component {
       final ServiceContainer serviceContainer,
       final String name,
       final InetSocketAddress bindAddress,
-      final ByteValue sendBufferSize,
+      final ByteValue maxMessageSize,
       final ServiceName<? extends ServerRequestHandler> requestHandlerDependency,
       final ServiceName<? extends ServerMessageHandler> messageHandlerDependency) {
     final ServerTransportService service =
-        new ServerTransportService(name, bindAddress, sendBufferSize);
+        new ServerTransportService(name, bindAddress, maxMessageSize);
 
     systemContext.addResourceReleasingDelegate(service.getReleasingResourcesDelegate());
 

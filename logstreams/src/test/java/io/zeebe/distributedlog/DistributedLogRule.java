@@ -65,28 +65,28 @@ public class DistributedLogRule extends ExternalResource {
   private ActorFuture<Void> configFuture;
 
   public DistributedLogRule(
-      ServiceContainerRule serviceContainerRule,
+      final ServiceContainerRule serviceContainerRule,
       final int nodeId,
-      int numPartitions,
-      int replicationFactor,
-      List<String> members,
-      List<Node> otherNodes) {
-    this.actorSchedulerRule = serviceContainerRule.getActorSchedulerRule();
+      final int numPartitions,
+      final int replicationFactor,
+      final List<String> members,
+      final List<Node> otherNodes) {
+    actorSchedulerRule = serviceContainerRule.getActorSchedulerRule();
     this.serviceContainerRule = serviceContainerRule;
     this.nodeId = nodeId;
     this.numPartitions = numPartitions;
     this.replicationFactor = replicationFactor;
-    this.socketAddress = SocketUtil.getNextAddress();
+    socketAddress = SocketUtil.getNextAddress();
     this.members = members;
     this.otherNodes = otherNodes;
     try {
       rootDirectory = Files.createTempDirectory("dl-test-" + nodeId + "-");
-    } catch (Exception ignored) {
+    } catch (final Exception ignored) {
       // ignored
     }
     config =
         new StorageConfigurationManager(
-            Collections.singletonList(rootDirectory.toAbsolutePath().toString()), "512M");
+            Collections.singletonList(rootDirectory.toAbsolutePath().toString()), "512M", "4M");
   }
 
   public Node getNode() {
@@ -111,7 +111,7 @@ public class DistributedLogRule extends ExternalResource {
     stopNode();
     try {
       FileUtil.deleteFolder(rootDirectory.toAbsolutePath().toString());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       e.printStackTrace();
     }
   }
@@ -123,7 +123,7 @@ public class DistributedLogRule extends ExternalResource {
                 (r, t) -> {
                   try {
                     createPartitions();
-                  } catch (IOException e) {
+                  } catch (final IOException e) {
                     e.printStackTrace();
                   }
                 });
@@ -204,30 +204,31 @@ public class DistributedLogRule extends ExternalResource {
     return atomix.start();
   }
 
-  public void becomeLeader(int partitionId) {
+  public void becomeLeader(final int partitionId) {
     partitions.get(partitionId).becomeLeader();
   }
 
-  public void becomeFollower(int partitionId) {
+  public void becomeFollower(final int partitionId) {
     partitions.get(partitionId).becomeFollower();
   }
 
-  public long writeEvent(int partitionId, final String message) {
+  public long writeEvent(final int partitionId, final String message) {
     return partitions.get(partitionId).writeEvent(message);
   }
 
   protected void waitUntilNodesJoined()
       throws ExecutionException, InterruptedException, TimeoutException {
-    LOG.info("Waiting for node {} start", this.nodeId);
+    LOG.info("Waiting for node {} start", nodeId);
     nodeStarted.get(50, TimeUnit.SECONDS);
-    LOG.info("Node {} started", this.nodeId);
+    LOG.info("Node {} started", nodeId);
   }
 
-  public boolean eventAppended(int partitionId, String message, long writePosition) {
+  public boolean eventAppended(
+      final int partitionId, final String message, final long writePosition) {
     return partitions.get(partitionId).eventAppended(message, writePosition);
   }
 
-  public int getCommittedEventsCount(int partitionId) {
+  public int getCommittedEventsCount(final int partitionId) {
     return partitions.get(partitionId).getCommittedEventsCount();
   }
 }

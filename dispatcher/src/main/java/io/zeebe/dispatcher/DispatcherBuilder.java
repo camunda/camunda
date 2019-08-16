@@ -23,41 +23,37 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.agrona.BitUtil;
-import org.agrona.concurrent.AtomicBuffer;
-import org.agrona.concurrent.status.CountersManager;
 
 /** Builder for a {@link Dispatcher} */
 public class DispatcherBuilder {
-  protected boolean allocateInMemory = true;
 
-  protected ByteBuffer rawBuffer;
+  private static final int DEFAULT_BUFFER_SIZE = (int) ByteValue.ofMegabytes(1).toBytes();
 
-  protected String bufferFileName;
+  private boolean allocateInMemory = true;
 
-  protected int bufferSize = 1024 * 1024 * 1024; // default buffer size is 1 Gig
+  private ByteBuffer rawBuffer;
 
-  protected int frameMaxLength;
+  private String bufferFileName;
 
-  protected CountersManager countersManager;
+  private int bufferSize = -1;
+  private int maxFragmentLength = -1;
 
-  protected String dispatcherName;
+  private String dispatcherName;
 
-  protected AtomicBuffer countersBuffer;
+  private ActorScheduler actorScheduler;
 
-  protected ActorScheduler actorScheduler;
+  private String[] subscriptionNames;
 
-  protected String[] subscriptionNames;
+  private int mode = Dispatcher.MODE_PUB_SUB;
 
-  protected int mode = Dispatcher.MODE_PUB_SUB;
-
-  protected int initialPartitionId = 0;
+  private int initialPartitionId = 0;
 
   public DispatcherBuilder(final String dispatcherName) {
     this.dispatcherName = dispatcherName;
   }
 
   public DispatcherBuilder name(final String name) {
-    this.dispatcherName = name;
+    dispatcherName = name;
     return this;
   }
 
@@ -69,7 +65,7 @@ public class DispatcherBuilder {
    * @see DispatcherBuilder#allocateInFile(String)
    */
   public DispatcherBuilder allocateInBuffer(final ByteBuffer rawBuffer) {
-    this.allocateInMemory = false;
+    allocateInMemory = false;
     this.rawBuffer = rawBuffer;
     return this;
   }
@@ -79,8 +75,8 @@ public class DispatcherBuilder {
    * exist. The dispatcher will place it's buffer at the beginning of the file.
    */
   public DispatcherBuilder allocateInFile(final String fileName) {
-    this.allocateInMemory = false;
-    this.bufferFileName = fileName;
+    allocateInMemory = false;
+    bufferFileName = fileName;
     return this;
   }
 
@@ -89,22 +85,22 @@ public class DispatcherBuilder {
    * Additional space will be allocated for the meta-data sections
    */
   public DispatcherBuilder bufferSize(final ByteValue byteValue) {
-    this.bufferSize = (int) byteValue.toBytes();
+    bufferSize = (int) byteValue.toBytes();
     return this;
   }
 
-  public DispatcherBuilder actorScheduler(ActorScheduler actorScheduler) {
+  public DispatcherBuilder actorScheduler(final ActorScheduler actorScheduler) {
     this.actorScheduler = actorScheduler;
     return this;
   }
 
   /** The max length of the data section of a frame */
-  public DispatcherBuilder frameMaxLength(final int frameMaxLength) {
-    this.frameMaxLength = frameMaxLength;
+  public DispatcherBuilder maxFragmentLength(final ByteValue maxFragmentLength) {
+    this.maxFragmentLength = (int) maxFragmentLength.toBytes();
     return this;
   }
 
-  public DispatcherBuilder initialPartitionId(int initialPartitionId) {
+  public DispatcherBuilder initialPartitionId(final int initialPartitionId) {
     EnsureUtil.ensureGreaterThanOrEqual("initial partition id", initialPartitionId, 0);
 
     this.initialPartitionId = initialPartitionId;
@@ -126,7 +122,7 @@ public class DispatcherBuilder {
    * @see #modePipeline()
    */
   public DispatcherBuilder modePubSub() {
-    this.mode = Dispatcher.MODE_PUB_SUB;
+    mode = Dispatcher.MODE_PUB_SUB;
     return this;
   }
 
@@ -138,16 +134,22 @@ public class DispatcherBuilder {
    * @see #modePubSub()
    */
   public DispatcherBuilder modePipeline() {
-    this.mode = Dispatcher.MODE_PIPELINE;
+    mode = Dispatcher.MODE_PIPELINE;
     return this;
   }
 
   public Dispatcher build() {
     Objects.requireNonNull(actorScheduler, "Actor scheduler cannot be null.");
 
+    bufferSize = calculateBufferSize();
     final int partitionSize = BitUtil.align(bufferSize / PARTITION_COUNT, 8);
 
-    final AllocatedBuffer allocatedBuffer = initAllocatedBuffer(partitionSize);
+    // assuming that we have only a single writer, we set the frame length to max value to use as
+    // much of the memory as possible
+    final int logWindowLength = partitionSize / 2;
+    maxFragmentLength = logWindowLength;
+
+    final AllocatedBuffer allocatedBuffer = initAllocatedBuffer(bufferSize);
 
     // allocate the counters
 
@@ -167,15 +169,14 @@ public class DispatcherBuilder {
     final LogBuffer logBuffer = new LogBuffer(allocatedBuffer, partitionSize, initialPartitionId);
     final LogBufferAppender logAppender = new LogBufferAppender();
 
-    final int bufferWindowLength = partitionSize / 4;
-
     final Dispatcher dispatcher =
         new Dispatcher(
             logBuffer,
             logAppender,
             publisherLimit,
             publisherPosition,
-            bufferWindowLength,
+            logWindowLength,
+            maxFragmentLength,
             subscriptionNames,
             mode,
             dispatcherName);
@@ -188,7 +189,29 @@ public class DispatcherBuilder {
     return dispatcher;
   }
 
-  protected AllocatedBuffer initAllocatedBuffer(final int partitionSize) {
+  private int calculateBufferSize() {
+    if (maxFragmentLength > 0) {
+      final int partitionSize = BitUtil.align(maxFragmentLength * 2, 8);
+      final int requiredBufferSize = partitionSize * PARTITION_COUNT;
+
+      if (bufferSize > 0 && bufferSize < requiredBufferSize) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Expected the buffer size to be greater than %d, but was %d. The max fragment length is set to %d.",
+                requiredBufferSize, bufferSize, maxFragmentLength));
+      }
+
+      return Math.max(bufferSize, requiredBufferSize);
+
+    } else if (bufferSize <= 0) {
+      return DEFAULT_BUFFER_SIZE;
+
+    } else {
+      return bufferSize;
+    }
+  }
+
+  private AllocatedBuffer initAllocatedBuffer(final int partitionSize) {
     final int requiredCapacity = requiredCapacity(partitionSize);
 
     AllocatedBuffer allocatedBuffer = null;

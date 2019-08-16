@@ -8,30 +8,24 @@
 package io.zeebe.broker.system.configuration;
 
 import io.zeebe.transport.SocketAddress;
+import java.util.Optional;
 
 public class SocketBindingCfg {
-  public static final String DEFAULT_SEND_BUFFER_SIZE = "16M";
 
   protected String host;
   protected int port;
-  protected String sendBufferSize;
 
-  private SocketBindingCfg(int defaultPort) {
-    this.port = defaultPort;
+  private SocketBindingCfg(final int defaultPort) {
+    port = defaultPort;
   }
 
   public SocketAddress toSocketAddress() {
     return new SocketAddress(host, port);
   }
 
-  public void applyDefaults(NetworkCfg networkCfg) {
-    if (host == null) {
-      host = networkCfg.getHost();
-    }
+  public void applyDefaults(final NetworkCfg networkCfg) {
 
-    if (sendBufferSize == null) {
-      sendBufferSize = DEFAULT_SEND_BUFFER_SIZE;
-    }
+    host = Optional.ofNullable(host).orElse(networkCfg.getHost());
 
     port += networkCfg.getPortOffset() * 10;
   }
@@ -40,7 +34,7 @@ public class SocketBindingCfg {
     return host;
   }
 
-  public void setHost(String host) {
+  public void setHost(final String host) {
     this.host = host;
   }
 
@@ -48,30 +42,13 @@ public class SocketBindingCfg {
     return port;
   }
 
-  public void setPort(int port) {
+  public void setPort(final int port) {
     this.port = port;
-  }
-
-  public String getSendBufferSize() {
-    return sendBufferSize;
-  }
-
-  public void setSendBufferSize(String sendBufferSize) {
-    this.sendBufferSize = sendBufferSize;
   }
 
   @Override
   public String toString() {
-    return "SocketBindingCfg{"
-        + "host='"
-        + host
-        + '\''
-        + ", port="
-        + port
-        + ", sendBufferSize='"
-        + sendBufferSize
-        + '\''
-        + '}';
+    return "SocketBindingCfg{" + "host='" + host + '\'' + ", port=" + port + '}';
   }
 
   public static class CommandApiCfg extends SocketBindingCfg {

@@ -51,8 +51,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   private final ActorConditions onCommitPositionUpdatedConditions;
   private final String logName;
   private final int partitionId;
-  private final ByteValue writeBufferSize;
-  private final int maxAppendBlockSize;
+  private final ByteValue maxFrameLength;
   private final Position commitPosition;
 
   private BufferedLogStreamReader reader;
@@ -64,13 +63,12 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   private LogStorageAppender appender;
 
   public LogStreamService(final LogStreamBuilder builder) {
-    this.logName = builder.getLogName();
-    this.partitionId = builder.getPartitionId();
-    this.serviceContainer = builder.getServiceContainer();
-    this.onCommitPositionUpdatedConditions = builder.getOnCommitPositionUpdatedConditions();
-    this.commitPosition = builder.getCommitPosition();
-    this.writeBufferSize = ByteValue.ofBytes(builder.getWriteBufferSize());
-    this.maxAppendBlockSize = builder.getMaxAppendBlockSize();
+    logName = builder.getLogName();
+    partitionId = builder.getPartitionId();
+    serviceContainer = builder.getServiceContainer();
+    onCommitPositionUpdatedConditions = builder.getOnCommitPositionUpdatedConditions();
+    commitPosition = builder.getCommitPosition();
+    maxFrameLength = ByteValue.ofBytes(builder.getMaxFragmentSize());
   }
 
   @Override
@@ -189,7 +187,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
         logStorageAppenderServiceName(logName);
 
     final DispatcherBuilder writeBufferBuilder =
-        Dispatchers.create(logWriteBufferServiceName.getName()).bufferSize(writeBufferSize);
+        Dispatchers.create(logWriteBufferServiceName.getName()).maxFragmentLength(maxFrameLength);
 
     final CompositeServiceBuilder installOperation =
         serviceContext.createComposite(logStorageAppenderRootService);
@@ -211,7 +209,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
         .install();
 
     final LogStorageAppenderService appenderService =
-        new LogStorageAppenderService(maxAppendBlockSize);
+        new LogStorageAppenderService((int) maxFrameLength.toBytes());
     appenderFuture =
         installOperation
             .createService(logStorageAppenderServiceName, appenderService)

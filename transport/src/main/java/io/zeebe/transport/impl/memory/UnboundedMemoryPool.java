@@ -19,14 +19,19 @@ public class UnboundedMemoryPool implements TransportMemoryPool {
   private static final Logger LOG = Loggers.TRANSPORT_MEMORY_LOGGER;
 
   @Override
-  public ByteBuffer allocate(int requestedCapacity) {
+  public ByteBuffer allocate(final int requestedCapacity) {
     LOG.trace("Attocated {} bytes", requestedCapacity);
     return ByteBuffer.allocate(requestedCapacity);
   }
 
   @Override
-  public void reclaim(ByteBuffer buffer) {
+  public void reclaim(final ByteBuffer buffer) {
     final int bytesReclaimed = buffer.capacity();
     LOG.trace("Reclaiming {} bytes", bytesReclaimed);
+  }
+
+  @Override
+  public long capacity() {
+    return Long.MAX_VALUE;
   }
 }

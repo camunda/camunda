@@ -9,10 +9,12 @@
       <type name="schemaId" primitiveType="uint16"/>
       <type name="version" primitiveType="uint16"/>
     </composite>
+
     <composite name="varDataEncoding">
-      <type name="length" primitiveType="uint16"/>
+      <type name="length" primitiveType="uint32" maxValue="2147483647"/>
       <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8"/>
     </composite>
+
     <composite name="groupSizeEncoding" description="Repeating group dimensions">
       <type name="blockLength" primitiveType="uint16"/>
       <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup"/>

@@ -47,6 +47,7 @@ public class RestoreTest {
             cfg.getData().setMaxSnapshots(1);
             cfg.getData().setSnapshotPeriod(SNAPSHOT_PERIOD_MIN + "m");
             cfg.getData().setRaftSegmentSize(ByteValue.ofBytes(ATOMIX_SEGMENT_SIZE).toString());
+            cfg.getNetwork().setMaxMessageSize(ByteValue.ofBytes(ATOMIX_SEGMENT_SIZE).toString());
           });
   private final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
@@ -113,14 +114,14 @@ public class RestoreTest {
         .forEach(i -> clientRule.createWorkflowInstance(workflowKey, LARGE_PAYLOAD));
   }
 
-  private static String getRandomBase64Bytes(long size) {
+  private static String getRandomBase64Bytes(final long size) {
     final byte[] bytes = new byte[(int) size];
     ThreadLocalRandom.current().nextBytes(bytes);
 
     return Base64.getEncoder().encodeToString(bytes);
   }
 
-  private void waitUntilAtomixBackup(int nodeId) {
+  private void waitUntilAtomixBackup(final int nodeId) {
     final Atomix atomix = clusteringRule.getService(ATOMIX_SERVICE, nodeId);
     atomix.getPartitionService().getPartitionGroup("raft-atomix").getPartitions().stream()
         .map(RaftPartition.class::cast)
@@ -133,17 +134,17 @@ public class RestoreTest {
                 .anyMatch(f -> f.getName().contains(".snapshot")));
   }
 
-  private File getAtomixBackupDirectory(Broker broker) {
+  private File getAtomixBackupDirectory(final Broker broker) {
     final String dataDir = broker.getConfig().getData().getDirectories().get(0);
     return new File(dataDir, "raft-atomix/partitions/1/");
   }
 
-  private File getSnapshotsDirectory(Broker broker) {
+  private File getSnapshotsDirectory(final Broker broker) {
     final String dataDir = broker.getConfig().getData().getDirectories().get(0);
     return new File(dataDir, "partition-1/state/snapshots");
   }
 
-  private void waitForValidSnapshotAtBroker(Broker broker) {
+  private void waitForValidSnapshotAtBroker(final Broker broker) {
     final File snapshotsDir = getSnapshotsDirectory(broker);
 
     waitUntil(

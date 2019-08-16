@@ -25,6 +25,7 @@ import io.zeebe.util.sched.future.ActorFuture;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class DeploymentDistributeProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
@@ -72,7 +73,11 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
 
     final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
     deploymentEvent.write(buffer, 0);
-    distributeDeployment(key, position, buffer);
+
+    final DirectBuffer bufferView = new UnsafeBuffer();
+    bufferView.wrap(buffer, 0, deploymentEvent.getLength());
+
+    distributeDeployment(key, position, bufferView);
   }
 
   private void distributeDeployment(

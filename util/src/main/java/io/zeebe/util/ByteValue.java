@@ -21,12 +21,12 @@ public class ByteValue {
   private final ByteUnit unit;
   private final long value;
 
-  public ByteValue(long value, ByteUnit unit) {
+  public ByteValue(final long value, final ByteUnit unit) {
     this.value = value;
     this.unit = unit;
   }
 
-  public ByteValue(String humanReadable) {
+  public ByteValue(final String humanReadable) {
     final Matcher matcher = PATTERN.matcher(humanReadable);
 
     if (!matcher.matches()) {
@@ -45,19 +45,19 @@ public class ByteValue {
     unit = ByteUnit.getUnit(unitString);
   }
 
-  public static ByteValue ofBytes(long value) {
-    return new ByteValue(value, ByteUnit.BYTES);
+  public static ByteValue ofBytes(final long value) {
+    return new ByteValue(value, BYTES).normalize();
   }
 
-  public static ByteValue ofKilobytes(long value) {
+  public static ByteValue ofKilobytes(final long value) {
     return new ByteValue(value, ByteUnit.KILOBYTES);
   }
 
-  public static ByteValue ofMegabytes(long value) {
+  public static ByteValue ofMegabytes(final long value) {
     return new ByteValue(value, ByteUnit.MEGABYTES);
   }
 
-  public static ByteValue ofGigabytes(long value) {
+  public static ByteValue ofGigabytes(final long value) {
     return new ByteValue(value, ByteUnit.GIGABYTES);
   }
 
@@ -67,6 +67,18 @@ public class ByteValue {
 
   public long getValue() {
     return value;
+  }
+
+  public ByteValue normalize() {
+    if (toGigabytesValue().getValue() > 0) {
+      return toGigabytesValue();
+    } else if (toMegabytesValue().getValue() > 0) {
+      return toMegabytesValue();
+    } else if (toKilobytesValue().getValue() > 0) {
+      return toKilobytesValue();
+    } else {
+      return this;
+    }
   }
 
   public long toBytes() {
@@ -99,7 +111,7 @@ public class ByteValue {
   }
 
   @Override
-  public boolean equals(Object obj) {
+  public boolean equals(final Object obj) {
     if (this == obj) {
       return true;
     }

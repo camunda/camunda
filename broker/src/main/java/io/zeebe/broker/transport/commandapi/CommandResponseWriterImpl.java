@@ -28,15 +28,14 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class CommandResponseWriterImpl implements CommandResponseWriter, BufferWriter {
-  protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-  protected final ExecuteCommandResponseEncoder responseEncoder =
-      new ExecuteCommandResponseEncoder();
-  protected final ServerResponse response = new ServerResponse();
-  protected final ServerOutput output;
-  protected int partitionId = partitionIdNullValue();
-  protected long key = keyNullValue();
-  protected BufferWriter valueWriter;
+  private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+  private final ExecuteCommandResponseEncoder responseEncoder = new ExecuteCommandResponseEncoder();
+  private final ServerResponse response = new ServerResponse();
+  private final ServerOutput output;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
+  private int partitionId = partitionIdNullValue();
+  private long key = keyNullValue();
+  private BufferWriter valueWriter;
   private RecordType recordType = RecordType.NULL_VAL;
   private ValueType valueType = ValueType.NULL_VAL;
   private short intent = Intent.NULL_VAL;
@@ -46,47 +45,56 @@ public class CommandResponseWriterImpl implements CommandResponseWriter, BufferW
     this.output = output;
   }
 
+  @Override
   public CommandResponseWriterImpl partitionId(final int partitionId) {
     this.partitionId = partitionId;
     return this;
   }
 
+  @Override
   public CommandResponseWriterImpl key(final long key) {
     this.key = key;
     return this;
   }
 
-  public CommandResponseWriterImpl intent(Intent intent) {
+  @Override
+  public CommandResponseWriterImpl intent(final Intent intent) {
     this.intent = intent.value();
     return this;
   }
 
-  public CommandResponseWriterImpl recordType(RecordType recordType) {
+  @Override
+  public CommandResponseWriterImpl recordType(final RecordType recordType) {
     this.recordType = recordType;
     return this;
   }
 
-  public CommandResponseWriterImpl valueType(ValueType valueType) {
+  @Override
+  public CommandResponseWriterImpl valueType(final ValueType valueType) {
     this.valueType = valueType;
     return this;
   }
 
-  public CommandResponseWriterImpl rejectionType(RejectionType rejectionType) {
+  @Override
+  public CommandResponseWriterImpl rejectionType(final RejectionType rejectionType) {
     this.rejectionType = rejectionType;
     return this;
   }
 
-  public CommandResponseWriterImpl rejectionReason(DirectBuffer rejectionReason) {
+  @Override
+  public CommandResponseWriterImpl rejectionReason(final DirectBuffer rejectionReason) {
     this.rejectionReason.wrap(rejectionReason);
     return this;
   }
 
+  @Override
   public CommandResponseWriterImpl valueWriter(final BufferWriter writer) {
-    this.valueWriter = writer;
+    valueWriter = writer;
     return this;
   }
 
-  public boolean tryWriteResponse(int remoteStreamId, long requestId) {
+  @Override
+  public boolean tryWriteResponse(final int remoteStreamId, final long requestId) {
     Objects.requireNonNull(valueWriter);
 
     try {
@@ -133,7 +141,7 @@ public class CommandResponseWriterImpl implements CommandResponseWriter, BufferW
     offset = responseEncoder.limit();
 
     final int eventLength = valueWriter.getLength();
-    buffer.putShort(offset, (short) eventLength, Protocol.ENDIANNESS);
+    buffer.putInt(offset, eventLength, Protocol.ENDIANNESS);
 
     offset += valueHeaderLength();
     valueWriter.write(buffer, offset);
@@ -144,7 +152,7 @@ public class CommandResponseWriterImpl implements CommandResponseWriter, BufferW
     responseEncoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
   }
 
-  protected void reset() {
+  private void reset() {
     partitionId = partitionIdNullValue();
     key = keyNullValue();
     valueWriter = null;

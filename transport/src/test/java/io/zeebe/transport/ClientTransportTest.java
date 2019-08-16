@@ -100,7 +100,7 @@ public class ClientTransportTest {
   }
 
   protected ServerTransport buildServerTransport(
-      Function<ServerTransportBuilder, ServerTransport> builderConsumer) {
+      final Function<ServerTransportBuilder, ServerTransport> builderConsumer) {
     final Dispatcher serverSendBuffer =
         Dispatchers.create("serverSendBuffer")
             .bufferSize(BUFFER_SIZE)
@@ -296,7 +296,7 @@ public class ClientTransportTest {
   public void shouldPostponeMessagesOnReceiveBufferBackpressure() throws InterruptedException {
     // given
     final int maximumMessageLength =
-        clientReceiveBuffer.getMaxFrameLength()
+        clientReceiveBuffer.getMaxFragmentLength()
             - TransportHeaderDescriptor.HEADER_LENGTH
             - 1; // https://github.com/zeebe-io/zb-dispatcher/issues/21
 
@@ -561,12 +561,12 @@ public class ClientTransportTest {
         new EchoRequestResponseHandler() {
           @Override
           public boolean onRequest(
-              ServerOutput output,
-              RemoteAddress remoteAddress,
-              DirectBuffer buffer,
-              int offset,
-              int length,
-              long requestId) {
+              final ServerOutput output,
+              final RemoteAddress remoteAddress,
+              final DirectBuffer buffer,
+              final int offset,
+              final int length,
+              final long requestId) {
             capturedRequestId.set(requestId);
 
             return super.onRequest(output, remoteAddress, buffer, offset, length, requestId);
@@ -735,7 +735,7 @@ public class ClientTransportTest {
             isWaiting.compareAndSet(false, true);
             try {
               monitor.wait();
-            } catch (InterruptedException e) {
+            } catch (final InterruptedException e) {
               throw new RuntimeException(e);
             }
             return false;
@@ -781,7 +781,7 @@ public class ClientTransportTest {
     // when
     try {
       clientTransport.closeAsync().get(10, TimeUnit.SECONDS);
-    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
       fail("Could not close transport in time", e);
     }
   }
@@ -980,19 +980,19 @@ public class ClientTransportTest {
     int messagesSent;
     BufferWriter writer;
 
-    public SendMessagesHandler(int numMessagesToSend, DirectBuffer messageToSend) {
+    public SendMessagesHandler(final int numMessagesToSend, final DirectBuffer messageToSend) {
       this.numMessagesToSend = numMessagesToSend;
-      this.messagesSent = 0;
-      this.writer = writerFor(messageToSend);
+      messagesSent = 0;
+      writer = writerFor(messageToSend);
     }
 
     @Override
     public boolean onMessage(
-        ServerOutput output,
-        RemoteAddress remoteAddress,
-        DirectBuffer buffer,
-        int offset,
-        int length) {
+        final ServerOutput output,
+        final RemoteAddress remoteAddress,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length) {
 
       final int remoteStreamId = remoteAddress.getStreamId();
       for (int i = messagesSent; i < numMessagesToSend; i++) {

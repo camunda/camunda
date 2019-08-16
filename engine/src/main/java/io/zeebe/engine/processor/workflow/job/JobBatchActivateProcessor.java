@@ -37,13 +37,23 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
   private final JobState jobState;
   private final VariablesState variablesState;
   private final KeyGenerator keyGenerator;
+  private final long maxJobBatchLength;
+
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
 
   public JobBatchActivateProcessor(
-      JobState jobState, VariablesState variablesState, KeyGenerator keyGenerator) {
+      JobState jobState,
+      VariablesState variablesState,
+      KeyGenerator keyGenerator,
+      long maxRecordLength) {
+
     this.jobState = jobState;
     this.variablesState = variablesState;
     this.keyGenerator = keyGenerator;
+
+    // we can only add the half of the max record length to the job batch
+    // because the jobs itself are also written to the same batch
+    maxJobBatchLength = (maxRecordLength - Long.BYTES) / 2;
   }
 
   @Override
@@ -121,8 +131,8 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
           }
 
           if (remainingAmount >= 0
-              && value.getLength() + Long.BYTES + jobRecord.getLength()
-                  <= record.getMaxValueLength()) {
+              && (record.getLength() + jobRecord.getLength()) <= maxJobBatchLength) {
+
             remainingAmount = amount.decrementAndGet();
             jobKeyIterator.add().setValue(key);
             final JobRecord arrayValueJob = jobIterator.add();

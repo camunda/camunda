@@ -37,10 +37,11 @@ public class EngineProcessors {
       DeploymentResponder deploymentResponder,
       Consumer<String> onJobsAvailableCallback) {
 
+    final ZeebeState zeebeState = processingContext.getZeebeState();
     final TypedRecordProcessors typedRecordProcessors = TypedRecordProcessors.processors();
     final LogStream stream = processingContext.getLogStream();
     final int partitionId = stream.getPartitionId();
-    final ZeebeState zeebeState = processingContext.getZeebeState();
+    final int maxRecordSize = stream.getWriteBuffer().getMaxFragmentLength();
 
     addDistributeDeploymentProcessors(
         zeebeState, stream, typedRecordProcessors, deploymentDistributor);
@@ -56,7 +57,7 @@ public class EngineProcessors {
         addWorkflowProcessors(
             zeebeState, typedRecordProcessors, subscriptionCommandSender, catchEventBehavior);
     addIncidentProcessors(zeebeState, stepProcessor, typedRecordProcessors);
-    addJobProcessors(zeebeState, typedRecordProcessors, onJobsAvailableCallback);
+    addJobProcessors(zeebeState, typedRecordProcessors, onJobsAvailableCallback, maxRecordSize);
 
     return typedRecordProcessors;
   }
@@ -123,8 +124,10 @@ public class EngineProcessors {
   private static void addJobProcessors(
       ZeebeState zeebeState,
       TypedRecordProcessors typedRecordProcessors,
-      Consumer<String> onJobsAvailableCallback) {
-    JobEventProcessors.addJobProcessors(typedRecordProcessors, zeebeState, onJobsAvailableCallback);
+      Consumer<String> onJobsAvailableCallback,
+      int maxRecordSize) {
+    JobEventProcessors.addJobProcessors(
+        typedRecordProcessors, zeebeState, onJobsAvailableCallback, maxRecordSize);
   }
 
   private static void addMessageProcessors(
