@@ -68,7 +68,6 @@ export default class Dropdown extends React.Component {
 
     const bodyWidth = document.body.clientWidth;
     const overlay = this.menuContainer.current;
-    const overlayTop = overlay.getBoundingClientRect().top;
     const buttonPosition = activeButton.getBoundingClientRect();
     this.initilizeHeaderAndFooterRefs();
     const footerTop = this.footerRef.getBoundingClientRect().top;
@@ -88,7 +87,7 @@ export default class Dropdown extends React.Component {
         : 0;
 
       scrollable = true;
-      listStyles.height = footerTop - overlayTop - fixedListHeight - margin;
+      listStyles.height = footerTop - buttonPosition.bottom - fixedListHeight - margin;
 
       // check to flip menu vertically
       if (buttonPosition.bottom + oneItemHeight * 4 + fixedListHeight > footerTop) {
