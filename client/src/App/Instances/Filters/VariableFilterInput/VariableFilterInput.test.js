@@ -12,8 +12,9 @@ import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import VariableFilterInput from './VariableFilterInput';
 
 const onFilterChange = jest.fn();
+const onChange = jest.fn();
 
-const mockDefaultProps = {onFilterChange};
+const mockDefaultProps = {onFilterChange, onChange};
 
 const mountNode = mockCustomProps => {
   return mount(

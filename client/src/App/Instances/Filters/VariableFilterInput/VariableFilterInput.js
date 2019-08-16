@@ -4,48 +4,46 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useEffect} from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 
 import * as Styled from './styled';
 
 export default function VariableFilterInput({
   onFilterChange,
+  onChange,
   variable,
   ...props
 }) {
-  const [name, setName] = useState('');
-  const [value, setValue] = useState('');
-
-  useEffect(() => {
-    setName(variable.name);
-    setValue(variable.value);
-  }, [variable]);
-
   function handleBlur() {
-    if (!name || !value) {
+    if (!variable.name || !variable.value) {
       return onFilterChange({variable: null});
     }
 
-    onFilterChange({variable: {name, value}});
+    onFilterChange({variable});
+  }
+
+  function handleChange(event) {
+    const {name, value} = event.target;
+    onChange({...variable, [name]: value});
   }
 
   return (
     <Styled.VariableFilterInput {...props}>
       <Styled.TextInput
-        value={name}
+        value={variable.name}
         placeholder="Variable"
         name="name"
         data-test="nameInput"
-        onChange={e => setName(e.target.value)}
+        onChange={handleChange}
         onBlur={handleBlur}
       />
       <Styled.TextInput
-        value={value}
+        value={variable.value}
         placeholder="Value"
         name="value"
         data-test="valueInput"
-        onChange={e => setValue(e.target.value)}
+        onChange={handleChange}
         onBlur={handleBlur}
       />
     </Styled.VariableFilterInput>

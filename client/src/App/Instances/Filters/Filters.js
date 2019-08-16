@@ -187,6 +187,11 @@ export default class Filters extends React.Component {
     );
   };
 
+  handleVariableChange = status => {
+    console.log(status);
+    this.setFilterState({variable: status});
+  };
+
   onFilterReset = () => {
     this.setFilterState(
       {...DEFAULT_FILTER_CONTROLLED_VALUES, ...DEFAULT_FILTER},
@@ -322,7 +327,8 @@ export default class Filters extends React.Component {
                   <Styled.Field>
                     <Styled.VariableFilterInput
                       variable={this.state.filter.variable}
-                      onFilterChange={this.props.onFilterChange}
+                      onFilterChange={this.propagateFilter}
+                      onChange={this.handleVariableChange}
                     />
                   </Styled.Field>
                   <Styled.CheckboxGroup
