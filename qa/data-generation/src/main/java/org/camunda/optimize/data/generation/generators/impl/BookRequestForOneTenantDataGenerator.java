@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.data.generation.generators.impl;
 
+import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
 import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
@@ -12,16 +13,21 @@ import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient
 import java.util.HashMap;
 import java.util.Map;
 
-public class BookRequestDataGenerator extends DataGenerator {
+public class BookRequestForOneTenantDataGenerator extends DataGenerator {
 
-  private static final String DIAGRAM = "diagrams/book-request.bpmn";
+  private static final String DIAGRAM = "diagrams/book-request-1-tenant.bpmn";
 
-  public BookRequestDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+  public BookRequestForOneTenantDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {
     return readProcessDiagramAsInstance(DIAGRAM);
+  }
+
+  @Override
+  protected void generateTenants() {
+    this.tenants = Lists.newArrayList("library");
   }
 
   @Override

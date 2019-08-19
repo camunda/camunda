@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.data.generation.generators.impl;
 
+import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
@@ -14,12 +15,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class InvoiceDataGenerator extends DataGenerator {
+public class InvoiceDataFor2TenantsAndSharedDataGenerator extends DataGenerator {
 
-  private static final String DIAGRAM = "diagrams/invoice.bpmn";
-  private static final String DMN_DIAGRAM = "diagrams/invoiceBusinessDecisions.dmn";
+  private static final String DIAGRAM = "diagrams/invoice-2-tenants-and-shared.bpmn";
+  private static final String DMN_DIAGRAM = "diagrams/invoiceBusinessDecisions-2-tenants-and-shared.dmn";
 
-  public InvoiceDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+  public InvoiceDataFor2TenantsAndSharedDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);
   }
 
@@ -32,6 +33,11 @@ public class InvoiceDataGenerator extends DataGenerator {
     super.deployAdditionalDiagrams();
     DmnModelInstance dmnModelInstance = readDmnTableAsInstance(DMN_DIAGRAM);
     engineClient.deployDecisionAndGetId(dmnModelInstance, tenants);
+  }
+
+  @Override
+  protected void generateTenants() {
+    this.tenants = Lists.newArrayList(null, "sales", "engineering");
   }
 
   @Override
