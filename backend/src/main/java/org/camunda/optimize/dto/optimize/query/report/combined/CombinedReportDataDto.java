@@ -6,7 +6,9 @@
 package org.camunda.optimize.dto.optimize.query.report.combined;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.CombinedReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
@@ -18,6 +20,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class CombinedReportDataDto implements ReportDataDto {
 
   protected CombinedReportConfigurationDto configuration = new CombinedReportConfigurationDto();

@@ -11,5 +11,9 @@ public interface CollectionEntity {
 
   String getId();
 
+  String getCollectionId();
+
+  String getName();
+
   OffsetDateTime getLastModified();
 }

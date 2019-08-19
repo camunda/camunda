@@ -6,9 +6,12 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportType;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
@@ -18,10 +21,12 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 
 
 public class CollectionRestServiceIT {
@@ -120,6 +125,38 @@ public class CollectionRestServiceIT {
     // then 
     assertThat(collections.size(), is(0));
   }
+
+  @Test
+  public void getAllResolvedCollectionsWithEntities() {
+    //given
+    final String testCollectionId = addCollectionToOptimize("TestCollection");
+
+    final String testReport1 = createReportAndAddToCollection(testCollectionId, "TestReport1");
+    final String testReport2 = createReportAndAddToCollection(testCollectionId, "TestReport2");
+
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    List<ResolvedCollectionDefinitionDto> collections = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildGetAllCollectionsRequest()
+      .executeAndReturnList(ResolvedCollectionDefinitionDto.class, 200);
+
+    // then
+    assertThat(collections.size(), is(1));
+    final ResolvedCollectionDefinitionDto resolvedCollection = collections.get(0);
+    assertThat(resolvedCollection.getName(), is("TestCollection"));
+    assertThat(resolvedCollection.getData(), is(notNullValue()));
+    assertThat(resolvedCollection.getData().getEntities().size(), is(2));
+    final List<String> result = resolvedCollection.getData()
+      .getEntities()
+      .stream()
+      .map(CollectionEntity::getId)
+      .collect(Collectors.toList());
+
+    assertThat(result, containsInAnyOrder(testReport1, testReport2));
+  }
+
 
   @Test
   public void getCollectionWithoutAuthentication() {
@@ -283,7 +320,7 @@ public class CollectionRestServiceIT {
   }
 
 
-  private void addCollectionToOptimize(String name) {
+  private String addCollectionToOptimize(String name) {
     String id = addEmptyCollectionToOptimize();
 
     final PartialCollectionUpdateDto collection = new PartialCollectionUpdateDto();
@@ -293,6 +330,29 @@ public class CollectionRestServiceIT {
       .getRequestExecutor()
       .buildUpdatePartialCollectionRequest(id, collection)
       .execute();
+
+    return id;
+  }
+
+  private String createReportAndAddToCollection(String collectionId, String reportName) {
+
+    final String reportId = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
+
+    SingleProcessReportDefinitionDto newReport = new SingleProcessReportDefinitionDto();
+    newReport.setName(reportName);
+
+    final Response response = embeddedOptimizeRule.getRequestExecutor()
+      .buildUpdateSingleProcessReportRequest(reportId, newReport).execute();
+
+    elasticSearchRule.moveSingleReportToCollection(reportId, ReportType.PROCESS, collectionId);
+
+    assertThat(response.getStatus(), is(204));
+
+    return reportId;
   }
 
 

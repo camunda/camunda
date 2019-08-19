@@ -14,31 +14,28 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataD
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
-import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
-import org.camunda.optimize.service.relations.DashboardReferencingService;
-import org.camunda.optimize.service.relations.ReportReferencingService;
+import org.camunda.optimize.service.relations.CollectionRelationService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.core.MultivaluedMap;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Component
-public class CollectionService implements ReportReferencingService, DashboardReferencingService {
+public class CollectionService {
 
   private final CollectionWriter collectionWriter;
   private final CollectionReader collectionReader;
+  private final CollectionRelationService collectionRelationService;
+
 
   public IdDto createNewCollectionAndReturnId(String userId) {
     return collectionWriter.createNewCollectionAndReturnId(userId);
@@ -53,21 +50,12 @@ public class CollectionService implements ReportReferencingService, DashboardRef
     if (collectionUpdate.getData() != null) {
       final PartialCollectionDataDto collectionDataDto = new PartialCollectionDataDto();
       collectionDataDto.setConfiguration(collectionUpdate.getData().getConfiguration());
-      collectionDataDto.setEntities(collectionUpdate.getData().getEntities());
       updateDto.setData(collectionDataDto);
     }
 
     updateDto.setLastModifier(userId);
     updateDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     collectionWriter.updateCollection(updateDto, collectionId);
-  }
-
-  public void addEntityToCollection(String collectionId, String entityId, String userId) {
-    collectionWriter.addEntityToCollection(collectionId, entityId, userId);
-  }
-
-  public void removeEntityFromCollection(String collectionId, String entityId, String userId) {
-    collectionWriter.removeEntityFromCollection(collectionId, entityId, userId);
   }
 
   public List<ResolvedCollectionDefinitionDto> getAllResolvedCollections(MultivaluedMap<String, String> queryParameters) {
@@ -83,11 +71,23 @@ public class CollectionService implements ReportReferencingService, DashboardRef
     return collectionReader.getCollection(collectionId);
   }
 
-  public void deleteCollection(String collectionId) {
+  public void deleteCollection(String collectionId, boolean force) throws OptimizeConflictException {
+    if (!force) {
+      final Set<ConflictedItemDto> conflictedItems = getConflictedItemsForDelete(collectionId);
+
+      if (!conflictedItems.isEmpty()) {
+        throw new OptimizeConflictException(conflictedItems);
+      }
+    }
+
+    final SimpleCollectionDefinitionDto collectionDefinition = getCollectionDefinition(collectionId);
     collectionWriter.deleteCollection(collectionId);
+    collectionRelationService.handleDeleted(collectionDefinition);
   }
 
-  public CollectionRoleDto addRoleToCollection(final String collectionId, final CollectionRoleDto roleDto, final String userId)
+
+  public CollectionRoleDto addRoleToCollection(final String collectionId, final CollectionRoleDto roleDto,
+                                               final String userId)
     throws OptimizeConflictException {
     return collectionWriter.addRoleToCollection(collectionId, roleDto, userId);
   }
@@ -104,63 +104,16 @@ public class CollectionService implements ReportReferencingService, DashboardRef
     collectionWriter.removeRoleFromCollection(collectionId, roleEntryId, userId);
   }
 
-  @Override
-  public Set<ConflictedItemDto> getConflictedItemsForDashboardDelete(final DashboardDefinitionDto definition) {
-    return mapCollectionsToConflictingItems(findFirstCollectionsForEntity(definition.getId()));
+  public boolean existsCollection(String collectionId) {
+    return collectionReader.checkIfCollectionExists(collectionId);
   }
 
-  @Override
-  public void handleDashboardDeleted(final DashboardDefinitionDto definition) {
-    removeEntityFromAllCollections(definition.getId());
+
+  public ConflictResponseDto getDeleteConflictingItems(String collectionId) {
+    return new ConflictResponseDto(getConflictedItemsForDelete(collectionId));
   }
 
-  @Override
-  public Set<ConflictedItemDto> getConflictedItemsForDashboardUpdate(final DashboardDefinitionDto currentDefinition,
-                                                                     final DashboardDefinitionDto updateDefinition) {
-    //NOOP
-    return Collections.emptySet();
-  }
-
-  @Override
-  public void handleDashboardUpdated(final String id, final DashboardDefinitionDto updateDefinition) {
-    //NOOP
-  }
-
-  @Override
-  public Set<ConflictedItemDto> getConflictedItemsForReportDelete(final ReportDefinitionDto reportDefinition) {
-    return mapCollectionsToConflictingItems(findFirstCollectionsForEntity(reportDefinition.getId()));
-  }
-
-  @Override
-  public void handleReportDeleted(final ReportDefinitionDto reportDefinition) {
-    removeEntityFromAllCollections(reportDefinition.getId());
-  }
-
-  @Override
-  public Set<ConflictedItemDto> getConflictedItemsForReportUpdate(final ReportDefinitionDto currentDefinition,
-                                                                  final ReportDefinitionDto updateDefinition) {
-    //NOOP
-    return Collections.emptySet();
-  }
-
-  @Override
-  public void handleReportUpdated(final String id, final ReportDefinitionDto updateDefinition) {
-    //NOOP
-  }
-
-  private void removeEntityFromAllCollections(String entityId) {
-    collectionWriter.removeEntityFromAllCollections(entityId);
-  }
-
-  private List<SimpleCollectionDefinitionDto> findFirstCollectionsForEntity(String entityId) {
-    return collectionReader.findFirstCollectionsForEntity(entityId);
-  }
-
-  private Set<ConflictedItemDto> mapCollectionsToConflictingItems(List<SimpleCollectionDefinitionDto> collections) {
-    return collections.stream()
-      .map(collection -> new ConflictedItemDto(
-        collection.getId(), ConflictedItemType.COLLECTION, collection.getName()
-      ))
-      .collect(Collectors.toSet());
+  private Set<ConflictedItemDto> getConflictedItemsForDelete(String collectionId) {
+    return collectionRelationService.getConflictedItemsForDelete(getCollectionDefinition(collectionId));
   }
 }

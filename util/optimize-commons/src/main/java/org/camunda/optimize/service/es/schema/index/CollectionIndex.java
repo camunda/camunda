@@ -70,9 +70,6 @@ public class CollectionIndex extends StrictIndexMappingCreator {
         .startObject("properties")
           .startObject(CollectionDataDto.Fields.configuration.name())
             .field("enabled", false)
-          .endObject()
-          .startObject(CollectionDataDto.Fields.entities.name())
-            .field("type", "keyword")
           .endObject();
           addRolesField(contentBuilder)
         .endObject()

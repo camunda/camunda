@@ -28,6 +28,7 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.List;
 
+import static org.camunda.optimize.service.es.schema.index.DashboardIndex.COLLECTION_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 
@@ -59,13 +60,40 @@ public class DashboardReader {
         return objectMapper.readValue(responseAsString, DashboardDefinitionDto.class);
       } catch (IOException e) {
         String reason = "Could not deserialize dashboard information for dashboard " + dashboardId;
-        log.error("Was not able to retrieve dashboard with id [{}] from Elasticsearch. Reason: reason");
+        log.error(
+          "Was not able to retrieve dashboard with id [{}] from Elasticsearch. Reason: {}",
+          dashboardId,
+          reason
+        );
         throw new OptimizeRuntimeException(reason, e);
       }
     } else {
       log.error("Was not able to retrieve dashboard with id [{}] from Elasticsearch.", dashboardId);
       throw new NotFoundException("Dashboard does not exist! Tried to retried dashboard with id " + dashboardId);
     }
+  }
+
+  public List<DashboardDefinitionDto> findDashboardsForCollection(String collectionId) {
+    log.debug("Fetching dashboards using collection with id {}", collectionId);
+
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder.query(QueryBuilders.termQuery(COLLECTION_ID, collectionId));
+    searchSourceBuilder.size(LIST_FETCH_LIMIT);
+    SearchRequest searchRequest = new SearchRequest(DASHBOARD_INDEX_NAME)
+      .types(DASHBOARD_INDEX_NAME)
+      .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Was not able to fetch dashboards for collection with id [%s]", collectionId);
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    return ElasticsearchHelper.mapHits(searchResponse.getHits(), DashboardDefinitionDto.class, objectMapper);
   }
 
   public List<DashboardDefinitionDto> findFirstDashboardsForReport(String reportId) {

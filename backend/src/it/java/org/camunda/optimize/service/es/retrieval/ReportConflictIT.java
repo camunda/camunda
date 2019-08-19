@@ -11,8 +11,6 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionEntityUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -30,10 +28,10 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
-import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -180,22 +178,6 @@ public class ReportConflictIT {
   }
 
   @Test
-  public void getCombinedReportDeleteConflictsIfUsedByCollection() {
-    // given
-    String firstSingleReportId = addEmptyProcessReportToOptimize();
-    String secondSingleReportId = addEmptyProcessReportToOptimize();
-    String combinedReportId = createNewCombinedReport(firstSingleReportId, secondSingleReportId);
-    String collectionId = createNewCollectionAndAddReport(combinedReportId);
-    String[] expectedConflictedItemIds = {collectionId};
-
-    // when
-    ConflictResponseDto conflictResponseDto = getReportDeleteConflicts(combinedReportId);
-
-    // then
-    checkConflictedItems(conflictResponseDto, ConflictedItemType.COLLECTION, expectedConflictedItemIds);
-  }
-
-  @Test
   @Parameters(source = ForceParameterProvider.class)
   public void deleteSingleReportsFailsWithConflictIfUsedByCombinedReportWhenForceSet(Boolean force) {
     // given
@@ -256,65 +238,6 @@ public class ReportConflictIT {
     checkDashboardsStillContainReport(expectedConflictedItemIds, reportId);
   }
 
-  @Test
-  @Parameters(source = ForceParameterProvider.class)
-  public void deleteSingleReportsFailsWithConflictIfUsedByCollectionWhenForceSet(Boolean force) {
-    // given
-    String reportId = addEmptyProcessReportToOptimize();
-    String firstCollectionId = createNewCollectionAndAddReport(reportId);
-    String secondCollectionId = createNewCollectionAndAddReport(reportId);
-    String[] expectedReportIds = {reportId};
-    String[] expectedConflictedItemIds = {firstCollectionId, secondCollectionId};
-
-    // when
-    ConflictResponseDto conflictResponseDto = deleteReportFailWithConflict(reportId, force);
-
-    // then
-    checkConflictedItems(conflictResponseDto, ConflictedItemType.COLLECTION, expectedConflictedItemIds);
-    checkReportsStillExist(expectedReportIds);
-    checkCollectionsStillContainEntity(expectedConflictedItemIds, reportId);
-  }
-
-  @Test
-  @Parameters(source = ForceParameterProvider.class)
-  public void deleteCombinedReportsFailsWithConflictIfUsedByCollectionWhenForceSet(Boolean force) {
-    // given
-    String firstSingleReportId = addEmptyProcessReportToOptimize();
-    String secondSingleReportId = addEmptyProcessReportToOptimize();
-    String combinedReportId = createNewCombinedReport(firstSingleReportId, secondSingleReportId);
-
-    String firstCollectionId = createNewCollectionAndAddReport(combinedReportId);
-    String secondCollectionId = createNewCollectionAndAddReport(combinedReportId);
-    String[] expectedReportIds = {combinedReportId, firstSingleReportId, secondSingleReportId};
-    String[] expectedConflictedItemIds = {firstCollectionId, secondCollectionId};
-
-    // when
-    ConflictResponseDto conflictResponseDto = deleteReportFailWithConflict(combinedReportId, force);
-
-    // then
-    checkConflictedItems(conflictResponseDto, ConflictedItemType.COLLECTION, expectedConflictedItemIds);
-    checkReportsStillExist(expectedReportIds);
-    checkCollectionsStillContainEntity(expectedConflictedItemIds, combinedReportId);
-  }
-
-  private void checkCollectionsStillContainEntity(String[] expectedConflictedItemIds, String entityId) {
-    List<ResolvedCollectionDefinitionDto> collections = getAllCollections();
-
-    assertThat(collections.size(), is(expectedConflictedItemIds.length));
-    assertThat(
-      collections.stream().map(ResolvedCollectionDefinitionDto::getId).collect(Collectors.toSet()),
-      containsInAnyOrder(expectedConflictedItemIds)
-    );
-    collections.forEach(collection -> {
-      assertThat(collection.getData().getEntities().size(), is(1));
-      assertThat(
-        collection.getData().getEntities().stream().anyMatch(
-          collectionEntity -> collectionEntity.getId().equals(entityId)
-        ),
-        is(true)
-      );
-    });
-  }
 
   private void checkDashboardsStillContainReport(String[] expectedConflictedItemIds, String reportId) {
     List<DashboardDefinitionDto> dashboards = getAllDashboards();
@@ -398,22 +321,38 @@ public class ReportConflictIT {
     return id;
   }
 
-  private String createNewCollectionAndAddReport(String reportId) {
-    String id = embeddedOptimizeRule
+  private String createNewCollectionAndAddReport(String reportId, final String id) {
+    String collectionId = embeddedOptimizeRule
       .getRequestExecutor()
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
       .getId();
-    final CollectionEntityUpdateDto collectionEntityUpdateDto = new CollectionEntityUpdateDto();
-    collectionEntityUpdateDto.setEntityId(reportId);
 
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildAddEntityToCollectionRequest(id, collectionEntityUpdateDto)
-      .execute();
-    assertThat(response.getStatus(), is(204));
+    final ReportDefinitionDto definition = embeddedOptimizeRule.getRequestExecutor()
+      .buildGetReportRequest(reportId)
+      .execute(ReportDefinitionDto.class, 200);
+    definition.setCollectionId(collectionId);
 
-    return id;
+    if (definition.getCombined()) {
+      embeddedOptimizeRule.getRequestExecutor()
+        .buildUpdateCombinedProcessReportRequest(reportId, (CombinedReportDefinitionDto) definition)
+        .execute(204);
+    } else {
+      switch (definition.getReportType()) {
+        case PROCESS:
+          embeddedOptimizeRule.getRequestExecutor()
+            .buildUpdateSingleProcessReportRequest(reportId, (SingleProcessReportDefinitionDto) definition)
+            .execute(204);
+          break;
+        case DECISION:
+          embeddedOptimizeRule.getRequestExecutor()
+            .buildUpdateSingleDecisionReportRequest(reportId, (SingleDecisionReportDefinitionDto) definition)
+            .execute(204);
+          break;
+      }
+    }
+
+    return collectionId;
   }
 
   private List<DashboardDefinitionDto> getAllDashboards() {
@@ -421,13 +360,6 @@ public class ReportConflictIT {
       .getRequestExecutor()
       .buildGetAllDashboardsRequest()
       .executeAndReturnList(DashboardDefinitionDto.class, 200);
-  }
-
-  private List<ResolvedCollectionDefinitionDto> getAllCollections() {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildGetAllCollectionsRequest()
-      .executeAndReturnList(ResolvedCollectionDefinitionDto.class, 200);
   }
 
   private String createNewAlertForReport(String reportId) {

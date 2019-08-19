@@ -20,4 +20,5 @@ public class DashboardDefinitionUpdateDto {
   protected String owner;
   protected String lastModifier;
   protected List<ReportLocationDto> reports;
+  protected String collectionId;
 }

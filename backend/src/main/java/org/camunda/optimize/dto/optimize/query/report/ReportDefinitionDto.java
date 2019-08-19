@@ -19,6 +19,7 @@ public class ReportDefinitionDto<RD extends ReportDataDto> implements Collection
   protected OffsetDateTime created;
   protected String owner;
   protected String lastModifier;
+  protected String collectionId;
 
   private RD data;
 

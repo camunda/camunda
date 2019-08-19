@@ -7,11 +7,14 @@ package org.camunda.optimize.service.report;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
@@ -24,6 +27,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
+import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
@@ -31,13 +35,16 @@ import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.relations.CollectionReferencingService;
 import org.camunda.optimize.service.relations.ReportRelationService;
 import org.camunda.optimize.service.security.ReportAuthorizationService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.MultivaluedMap;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -50,7 +57,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportUtil.cop
 @RequiredArgsConstructor
 @Component
 @Slf4j
-public class ReportService {
+public class ReportService implements CollectionReferencingService {
 
   private final ReportWriter reportWriter;
   private final ReportReader reportReader;
@@ -58,38 +65,86 @@ public class ReportService {
   private final ReportAuthorizationService authorizationService;
   private final ReportRelationService reportRelationService;
 
-  public IdDto copyReport(String reportId, String userId) {
-    ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
-    if (!reportDefinition.getCombined()) {
-      switch (reportDefinition.getReportType()) {
+  private final CollectionService collectionService;
+
+  public IdDto copyAndMoveReport(String reportId, String userId, String collectionId) {
+    return copyAndMoveReport(reportId, userId, collectionId, null);
+  }
+
+  public IdDto copyAndMoveReport(String reportId, String userId, String collectionId, String newReportName) {
+    if (collectionId != null && !collectionService.existsCollection(collectionId)) {
+      throw new NotFoundException("Collection to copy to does not exist!");
+    }
+
+    return copyReport(reportId, userId, collectionId, false, newReportName);
+  }
+
+  public IdDto copyReport(String reportId, String userId, String newReportName) {
+    return copyReport(reportId, userId, null, true, newReportName);
+  }
+
+  private IdDto copyReport(final String reportId,
+                           final String userId,
+                           final String collectionId,
+                           final boolean sameCollection,
+                           final String newReportName) {
+    ReportDefinitionDto oldReportDefinition = reportReader.getReport(reportId);
+    final String newName = newReportName != null ? newReportName : oldReportDefinition.getName() + " – Copy";
+    final String newCollectionId = sameCollection ? oldReportDefinition.getCollectionId() : collectionId;
+
+    if (!oldReportDefinition.getCombined()) {
+      switch (oldReportDefinition.getReportType()) {
         case PROCESS:
           SingleProcessReportDefinitionDto singleProcessReportDefinitionDto =
-            (SingleProcessReportDefinitionDto) reportDefinition;
+            (SingleProcessReportDefinitionDto) oldReportDefinition;
           return reportWriter.createNewSingleProcessReport(
             userId,
             singleProcessReportDefinitionDto.getData(),
-            singleProcessReportDefinitionDto.getName() + " – Copy"
+            newName,
+            newCollectionId
           );
         case DECISION:
           SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto =
-            (SingleDecisionReportDefinitionDto) reportDefinition;
+            (SingleDecisionReportDefinitionDto) oldReportDefinition;
           return reportWriter.createNewSingleDecisionReport(
             userId,
             singleDecisionReportDefinitionDto.getData(),
-            singleDecisionReportDefinitionDto.getName() + " – Copy"
+            newName,
+            newCollectionId
           );
         default:
-          throw new IllegalStateException("Unsupported reportType: " + reportDefinition.getReportType());
+          throw new IllegalStateException("Unsupported reportType: " + oldReportDefinition.getReportType());
       }
     } else {
-      CombinedReportDefinitionDto combinedReportDefinition =
-        (CombinedReportDefinitionDto) reportDefinition;
-      return reportWriter.createNewCombinedReport(
-        userId,
-        combinedReportDefinition.getData(),
-        reportDefinition.getName() + " – Copy"
-      );
+      final String oldCollectionId = oldReportDefinition.getCollectionId();
+      CombinedReportDefinitionDto combinedReportDefinition = (CombinedReportDefinitionDto) oldReportDefinition;
+      return copyCombinedReport(userId, newName, newCollectionId, oldCollectionId, combinedReportDefinition.getData());
     }
+  }
+
+  private IdDto copyCombinedReport(final String userId, final String newName, final String newCollectionId,
+                                   final String oldCollectionId, final CombinedReportDataDto oldCombinedReportData) {
+    final CombinedReportDataDto newCombinedReportData = new CombinedReportDataDto(
+      oldCombinedReportData.getConfiguration(),
+      oldCombinedReportData.getVisualization(),
+      oldCombinedReportData.getReports()
+    );
+
+    if (!StringUtils.equals(newCollectionId, oldCollectionId)) {
+      final List<CombinedReportItemDto> newReports = new ArrayList<>();
+      oldCombinedReportData.getReports().forEach(combinedReportItemDto -> {
+        final IdDto idDto = copyReport(combinedReportItemDto.getId(), userId, null);
+        newReports.add(combinedReportItemDto.toBuilder().id(idDto.getId()).build());
+      });
+      newCombinedReportData.setReports(newReports);
+    }
+
+    return reportWriter.createNewCombinedReport(
+      userId,
+      newCombinedReportData,
+      newName,
+      newCollectionId
+    );
   }
 
   public ConflictResponseDto getReportDeleteConflictingItemsWithAuthorizationCheck(String userId, String reportId) {
@@ -123,6 +178,7 @@ public class ReportService {
 
     reportRelationService.handleDeleted(reportDefinition);
   }
+
 
   private Set<ConflictedItemDto> getConflictedItemsForDeleteReport(ReportDefinitionDto reportDefinition) {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
@@ -309,7 +365,7 @@ public class ReportService {
   }
 
   public List<ReportDefinitionDto> findAndFilterReports(String userId) {
-    List<ReportDefinitionDto> reports = reportReader.getAllReportsOmitXml();
+    List<ReportDefinitionDto> reports = reportReader.getAllReportsOmitXml(userId);
     reports = filterAuthorizedReports(userId, reports);
     return reports;
   }
@@ -408,5 +464,20 @@ public class ReportService {
         combinedReportDto.getId(), ConflictedItemType.COMBINED_REPORT, combinedReportDto.getName()
       ))
       .collect(Collectors.toSet());
+  }
+
+
+  @Override
+  public Set<ConflictedItemDto> getConflictedItemsForCollectionDelete(final SimpleCollectionDefinitionDto definition) {
+    return reportReader.findReportsForCollection(definition.getId()).stream()
+      .map(reportDefinitionDto -> new ConflictedItemDto(
+        reportDefinitionDto.getId(), ConflictedItemType.COLLECTION, reportDefinitionDto.getName()
+      ))
+      .collect(Collectors.toSet());
+  }
+
+  @Override
+  public void handleCollectionDeleted(final SimpleCollectionDefinitionDto definition) {
+    reportWriter.deleteAllReportsOfCollection(definition.getId());
   }
 }

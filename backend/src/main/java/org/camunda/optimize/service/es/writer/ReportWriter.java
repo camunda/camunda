@@ -35,6 +35,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.engine.DocumentMissingException;
 import org.elasticsearch.index.query.NestedQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
@@ -49,6 +50,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.DATA;
 import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORTS;
 import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORT_ITEM_ID;
@@ -71,10 +73,13 @@ public class ReportWriter {
   private final OptimizeElasticsearchClient esClient;
 
   public IdDto createNewCombinedReport(final String userId) {
-    return createNewCombinedReport(userId, new CombinedReportDataDto(), DEFAULT_REPORT_NAME);
+    return createNewCombinedReport(userId, new CombinedReportDataDto(), DEFAULT_REPORT_NAME, null);
   }
 
-  public IdDto createNewCombinedReport(final String userId, CombinedReportDataDto reportData, String reportName) {
+  public IdDto createNewCombinedReport(final String userId,
+                                       CombinedReportDataDto reportData,
+                                       String reportName,
+                                       String collectionId) {
     log.debug("Writing new combined report to Elasticsearch");
     final String id = IdGenerator.getNextId();
     final CombinedReportDefinitionDto reportDefinitionDto = new CombinedReportDefinitionDto();
@@ -86,6 +91,7 @@ public class ReportWriter {
     reportDefinitionDto.setLastModifier(userId);
     reportDefinitionDto.setName(reportName);
     reportDefinitionDto.setData(reportData);
+    reportDefinitionDto.setCollectionId(collectionId);
 
     try {
       IndexRequest request = new IndexRequest(COMBINED_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME, id)
@@ -111,10 +117,13 @@ public class ReportWriter {
 
 
   public IdDto createNewSingleProcessReport(final String userId) {
-    return createNewSingleProcessReport(userId, new ProcessReportDataDto(), DEFAULT_REPORT_NAME);
+    return createNewSingleProcessReport(userId, new ProcessReportDataDto(), DEFAULT_REPORT_NAME, null);
   }
 
-  public IdDto createNewSingleProcessReport(final String userId, ProcessReportDataDto reportData, String reportName) {
+  public IdDto createNewSingleProcessReport(final String userId,
+                                            ProcessReportDataDto reportData,
+                                            String reportName,
+                                            String collectionId) {
     log.debug("Writing new single report to Elasticsearch");
 
     final String id = IdGenerator.getNextId();
@@ -127,6 +136,7 @@ public class ReportWriter {
     reportDefinitionDto.setLastModifier(userId);
     reportDefinitionDto.setName(reportName);
     reportDefinitionDto.setData(reportData);
+    reportDefinitionDto.setCollectionId(collectionId);
 
     try {
       IndexRequest request = new IndexRequest(SINGLE_PROCESS_REPORT_INDEX_NAME, SINGLE_PROCESS_REPORT_INDEX_NAME, id)
@@ -151,11 +161,14 @@ public class ReportWriter {
   }
 
   public IdDto createNewSingleDecisionReport(final String userId) {
-    return createNewSingleDecisionReport(userId, new DecisionReportDataDto(), DEFAULT_REPORT_NAME);
+    return createNewSingleDecisionReport(userId, new DecisionReportDataDto(), DEFAULT_REPORT_NAME, null);
   }
 
 
-  public IdDto createNewSingleDecisionReport(final String userId, DecisionReportDataDto reportData, String reportName) {
+  public IdDto createNewSingleDecisionReport(final String userId,
+                                             DecisionReportDataDto reportData,
+                                             String reportName,
+                                             String collectionId) {
     log.debug("Writing new single report to Elasticsearch");
 
     final String id = IdGenerator.getNextId();
@@ -168,6 +181,7 @@ public class ReportWriter {
     reportDefinitionDto.setLastModifier(userId);
     reportDefinitionDto.setName(reportName);
     reportDefinitionDto.setData(reportData);
+    reportDefinitionDto.setCollectionId(collectionId);
 
     try {
       IndexRequest request = new IndexRequest(SINGLE_DECISION_REPORT_INDEX_NAME, SINGLE_DECISION_REPORT_INDEX_NAME, id)
@@ -340,6 +354,33 @@ public class ReportWriter {
       throw new NotFoundException(message);
     }
   }
+
+  public void deleteAllReportsOfCollection(String collectionId) {
+    log.debug("Deleting all reports of collection with collectionId [{}]", collectionId);
+    DeleteByQueryRequest request = new DeleteByQueryRequest(
+      COMBINED_REPORT_INDEX_NAME,
+      SINGLE_PROCESS_REPORT_INDEX_NAME,
+      SINGLE_DECISION_REPORT_INDEX_NAME
+    )
+      .setQuery(QueryBuilders.termQuery(COLLECTION_ID, collectionId));
+
+    BulkByScrollResponse deleteResponse;
+    try {
+      deleteResponse = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason =
+        String.format("Could not delete reports of collection with collectionId [%s].", collectionId);
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    log.debug(
+      "Deleted [{}] reports that were part of collection with collectionId [{}]",
+      deleteResponse.getDeleted(),
+      collectionId
+    );
+  }
+
 
   private Script buildUpdateScript(final ReportDefinitionUpdateDto updateDto) {
     final Map<String, Object> parameterMap = mapToParameterSet(updateDto);

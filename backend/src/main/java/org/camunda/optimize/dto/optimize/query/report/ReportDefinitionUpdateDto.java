@@ -20,4 +20,5 @@ public class ReportDefinitionUpdateDto {
   protected OffsetDateTime created;
   protected String owner;
   protected String lastModifier;
+  protected String collectionId;
 }

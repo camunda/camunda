@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
 import org.camunda.optimize.rest.providers.Secured;
+import org.camunda.optimize.rest.queryparam.QueryParamUtil;
 import org.camunda.optimize.service.es.reader.BranchAnalysisReader;
 import org.camunda.optimize.service.es.reader.DurationOutliersReader;
 import org.camunda.optimize.service.security.SessionService;
@@ -93,6 +94,6 @@ public class AnalysisRestService {
   }
 
   private List<String> normalizeTenants(List<String> tenantIds) {
-    return tenantIds.stream().map(t -> t.equals("null") ? null : t).collect(Collectors.toList());
+    return tenantIds.stream().map(QueryParamUtil::normalizeNullStringValue).collect(Collectors.toList());
   }
 }

@@ -180,6 +180,12 @@ public class OptimizeRequestExecutor {
     return builder;
   }
 
+  public Response execute(int expectedResponseCode) {
+    Response response = execute();
+    assertThat(response.getStatus(), is(expectedResponseCode));
+    return response;
+  }
+
   public <T> T execute(TypeReference<T> classToExtractFromResponse) {
     Response response = execute();
     assertThat(response.getStatus(), is(200));
@@ -421,20 +427,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildAddEntityToCollectionRequest(String id,
-                                                                   CollectionEntityUpdateDto entityUpdateDto) {
-    this.path = "collection/" + id + "/entity/";
-    this.requestType = POST;
-    this.body = getBody(entityUpdateDto);
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildRemoveEntityFromCollectionRequest(String id, String entityId) {
-    this.path = "collection/" + id + "/entity/" + entityId;
-    this.requestType = DELETE;
-    return this;
-  }
-
   public OptimizeRequestExecutor buildGetRolesToCollectionRequest(final String id) {
     this.path = "collection/" + id + "/role/";
     this.requestType = GET;
@@ -478,6 +470,12 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetCollectionDeleteConflictsRequest(String id) {
+    this.path = "collection/" + id + "/delete-conflicts";
+    this.requestType = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetAllDashboardsRequest() {
     this.path = "dashboard/";
     this.requestType = GET;
@@ -486,6 +484,12 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildGetAllCollectionsRequest() {
     this.path = "collection/";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetAllPrivateEntitiesRequest() {
+    this.path = "entities/";
     this.requestType = GET;
     return this;
   }
@@ -508,8 +512,13 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildDeleteCollectionRequest(String id) {
+    return buildDeleteCollectionRequest(id, false);
+  }
+
+  public OptimizeRequestExecutor buildDeleteCollectionRequest(String id, Boolean force) {
     this.path = "collection/" + id;
     this.requestType = DELETE;
+    Optional.ofNullable(force).ifPresent(value -> addSingleQueryParam("force", value));
     return this;
   }
 
@@ -763,7 +772,8 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildFlowNodeOutliersRequest(String key, List<String> version,
+  public OptimizeRequestExecutor buildFlowNodeOutliersRequest(String key,
+                                                              List<String> version,
                                                               List<String> tenantIds) {
     this.path = "analysis/flowNodeOutliers";
     this.requestType = GET;
@@ -773,8 +783,10 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildFlowNodeDurationChartRequest(String key, List<String> version,
-                                                                   String flowNodeId, List<String> tenantIds) {
+  public OptimizeRequestExecutor buildFlowNodeDurationChartRequest(String key,
+                                                                   List<String> version,
+                                                                   String flowNodeId,
+                                                                   List<String> tenantIds) {
     this.path = "analysis/durationChart";
     this.requestType = GET;
     this.addSingleQueryParam("processDefinitionKey", key);
@@ -785,8 +797,24 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildCopyReportRequest(String id) {
+    return buildCopyReportRequest(id, null);
+  }
+
+  public OptimizeRequestExecutor buildCopyReportRequest(String id, String collectionId) {
     this.path = "report/" + id + "/copy";
     this.requestType = POST;
+    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildCopyDashboardRequest(String id) {
+    return buildCopyDashboardRequest(id, null);
+  }
+
+  public OptimizeRequestExecutor buildCopyDashboardRequest(String id, String collectionId) {
+    this.path = "dashboard/" + id + "/copy";
+    this.requestType = POST;
+    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
     return this;
   }
 

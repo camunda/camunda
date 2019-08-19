@@ -32,6 +32,8 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
 import java.util.List;
 
+import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
+
 @AllArgsConstructor
 @Secured
 @Path("/dashboard")
@@ -71,6 +73,26 @@ public class DashboardRestService {
     updatedDashboard.setId(dashboardId);
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     dashboardService.updateDashboard(updatedDashboard, userId);
+  }
+
+
+  @POST
+  @Path("/{id}/copy")
+  @Produces(MediaType.APPLICATION_JSON)
+  public IdDto copyDashboard(@Context UriInfo uriInfo,
+                             @Context ContainerRequestContext requestContext,
+                             @PathParam("id") String dashboardId,
+                             @QueryParam("collectionId") String collectionId,
+                             @QueryParam("name") String newDashboardName) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+
+    if (collectionId == null) {
+      return dashboardService.copyDashboard(dashboardId, userId, newDashboardName);
+    } else {
+      // 'null' or collectionId value provided
+      collectionId = normalizeNullStringValue(collectionId);
+      return dashboardService.copyAndMoveDashboard(dashboardId, userId, collectionId, newDashboardName);
+    }
   }
 
 

@@ -14,12 +14,11 @@ import java.time.OffsetDateTime;
 @FieldNameConstants(asEnum = true)
 public class BaseCollectionDefinitionDto<DATA_TYPE> {
 
-  private String id;
-  private String name;
-  private OffsetDateTime lastModified;
-  private OffsetDateTime created;
-  private String owner;
-  private String lastModifier;
-  private CollectionDataDto<DATA_TYPE> data = new CollectionDataDto<>();
-
+  protected String id;
+  protected String name;
+  protected OffsetDateTime lastModified;
+  protected OffsetDateTime created;
+  protected String owner;
+  protected String lastModifier;
+  protected DATA_TYPE data;
 }

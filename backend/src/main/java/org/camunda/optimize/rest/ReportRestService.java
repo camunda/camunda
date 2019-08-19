@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.EvaluationResultDto;
 import org.camunda.optimize.rest.mapper.ReportEvaluationResultMapper;
 import org.camunda.optimize.rest.providers.Secured;
+import org.camunda.optimize.rest.queryparam.QueryParamUtil;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.report.ReportService;
@@ -38,6 +39,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
 import java.util.List;
+
+import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
 
 @AllArgsConstructor
 @Secured
@@ -93,10 +96,19 @@ public class ReportRestService {
   @POST
   @Path("/{id}/copy")
   @Produces(MediaType.APPLICATION_JSON)
-  public IdDto copyReport(@Context ContainerRequestContext requestContext,
-                         @PathParam("id") String id) {
+  public IdDto copyReport(@Context UriInfo uriInfo,
+                          @Context ContainerRequestContext requestContext,
+                          @PathParam("id") String id,
+                          @QueryParam("collectionId") String collectionId,
+                          @QueryParam("name") String newReportName) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return reportService.copyReport(id, userId);
+    if (collectionId == null) {
+      return reportService.copyReport(id, userId, newReportName);
+    } else {
+      // 'null' or collectionId value provided
+      collectionId = normalizeNullStringValue(collectionId);
+      return reportService.copyAndMoveReport(id, userId, collectionId, newReportName);
+    }
   }
 
   /**
@@ -155,13 +167,14 @@ public class ReportRestService {
     reportService.updateCombinedProcessReportWithAuthorizationCheck(reportId, updatedReport);
   }
 
+
   /**
    * Get a list of all available reports.
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<ReportDefinitionDto> getStoredReports(@Context UriInfo uriInfo,
-                                                    @Context ContainerRequestContext requestContext) {
+  public List<ReportDefinitionDto> getPrivateReports(@Context UriInfo uriInfo,
+                                                     @Context ContainerRequestContext requestContext) {
     MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
 
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);

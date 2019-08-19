@@ -20,6 +20,7 @@ public abstract class AbstractReportIndex extends StrictIndexMappingCreator {
   public static final String CREATED = "created";
   public static final String OWNER = "owner";
   public static final String LAST_MODIFIER = "lastModifier";
+  public static final String COLLECTION_ID = "collectionId";
 
   public static final String REPORT_TYPE = "reportType";
   public static final String COMBINED = "combined";
@@ -37,17 +38,20 @@ public abstract class AbstractReportIndex extends StrictIndexMappingCreator {
       .endObject()
       .startObject(LAST_MODIFIED)
         .field("type", "date")
-              .field("format", OPTIMIZE_DATE_FORMAT)
+        .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
       .startObject(CREATED)
         .field("type", "date")
-              .field("format", OPTIMIZE_DATE_FORMAT)
+        .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
       .startObject(OWNER)
         .field("type", "keyword")
       .endObject()
       .startObject(LAST_MODIFIER)
         .field("type", "keyword")
+      .endObject()
+      .startObject(COLLECTION_ID)
+       .field("type", "keyword")
       .endObject()
       .startObject(REPORT_TYPE)
         .field("type", "keyword")
@@ -56,8 +60,8 @@ public abstract class AbstractReportIndex extends StrictIndexMappingCreator {
        .field("type", "boolean")
       .endObject();
      // @formatter:on
-     newBuilder = addDataField(newBuilder);
-     return newBuilder;
+    newBuilder = addDataField(newBuilder);
+    return newBuilder;
   }
 
   protected abstract XContentBuilder addDataField(XContentBuilder xContentBuilder) throws IOException;

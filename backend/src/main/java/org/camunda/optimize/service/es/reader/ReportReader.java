@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
 import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORTS;
 import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORT_ITEM_ID;
@@ -57,7 +58,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Slf4j
 public class ReportReader {
 
-  private static final String REPORT_DATA_XML_PROPERTY = String.join(
+  protected static final String REPORT_DATA_XML_PROPERTY = String.join(
     ".",
     DATA, SingleReportDataDto.Fields.configuration.name(), SingleReportConfigurationDto.Fields.xml.name()
   );
@@ -100,7 +101,11 @@ public class ReportReader {
   private MultiGetResponse performGetReportRequest(String reportId) {
     MultiGetRequest request = new MultiGetRequest();
     request.add(new MultiGetRequest.Item(SINGLE_PROCESS_REPORT_INDEX_NAME, SINGLE_PROCESS_REPORT_INDEX_NAME, reportId));
-    request.add(new MultiGetRequest.Item(SINGLE_DECISION_REPORT_INDEX_NAME, SINGLE_DECISION_REPORT_INDEX_NAME, reportId));
+    request.add(new MultiGetRequest.Item(
+      SINGLE_DECISION_REPORT_INDEX_NAME,
+      SINGLE_DECISION_REPORT_INDEX_NAME,
+      reportId
+    ));
     request.add(new MultiGetRequest.Item(COMBINED_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME, reportId));
 
     MultiGetResponse multiGetItemResponses;
@@ -116,7 +121,11 @@ public class ReportReader {
 
   public SingleProcessReportDefinitionDto getSingleProcessReport(String reportId) {
     log.debug("Fetching single process report with id [{}]", reportId);
-    GetRequest getRequest = new GetRequest(SINGLE_PROCESS_REPORT_INDEX_NAME, SINGLE_PROCESS_REPORT_INDEX_NAME, reportId);
+    GetRequest getRequest = new GetRequest(
+      SINGLE_PROCESS_REPORT_INDEX_NAME,
+      SINGLE_PROCESS_REPORT_INDEX_NAME,
+      reportId
+    );
 
     GetResponse getResponse;
     try {
@@ -145,7 +154,8 @@ public class ReportReader {
     log.debug("Fetching single decision report with id [{}]", reportId);
     GetRequest getRequest = new GetRequest(
       SINGLE_DECISION_REPORT_INDEX_NAME,
-      SINGLE_DECISION_REPORT_INDEX_NAME, reportId);
+      SINGLE_DECISION_REPORT_INDEX_NAME, reportId
+    );
 
     GetResponse getResponse;
     try {
@@ -170,7 +180,7 @@ public class ReportReader {
     }
   }
 
-  public List<ReportDefinitionDto> getAllReportsOmitXml() {
+  public List<ReportDefinitionDto> getAllReportsOmitXml(String userId) {
     log.debug("Fetching all available reports");
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
@@ -265,6 +275,34 @@ public class ReportReader {
       throw new OptimizeRuntimeException(reason, e);
     }
   }
+
+  public List<ReportDefinitionDto> findReportsForCollection(String collectionId) {
+    log.debug("Fetching reports using collection with id {}", collectionId);
+
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder.query(QueryBuilders.termQuery(COLLECTION_ID, collectionId));
+    searchSourceBuilder.size(LIST_FETCH_LIMIT);
+    SearchRequest searchRequest = new SearchRequest(
+      COMBINED_REPORT_INDEX_NAME,
+      SINGLE_PROCESS_REPORT_INDEX_NAME,
+      SINGLE_DECISION_REPORT_INDEX_NAME
+    )
+      .types(COMBINED_REPORT_INDEX_NAME, SINGLE_PROCESS_REPORT_INDEX_NAME, SINGLE_DECISION_REPORT_INDEX_NAME)
+      .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Was not able to fetch reports for collection with id [%s]", collectionId);
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    return ElasticsearchHelper.mapHits(searchResponse.getHits(), ReportDefinitionDto.class, objectMapper);
+  }
+
 
   public List<CombinedReportDefinitionDto> findFirstCombinedReportsForSimpleReport(String simpleReportId) {
     log.debug("Fetching first combined reports using simpleReport with id {}", simpleReportId);

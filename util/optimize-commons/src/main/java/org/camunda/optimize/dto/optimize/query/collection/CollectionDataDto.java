@@ -16,10 +16,7 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
 @FieldNameConstants(asEnum = true)
-public class CollectionDataDto<DATA_TYPE> {
-
+public class CollectionDataDto {
   protected Object configuration = new HashMap<>();
   private List<CollectionRoleDto> roles = new ArrayList<>();
-
-  protected List<DATA_TYPE> entities = new ArrayList<>();
 }

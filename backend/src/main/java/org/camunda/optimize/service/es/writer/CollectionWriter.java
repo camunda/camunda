@@ -8,17 +8,14 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRole;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
@@ -31,26 +28,17 @@ import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.query.NestedQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
@@ -84,9 +72,11 @@ public class CollectionWriter {
     collection.setOwner(userId);
     collection.setLastModifier(userId);
     collection.setName(DEFAULT_COLLECTION_NAME);
-    collection.getData().getRoles().add(
+    final CollectionDataDto newData = new CollectionDataDto();
+    newData.getRoles().add(
       new CollectionRoleDto(new IdentityDto(userId, IdentityType.USER), CollectionRole.MANAGER)
     );
+    collection.setData(newData);
 
     try {
       IndexRequest request = new IndexRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, id)
@@ -113,7 +103,6 @@ public class CollectionWriter {
   public void updateCollection(CollectionDefinitionUpdateDto collection, String id) {
     log.debug("Updating collection with id [{}] in Elasticsearch", id);
 
-    ensureThatAllProvidedEntityIdsExist(collection.getData());
     try {
 
       UpdateRequest request =
@@ -171,124 +160,6 @@ public class CollectionWriter {
                                        "Maybe it was already deleted by someone else?", collectionId);
       log.error(message);
       throw new NotFoundException(message);
-    }
-  }
-
-  public void addEntityToCollection(String collectionId, String entityId, String userId) {
-    log.debug("Adding entity with id [{}] to collection with id [{}] in Elasticsearch", entityId, collectionId);
-
-    ensureThatAllProvidedEntityIdsExist(Collections.singletonList(entityId));
-
-
-    try {
-      final Map<String, Object> params = new HashMap<>();
-      params.put("entity", entityId);
-      params.put("lastModifier", userId);
-      params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
-
-
-      String script = "if(!ctx._source.data.entities.contains(params.entity)){ " +
-        "ctx._source.data.entities.add(params.entity); " +
-        "ctx._source.lastModifier = params.lastModifier; " +
-        "ctx._source.lastModified = params.lastModified; " +
-        "}";
-      final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScript(script, params);
-
-      UpdateRequest request = new UpdateRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId)
-        .script(addEntityScript)
-        .setRefreshPolicy(IMMEDIATE)
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
-      UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
-
-      if (updateResponse.getShardInfo().getFailed() > 0) {
-        log.error("Was not able to update collection with id [{}].", collectionId);
-        throw new OptimizeRuntimeException("Was not able to update collection!");
-      }
-    } catch (IOException e) {
-      String errorMessage = String.format("Was not able to update collection with id [%s].", collectionId);
-      log.error(errorMessage, e);
-      throw new OptimizeRuntimeException(errorMessage, e);
-    } catch (ElasticsearchStatusException e) {
-      String errorMessage = String.format(
-        "Was not able to update collection with id [%s]. Collection does not exist!",
-        collectionId
-      );
-      log.error(errorMessage, e);
-      throw new NotFoundException(errorMessage, e);
-    }
-
-  }
-
-  public void removeEntityFromCollection(String collectionId, String entityId, String userId) {
-    log.debug("Removing entity [{}] from collection [{}].", entityId, collectionId);
-
-    Script removeEntityFromCollectionScript = getRemoveEntityFromCollectionScript(entityId);
-
-    final UpdateRequest request = new UpdateRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId)
-      .script(removeEntityFromCollectionScript)
-      .setRefreshPolicy(IMMEDIATE);
-
-
-    try {
-      UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
-
-      if (updateResponse.getShardInfo().getFailed() > 0) {
-        log.error("Was not able to update collection with id [{}].", collectionId);
-        throw new OptimizeRuntimeException("Was not able to update collection!");
-      }
-    } catch (IOException e) {
-      String errorMessage = String.format("Was not able to update collection with id [%s].", collectionId);
-      log.error(errorMessage, e);
-      throw new OptimizeRuntimeException(errorMessage, e);
-    } catch (ElasticsearchStatusException e) {
-      String errorMessage = String.format(
-        "Was not able to update collection with id [%s]. Collection does not exist!",
-        collectionId
-      );
-      log.error(errorMessage, e);
-      throw new NotFoundException(errorMessage, e);
-    }
-  }
-
-  public void removeEntityFromAllCollections(String entityId) {
-    log.debug("Removing entity [{}] from all collections.", entityId);
-    Script removeEntityFromCollectionScript = getRemoveEntityFromCollectionScript(entityId);
-
-    NestedQueryBuilder query =
-      QueryBuilders.nestedQuery(
-        BaseCollectionDefinitionDto.Fields.data.name(),
-        QueryBuilders.termQuery(
-          BaseCollectionDefinitionDto.Fields.data.name() + "." + CollectionDataDto.Fields.entities.name(), entityId
-        ),
-        ScoreMode.None
-      );
-
-    UpdateByQueryRequest request = new UpdateByQueryRequest(COLLECTION_INDEX_NAME)
-      .setAbortOnVersionConflict(false)
-      .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
-      .setQuery(query)
-      .setScript(removeEntityFromCollectionScript)
-      .setRefresh(true);
-
-    BulkByScrollResponse bulkByScrollResponse;
-    try {
-      bulkByScrollResponse = esClient.updateByQuery(request, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String reason = String.format("Could not remove entity with id [%s] from collections.", entityId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    if (!bulkByScrollResponse.getBulkFailures().isEmpty()) {
-      String errorMessage =
-        String.format(
-          "Could not remove entity id [%s] from collection! Error response: %s",
-          entityId,
-          bulkByScrollResponse.getBulkFailures()
-        );
-      log.error(errorMessage);
-      throw new OptimizeRuntimeException(errorMessage);
     }
   }
 
@@ -503,52 +374,6 @@ public class CollectionWriter {
       log.error(errorMessage, e);
       throw new NotFoundException(errorMessage, e);
     }
-  }
-
-  private void ensureThatAllProvidedEntityIdsExist(PartialCollectionDataDto collectionData) {
-    boolean entityIdsAreProvided =
-      collectionData != null && collectionData.getEntities() != null && !collectionData.getEntities()
-        .isEmpty();
-    if (entityIdsAreProvided) {
-      ensureThatAllProvidedEntityIdsExist(collectionData.getEntities());
-    }
-  }
-
-  private void ensureThatAllProvidedEntityIdsExist(final List<String> entityIds) {
-    log.debug("Checking that the given entity ids [{}] for a collection exist", entityIds);
-
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(QueryBuilders.idsQuery().addIds(entityIds.toArray(new String[0])))
-      .size(0);
-    SearchRequest searchRequest =
-      new SearchRequest()
-        .indices(SINGLE_PROCESS_REPORT_INDEX_NAME,
-                 SINGLE_DECISION_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME, DASHBOARD_INDEX_NAME
-        )
-        .source(searchSourceBuilder);
-
-    SearchResponse searchResponse;
-    try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String reason = "Was not able to fetch collections.";
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    if (searchResponse.getHits().getTotalHits() != entityIds.size()) {
-      String errorMessage = "Could not update collection, since the update contains entity ids that " +
-        "do not exist in Optimize any longer.";
-      log.error(errorMessage);
-      throw new OptimizeRuntimeException(errorMessage);
-    }
-  }
-
-  private Script getRemoveEntityFromCollectionScript(final String entityId) {
-    return ElasticsearchWriterUtil.createDefaultScript(
-      "ctx._source.data.entities.removeIf(id -> id.equals(params.idToRemove))",
-      Collections.singletonMap("idToRemove", entityId)
-    );
   }
 
 }

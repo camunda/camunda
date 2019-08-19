@@ -15,5 +15,4 @@ import java.util.List;
 public class PartialCollectionDataDto {
 
   protected Object configuration;
-  protected List<String> entities;
 }

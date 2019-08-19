@@ -12,6 +12,7 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -29,6 +30,7 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -37,7 +39,9 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 
+import static org.camunda.optimize.service.es.schema.index.DashboardIndex.COLLECTION_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
@@ -51,7 +55,15 @@ public class DashboardWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public IdDto createNewDashboardAndReturnId(String userId) {
+
+  public IdDto createNewDashboard(String userId) {
+    return createNewDashboard(userId, null, DEFAULT_DASHBOARD_NAME, null);
+  }
+
+  public IdDto createNewDashboard(String userId,
+                                  String collectionId,
+                                  String dashboardName,
+                                  List<ReportLocationDto> reports) {
     log.debug("Writing new dashboard to Elasticsearch");
 
     String id = IdGenerator.getNextId();
@@ -60,8 +72,12 @@ public class DashboardWriter {
     dashboard.setLastModified(LocalDateUtil.getCurrentDateTime());
     dashboard.setOwner(userId);
     dashboard.setLastModifier(userId);
-    dashboard.setName(DEFAULT_DASHBOARD_NAME);
+    dashboard.setName(dashboardName);
     dashboard.setId(id);
+    dashboard.setCollectionId(collectionId);
+    if (reports != null) {
+      dashboard.setReports(reports);
+    }
 
     try {
       IndexRequest request = new IndexRequest(DASHBOARD_INDEX_NAME, DASHBOARD_INDEX_NAME, id)
@@ -162,6 +178,28 @@ public class DashboardWriter {
       log.error(errorMessage);
       throw new OptimizeRuntimeException(errorMessage);
     }
+  }
+
+  public void deleteDashboardsOfCollection(String collectionId) {
+    log.debug("Deleting dashboards of collection with collectionId [{}]", collectionId);
+    DeleteByQueryRequest request = new DeleteByQueryRequest(DASHBOARD_INDEX_NAME)
+      .setQuery(QueryBuilders.termQuery(COLLECTION_ID, collectionId));
+
+    BulkByScrollResponse deleteResponse;
+    try {
+      deleteResponse = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason =
+        String.format("Could not delete dashboards of collection with collectionId [%s].", collectionId);
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    log.debug(
+      "Deleted [{}] dashboards that were part of collection with collectionId [{}]",
+      deleteResponse.getDeleted(),
+      collectionId
+    );
   }
 
   public void deleteDashboard(String dashboardId) {

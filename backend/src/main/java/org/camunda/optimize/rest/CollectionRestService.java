@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDt
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
@@ -28,6 +29,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -71,40 +73,6 @@ public class CollectionRestService {
 
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionService.updatePartialCollection(collectionId, userId, updatedCollection);
-  }
-
-  /**
-   * Adds entity to collection (if it wasn't already contained before)
-   *
-   * @param collectionId    the id of the collection
-   * @param entityUpdateDto contains the id of the entity to add
-   */
-  @POST
-  @Path("/{id}/entity/")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public void addEntity(@Context ContainerRequestContext requestContext,
-                        @PathParam("id") String collectionId,
-                        @NotNull CollectionEntityUpdateDto entityUpdateDto) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    collectionService.addEntityToCollection(collectionId, entityUpdateDto.getEntityId(), userId);
-  }
-
-  /**
-   * Removes entity from collection.
-   *
-   * @param collectionId the id of the collection
-   * @param entityId     the id of the entity to remove
-   */
-  @DELETE
-  @Path("/{id}/entity/{entityId}")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public void removeEntity(@Context ContainerRequestContext requestContext,
-                           @PathParam("id") String collectionId,
-                           @PathParam("entityId") String entityId) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    collectionService.removeEntityFromCollection(collectionId, entityId, userId);
   }
 
   @GET
@@ -167,7 +135,7 @@ public class CollectionRestService {
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public SimpleCollectionDefinitionDto getCollections(@PathParam("id") String collectionId) {
+  public SimpleCollectionDefinitionDto getCollection(@PathParam("id") String collectionId) {
     return collectionService.getCollectionDefinition(collectionId);
   }
 
@@ -177,10 +145,21 @@ public class CollectionRestService {
   @DELETE
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public void deleteCollection(@PathParam("id") String collectionId) {
-    collectionService.deleteCollection(collectionId);
+  public void deleteCollection(@PathParam("id") String collectionId,
+                               @QueryParam("force") boolean force) throws OptimizeConflictException {
+    collectionService.deleteCollection(collectionId, force);
   }
 
+  /**
+   * Retrieve the conflicting items that would occur on performing a delete.
+   */
+  @GET
+  @Path("/{id}/delete-conflicts")
+  @Produces(MediaType.APPLICATION_JSON)
+  public ConflictResponseDto getDeleteConflicts(@Context ContainerRequestContext requestContext,
+                                                @PathParam("id") String collectionId) {
+    return collectionService.getDeleteConflictingItems(collectionId);
+  }
 
 }
 

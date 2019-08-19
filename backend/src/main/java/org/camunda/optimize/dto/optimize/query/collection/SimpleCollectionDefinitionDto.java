@@ -5,6 +5,6 @@
  */
 package org.camunda.optimize.dto.optimize.query.collection;
 
-public class SimpleCollectionDefinitionDto extends BaseCollectionDefinitionDto<String> {
+public class SimpleCollectionDefinitionDto extends BaseCollectionDefinitionDto<CollectionDataDto> {
 
 }

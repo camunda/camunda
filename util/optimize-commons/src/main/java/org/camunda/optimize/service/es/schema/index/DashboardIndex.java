@@ -26,6 +26,7 @@ public class DashboardIndex extends StrictIndexMappingCreator {
   public static final String OWNER = "owner";
   public static final String LAST_MODIFIER = "lastModifier";
   public static final String REPORTS = "reports";
+  public static final String COLLECTION_ID = "collectionId";
 
   public static final String POSITION = "position";
   public static final String X_POSITION = "x";
@@ -76,6 +77,9 @@ public class DashboardIndex extends StrictIndexMappingCreator {
         .startObject("properties");
           addNestedReportsField(newBuilder)
         .endObject()
+      .endObject()
+      .startObject(COLLECTION_ID)
+        .field("type","keyword")
       .endObject();
      return newBuilder;
   }

@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
+import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.writer.ReportWriter;
@@ -47,6 +48,9 @@ public class ReportServiceConflictTest {
   @Mock
   ReportRelationService reportRelationService;
 
+  @Mock
+  CollectionService collectionService;
+
   ReportService underTest;
 
   @Before
@@ -56,7 +60,8 @@ public class ReportServiceConflictTest {
       reportReader,
       reportEvaluator,
       authorizationService,
-      reportRelationService
+      reportRelationService,
+      collectionService
     );
   }
 

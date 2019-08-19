@@ -17,4 +17,5 @@ public class BaseDashboardDefinitionDto {
   protected OffsetDateTime created;
   protected String owner;
   protected String lastModifier;
+  protected String collectionId;
 }

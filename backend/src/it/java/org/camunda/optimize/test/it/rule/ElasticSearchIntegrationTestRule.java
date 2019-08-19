@@ -14,12 +14,15 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportType;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -35,13 +38,14 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -67,15 +71,22 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 @Slf4j
 public class ElasticSearchIntegrationTestRule extends TestWatcher {
@@ -168,6 +179,75 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       throw new OptimizeIntegrationTestException("Unable to add an entry to elasticsearch", e);
     }
     addEntryToTracker(type, id);
+  }
+
+  public void moveDashboardToCollection(String dashboardId, String collectionId) {
+    try {
+      UpdateRequest updateRequest = new UpdateRequest(DASHBOARD_INDEX_NAME, DASHBOARD_INDEX_NAME, dashboardId)
+        .doc(jsonBuilder()
+               .startObject()
+               .field(DashboardIndex.COLLECTION_ID, collectionId)
+               .endObject())
+        .setRefreshPolicy(IMMEDIATE);
+
+      final UpdateResponse update = getOptimizeElasticClient().update(updateRequest, RequestOptions.DEFAULT);
+      assertThat(update.status().getStatus(), is(200));
+
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Unable to move dashboard to collection", e);
+    }
+  }
+
+  public void moveCombinedReportToCollection(String reportId, String collectionId) {
+    try {
+      UpdateRequest updateRequest = new UpdateRequest(COMBINED_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME, reportId)
+        .doc(jsonBuilder()
+               .startObject()
+               .field(AbstractReportIndex.COLLECTION_ID, collectionId)
+               .endObject());
+
+      final UpdateResponse update = getOptimizeElasticClient().update(updateRequest, RequestOptions.DEFAULT);
+      assertThat(update.status().getStatus(), is(200));
+
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Unable to move dashboard to collection", e);
+    }
+  }
+
+  public void moveSingleReportToCollection(String reportId, ReportType reportType, String collectionId) {
+    try {
+      UpdateRequest updateRequest;
+      switch (reportType) {
+        case DECISION:
+          updateRequest = new UpdateRequest(
+            SINGLE_DECISION_REPORT_INDEX_NAME,
+            SINGLE_DECISION_REPORT_INDEX_NAME,
+            reportId
+          ).doc(jsonBuilder()
+                  .startObject()
+                  .field(AbstractReportIndex.COLLECTION_ID, collectionId)
+                  .endObject());
+          break;
+        case PROCESS:
+          updateRequest = new UpdateRequest(
+            SINGLE_PROCESS_REPORT_INDEX_NAME,
+            SINGLE_PROCESS_REPORT_INDEX_NAME,
+            reportId
+          ).doc(jsonBuilder()
+                  .startObject()
+                  .field(AbstractReportIndex.COLLECTION_ID, collectionId)
+                  .endObject());
+          break;
+        default:
+          throw new IllegalStateException("Unexpected value: " + reportType);
+      }
+
+      final UpdateResponse update = getOptimizeElasticClient().update(updateRequest, RequestOptions.DEFAULT);
+      assertThat(update.status().getStatus(), is(200));
+
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Unable to move dashboard to collection", e);
+    }
   }
 
   public OffsetDateTime getLastProcessInstanceImportTimestamp() throws IOException {
@@ -424,7 +504,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       .build();
     ClusterUpdateSettingsRequest clusterUpdateSettingsRequest = new ClusterUpdateSettingsRequest();
     clusterUpdateSettingsRequest.persistentSettings(settings);
-    try (XContentBuilder builder = XContentFactory.jsonBuilder()) {
+    try (XContentBuilder builder = jsonBuilder()) {
       // low level request as we need body serialized with flat_settings option for AWS hosted elasticsearch support
       Request request = new Request("PUT", "/_cluster/settings");
       request.setJsonEntity(Strings.toString(

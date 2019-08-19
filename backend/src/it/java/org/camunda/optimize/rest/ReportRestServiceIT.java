@@ -42,7 +42,10 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.dto.optimize.query.report.ReportType.DECISION;
+import static org.camunda.optimize.dto.optimize.query.report.ReportType.PROCESS;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -59,7 +62,7 @@ public class ReportRestServiceIT {
   private static final String DECISION_DEFINITION_KEY = "invoiceClassification";
 
   private static Object[] processAndDecisionReportType() {
-    return new Object[]{ReportType.PROCESS, ReportType.DECISION};
+    return new Object[]{PROCESS, DECISION};
   }
 
   private static final String RANDOM_KEY = "someRandomKey";
@@ -188,9 +191,9 @@ public class ReportRestServiceIT {
   public void getStoredReportsWithNameFromXml() {
     //given
     String idProcessReport = addEmptyProcessReportToOptimize();
-    updateReportWithValidXml(idProcessReport, ReportType.PROCESS);
+    updateReportWithValidXml(idProcessReport, PROCESS);
     String idDecisionReport = addEmptyDecisionReportToOptimize();
-    updateReportWithValidXml(idDecisionReport, ReportType.DECISION);
+    updateReportWithValidXml(idDecisionReport, DECISION);
 
     // when
     List<ReportDefinitionDto> reports = getAllReports();
@@ -503,10 +506,12 @@ public class ReportRestServiceIT {
     assertThat(response.getStatus(), is(200));
   }
 
+
   @Test
-  public void copySingleReport() {
-    SingleProcessReportDefinitionDto single = constructProcessReportWithFakePD();
-    String id = createAndStoreDefaultProcessReportDefinition(single.getData());
+  @Parameters(method = "processAndDecisionReportType")
+  public void copySingleReport(ReportType reportType) {
+    String id = createSingleReport(reportType);
+
     engineIntegrationRule.addUser("john", "john");
     engineIntegrationRule.grantAllAuthorizations("john");
 
@@ -529,14 +534,7 @@ public class ReportRestServiceIT {
     engineIntegrationRule.addUser("john", "john");
     engineIntegrationRule.grantAllAuthorizations("john");
 
-    IdDto id = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest()
-      .execute(IdDto.class, 200);
-
-    embeddedOptimizeRule.getRequestExecutor()
-      .buildUpdateCombinedProcessReportRequest(id.getId(), new CombinedReportDefinitionDto(combined), true)
-      .execute();
+    IdDto id = createAndUpdateCombinedReport(combined);
 
     IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
       .buildCopyReportRequest(id.getId())
@@ -551,28 +549,228 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void copyDecisionReport() {
-    DecisionReportDataDto decisionReportData = DecisionReportDataBuilder
-      .create()
-      .setDecisionDefinitionKey(RANDOM_KEY)
-      .setDecisionDefinitionVersion(RANDOM_VERSION)
-      .setReportDataType(DecisionReportDataType.RAW_DATA)
-      .build();
-    String id = createAndStoreDefaultDecisionReportDefinition(decisionReportData);
+  public void copyReportWithNameParameter() {
+    // given
+    final String collectionId = addEmptyCollectionToOptimize();
+
+    SingleProcessReportDefinitionDto single = constructProcessReportWithFakePD();
+    String id = createAndStoreDefaultProcessReportDefinition(single.getData());
+
+    final String testReportCopyName = "Hello World, I am a copied report???! :-o";
+
+    // when
+    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
+      .buildCopyReportRequest(id, collectionId)
+      .addSingleQueryParam("name", testReportCopyName)
+      .execute(IdDto.class, 200);
+
+    // then
+    ReportDefinitionDto oldReport = getReport(id);
+    ReportDefinitionDto report = getReport(copyId.getId());
+    assertThat(report.getData().toString(), is(oldReport.getData().toString()));
+    assertThat(report.getName(), is(testReportCopyName));
+  }
+
+
+  @Test
+  @Parameters(method = "processAndDecisionReportType")
+  public void copyPrivateSingleReportAndMoveToCollection(ReportType reportType) {
+    // given
+    final String collectionId = addEmptyCollectionToOptimize();
+    String id = createSingleReport(reportType);
+
 
     engineIntegrationRule.addUser("john", "john");
     engineIntegrationRule.grantAllAuthorizations("john");
 
+    // when
     IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
-      .buildCopyReportRequest(id)
+      .buildCopyReportRequest(id, collectionId)
       .withUserAuthentication("john", "john")
       .execute(IdDto.class, 200);
 
+    // then
     ReportDefinitionDto oldReport = getReport(id);
     ReportDefinitionDto report = getReport(copyId.getId());
     assertThat(report.getData().toString(), is(oldReport.getData().toString()));
     assertThat(oldReport.getName() + " – Copy", is(report.getName()));
     assertThat(report.getLastModifier(), is("john"));
+    assertThat(oldReport.getCollectionId(), is(nullValue()));
+    assertThat(report.getCollectionId(), is(collectionId));
+  }
+
+  @Test
+  public void copyPrivateCombinedReportAndMoveToCollection() {
+    // given
+    final String collectionId = addEmptyCollectionToOptimize();
+    final String report1 = addEmptyProcessReportToOptimize();
+    final String report2 = addEmptyProcessReportToOptimize();
+    CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReport(report1, report2);
+
+
+    engineIntegrationRule.addUser("john", "john");
+    engineIntegrationRule.grantAllAuthorizations("john");
+
+    IdDto id = createAndUpdateCombinedReport(combined);
+
+    // when
+    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
+      .buildCopyReportRequest(id.getId(), collectionId)
+      .withUserAuthentication("john", "john")
+      .execute(IdDto.class, 200);
+
+    // then
+    ReportDefinitionDto oldReport = getReport(id.getId());
+    ReportDefinitionDto newReport = getReport(copyId.getId());
+    assertThat(oldReport.getName() + " – Copy", is(newReport.getName()));
+    assertThat(newReport.getLastModifier(), is("john"));
+    assertThat(oldReport.getCollectionId(), is(nullValue()));
+    assertThat(newReport.getCollectionId(), is(collectionId));
+
+    final CombinedReportDataDto oldData = (CombinedReportDataDto) oldReport.getData();
+    assertThat(oldData.getReportIds().isEmpty(), is(false));
+    assertThat(oldData.getReportIds(), containsInAnyOrder(report1, report2));
+
+    final CombinedReportDataDto newData = (CombinedReportDataDto) newReport.getData();
+    assertThat(newData.getReportIds().isEmpty(), is(false));
+    assertThat(newData.getReportIds(), not(containsInAnyOrder(report1, report2)));
+  }
+
+  @Test
+  @Parameters(method = "processAndDecisionReportType")
+  public void copySingleReportFromCollectionToPrivateEntities(ReportType reportType) {
+    // given
+    final String collectionId = addEmptyCollectionToOptimize();
+    String id = createSingleReport(reportType);
+    elasticSearchRule.moveSingleReportToCollection(id, reportType, collectionId);
+
+
+    engineIntegrationRule.addUser("john", "john");
+    engineIntegrationRule.grantAllAuthorizations("john");
+
+    // when
+    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
+      .buildCopyReportRequest(id, "null")
+      .withUserAuthentication("john", "john")
+      .execute(IdDto.class, 200);
+
+    // then
+    ReportDefinitionDto oldReport = getReport(id);
+    ReportDefinitionDto report = getReport(copyId.getId());
+    assertThat(report.getData().toString(), is(oldReport.getData().toString()));
+    assertThat(oldReport.getName() + " – Copy", is(report.getName()));
+    assertThat(report.getLastModifier(), is("john"));
+    assertThat(oldReport.getCollectionId(), is(collectionId));
+    assertThat(report.getCollectionId(), is(nullValue()));
+  }
+
+  @Test
+  public void copyCombinedReportFromCollectionToPrivateEntities() {
+    // given
+    final String collectionId = addEmptyCollectionToOptimize();
+
+    final String report1 = addEmptyProcessReportToOptimize();
+    final String report2 = addEmptyProcessReportToOptimize();
+    CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReport(report1, report2);
+
+    engineIntegrationRule.addUser("john", "john");
+    engineIntegrationRule.grantAllAuthorizations("john");
+
+    IdDto id = createAndUpdateCombinedReport(combined);
+    elasticSearchRule.moveCombinedReportToCollection(id.getId(), collectionId);
+
+    // when
+    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
+      .buildCopyReportRequest(id.getId(), "null")
+      .withUserAuthentication("john", "john")
+      .execute(IdDto.class, 200);
+
+    // then
+    ReportDefinitionDto oldReport = getReport(id.getId());
+    ReportDefinitionDto newReport = getReport(copyId.getId());
+
+    assertThat(oldReport.getName() + " – Copy", is(newReport.getName()));
+    assertThat(newReport.getLastModifier(), is("john"));
+    assertThat(oldReport.getCollectionId(), is(collectionId));
+    assertThat(newReport.getCollectionId(), is(nullValue()));
+
+    final CombinedReportDataDto oldData = (CombinedReportDataDto) oldReport.getData();
+    assertThat(oldData.getReportIds().isEmpty(), is(false));
+    assertThat(oldData.getReportIds(), containsInAnyOrder(report1, report2));
+
+    final CombinedReportDataDto newData = (CombinedReportDataDto) newReport.getData();
+    assertThat(newData.getReportIds().isEmpty(), is(false));
+    assertThat(newData.getReportIds(), not(containsInAnyOrder(report1, report2)));
+  }
+
+  @Test
+  @Parameters(method = "processAndDecisionReportType")
+  public void copySingleReportFromCollectionToDifferentCollection(ReportType reportType) {
+    // given
+    final String collectionId = addEmptyCollectionToOptimize();
+    String id = createSingleReport(reportType);
+    elasticSearchRule.moveSingleReportToCollection(id, reportType, collectionId);
+
+
+    engineIntegrationRule.addUser("john", "john");
+    engineIntegrationRule.grantAllAuthorizations("john");
+
+    final String newCollectionId = addEmptyCollectionToOptimize();
+
+    // when
+    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
+      .buildCopyReportRequest(id, newCollectionId)
+      .withUserAuthentication("john", "john")
+      .execute(IdDto.class, 200);
+
+    // then
+    ReportDefinitionDto oldReport = getReport(id);
+    ReportDefinitionDto newReport = getReport(copyId.getId());
+    assertThat(newReport.getData().toString(), is(oldReport.getData().toString()));
+    assertThat(oldReport.getName() + " – Copy", is(newReport.getName()));
+    assertThat(newReport.getLastModifier(), is("john"));
+    assertThat(oldReport.getCollectionId(), is(collectionId));
+    assertThat(newReport.getCollectionId(), is(newCollectionId));
+  }
+
+  @Test
+  public void copyCombinedReportFromCollectionToDifferentCollection() {
+    // given
+    final String collectionId = addEmptyCollectionToOptimize();
+
+    final String report1 = addEmptyProcessReportToOptimize();
+    final String report2 = addEmptyProcessReportToOptimize();
+    CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReport(report1, report2);
+
+    engineIntegrationRule.addUser("john", "john");
+    engineIntegrationRule.grantAllAuthorizations("john");
+
+    IdDto id = createAndUpdateCombinedReport(combined);
+    elasticSearchRule.moveCombinedReportToCollection(id.getId(), collectionId);
+
+    final String newCollectionId = addEmptyCollectionToOptimize();
+
+    // when
+    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
+      .buildCopyReportRequest(id.getId(), newCollectionId)
+      .withUserAuthentication("john", "john")
+      .execute(IdDto.class, 200);
+
+    // then
+    ReportDefinitionDto oldReport = getReport(id.getId());
+    ReportDefinitionDto newReport = getReport(copyId.getId());
+
+    assertThat(oldReport.getName() + " – Copy", is(newReport.getName()));
+    assertThat(newReport.getLastModifier(), is("john"));
+    assertThat(oldReport.getCollectionId(), is(collectionId));
+    assertThat(newReport.getCollectionId(), is(newCollectionId));
+    final CombinedReportDataDto oldData = (CombinedReportDataDto) oldReport.getData();
+    assertThat(oldData.getReportIds().isEmpty(), is(false));
+    assertThat(oldData.getReportIds(), containsInAnyOrder(report1, report2));
+
+    final CombinedReportDataDto newData = (CombinedReportDataDto) newReport.getData();
+    assertThat(newData.getReportIds().isEmpty(), is(false));
+    assertThat(newData.getReportIds(), not(containsInAnyOrder(report1, report2)));
   }
 
   @Test
@@ -615,8 +813,71 @@ public class ReportRestServiceIT {
     AbstractSharingIT.assertErrorFields(response);
   }
 
+  private Response updateSingleReportRequest(final String reportId, final ReportType reportType,
+                                             final String collectionId) {
+    final ReportDefinitionDto reportDef = embeddedOptimizeRule.getRequestExecutor()
+      .buildGetReportRequest(reportId).execute(ReportDefinitionDto.class, 200);
+
+    switch (reportType) {
+      case PROCESS:
+        SingleProcessReportDefinitionDto processReportDefinition = (SingleProcessReportDefinitionDto) reportDef;
+        processReportDefinition.setCollectionId(collectionId);
+        return embeddedOptimizeRule.getRequestExecutor()
+          .buildUpdateSingleProcessReportRequest(reportId, processReportDefinition)
+          .execute(204);
+      case DECISION:
+        SingleDecisionReportDefinitionDto decisionReportDefinition = (SingleDecisionReportDefinitionDto) reportDef;
+        decisionReportDefinition.setCollectionId(collectionId);
+        return embeddedOptimizeRule.getRequestExecutor()
+          .buildUpdateSingleDecisionReportRequest(reportId, decisionReportDefinition)
+          .execute(204);
+
+      default:
+        throw new IllegalStateException("Uncovered reportType: " + reportType);
+    }
+  }
+
+  private void updateCombinedReportRequest(final String reportId, final String collectionId) {
+    final CombinedReportDefinitionDto reportDefinition = embeddedOptimizeRule.getRequestExecutor()
+      .buildGetReportRequest(reportId).execute(CombinedReportDefinitionDto.class, 200);
+    reportDefinition.setCollectionId(collectionId);
+
+    embeddedOptimizeRule.getRequestExecutor()
+      .buildUpdateCombinedProcessReportRequest(reportId, reportDefinition)
+      .execute(204);
+  }
+
+  private Response updateReportRequest(final String id, final ReportType reportType) {
+    if (PROCESS.equals(reportType)) {
+      return embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildUpdateSingleProcessReportRequest(id, constructProcessReportWithFakePD())
+        .execute();
+    } else {
+      return embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildUpdateSingleDecisionReportRequest(id, constructDecisionReportWithFakeDD())
+        .execute();
+    }
+  }
+
+  private String addEmptyCollectionToOptimize() {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateCollectionRequest()
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
+  private String addNewEmptyCombinedReport() {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateCombinedReportRequest()
+      .execute(IdDto.class, 200).getId();
+  }
+
   private String addEmptyReportToOptimize(final ReportType reportType) {
-    return ReportType.PROCESS.equals(reportType)
+    return PROCESS.equals(reportType)
       ? addEmptyProcessReportToOptimize()
       : addEmptyDecisionReportToOptimize();
   }
@@ -626,6 +887,31 @@ public class ReportRestServiceIT {
       .getRequestExecutor()
       .buildGetReportRequest(id)
       .execute(ReportDefinitionDto.class, 200);
+  }
+
+  private String createSingleReport(final ReportType reportType) {
+    switch (reportType) {
+      case PROCESS:
+        SingleProcessReportDefinitionDto processDef = constructProcessReportWithFakePD();
+        return createAndStoreDefaultProcessReportDefinition(processDef.getData());
+      case DECISION:
+        SingleDecisionReportDefinitionDto decisionDef = constructDecisionReportWithFakeDD();
+        return createAndStoreDefaultDecisionReportDefinition(decisionDef.getData());
+      default:
+        throw new IllegalStateException("Unexpected value: " + reportType);
+    }
+  }
+
+  private IdDto createAndUpdateCombinedReport(final CombinedReportDataDto combined) {
+    IdDto id = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateCombinedReportRequest()
+      .execute(IdDto.class, 200);
+
+    embeddedOptimizeRule.getRequestExecutor()
+      .buildUpdateCombinedProcessReportRequest(id.getId(), new CombinedReportDefinitionDto(combined), true)
+      .execute();
+    return id;
   }
 
   private String createAndStoreDefaultProcessReportDefinition(ProcessReportDataDto processReportDataDto) {
@@ -702,7 +988,7 @@ public class ReportRestServiceIT {
   @SneakyThrows
   private Response updateReportWithValidXml(final String id, final ReportType reportType) {
     final Response response;
-    if (ReportType.PROCESS.equals(reportType)) {
+    if (PROCESS.equals(reportType)) {
       SingleProcessReportDefinitionDto reportDefinitionDto = getProcessReportDefinitionDtoWithXml(
         PROCESS_DEFINITION_XML_WITH_NAME
       );
@@ -748,20 +1034,6 @@ public class ReportRestServiceIT {
     return reportDefinitionDto;
   }
 
-
-  private Response updateReportRequest(final String id, final ReportType reportType) {
-    if (ReportType.PROCESS.equals(reportType)) {
-      return embeddedOptimizeRule
-        .getRequestExecutor()
-        .buildUpdateSingleProcessReportRequest(id, constructProcessReportWithFakePD())
-        .execute();
-    } else {
-      return embeddedOptimizeRule
-        .getRequestExecutor()
-        .buildUpdateSingleDecisionReportRequest(id, constructDecisionReportWithFakeDD())
-        .execute();
-    }
-  }
 
   private SingleProcessReportDefinitionDto constructProcessReportWithFakePD() {
     SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();

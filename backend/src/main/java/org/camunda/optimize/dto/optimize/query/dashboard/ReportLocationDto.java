@@ -5,9 +5,15 @@
  */
 package org.camunda.optimize.dto.optimize.query.dashboard;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@Builder(toBuilder = true)
+@NoArgsConstructor
+@AllArgsConstructor
 public class ReportLocationDto {
 
   protected String id;
