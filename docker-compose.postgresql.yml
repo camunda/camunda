@@ -19,8 +19,6 @@ services:
       - 9300:9300
     volumes:
       - "./backend/target/es_logs:/usr/share/elasticsearch/logs"
-      - "./backend/src/it/resources/es_conf/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml"
-      - "./backend/src/it/resources/es_conf/log4j2.properties:/usr/share/elasticsearch/config/log4j2.properties"
     restart: always
     cpu_count: 2
     mem_limit: 2g
