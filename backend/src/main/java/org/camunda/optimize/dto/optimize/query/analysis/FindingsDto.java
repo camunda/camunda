@@ -9,18 +9,25 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Optional;
+
 @Data
 public class FindingsDto {
   private Finding lowerOutlier;
   private Finding higherOutlier;
   private Double heat;
-  private Long outlierCount = 0L;
-  public void setLowerOutlier(Double percentile, Double relation) {
-    this.lowerOutlier = new Finding(percentile, relation);
+
+  public void setLowerOutlier(Double percentile, Double relation, Long count) {
+    this.lowerOutlier = new Finding(percentile, relation, count);
   }
 
-  public void setHigherOutlier(Double percentile, Double relation) {
-    this.higherOutlier = new Finding(percentile, relation);
+  public void setHigherOutlier(Double percentile, Double relation, Long count) {
+    this.higherOutlier = new Finding(percentile, relation, count);
+  }
+
+  public Long getOutlierCount() {
+    return Optional.ofNullable(lowerOutlier).map(Finding::getCount).orElse(0L)
+      + Optional.ofNullable(higherOutlier).map(Finding::getCount).orElse(0L);
   }
 
   @Data
@@ -29,6 +36,7 @@ public class FindingsDto {
   public class Finding {
     private Double percentile;
     private Double relation;
+    private Long count = 0L;
   }
 }
 

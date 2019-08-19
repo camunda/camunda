@@ -41,7 +41,6 @@ public class OutlierDetectionIT {
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
   public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule(engineRule.getEngineName());
 
-
   @Rule
   public RuleChain chain = RuleChain
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
@@ -67,11 +66,18 @@ public class OutlierDetectionIT {
       });
 
     // assuming normal distribution, left and right outliers should be of the same percentile
-    assertThat(outlierTest.get("testActivity1").getHigherOutlier().getPercentile(),
-      closeTo(outlierTest.get("testActivity1").getLowerOutlier().getPercentile(), 0.00001)
+    final FindingsDto activity1Findings = outlierTest.get("testActivity1");
+    final FindingsDto activity2Findings = outlierTest.get("testActivity2");
+    assertThat(
+      activity1Findings.getHigherOutlier().getPercentile(),
+      closeTo(activity1Findings.getLowerOutlier().getPercentile(), 0.00001)
     );
+    assertThat(activity1Findings.getLowerOutlier().getCount(), is(activity1Findings.getHigherOutlier().getCount()));
+    assertThat(activity1Findings.getOutlierCount(), is(activity1Findings.getHigherOutlier().getCount() * 2));
 
-    assertThat(outlierTest.get("testActivity2").getHeat() > outlierTest.get("testActivity1").getHeat(), is(true));
+    assertThat(activity2Findings.getHeat() > activity1Findings.getHeat(), is(true));
+    // second activity only has higher outliers
+    assertThat(activity2Findings.getOutlierCount(), is(activity2Findings.getHigherOutlier().getCount()));
   }
 
   @Test
@@ -140,7 +146,12 @@ public class OutlierDetectionIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     List<DurationChartEntryDto> durationChart = embeddedOptimizeRule.getRequestExecutor()
-      .buildFlowNodeDurationChartRequest("outlierTest", Collections.singletonList("1"), "chartTestActivity", Collections.singletonList(null))
+      .buildFlowNodeDurationChartRequest(
+        "outlierTest",
+        Collections.singletonList("1"),
+        "chartTestActivity",
+        Collections.singletonList(null)
+      )
       .executeAndReturnList(DurationChartEntryDto.class, 200);
 
     assertThat(durationChart.get(0).getValue(), is(1L));
@@ -148,10 +159,10 @@ public class OutlierDetectionIT {
 
   }
 
-  private void startPIsDistributedByDuration(ProcessDefinitionEngineDto processDefinition, Gaussian gaussian,
+  private void startPIsDistributedByDuration(ProcessDefinitionEngineDto processDefinition,
+                                             Gaussian gaussian,
                                              int numberOfDataPoints,
-                                             String... activityId) throws
-                                                                   SQLException {
+                                             String... activityId) throws SQLException {
 
     for (int i = 0; i <= numberOfDataPoints; i++) {
       for (int x = 0; x <= gaussian.value(i) * 1000; x++) {

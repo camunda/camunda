@@ -161,7 +161,9 @@ public class DurationOutliersReader {
       .subAggregation(filteredFlowNodes);
   }
 
-  public Map<String, FindingsDto> getFlowNodeOutlierMap(String procDefKey, List<String> procDefVersion, String userId,
+  public Map<String, FindingsDto> getFlowNodeOutlierMap(String procDefKey,
+                                                        List<String> procDefVersion,
+                                                        String userId,
                                                         List<String> tenantId) {
     if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, tenantId)) {
       throw new ForbiddenException("Current user is not authorized to access data of the provided tenant");
@@ -206,8 +208,7 @@ public class DurationOutliersReader {
     return mapToFlowNodeOutlierMap(query, aggregations);
   }
 
-  private Map<String, FindingsDto> mapToFlowNodeOutlierMap(BoolQueryBuilder query,
-                                                           Aggregations aggregations) {
+  private Map<String, FindingsDto> mapToFlowNodeOutlierMap(BoolQueryBuilder query, Aggregations aggregations) {
     HashMap<String, FindingsDto> result = new HashMap<>();
 
     List<? extends Terms.Bucket> buckets = ((Terms) ((Nested) aggregations.get(NESTED_AGG)).getAggregations()
@@ -244,21 +245,21 @@ public class DurationOutliersReader {
       } catch (IOException e) {
         throw new OptimizeRuntimeException(e.getMessage());
       }
-      PercentileRanks ranks =
-        ((Filter) (((Nested) singleNodeAggregation.get(EVENTS)).getAggregations()
+      PercentileRanks ranks = ((Filter) (((Nested) singleNodeAggregation.get(EVENTS)).getAggregations()
           .get(FILTERED_FLOW_NODES_AGG))).getAggregations().get(RANKS_AGG);
 
       if (stdDeviationBoundLower > statsAgg.getMin()) {
         double percent = ranks.percent(stdDeviationBoundLower);
-        finding.setLowerOutlier(percent, avg / stdDeviationBoundLower);
-        finding.setOutlierCount(Math.round(statsAgg.getCount() * 0.01 * percent));
+        finding.setLowerOutlier(
+          percent, avg / stdDeviationBoundLower, Math.round(statsAgg.getCount() * 0.01 * percent)
+        );
       }
 
       if (stdDeviationBoundHigher < statsAgg.getMax()) {
         double percent = ranks.percent(stdDeviationBoundHigher);
-        finding.setHigherOutlier(100 - percent, stdDeviationBoundHigher / avg);
-        // summing with existing outlier count as we want to have the sum of both lower and higher outliers count
-        finding.setOutlierCount(finding.getOutlierCount() + Math.round(statsAgg.getCount() * 0.01 * (100 - percent)));
+        finding.setHigherOutlier(
+          100 - percent, stdDeviationBoundHigher / avg, Math.round(statsAgg.getCount() * 0.01 * (100 - percent))
+        );
       }
 
       result.put(bucket.getKeyAsString(), finding);
