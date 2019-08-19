@@ -122,6 +122,18 @@
       <groupId>io.netty</groupId>
       <artifactId>netty-handler</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>com.github.tomakehurst</groupId>
+      <artifactId>wiremock-jre8</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

@@ -50,10 +50,7 @@ public class OAuthCredentialsProviderBuilder {
     return clientSecret;
   }
 
-  /**
-   * The recipient of the access token. Should be equal to the broker contact point {@link
-   * ZeebeClientBuilderImpl#brokerContactPoint(String)}.
-   */
+  /** The resource for which the the access token should be valid. */
   public OAuthCredentialsProviderBuilder audience(String audience) {
     this.audience = audience;
     return this;
@@ -71,7 +68,7 @@ public class OAuthCredentialsProviderBuilder {
   }
 
   /** @see OAuthCredentialsProviderBuilder#authorizationServerUrl(String) */
-  public URL getAuthorizationServer() {
+  URL getAuthorizationServer() {
     return authorizationServer;
   }
 

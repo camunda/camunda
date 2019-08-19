@@ -15,11 +15,12 @@
  */
 package io.zeebe.client.impl.command;
 
+import io.grpc.stub.StreamObserver;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.FinalCommandStep;
 import io.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.zeebe.client.api.command.SetVariablesCommandStep1.SetVariablesCommandStep2;
-import io.zeebe.client.impl.ZeebeClientFutureImpl;
+import io.zeebe.client.impl.RetriableClientFutureImpl;
 import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
@@ -29,24 +30,26 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 public class SetVariablesCommandImpl implements SetVariablesCommandStep1, SetVariablesCommandStep2 {
 
   private final GatewayStub asyncStub;
   private final Builder builder;
   private final ZeebeObjectMapper objectMapper;
-  private final long elementInstanceKey;
+  private final Predicate<Throwable> retryPredicate;
   private Duration requestTimeout;
 
   public SetVariablesCommandImpl(
       GatewayStub asyncStub,
       ZeebeObjectMapper objectMapper,
       long elementInstanceKey,
-      Duration requestTimeout) {
+      Duration requestTimeout,
+      Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.objectMapper = objectMapper;
-    this.elementInstanceKey = elementInstanceKey;
     this.requestTimeout = requestTimeout;
+    this.retryPredicate = retryPredicate;
     this.builder = SetVariablesRequest.newBuilder();
     builder.setElementInstanceKey(elementInstanceKey);
   }
@@ -61,12 +64,19 @@ public class SetVariablesCommandImpl implements SetVariablesCommandStep1, SetVar
   public ZeebeFuture<Void> send() {
     final SetVariablesRequest request = builder.build();
 
-    final ZeebeClientFutureImpl<Void, SetVariablesResponse> future = new ZeebeClientFutureImpl<>();
+    final RetriableClientFutureImpl<Void, SetVariablesResponse> future =
+        new RetriableClientFutureImpl<>(
+            retryPredicate, streamObserver -> send(request, streamObserver));
 
+    send(request, future);
+    return future;
+  }
+
+  private void send(
+      SetVariablesRequest request, StreamObserver<SetVariablesResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
-        .setVariables(request, future);
-    return future;
+        .setVariables(request, streamObserver);
   }
 
   @Override

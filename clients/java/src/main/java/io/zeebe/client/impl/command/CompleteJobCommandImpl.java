@@ -15,30 +15,38 @@
  */
 package io.zeebe.client.impl.command;
 
+import io.grpc.stub.StreamObserver;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.zeebe.client.api.command.FinalCommandStep;
-import io.zeebe.client.impl.ZeebeClientFutureImpl;
+import io.zeebe.client.impl.RetriableClientFutureImpl;
 import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
-import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest.Builder;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 public class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobCommandStep1>
     implements CompleteJobCommandStep1 {
 
   private final GatewayStub asyncStub;
   private final Builder builder;
+  private final Predicate<Throwable> retryPredicate;
   private Duration requestTimeout;
 
   public CompleteJobCommandImpl(
-      GatewayStub asyncStub, ZeebeObjectMapper objectMapper, long key, Duration requestTimeout) {
+      GatewayStub asyncStub,
+      ZeebeObjectMapper objectMapper,
+      long key,
+      Duration requestTimeout,
+      Predicate<Throwable> retryPredicate) {
     super(objectMapper);
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
+    this.retryPredicate = retryPredicate;
     builder = CompleteJobRequest.newBuilder();
     builder.setJobKey(key);
   }
@@ -53,13 +61,19 @@ public class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobComm
   public ZeebeFuture<Void> send() {
     final CompleteJobRequest request = builder.build();
 
-    final ZeebeClientFutureImpl<Void, GatewayOuterClass.CompleteJobResponse> future =
-        new ZeebeClientFutureImpl<>();
+    final RetriableClientFutureImpl<Void, CompleteJobResponse> future =
+        new RetriableClientFutureImpl<>(
+            retryPredicate, streamObserver -> send(request, streamObserver));
 
+    send(request, future);
+    return future;
+  }
+
+  private void send(
+      CompleteJobRequest request, StreamObserver<CompleteJobResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
-        .completeJob(request, future);
-    return future;
+        .completeJob(request, streamObserver);
   }
 
   @Override

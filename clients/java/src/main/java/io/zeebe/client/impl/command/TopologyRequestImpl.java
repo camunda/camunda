@@ -15,26 +15,31 @@
  */
 package io.zeebe.client.impl.command;
 
+import io.grpc.stub.StreamObserver;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.FinalCommandStep;
 import io.zeebe.client.api.command.TopologyRequestStep1;
 import io.zeebe.client.api.response.Topology;
-import io.zeebe.client.impl.ZeebeClientFutureImpl;
+import io.zeebe.client.impl.RetriableClientFutureImpl;
 import io.zeebe.client.impl.response.TopologyImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 public class TopologyRequestImpl implements TopologyRequestStep1 {
 
   private final GatewayStub asyncStub;
+  private final Predicate<Throwable> retryPredicate;
   private Duration requestTimeout;
 
-  public TopologyRequestImpl(final GatewayStub asyncStub, Duration requestTimeout) {
+  public TopologyRequestImpl(
+      final GatewayStub asyncStub, Duration requestTimeout, Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
+    this.retryPredicate = retryPredicate;
   }
 
   @Override
@@ -47,13 +52,18 @@ public class TopologyRequestImpl implements TopologyRequestStep1 {
   public ZeebeFuture<Topology> send() {
     final TopologyRequest request = TopologyRequest.getDefaultInstance();
 
-    final ZeebeClientFutureImpl<Topology, TopologyResponse> future =
-        new ZeebeClientFutureImpl<>(TopologyImpl::new);
+    final RetriableClientFutureImpl<Topology, TopologyResponse> future =
+        new RetriableClientFutureImpl<>(
+            TopologyImpl::new, retryPredicate, streamObserver -> send(request, streamObserver));
 
-    asyncStub
-        .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
-        .topology(request, future);
+    send(request, future);
 
     return future;
+  }
+
+  private void send(TopologyRequest request, StreamObserver<TopologyResponse> streamObserver) {
+    asyncStub
+        .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
+        .topology(request, streamObserver);
   }
 }

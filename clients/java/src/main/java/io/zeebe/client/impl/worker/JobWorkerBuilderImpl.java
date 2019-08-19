@@ -35,6 +35,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Predicate;
 
 public class JobWorkerBuilderImpl
     implements JobWorkerBuilderStep1, JobWorkerBuilderStep2, JobWorkerBuilderStep3 {
@@ -46,7 +47,7 @@ public class JobWorkerBuilderImpl
   private final ZeebeObjectMapper objectMapper;
   private final ScheduledExecutorService executorService;
   private final List<Closeable> closeables;
-
+  private final Predicate<Throwable> retryPredicate;
   private String jobType;
   private JobHandler handler;
   private long timeout;
@@ -62,7 +63,8 @@ public class JobWorkerBuilderImpl
       JobClient jobClient,
       ZeebeObjectMapper objectMapper,
       ScheduledExecutorService executorService,
-      List<Closeable> closeables) {
+      List<Closeable> closeables,
+      Predicate<Throwable> retryPredicate) {
     this.gatewayStub = gatewayStub;
     this.jobClient = jobClient;
     this.objectMapper = objectMapper;
@@ -74,6 +76,7 @@ public class JobWorkerBuilderImpl
     this.maxJobsActive = configuration.getDefaultJobWorkerMaxJobsActive();
     this.pollInterval = configuration.getDefaultJobPollInterval();
     this.requestTimeout = configuration.getDefaultRequestTimeout();
+    this.retryPredicate = retryPredicate;
   }
 
   @Override
@@ -156,7 +159,8 @@ public class JobWorkerBuilderImpl
     final Duration deadline = requestTimeout.plus(DEADLINE_OFFSET);
 
     final JobRunnableFactory jobRunnableFactory = new JobRunnableFactory(jobClient, handler);
-    final JobPoller jobPoller = new JobPoller(gatewayStub, requestBuilder, objectMapper, deadline);
+    final JobPoller jobPoller =
+        new JobPoller(gatewayStub, requestBuilder, objectMapper, deadline, retryPredicate);
 
     final JobWorkerImpl jobWorker =
         new JobWorkerImpl(

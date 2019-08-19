@@ -16,14 +16,15 @@
 package io.zeebe.client.impl;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Objects;
 
-public class ZeebeClientCredentials {
+class ZeebeClientCredentials {
 
   @JsonProperty("access_token")
   private String accessToken;
 
   @JsonProperty("expires_in")
-  private String expiresIn;
+  private long expiresIn;
 
   @JsonProperty("token_type")
   private String tokenType;
@@ -31,13 +32,30 @@ public class ZeebeClientCredentials {
   @JsonProperty("scope")
   private String scope;
 
-  public ZeebeClientCredentials() {}
-
-  public String getAccessToken() {
+  String getAccessToken() {
     return accessToken;
   }
 
-  public String getTokenType() {
+  String getTokenType() {
     return tokenType;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(accessToken, expiresIn, tokenType, scope);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || !o.getClass().equals(this.getClass())) {
+      return false;
+    }
+
+    final ZeebeClientCredentials other = (ZeebeClientCredentials) o;
+
+    return accessToken.equals(other.accessToken)
+        && expiresIn == other.expiresIn
+        && tokenType.equals(other.tokenType)
+        && scope.equals(other.scope);
   }
 }

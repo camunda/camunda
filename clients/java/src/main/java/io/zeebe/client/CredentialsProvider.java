@@ -29,6 +29,8 @@ public interface CredentialsProvider {
    */
   void applyCredentials(Metadata headers);
 
+  boolean shouldRetryRequest(Throwable throwable);
+
   /** @return a builder to configure and create a new {@link OAuthCredentialsProvider}. */
   static OAuthCredentialsProviderBuilder newCredentialsProviderBuilder() {
     return new OAuthCredentialsProviderBuilder();

@@ -33,7 +33,8 @@ public class JobPollerTest extends ClientTest {
             rule.getGatewayStub(),
             ActivateJobsRequest.newBuilder(),
             new ZeebeObjectMapper(),
-            requestTimeout);
+            requestTimeout,
+            (t) -> false);
 
     // when
     jobPoller.poll(123, job -> {}, integer -> {});

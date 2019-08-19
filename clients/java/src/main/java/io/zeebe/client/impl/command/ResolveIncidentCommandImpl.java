@@ -15,28 +15,35 @@
  */
 package io.zeebe.client.impl.command;
 
+import io.grpc.stub.StreamObserver;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.FinalCommandStep;
 import io.zeebe.client.api.command.ResolveIncidentCommandStep1;
-import io.zeebe.client.impl.ZeebeClientFutureImpl;
+import io.zeebe.client.impl.RetriableClientFutureImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest.Builder;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 public class ResolveIncidentCommandImpl implements ResolveIncidentCommandStep1 {
 
   private final GatewayStub asyncStub;
   private final Builder builder;
+  private final Predicate<Throwable> retryPredicate;
   private Duration requestTimeout;
 
   public ResolveIncidentCommandImpl(
-      GatewayStub asyncStub, long incidentKey, Duration requestTimeout) {
+      GatewayStub asyncStub,
+      long incidentKey,
+      Duration requestTimeout,
+      Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.builder = ResolveIncidentRequest.newBuilder().setIncidentKey(incidentKey);
     this.requestTimeout = requestTimeout;
+    this.retryPredicate = retryPredicate;
   }
 
   @Override
@@ -49,12 +56,18 @@ public class ResolveIncidentCommandImpl implements ResolveIncidentCommandStep1 {
   public ZeebeFuture<Void> send() {
     final ResolveIncidentRequest request = builder.build();
 
-    final ZeebeClientFutureImpl<Void, ResolveIncidentResponse> future =
-        new ZeebeClientFutureImpl<>();
+    final RetriableClientFutureImpl<Void, ResolveIncidentResponse> future =
+        new RetriableClientFutureImpl<>(
+            retryPredicate, streamObserver -> send(request, streamObserver));
 
+    send(request, future);
+    return future;
+  }
+
+  private void send(
+      ResolveIncidentRequest request, StreamObserver<ResolveIncidentResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
-        .resolveIncident(request, future);
-    return future;
+        .resolveIncident(request, streamObserver);
   }
 }

@@ -15,35 +15,54 @@
  */
 package io.zeebe.client;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
+import io.grpc.ServerCall;
 import io.grpc.ServerInterceptors;
+import io.grpc.Status;
 import io.grpc.testing.GrpcServerRule;
-import io.zeebe.client.impl.OAuthCredentialsProvider;
+import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.impl.OAuthCredentialsProviderBuilder;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.util.RecordingGatewayService;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
+import java.time.Duration;
+import java.util.function.BiConsumer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 public class OAuthCredentialsProviderTest {
+
+  private static final Key<String> AUTH_KEY =
+      Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
+  private static final String SCOPE = "grpc";
+  private static final long EXPIRES_IN = Duration.ofDays(1).getSeconds();
+  private static final String SECRET = "secret";
+  private static final String AUDIENCE = "endpoint";
+  private static final String ACCESS_TOKEN = "someToken";
+  private static final String TOKEN_TYPE = "Bearer";
+  private static final String CLIENT_ID = "client";
+
   @Rule public final GrpcServerRule serverRule = new GrpcServerRule();
+
+  @Rule
+  public final WireMockRule wireMockRule =
+      new WireMockRule(wireMockConfig().dynamicPort().dynamicPort());
 
   private final RecordingInterceptor recordingInterceptor = new RecordingInterceptor();
   private final RecordingGatewayService gatewayService = new RecordingGatewayService();
@@ -62,38 +81,110 @@ public class OAuthCredentialsProviderTest {
       client.close();
       client = null;
     }
+
+    recordingInterceptor.reset();
   }
 
   @Test
-  public void shouldModifyCallHeaders() throws IOException {
+  public void shouldRequestTokenAndAddToCall() {
     // given
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    final OAuthCredentialsProviderBuilder credsProviderBuilder =
-        Mockito.spy(
-            new OAuthCredentialsProviderBuilder()
-                .clientId("id")
-                .clientSecret("secret")
-                .audience("endpoint"));
-    final HttpURLConnection connection = mockAuthServerConnection(credsProviderBuilder);
+    mockCredentials(ACCESS_TOKEN);
 
-    builder.usePlaintext().credentialsProvider(new OAuthCredentialsProvider(credsProviderBuilder));
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder
+        .usePlaintext()
+        .credentialsProvider(
+            new OAuthCredentialsProviderBuilder()
+                .clientId(CLIENT_ID)
+                .clientSecret(SECRET)
+                .audience(AUDIENCE)
+                .authorizationServerUrl("http://localhost:" + wireMockRule.port() + "/oauth/token")
+                .build());
     client = new ZeebeClientImpl(builder, serverRule.getChannel());
 
     // when
     client.newTopologyRequest().send().join();
 
     // then
-    final Key<String> key = Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
-    assertThat(recordingInterceptor.getCapturedHeaders().get(key)).isEqualTo("Bearer someToken");
+    assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
+        .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
+  }
 
-    final ByteArrayOutputStream outputStream = (ByteArrayOutputStream) connection.getOutputStream();
-    final String jsonPayload = new String(outputStream.toByteArray());
-    final Map<String, String> payload =
-        new ObjectMapper().readerFor(Map.class).readValue(jsonPayload);
-    assertThat(payload)
-        .containsEntry("client_id", "id")
-        .containsEntry("client_secret", "secret")
-        .containsEntry("audience", "endpoint");
+  @Test
+  public void shouldRetryRequestWithNewCredentials() {
+    // given
+    final String firstToken = "firstToken";
+    mockCredentials(firstToken);
+    final BiConsumer<ServerCall, Metadata> interceptAction =
+        Mockito.spy(
+            new BiConsumer<ServerCall, Metadata>() {
+              @Override
+              public void accept(ServerCall call, Metadata headers) {
+                mockCredentials(ACCESS_TOKEN);
+                recordingInterceptor.reset();
+                call.close(Status.UNAUTHENTICATED, headers);
+              }
+            });
+
+    recordingInterceptor.setInterceptAction(interceptAction);
+
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder
+        .usePlaintext()
+        .credentialsProvider(
+            new OAuthCredentialsProviderBuilder()
+                .clientId(CLIENT_ID)
+                .clientSecret(SECRET)
+                .audience(AUDIENCE)
+                .authorizationServerUrl("http://localhost:" + wireMockRule.port() + "/oauth/token")
+                .build());
+
+    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+
+    // when
+    client.newTopologyRequest().send().join();
+
+    // then
+    final ArgumentCaptor<Metadata> captor = ArgumentCaptor.forClass(Metadata.class);
+
+    Mockito.verify(interceptAction, times(1)).accept(any(ServerCall.class), captor.capture());
+    assertThat(captor.getValue().get(AUTH_KEY)).isEqualTo(TOKEN_TYPE + " " + firstToken);
+    assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
+        .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
+  }
+
+  @Test
+  public void shouldNotRetryWithSameCredentials() {
+    // given
+    mockCredentials(ACCESS_TOKEN);
+    final BiConsumer<ServerCall, Metadata> interceptAction =
+        Mockito.spy(
+            new BiConsumer<ServerCall, Metadata>() {
+              @Override
+              public void accept(ServerCall call, Metadata headers) {
+                call.close(Status.UNAUTHENTICATED, headers);
+              }
+            });
+
+    recordingInterceptor.setInterceptAction(interceptAction);
+
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder
+        .usePlaintext()
+        .credentialsProvider(
+            new OAuthCredentialsProviderBuilder()
+                .clientId(CLIENT_ID)
+                .clientSecret(SECRET)
+                .audience(AUDIENCE)
+                .authorizationServerUrl("http://localhost:" + wireMockRule.port() + "/oauth/token")
+                .build());
+
+    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+
+    // when
+    assertThatThrownBy(() -> client.newTopologyRequest().send().join())
+        .isInstanceOf(ClientException.class);
+    Mockito.verify(interceptAction, times(1)).accept(any(ServerCall.class), any(Metadata.class));
   }
 
   @Test
@@ -172,19 +263,29 @@ public class OAuthCredentialsProviderTest {
         .hasCauseInstanceOf(MalformedURLException.class);
   }
 
-  private HttpURLConnection mockAuthServerConnection(OAuthCredentialsProviderBuilder builder)
-      throws IOException {
-    final String jsonResponse = "{\"access_token\":\"someToken\",\"token_type\":\"Bearer\"}";
-
-    final URL authServerUrl = Mockito.spy(new URL("https://authServerUrl"));
-    final HttpURLConnection urlConnection = Mockito.mock(HttpURLConnection.class);
-    Mockito.when(urlConnection.getResponseCode()).thenReturn(200);
-    Mockito.when(urlConnection.getOutputStream()).thenReturn(new ByteArrayOutputStream());
-    Mockito.when(urlConnection.getInputStream())
-        .thenReturn(new ByteArrayInputStream(jsonResponse.getBytes(StandardCharsets.UTF_8)));
-
-    Mockito.when(authServerUrl.openConnection()).thenReturn(urlConnection);
-    Mockito.when(builder.getAuthorizationServer()).thenReturn(authServerUrl);
-    return urlConnection;
+  private void mockCredentials(final String accessToken) {
+    wireMockRule.stubFor(
+        WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
+            .withHeader("Accept", equalTo("application/json"))
+            .withRequestBody(
+                equalToJson(
+                    "{\"client_secret\":\""
+                        + SECRET
+                        + "\",\"client_id\":\""
+                        + CLIENT_ID
+                        + "\",\"audience\": \""
+                        + AUDIENCE
+                        + "\",\"grant_type\": \"client_credentials\"}"))
+            .willReturn(
+                WireMock.okJson(
+                    "{\"access_token\":\""
+                        + accessToken
+                        + "\",\"token_type\":\""
+                        + TOKEN_TYPE
+                        + "\",\"expires_in\":"
+                        + EXPIRES_IN
+                        + ",\"scope\":\""
+                        + SCOPE
+                        + "\"}")));
   }
 }

@@ -26,6 +26,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 
 public class JobPoller implements StreamObserver<ActivateJobsResponse> {
@@ -36,20 +38,23 @@ public class JobPoller implements StreamObserver<ActivateJobsResponse> {
   private final Builder requestBuilder;
   private final ZeebeObjectMapper objectMapper;
   private final long requestTimeout;
+  private final Predicate<Throwable> retryPredicate;
 
   private Consumer<ActivatedJob> jobConsumer;
-  private Consumer<Integer> doneCallback;
+  private IntConsumer doneCallback;
   private int activatedJobs;
 
   public JobPoller(
       GatewayStub gatewayStub,
       Builder requestBuilder,
       ZeebeObjectMapper objectMapper,
-      Duration requestTimeout) {
+      Duration requestTimeout,
+      Predicate<Throwable> retryPredicate) {
     this.gatewayStub = gatewayStub;
     this.requestBuilder = requestBuilder;
     this.objectMapper = objectMapper;
     this.requestTimeout = requestTimeout.toMillis();
+    this.retryPredicate = retryPredicate;
   }
 
   private void reset() {
@@ -57,7 +62,7 @@ public class JobPoller implements StreamObserver<ActivateJobsResponse> {
   }
 
   public void poll(
-      int maxJobsToActivate, Consumer<ActivatedJob> jobConsumer, Consumer<Integer> doneCallback) {
+      int maxJobsToActivate, Consumer<ActivatedJob> jobConsumer, IntConsumer doneCallback) {
     reset();
 
     requestBuilder.setMaxJobsToActivate(maxJobsToActivate);
@@ -88,12 +93,16 @@ public class JobPoller implements StreamObserver<ActivateJobsResponse> {
 
   @Override
   public void onError(Throwable throwable) {
-    LOG.warn(
-        "Failed to activated jobs for worker {} and job type {}",
-        requestBuilder.getWorker(),
-        requestBuilder.getType(),
-        throwable);
-    pollingDone();
+    if (retryPredicate.test(throwable)) {
+      poll();
+    } else {
+      LOG.warn(
+          "Failed to activated jobs for worker {} and job type {}",
+          requestBuilder.getWorker(),
+          requestBuilder.getType(),
+          throwable);
+      pollingDone();
+    }
   }
 
   @Override
