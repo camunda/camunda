@@ -12,15 +12,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.INPUTS;
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.MULTIVALUE_FIELD_DATE;
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.MULTIVALUE_FIELD_DOUBLE;
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.MULTIVALUE_FIELD_LONG;
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.OUTPUTS;
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.VARIABLE_CLAUSE_ID;
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.VARIABLE_CLAUSE_NAME;
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.VARIABLE_VALUE;
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.VARIABLE_VALUE_TYPE;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.INPUTS;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.MULTIVALUE_FIELD_DATE;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.MULTIVALUE_FIELD_DOUBLE;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.MULTIVALUE_FIELD_LONG;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.OUTPUTS;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.VARIABLE_CLAUSE_ID;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.VARIABLE_CLAUSE_NAME;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.VARIABLE_VALUE;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.VARIABLE_VALUE_TYPE;
 
 public class DecisionVariableHelper {
   private static final List<VariableType> MULTIVALUE_TYPE_FIELDS = Collections.unmodifiableList(Arrays.asList(

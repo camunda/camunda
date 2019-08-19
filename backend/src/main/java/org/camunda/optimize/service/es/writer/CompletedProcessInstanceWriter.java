@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -33,18 +33,18 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.BUSINESS_KEY;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DURATION;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ENGINE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_ID;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_KEY;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_VERSION;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STATE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.TENANT_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ENGINE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_VERSION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.STATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.TENANT_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -95,9 +95,9 @@ public class CompletedProcessInstanceWriter {
     try {
       progressReporter.start();
       final BoolQueryBuilder filterQuery = boolQuery()
-        .filter(termQuery(ProcessInstanceType.PROCESS_DEFINITION_KEY, processDefinitionKey))
-        .filter(rangeQuery(ProcessInstanceType.END_DATE).lt(dateTimeFormatter.format(endDate)));
-      DeleteByQueryRequest request = new DeleteByQueryRequest(PROC_INSTANCE_TYPE)
+        .filter(termQuery(ProcessInstanceIndex.PROCESS_DEFINITION_KEY, processDefinitionKey))
+        .filter(rangeQuery(ProcessInstanceIndex.END_DATE).lt(dateTimeFormatter.format(endDate)));
+      DeleteByQueryRequest request = new DeleteByQueryRequest(PROCESS_INSTANCE_INDEX_NAME)
         .setQuery(filterQuery)
         .setAbortOnVersionConflict(false)
         .setRefresh(true);
@@ -143,7 +143,9 @@ public class CompletedProcessInstanceWriter {
     );
     final String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
     final String processInstanceId = procInst.getProcessInstanceId();
-    UpdateRequest request = new UpdateRequest(PROC_INSTANCE_TYPE, PROC_INSTANCE_TYPE, processInstanceId)
+    UpdateRequest request = new UpdateRequest(
+      PROCESS_INSTANCE_INDEX_NAME,
+      PROCESS_INSTANCE_INDEX_NAME, processInstanceId)
       .script(updateScript)
       .upsert(newEntryIfAbsent, XContentType.JSON)
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

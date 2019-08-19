@@ -24,8 +24,8 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_SHARE_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REPORT_SHARE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_SHARE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REPORT_SHARE_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 @AllArgsConstructor
@@ -41,7 +41,7 @@ public class SharingWriter {
     String id = IdGenerator.getNextId();
     createSharingDto.setId(id);
     try {
-      IndexRequest request = new IndexRequest(REPORT_SHARE_TYPE, REPORT_SHARE_TYPE, id)
+      IndexRequest request = new IndexRequest(REPORT_SHARE_INDEX_NAME, REPORT_SHARE_INDEX_NAME, id)
         .source(objectMapper.writeValueAsString(createSharingDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -68,7 +68,7 @@ public class SharingWriter {
     String id = IdGenerator.getNextId();
     createSharingDto.setId(id);
     try {
-      IndexRequest request = new IndexRequest(DASHBOARD_SHARE_TYPE, DASHBOARD_SHARE_TYPE, id)
+      IndexRequest request = new IndexRequest(DASHBOARD_SHARE_INDEX_NAME, DASHBOARD_SHARE_INDEX_NAME, id)
         .source(objectMapper.writeValueAsString(createSharingDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -97,7 +97,7 @@ public class SharingWriter {
   public void updateDashboardShare(DashboardShareDto updatedShare) {
     String id = updatedShare.getId();
     try {
-      IndexRequest request = new IndexRequest(DASHBOARD_SHARE_TYPE, DASHBOARD_SHARE_TYPE, id)
+      IndexRequest request = new IndexRequest(DASHBOARD_SHARE_INDEX_NAME, DASHBOARD_SHARE_INDEX_NAME, id)
         .source(objectMapper.writeValueAsString(updatedShare), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -125,7 +125,7 @@ public class SharingWriter {
   public void deleteReportShare(String shareId) {
     log.debug("Deleting report share with id [{}]", shareId);
     DeleteRequest request =
-      new DeleteRequest(REPORT_SHARE_TYPE, REPORT_SHARE_TYPE, shareId)
+      new DeleteRequest(REPORT_SHARE_INDEX_NAME, REPORT_SHARE_INDEX_NAME, shareId)
         .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;
@@ -149,7 +149,7 @@ public class SharingWriter {
 
   public void deleteDashboardShare(String shareId) {
     log.debug("Deleting dashboard share with id [{}]", shareId);
-    DeleteRequest request = new DeleteRequest(DASHBOARD_SHARE_TYPE, DASHBOARD_SHARE_TYPE, shareId)
+    DeleteRequest request = new DeleteRequest(DASHBOARD_SHARE_INDEX_NAME, DASHBOARD_SHARE_INDEX_NAME, shareId)
       .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;

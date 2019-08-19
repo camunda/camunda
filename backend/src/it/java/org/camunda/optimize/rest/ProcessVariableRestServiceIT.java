@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -18,6 +19,7 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -88,7 +90,7 @@ public class ProcessVariableRestServiceIT {
     requestDto.setProcessDefinitionKey("aKey");
     requestDto.setProcessDefinitionVersion("aVersion");
     requestDto.setName("bla");
-    requestDto.setType("Boolean");
+    requestDto.setType(BOOLEAN);
 
     // when
     List responseList = embeddedOptimizeRule

@@ -11,8 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.type.DashboardShareType;
-import org.camunda.optimize.service.es.schema.type.ReportShareType;
+import org.camunda.optimize.service.es.schema.index.DashboardShareIndex;
+import org.camunda.optimize.service.es.schema.index.ReportShareIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetRequest;
@@ -34,9 +34,9 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_SHARE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_SHARE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REPORT_SHARE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REPORT_SHARE_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component
@@ -53,8 +53,8 @@ public class SharingReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
-    SearchRequest searchRequest = new SearchRequest(REPORT_SHARE_TYPE)
-      .types(REPORT_SHARE_TYPE)
+    SearchRequest searchRequest = new SearchRequest(REPORT_SHARE_INDEX_NAME)
+      .types(REPORT_SHARE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -84,7 +84,7 @@ public class SharingReader {
   public Optional<ReportShareDto> getReportShare(String shareId) {
     Optional<ReportShareDto> result = Optional.empty();
     log.debug("Fetching report share with id [{}]", shareId);
-    GetRequest getRequest = new GetRequest(REPORT_SHARE_TYPE, REPORT_SHARE_TYPE, shareId);
+    GetRequest getRequest = new GetRequest(REPORT_SHARE_INDEX_NAME, REPORT_SHARE_INDEX_NAME, shareId);
 
     GetResponse getResponse;
     try {
@@ -110,7 +110,7 @@ public class SharingReader {
   public Optional<DashboardShareDto> findDashboardShare(String shareId) {
     Optional<DashboardShareDto> result = Optional.empty();
     log.debug("Fetching dashboard share with id [{}]", shareId);
-    GetRequest getRequest = new GetRequest(DASHBOARD_SHARE_TYPE, DASHBOARD_SHARE_TYPE, shareId);
+    GetRequest getRequest = new GetRequest(DASHBOARD_SHARE_INDEX_NAME, DASHBOARD_SHARE_INDEX_NAME, shareId);
 
     GetResponse getResponse;
     try {
@@ -137,7 +137,7 @@ public class SharingReader {
     log.debug("Fetching share for resource [{}]", reportId);
     BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
     boolQueryBuilder = boolQueryBuilder
-      .must(QueryBuilders.termQuery(ReportShareType.REPORT_ID, reportId));
+      .must(QueryBuilders.termQuery(ReportShareIndex.REPORT_ID, reportId));
     return findReportShareByQuery(boolQueryBuilder);
   }
 
@@ -169,12 +169,12 @@ public class SharingReader {
   private SearchResponse performSearchShareForDashboardIdRequest(String dashboardId) {
     BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
     boolQueryBuilder = boolQueryBuilder
-      .must(QueryBuilders.termQuery(DashboardShareType.DASHBOARD_ID, dashboardId));
+      .must(QueryBuilders.termQuery(DashboardShareIndex.DASHBOARD_ID, dashboardId));
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(boolQueryBuilder);
     searchSourceBuilder.size(1);
-    SearchRequest searchRequest = new SearchRequest(DASHBOARD_SHARE_TYPE)
-      .types(DASHBOARD_SHARE_TYPE)
+    SearchRequest searchRequest = new SearchRequest(DASHBOARD_SHARE_INDEX_NAME)
+      .types(DASHBOARD_SHARE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -192,8 +192,8 @@ public class SharingReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(REPORT_SHARE_TYPE)
-        .types(REPORT_SHARE_TYPE)
+    SearchRequest searchRequest = new SearchRequest(REPORT_SHARE_INDEX_NAME)
+        .types(REPORT_SHARE_INDEX_NAME)
         .source(searchSourceBuilder)
         .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
@@ -222,14 +222,14 @@ public class SharingReader {
   public Map<String, ReportShareDto> findShareForReports(List<String> reports) {
     BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
     boolQueryBuilder = boolQueryBuilder
-      .must(QueryBuilders.termsQuery(ReportShareType.REPORT_ID, reports));
+      .must(QueryBuilders.termsQuery(ReportShareIndex.REPORT_ID, reports));
     return findReportSharesByQuery(boolQueryBuilder);
   }
 
   public Map<String, DashboardShareDto> findShareForDashboards(List<String> dashboards) {
     BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
     boolQueryBuilder = boolQueryBuilder
-      .must(QueryBuilders.termsQuery(DashboardShareType.DASHBOARD_ID, dashboards));
+      .must(QueryBuilders.termsQuery(DashboardShareIndex.DASHBOARD_ID, dashboards));
     return findDashboardSharesByQuery(boolQueryBuilder);
   }
 
@@ -237,8 +237,8 @@ public class SharingReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(DASHBOARD_SHARE_TYPE)
-        .types(DASHBOARD_SHARE_TYPE)
+    SearchRequest searchRequest = new SearchRequest(DASHBOARD_SHARE_INDEX_NAME)
+        .types(DASHBOARD_SHARE_INDEX_NAME)
         .source(searchSourceBuilder)
         .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 

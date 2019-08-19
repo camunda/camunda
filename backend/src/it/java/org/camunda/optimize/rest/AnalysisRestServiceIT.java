@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
@@ -105,11 +105,11 @@ public class AnalysisRestServiceIT {
       .setVersion(PROCESS_DEFINITION_VERSION_1)
       .setEngine(DEFAULT_ENGINE_ALIAS)
       .setBpmn20Xml(readDiagram());
-    elasticSearchRule.addEntryToElasticsearch(PROCESS_DEFINITION_TYPE, PROCESS_DEFINITION_ID, processDefinitionXmlDto);
+    elasticSearchRule.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, PROCESS_DEFINITION_ID, processDefinitionXmlDto);
 
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_2);
     processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_2);
-    elasticSearchRule.addEntryToElasticsearch(PROCESS_DEFINITION_TYPE, PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
+    elasticSearchRule.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
 
     final ProcessInstanceDto procInst = new ProcessInstanceDto()
       .setProcessDefinitionId(PROCESS_DEFINITION_ID)
@@ -119,13 +119,13 @@ public class AnalysisRestServiceIT {
       .setStartDate(OffsetDateTime.now())
       .setEndDate(OffsetDateTime.now())
       .setEvents(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}));
-    elasticSearchRule.addEntryToElasticsearch(PROC_INSTANCE_TYPE, PROCESS_INSTANCE_ID, procInst);
+    elasticSearchRule.addEntryToElasticsearch(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_ID, procInst);
 
     procInst.setEvents(
       createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY})
     );
     procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
-    elasticSearchRule.addEntryToElasticsearch(PROC_INSTANCE_TYPE, PROCESS_INSTANCE_ID_2, procInst);
+    elasticSearchRule.addEntryToElasticsearch(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_ID_2, procInst);
   }
 
   private List<SimpleEventDto> createEventList(String[] activityIds) {

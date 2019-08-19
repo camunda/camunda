@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.util;
 
 import lombok.experimental.UtilityClass;
-import org.camunda.optimize.service.es.schema.type.DefinitionBasedType;
+import org.camunda.optimize.service.es.schema.index.DefinitionBasedType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 

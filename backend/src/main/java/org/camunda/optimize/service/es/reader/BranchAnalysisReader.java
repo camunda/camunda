@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.service.ProcessDefinitionService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.TenantAuthorizationService;
 import org.camunda.optimize.service.util.ValidationHelper;
@@ -42,7 +42,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -147,7 +147,7 @@ public class BranchAnalysisReader {
       request.getProcessDefinitionKey(),
       request.getProcessDefinitionVersions(),
       request.getTenantIds(),
-      new ProcessInstanceType(),
+      new ProcessInstanceIndex(),
       processDefinitionReader::getLatestVersionToKey
     );
     excludeActivities(activitiesToExclude, query);
@@ -163,7 +163,7 @@ public class BranchAnalysisReader {
 
   private NestedQueryBuilder createMustMatchActivityIdQuery(final String activityId) {
     return nestedQuery(
-      ProcessInstanceType.EVENTS,
+      ProcessInstanceIndex.EVENTS,
       termQuery("events.activityId", activityId),
       ScoreMode.None
     );
@@ -176,8 +176,8 @@ public class BranchAnalysisReader {
       .query(query)
       .size(0)
       .fetchSource(false);
-    SearchRequest searchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
-      .types(PROC_INSTANCE_TYPE)
+    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;

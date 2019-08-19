@@ -17,7 +17,11 @@ import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
 import org.camunda.optimize.service.engine.importing.DmnModelUtility;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
+import org.camunda.optimize.service.es.schema.index.CollectionIndex;
+import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
@@ -26,6 +30,8 @@ import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
+import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
+import org.camunda.optimize.upgrade.steps.schema.UpdateMappingIndexStep;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
@@ -45,15 +51,16 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
+import static java.util.Arrays.asList;
 import static org.camunda.optimize.service.engine.importing.DmnModelUtility.parseDmnModel;
-import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_ID;
-import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.INPUT_VARIABLE_NAMES;
-import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.OUTPUT_VARIABLE_NAMES;
-import static org.camunda.optimize.service.es.schema.type.report.AbstractReportType.DATA;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
+import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_ID;
+import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.INPUT_VARIABLE_NAMES;
+import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.OUTPUT_VARIABLE_NAMES;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 
 public class UpgradeFrom25To26 implements Upgrade {
 
@@ -99,20 +106,24 @@ public class UpgradeFrom25To26 implements Upgrade {
     return UpgradePlanBuilder.createUpgradePlan()
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
+      .addUpgradeStep(new UpdateMappingIndexStep(new SingleProcessReportIndex()))
+      .addUpgradeStep(new UpdateMappingIndexStep(new SingleDecisionReportIndex()))
       .addUpgradeStep(createMultipleDefinitionVersionsForProcessReports())
       .addUpgradeStep(createMultipleDefinitionVersionsForDecisionReports())
+      .addUpgradeStep(new UpdateMappingIndexStep(new DecisionDefinitionIndex()))
       .addUpgradeStep(createDecisionDefinitionInputVariableNames())
       .addUpgradeStep(createDecisionDefinitionOutputVariableNames())
       .addUpgradeStep(createDefaultManagerRoleForCollections())
+      .addUpgradeStep(moveProcessVariablesToSingleField())
       .build();
   }
 
   private UpgradeStep createMultipleDefinitionVersionsForProcessReports() {
-    return createMultipleDefinitionVersionsForReports(SINGLE_PROCESS_REPORT_TYPE, "processDefinitionVersion");
+    return createMultipleDefinitionVersionsForReports(SINGLE_PROCESS_REPORT_INDEX_NAME, "processDefinitionVersion");
   }
 
   private UpgradeStep createMultipleDefinitionVersionsForDecisionReports() {
-    return createMultipleDefinitionVersionsForReports(SINGLE_DECISION_REPORT_TYPE, "decisionDefinitionVersion");
+    return createMultipleDefinitionVersionsForReports(SINGLE_DECISION_REPORT_INDEX_NAME, "decisionDefinitionVersion");
   }
 
   private UpgradeStep createMultipleDefinitionVersionsForReports(String esType, String definitionVersionField) {
@@ -174,7 +185,7 @@ public class UpgradeFrom25To26 implements Upgrade {
     // @formatter:on
 
     return new UpdateDataStep(
-      DECISION_DEFINITION_TYPE,
+      DECISION_DEFINITION_INDEX_NAME,
       QueryBuilders.matchAllQuery(),
       script,
       ImmutableMap.of(DEFINITION_ID_TO_VAR_NAMES_PARAMETER_NAME, params)
@@ -193,7 +204,7 @@ public class UpgradeFrom25To26 implements Upgrade {
     final Map<String, List<DecisionVariableNameDto>> result = new HashMap<>();
     try {
       final TimeValue scrollTimeOut = new TimeValue(configurationService.getElasticsearchScrollTimeout());
-      final SearchRequest scrollSearchRequest = new SearchRequest(DECISION_DEFINITION_TYPE)
+      final SearchRequest scrollSearchRequest = new SearchRequest(DECISION_DEFINITION_INDEX_NAME)
         .source(new SearchSourceBuilder().size(10))
         .scroll(scrollTimeOut);
 
@@ -202,9 +213,9 @@ public class UpgradeFrom25To26 implements Upgrade {
         Arrays.stream(currentScrollResponse.getHits().getHits())
           .map(SearchHit::getSourceAsMap)
           .forEach(sourceAsMap -> {
-            final String id = (String) sourceAsMap.get(DecisionDefinitionType.DECISION_DEFINITION_ID);
-            final String key = (String) sourceAsMap.get(DecisionDefinitionType.DECISION_DEFINITION_KEY);
-            final String value = (String) sourceAsMap.get(DecisionDefinitionType.DECISION_DEFINITION_XML);
+            final String id = (String) sourceAsMap.get(DecisionDefinitionIndex.DECISION_DEFINITION_ID);
+            final String key = (String) sourceAsMap.get(DecisionDefinitionIndex.DECISION_DEFINITION_KEY);
+            final String value = (String) sourceAsMap.get(DecisionDefinitionIndex.DECISION_DEFINITION_XML);
             if (value != null) {
               result.put(id, extractVariables.apply(parseDmnModel(value), key));
             }
@@ -244,11 +255,47 @@ public class UpgradeFrom25To26 implements Upgrade {
         "ctx._source.${collectionDataField}.${collectionDataRolesField}.add(roleEntry);\n"
       // @formatter:on
     );
-    return new UpdateDataStep(
-      COLLECTION_TYPE,
-      QueryBuilders.matchAllQuery(),
+    return new UpdateIndexStep(
+      new CollectionIndex(),
       script
     );
 
+  }
+
+  private UpgradeStep moveProcessVariablesToSingleField() {
+    List<String> oldVariableFields = asList(
+      "stringVariables",
+      "integerVariables",
+      "longVariables",
+      "shortVariables",
+      "doubleVariables",
+      "dateVariables",
+      "booleanVariables"
+    );
+    StringBuilder scriptBuilder = new StringBuilder("def variables = new ArrayList();\n");
+    for (String oldVariableField : oldVariableFields) {
+      final StringSubstitutor substitutor = new StringSubstitutor(
+        ImmutableMap.<String, String>builder()
+          .put("oldVarField", oldVariableField)
+          .build()
+      );
+      // @formatter:off
+      String replaceVarFieldScript =
+        "if (ctx._source.${oldVarField} != null) {\n" +
+        "  def newEntries = " +
+        "    ctx._source.${oldVarField}.stream()" +
+        "      .map(var -> {" +
+        "        def valueAsString = var.value == null? null : String.valueOf(var.value); " +
+        "        var.value = valueAsString; " +
+        "        return var;}" +
+        "      ).collect(Collectors.toList());\n" +
+        "  variables.addAll(newEntries); \n" +
+        "}\n" +
+        "ctx._source.remove(\"${oldVarField}\"); \n";
+      // @formatter:on
+      scriptBuilder.append(substitutor.replace(replaceVarFieldScript));
+    }
+    scriptBuilder.append("ctx._source." + VARIABLES + " = variables;");
+    return new UpdateIndexStep(new ProcessInstanceIndex(), scriptBuilder.toString());
   }
 }

@@ -30,8 +30,8 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -477,7 +477,7 @@ public class DecisionDefinitionRestServiceIT {
 
   private void createTenant(final String id, final String name) {
     final TenantDto tenantDto = new TenantDto(id, name, DEFAULT_ENGINE_ALIAS);
-    elasticSearchRule.addEntryToElasticsearch(TENANT_TYPE, id, tenantDto);
+    elasticSearchRule.addEntryToElasticsearch(TENANT_INDEX_NAME, id, tenantDto);
   }
 
   private void grantSingleDefinitionAuthorizationsForUser(String userId, String definitionKey) {
@@ -534,7 +534,7 @@ public class DecisionDefinitionRestServiceIT {
 
   private void addDecisionDefinitionToElasticsearch(final DecisionDefinitionOptimizeDto definitionOptimizeDto) {
     elasticSearchRule.addEntryToElasticsearch(
-      DECISION_DEFINITION_TYPE, definitionOptimizeDto.getId(), definitionOptimizeDto
+      DECISION_DEFINITION_INDEX_NAME, definitionOptimizeDto.getId(), definitionOptimizeDto
     );
   }
 

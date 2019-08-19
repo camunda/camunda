@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.TenantAuthorizationService;
 import org.camunda.optimize.service.util.DefinitionQueryUtil;
@@ -47,9 +47,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ACTIVITY_DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_DURATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 @AllArgsConstructor
 @Component
@@ -78,13 +78,13 @@ public class DurationOutliersReader {
       procDefKey,
       procDefVersion,
       tenantId,
-      new ProcessInstanceType(),
+      new ProcessInstanceIndex(),
       processDefinitionReader::getLatestVersionToKey
     );
 
     long interval = getInterval(query, flowNodeId);
     HistogramAggregationBuilder histogram = AggregationBuilders.histogram(HISTOGRAM_AGG)
-      .field(EVENTS + "." + ProcessInstanceType.DURATION)
+      .field(EVENTS + "." + ProcessInstanceIndex.DURATION)
       .interval(interval);
 
     NestedAggregationBuilder termsAgg = buildNestedAggregation(flowNodeId, histogram);
@@ -96,8 +96,8 @@ public class DurationOutliersReader {
       .size(0);
 
     SearchRequest searchRequest =
-      new SearchRequest(PROC_INSTANCE_TYPE)
-        .types(PROC_INSTANCE_TYPE)
+      new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+        .types(PROCESS_INSTANCE_INDEX_NAME)
         .source(searchSourceBuilder);
 
     SearchResponse search;
@@ -118,7 +118,7 @@ public class DurationOutliersReader {
 
   private long getInterval(BoolQueryBuilder query, String flowNodeId) {
     StatsAggregationBuilder statsAgg = AggregationBuilders.stats(STATS_AGG)
-      .field(EVENTS + "." + ProcessInstanceType.DURATION);
+      .field(EVENTS + "." + ProcessInstanceIndex.DURATION);
 
     NestedAggregationBuilder termsAgg = buildNestedAggregation(flowNodeId, statsAgg);
 
@@ -129,8 +129,8 @@ public class DurationOutliersReader {
       .size(0);
 
     SearchRequest searchRequest =
-      new SearchRequest(PROC_INSTANCE_TYPE)
-        .types(PROC_INSTANCE_TYPE)
+      new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+        .types(PROCESS_INSTANCE_INDEX_NAME)
         .source(searchSourceBuilder);
 
     SearchResponse search;
@@ -171,7 +171,7 @@ public class DurationOutliersReader {
       procDefKey,
       procDefVersion,
       tenantId,
-      new ProcessInstanceType(),
+      new ProcessInstanceIndex(),
       processDefinitionReader::getLatestVersionToKey
     );
     ExtendedStatsAggregationBuilder stats = AggregationBuilders.extendedStats(STATS_AGG)
@@ -179,7 +179,7 @@ public class DurationOutliersReader {
 
 
     TermsAggregationBuilder terms = AggregationBuilders.terms(EVENTS)
-      .field(EVENTS + "." + ProcessInstanceType.ACTIVITY_ID)
+      .field(EVENTS + "." + ProcessInstanceIndex.ACTIVITY_ID)
       .subAggregation(stats);
 
     NestedAggregationBuilder nested = AggregationBuilders.nested(NESTED_AGG, EVENTS)
@@ -191,8 +191,8 @@ public class DurationOutliersReader {
       .aggregation(nested)
       .size(0);
 
-    SearchRequest searchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
-      .types(PROC_INSTANCE_TYPE)
+    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     Aggregations aggregations;
@@ -234,8 +234,8 @@ public class DurationOutliersReader {
         .aggregation(nested)
         .size(0);
 
-      SearchRequest searchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
-        .types(PROC_INSTANCE_TYPE)
+      SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+        .types(PROCESS_INSTANCE_INDEX_NAME)
         .source(searchSourceBuilder);
 
       Aggregations singleNodeAggregation;

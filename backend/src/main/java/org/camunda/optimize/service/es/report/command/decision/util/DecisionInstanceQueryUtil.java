@@ -21,8 +21,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.EVALUATION_DATE_TIME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.EVALUATION_DATE_TIME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 @Slf4j
@@ -36,8 +36,8 @@ public class DecisionInstanceQueryUtil {
       .sort(SortBuilders.fieldSort(EVALUATION_DATE_TIME).order(SortOrder.DESC))
       .fetchSource(false)
       .size(1);
-    SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_TYPE)
-      .types(DECISION_INSTANCE_TYPE)
+    SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_INDEX_NAME)
+      .types(DECISION_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse response;

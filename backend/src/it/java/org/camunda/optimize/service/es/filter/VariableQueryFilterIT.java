@@ -53,8 +53,6 @@ public class VariableQueryFilterIT {
   public RuleChain chain = RuleChain
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
-  private final String TEST_DEFINITION_KEY = "testDefinition";
-
   private RawDataProcessReportResultDto evaluateReportAndReturnResult(final ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
@@ -65,11 +63,11 @@ public class VariableQueryFilterIT {
       .getResult();
   }
 
-  private Response evaluateReportWithFilterAndGetResponse(String processDefinitionKey,
-                                                          List<ProcessFilterDto> filterList) {
+  private Response evaluateReportWithFilterAndGetResponse(List<ProcessFilterDto> filterList) {
+    final String TEST_DEFINITION_KEY = "testDefinition";
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionKey(TEST_DEFINITION_KEY)
       .setProcessDefinitionVersion("1")
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
@@ -107,7 +105,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void simpleVariableFilter() throws Exception {
+  public void simpleVariableFilter() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -136,7 +134,7 @@ public class VariableQueryFilterIT {
 
 
   @Test
-  public void severalVariablesInSameProcessInstanceShouldNotAffectFilter() throws Exception {
+  public void severalVariablesInSameProcessInstanceShouldNotAffectFilter() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -165,7 +163,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void stringEqualityFilterWithVariableOfDifferentType() throws Exception {
+  public void stringEqualityFilterWithVariableOfDifferentType() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -194,7 +192,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void stringInequalityFilterWithVariableOfDifferentTypeAndProcessInstance() throws Exception {
+  public void stringInequalityFilterWithVariableOfDifferentTypeAndProcessInstance() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -225,7 +223,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void severalStringValueFiltersAreConcatenated() throws Exception {
+  public void severalStringValueFiltersAreConcatenated() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     engineRule.startProcessInstance(processDefinition.getId());
@@ -259,7 +257,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void variablesWithDifferentNameAreFiltered() throws Exception {
+  public void variablesWithDifferentNameAreFiltered() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -286,7 +284,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void variablesWithDifferentTypeAreFiltered() throws Exception {
+  public void variablesWithDifferentTypeAreFiltered() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -314,7 +312,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void stringInequalityVariableFilter() throws Exception {
+  public void stringInequalityVariableFilter() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -345,7 +343,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void multipleStringInequalityVariableFilter() throws Exception {
+  public void multipleStringInequalityVariableFilter() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -380,7 +378,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void booleanTrueVariableFilter() throws Exception {
+  public void booleanTrueVariableFilter() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -409,7 +407,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void booleanFalseVariableFilter() throws Exception {
+  public void booleanFalseVariableFilter() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -437,7 +435,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void numericLessThanVariableFilter() throws Exception {
+  public void numericLessThanVariableFilter() {
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
 
     for (VariableType variableType : VariableType.getNumericTypes()) {
@@ -478,7 +476,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void multipleNumericEqualityVariableFilter() throws Exception {
+  public void multipleNumericEqualityVariableFilter() {
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
 
     // given
@@ -519,7 +517,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void multipleNumericInequalityVariableFilter() throws Exception {
+  public void multipleNumericInequalityVariableFilter() {
     for (VariableType variableType : VariableType.getNumericTypes()) {
       // given
       ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
@@ -561,7 +559,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void numericLessThanEqualVariableFilter() throws Exception {
+  public void numericLessThanEqualVariableFilter() {
 
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
 
@@ -600,7 +598,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void numericGreaterThanVariableFilter() throws Exception {
+  public void numericGreaterThanVariableFilter() {
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
 
     for (VariableType variableType : VariableType.getNumericTypes()) {
@@ -636,7 +634,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void numericGreaterThanEqualVariableFilter() throws Exception {
+  public void numericGreaterThanEqualVariableFilter() {
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
 
     for (VariableType variableType : VariableType.getNumericTypes()) {
@@ -672,7 +670,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void numericEqualVariableFilter() throws Exception {
+  public void numericEqualVariableFilter() {
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
 
     for (VariableType variableType : VariableType.getNumericTypes()) {
@@ -708,7 +706,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void numericUnequalVariableFilter() throws Exception {
+  public void numericUnequalVariableFilter() {
     for (VariableType variableType : VariableType.getNumericTypes()) {
       // given
       ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
@@ -744,7 +742,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void numericWithinRangeVariableFilter() throws Exception {
+  public void numericWithinRangeVariableFilter() {
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
 
     for (VariableType variableType : VariableType.getNumericTypes()) {
@@ -788,7 +786,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void numericOffRangeVariableFilter() throws Exception {
+  public void numericOffRangeVariableFilter() {
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
 
     for (VariableType variableType : VariableType.getNumericTypes()) {
@@ -829,7 +827,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void dateLessThanOrEqualVariableFilter() throws Exception {
+  public void dateLessThanOrEqualVariableFilter() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -864,7 +862,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void dateGreaterOrEqualThanVariableFilter() throws Exception {
+  public void dateGreaterOrEqualThanVariableFilter() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -897,7 +895,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void dateEqualVariableFilter() throws Exception {
+  public void dateEqualVariableFilter() {
     // given
     final OffsetDateTime now = nowDate();
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
@@ -930,7 +928,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void dateWithinRangeVariableFilter() throws Exception {
+  public void dateWithinRangeVariableFilter() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     OffsetDateTime now = nowDate();
@@ -962,7 +960,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void dateOffRangeVariableFilter() throws Exception {
+  public void dateOffRangeVariableFilter() {
     // given
     OffsetDateTime now = nowDate();
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
@@ -1126,7 +1124,7 @@ public class VariableQueryFilterIT {
       .buildList();
 
     // when
-    Response response = evaluateReportWithFilterAndGetResponse(TEST_DEFINITION_KEY, variableFilterDto);
+    Response response = evaluateReportWithFilterAndGetResponse(variableFilterDto);
 
     // then
     assertThat(response.getStatus(), is(500));
@@ -1146,7 +1144,7 @@ public class VariableQueryFilterIT {
       .buildList();
 
     // when
-    Response response = evaluateReportWithFilterAndGetResponse(TEST_DEFINITION_KEY, variableFilterDto);
+    Response response = evaluateReportWithFilterAndGetResponse(variableFilterDto);
 
     // then
     assertThat(response.getStatus(), is(500));
@@ -1167,7 +1165,7 @@ public class VariableQueryFilterIT {
       .buildList();
 
     // when
-    Response response = evaluateReportWithFilterAndGetResponse(TEST_DEFINITION_KEY, variableFilterDto);
+    Response response = evaluateReportWithFilterAndGetResponse(variableFilterDto);
 
     // then
     assertThat(response.getStatus(), is(500));
@@ -1185,7 +1183,7 @@ public class VariableQueryFilterIT {
       .buildList();
 
     // when
-    Response response = evaluateReportWithFilterAndGetResponse(TEST_DEFINITION_KEY, variableFilterDto);
+    Response response = evaluateReportWithFilterAndGetResponse(variableFilterDto);
 
     // then
     assertThat(response.getStatus(), is(500));

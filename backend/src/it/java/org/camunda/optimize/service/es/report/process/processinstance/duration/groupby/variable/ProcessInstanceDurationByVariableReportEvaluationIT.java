@@ -693,6 +693,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("foo")
       .setVariableType(VariableType.STRING)
       .build();
+    reportData.getConfiguration().setAggregationType(AggregationType.MAX);
     ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
       reportData);
 
@@ -1148,9 +1149,9 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     return processInstance;
   }
 
-  private ProcessInstanceEngineDto startProcessWithDates(final ProcessDefinitionEngineDto definition,
-                                                         final OffsetDateTime startDate,
-                                                         final OffsetDateTime endDate) throws SQLException {
-    return startProcessWithVariablesAndDates(definition, new HashMap<>(), startDate, endDate);
+  private void startProcessWithDates(final ProcessDefinitionEngineDto definition,
+                                     final OffsetDateTime startDate,
+                                     final OffsetDateTime endDate) throws SQLException {
+    startProcessWithVariablesAndDates(definition, new HashMap<>(), startDate, endDate);
   }
 }

@@ -8,7 +8,7 @@ package org.camunda.optimize.service.importing;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -27,15 +27,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_KEY;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STRING_VARIABLES;
-import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.ES_TYPE_INDEX_REFERS_TO;
-import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
-import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_OF_LAST_ENTITY;
+import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.ES_TYPE_INDEX_REFERS_TO;
+import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
+import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_OF_LAST_ENTITY;
 import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -56,7 +56,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshAllOptimizeIndices();
-    SearchResponse searchResponse = performProcessDefinitionSearchRequest(PROCESS_DEFINITION_TYPE);
+    SearchResponse searchResponse = performProcessDefinitionSearchRequest(PROCESS_DEFINITION_INDEX_NAME);
 
     // then
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();
@@ -81,7 +81,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshAllOptimizeIndices();
-    SearchResponse searchResponse = performProcessDefinitionSearchRequest(PROCESS_DEFINITION_TYPE);
+    SearchResponse searchResponse = performProcessDefinitionSearchRequest(PROCESS_DEFINITION_INDEX_NAME);
 
     // then
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();
@@ -106,7 +106,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshAllOptimizeIndices();
-    SearchResponse searchResponse = performProcessDefinitionSearchRequest(ElasticsearchConstants.PROC_INSTANCE_TYPE);
+    SearchResponse searchResponse = performProcessDefinitionSearchRequest(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME);
 
     // then
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();
@@ -130,7 +130,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshAllOptimizeIndices();
-    SearchResponse searchResponse = performProcessDefinitionSearchRequest(ElasticsearchConstants.PROC_INSTANCE_TYPE);
+    SearchResponse searchResponse = performProcessDefinitionSearchRequest(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME);
 
     // then
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();
@@ -158,7 +158,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    final SearchResponse idsResp = elasticSearchRule.getSearchResponseForAllDocumentsOfType(TENANT_TYPE);
+    final SearchResponse idsResp = elasticSearchRule.getSearchResponseForAllDocumentsOfType(TENANT_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), CoreMatchers.is(2L));
     final Map<Object, List<Map<String, Object>>> tenantsByEngine = Arrays.stream(idsResp.getHits().getHits())
       .map(SearchHit::getSourceAsMap)
@@ -211,14 +211,14 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
   private void assertImportResults(SearchResponse searchResponse, Set<String> allowedProcessDefinitionKeys) {
     assertThat(searchResponse.getHits().getTotalHits(), is(2L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
-      String processDefinitionKey = (String) searchHit.getSourceAsMap().get(ProcessInstanceType.PROCESS_DEFINITION_KEY);
+      String processDefinitionKey = (String) searchHit.getSourceAsMap().get(ProcessInstanceIndex.PROCESS_DEFINITION_KEY);
       assertThat(allowedProcessDefinitionKeys.contains(processDefinitionKey), is(true));
       allowedProcessDefinitionKeys.remove(processDefinitionKey);
       List events = (List) searchHit.getSourceAsMap().get(EVENTS);
       assertThat(events.size(), is(2));
-      List stringVariables = (List) searchHit.getSourceAsMap().get(STRING_VARIABLES);
+      List variables = (List) searchHit.getSourceAsMap().get(VARIABLES);
       //NOTE: independent from process definition
-      assertThat(stringVariables.size(), is(1));
+      assertThat(variables.size(), is(1));
     }
   }
 

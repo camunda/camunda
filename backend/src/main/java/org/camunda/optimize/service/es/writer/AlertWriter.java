@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.type.AlertType;
+import org.camunda.optimize.service.es.schema.index.AlertIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
@@ -52,7 +52,7 @@ public class AlertWriter {
     String id = IdGenerator.getNextId();
     alertDefinitionDto.setId(id);
     try {
-      IndexRequest request = new IndexRequest(ALERT_TYPE, ALERT_TYPE, id)
+      IndexRequest request = new IndexRequest(ALERT_INDEX_NAME, ALERT_INDEX_NAME, id)
         .source(objectMapper.writeValueAsString(alertDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -78,7 +78,7 @@ public class AlertWriter {
     log.debug("Updating alert with id [{}] in Elasticsearch", alertUpdate.getId());
     try {
       UpdateRequest request =
-        new UpdateRequest(ALERT_TYPE, ALERT_TYPE, alertUpdate.getId())
+        new UpdateRequest(ALERT_INDEX_NAME, ALERT_INDEX_NAME, alertUpdate.getId())
         .doc(objectMapper.writeValueAsString(alertUpdate), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -114,7 +114,7 @@ public class AlertWriter {
   public void deleteAlert(String alertId) {
     log.debug("Deleting alert with id [{}]", alertId);
     DeleteRequest request =
-      new DeleteRequest(ALERT_TYPE, ALERT_TYPE, alertId)
+      new DeleteRequest(ALERT_INDEX_NAME, ALERT_INDEX_NAME, alertId)
       .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;
@@ -143,10 +143,10 @@ public class AlertWriter {
       XContentBuilder docFieldToUpdate =
         jsonBuilder()
           .startObject()
-          .field(AlertType.TRIGGERED, alertStatus)
+          .field(AlertIndex.TRIGGERED, alertStatus)
           .endObject();
       UpdateRequest request =
-        new UpdateRequest(ALERT_TYPE, ALERT_TYPE, alertId)
+        new UpdateRequest(ALERT_INDEX_NAME, ALERT_INDEX_NAME, alertId)
           .doc(docFieldToUpdate)
           .setRefreshPolicy(IMMEDIATE)
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -163,8 +163,8 @@ public class AlertWriter {
   public void deleteAlertsForReport(String reportId) {
     log.debug("Deleting all alerts for report with id [{}]", reportId);
 
-    TermQueryBuilder query = QueryBuilders.termQuery(AlertType.REPORT_ID, reportId);
-    DeleteByQueryRequest request = new DeleteByQueryRequest(ALERT_TYPE)
+    TermQueryBuilder query = QueryBuilders.termQuery(AlertIndex.REPORT_ID, reportId);
+    DeleteByQueryRequest request = new DeleteByQueryRequest(ALERT_INDEX_NAME)
       .setQuery(query)
       .setRefresh(true);
 

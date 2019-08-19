@@ -45,7 +45,7 @@ public class ElasticSearchSchemaManager {
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
 
-  private final List<TypeMappingCreator> mappings;
+  private final List<IndexMappingCreator> mappings;
   private final ObjectMapper objectMapper;
 
   public void validateExistingSchemaVersion(final OptimizeElasticsearchClient esClient) {
@@ -64,19 +64,19 @@ public class ElasticSearchSchemaManager {
     metadataService.initMetadataVersionIfMissing(esClient);
   }
 
-  public void addMapping(TypeMappingCreator mapping) {
+  public void addMapping(IndexMappingCreator mapping) {
     mappings.add(mapping);
   }
 
-  public List<TypeMappingCreator> getMappings() {
+  public List<IndexMappingCreator> getMappings() {
     return mappings;
   }
 
   public boolean schemaAlreadyExists(OptimizeElasticsearchClient esClient) {
     String[] types = new String[mappings.size()];
     int i = 0;
-    for (TypeMappingCreator creator : mappings) {
-      types[i] = creator.getType();
+    for (IndexMappingCreator creator : mappings) {
+      types[i] = creator.getIndexName();
       i = ++i;
     }
 
@@ -100,8 +100,8 @@ public class ElasticSearchSchemaManager {
    * https://www.elastic.co/guide/en/elasticsearch/reference/6.0/indices-aliases.html
    */
   public void createOptimizeIndices(RestHighLevelClient esClient) {
-    for (TypeMappingCreator mapping : mappings) {
-      final String aliasName = indexNameService.getOptimizeIndexAliasForType(mapping.getType());
+    for (IndexMappingCreator mapping : mappings) {
+      final String aliasName = indexNameService.getOptimizeIndexAliasForIndex(mapping.getIndexName());
       final String indexName = indexNameService.getVersionedOptimizeIndexNameForTypeMapping(mapping);
       final Settings indexSettings = createIndexSettings();
       try {
@@ -109,7 +109,7 @@ public class ElasticSearchSchemaManager {
           CreateIndexRequest request = new CreateIndexRequest(indexName);
           request.alias(new Alias(aliasName));
           request.settings(indexSettings);
-          request.mapping(mapping.getType(), mapping.getSource());
+          request.mapping(mapping.getIndexName(), mapping.getSource());
           esClient.indices().create(request, RequestOptions.DEFAULT);
         } catch (ElasticsearchStatusException e) {
           if (e.status() == RestStatus.BAD_REQUEST && e.getMessage().contains("resource_already_exists_exception")) {
@@ -136,7 +136,7 @@ public class ElasticSearchSchemaManager {
 
   private void updateAllMappingsAndDynamicSettings(RestHighLevelClient esClient) {
     log.info("Updating Optimize schema...");
-    for (TypeMappingCreator mapping : mappings) {
+    for (IndexMappingCreator mapping : mappings) {
       updateIndexDynamicSettingsAndMappings(esClient, mapping);
     }
     log.info("Finished updating Optimize schema.");
@@ -182,7 +182,7 @@ public class ElasticSearchSchemaManager {
     }
   }
 
-  private void updateIndexDynamicSettingsAndMappings(RestHighLevelClient esClient, TypeMappingCreator typeMapping) {
+  private void updateIndexDynamicSettingsAndMappings(RestHighLevelClient esClient, IndexMappingCreator typeMapping) {
     final String indexName = indexNameService.getVersionedOptimizeIndexNameForTypeMapping(typeMapping);
     try {
       final Settings indexSettings = buildDynamicSettings(configurationService);
@@ -191,16 +191,16 @@ public class ElasticSearchSchemaManager {
       updateSettingsRequest.settings(indexSettings);
       esClient.indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      String message = String.format("Could not update index settings for type [%s].", typeMapping.getType());
+      String message = String.format("Could not update index settings for type [%s].", typeMapping.getIndexName());
       throw new OptimizeRuntimeException(message, e);
     }
 
     try {
       final PutMappingRequest putMappingRequest = new PutMappingRequest(indexName);
-      putMappingRequest.type(typeMapping.getType()).source(typeMapping.getSource());
+      putMappingRequest.type(typeMapping.getIndexName()).source(typeMapping.getSource());
       esClient.indices().putMapping(putMappingRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      String message = String.format("Could not update index mappings for type [%s].", typeMapping.getType());
+      String message = String.format("Could not update index mappings for type [%s].", typeMapping.getIndexName());
       throw new OptimizeRuntimeException(message, e);
     }
   }

@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.report.command.process.processinstance.d
 
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -33,8 +33,8 @@ public class ProcessInstanceDurationGroupByNoneCommand extends
   private Script getScriptedAggregationField() {
     return ExecutionStateAggregationUtil.getDurationAggregationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-      ProcessInstanceType.DURATION,
-      ProcessInstanceType.START_DATE
+      ProcessInstanceIndex.DURATION,
+      ProcessInstanceIndex.START_DATE
     );
   }
 }

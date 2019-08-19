@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
+import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
@@ -19,7 +19,7 @@ public class DecisionOutputVariableQueryFilter extends DecisionVariableQueryFilt
 
   @Override
   String getVariablePath() {
-    return DecisionInstanceType.OUTPUTS;
+    return DecisionInstanceIndex.OUTPUTS;
   }
 
 }

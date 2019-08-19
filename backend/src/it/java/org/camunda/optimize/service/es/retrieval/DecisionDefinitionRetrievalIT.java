@@ -16,7 +16,7 @@ import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
@@ -207,7 +207,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
       .setId("aDecDefId")
       .setKey("aDecDefKey")
       .setVersion("aDevDefVersion");
-    elasticSearchRule.addEntryToElasticsearch(DECISION_DEFINITION_TYPE, "fooId", decisionDefinitionWithoutXml);
+    elasticSearchRule.addEntryToElasticsearch(DECISION_DEFINITION_INDEX_NAME, "fooId", decisionDefinitionWithoutXml);
   }
 
 }

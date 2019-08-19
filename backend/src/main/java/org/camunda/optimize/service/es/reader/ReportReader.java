@@ -42,13 +42,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.type.report.AbstractReportType.DATA;
-import static org.camunda.optimize.service.es.schema.type.report.CombinedReportType.REPORTS;
-import static org.camunda.optimize.service.es.schema.type.report.CombinedReportType.REPORT_ITEM_ID;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
+import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
+import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORTS;
+import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORT_ITEM_ID;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -99,9 +99,9 @@ public class ReportReader {
 
   private MultiGetResponse performGetReportRequest(String reportId) {
     MultiGetRequest request = new MultiGetRequest();
-    request.add(new MultiGetRequest.Item(SINGLE_PROCESS_REPORT_TYPE, SINGLE_PROCESS_REPORT_TYPE, reportId));
-    request.add(new MultiGetRequest.Item(SINGLE_DECISION_REPORT_TYPE, SINGLE_DECISION_REPORT_TYPE, reportId));
-    request.add(new MultiGetRequest.Item(COMBINED_REPORT_TYPE, COMBINED_REPORT_TYPE, reportId));
+    request.add(new MultiGetRequest.Item(SINGLE_PROCESS_REPORT_INDEX_NAME, SINGLE_PROCESS_REPORT_INDEX_NAME, reportId));
+    request.add(new MultiGetRequest.Item(SINGLE_DECISION_REPORT_INDEX_NAME, SINGLE_DECISION_REPORT_INDEX_NAME, reportId));
+    request.add(new MultiGetRequest.Item(COMBINED_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME, reportId));
 
     MultiGetResponse multiGetItemResponses;
     try {
@@ -116,7 +116,7 @@ public class ReportReader {
 
   public SingleProcessReportDefinitionDto getSingleProcessReport(String reportId) {
     log.debug("Fetching single process report with id [{}]", reportId);
-    GetRequest getRequest = new GetRequest(SINGLE_PROCESS_REPORT_TYPE, SINGLE_PROCESS_REPORT_TYPE, reportId);
+    GetRequest getRequest = new GetRequest(SINGLE_PROCESS_REPORT_INDEX_NAME, SINGLE_PROCESS_REPORT_INDEX_NAME, reportId);
 
     GetResponse getResponse;
     try {
@@ -143,7 +143,9 @@ public class ReportReader {
 
   public SingleDecisionReportDefinitionDto getSingleDecisionReport(String reportId) {
     log.debug("Fetching single decision report with id [{}]", reportId);
-    GetRequest getRequest = new GetRequest(SINGLE_DECISION_REPORT_TYPE, SINGLE_DECISION_REPORT_TYPE, reportId);
+    GetRequest getRequest = new GetRequest(
+      SINGLE_DECISION_REPORT_INDEX_NAME,
+      SINGLE_DECISION_REPORT_INDEX_NAME, reportId);
 
     GetResponse getResponse;
     try {
@@ -176,7 +178,7 @@ public class ReportReader {
       .size(LIST_FETCH_LIMIT)
       .fetchSource(null, REPORT_LIST_EXCLUDES);
     SearchRequest searchRequest =
-      new SearchRequest(SINGLE_PROCESS_REPORT_TYPE, SINGLE_DECISION_REPORT_TYPE, COMBINED_REPORT_TYPE)
+      new SearchRequest(SINGLE_PROCESS_REPORT_INDEX_NAME, SINGLE_DECISION_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME)
         .source(searchSourceBuilder)
         .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
@@ -251,8 +253,8 @@ public class ReportReader {
     searchSourceBuilder.size(reportIdsAsArray.length);
     searchSourceBuilder.fetchSource(null, REPORT_LIST_EXCLUDES);
 
-    final SearchRequest searchRequest = new SearchRequest(SINGLE_PROCESS_REPORT_TYPE)
-      .types(SINGLE_PROCESS_REPORT_TYPE)
+    final SearchRequest searchRequest = new SearchRequest(SINGLE_PROCESS_REPORT_INDEX_NAME)
+      .types(SINGLE_PROCESS_REPORT_INDEX_NAME)
       .source(searchSourceBuilder);
 
     try {
@@ -279,8 +281,8 @@ public class ReportReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(getCombinedReportsBySimpleReportIdQuery);
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(COMBINED_REPORT_TYPE)
-      .types(COMBINED_REPORT_TYPE)
+    SearchRequest searchRequest = new SearchRequest(COMBINED_REPORT_INDEX_NAME)
+      .types(COMBINED_REPORT_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;

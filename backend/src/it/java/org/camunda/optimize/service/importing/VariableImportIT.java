@@ -12,8 +12,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
-import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.STRING_TYPE;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -184,7 +184,7 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setProcessDefinitionKey(instanceDto.getProcessDefinitionKey());
     requestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
     requestDto.setName("stringVar");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     List<String> variableValues =
       embeddedOptimizeRule
         .getRequestExecutor()
@@ -223,7 +223,7 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setProcessDefinitionKey(instanceDto.getProcessDefinitionKey());
     requestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
     requestDto.setName("stringVar");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     List<String> variableValues =
       embeddedOptimizeRule
         .getRequestExecutor()
@@ -239,7 +239,7 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setProcessDefinitionKey(instanceDto.getProcessDefinitionKey());
     requestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
     requestDto.setName("anotherVar");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     variableValues =
       embeddedOptimizeRule
         .getRequestExecutor()
@@ -283,7 +283,7 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setProcessDefinitionKey(instanceDto.getProcessDefinitionKey());
     requestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
     requestDto.setName("stringVar");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     List<String> variableValues =
       embeddedOptimizeRule
         .getRequestExecutor()
@@ -317,7 +317,7 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setProcessDefinitionKey(instanceDto.getProcessDefinitionKey());
     requestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
     requestDto.setName("stringVar");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     List<String> variableValues =
       embeddedOptimizeRule
         .getRequestExecutor()

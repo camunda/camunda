@@ -31,7 +31,7 @@ public class DecisionDefinitionImportIndexHandler extends AllEntitiesBasedImport
 
   @Override
   protected String getElasticsearchImportIndexType() {
-    return ElasticsearchConstants.DECISION_DEFINITION_TYPE;
+    return ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
   }
 
   public void addImportedDefinitions(Collection<DecisionDefinitionEngineDto> definitions) {

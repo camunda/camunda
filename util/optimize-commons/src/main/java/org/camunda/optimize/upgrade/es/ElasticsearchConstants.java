@@ -18,25 +18,25 @@ public class ElasticsearchConstants {
 
   public static final String OPTIMIZE_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
 
-  public static final String DECISION_DEFINITION_TYPE = "decision-definition";
-  public static final String DECISION_INSTANCE_TYPE = "decision-instance";
+  public static final String DECISION_DEFINITION_INDEX_NAME = "decision-definition";
+  public static final String DECISION_INSTANCE_INDEX_NAME = "decision-instance";
 
-  public static final String SINGLE_PROCESS_REPORT_TYPE = "single-process-report";
-  public static final String SINGLE_DECISION_REPORT_TYPE = "single-decision-report";
-  public static final String COMBINED_REPORT_TYPE = "combined-report";
-  public static final String DASHBOARD_TYPE = "dashboard";
-  public static final String COLLECTION_TYPE = "collection";
-  public static final String PROCESS_DEFINITION_TYPE = "process-definition";
-  public static final String PROC_INSTANCE_TYPE = "process-instance";
-  public static final String IMPORT_INDEX_TYPE = "import-index";
-  public static final String LICENSE_TYPE = "license";
-  public static final String ALERT_TYPE = "alert";
-  public static final String REPORT_SHARE_TYPE = "report-share";
-  public static final String DASHBOARD_SHARE_TYPE =  "dashboard-share";
-  public static final String TIMESTAMP_BASED_IMPORT_INDEX_TYPE = "timestamp-based-import-index";
-  public static final String METADATA_TYPE = "metadata";
-  public static final String TERMINATED_USER_SESSION_TYPE = "terminated-user-session";
-  public static final String TENANT_TYPE = "tenant";
+  public static final String SINGLE_PROCESS_REPORT_INDEX_NAME = "single-process-report";
+  public static final String SINGLE_DECISION_REPORT_INDEX_NAME = "single-decision-report";
+  public static final String COMBINED_REPORT_INDEX_NAME = "combined-report";
+  public static final String DASHBOARD_INDEX_NAME = "dashboard";
+  public static final String COLLECTION_INDEX_NAME = "collection";
+  public static final String PROCESS_DEFINITION_INDEX_NAME = "process-definition";
+  public static final String PROCESS_INSTANCE_INDEX_NAME = "process-instance";
+  public static final String IMPORT_INDEX_INDEX_NAME = "import-index";
+  public static final String LICENSE_INDEX_NAME = "license";
+  public static final String ALERT_INDEX_NAME = "alert";
+  public static final String REPORT_SHARE_INDEX_NAME = "report-share";
+  public static final String DASHBOARD_SHARE_INDEX_NAME =  "dashboard-share";
+  public static final String TIMESTAMP_BASED_IMPORT_INDEX_NAME = "timestamp-based-import-index";
+  public static final String METADATA_INDEX_NAME = "metadata";
+  public static final String TERMINATED_USER_SESSION_INDEX_NAME = "terminated-user-session";
+  public static final String TENANT_INDEX_NAME = "tenant";
 
   public static final String METADATA_TYPE_SCHEMA_VERSION = "schemaVersion";
 }

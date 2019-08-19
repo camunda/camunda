@@ -11,8 +11,8 @@ import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
-import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
-import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
+import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -25,13 +25,13 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.ES_TYPE_INDEX_REFERS_TO;
-import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.ES_TYPE_INDEX_REFERS_TO;
+import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -42,7 +42,7 @@ import static org.hamcrest.Matchers.lessThan;
 public class DecisionImportIT extends AbstractImportIT {
 
   protected static final Set<String> DECISION_DEFINITION_NULLABLE_FIELDS =
-    Collections.singleton(DecisionDefinitionType.TENANT_ID);
+    Collections.singleton(DecisionDefinitionIndex.TENANT_ID);
 
   @Test
   public void importOfDecisionDataCanBeDisabled() throws IOException {
@@ -58,10 +58,10 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_TYPE, 0L);
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_TYPE, 0L);
-    allEntriesInElasticsearchHaveAllDataWithCount(PROC_INSTANCE_TYPE, 1L);
-    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_TYPE, 1L);
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
+    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 1L);
+    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, 1L);
   }
 
   @Test
@@ -75,7 +75,7 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_TYPE, 2L, DECISION_DEFINITION_NULLABLE_FIELDS);
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 2L, DECISION_DEFINITION_NULLABLE_FIELDS);
   }
 
   @Test
@@ -89,10 +89,10 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_DEFINITION_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(DecisionDefinitionType.TENANT_ID), is(tenantId));
+    assertThat(hit.getSourceAsMap().get(DecisionDefinitionIndex.TENANT_ID), is(tenantId));
   }
 
   @Test
@@ -107,10 +107,10 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_DEFINITION_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(DecisionDefinitionType.TENANT_ID), is(tenantId));
+    assertThat(hit.getSourceAsMap().get(DecisionDefinitionIndex.TENANT_ID), is(tenantId));
   }
 
   @Test
@@ -126,10 +126,10 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_DEFINITION_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(DecisionDefinitionType.TENANT_ID), is(expectedTenantId));
+    assertThat(hit.getSourceAsMap().get(DecisionDefinitionIndex.TENANT_ID), is(expectedTenantId));
   }
 
   @Test
@@ -142,7 +142,7 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
 
     final SearchHit hit = idsResp.getHits().getHits()[0];
@@ -161,10 +161,10 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(DecisionInstanceType.TENANT_ID), is(tenantId));
+    assertThat(hit.getSourceAsMap().get(DecisionInstanceIndex.TENANT_ID), is(tenantId));
   }
 
   @Test
@@ -179,10 +179,10 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(DecisionInstanceType.TENANT_ID), is(tenantId));
+    assertThat(hit.getSourceAsMap().get(DecisionInstanceIndex.TENANT_ID), is(tenantId));
   }
 
   @Test
@@ -200,10 +200,10 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(DecisionInstanceType.TENANT_ID), is(expectedTenantId));
+    assertThat(hit.getSourceAsMap().get(DecisionInstanceIndex.TENANT_ID), is(expectedTenantId));
   }
 
   @Test
@@ -217,7 +217,7 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_TYPE, 2L);
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 2L);
   }
 
   @Test
@@ -240,7 +240,7 @@ public class DecisionImportIT extends AbstractImportIT {
     );
     assertThat(decisionInstanceDto.getTimestampOfLastEntity(), is(lessThan(OffsetDateTime.now())));
 
-    final String decisionDefinitionIndexId = DECISION_DEFINITION_TYPE + "-1";
+    final String decisionDefinitionIndexId = DECISION_DEFINITION_INDEX_NAME + "-1";
     SearchResponse searchDecisionDefinitionIndexResponse = getDecisionDefinitionIndexById(decisionDefinitionIndexId);
     assertThat(searchDecisionDefinitionIndexResponse.getHits().getTotalHits(), is(1L));
     final AllEntitiesBasedImportIndexDto definitionImportIndex = parseToDto(
@@ -265,7 +265,7 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_TYPE, 2L);
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 2L);
     embeddedOptimizeRule.getConfigurationService().setEngineImportDecisionInstanceMaxPageSize(originalMaxPageSize);
   }
 
@@ -275,8 +275,8 @@ public class DecisionImportIT extends AbstractImportIT {
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(IMPORT_INDEX_TYPE)
-      .types(IMPORT_INDEX_TYPE)
+      .indices(IMPORT_INDEX_INDEX_NAME)
+      .types(IMPORT_INDEX_INDEX_NAME)
       .source(searchSourceBuilder);
 
     return elasticSearchRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
@@ -284,7 +284,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
   private SearchResponse getDecisionInstanceIndexResponse() throws IOException {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(termsQuery(ES_TYPE_INDEX_REFERS_TO, DECISION_INSTANCE_TYPE))
+      .query(termsQuery(ES_TYPE_INDEX_REFERS_TO, DECISION_INSTANCE_INDEX_NAME))
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
@@ -318,9 +318,9 @@ public class DecisionImportIT extends AbstractImportIT {
     assertThat(idsResp.getHits().getTotalHits(), is(count));
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
       // in this test suite we only care about decision types, no asserts besides count on others
-      if (DECISION_INSTANCE_TYPE.equals(elasticsearchType)) {
+      if (DECISION_INSTANCE_INDEX_NAME.equals(elasticsearchType)) {
         assertDecisionInstanceFieldSetAsExpected(searchHit, expectTenant);
-      } else if (DECISION_DEFINITION_TYPE.equals(elasticsearchType)) {
+      } else if (DECISION_DEFINITION_INDEX_NAME.equals(elasticsearchType)) {
         assertAllFieldsSet(DECISION_DEFINITION_NULLABLE_FIELDS, searchHit);
       }
     }

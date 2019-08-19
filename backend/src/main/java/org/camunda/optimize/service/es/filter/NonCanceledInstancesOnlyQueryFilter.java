@@ -14,7 +14,7 @@ import java.util.List;
 
 import static org.camunda.optimize.service.es.filter.CanceledInstancesOnlyQueryFilter.EXTERNALLY_TERMINATED;
 import static org.camunda.optimize.service.es.filter.CanceledInstancesOnlyQueryFilter.INTERNALLY_TERMINATED;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.STATE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 

@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndD
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.process.util.ProcessInstanceQueryUtil;
 import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -23,7 +23,7 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.createProcessEndDateHistogramBucketLimitingFilterFor;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
 
 
 public class ProcessInstanceDurationGroupByEndDateCommand extends
@@ -46,8 +46,8 @@ public class ProcessInstanceDurationGroupByEndDateCommand extends
   private Script getScriptedAggregationField() {
     return ExecutionStateAggregationUtil.getDurationAggregationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-      ProcessInstanceType.DURATION,
-      ProcessInstanceType.START_DATE
+      ProcessInstanceIndex.DURATION,
+      ProcessInstanceIndex.START_DATE
     );
   }
 

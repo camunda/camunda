@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.assignee.distributed_by.none;
 
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 
 public class UserTaskIdleDurationByAssigneeCommand extends AbstractUserTaskDurationByAssigneeCommand {
 
@@ -17,11 +17,11 @@ public class UserTaskIdleDurationByAssigneeCommand extends AbstractUserTaskDurat
 
   @Override
   protected String getDurationFieldName() {
-    return ProcessInstanceType.USER_TASK_IDLE_DURATION;
+    return ProcessInstanceIndex.USER_TASK_IDLE_DURATION;
   }
 
   @Override
   protected String getReferenceDateFieldName() {
-    return ProcessInstanceType.USER_TASK_START_DATE;
+    return ProcessInstanceIndex.USER_TASK_START_DATE;
   }
 }

@@ -13,7 +13,7 @@ import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
-import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
+import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
 public abstract class DecisionReportCommand<T extends ReportEvaluationResult>
@@ -41,7 +41,7 @@ public abstract class DecisionReportCommand<T extends ReportEvaluationResult>
   }
 
   protected BoolQueryBuilder setupBaseQuery(final DecisionReportDataDto reportData) {
-    final BoolQueryBuilder query = setupBaseQuery(reportData, new DecisionInstanceType());
+    final BoolQueryBuilder query = setupBaseQuery(reportData, new DecisionInstanceIndex());
     queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
     return query;
   }

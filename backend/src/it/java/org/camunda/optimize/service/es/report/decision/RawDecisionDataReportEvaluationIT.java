@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.DecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.command.decision.RawDecisionDataCommand;
-import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
+import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.hamcrest.Description;
@@ -249,7 +249,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
-    reportData.getParameters().setSorting(new SortingDto(DecisionInstanceType.DECISION_INSTANCE_ID, SortOrder.ASC));
+    reportData.getParameters().setSorting(new SortingDto(DecisionInstanceIndex.DECISION_INSTANCE_ID, SortOrder.ASC));
     final DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
       evaluateRawReport(reportData);
 
@@ -284,7 +284,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
-    reportData.getParameters().setSorting(new SortingDto(DecisionInstanceType.EVALUATION_DATE_TIME, SortOrder.ASC));
+    reportData.getParameters().setSorting(new SortingDto(DecisionInstanceIndex.EVALUATION_DATE_TIME, SortOrder.ASC));
     final DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
       evaluateRawReport(reportData);
 

@@ -11,7 +11,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.VariableUpdateInstanceFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableUpdateInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.service.VariableUpdateInstanceImportService;
-import org.camunda.optimize.service.es.writer.variable.VariableUpdateWriter;
+import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -29,7 +29,7 @@ public class VariableUpdateEngineImportMediator
   private VariableUpdateInstanceFetcher engineEntityFetcher;
 
   @Autowired
-  private VariableUpdateWriter variableWriter;
+  private ProcessVariableUpdateWriter variableWriter;
   @Autowired
   private ImportAdapterProvider importAdapterProvider;
 

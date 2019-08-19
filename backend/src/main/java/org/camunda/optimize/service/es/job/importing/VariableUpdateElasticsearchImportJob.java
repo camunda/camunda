@@ -5,23 +5,23 @@
  */
 package org.camunda.optimize.service.es.job.importing;
 
-import org.camunda.optimize.dto.optimize.query.variable.VariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.variable.VariableUpdateWriter;
+import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 
 import java.util.List;
 
-public class VariableUpdateElasticsearchImportJob extends ElasticsearchImportJob<VariableDto> {
+public class VariableUpdateElasticsearchImportJob extends ElasticsearchImportJob<ProcessVariableDto> {
 
-  private VariableUpdateWriter variableWriter;
+  private ProcessVariableUpdateWriter variableWriter;
 
-  public VariableUpdateElasticsearchImportJob(VariableUpdateWriter variableWriter, Runnable callback) {
+  public VariableUpdateElasticsearchImportJob(ProcessVariableUpdateWriter variableWriter, Runnable callback) {
     super(callback);
     this.variableWriter = variableWriter;
   }
 
   @Override
-  protected void persistEntities(List<VariableDto> newOptimizeEntities) throws Exception {
+  protected void persistEntities(List<ProcessVariableDto> newOptimizeEntities) throws Exception {
     variableWriter.importVariables(newOptimizeEntities);
   }
 

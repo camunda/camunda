@@ -7,7 +7,7 @@ package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.ScrollBasedImportIndexHandler;
-import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
+import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -29,9 +29,9 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_ID;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.ENGINE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
+import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.ENGINE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -82,7 +82,7 @@ public class DecisionDefinitionXmlImportIndexHandler extends ScrollBasedImportIn
 
   private QueryBuilder buildBasicQuery() {
     return QueryBuilders.boolQuery()
-      .mustNot(existsQuery(DecisionDefinitionType.DECISION_DEFINITION_XML))
+      .mustNot(existsQuery(DecisionDefinitionIndex.DECISION_DEFINITION_XML))
       .must(termQuery(ENGINE, engineContext.getEngineAlias()));
   }
 
@@ -98,8 +98,8 @@ public class DecisionDefinitionXmlImportIndexHandler extends ScrollBasedImportIn
       .fetchSource(false)
       .sort(SortBuilders.fieldSort(DECISION_DEFINITION_ID).order(SortOrder.DESC))
       .size(configurationService.getEngineImportDecisionDefinitionXmlMaxPageSize());
-    SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_TYPE)
-      .types(DECISION_DEFINITION_TYPE)
+    SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_INDEX_NAME)
+      .types(DECISION_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 

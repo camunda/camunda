@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportI
 import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.type.index.ImportIndexType;
+import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -30,8 +30,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_TYPE;
+import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
 
 @AllArgsConstructor
 @Component
@@ -118,10 +118,10 @@ public class ImportIndexWriter {
     try {
       XContentBuilder sourceToAdjust = XContentFactory.jsonBuilder()
         .startObject()
-        .field(ImportIndexType.ENGINE, importIndex.getEngine())
-        .field(ImportIndexType.IMPORT_INDEX, importIndex.getImportIndex())
+        .field(ImportIndexIndex.ENGINE, importIndex.getEngine())
+        .field(ImportIndexIndex.IMPORT_INDEX, importIndex.getImportIndex())
         .endObject();
-      return new IndexRequest(IMPORT_INDEX_TYPE, IMPORT_INDEX_TYPE, getId(importIndex))
+      return new IndexRequest(IMPORT_INDEX_INDEX_NAME, IMPORT_INDEX_INDEX_NAME, getId(importIndex))
         .source(sourceToAdjust);
     } catch (IOException e) {
       log.error(

@@ -22,7 +22,7 @@ public class ProcessVariableValueRequestDto {
   private List<String> processDefinitionVersions = new ArrayList<>();
   private List<String> tenantIds = new ArrayList<>(Collections.singletonList(null));
   private String name;
-  private String type;
+  private VariableType type;
   private String valueFilter;
   private Integer resultOffset = 0;
   private Integer numResults = MAX_RESPONSE_SIZE_LIMIT;

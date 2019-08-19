@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.type.DashboardType;
+import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -38,7 +38,7 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.Collections;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
@@ -64,7 +64,7 @@ public class DashboardWriter {
     dashboard.setId(id);
 
     try {
-      IndexRequest request = new IndexRequest(DASHBOARD_TYPE, DASHBOARD_TYPE, id)
+      IndexRequest request = new IndexRequest(DASHBOARD_INDEX_NAME, DASHBOARD_INDEX_NAME, id)
         .source(objectMapper.writeValueAsString(dashboard), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -89,7 +89,7 @@ public class DashboardWriter {
   public void updateDashboard(DashboardDefinitionUpdateDto dashboard, String id) {
     log.debug("Updating dashboard with id [{}] in Elasticsearch", id);
     try {
-      UpdateRequest request = new UpdateRequest(DASHBOARD_TYPE, DASHBOARD_TYPE, id)
+      UpdateRequest request = new UpdateRequest(DASHBOARD_INDEX_NAME, DASHBOARD_INDEX_NAME, id)
         .doc(objectMapper.writeValueAsString(dashboard), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -132,11 +132,11 @@ public class DashboardWriter {
     );
 
     NestedQueryBuilder query = QueryBuilders.nestedQuery(
-      DashboardType.REPORTS,
-      QueryBuilders.termQuery(DashboardType.REPORTS + "." + DashboardType.ID, reportId),
+      DashboardIndex.REPORTS,
+      QueryBuilders.termQuery(DashboardIndex.REPORTS + "." + DashboardIndex.ID, reportId),
       ScoreMode.None
     );
-    UpdateByQueryRequest request = new UpdateByQueryRequest(DASHBOARD_TYPE)
+    UpdateByQueryRequest request = new UpdateByQueryRequest(DASHBOARD_INDEX_NAME)
       .setAbortOnVersionConflict(false)
       .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
       .setQuery(query)
@@ -166,7 +166,7 @@ public class DashboardWriter {
 
   public void deleteDashboard(String dashboardId) {
     log.debug("Deleting dashboard with id [{}]", dashboardId);
-    DeleteRequest request = new DeleteRequest(DASHBOARD_TYPE, DASHBOARD_TYPE, dashboardId)
+    DeleteRequest request = new DeleteRequest(DASHBOARD_INDEX_NAME, DASHBOARD_INDEX_NAME, dashboardId)
       .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;

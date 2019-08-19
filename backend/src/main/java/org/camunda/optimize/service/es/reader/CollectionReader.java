@@ -37,12 +37,12 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component
@@ -54,7 +54,7 @@ public class CollectionReader {
 
   public SimpleCollectionDefinitionDto getCollection(String collectionId) {
     log.debug("Fetching collection with id [{}]", collectionId);
-    GetRequest getRequest = new GetRequest(COLLECTION_TYPE, COLLECTION_TYPE, collectionId);
+    GetRequest getRequest = new GetRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId);
 
     GetResponse getResponse;
     try {
@@ -98,7 +98,9 @@ public class CollectionReader {
       .query(QueryBuilders.matchAllQuery())
       .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest =
-      new SearchRequest(SINGLE_PROCESS_REPORT_TYPE, SINGLE_DECISION_REPORT_TYPE, COMBINED_REPORT_TYPE, DASHBOARD_TYPE)
+      new SearchRequest(SINGLE_PROCESS_REPORT_INDEX_NAME,
+                        SINGLE_DECISION_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME, DASHBOARD_INDEX_NAME
+      )
         .source(searchSourceBuilder)
         .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
@@ -154,8 +156,8 @@ public class CollectionReader {
       .query(QueryBuilders.matchAllQuery())
       .sort(SimpleCollectionDefinitionDto.Fields.name.name(), SortOrder.ASC)
       .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(COLLECTION_TYPE)
-      .types(COLLECTION_TYPE)
+    SearchRequest searchRequest = new SearchRequest(COLLECTION_INDEX_NAME)
+      .types(COLLECTION_INDEX_NAME)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
@@ -188,8 +190,8 @@ public class CollectionReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(getCollectionByEntityIdQuery)
       .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(COLLECTION_TYPE)
-      .types(COLLECTION_TYPE)
+    SearchRequest searchRequest = new SearchRequest(COLLECTION_INDEX_NAME)
+      .types(COLLECTION_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;

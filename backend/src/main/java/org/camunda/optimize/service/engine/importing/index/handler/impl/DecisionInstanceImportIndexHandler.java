@@ -22,7 +22,7 @@ public class DecisionInstanceImportIndexHandler extends TimestampBasedImportInde
 
   @Override
   protected String getElasticsearchDocID() {
-    return ElasticsearchConstants.DECISION_INSTANCE_TYPE;
+    return ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
   }
 
 }

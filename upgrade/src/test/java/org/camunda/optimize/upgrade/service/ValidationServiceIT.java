@@ -35,7 +35,7 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
       new ConfigurationService(),
       new ElasticsearchMetadataService(new ObjectMapper())
     );
-    initSchema(Lists.newArrayList(METADATA_TYPE));
+    initSchema(Lists.newArrayList(METADATA_INDEX));
   }
 
   @Test

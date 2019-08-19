@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.groupingBy;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 @Component
 @Slf4j
@@ -100,7 +100,7 @@ public class UserOperationsLogEntryWriter extends AbstractUserTaskWriter {
     final String newProcessInstanceIfAbsent = objectMapper.writeValueAsString(procInst);
     final Script updateScript = createUpdateUserOperationsScript(userTasks);
     final UpdateRequest request =
-      new UpdateRequest(PROC_INSTANCE_TYPE, PROC_INSTANCE_TYPE, processInstanceId)
+      new UpdateRequest(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_INDEX_NAME, processInstanceId)
         .script(updateScript)
         .upsert(newProcessInstanceIfAbsent, XContentType.JSON)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

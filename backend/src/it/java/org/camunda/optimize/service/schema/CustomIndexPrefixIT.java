@@ -8,7 +8,7 @@ package org.camunda.optimize.service.schema;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.TypeMappingCreator;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -26,7 +26,7 @@ import java.util.UUID;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexAliasForTypeAndPrefix;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersion;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -81,10 +81,10 @@ public class CustomIndexPrefixIT {
     initializeSchema();
 
     // then
-    final List<TypeMappingCreator> mappings = embeddedOptimizeRule.getElasticSearchSchemaManager().getMappings();
+    final List<IndexMappingCreator> mappings = embeddedOptimizeRule.getElasticSearchSchemaManager().getMappings();
     assertThat(mappings.size(), is(18));
-    for (TypeMappingCreator mapping : mappings) {
-      final String expectedAliasName = getOptimizeIndexAliasForTypeAndPrefix(mapping.getType(), CUSTOM_PREFIX);
+    for (IndexMappingCreator mapping : mappings) {
+      final String expectedAliasName = getOptimizeIndexAliasForTypeAndPrefix(mapping.getIndexName(), CUSTOM_PREFIX);
       final String expectedIndexName = getOptimizeIndexNameForAliasAndVersion(
         expectedAliasName, String.valueOf(mapping.getVersion())
       );
@@ -92,13 +92,13 @@ public class CustomIndexPrefixIT {
       final RestHighLevelClient highLevelClient = customPrefixElasticSearchRule.getOptimizeElasticClient().getHighLevelClient();
 
       assertThat(
-        "Custom prefix alias exists for type " + mapping.getType(),
+        "Custom prefix alias exists for type " + mapping.getIndexName(),
         highLevelClient.indices().exists(new GetIndexRequest().indices(expectedAliasName), RequestOptions.DEFAULT),
         is(true)
       );
 
       assertThat(
-        "Custom prefix index exists for type " + mapping.getType(),
+        "Custom prefix index exists for type " + mapping.getIndexName(),
         highLevelClient.indices().exists(new GetIndexRequest().indices(expectedIndexName), RequestOptions.DEFAULT),
         is(true)
       );
@@ -125,8 +125,8 @@ public class CustomIndexPrefixIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     customPrefixElasticSearchRule.refreshAllOptimizeIndices();
 
-    assertThat(defaultElasticSearchRule.getDocumentCountOf(PROC_INSTANCE_TYPE), is(1));
-    assertThat(customPrefixElasticSearchRule.getDocumentCountOf(PROC_INSTANCE_TYPE), is(2));
+    assertThat(defaultElasticSearchRule.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME), is(1));
+    assertThat(customPrefixElasticSearchRule.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME), is(2));
   }
 
   private void deploySimpleProcess() {

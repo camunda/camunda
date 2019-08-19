@@ -48,8 +48,8 @@ import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterU
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.isResultComplete;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.EVALUATION_DATE_TIME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.EVALUATION_DATE_TIME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
@@ -80,8 +80,8 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
       .fetchSource(false)
       .aggregation(createAggregation(groupBy.getUnit(), query))
       .size(0);
-    SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_TYPE)
-      .types(DECISION_INSTANCE_TYPE)
+    SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_INDEX_NAME)
+      .types(DECISION_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     try {
@@ -158,7 +158,7 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
       intervalAggregationService.createIntervalAggregation(
         dateIntervalRange,
         query,
-        DECISION_INSTANCE_TYPE,
+        DECISION_INSTANCE_INDEX_NAME,
         EVALUATION_DATE_TIME
       );
 

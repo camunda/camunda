@@ -14,7 +14,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TERMINATED_USER_SESSION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TERMINATED_USER_SESSION_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component
@@ -27,7 +27,7 @@ public class TerminatedUserSessionReader {
     log.debug("Fetching terminated user session with id [{}]", sessionId);
     try {
       final GetRequest sessionByIdRequest = new GetRequest(
-        TERMINATED_USER_SESSION_TYPE, TERMINATED_USER_SESSION_TYPE, sessionId
+        TERMINATED_USER_SESSION_INDEX_NAME, TERMINATED_USER_SESSION_INDEX_NAME, sessionId
       );
       sessionByIdRequest.fetchSourceContext(FetchSourceContext.DO_NOT_FETCH_SOURCE);
       return esClient.get(sessionByIdRequest, RequestOptions.DEFAULT).isExists();

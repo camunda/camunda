@@ -18,6 +18,7 @@ import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.wrapper.DestinationWrapper;
@@ -28,12 +29,16 @@ import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest.AliasActions;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
+import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.Strings;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
@@ -44,9 +49,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+
+import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
 
 public class ESIndexAdjuster {
 
@@ -72,13 +78,13 @@ public class ESIndexAdjuster {
     this.restClient = restClient;
   }
 
-  public void reindex(final String sourceTypeToConstructIndexFrom,
-                      final String destinationTypeToConstructIndexFrom,
+  public void reindex(final String sourceIndex,
+                      final String destinationIndex,
                       final String sourceType,
                       final String destType) {
     this.reindex(
-      sourceTypeToConstructIndexFrom,
-      destinationTypeToConstructIndexFrom,
+      sourceIndex,
+      destinationIndex,
       sourceType,
       destType,
       null
@@ -234,18 +240,16 @@ public class ESIndexAdjuster {
     return "_" + REINDEX_OPERATION;
   }
 
-  public void createIndex(final String typeName, final String mappingAndSettings) {
-    createIndex(typeName, null, mappingAndSettings);
-  }
-
-  public void createIndex(final String indexName, final String indexAlias, final String mappingAndSettings) {
+  public void createIndex(final IndexMappingCreator mapping) {
+    final String indexName = indexNameService.getVersionedOptimizeIndexNameForTypeMapping(mapping);
     logger.debug(
-      "Creating index [{}] with alias [{}] and with mapping and settings [{}].",
-      indexName, indexAlias, mappingAndSettings
+      "Creating index [{}] and mapping [{}].",
+      indexName, Strings.toString(mapping.getSource())
     );
 
     final CreateIndexRequest createIndexRequest = new CreateIndexRequest(indexName);
-    createIndexRequest.source(preProcess(mappingAndSettings, indexAlias), XContentType.JSON);
+    createIndexRequest.mapping(mapping.getIndexName(), mapping.getSource());
+    createIndexRequest.settings(createIndexSettings());
 
     try {
       restClient.indices().create(createIndexRequest, RequestOptions.DEFAULT);
@@ -255,55 +259,38 @@ public class ESIndexAdjuster {
     }
   }
 
-  public void addAlias(final String targetIndexName, final String targetIndexAlias) {
-    logger.debug("Adding alias [{}] to index [{}].", targetIndexAlias, targetIndexName);
+  private Settings createIndexSettings() {
+    try {
+      return IndexSettingsBuilder.buildAllSettings(configurationService);
+    } catch (IOException e) {
+      logger.error("Could not create settings!", e);
+      throw new UpgradeRuntimeException("Could not create index settings");
+    }
+  }
+
+  public void addAlias(final IndexMappingCreator mapping) {
+    final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(mapping.getIndexName());
+    final String indexName = indexNameService.getVersionedOptimizeIndexNameForTypeMapping(mapping);
+    logger.debug("Adding alias [{}] to index [{}].", indexAlias, indexName);
 
     try {
       final IndicesAliasesRequest indicesAliasesRequest = new IndicesAliasesRequest();
       final AliasActions aliasAction = new AliasActions(AliasActions.Type.ADD)
-        .index(targetIndexName)
-        .alias(targetIndexAlias);
+        .index(indexName)
+        .alias(indexAlias);
       indicesAliasesRequest.addAliasAction(aliasAction);
       restClient.indices().updateAliases(indicesAliasesRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      String errorMessage = String.format("Could not add alias to index [%s]!", targetIndexName);
+      String errorMessage = String.format("Could not add alias to index [%s]!", indexName);
       throw new UpgradeRuntimeException(errorMessage, e);
     }
   }
 
-  private String preProcess(final String mappingAndSettings, final String indexAlias) {
-    return enhanceWithDefaults(mappingAndSettings, indexAlias);
-  }
-
-  private String enhanceWithDefaults(final String mappingAndSettings, final String indexAlias) {
-    String result = mappingAndSettings;
-    try {
-      HashMap mapping = objectMapper.readValue(mappingAndSettings, HashMap.class);
-      HashMap settings = objectMapper.readValue(
-        IndexSettingsBuilder.buildAllSettingsAsString(configurationService),
-        HashMap.class
-      );
-
-      mapping.putAll(settings);
-
-      if (indexAlias != null) {
-        final HashMap<String, HashMap<String, Object>> aliases = new HashMap<>();
-        aliases.put(indexAlias, new HashMap<>());
-        mapping.put("aliases", aliases);
-      }
-
-      result = objectMapper.writeValueAsString(mapping);
-    } catch (IOException e) {
-      logger.error("can't apply defaults to mapping", e);
-    }
-    return result;
-  }
-
-  public void insertDataByTypeName(final String typeName, final String data) {
-    String aliasName = indexNameService.getOptimizeIndexAliasForType(typeName);
+  public void insertDataByTypeName(final IndexMappingCreator type, final String data) {
+    String aliasName = indexNameService.getOptimizeIndexAliasForIndex(type.getIndexName());
     logger.debug("Inserting data to indexAlias [{}]. Data payload is [{}]", aliasName, data);
     try {
-      final IndexRequest indexRequest = new IndexRequest(aliasName, typeName);
+      final IndexRequest indexRequest = new IndexRequest(aliasName, type.getIndexName());
       indexRequest.source(data, XContentType.JSON);
       indexRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
       restClient.index(indexRequest, RequestOptions.DEFAULT);
@@ -313,11 +300,11 @@ public class ESIndexAdjuster {
     }
   }
 
-  public void updateDataByTypeName(final String typeName,
+  public void updateDataByTypeName(final String indexName,
                                    final QueryBuilder query,
                                    final String updateScript,
                                    final Map<String, Object> parameters) {
-    String aliasName = indexNameService.getOptimizeIndexAliasForType(typeName);
+    String aliasName = indexNameService.getOptimizeIndexAliasForIndex(indexName);
     logger.debug(
       "Updating data for indexAlias [{}] using script [{}] and query [{}].", aliasName, updateScript, query.toString()
     );
@@ -336,6 +323,29 @@ public class ESIndexAdjuster {
     } catch (IOException e) {
       String errorMessage = String.format("Could not update data for indexAlias [%s]!", aliasName);
       throw new UpgradeRuntimeException(errorMessage, e);
+    }
+  }
+
+  public void updateIndexDynamicSettingsAndMappings(IndexMappingCreator index) {
+    final String indexName = indexNameService.getVersionedOptimizeIndexNameForTypeMapping(index);
+    try {
+      final Settings indexSettings = buildDynamicSettings(configurationService);
+      final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest();
+      updateSettingsRequest.indices(indexName);
+      updateSettingsRequest.settings(indexSettings);
+      restClient.indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String message = String.format("Could not update index settings for type [%s].", index.getIndexName());
+      throw new UpgradeRuntimeException(message, e);
+    }
+
+    try {
+      final PutMappingRequest putMappingRequest = new PutMappingRequest(indexName);
+      putMappingRequest.type(index.getIndexName()).source(index.getSource());
+      restClient.indices().putMapping(putMappingRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String message = String.format("Could not update index mappings for type [%s].", index.getIndexName());
+      throw new UpgradeRuntimeException(message, e);
     }
   }
 }

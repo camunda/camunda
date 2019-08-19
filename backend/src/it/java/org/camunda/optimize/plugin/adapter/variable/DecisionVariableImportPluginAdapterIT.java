@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.mapHits;
 import static org.camunda.optimize.test.it.rule.EngineIntegrationRule.DEFAULT_DMN_DEFINITION_PATH;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -202,7 +202,7 @@ public class DecisionVariableImportPluginAdapterIT {
   }
 
   private List<DecisionInstanceDto> getDecisionInstanceDtos() {
-    SearchResponse response = elasticSearchRule.getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_TYPE);
+    SearchResponse response = elasticSearchRule.getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_INDEX_NAME);
     return mapHits(
       response.getHits(),
       DecisionInstanceDto.class,

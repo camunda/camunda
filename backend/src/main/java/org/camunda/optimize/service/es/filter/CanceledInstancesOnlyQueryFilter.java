@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.STATE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 

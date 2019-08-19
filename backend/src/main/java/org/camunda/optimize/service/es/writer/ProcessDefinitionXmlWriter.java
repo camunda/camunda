@@ -24,11 +24,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.FLOW_NODE_NAMES;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_XML;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.USER_TASK_NAMES;
+import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.FLOW_NODE_NAMES;
+import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
+import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.USER_TASK_NAMES;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 
 @AllArgsConstructor
 @Component
@@ -75,8 +75,8 @@ public class ProcessDefinitionXmlWriter {
       processDefinitionDto
     );
     final UpdateRequest updateRequest = new UpdateRequest(
-      PROCESS_DEFINITION_TYPE,
-      PROCESS_DEFINITION_TYPE, processDefinitionDto.getId())
+      PROCESS_DEFINITION_INDEX_NAME,
+      PROCESS_DEFINITION_INDEX_NAME, processDefinitionDto.getId())
       .script(updateScript)
       .upsert(objectMapper.convertValue(processDefinitionDto, Map.class))
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

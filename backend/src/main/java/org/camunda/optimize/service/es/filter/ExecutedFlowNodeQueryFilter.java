@@ -17,8 +17,8 @@ import java.util.List;
 
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.NOT_IN;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ACTIVITY_ID;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;

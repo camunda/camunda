@@ -59,7 +59,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -95,7 +95,7 @@ public class CombinedReportHandlingIT {
     String id = createNewCombinedReport();
 
     // then
-    GetRequest getRequest = new GetRequest(COMBINED_REPORT_TYPE, COMBINED_REPORT_TYPE, id);
+    GetRequest getRequest = new GetRequest(COMBINED_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME, id);
     GetResponse getResponse = elasticSearchRule.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
 
     assertThat(getResponse.isExists(), is(true));

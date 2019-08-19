@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.candidate_group.distributed_by.usertask;
 
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 
 public class UserTaskWorkDurationByCandidateGroupByUserTaskCommand
   extends AbstractUserTaskDurationByCandidateGroupByUserTaskCommand {
@@ -18,12 +18,12 @@ public class UserTaskWorkDurationByCandidateGroupByUserTaskCommand
 
   @Override
   protected String getDurationFieldName() {
-    return ProcessInstanceType.USER_TASK_WORK_DURATION;
+    return ProcessInstanceIndex.USER_TASK_WORK_DURATION;
   }
 
 
   @Override
   protected String getReferenceDateFieldName() {
-    return ProcessInstanceType.USER_TASK_CLAIM_DATE;
+    return ProcessInstanceIndex.USER_TASK_CLAIM_DATE;
   }
 }

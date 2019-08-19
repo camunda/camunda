@@ -25,7 +25,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.IDENTITY_LINK_OPERATION_DELETE;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -51,7 +51,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
@@ -80,7 +80,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
@@ -131,7 +131,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
@@ -156,7 +156,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
@@ -188,7 +188,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
@@ -222,7 +222,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
@@ -249,7 +249,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
@@ -272,7 +272,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
@@ -300,7 +300,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
@@ -332,7 +332,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
@@ -362,7 +362,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(

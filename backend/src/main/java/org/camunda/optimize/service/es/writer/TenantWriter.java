@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
 @AllArgsConstructor
 @Component
@@ -63,7 +63,7 @@ public class TenantWriter {
       final String id = tenantDto.getId();
       final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(FIELDS_TO_UPDATE, tenantDto);
       final UpdateRequest request =
-        new UpdateRequest(TENANT_TYPE, TENANT_TYPE, id)
+        new UpdateRequest(TENANT_INDEX_NAME, TENANT_INDEX_NAME, id)
           .script(updateScript)
           .upsert(objectMapper.convertValue(tenantDto, Map.class))
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

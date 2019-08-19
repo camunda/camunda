@@ -25,8 +25,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.MATCHED_RULES;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.MATCHED_RULES;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 
 public class CountDecisionFrequencyGroupByMatchedRuleCommand
   extends DecisionReportCommand<SingleDecisionMapReportResult> {
@@ -50,8 +50,8 @@ public class CountDecisionFrequencyGroupByMatchedRuleCommand
       .fetchSource(false)
       .aggregation(createAggregation())
       .size(0);
-    SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_TYPE)
-      .types(DECISION_INSTANCE_TYPE)
+    SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_INDEX_NAME)
+      .types(DECISION_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     try {

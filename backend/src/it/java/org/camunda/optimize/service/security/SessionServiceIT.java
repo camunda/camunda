@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.security;
 
-import org.camunda.optimize.service.es.schema.type.TerminatedUserSessionType;
+import org.camunda.optimize.service.es.schema.index.TerminatedUserSessionIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -23,7 +23,7 @@ import java.time.temporal.ChronoUnit;
 
 import static org.camunda.optimize.service.security.AuthCookieService.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TERMINATED_USER_SESSION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TERMINATED_USER_SESSION_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -63,7 +63,7 @@ public class SessionServiceIT {
     getTerminatedSessionService().cleanup();
 
     // then
-    assertThat(elasticSearchRule.getDocumentCountOf(TERMINATED_USER_SESSION_TYPE), is(0));
+    assertThat(elasticSearchRule.getDocumentCountOf(TERMINATED_USER_SESSION_INDEX_NAME), is(0));
   }
 
   @Test
@@ -105,7 +105,7 @@ public class SessionServiceIT {
     embeddedOptimizeRule.getRequestExecutor().buildLogOutRequest().withGivenAuthToken(token).execute();
 
     // then
-    assertThat(elasticSearchRule.getDocumentCountOf(TERMINATED_USER_SESSION_TYPE), is(1));
+    assertThat(elasticSearchRule.getDocumentCountOf(TERMINATED_USER_SESSION_INDEX_NAME), is(1));
   }
 
   @Test
@@ -252,7 +252,7 @@ public class SessionServiceIT {
 
       // when
       // provoke failure for terminated session check
-      elasticSearchRule.deleteIndexOfType(new TerminatedUserSessionType());
+      elasticSearchRule.deleteIndexOfType(new TerminatedUserSessionIndex());
 
       final Response getReportsResponse =
         embeddedOptimizeRule

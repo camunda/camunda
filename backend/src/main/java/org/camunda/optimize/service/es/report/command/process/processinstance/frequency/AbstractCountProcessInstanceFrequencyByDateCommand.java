@@ -47,7 +47,7 @@ import static org.camunda.optimize.service.es.report.command.util.FilterLimitedA
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 
@@ -82,8 +82,8 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateCommand
       .fetchSource(false)
       .aggregation(createAggregation(getGroupByDateUnit(processReportData), query))
       .size(0);
-    SearchRequest searchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
-      .types(PROC_INSTANCE_TYPE)
+    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     try {
@@ -172,7 +172,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateCommand
       intervalAggregationService.createIntervalAggregation(
         dateIntervalRange,
         query,
-        PROC_INSTANCE_TYPE,
+        PROCESS_INSTANCE_INDEX_NAME,
         getDateField()
       );
 

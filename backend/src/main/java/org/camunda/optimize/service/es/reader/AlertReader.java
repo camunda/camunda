@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.type.AlertType;
+import org.camunda.optimize.service.es.schema.index.AlertIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetRequest;
@@ -28,7 +28,7 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.List;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 
 @RequiredArgsConstructor
@@ -46,8 +46,8 @@ public class AlertReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(QueryBuilders.matchAllQuery());
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(ALERT_TYPE)
-      .types(ALERT_TYPE)
+    SearchRequest searchRequest = new SearchRequest(ALERT_INDEX_NAME)
+      .types(ALERT_INDEX_NAME)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
@@ -71,7 +71,7 @@ public class AlertReader {
 
   public AlertDefinitionDto findAlert(String alertId) {
     log.debug("Fetching alert with id [{}]", alertId);
-    GetRequest getRequest = new GetRequest(ALERT_TYPE, ALERT_TYPE, alertId);
+    GetRequest getRequest = new GetRequest(ALERT_INDEX_NAME, ALERT_INDEX_NAME, alertId);
 
     GetResponse getResponse;
     try {
@@ -99,11 +99,11 @@ public class AlertReader {
   public List<AlertDefinitionDto> findFirstAlertsForReport(String reportId) {
     log.debug("Fetching first {} alerts using report with id {}", LIST_FETCH_LIMIT, reportId);
 
-    final QueryBuilder query = QueryBuilders.termQuery(AlertType.REPORT_ID, reportId);
+    final QueryBuilder query = QueryBuilders.termQuery(AlertIndex.REPORT_ID, reportId);
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(ALERT_TYPE).types(ALERT_TYPE).source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(ALERT_INDEX_NAME).types(ALERT_INDEX_NAME).source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {

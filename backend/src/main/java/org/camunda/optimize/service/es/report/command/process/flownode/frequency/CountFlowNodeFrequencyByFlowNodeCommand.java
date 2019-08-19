@@ -30,10 +30,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil.addExecutionStateFilter;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ACTIVITY_END_DATE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ACTIVITY_TYPE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_END_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_TYPE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
@@ -60,8 +60,8 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeFrequencyGr
       .fetchSource(false)
       .aggregation(createAggregation(processReportData.getConfiguration().getFlowNodeExecutionState()))
       .size(0);
-    SearchRequest searchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
-      .types(PROC_INSTANCE_TYPE)
+    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     try {

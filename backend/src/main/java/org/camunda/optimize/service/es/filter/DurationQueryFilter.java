@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.filter;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -29,8 +29,8 @@ public class DurationQueryFilter implements QueryFilter<DurationFilterDataDto> {
       for (DurationFilterDataDto durationDto : durations) {
         ScriptQueryBuilder scriptQueryBuilder = QueryBuilders.scriptQuery(getDurationFilterScript(
           LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-          ProcessInstanceType.DURATION,
-          ProcessInstanceType.START_DATE,
+          ProcessInstanceIndex.DURATION,
+          ProcessInstanceIndex.START_DATE,
           durationDto
         ));
 

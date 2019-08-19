@@ -25,7 +25,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
 @AllArgsConstructor
 @Component
@@ -42,8 +42,8 @@ public class TenantReader {
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(QueryBuilders.matchAllQuery())
       .size(LIST_FETCH_LIMIT);
-    final SearchRequest searchRequest = new SearchRequest(TENANT_TYPE)
-      .types(TENANT_TYPE)
+    final SearchRequest searchRequest = new SearchRequest(TENANT_INDEX_NAME)
+      .types(TENANT_INDEX_NAME)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 

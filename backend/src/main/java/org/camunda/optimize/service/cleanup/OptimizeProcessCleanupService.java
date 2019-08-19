@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
-import org.camunda.optimize.service.es.writer.variable.VariableWriter;
+import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.OptimizeCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.ProcessDefinitionCleanupConfiguration;
@@ -30,7 +30,7 @@ public class OptimizeProcessCleanupService implements OptimizeCleanupService {
   private final ConfigurationService configurationService;
   private final ProcessDefinitionReader processDefinitionReader;
   private final CompletedProcessInstanceWriter processInstanceWriter;
-  private final VariableWriter variableWriter;
+  private final ProcessVariableUpdateWriter processVariableUpdateWriter;
 
 
   @Override
@@ -69,7 +69,7 @@ public class OptimizeProcessCleanupService implements OptimizeCleanupService {
         );
         break;
       case VARIABLES:
-        variableWriter.deleteAllInstanceVariablesByProcessDefinitionKeyAndEndDateOlderThan(
+        processVariableUpdateWriter.deleteAllInstanceVariablesByProcessDefinitionKeyAndEndDateOlderThan(
           currentProcessDefinitionKey,
           endDateFilter
         );

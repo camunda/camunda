@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Optional;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
 
 @AllArgsConstructor
 @Component
@@ -31,7 +31,7 @@ public class ImportIndexReader {
   public Optional<AllEntitiesBasedImportIndexDto> getImportIndex(String id) {
     log.debug("Fetching import index of type [{}]", id);
 
-    GetRequest getRequest = new GetRequest(IMPORT_INDEX_TYPE, IMPORT_INDEX_TYPE, id);
+    GetRequest getRequest = new GetRequest(IMPORT_INDEX_INDEX_NAME, IMPORT_INDEX_INDEX_NAME, id);
 
     GetResponse getResponse = null;
     try {

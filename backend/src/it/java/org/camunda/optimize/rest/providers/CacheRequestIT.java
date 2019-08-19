@@ -19,7 +19,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -44,7 +44,7 @@ public class CacheRequestIT {
     String key = "test", version = "1";
     DecisionDefinitionOptimizeDto expectedDefinitionDto = createDecisionDefinitionDto(key, version);
     elasticSearchRule.addEntryToElasticsearch(
-      DECISION_DEFINITION_TYPE,
+      DECISION_DEFINITION_INDEX_NAME,
       expectedDefinitionDto.getId(),
       expectedDefinitionDto
     );
@@ -72,7 +72,7 @@ public class CacheRequestIT {
     decisionDefinitionDto.setVersion(version);
     decisionDefinitionDto.setId("id-" + key + "-version-" + version);
     elasticSearchRule.addEntryToElasticsearch(
-      DECISION_DEFINITION_TYPE, decisionDefinitionDto.getId(), decisionDefinitionDto
+      DECISION_DEFINITION_INDEX_NAME, decisionDefinitionDto.getId(), decisionDefinitionDto
     );
     return decisionDefinitionDto;
   }

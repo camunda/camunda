@@ -38,11 +38,11 @@ import java.util.Optional;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.service.es.report.command.process.util.GroupByDateVariableIntervalSelection.createDateVariableAggregation;
 import static org.camunda.optimize.service.es.report.command.util.IntervalAggregationService.RANGE_AGGREGATION;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DATE_VARIABLES;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabelForType;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldLabelForType;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.variableTypeToFieldLabel;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
@@ -76,8 +76,8 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
       .fetchSource(false)
       .aggregation(createAggregation(groupByVariable.getName(), groupByVariable.getType()))
       .size(0);
-    SearchRequest searchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
-      .types(PROC_INSTANCE_TYPE)
+    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     try {
@@ -118,45 +118,35 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
   }
 
   private AggregationBuilder createAggregation(String variableName, VariableType variableType) {
+    AggregationBuilder variableSubAggregation =
+      createVariableSubAggregation(variableName, variableType);
 
-    String path = variableTypeToFieldLabel(variableType);
-    String nestedVariableNameFieldLabel = getNestedVariableNameFieldLabelForType(variableType);
-    String nestedVariableValueFieldLabel = getNestedVariableValueFieldLabelForType(variableType);
-
-    AggregationBuilder variableSubAggregation = createVariableSubAggregation(
-      variableName,
-      variableType,
-      nestedVariableNameFieldLabel,
-      nestedVariableValueFieldLabel
-    );
-
-    return nested(NESTED_AGGREGATION, path)
+    return nested(NESTED_AGGREGATION, VARIABLES)
       .subAggregation(
         filter(
           FILTERED_VARIABLES_AGGREGATION,
-          boolQuery().must(termQuery(nestedVariableNameFieldLabel, variableName))
+          boolQuery().must(termQuery(getNestedVariableNameField(), variableName))
+          .must(termQuery(getNestedVariableTypeField(), variableType.getId()))
         )
           .subAggregation(variableSubAggregation)
           .subAggregation(reverseNested(FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION))
       );
   }
 
-  private AggregationBuilder createVariableSubAggregation(final String variableName, final VariableType variableType,
-                                                          final String nestedVariableNameFieldLabel,
-                                                          final String nestedVariableValueFieldLabel) {
+  private AggregationBuilder createVariableSubAggregation(final String variableName, final VariableType variableType) {
     AggregationBuilder aggregationBuilder = AggregationBuilders
       .terms(VARIABLES_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
-      .field(nestedVariableValueFieldLabel);
+      .field(getNestedVariableValueFieldForType(variableType));
 
     if (variableType.equals(VariableType.DATE)) {
       aggregationBuilder = createDateVariableAggregation(
         VARIABLES_AGGREGATION,
         variableName,
-        nestedVariableNameFieldLabel,
-        nestedVariableValueFieldLabel,
-        PROC_INSTANCE_TYPE,
-        DATE_VARIABLES,
+        getNestedVariableNameField(),
+        getNestedVariableValueFieldForType(VariableType.DATE),
+        PROCESS_INSTANCE_INDEX_NAME,
+        VARIABLES,
         intervalAggregationService,
         esClient,
         setupBaseQuery(getReportData())

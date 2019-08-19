@@ -18,11 +18,10 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.TypeMappingCreator;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EsHelper;
-import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.mapper.CustomDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomSerializer;
@@ -63,12 +62,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_ID;
-import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabel;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -174,7 +174,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     GetRequest getRequest = new GetRequest(
       TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
       TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
-      EsHelper.constructKey(ElasticsearchConstants.PROC_INSTANCE_TYPE, "1")
+      EsHelper.constructKey(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME, "1")
     );
 
     String content = prefixAwareRestHighLevelClient.get(getRequest, RequestOptions.DEFAULT).getSourceAsString();
@@ -193,7 +193,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
         .build();
 
     UpdateSettingsRequest request = new UpdateSettingsRequest(
-      getIndexNameService().getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE)
+      getIndexNameService().getOptimizeIndexAliasForIndex(PROCESS_INSTANCE_INDEX_NAME)
     );
     request.settings(settings);
 
@@ -251,13 +251,13 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
         nested(EVENTS, EVENTS)
           .subAggregation(
             count(EVENTS + "_count")
-              .field(EVENTS + "." + ProcessInstanceType.EVENT_ID)
+              .field(EVENTS + "." + ProcessInstanceIndex.EVENT_ID)
           )
       );
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(PROC_INSTANCE_TYPE)
-      .types(PROC_INSTANCE_TYPE)
+      .indices(PROCESS_INSTANCE_INDEX_NAME)
+      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -286,65 +286,15 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       .size(0);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(PROC_INSTANCE_TYPE)
-      .types(PROC_INSTANCE_TYPE)
-      .source(searchSourceBuilder);
-
-    for (String variableTypeFieldLabel : ProcessVariableHelper.allVariableTypeFieldLabels) {
-      searchSourceBuilder.aggregation(
-        nested(variableTypeFieldLabel, variableTypeFieldLabel)
-          .subAggregation(
-            count(variableTypeFieldLabel + "_count")
-              .field(variableTypeFieldLabel + "." + VARIABLE_ID)
-          )
-      );
-    }
-
-    SearchResponse searchResponse;
-    try {
-      searchResponse = getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException("Could not query the variable instance count!", e);
-    }
-
-    long totalVariableCount = 0L;
-    for (String variableTypeFieldLabel : ProcessVariableHelper.allVariableTypeFieldLabels) {
-      Nested nestedAgg = searchResponse.getAggregations().get(variableTypeFieldLabel);
-      ValueCount countAggregator = nestedAgg.getAggregations()
-        .get(variableTypeFieldLabel + "_count");
-      totalVariableCount += countAggregator.getValue();
-    }
-
-    return Long.valueOf(totalVariableCount).intValue();
-  }
-
-  public Integer getVariableInstanceCount(String variableName, VariableType variableType) {
-    final String variableTypeFieldLabel = ProcessVariableHelper.variableTypeToFieldLabel(variableType);
-
-    final QueryBuilder query = nestedQuery(
-      variableTypeFieldLabel,
-      boolQuery().must(termQuery(getNestedVariableNameFieldLabel(variableTypeFieldLabel), variableName)),
-      ScoreMode.None
-    );
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
-      .fetchSource(false)
-      .size(0);
-
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(PROC_INSTANCE_TYPE)
-      .types(PROC_INSTANCE_TYPE)
+      .indices(PROCESS_INSTANCE_INDEX_NAME)
+      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     searchSourceBuilder.aggregation(
-      nested(
-        "nestedAggregation",
-        variableTypeFieldLabel
-      )
+      nested(VARIABLES, VARIABLES)
         .subAggregation(
-          count(variableTypeFieldLabel + "_count")
-            .field(variableTypeFieldLabel + "." + VARIABLE_ID)
-
+          count("count")
+            .field(getNestedVariableIdField())
         )
     );
 
@@ -355,8 +305,51 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       throw new OptimizeIntegrationTestException("Could not query the variable instance count!", e);
     }
 
-    Nested nestedAgg = searchResponse.getAggregations().get("nestedAggregation");
-    ValueCount countAggregator = nestedAgg.getAggregations().get(variableTypeFieldLabel + "_count");
+    Nested nestedAgg = searchResponse.getAggregations().get(VARIABLES);
+    ValueCount countAggregator = nestedAgg.getAggregations().get("count");
+    long totalVariableCount = countAggregator.getValue();
+
+    return Long.valueOf(totalVariableCount).intValue();
+  }
+
+  public Integer getVariableInstanceCount(String variableName, VariableType variableType) {
+    final QueryBuilder query = nestedQuery(
+      VARIABLES,
+      boolQuery().must(termQuery(getNestedVariableNameField(), variableName)),
+      ScoreMode.None
+    );
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .fetchSource(false)
+      .size(0);
+
+    SearchRequest searchRequest = new SearchRequest()
+      .indices(PROCESS_INSTANCE_INDEX_NAME)
+      .types(PROCESS_INSTANCE_INDEX_NAME)
+      .source(searchSourceBuilder);
+
+    String VARIABLE_COUNT_AGGREGATION = VARIABLES + "_count";
+    String NESTED_VARIABLE_AGGREGATION = "nestedAggregation";
+    searchSourceBuilder.aggregation(
+      nested(
+        NESTED_VARIABLE_AGGREGATION,
+        VARIABLES
+      )
+        .subAggregation(
+          count(VARIABLE_COUNT_AGGREGATION)
+            .field(getNestedVariableIdField())
+        )
+    );
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Could not query the variable instance count!", e);
+    }
+
+    Nested nestedAgg = searchResponse.getAggregations().get(NESTED_VARIABLE_AGGREGATION);
+    ValueCount countAggregator = nestedAgg.getAggregations().get(VARIABLE_COUNT_AGGREGATION);
     return Long.valueOf(countAggregator.getValue()).intValue();
   }
 
@@ -372,7 +365,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     }
   }
 
-  public void deleteIndexOfType(final TypeMappingCreator type) {
+  public void deleteIndexOfType(final IndexMappingCreator type) {
     try {
       getOptimizeElasticClient().getHighLevelClient().indices().delete(
         new DeleteIndexRequest(getIndexNameService().getVersionedOptimizeIndexNameForTypeMapping(type)),

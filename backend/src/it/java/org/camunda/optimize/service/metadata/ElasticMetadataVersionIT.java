@@ -45,7 +45,7 @@ public class ElasticMetadataVersionIT {
 
   @Test
   public void verifyNotStartingIfMetadataIsCorrupted() throws Exception {
-    String metaDataType = ElasticsearchConstants.METADATA_TYPE;
+    String metaDataType = ElasticsearchConstants.METADATA_INDEX_NAME;
     embeddedOptimizeRule.stopOptimize();
     MetadataDto meta = new MetadataDto("TEST");
     elasticSearchRule.addEntryToElasticsearch(metaDataType, "2", meta);
@@ -65,7 +65,7 @@ public class ElasticMetadataVersionIT {
 
   @Test
   public void verifyNotStartingIfVersionDoesNotMatch () throws Exception {
-    String metaDataType = ElasticsearchConstants.METADATA_TYPE;
+    String metaDataType = ElasticsearchConstants.METADATA_INDEX_NAME;
     embeddedOptimizeRule.stopOptimize();
     elasticSearchRule.deleteAllOptimizeData();
     MetadataDto meta = new MetadataDto("TEST");

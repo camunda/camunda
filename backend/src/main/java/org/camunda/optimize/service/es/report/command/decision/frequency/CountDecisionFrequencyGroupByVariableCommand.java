@@ -39,7 +39,7 @@ import static org.camunda.optimize.service.es.report.command.util.IntervalAggreg
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableStringValueField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -76,8 +76,8 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
       .fetchSource(false)
       .aggregation(createAggregation(groupBy.getId(), groupBy.getType()))
       .size(0);
-    SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_TYPE)
-      .types(DECISION_INSTANCE_TYPE)
+    SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_INDEX_NAME)
+      .types(DECISION_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse response;
@@ -143,7 +143,7 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
         variableClauseId,
         getVariableClauseIdField(variablePath),
         getVariableValueFieldForType(variablePath, VariableType.DATE),
-        DECISION_INSTANCE_TYPE,
+        DECISION_INSTANCE_INDEX_NAME,
         variablePath,
         intervalAggregationService,
         esClient,

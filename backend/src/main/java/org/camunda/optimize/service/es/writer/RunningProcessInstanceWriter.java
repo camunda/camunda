@@ -24,15 +24,15 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.BUSINESS_KEY;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ENGINE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_ID;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_KEY;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_VERSION;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STATE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.TENANT_ID;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ENGINE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_VERSION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.STATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.TENANT_ID;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 @AllArgsConstructor
 @Component
@@ -76,7 +76,9 @@ public class RunningProcessInstanceWriter {
 
     final String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
 
-    final UpdateRequest request = new UpdateRequest(PROC_INSTANCE_TYPE, PROC_INSTANCE_TYPE, processInstanceId)
+    final UpdateRequest request = new UpdateRequest(
+      PROCESS_INSTANCE_INDEX_NAME,
+      PROCESS_INSTANCE_INDEX_NAME, processInstanceId)
       .script(updateScript)
       .upsert(newEntryIfAbsent, XContentType.JSON);
 

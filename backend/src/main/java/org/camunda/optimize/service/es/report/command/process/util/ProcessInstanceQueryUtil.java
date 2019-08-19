@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 @Slf4j
 public class ProcessInstanceQueryUtil {
@@ -35,8 +35,8 @@ public class ProcessInstanceQueryUtil {
       .query(baseQuery)
       .sort(SortBuilders.fieldSort(dateField).order(SortOrder.DESC))
       .size(1);
-    final SearchRequest searchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
-      .types(PROC_INSTANCE_TYPE)
+    final SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     try {

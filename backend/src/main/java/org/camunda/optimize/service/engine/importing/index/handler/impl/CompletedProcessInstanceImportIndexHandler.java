@@ -22,7 +22,7 @@ public class CompletedProcessInstanceImportIndexHandler extends TimestampBasedIm
 
   @Override
   protected String getElasticsearchDocID() {
-    return ElasticsearchConstants.PROC_INSTANCE_TYPE;
+    return ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
   }
 
 }

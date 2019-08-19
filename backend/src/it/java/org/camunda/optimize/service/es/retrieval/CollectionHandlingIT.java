@@ -40,7 +40,7 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -63,7 +63,7 @@ public class CollectionHandlingIT {
     String id = createNewCollection();
 
     // then
-    GetRequest getRequest = new GetRequest(COLLECTION_TYPE, COLLECTION_TYPE, id);
+    GetRequest getRequest = new GetRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, id);
     GetResponse getResponse = elasticSearchRule.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
 
     // then

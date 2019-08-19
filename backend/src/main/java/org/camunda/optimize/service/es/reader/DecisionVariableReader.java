@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
-import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
+import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -32,13 +32,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.INPUTS;
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.OUTPUTS;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.INPUTS;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.OUTPUTS;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
 import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -87,7 +87,7 @@ public class DecisionVariableReader {
         requestDto.getDecisionDefinitionKey(),
         requestDto.getDecisionDefinitionVersions(),
         requestDto.getTenantIds(),
-        new DecisionInstanceType(),
+        new DecisionInstanceIndex(),
         decisionDefinitionReader::getLatestVersionToKey
       );
 
@@ -96,8 +96,8 @@ public class DecisionVariableReader {
       .aggregation(getVariableValueAggregation(requestDto, variablesPath))
       .size(0);
 
-    final SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_TYPE)
-      .types(DECISION_INSTANCE_TYPE)
+    final SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_INDEX_NAME)
+      .types(DECISION_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     try {

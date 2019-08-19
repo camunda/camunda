@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es;
 
 import lombok.Getter;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.TypeMappingCreator;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.IndicesRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
@@ -42,7 +42,7 @@ import java.util.Arrays;
  * This Client serves as the main elasticsearch client to be used from application code.
  * <p>
  * The exposed methods correspond to the interface of the {@link RestHighLevelClient},
- * any requests passed are expected to contain just the {@link TypeMappingCreator#getType()} value as index name.
+ * any requests passed are expected to contain just the {@link IndexMappingCreator#getIndexName()} value as index name.
  * The client will care about injecting the current index prefix.
  * <p>
  * For low level operations it still exposes the underlying {@link RestHighLevelClient},
@@ -93,7 +93,7 @@ public class OptimizeElasticsearchClient {
   }
 
   public final GetResponse get(final GetRequest getRequest, final RequestOptions options) throws IOException {
-    getRequest.index(indexNameService.getOptimizeIndexAliasForType(getRequest.index()));
+    getRequest.index(indexNameService.getOptimizeIndexAliasForIndex(getRequest.index()));
 
     return highLevelClient.get(getRequest, options);
   }
@@ -111,7 +111,7 @@ public class OptimizeElasticsearchClient {
 
   public final MultiGetResponse mget(final MultiGetRequest multiGetRequest, final RequestOptions options)
     throws IOException {
-    multiGetRequest.getItems().forEach(item -> item.index(indexNameService.getOptimizeIndexAliasForType(item.index())));
+    multiGetRequest.getItems().forEach(item -> item.index(indexNameService.getOptimizeIndexAliasForIndex(item.index())));
 
     return highLevelClient.mget(multiGetRequest, options);
   }
@@ -150,13 +150,13 @@ public class OptimizeElasticsearchClient {
   }
 
   private void applyIndexPrefix(final DocWriteRequest<?> deleteRequest) {
-    deleteRequest.index(indexNameService.getOptimizeIndexAliasForType(deleteRequest.index()));
+    deleteRequest.index(indexNameService.getOptimizeIndexAliasForIndex(deleteRequest.index()));
   }
 
   private void applyIndexPrefixes(final IndicesRequest.Replaceable deleteByQueryRequest) {
     deleteByQueryRequest.indices(
       Arrays.stream(deleteByQueryRequest.indices())
-        .map(indexNameService::getOptimizeIndexAliasForType)
+        .map(indexNameService::getOptimizeIndexAliasForIndex)
         .toArray(String[]::new)
     );
   }

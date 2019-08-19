@@ -14,8 +14,8 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameReque
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.filter.CanceledInstancesOnlyQueryFilter;
-import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -36,12 +36,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.hamcrest.CoreMatchers.is;
@@ -55,9 +55,9 @@ import static org.junit.Assert.assertTrue;
 public class ProcessImportIT extends AbstractImportIT {
 
   private static final Set<String> PROCESS_INSTANCE_NULLABLE_FIELDS =
-    Collections.singleton(ProcessInstanceType.TENANT_ID);
+    Collections.singleton(ProcessInstanceIndex.TENANT_ID);
   private static final Set<String> PROCESS_DEFINITION_NULLABLE_FIELDS =
-    Collections.singleton(ProcessDefinitionType.TENANT_ID);
+    Collections.singleton(ProcessDefinitionIndex.TENANT_ID);
 
   @Test
   public void importCanBeDisabled() throws IOException {
@@ -76,10 +76,10 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(PROC_INSTANCE_TYPE, 0L);
-    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_TYPE, 0L);
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_TYPE, 0L);
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_TYPE, 0L);
+    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 0L);
+    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, 0L);
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
     assertThat(embeddedOptimizeRule.getImportSchedulerFactory().getImportSchedulers().size(), is(greaterThan(0)));
     embeddedOptimizeRule.getImportSchedulerFactory().getImportSchedulers()
       .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isEnabled(), is(false)));
@@ -95,7 +95,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    allEntriesInElasticsearchHaveAllData(PROCESS_DEFINITION_TYPE, PROCESS_DEFINITION_NULLABLE_FIELDS);
+    allEntriesInElasticsearchHaveAllData(PROCESS_DEFINITION_INDEX_NAME, PROCESS_DEFINITION_NULLABLE_FIELDS);
   }
 
   @Test
@@ -109,10 +109,10 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_DEFINITION_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(ProcessDefinitionType.TENANT_ID), is(tenantId));
+    assertThat(hit.getSourceAsMap().get(ProcessDefinitionIndex.TENANT_ID), is(tenantId));
   }
 
   @Test
@@ -127,10 +127,10 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_DEFINITION_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(ProcessDefinitionType.TENANT_ID), is(tenantId));
+    assertThat(hit.getSourceAsMap().get(ProcessDefinitionIndex.TENANT_ID), is(tenantId));
   }
 
   @Test
@@ -146,10 +146,10 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_DEFINITION_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(ProcessDefinitionType.TENANT_ID), is(expectedTenantId));
+    assertThat(hit.getSourceAsMap().get(ProcessDefinitionIndex.TENANT_ID), is(expectedTenantId));
   }
 
   @Test
@@ -162,7 +162,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    allEntriesInElasticsearchHaveAllData(PROC_INSTANCE_TYPE, PROCESS_INSTANCE_NULLABLE_FIELDS);
+    allEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_NULLABLE_FIELDS);
   }
 
   @Test
@@ -176,10 +176,10 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(ProcessInstanceType.TENANT_ID), is(tenantId));
+    assertThat(hit.getSourceAsMap().get(ProcessInstanceIndex.TENANT_ID), is(tenantId));
   }
 
   @Test
@@ -194,10 +194,10 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(ProcessInstanceType.TENANT_ID), is(tenantId));
+    assertThat(hit.getSourceAsMap().get(ProcessInstanceIndex.TENANT_ID), is(tenantId));
   }
 
   @Test
@@ -213,10 +213,10 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(ProcessInstanceType.TENANT_ID), is(expectedTenantId));
+    assertThat(hit.getSourceAsMap().get(ProcessInstanceIndex.TENANT_ID), is(expectedTenantId));
   }
 
   @Test
@@ -263,7 +263,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .setVersion("1")
       .setEngine("1");
 
-    elasticSearchRule.addEntryToElasticsearch(PROCESS_DEFINITION_TYPE, procDef.getId(), procDef);
+    elasticSearchRule.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, procDef.getId(), procDef);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
@@ -272,7 +272,7 @@ public class ProcessImportIT extends AbstractImportIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex();
     elasticSearchRule.refreshAllOptimizeIndices();
 
-    SearchResponse response = getSearchResponseForAllDocumentsOfType(PROCESS_DEFINITION_TYPE);
+    SearchResponse response = getSearchResponseForAllDocumentsOfType(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(response.getHits().getTotalHits(), is(2L));
     response.getHits().forEach((SearchHit hit) -> {
       Map<String, Object> source = hit.getSourceAsMap();
@@ -294,7 +294,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       List events = (List) searchHitFields.getSourceAsMap().get(EVENTS);
       assertThat(events.size(), is(3));
@@ -311,9 +311,9 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(
-      idsResp.getHits().getAt(0).getSourceAsMap().get(ProcessInstanceType.STATE),
+      idsResp.getHits().getAt(0).getSourceAsMap().get(ProcessInstanceIndex.STATE),
       is(CanceledInstancesOnlyQueryFilter.EXTERNALLY_TERMINATED)
     );
   }
@@ -325,7 +325,7 @@ public class ProcessImportIT extends AbstractImportIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
 
     //then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       List events = (List) searchHitFields.getSourceAsMap().get(EVENTS);
       assertThat(events.size(), is(2));
@@ -339,7 +339,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       Object date = searchHitFields.getSourceAsMap().get(END_DATE);
       assertThat(date, is(notNullValue()));
@@ -358,7 +358,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(PROC_INSTANCE_TYPE, 4L, PROCESS_INSTANCE_NULLABLE_FIELDS);
+    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 4L, PROCESS_INSTANCE_NULLABLE_FIELDS);
   }
 
   @Test
@@ -405,7 +405,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     SearchHit hit = idsResp.getHits().getAt(0);
     List events = (List) hit.getSourceAsMap().get(EVENTS);
@@ -429,7 +429,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     SearchHit hit = idsResp.getHits().getAt(0);
     List<Map> events = (List) hit.getSourceAsMap().get(EVENTS);
@@ -464,7 +464,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     SearchHit hit = idsResp.getHits().getAt(0);
     List<Map> events = (List) hit.getSourceAsMap().get(EVENTS);
@@ -503,7 +503,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(PROC_INSTANCE_TYPE, 2L, PROCESS_INSTANCE_NULLABLE_FIELDS);
+    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 2L, PROCESS_INSTANCE_NULLABLE_FIELDS);
     embeddedOptimizeRule.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(originalMaxPageSize);
   }
 
@@ -521,13 +521,13 @@ public class ProcessImportIT extends AbstractImportIT {
         nested(EVENTS, EVENTS)
           .subAggregation(
             count(EVENTS + "_count")
-              .field(EVENTS + "." + ProcessInstanceType.EVENT_ID)
+              .field(EVENTS + "." + ProcessInstanceIndex.EVENT_ID)
           )
       );
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(PROC_INSTANCE_TYPE)
-      .types(PROC_INSTANCE_TYPE)
+      .indices(PROCESS_INSTANCE_INDEX_NAME)
+      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse response = elasticSearchRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);

@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -86,7 +86,7 @@ public class EngineRestFilterPluginIT {
     );
 
     // then
-    allEntriesInElasticsearchHaveAllData(PROC_INSTANCE_TYPE);
+    allEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_INDEX_NAME);
   }
 
   private void deployAndStartSimpleServiceTask() {

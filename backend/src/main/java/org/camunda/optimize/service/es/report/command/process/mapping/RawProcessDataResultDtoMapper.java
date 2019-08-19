@@ -11,7 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.variable.value.VariableInstanceDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -68,7 +69,7 @@ public class RawProcessDataResultDtoMapper {
                                            final ObjectMapper objectMapper) {
     Map<String, Object> result = new TreeMap<>();
 
-    for (VariableInstanceDto instance : processInstanceDto.obtainAllVariables()) {
+    for (SimpleProcessVariableDto instance : processInstanceDto.getVariables()) {
       if (instance.getName() != null) {
         result.put(instance.getName(), instance.getValue());
       } else {

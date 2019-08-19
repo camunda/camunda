@@ -22,7 +22,7 @@ import java.util.List;
 
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.createProcessStartDateHistogramBucketLimitingFilterFor;
 import static org.camunda.optimize.service.es.report.command.process.processinstance.duration.ProcessPartQueryUtil.processProcessPartAggregationOperations;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
 
 
 public class ProcessInstanceDurationGroupByStartDateWithProcessPartCommand

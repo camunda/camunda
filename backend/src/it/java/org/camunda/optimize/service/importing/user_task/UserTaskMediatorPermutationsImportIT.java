@@ -41,7 +41,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -106,7 +106,7 @@ public class UserTaskMediatorPermutationsImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    final SearchResponse idsResp = elasticSearchRule.getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    final SearchResponse idsResp = elasticSearchRule.getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(

@@ -28,7 +28,7 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.List;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 
 @RequiredArgsConstructor
@@ -42,7 +42,7 @@ public class DashboardReader {
 
   public DashboardDefinitionDto getDashboard(String dashboardId) {
     log.debug("Fetching dashboard with id [{}]", dashboardId);
-    GetRequest getRequest = new GetRequest(DASHBOARD_TYPE, DASHBOARD_TYPE, dashboardId);
+    GetRequest getRequest = new GetRequest(DASHBOARD_INDEX_NAME, DASHBOARD_INDEX_NAME, dashboardId);
 
     GetResponse getResponse;
     try {
@@ -81,8 +81,8 @@ public class DashboardReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(getCombinedReportsBySimpleReportIdQuery);
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(DASHBOARD_TYPE)
-      .types(DASHBOARD_TYPE)
+    SearchRequest searchRequest = new SearchRequest(DASHBOARD_INDEX_NAME)
+      .types(DASHBOARD_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -102,8 +102,8 @@ public class DashboardReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(QueryBuilders.matchAllQuery())
       .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(DASHBOARD_TYPE)
-      .types(DASHBOARD_TYPE)
+    SearchRequest searchRequest = new SearchRequest(DASHBOARD_INDEX_NAME)
+      .types(DASHBOARD_INDEX_NAME)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 

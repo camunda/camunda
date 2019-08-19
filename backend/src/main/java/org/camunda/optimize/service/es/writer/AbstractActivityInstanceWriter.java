@@ -28,10 +28,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 @AllArgsConstructor
 @Component
@@ -89,7 +89,9 @@ public abstract class AbstractActivityInstanceWriter {
       .setEvents(simpleEvents);
     final String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
 
-    final UpdateRequest request = new UpdateRequest(PROC_INSTANCE_TYPE, PROC_INSTANCE_TYPE, processInstanceId)
+    final UpdateRequest request = new UpdateRequest(
+      PROCESS_INSTANCE_INDEX_NAME,
+      PROCESS_INSTANCE_INDEX_NAME, processInstanceId)
       .script(updateScript)
       .upsert(newEntryIfAbsent, XContentType.JSON)
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

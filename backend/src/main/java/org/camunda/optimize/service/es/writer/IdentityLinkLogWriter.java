@@ -36,22 +36,22 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.groupingByConcurrent;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ASSIGNEE_OPERATION_TYPE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ASSIGNEE_OPERATION_USER_ID;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.CANDIDATE_GROUP_OPERATION_GROUP_ID;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.CANDIDATE_GROUP_OPERATION_TYPE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ASSIGNEE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ASSIGNEE_OPERATIONS;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_CANDIDATE_GROUPS;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_CANDIDATE_GROUP_OPERATIONS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ASSIGNEE_OPERATION_TYPE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ASSIGNEE_OPERATION_USER_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.CANDIDATE_GROUP_OPERATION_GROUP_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.CANDIDATE_GROUP_OPERATION_TYPE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE_OPERATIONS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUP_OPERATIONS;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.IDENTITY_LINK_OPERATION_ADD;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.IDENTITY_LINK_OPERATION_DELETE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.IDENTITY_LINK_TYPE_ASSIGNEE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.IDENTITY_LINK_TYPE_CANDIDATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 @Component
 @Slf4j
@@ -199,7 +199,9 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
       .setUserTasks(userTasks);
     String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
 
-    UpdateRequest request = new UpdateRequest(PROC_INSTANCE_TYPE, PROC_INSTANCE_TYPE, processInstanceId)
+    UpdateRequest request = new UpdateRequest(
+      PROCESS_INSTANCE_INDEX_NAME,
+      PROCESS_INSTANCE_INDEX_NAME, processInstanceId)
       .script(updateScript)
       .upsert(newEntryIfAbsent, XContentType.JSON)
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

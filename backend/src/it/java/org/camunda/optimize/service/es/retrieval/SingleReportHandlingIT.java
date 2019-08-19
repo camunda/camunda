@@ -52,7 +52,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -83,7 +83,7 @@ public class SingleReportHandlingIT {
     String id = createNewReport();
 
     // when
-    GetRequest getRequest = new GetRequest(SINGLE_PROCESS_REPORT_TYPE, SINGLE_PROCESS_REPORT_TYPE, id);
+    GetRequest getRequest = new GetRequest(SINGLE_PROCESS_REPORT_INDEX_NAME, SINGLE_PROCESS_REPORT_INDEX_NAME, id);
     GetResponse getResponse = elasticSearchRule.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
 
     // then

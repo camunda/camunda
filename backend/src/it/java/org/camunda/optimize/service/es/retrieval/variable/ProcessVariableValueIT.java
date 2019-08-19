@@ -13,6 +13,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -32,8 +33,13 @@ import java.util.stream.IntStream;
 import static junit.framework.TestCase.assertTrue;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.INTEGER_TYPE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.STRING_TYPE;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DATE;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DOUBLE;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.INTEGER;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.LONG;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.SHORT;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -94,7 +100,7 @@ public class ProcessVariableValueIT {
     valueRequestDto.setProcessDefinitionVersion(ALL_VERSIONS);
     valueRequestDto.setTenantIds(selectedTenants);
     valueRequestDto.setName(variableName);
-    valueRequestDto.setType(STRING_TYPE);
+    valueRequestDto.setType(STRING);
     List<String> variableResponse = getVariableValues(valueRequestDto);
 
     // then
@@ -127,7 +133,7 @@ public class ProcessVariableValueIT {
       processDefinition3.getVersionAsString()
     ));
     valueRequestDto.setName("var");
-    valueRequestDto.setType(STRING_TYPE);
+    valueRequestDto.setType(STRING);
     List<String> variableResponse = getVariableValues(valueRequestDto);
 
     // then
@@ -154,7 +160,7 @@ public class ProcessVariableValueIT {
     valueRequestDto.setProcessDefinitionKey(processDefinition.getKey());
     valueRequestDto.setProcessDefinitionVersion(ALL_VERSIONS);
     valueRequestDto.setName("var");
-    valueRequestDto.setType(STRING_TYPE);
+    valueRequestDto.setType(STRING);
     List<String> variableResponse = getVariableValues(valueRequestDto);
 
     // then
@@ -182,7 +188,7 @@ public class ProcessVariableValueIT {
     valueRequestDto.setProcessDefinitionKey(processDefinition.getKey());
     valueRequestDto.setProcessDefinitionVersion(LATEST_VERSION);
     valueRequestDto.setName("var");
-    valueRequestDto.setType(STRING_TYPE);
+    valueRequestDto.setType(STRING);
     List<String> variableResponse = getVariableValues(valueRequestDto);
 
     // then
@@ -296,7 +302,7 @@ public class ProcessVariableValueIT {
   public void retrieveValuesForAllPrimitiveTypes() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    Map<String, String> varNameToTypeMap = createVarNameToTypeMap();
+    Map<String, VariableType> varNameToTypeMap = createVarNameToTypeMap();
     Map<String, Object> variables = new HashMap<>();
     variables.put("dateVar", OffsetDateTime.now().withOffsetSameLocal(ZoneOffset.UTC));
     variables.put("boolVar", true);
@@ -311,7 +317,7 @@ public class ProcessVariableValueIT {
 
     for (String name : variables.keySet()) {
       // when
-      String type = varNameToTypeMap.get(name);
+      VariableType type = varNameToTypeMap.get(name);
       ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
       requestDto.setProcessDefinitionKey(processDefinition.getKey());
       requestDto.setProcessDefinitionVersion(processDefinition.getVersionAsString());
@@ -333,15 +339,15 @@ public class ProcessVariableValueIT {
 
   }
 
-  private Map<String, String> createVarNameToTypeMap() {
-    Map<String, String> varToType = new HashMap<>();
-    varToType.put("dateVar", "date");
-    varToType.put("boolVar", "boolean");
-    varToType.put("shortVar", "short");
-    varToType.put("intVar", "integer");
-    varToType.put("longVar", "long");
-    varToType.put("doubleVar", "double");
-    varToType.put("stringVar", "string");
+  private Map<String, VariableType> createVarNameToTypeMap() {
+    Map<String, VariableType> varToType = new HashMap<>();
+    varToType.put("dateVar", DATE);
+    varToType.put("boolVar", BOOLEAN);
+    varToType.put("shortVar", SHORT);
+    varToType.put("intVar", INTEGER);
+    varToType.put("longVar", LONG);
+    varToType.put("doubleVar", DOUBLE);
+    varToType.put("stringVar", STRING);
     return varToType;
   }
 
@@ -365,7 +371,7 @@ public class ProcessVariableValueIT {
     requestDto.setProcessDefinitionKey(processDefinition.getKey());
     requestDto.setProcessDefinitionVersion(processDefinition.getVersionAsString());
     requestDto.setName("var");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     requestDto.setNumResults(2);
     List<String> variableResponse = getVariableValues(requestDto);
 
@@ -394,7 +400,7 @@ public class ProcessVariableValueIT {
     requestDto.setProcessDefinitionKey(processDefinition.getKey());
     requestDto.setProcessDefinitionVersion(processDefinition.getVersionAsString());
     requestDto.setName("var");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     requestDto.setResultOffset(1);
     List<String> variableResponse = getVariableValues(requestDto);
 
@@ -423,7 +429,7 @@ public class ProcessVariableValueIT {
     requestDto.setProcessDefinitionKey(processDefinition.getKey());
     requestDto.setProcessDefinitionVersion(processDefinition.getVersionAsString());
     requestDto.setName("var");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     requestDto.setNumResults(1);
     requestDto.setResultOffset(1);
     List<String> variableResponse = getVariableValues(requestDto);
@@ -452,7 +458,7 @@ public class ProcessVariableValueIT {
     requestDto.setProcessDefinitionKey(processDefinition.getKey());
     requestDto.setProcessDefinitionVersion(processDefinition.getVersionAsString());
     requestDto.setName("var");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     requestDto.setValueFilter("ba");
     List<String> variableResponse = getVariableValues(requestDto);
 
@@ -480,7 +486,7 @@ public class ProcessVariableValueIT {
     requestDto.setProcessDefinitionKey(processDefinition.getKey());
     requestDto.setProcessDefinitionVersion(processDefinition.getVersionAsString());
     requestDto.setName("var");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     requestDto.setValueFilter("o");
     List<String> variableResponse = getVariableValues(requestDto);
 
@@ -507,7 +513,7 @@ public class ProcessVariableValueIT {
     requestDto.setProcessDefinitionKey(processDefinition.getKey());
     requestDto.setProcessDefinitionVersion(processDefinition.getVersionAsString());
     requestDto.setName("var");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     requestDto.setValueFilter("ooo");
     List<String> variableResponse = getVariableValues(requestDto);
 
@@ -538,7 +544,7 @@ public class ProcessVariableValueIT {
     requestDto.setProcessDefinitionKey(processDefinition.getKey());
     requestDto.setProcessDefinitionVersion(processDefinition.getVersionAsString());
     requestDto.setName("var");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     requestDto.setValueFilter("bAr");
     List<String> variableResponse = getVariableValues(requestDto);
 
@@ -568,7 +574,7 @@ public class ProcessVariableValueIT {
     requestDto.setProcessDefinitionKey(processDefinition.getKey());
     requestDto.setProcessDefinitionVersion(processDefinition.getVersionAsString());
     requestDto.setName("var");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     requestDto.setValueFilter("barbarbarbar");
     List<String> variableResponse = getVariableValues(requestDto);
 
@@ -593,7 +599,7 @@ public class ProcessVariableValueIT {
     requestDto.setProcessDefinitionKey(processDefinition.getKey());
     requestDto.setProcessDefinitionVersion(processDefinition.getVersionAsString());
     requestDto.setName("var");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     requestDto.setValueFilter("bar");
     List<String> variableResponse = getVariableValues(requestDto);
 
@@ -616,7 +622,7 @@ public class ProcessVariableValueIT {
     requestDto.setProcessDefinitionKey(processDefinition.getKey());
     requestDto.setProcessDefinitionVersion(processDefinition.getVersionAsString());
     requestDto.setName("var");
-    requestDto.setType(INTEGER_TYPE);
+    requestDto.setType(INTEGER);
     requestDto.setValueFilter("bar");
     List<String> variableResponse = getVariableValues(requestDto);
 
@@ -639,7 +645,7 @@ public class ProcessVariableValueIT {
     requestDto.setProcessDefinitionKey(processDefinition.getKey());
     requestDto.setProcessDefinitionVersion(processDefinition.getVersionAsString());
     requestDto.setName("var");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     requestDto.setValueFilter(null);
     List<String> variableResponse = getVariableValues(requestDto);
 
@@ -662,7 +668,7 @@ public class ProcessVariableValueIT {
     requestDto.setProcessDefinitionKey(processDefinition.getKey());
     requestDto.setProcessDefinitionVersion(processDefinition.getVersionAsString());
     requestDto.setName("var");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     requestDto.setValueFilter("");
     List<String> variableResponse = getVariableValues(requestDto);
 
@@ -676,7 +682,7 @@ public class ProcessVariableValueIT {
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
     requestDto.setProcessDefinitionKey("aKey");
     requestDto.setProcessDefinitionVersion("aVersion");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
 
     //when
     Response response = getVariableValueResponse(requestDto);
@@ -705,7 +711,7 @@ public class ProcessVariableValueIT {
     // given
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
     requestDto.setProcessDefinitionVersion("aVersion");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     requestDto.setName("var");
 
     //when
@@ -720,7 +726,7 @@ public class ProcessVariableValueIT {
     // given
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
     requestDto.setProcessDefinitionKey("aKey");
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     requestDto.setName("var");
 
     //when
@@ -747,7 +753,7 @@ public class ProcessVariableValueIT {
     requestDto.setProcessDefinitionKey(processDefinition.getKey());
     requestDto.setProcessDefinitionVersion(processDefinition.getVersionAsString());
     requestDto.setName(name);
-    requestDto.setType(STRING_TYPE);
+    requestDto.setType(STRING);
     List<String> variableResponse = getVariableValues(requestDto);
     return getVariableValues(requestDto);
   }

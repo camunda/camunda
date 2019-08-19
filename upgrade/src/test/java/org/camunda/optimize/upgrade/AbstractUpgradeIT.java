@@ -15,8 +15,8 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.TypeMappingCreator;
-import org.camunda.optimize.service.es.schema.type.MetadataType;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
@@ -38,7 +38,7 @@ import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig
 
 public abstract class AbstractUpgradeIT {
 
-  public static final MetadataType METADATA_TYPE = new MetadataType();
+  public static final MetadataIndex METADATA_INDEX = new MetadataIndex();
 
   protected ObjectMapper objectMapper;
   protected OptimizeElasticsearchClient prefixAwareClient;
@@ -75,7 +75,7 @@ public abstract class AbstractUpgradeIT {
     deleteEnvConfig();
   }
 
-  protected void initSchema(List<TypeMappingCreator> mappingCreators) {
+  protected void initSchema(List<IndexMappingCreator> mappingCreators) {
     final ElasticSearchSchemaManager elasticSearchSchemaManager = new ElasticSearchSchemaManager(
       metadataService, new ConfigurationService(), indexNameService, mappingCreators, objectMapper
     );

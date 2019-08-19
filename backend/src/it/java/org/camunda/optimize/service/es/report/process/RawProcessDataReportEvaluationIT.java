@@ -20,7 +20,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.hamcrest.Description;
@@ -325,7 +325,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     // when
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
-    reportData.getParameters().setSorting(new SortingDto(ProcessInstanceType.PROCESS_INSTANCE_ID, SortOrder.DESC));
+    reportData.getParameters().setSorting(new SortingDto(ProcessInstanceIndex.PROCESS_INSTANCE_ID, SortOrder.DESC));
     final ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
       reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();

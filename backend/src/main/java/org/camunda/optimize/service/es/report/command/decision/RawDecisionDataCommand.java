@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.reader.ElasticsearchHelper;
 import org.camunda.optimize.service.es.report.command.decision.mapping.RawDecisionDataResultDtoMapper;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionRawDataReportResult;
-import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
+import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -31,12 +31,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.INPUTS;
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.OUTPUTS;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.INPUTS;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.OUTPUTS;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableMultivalueFields;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -64,8 +64,8 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
 
     addSortingToQuery(reportData, searchSourceBuilder);
 
-    final SearchRequest scrollSearchRequest = new SearchRequest(DECISION_INSTANCE_TYPE)
-      .types(DECISION_INSTANCE_TYPE)
+    final SearchRequest scrollSearchRequest = new SearchRequest(DECISION_INSTANCE_INDEX_NAME)
+      .types(DECISION_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
@@ -106,7 +106,7 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
     final Optional<SortingDto> customSorting = Optional.ofNullable(decisionReportData.getParameters())
       .flatMap(DecisionParametersDto::getSorting);
     final String sortByField = customSorting.flatMap(SortingDto::getBy)
-      .orElse(DecisionInstanceType.EVALUATION_DATE_TIME);
+      .orElse(DecisionInstanceIndex.EVALUATION_DATE_TIME);
     final SortOrder sortOrder = customSorting.flatMap(SortingDto::getOrder)
       .map(order -> SortOrder.valueOf(order.name()))
       .orElse(SortOrder.DESC);

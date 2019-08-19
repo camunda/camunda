@@ -16,7 +16,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.createProcessEndDateHistogramBucketLimitingFilterFor;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
 
 public class CountProcessInstanceFrequencyByEndDateCommand extends AbstractCountProcessInstanceFrequencyByDateCommand {
   @Override

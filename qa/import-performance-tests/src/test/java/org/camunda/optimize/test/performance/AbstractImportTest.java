@@ -25,10 +25,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -65,12 +65,12 @@ public abstract class AbstractImportTest {
       logger.info(
         "The Camunda Platform contains {} process definitions. Optimize: {}",
         (engineDatabaseRule.countProcessDefinitions()),
-        elasticSearchRule.getDocumentCountOf(PROCESS_DEFINITION_TYPE)
+        elasticSearchRule.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME)
       );
       logger.info(
         "The Camunda Platform contains {} historic process instances. Optimize: {}",
         engineDatabaseRule.countHistoricProcessInstances(),
-        elasticSearchRule.getDocumentCountOf(PROC_INSTANCE_TYPE)
+        elasticSearchRule.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME)
       );
       logger.info(
         "The Camunda Platform contains {} historic variable instances. Optimize: {}",
@@ -86,12 +86,12 @@ public abstract class AbstractImportTest {
       logger.info(
         "The Camunda Platform contains {} decision definitions. Optimize: {}",
         engineDatabaseRule.countDecisionDefinitions(),
-        elasticSearchRule.getDocumentCountOf(DECISION_DEFINITION_TYPE)
+        elasticSearchRule.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME)
       );
       logger.info(
         "The Camunda Platform contains {} historic decision instances. Optimize: {}",
         engineDatabaseRule.countHistoricDecisionInstances(),
-        elasticSearchRule.getDocumentCountOf(DECISION_INSTANCE_TYPE)
+        elasticSearchRule.getDocumentCountOf(DECISION_INSTANCE_INDEX_NAME)
       );
     } catch (SQLException e) {
       logger.error("Failed producing stats", e);
@@ -114,7 +114,7 @@ public abstract class AbstractImportTest {
   private long computeImportProgress() {
     // assumption: we know how many process instances have been generated
     Integer processInstancesImported = elasticSearchRule.getDocumentCountOf(
-      PROC_INSTANCE_TYPE
+      PROCESS_INSTANCE_INDEX_NAME
     );
     Long totalInstances;
     try {
@@ -130,13 +130,13 @@ public abstract class AbstractImportTest {
     assertThat(
       "processDefinitionsCount",
       elasticSearchRule.getDocumentCountOf(
-        PROCESS_DEFINITION_TYPE
+        PROCESS_DEFINITION_INDEX_NAME
       ),
       is(engineDatabaseRule.countProcessDefinitions())
     );
     assertThat(
       "processInstanceTypeCount",
-      elasticSearchRule.getDocumentCountOf(PROC_INSTANCE_TYPE),
+      elasticSearchRule.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME),
       is(engineDatabaseRule.countHistoricProcessInstances())
     );
     assertThat(
@@ -152,12 +152,12 @@ public abstract class AbstractImportTest {
 
     assertThat(
       "decisionDefinitionsCount",
-      elasticSearchRule.getDocumentCountOf(DECISION_DEFINITION_TYPE),
+      elasticSearchRule.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME),
       is(engineDatabaseRule.countDecisionDefinitions())
     );
     assertThat(
       "decisionInstancesCount",
-      elasticSearchRule.getDocumentCountOf(DECISION_INSTANCE_TYPE),
+      elasticSearchRule.getDocumentCountOf(DECISION_INSTANCE_INDEX_NAME),
       is(engineDatabaseRule.countHistoricDecisionInstances())
     );
   }

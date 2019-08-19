@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
 
 @Component
 public class EndDateQueryFilter extends DateQueryFilter {

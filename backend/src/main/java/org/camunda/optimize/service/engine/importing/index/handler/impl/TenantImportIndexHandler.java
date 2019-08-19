@@ -31,7 +31,7 @@ public class TenantImportIndexHandler extends AllEntitiesBasedImportIndexHandler
 
   @Override
   protected String getElasticsearchImportIndexType() {
-    return ElasticsearchConstants.TENANT_TYPE;
+    return ElasticsearchConstants.TENANT_INDEX_NAME;
   }
 
   public void addImportedTenants(final Collection<TenantEngineDto> tenantDtos) {

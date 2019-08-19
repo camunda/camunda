@@ -15,7 +15,7 @@ import org.elasticsearch.search.aggregations.metrics.stats.Stats;
 
 import java.util.Optional;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 public interface AutomaticGroupByDateCommand {
 
@@ -28,7 +28,7 @@ public interface AutomaticGroupByDateCommand {
       if (GroupByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
         Stats minMaxStats = getIntervalAggregationService().getMinMaxStats(
           setupBaseQuery(reportData),
-          PROC_INSTANCE_TYPE,
+          PROCESS_INSTANCE_INDEX_NAME,
           getDateField()
         );
         return Optional.of(minMaxStats);

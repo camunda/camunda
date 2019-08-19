@@ -12,13 +12,13 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.TypeMappingCreator;
-import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
-import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
-import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
-import org.camunda.optimize.service.es.schema.type.index.ImportIndexType;
-import org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
+import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.client.Request;
@@ -40,10 +40,10 @@ public class ReimportPreparation {
 
   private static ConfigurationService configurationService = new ConfigurationService();
 
-  private static final List<TypeMappingCreator> TYPES_TO_CLEAR = Lists.newArrayList(
-    new ImportIndexType(), new TimestampBasedImportIndexType(),
-    new ProcessDefinitionType(), new ProcessInstanceType(),
-    new DecisionDefinitionType(), new DecisionInstanceType()
+  private static final List<IndexMappingCreator> TYPES_TO_CLEAR = Lists.newArrayList(
+    new ImportIndexIndex(), new TimestampBasedImportIndex(),
+    new ProcessDefinitionIndex(), new ProcessInstanceIndex(),
+    new DecisionDefinitionIndex(), new DecisionInstanceIndex()
   );
 
   public static void main(String[] args) {

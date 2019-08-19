@@ -24,13 +24,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_KEY;
-import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_NAME;
-import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_VERSION;
-import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_VERSION_TAG;
-import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.ENGINE;
-import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.TENANT_ID;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
+import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
+import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_NAME;
+import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
+import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION_TAG;
+import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.ENGINE;
+import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.TENANT_ID;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
@@ -64,7 +64,7 @@ public class DecisionDefinitionWriter {
         FIELDS_TO_UPDATE,
         decisionDefinition
       );
-      final UpdateRequest request = new UpdateRequest(DECISION_DEFINITION_TYPE, DECISION_DEFINITION_TYPE, id)
+      final UpdateRequest request = new UpdateRequest(DECISION_DEFINITION_INDEX_NAME, DECISION_DEFINITION_INDEX_NAME, id)
         .script(updateScript)
         .upsert(objectMapper.convertValue(decisionDefinition, Map.class))
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

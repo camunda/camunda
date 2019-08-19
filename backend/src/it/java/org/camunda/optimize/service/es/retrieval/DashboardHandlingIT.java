@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -56,7 +56,7 @@ public class DashboardHandlingIT {
     String id = createNewDashboard();
 
     // when
-    GetRequest getRequest = new GetRequest(DASHBOARD_TYPE, DASHBOARD_TYPE, id);
+    GetRequest getRequest = new GetRequest(DASHBOARD_INDEX_NAME, DASHBOARD_INDEX_NAME, id);
     GetResponse getResponse = elasticSearchRule.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
 
     // then

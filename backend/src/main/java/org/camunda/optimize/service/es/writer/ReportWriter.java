@@ -49,13 +49,13 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.type.report.CombinedReportType.DATA;
-import static org.camunda.optimize.service.es.schema.type.report.CombinedReportType.REPORTS;
-import static org.camunda.optimize.service.es.schema.type.report.CombinedReportType.REPORT_ITEM_ID;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
+import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.DATA;
+import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORTS;
+import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORT_ITEM_ID;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -88,7 +88,7 @@ public class ReportWriter {
     reportDefinitionDto.setData(reportData);
 
     try {
-      IndexRequest request = new IndexRequest(COMBINED_REPORT_TYPE, COMBINED_REPORT_TYPE, id)
+      IndexRequest request = new IndexRequest(COMBINED_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME, id)
         .source(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -129,7 +129,7 @@ public class ReportWriter {
     reportDefinitionDto.setData(reportData);
 
     try {
-      IndexRequest request = new IndexRequest(SINGLE_PROCESS_REPORT_TYPE, SINGLE_PROCESS_REPORT_TYPE, id)
+      IndexRequest request = new IndexRequest(SINGLE_PROCESS_REPORT_INDEX_NAME, SINGLE_PROCESS_REPORT_INDEX_NAME, id)
         .source(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -170,7 +170,7 @@ public class ReportWriter {
     reportDefinitionDto.setData(reportData);
 
     try {
-      IndexRequest request = new IndexRequest(SINGLE_DECISION_REPORT_TYPE, SINGLE_DECISION_REPORT_TYPE, id)
+      IndexRequest request = new IndexRequest(SINGLE_DECISION_REPORT_INDEX_NAME, SINGLE_DECISION_REPORT_INDEX_NAME, id)
         .source(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -192,15 +192,15 @@ public class ReportWriter {
   }
 
   public void updateSingleProcessReport(final SingleProcessReportDefinitionUpdateDto reportUpdate) {
-    updateReport(reportUpdate, SINGLE_PROCESS_REPORT_TYPE);
+    updateReport(reportUpdate, SINGLE_PROCESS_REPORT_INDEX_NAME);
   }
 
   public void updateSingleDecisionReport(final SingleDecisionReportDefinitionUpdateDto reportUpdate) {
-    updateReport(reportUpdate, SINGLE_DECISION_REPORT_TYPE);
+    updateReport(reportUpdate, SINGLE_DECISION_REPORT_INDEX_NAME);
   }
 
   public void updateCombinedReport(final ReportDefinitionUpdateDto updatedReport) {
-    updateReport(updatedReport, COMBINED_REPORT_TYPE);
+    updateReport(updatedReport, COMBINED_REPORT_INDEX_NAME);
   }
 
   private void updateReport(ReportDefinitionUpdateDto updatedReport, String elasticsearchType) {
@@ -239,7 +239,9 @@ public class ReportWriter {
   public void deleteSingleReport(final String reportId) {
     log.debug("Deleting single report with id [{}]", reportId);
 
-    DeleteByQueryRequest request = new DeleteByQueryRequest(SINGLE_PROCESS_REPORT_TYPE, SINGLE_DECISION_REPORT_TYPE)
+    DeleteByQueryRequest request = new DeleteByQueryRequest(SINGLE_PROCESS_REPORT_INDEX_NAME,
+                                                            SINGLE_DECISION_REPORT_INDEX_NAME
+    )
       .setQuery(idsQuery().addIds(reportId))
       .setRefresh(true);
 
@@ -285,7 +287,7 @@ public class ReportWriter {
       ScoreMode.None
     );
 
-    UpdateByQueryRequest request = new UpdateByQueryRequest(COMBINED_REPORT_TYPE)
+    UpdateByQueryRequest request = new UpdateByQueryRequest(COMBINED_REPORT_INDEX_NAME)
       .setAbortOnVersionConflict(false)
       .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
       .setQuery(query)
@@ -316,7 +318,7 @@ public class ReportWriter {
   public void deleteCombinedReport(final String reportId) {
     log.debug("Deleting combined report with id [{}]", reportId);
 
-    DeleteRequest request = new DeleteRequest(COMBINED_REPORT_TYPE, COMBINED_REPORT_TYPE, reportId)
+    DeleteRequest request = new DeleteRequest(COMBINED_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME, reportId)
       .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;

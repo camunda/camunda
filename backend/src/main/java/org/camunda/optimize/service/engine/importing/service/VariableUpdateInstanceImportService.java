@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.engine.importing.service;
 
 import org.camunda.optimize.dto.engine.HistoricVariableUpdateInstanceDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
@@ -14,7 +14,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.VariableUpdateElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.variable.VariableUpdateWriter;
+import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,10 +32,10 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private ImportAdapterProvider importAdapterProvider;
   protected EngineContext engineContext;
-  private VariableUpdateWriter variableWriter;
+  private ProcessVariableUpdateWriter variableWriter;
 
   public VariableUpdateInstanceImportService(
-    VariableUpdateWriter variableWriter,
+    ProcessVariableUpdateWriter variableWriter,
     ImportAdapterProvider importAdapterProvider,
     ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
     EngineContext engineContext
@@ -52,8 +52,8 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
-      List<VariableDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
-      ElasticsearchImportJob<VariableDto> elasticsearchImportJob = createElasticsearchImportJob(
+      List<ProcessVariableDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
+      ElasticsearchImportJob<ProcessVariableDto> elasticsearchImportJob = createElasticsearchImportJob(
         newOptimizeEntities,
         callback
       );
@@ -65,7 +65,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }
 
-  private List<VariableDto> mapEngineEntitiesToOptimizeEntities(List<HistoricVariableUpdateInstanceDto>
+  private List<ProcessVariableDto> mapEngineEntitiesToOptimizeEntities(List<HistoricVariableUpdateInstanceDto>
                                                                   engineEntities) {
     List<PluginVariableDto> pluginVariableList = mapEngineVariablesToOptimizeVariablesAndRemoveDuplicates
       (engineEntities);
@@ -75,12 +75,12 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     return convertPluginListToImportList(pluginVariableList);
   }
 
-  private List<VariableDto> convertPluginListToImportList(List<PluginVariableDto> pluginVariableList) {
-    List<VariableDto> variableImportList = new ArrayList<>(pluginVariableList.size());
+  private List<ProcessVariableDto> convertPluginListToImportList(List<PluginVariableDto> pluginVariableList) {
+    List<ProcessVariableDto> variableImportList = new ArrayList<>(pluginVariableList.size());
     for (PluginVariableDto dto : pluginVariableList) {
       if (isValidVariable(dto)) {
-        if (dto instanceof VariableDto) {
-          variableImportList.add((VariableDto) dto);
+        if (dto instanceof ProcessVariableDto) {
+          variableImportList.add((ProcessVariableDto) dto);
         } else {
           variableImportList.add(convertPluginVariableToImportVariable(dto));
         }
@@ -89,8 +89,8 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     return variableImportList;
   }
 
-  private VariableDto convertPluginVariableToImportVariable(PluginVariableDto pluginVariableDto) {
-    final VariableDto variableDto = new VariableDto(
+  private ProcessVariableDto convertPluginVariableToImportVariable(PluginVariableDto pluginVariableDto) {
+    return new ProcessVariableDto(
       pluginVariableDto.getId(),
       pluginVariableDto.getName(),
       pluginVariableDto.getType(),
@@ -103,7 +103,6 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
       pluginVariableDto.getEngineAlias(),
       pluginVariableDto.getTenantId()
     );
-    return variableDto;
   }
 
   private List<PluginVariableDto> mapEngineVariablesToOptimizeVariablesAndRemoveDuplicates
@@ -119,8 +118,8 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     return new ArrayList<>(resultSet.values());
   }
 
-  private VariableDto mapEngineEntityToOptimizeEntity(HistoricVariableUpdateInstanceDto engineEntity) {
-    final VariableDto optimizeDto = new VariableDto(
+  private ProcessVariableDto mapEngineEntityToOptimizeEntity(HistoricVariableUpdateInstanceDto engineEntity) {
+    return new ProcessVariableDto(
       engineEntity.getVariableInstanceId(),
       engineEntity.getVariableName(),
       engineEntity.getVariableType(),
@@ -133,7 +132,6 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
       engineContext.getEngineAlias(),
       engineEntity.getTenantId()
     );
-    return optimizeDto;
   }
 
   private boolean isValidVariable(PluginVariableDto variableDto) {
@@ -203,8 +201,8 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     return value == null || value.equals(0L);
   }
 
-  private ElasticsearchImportJob<VariableDto> createElasticsearchImportJob(List<VariableDto> processInstances,
-                                                                           Runnable callback) {
+  private ElasticsearchImportJob<ProcessVariableDto> createElasticsearchImportJob(List<ProcessVariableDto> processInstances,
+                                                                                  Runnable callback) {
     VariableUpdateElasticsearchImportJob importJob = new VariableUpdateElasticsearchImportJob(variableWriter, callback);
     importJob.setEntitiesToImport(processInstances);
     return importJob;

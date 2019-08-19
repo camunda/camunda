@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Optional;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 @RequiredArgsConstructor
@@ -65,7 +65,7 @@ public class ElasticsearchMetadataService {
   public Optional<MetadataDto> readMetadata(final OptimizeElasticsearchClient esClient) {
     Optional<MetadataDto> result = Optional.empty();
 
-    final SearchRequest searchRequest = new SearchRequest(METADATA_TYPE);
+    final SearchRequest searchRequest = new SearchRequest(METADATA_INDEX_NAME);
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(QueryBuilders.matchAllQuery());
     searchRequest.source(searchSourceBuilder);
@@ -103,7 +103,7 @@ public class ElasticsearchMetadataService {
       final String source = objectMapper.writeValueAsString(metadataDto);
 
       final IndexRequest request =
-        new IndexRequest(METADATA_TYPE, METADATA_TYPE, ID)
+        new IndexRequest(METADATA_INDEX_NAME, METADATA_INDEX_NAME, ID)
           .source(source, XContentType.JSON)
           .setRefreshPolicy(IMMEDIATE);
 

@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -100,7 +100,7 @@ public class DecisionVariableNamesRestServiceIT {
     definition.setTenantId(null);
     definition.setDmn10Xml("someXml");
     definition.setEngine(DEFAULT_ENGINE_ALIAS);
-    elasticSearchRule.addEntryToElasticsearch(DECISION_DEFINITION_TYPE, definition.getId(), definition);
+    elasticSearchRule.addEntryToElasticsearch(DECISION_DEFINITION_INDEX_NAME, definition.getId(), definition);
   }
 
   @Test

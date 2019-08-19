@@ -18,7 +18,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 public class CountProcessInstanceFrequencyGroupByNoneCommand
   extends ProcessReportCommand<SingleProcessNumberReportResult> {
@@ -40,8 +40,8 @@ public class CountProcessInstanceFrequencyGroupByNoneCommand
       .query(query)
       .fetchSource(false)
       .size(0);
-    SearchRequest searchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
-      .types(PROC_INSTANCE_TYPE)
+    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse response;

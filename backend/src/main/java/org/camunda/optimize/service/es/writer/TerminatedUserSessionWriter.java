@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.TerminatedUserSessionDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.type.TerminatedUserSessionType;
+import org.camunda.optimize.service.es.schema.index.TerminatedUserSessionIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -25,7 +25,7 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TERMINATED_USER_SESSION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TERMINATED_USER_SESSION_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
@@ -45,7 +45,7 @@ public class TerminatedUserSessionWriter {
       final String jsonSource = objectMapper.writeValueAsString(sessionDto);
 
       final IndexRequest request =
-        new IndexRequest(TERMINATED_USER_SESSION_TYPE, TERMINATED_USER_SESSION_TYPE, sessionDto.getId())
+        new IndexRequest(TERMINATED_USER_SESSION_INDEX_NAME, TERMINATED_USER_SESSION_INDEX_NAME, sessionDto.getId())
           .source(jsonSource, XContentType.JSON)
           .setRefreshPolicy(IMMEDIATE);
 
@@ -61,11 +61,11 @@ public class TerminatedUserSessionWriter {
     log.debug("Deleting terminated user sessions older than {}", timestamp);
 
     final BoolQueryBuilder filterQuery = boolQuery().filter(
-      rangeQuery(TerminatedUserSessionType.TERMINATION_TIMESTAMP)
+      rangeQuery(TerminatedUserSessionIndex.TERMINATION_TIMESTAMP)
         .lt(dateTimeFormatter.format(timestamp))
         .format(OPTIMIZE_DATE_FORMAT)
     );
-    final DeleteByQueryRequest request = new DeleteByQueryRequest(TERMINATED_USER_SESSION_TYPE)
+    final DeleteByQueryRequest request = new DeleteByQueryRequest(TERMINATED_USER_SESSION_INDEX_NAME)
       .setQuery(filterQuery)
       .setAbortOnVersionConflict(false)
       .setRefresh(true);

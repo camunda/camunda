@@ -11,7 +11,6 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.configuration.CleanupMode;
 import org.camunda.optimize.service.util.configuration.DecisionDefinitionCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.OptimizeCleanupConfiguration;
@@ -39,10 +38,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.DECISION_INSTANCE_ID;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_INSTANCE_ID;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.DECISION_INSTANCE_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -292,13 +292,11 @@ public class OptimizeCleanupServiceIT {
 
     assertThat(idsResp.getHits().getTotalHits(), is(Long.valueOf(processIds.size())));
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
-      for (String variableFieldName : ProcessVariableHelper.getAllVariableTypeFieldLabels()) {
-        assertThat(
-          variableFieldName + "is empty",
-          searchHit.getSourceAsMap().get(variableFieldName),
-          is(Collections.emptyList())
-        );
-      }
+      assertThat(
+        VARIABLES + " is empty",
+        searchHit.getSourceAsMap().get(VARIABLES),
+        is(Collections.emptyList())
+      );
     }
   }
 
@@ -308,8 +306,8 @@ public class OptimizeCleanupServiceIT {
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(PROC_INSTANCE_TYPE)
-      .types(PROC_INSTANCE_TYPE)
+      .indices(PROCESS_INSTANCE_INDEX_NAME)
+      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     return elasticSearchRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
@@ -320,13 +318,11 @@ public class OptimizeCleanupServiceIT {
     assertThat(idsResp.getHits().getTotalHits(), is(Long.valueOf(processIds.size())));
 
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
-      for (String variableFieldName : ProcessVariableHelper.getAllVariableTypeFieldLabels()) {
-        assertThat(
-          variableFieldName + "is not empty",
-          ((Collection) searchHit.getSourceAsMap().get(variableFieldName)).size(),
-          is(greaterThan(0))
-        );
-      }
+      assertThat(
+        VARIABLES + " is not empty",
+        ((Collection) searchHit.getSourceAsMap().get(VARIABLES)).size(),
+        is(greaterThan(0))
+      );
     }
   }
 
@@ -336,8 +332,8 @@ public class OptimizeCleanupServiceIT {
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(DECISION_INSTANCE_TYPE)
-      .types(DECISION_INSTANCE_TYPE)
+      .indices(DECISION_INSTANCE_INDEX_NAME)
+      .types(DECISION_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     return elasticSearchRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);

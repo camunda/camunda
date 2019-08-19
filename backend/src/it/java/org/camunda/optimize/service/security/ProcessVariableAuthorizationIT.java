@@ -28,7 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.util.ProcessVariableHelper.STRING_TYPE;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
@@ -237,7 +237,7 @@ public class ProcessVariableAuthorizationIT {
     dto.setProcessDefinitionVersion(processDefinitionVersion);
     dto.setTenantIds(tenantIds);
     dto.setName(VARIABLE_NAME);
-    dto.setType(STRING_TYPE);
+    dto.setType(STRING);
     return dto;
   }
 

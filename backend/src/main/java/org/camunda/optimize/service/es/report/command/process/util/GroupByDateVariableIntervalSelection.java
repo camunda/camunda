@@ -32,50 +32,12 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.stats;
 
 public class GroupByDateVariableIntervalSelection {
   private static final String STATS = "stats";
+  private static final String VARIABLES_AGGREGATION = "variables";
   private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
-
-
-  public static Stats getMinMaxStats(QueryBuilder query,
-                                     String esType,
-                                     String nestedPath,
-                                     String field,
-                                     OptimizeElasticsearchClient esClient,
-                                     String nestedVariableNameFieldLabel,
-                                     String variableName) {
-
-    AggregationBuilder aggregationBuilder = nested(NESTED_AGGREGATION, nestedPath).subAggregation(filter(
-      FILTERED_VARIABLES_AGGREGATION,
-      boolQuery()
-        .must(
-          termQuery(nestedVariableNameFieldLabel, variableName)
-        )
-    ));
-
-    AggregationBuilder statsAgg = aggregationBuilder.subAggregation(AggregationBuilders
-                                                                      .stats(STATS)
-                                                                      .field(field)
-                                                                      .format(OPTIMIZE_DATE_FORMAT));
-
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
-      .fetchSource(false)
-      .aggregation(statsAgg)
-      .size(0);
-    SearchRequest searchRequest = new SearchRequest(esType)
-      .types(esType)
-      .source(searchSourceBuilder);
-
-    SearchResponse response;
-    try {
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException("Could not automatically determine date interval", e);
-    }
-    return ((Nested) response.getAggregations().get(NESTED_AGGREGATION)).getAggregations().get(STATS);
-  }
 
   public static AggregationBuilder createDateVariableAggregation(String aggregationName,
                                                                  String variableName,
@@ -114,5 +76,46 @@ public class GroupByDateVariableIntervalSelection {
         .timeZone(DateTimeZone.getDefault());
     }
     return aggregationBuilder;
+  }
+
+  private static Stats getMinMaxStats(QueryBuilder query,
+                                      String esType,
+                                      String nestedPath,
+                                      String field,
+                                      OptimizeElasticsearchClient esClient,
+                                      String nestedVariableNameFieldLabel,
+                                      String variableName) {
+
+    AggregationBuilder aggregationBuilder = nested(NESTED_AGGREGATION, nestedPath).subAggregation(filter(
+      FILTERED_VARIABLES_AGGREGATION,
+      boolQuery()
+        .must(
+          termQuery(nestedVariableNameFieldLabel, variableName)
+        )
+    ));
+
+    AggregationBuilder statsAgg = aggregationBuilder
+      .subAggregation(
+        stats(STATS)
+          .field(field)
+          .format(OPTIMIZE_DATE_FORMAT)
+      );
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .fetchSource(false)
+      .aggregation(statsAgg)
+      .size(0);
+    SearchRequest searchRequest = new SearchRequest(esType)
+      .types(esType)
+      .source(searchSourceBuilder);
+
+    SearchResponse response;
+    try {
+      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Could not automatically determine date interval", e);
+    }
+    return ((Nested) response.getAggregations().get(NESTED_AGGREGATION)).getAggregations().get(STATS);
   }
 }

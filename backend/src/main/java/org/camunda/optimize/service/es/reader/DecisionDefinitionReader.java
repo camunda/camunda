@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
+import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
@@ -33,14 +33,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_KEY;
-import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_VERSION;
-import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_XML;
-import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.ENGINE;
-import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.TENANT_ID;
+import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
+import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
+import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_XML;
+import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.ENGINE;
+import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.TENANT_ID;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToValidDefinitionVersion;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -82,8 +82,8 @@ public class DecisionDefinitionReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
-    SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_TYPE)
-      .types(DECISION_DEFINITION_TYPE)
+    SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_INDEX_NAME)
+      .types(DECISION_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -129,8 +129,8 @@ public class DecisionDefinitionReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
-    SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_TYPE)
-      .types(DECISION_DEFINITION_TYPE)
+    SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_INDEX_NAME)
+      .types(DECISION_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -158,7 +158,7 @@ public class DecisionDefinitionReader {
 
   public List<DecisionDefinitionOptimizeDto> getDecisionDefinitions(final boolean fullyImported,
                                                                     final boolean withXml) {
-    final String[] fieldsToExclude = withXml ? null : new String[]{DecisionDefinitionType.DECISION_DEFINITION_XML};
+    final String[] fieldsToExclude = withXml ? null : new String[]{DecisionDefinitionIndex.DECISION_DEFINITION_XML};
 
     final QueryBuilder query = fullyImported ? existsQuery(DECISION_DEFINITION_XML) : matchAllQuery();
 
@@ -166,8 +166,8 @@ public class DecisionDefinitionReader {
       .query(query)
       .size(LIST_FETCH_LIMIT)
       .fetchSource(null, fieldsToExclude);
-    final SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_TYPE)
-      .types(DECISION_DEFINITION_TYPE)
+    final SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_INDEX_NAME)
+      .types(DECISION_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
@@ -212,8 +212,8 @@ public class DecisionDefinitionReader {
       .sort(SortBuilders.scriptSort(script, ScriptSortBuilder.ScriptSortType.NUMBER).order(SortOrder.DESC))
       .size(1);
 
-    SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_TYPE)
-      .types(DECISION_DEFINITION_TYPE)
+    SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_INDEX_NAME)
+      .types(DECISION_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;

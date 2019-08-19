@@ -12,9 +12,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.service.es.reader.ElasticsearchHelper;
 import org.camunda.optimize.service.es.report.command.process.mapping.RawProcessDataResultDtoMapper;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessRawDataReportResult;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -28,11 +27,12 @@ import org.elasticsearch.search.sort.SortOrder;
 import java.io.IOException;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_NAME;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_VALUE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRawDataReportResult> {
@@ -52,7 +52,7 @@ public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRaw
 
     final String sortByField = processReportData.getParameters().getSorting()
       .flatMap(SortingDto::getBy)
-      .orElse(ProcessInstanceType.START_DATE);
+      .orElse(ProcessInstanceIndex.START_DATE);
     final SortOrder sortOrder = processReportData.getParameters().getSorting()
       .flatMap(SortingDto::getOrder)
       .map(order -> SortOrder.valueOf(order.name()))
@@ -66,8 +66,8 @@ public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRaw
 
     addSorting(sortByField, sortOrder, searchSourceBuilder);
 
-    final SearchRequest scrollSearchRequest = new SearchRequest(PROC_INSTANCE_TYPE)
-      .types(PROC_INSTANCE_TYPE)
+    final SearchRequest scrollSearchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
@@ -107,16 +107,14 @@ public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRaw
   private void addSorting(String sortByField, SortOrder sortOrder, SearchSourceBuilder searchSourceBuilder) {
     if (sortByField.startsWith(VARIABLE_PREFIX)) {
       final String variableName = sortByField.substring(VARIABLE_PREFIX.length());
-      for (String variableField : ProcessVariableHelper.getAllVariableTypeFieldLabels()) {
-        searchSourceBuilder.sort(
-          SortBuilders
-            .fieldSort(variableField + "." + VARIABLE_VALUE)
-            .setNestedSort(
-              new NestedSortBuilder(variableField)
-                .setFilter(termQuery(variableField + "." + VARIABLE_NAME, variableName))
-            ).order(sortOrder)
-        );
-      }
+      searchSourceBuilder.sort(
+        SortBuilders
+          .fieldSort(getNestedVariableValueField())
+          .setNestedSort(
+            new NestedSortBuilder(VARIABLES)
+              .setFilter(termQuery(getNestedVariableNameField(), variableName))
+          ).order(sortOrder)
+      );
     } else {
       searchSourceBuilder.sort(
         SortBuilders.fieldSort(sortByField).order(sortOrder)

@@ -53,12 +53,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 
@@ -89,7 +89,7 @@ public class CollectionWriter {
     );
 
     try {
-      IndexRequest request = new IndexRequest(COLLECTION_TYPE, COLLECTION_TYPE, id)
+      IndexRequest request = new IndexRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, id)
         .source(objectMapper.writeValueAsString(collection), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -117,7 +117,7 @@ public class CollectionWriter {
     try {
 
       UpdateRequest request =
-        new UpdateRequest(COLLECTION_TYPE, COLLECTION_TYPE, id)
+        new UpdateRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, id)
           .doc(objectMapper.writeValueAsString(collection), XContentType.JSON)
           .setRefreshPolicy(IMMEDIATE)
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -153,7 +153,7 @@ public class CollectionWriter {
 
   public void deleteCollection(String collectionId) {
     log.debug("Deleting collection with id [{}]", collectionId);
-    DeleteRequest request = new DeleteRequest(COLLECTION_TYPE, COLLECTION_TYPE, collectionId)
+    DeleteRequest request = new DeleteRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId)
       .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;
@@ -194,7 +194,7 @@ public class CollectionWriter {
         "}";
       final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScript(script, params);
 
-      UpdateRequest request = new UpdateRequest(COLLECTION_TYPE, COLLECTION_TYPE, collectionId)
+      UpdateRequest request = new UpdateRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId)
         .script(addEntityScript)
         .setRefreshPolicy(IMMEDIATE)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -225,7 +225,7 @@ public class CollectionWriter {
 
     Script removeEntityFromCollectionScript = getRemoveEntityFromCollectionScript(entityId);
 
-    final UpdateRequest request = new UpdateRequest(COLLECTION_TYPE, COLLECTION_TYPE, collectionId)
+    final UpdateRequest request = new UpdateRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId)
       .script(removeEntityFromCollectionScript)
       .setRefreshPolicy(IMMEDIATE);
 
@@ -264,7 +264,7 @@ public class CollectionWriter {
         ScoreMode.None
       );
 
-    UpdateByQueryRequest request = new UpdateByQueryRequest(COLLECTION_TYPE)
+    UpdateByQueryRequest request = new UpdateByQueryRequest(COLLECTION_INDEX_NAME)
       .setAbortOnVersionConflict(false)
       .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
       .setQuery(query)
@@ -320,7 +320,7 @@ public class CollectionWriter {
         params
       );
 
-      final UpdateRequest request = new UpdateRequest(COLLECTION_TYPE, COLLECTION_TYPE, collectionId)
+      final UpdateRequest request = new UpdateRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId)
         .script(addEntityScript)
         .setRefreshPolicy(IMMEDIATE)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -395,7 +395,7 @@ public class CollectionWriter {
         params
       );
 
-      final UpdateRequest request = new UpdateRequest(COLLECTION_TYPE, COLLECTION_TYPE, collectionId)
+      final UpdateRequest request = new UpdateRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId)
         .script(addEntityScript)
         .setRefreshPolicy(IMMEDIATE)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -470,7 +470,7 @@ public class CollectionWriter {
         params
       );
 
-      final UpdateRequest request = new UpdateRequest(COLLECTION_TYPE, COLLECTION_TYPE, collectionId)
+      final UpdateRequest request = new UpdateRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId)
         .script(addEntityScript)
         .setRefreshPolicy(IMMEDIATE)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -522,7 +522,9 @@ public class CollectionWriter {
       .size(0);
     SearchRequest searchRequest =
       new SearchRequest()
-        .indices(SINGLE_PROCESS_REPORT_TYPE, SINGLE_DECISION_REPORT_TYPE, COMBINED_REPORT_TYPE, DASHBOARD_TYPE)
+        .indices(SINGLE_PROCESS_REPORT_INDEX_NAME,
+                 SINGLE_DECISION_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME, DASHBOARD_INDEX_NAME
+        )
         .source(searchSourceBuilder);
 
     SearchResponse searchResponse;

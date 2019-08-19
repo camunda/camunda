@@ -9,7 +9,7 @@ import org.apache.commons.collections.ListUtils;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
-import org.camunda.optimize.service.es.writer.variable.VariableWriter;
+import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.CleanupMode;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -53,7 +53,7 @@ public class OptimizeProcessCleanupServiceTest {
   @Mock
   private CompletedProcessInstanceWriter processInstanceWriter;
   @Mock
-  private VariableWriter variableWriter;
+  private ProcessVariableUpdateWriter processVariableUpdateWriter;
 
   private ConfigurationService configurationService;
 
@@ -265,7 +265,7 @@ public class OptimizeProcessCleanupServiceTest {
     ArgumentCaptor<String> processInstanceCaptor = ArgumentCaptor.forClass(String.class);
     ArgumentCaptor<OffsetDateTime> endDateFilterCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
     verify(
-      variableWriter,
+      processVariableUpdateWriter,
       atLeast(expectedProcessDefinitionKeys.size())
     ).deleteAllInstanceVariablesByProcessDefinitionKeyAndEndDateOlderThan(
       processInstanceCaptor.capture(),
@@ -302,7 +302,7 @@ public class OptimizeProcessCleanupServiceTest {
 
   private OptimizeCleanupService createOptimizeCleanupServiceToTest() {
     return new OptimizeProcessCleanupService(
-      configurationService, processDefinitionReader, processInstanceWriter, variableWriter
+      configurationService, processDefinitionReader, processInstanceWriter, processVariableUpdateWriter
     );
   }
 }

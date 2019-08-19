@@ -32,8 +32,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 
-import static org.camunda.optimize.service.es.schema.type.LicenseType.LICENSE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LICENSE_TYPE;
+import static org.camunda.optimize.service.es.schema.index.LicenseIndex.LICENSE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LICENSE_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
@@ -87,7 +87,7 @@ public class LicenseManager {
       throw new OptimizeException("Could not parse given license. Please check the encoding!");
     }
 
-    IndexRequest request = new IndexRequest(LICENSE_TYPE, LICENSE_TYPE, licenseDocumentId)
+    IndexRequest request = new IndexRequest(LICENSE_INDEX_NAME, LICENSE_INDEX_NAME, licenseDocumentId)
       .source(builder)
       .setRefreshPolicy(IMMEDIATE);
 
@@ -136,7 +136,7 @@ public class LicenseManager {
 
   private String retrieveStoredOptimizeLicense() {
     log.debug("Retrieving stored optimize license!");
-    GetRequest getRequest = new GetRequest(LICENSE_TYPE, LICENSE_TYPE, licenseDocumentId);
+    GetRequest getRequest = new GetRequest(LICENSE_INDEX_NAME, LICENSE_INDEX_NAME, licenseDocumentId);
 
     GetResponse getResponse;
     try {

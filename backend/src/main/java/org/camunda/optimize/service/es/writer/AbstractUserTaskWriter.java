@@ -15,14 +15,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_OPERATIONS;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_CLAIM_DATE;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_IDLE_DURATION;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_TOTAL_DURATION;
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_WORK_DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_OPERATIONS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CLAIM_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_IDLE_DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_TOTAL_DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 @AllArgsConstructor

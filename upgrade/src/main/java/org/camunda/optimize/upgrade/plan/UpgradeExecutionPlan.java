@@ -10,16 +10,22 @@ import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.StrictTypeMappingCreator;
-import org.camunda.optimize.service.es.schema.TypeMappingCreator;
-import org.camunda.optimize.service.es.schema.type.MetadataType;
+import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.service.ValidationService;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.document.InsertDataStep;
+import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
+import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
+import org.camunda.optimize.upgrade.steps.schema.DeleteIndexStep;
+import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
+import org.camunda.optimize.upgrade.steps.schema.UpdateMappingIndexStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -28,18 +34,20 @@ import org.springframework.core.type.filter.AssignableTypeFilter;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class UpgradeExecutionPlan implements UpgradePlan {
 
-  private final OptimizeIndexNameService indexNameService;
   private Logger logger = LoggerFactory.getLogger(getClass());
 
+  private final OptimizeIndexNameService indexNameService;
   private final OptimizeElasticsearchClient prefixAwareClient;
-  private final List<UpgradeStep> upgradeSteps = new ArrayList<>();
 
+  private final List<UpgradeStep> upgradeSteps = new ArrayList<>();
   private ValidationService validationService;
   private ElasticsearchMetadataService metadataService;
   private ElasticSearchSchemaManager schemaManager;
@@ -78,8 +86,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
   public void execute() {
     validateVersions();
 
-    schemaManager.initializeSchema(prefixAwareClient);
-
+    sortUpgradeStepsSoThatIndexAdjustmentsAreDoneFirst();
     int currentStepCount = 1;
     for (UpgradeStep step : upgradeSteps) {
       logger.info(
@@ -98,39 +105,32 @@ public class UpgradeExecutionPlan implements UpgradePlan {
       currentStepCount++;
     }
 
+    schemaManager.initializeSchema(prefixAwareClient);
+
     updateOptimizeVersion();
   }
 
-  private void validateVersions() {
-    validationService.validateSchemaVersions(prefixAwareClient, fromVersion, toVersion);
-    validationService.validateESVersion(prefixAwareClient, toVersion);
-  }
-
-  public List<TypeMappingCreator> getMappings() {
+  public List<IndexMappingCreator> getMappings() {
     final ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
-    provider.addIncludeFilter(new AssignableTypeFilter(StrictTypeMappingCreator.class));
-    final Set<BeanDefinition> typeMapping = provider.findCandidateComponents(MetadataType.class.getPackage().getName());
+    provider.addIncludeFilter(new AssignableTypeFilter(StrictIndexMappingCreator.class));
+    final Set<BeanDefinition> indexMapping =
+      provider.findCandidateComponents(MetadataIndex.class.getPackage().getName());
 
-    final List<TypeMappingCreator> mappingTypes = typeMapping.stream()
+    final List<IndexMappingCreator> indexMappings = indexMapping.stream()
       .map(beanDefinition -> {
         try {
-          return (TypeMappingCreator) Class.forName(beanDefinition.getBeanClassName()).getConstructor().newInstance();
+          return (IndexMappingCreator) Class.forName(beanDefinition.getBeanClassName()).getConstructor().newInstance();
         } catch (IllegalAccessException | InstantiationException | InvocationTargetException | ClassNotFoundException | NoSuchMethodException e) {
           throw new OptimizeRuntimeException("Failed initializing: " + beanDefinition.getBeanClassName(), e);
         }
       })
       .collect(Collectors.toList());
 
-    return mappingTypes;
+    return indexMappings;
   }
 
   public void addUpgradeStep(UpgradeStep upgradeStep) {
     this.upgradeSteps.add(upgradeStep);
-  }
-
-  private void updateOptimizeVersion() {
-    logger.info("Updating Optimize Elasticsearch data structure version tag from {} to {}.", fromVersion, toVersion);
-    metadataService.writeMetadata(prefixAwareClient, new MetadataDto(toVersion));
   }
 
   public void setEsIndexAdjuster(final ESIndexAdjuster esIndexAdjuster) {
@@ -155,6 +155,28 @@ public class UpgradeExecutionPlan implements UpgradePlan {
 
   public void setToVersion(String toVersion) {
     this.toVersion = toVersion;
+  }
+
+  private void sortUpgradeStepsSoThatIndexAdjustmentsAreDoneFirst() {
+    List<Class> sortOrder = Arrays.asList(
+      CreateIndexStep.class,
+      DeleteIndexStep.class,
+      UpdateMappingIndexStep.class,
+      UpdateIndexStep.class,
+      InsertDataStep.class,
+      UpdateDataStep.class
+    );
+    upgradeSteps.sort(Comparator.comparingInt(step -> sortOrder.indexOf(step.getClass())));
+  }
+
+  private void validateVersions() {
+    validationService.validateSchemaVersions(prefixAwareClient, fromVersion, toVersion);
+    validationService.validateESVersion(prefixAwareClient, toVersion);
+  }
+
+  private void updateOptimizeVersion() {
+    logger.info("Updating Optimize Elasticsearch data structure version tag from {} to {}.", fromVersion, toVersion);
+    metadataService.writeMetadata(prefixAwareClient, new MetadataDto(toVersion));
   }
 
 }

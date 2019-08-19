@@ -13,7 +13,7 @@ import org.junit.Test;
 import java.io.IOException;
 
 import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -31,7 +31,7 @@ public class TenantImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(TENANT_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(TENANT_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(TenantDto.Fields.id.name()), is(tenantId));
@@ -57,7 +57,7 @@ public class TenantImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(TENANT_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(TENANT_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(TenantDto.Fields.id.name()), is(tenantId));

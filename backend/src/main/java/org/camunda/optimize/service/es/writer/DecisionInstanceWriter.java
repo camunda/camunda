@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
+import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -30,8 +30,8 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.DECISION_DEFINITION_KEY;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.DECISION_DEFINITION_KEY;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -73,7 +73,9 @@ public class DecisionInstanceWriter {
     final String decisionInstanceId = decisionInstanceDto.getDecisionInstanceId();
     final String source = objectMapper.writeValueAsString(decisionInstanceDto);
 
-    final IndexRequest request = new IndexRequest(DECISION_INSTANCE_TYPE, DECISION_INSTANCE_TYPE, decisionInstanceId)
+    final IndexRequest request = new IndexRequest(
+      DECISION_INSTANCE_INDEX_NAME,
+      DECISION_INSTANCE_INDEX_NAME, decisionInstanceId)
       .source(source, XContentType.JSON);
 
     bulkRequest.add(request);
@@ -93,8 +95,8 @@ public class DecisionInstanceWriter {
       progressReporter.start();
       final BoolQueryBuilder filterQuery = boolQuery()
         .filter(termQuery(DECISION_DEFINITION_KEY, decisionDefinitionKey))
-        .filter(rangeQuery(DecisionInstanceType.EVALUATION_DATE_TIME).lt(dateTimeFormatter.format(evaluationDate)));
-      DeleteByQueryRequest request = new DeleteByQueryRequest(DECISION_INSTANCE_TYPE)
+        .filter(rangeQuery(DecisionInstanceIndex.EVALUATION_DATE_TIME).lt(dateTimeFormatter.format(evaluationDate)));
+      DeleteByQueryRequest request = new DeleteByQueryRequest(DECISION_INSTANCE_INDEX_NAME)
         .setQuery(filterQuery)
         .setAbortOnVersionConflict(false)
         .setRefresh(true);

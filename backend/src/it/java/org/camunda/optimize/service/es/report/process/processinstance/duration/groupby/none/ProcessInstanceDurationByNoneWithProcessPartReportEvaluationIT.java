@@ -43,7 +43,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE_WITH_PART;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.script.Script.DEFAULT_SCRIPT_LANG;
 import static org.hamcrest.CoreMatchers.is;
@@ -288,7 +288,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       "for (event in ctx._source.events) { event.startDate = null }",
       Collections.emptyMap()
     );
-    UpdateByQueryRequest request = new UpdateByQueryRequest(PROC_INSTANCE_TYPE)
+    UpdateByQueryRequest request = new UpdateByQueryRequest(PROCESS_INSTANCE_INDEX_NAME)
       .setAbortOnVersionConflict(false)
       .setQuery(matchAllQuery())
       .setScript(setActivityStartDatesToNull)

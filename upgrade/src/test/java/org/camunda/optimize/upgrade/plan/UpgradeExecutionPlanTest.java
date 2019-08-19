@@ -7,7 +7,7 @@ package org.camunda.optimize.upgrade.plan;
 
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.schema.TypeMappingCreator;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 import org.camunda.optimize.upgrade.service.ValidationService;
 import org.junit.Test;
@@ -26,7 +26,7 @@ public class UpgradeExecutionPlanTest {
   @Test
   public void testGetMappings() {
     final UpgradeExecutionPlan underTest = new UpgradeExecutionPlan();
-    final List<TypeMappingCreator> mappings = underTest.getMappings();
+    final List<IndexMappingCreator> mappings = underTest.getMappings();
 
     assertThat(mappings.size(), is(18));
   }

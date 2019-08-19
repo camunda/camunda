@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.command.decision.frequency;
 
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.INPUTS;
+import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.INPUTS;
 
 public class CountDecisionFrequencyGroupByInputVariableCommand
   extends CountDecisionFrequencyGroupByVariableCommand {

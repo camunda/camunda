@@ -6,47 +6,40 @@
 package org.camunda.optimize.upgrade.steps.schema;
 
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersion;
+
 public class UpdateIndexStep implements UpgradeStep {
-  private final String typeName;
-  private final Integer targetVersion;
-  private final String customMapping;
+  private final IndexMappingCreator index;
+  private final String mappingScript;
 
-  public UpdateIndexStep(final String typeName,
-                         final Integer targetVersion) {
-    this(typeName, targetVersion, null);
-  }
-
-  public UpdateIndexStep(final String typeName,
-                         final Integer targetVersion,
-                         final String customMapping) {
-    this.typeName = typeName;
-    this.targetVersion = targetVersion;
-    this.customMapping = customMapping;
+  public UpdateIndexStep(final IndexMappingCreator index, final String mappingScript) {
+    this.index = index;
+    this.mappingScript = mappingScript;
   }
 
   @Override
   public void execute(final ESIndexAdjuster esIndexAdjuster) {
+    String indexName = index.getIndexName();
+    int targetVersion = index.getVersion();
     final OptimizeIndexNameService indexNameService = esIndexAdjuster.getIndexNameService();
-    final String indexAlias = indexNameService.getOptimizeIndexAliasForType(typeName);
+    final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(indexName);
     String sourceVersionAsString = String.valueOf(targetVersion - 1);
     String targetVersionAsString = String.valueOf(targetVersion);
-    final String sourceIndexName = indexNameService.getOptimizeIndexNameForAliasAndVersion(
+    final String sourceIndexName = getOptimizeIndexNameForAliasAndVersion(
       indexAlias, sourceVersionAsString
     );
-    final String targetIndexName = indexNameService.getOptimizeIndexNameForAliasAndVersion(
+    final String targetIndexName = getOptimizeIndexNameForAliasAndVersion(
       indexAlias, targetVersionAsString
     );
 
-    String indexSettingsAndMappings = esIndexAdjuster.getIndexMappings(sourceIndexName);
-    indexSettingsAndMappings = customMapping != null ? customMapping : indexSettingsAndMappings;
-
     // create new index and reindex data to it
-    esIndexAdjuster.createIndex(targetIndexName, indexSettingsAndMappings);
-    esIndexAdjuster.reindex(sourceIndexName, targetIndexName, typeName, typeName);
-    esIndexAdjuster.addAlias(targetIndexName, indexAlias);
+    esIndexAdjuster.createIndex(index);
+    esIndexAdjuster.reindex(sourceIndexName, targetIndexName, indexName, indexName, mappingScript);
+    esIndexAdjuster.addAlias(index);
     esIndexAdjuster.deleteIndex(sourceIndexName);
   }
 

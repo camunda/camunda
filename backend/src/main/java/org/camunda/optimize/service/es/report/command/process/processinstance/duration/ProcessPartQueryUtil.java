@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.command.process.processinstance.d
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
@@ -70,15 +70,15 @@ public class ProcessPartQueryUtil {
   public static BoolQueryBuilder addProcessPartQuery(BoolQueryBuilder boolQueryBuilder,
                                                      String startFlowNodeId,
                                                      String endFlowNodeId) {
-    String termPath = ProcessInstanceType.EVENTS + "." + ProcessInstanceType.ACTIVITY_ID;
+    String termPath = ProcessInstanceIndex.EVENTS + "." + ProcessInstanceIndex.ACTIVITY_ID;
     boolQueryBuilder.must(nestedQuery(
-      ProcessInstanceType.EVENTS,
+      ProcessInstanceIndex.EVENTS,
       termQuery(termPath, startFlowNodeId),
       ScoreMode.None
                           )
     );
     boolQueryBuilder.must(nestedQuery(
-      ProcessInstanceType.EVENTS,
+      ProcessInstanceIndex.EVENTS,
       termQuery(termPath, endFlowNodeId),
       ScoreMode.None
                           )
@@ -99,10 +99,10 @@ public class ProcessPartQueryUtil {
       .reduceScript(getReduceScript())
       .params(params);
     NestedAggregationBuilder searchThroughTheEvents =
-      nested(NESTED_AGGREGATION, ProcessInstanceType.EVENTS);
+      nested(NESTED_AGGREGATION, ProcessInstanceIndex.EVENTS);
     return
       terms(TERMS_AGGREGATIONS)
-        .field(ProcessInstanceType.PROCESS_INSTANCE_ID)
+        .field(ProcessInstanceIndex.PROCESS_INSTANCE_ID)
         .subAggregation(
           searchThroughTheEvents
             .subAggregation(

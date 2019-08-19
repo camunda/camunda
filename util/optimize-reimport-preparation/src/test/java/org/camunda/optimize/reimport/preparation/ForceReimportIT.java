@@ -45,11 +45,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LICENSE_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LICENSE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -112,9 +112,9 @@ public class ForceReimportIT {
   private boolean hasEngineData() throws IOException {
     List<String> types = new ArrayList<>();
     types.add(TIMESTAMP_BASED_IMPORT_INDEX_TYPE);
-    types.add(IMPORT_INDEX_TYPE);
-    types.add(PROCESS_DEFINITION_TYPE);
-    types.add(PROC_INSTANCE_TYPE);
+    types.add(IMPORT_INDEX_INDEX_NAME);
+    types.add(PROCESS_DEFINITION_INDEX_NAME);
+    types.add(PROCESS_INSTANCE_INDEX_NAME);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(QueryBuilders.matchAllQuery())
@@ -131,7 +131,7 @@ public class ForceReimportIT {
   }
 
   private boolean licenseExists() {
-    GetRequest getRequest = new GetRequest(LICENSE_TYPE, LICENSE_TYPE, LICENSE_TYPE);
+    GetRequest getRequest = new GetRequest(LICENSE_INDEX_NAME, LICENSE_INDEX_NAME, LICENSE_INDEX_NAME);
     GetResponse getResponse;
     try {
       getResponse = elasticSearchRule.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);

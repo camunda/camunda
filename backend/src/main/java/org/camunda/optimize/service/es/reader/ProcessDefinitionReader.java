@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
@@ -32,15 +32,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.ENGINE;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_KEY;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_VERSION;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_XML;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.TENANT_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.ENGINE;
+import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
+import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_VERSION;
+import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
+import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.TENANT_ID;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToValidVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -78,8 +78,8 @@ public class ProcessDefinitionReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
-    SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_TYPE)
-      .types(PROCESS_DEFINITION_TYPE)
+    SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_INDEX_NAME)
+      .types(PROCESS_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -129,8 +129,8 @@ public class ProcessDefinitionReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
-    SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_TYPE)
-      .types(PROCESS_DEFINITION_TYPE)
+    SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_INDEX_NAME)
+      .types(PROCESS_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -157,15 +157,15 @@ public class ProcessDefinitionReader {
   }
 
   public List<ProcessDefinitionOptimizeDto> getFullyImportedProcessDefinitions(final boolean withXml) {
-    final String[] fieldsToExclude = withXml ? null : new String[]{ProcessDefinitionType.PROCESS_DEFINITION_XML};
+    final String[] fieldsToExclude = withXml ? null : new String[]{ProcessDefinitionIndex.PROCESS_DEFINITION_XML};
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(QueryBuilders.existsQuery(ProcessDefinitionType.PROCESS_DEFINITION_XML))
+      .query(QueryBuilders.existsQuery(ProcessDefinitionIndex.PROCESS_DEFINITION_XML))
       .size(LIST_FETCH_LIMIT)
       .fetchSource(null, fieldsToExclude);
     final SearchRequest searchRequest =
-      new SearchRequest(PROCESS_DEFINITION_TYPE)
-        .types(PROCESS_DEFINITION_TYPE)
+      new SearchRequest(PROCESS_DEFINITION_INDEX_NAME)
+        .types(PROCESS_DEFINITION_INDEX_NAME)
         .source(searchSourceBuilder)
         .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
@@ -198,8 +198,8 @@ public class ProcessDefinitionReader {
       .sort(SortBuilders.scriptSort(script, ScriptSortBuilder.ScriptSortType.NUMBER).order(SortOrder.DESC))
       .size(1);
 
-    SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_TYPE)
-      .types(PROCESS_DEFINITION_TYPE)
+    SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_INDEX_NAME)
+      .types(PROCESS_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
