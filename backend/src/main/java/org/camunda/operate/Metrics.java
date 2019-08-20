@@ -8,36 +8,49 @@ package org.camunda.operate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
 import org.springframework.stereotype.Component;
 
-import com.google.common.base.Predicate;
-
-import io.micrometer.core.instrument.Meter.Id;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.config.MeterFilter;
 
 @Component
-public class Metrics implements MeterRegistryCustomizer<MeterRegistry>{
+public class Metrics {
+  
+  // Namespace (prefix) for operate metrics
+  public static final String OPERATE_NAMESPACE = "operate.";
+  
+  // Timers:
+  public static final String TIMER_NAME_QUERY = OPERATE_NAMESPACE+"query";
+  // Counters:
+  public static final String COUNTER_NAME_EVENTS_PROCESSED = "events.processed";
+  public static final String COUNTER_NAME_COMMANDS = "commands";
+  // Tags 
+  // -----
+  //  Keys:
+  public static final String TAG_KEY_NAME = "name",
+                             TAG_KEY_TYPE="type",
+                             TAG_KEY_STATUS = "status";
+  //  Values:
+  public static final String TAG_VALUE_WORKFLOWINSTANCES = "workflowInstances", 
+                             TAG_VALUE_CORESTATISTICS = "corestatistics",
+                             TAG_VALUE_SUCCEEDED="succeeded", 
+                             TAG_VALUE_FAILED="failed";
   
   Logger logger = LoggerFactory.getLogger(Metrics.class);
-
-  public static final String OPERATE_NAMESPACE = "operate.";
-
-  private static Predicate<Id> IS_OPERATE = id -> id.getName().startsWith(OPERATE_NAMESPACE);
   
   @Autowired
   private MeterRegistry registry;
-  
-  @Override
-  public void customize(MeterRegistry registry) {
-    logger.info("Metrics are enabled (only for "+OPERATE_NAMESPACE+"*) meters");
-    registry.config()
-      .meterFilter(MeterFilter.denyUnless(IS_OPERATE));   
-  }
 
-  public void recordCounts(String name, int count, String ... dimensions) {
-    registry.counter(OPERATE_NAMESPACE+name, dimensions).increment(count); 
+  /**
+   * Record counts for given name and tags. Tags are further attributes that gives the possibility to categorize the counter.<br/>
+   * They will be given as varargs key value pairs. For example: "type":"incident"<br/>
+   * Original documentation for tags: <a href="https://micrometer.io/docs/concepts#_tag_naming">Tags naming</a>
+   * 
+   * @param name - Name of counter
+   * @param count - Number to count 
+   * @param dimensions - key value pairs of tags as Strings - The size of tags varargs must be even.
+   */
+  public void recordCounts(String name, int count, String ... tags) {
+    registry.counter(OPERATE_NAMESPACE+name, tags).increment(count); 
   }
  
 }

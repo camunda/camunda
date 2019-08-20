@@ -64,7 +64,7 @@ public class ElasticsearchBulkProcessor {
   Metrics metrics;
 
   public void persistZeebeRecords(List<Record> zeebeRecords, ImportValueType importValueType) throws PersistenceException {
-    metrics.recordCounts("events.processed",zeebeRecords.size(),"type",importValueType.getValueType().name());
+    metrics.recordCounts(Metrics.COUNTER_NAME_EVENTS_PROCESSED,zeebeRecords.size(),Metrics.TAG_KEY_TYPE,importValueType.getValueType().name());
     logger.debug("Writing [{}] Zeebe records to Elasticsearch", zeebeRecords.size());
 
       BulkRequest bulkRequest = new BulkRequest();

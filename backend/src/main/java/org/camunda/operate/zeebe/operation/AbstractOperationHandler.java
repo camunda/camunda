@@ -20,9 +20,6 @@ import org.springframework.util.StringUtils;
 
 public abstract class AbstractOperationHandler implements OperationHandler {
 
-  // Metric signature
-  private static final String COMMANDS = "commands", STATUS = "status", SUCCEEDED="succeeded", FAILED="failed",TYPE="type";
-
   private static final Logger logger = LoggerFactory.getLogger(AbstractOperationHandler.class);
 
   @Autowired
@@ -32,6 +29,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
 
   @Autowired
   protected Metrics metrics;
+  
   @Override
   public void handle(OperationEntity operation) {
     try {
@@ -47,15 +45,15 @@ public abstract class AbstractOperationHandler implements OperationHandler {
   }
   
   protected void recordCommandMetric(final String result,final OperationEntity operation) {
-    metrics.recordCounts(COMMANDS, 1, STATUS,result,TYPE, operation.getType().name()); 
+    metrics.recordCounts(Metrics.COUNTER_NAME_COMMANDS, 1, Metrics.TAG_KEY_STATUS,result,Metrics.TAG_KEY_TYPE, operation.getType().name()); 
   }
   
   protected void recordCommandSucceededMetric(final OperationEntity operation) {
-    recordCommandMetric(SUCCEEDED, operation);
+    recordCommandMetric(Metrics.TAG_VALUE_SUCCEEDED, operation);
   }
   
   protected void recordCommandFailedMetric(final OperationEntity operation) {
-    recordCommandMetric(FAILED, operation);
+    recordCommandMetric(Metrics.TAG_VALUE_FAILED, operation);
   }
 
   protected void failOperation(OperationEntity operation, String errorMsg) throws PersistenceException {

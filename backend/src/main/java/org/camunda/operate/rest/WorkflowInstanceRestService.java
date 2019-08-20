@@ -81,7 +81,7 @@ public class WorkflowInstanceRestService {
 
   @ApiOperation("Query workflow instances by different parameters")
   @PostMapping
-  @Timed(value = Metrics.OPERATE_NAMESPACE+"query",extraTags = {"name","workflowinstances"},description = "How long does it take to retrieve the workflowinstances by query.")
+  @Timed(value = Metrics.TIMER_NAME_QUERY, extraTags = {Metrics.TAG_KEY_NAME, Metrics.TAG_VALUE_WORKFLOWINSTANCES}, description = "How long does it take to retrieve the workflowinstances by query.")
   public ListViewResponseDto queryWorkflowInstances(
       @RequestBody ListViewRequestDto workflowInstanceRequest,
       @RequestParam("firstResult") Integer firstResult,   //required
@@ -164,7 +164,7 @@ public class WorkflowInstanceRestService {
   
   @ApiOperation("Get workflow instance core statistics (aggregations)")
   @GetMapping(path = "/core-statistics")
-  @Timed(value = Metrics.OPERATE_NAMESPACE+"query",extraTags = {"name","corestatistics"},description = "How long does it take to retrieve the core statistics.")
+  @Timed(value = Metrics.TIMER_NAME_QUERY, extraTags = {Metrics.TAG_KEY_NAME,Metrics.TAG_VALUE_CORESTATISTICS},description = "How long does it take to retrieve the core statistics.")
   public WorkflowInstanceCoreStatisticsDto getCoreStatistics() {
     return workflowInstanceReader.getCoreStatistics(); 
   }
