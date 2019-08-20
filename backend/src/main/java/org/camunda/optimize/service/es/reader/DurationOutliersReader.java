@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_DURATION;
@@ -68,8 +69,13 @@ public class DurationOutliersReader {
   private ProcessDefinitionReader processDefinitionReader;
 
 
-  public List<DurationChartEntryDto> getCountByDurationChart(String procDefKey, List<String> procDefVersion, String
-    flowNodeId, String userId, List<String> tenantId) {
+  public List<DurationChartEntryDto> getCountByDurationChart(String procDefKey,
+                                                             List<String> procDefVersion,
+                                                             String flowNodeId,
+                                                             String userId,
+                                                             List<String> tenantId,
+                                                             Long lowerOutlierBound,
+                                                             Long higherOutlierBound) {
     if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, tenantId)) {
       throw new ForbiddenException("Current user is not authorized to access data of the provided tenant");
     }
@@ -108,12 +114,20 @@ public class DurationOutliersReader {
       throw new OptimizeRuntimeException(e.getMessage());
     }
 
-
     return ((Histogram) ((Filter) ((Nested) search.getAggregations().get(EVENTS)).getAggregations()
       .get(FILTERED_FLOW_NODES_AGG)).getAggregations().get(HISTOGRAM_AGG)).getBuckets()
       .stream()
-      .map(b -> new DurationChartEntryDto(b.getKeyAsString(), b.getDocCount()))
+      .map(b -> {
+        final Long durationKey = Double.valueOf(b.getKeyAsString()).longValue();
+        return new DurationChartEntryDto(durationKey, b.getDocCount(), isOutlier(lowerOutlierBound, higherOutlierBound, durationKey)
+        );
+      })
       .collect(Collectors.toList());
+  }
+
+  private boolean isOutlier(final Long lowerOutlierBound, final Long higherOutlierBound, final Long durationValue) {
+    return Optional.ofNullable(lowerOutlierBound).map(value -> durationValue <= value).orElse(false)
+      || Optional.ofNullable(higherOutlierBound).map(value -> durationValue >= value).orElse(false);
   }
 
   private long getInterval(BoolQueryBuilder query, String flowNodeId) {
@@ -218,8 +232,8 @@ public class DurationOutliersReader {
       ExtendedStats statsAgg = bucket.getAggregations().get(STATS_AGG);
       FindingsDto finding = new FindingsDto();
 
-      double stdDeviationBoundLower = statsAgg.getStdDeviationBound(ExtendedStats.Bounds.LOWER);
-      double stdDeviationBoundHigher = statsAgg.getStdDeviationBound(ExtendedStats.Bounds.UPPER);
+      Double stdDeviationBoundLower = statsAgg.getStdDeviationBound(ExtendedStats.Bounds.LOWER);
+      Double stdDeviationBoundHigher = statsAgg.getStdDeviationBound(ExtendedStats.Bounds.UPPER);
       double avg = statsAgg.getAvg();
 
       double[] values = {stdDeviationBoundHigher, stdDeviationBoundLower};
@@ -246,19 +260,25 @@ public class DurationOutliersReader {
         throw new OptimizeRuntimeException(e.getMessage());
       }
       PercentileRanks ranks = ((Filter) (((Nested) singleNodeAggregation.get(EVENTS)).getAggregations()
-          .get(FILTERED_FLOW_NODES_AGG))).getAggregations().get(RANKS_AGG);
+        .get(FILTERED_FLOW_NODES_AGG))).getAggregations().get(RANKS_AGG);
 
       if (stdDeviationBoundLower > statsAgg.getMin()) {
         double percent = ranks.percent(stdDeviationBoundLower);
         finding.setLowerOutlier(
-          percent, avg / stdDeviationBoundLower, Math.round(statsAgg.getCount() * 0.01 * percent)
+          stdDeviationBoundLower.longValue(),
+          percent,
+          avg / stdDeviationBoundLower,
+          Math.round(statsAgg.getCount() * 0.01 * percent)
         );
       }
 
       if (stdDeviationBoundHigher < statsAgg.getMax()) {
         double percent = ranks.percent(stdDeviationBoundHigher);
         finding.setHigherOutlier(
-          100 - percent, stdDeviationBoundHigher / avg, Math.round(statsAgg.getCount() * 0.01 * (100 - percent))
+          stdDeviationBoundHigher.longValue(),
+          100 - percent,
+          stdDeviationBoundHigher / avg,
+          Math.round(statsAgg.getCount() * 0.01 * (100 - percent))
         );
       }
 

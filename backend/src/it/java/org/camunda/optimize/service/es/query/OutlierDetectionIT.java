@@ -23,7 +23,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -47,6 +46,7 @@ public class OutlierDetectionIT {
 
   @Test
   public void outlierDetectionNormalDistribution() throws SQLException {
+    // given
     ProcessDefinitionEngineDto processDefinition =
       engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance("testActivity1", "testActivity2"));
 
@@ -60,14 +60,19 @@ public class OutlierDetectionIT {
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
     HashMap<String, FindingsDto> outlierTest = embeddedOptimizeRule.getRequestExecutor()
       .buildFlowNodeOutliersRequest("outlierTest", Collections.singletonList("1"), Collections.singletonList(null))
       .execute(new TypeReference<HashMap<String, FindingsDto>>() {
       });
 
+    // then
     // assuming normal distribution, left and right outliers should be of the same percentile
     final FindingsDto activity1Findings = outlierTest.get("testActivity1");
     final FindingsDto activity2Findings = outlierTest.get("testActivity2");
+    assertThat(activity1Findings.getHigherOutlier().getBoundValue(), is(39486L));
+    assertThat(activity1Findings.getLowerOutlier().getBoundValue(), is(513L));
     assertThat(
       activity1Findings.getHigherOutlier().getPercentile(),
       closeTo(activity1Findings.getLowerOutlier().getPercentile(), 0.00001)
@@ -82,6 +87,7 @@ public class OutlierDetectionIT {
 
   @Test
   public void noOutliersFoundTest() throws SQLException {
+    // given
     ProcessDefinitionEngineDto processDefinition =
       engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance("testActivity"));
 
@@ -95,16 +101,20 @@ public class OutlierDetectionIT {
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
     HashMap<String, FindingsDto> outlierTest = embeddedOptimizeRule.getRequestExecutor()
       .buildFlowNodeOutliersRequest("outlierTest", Collections.singletonList("1"), Collections.singletonList(null))
       .execute(new TypeReference<HashMap<String, FindingsDto>>() {
       });
 
+    // then
     assertThat(outlierTest.get("testActivity").getOutlierCount(), is(0L));
   }
 
   @Test
   public void durationChartNormalDistributionTest() throws SQLException {
+    // given
     ProcessDefinitionEngineDto processDefinition =
       engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance("chartTestActivity"));
 
@@ -118,12 +128,17 @@ public class OutlierDetectionIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
-    List<String> list = new ArrayList<>();
-    list.add("1");
-    list.add("2");
+    // when
     List<DurationChartEntryDto> durationChart = embeddedOptimizeRule.getRequestExecutor()
-      .buildFlowNodeDurationChartRequest("outlierTest", list, "chartTestActivity", Collections.singletonList(null))
+      .buildFlowNodeDurationChartRequest(
+        "outlierTest",
+        Collections.singletonList("1"),
+        "chartTestActivity",
+        Collections.singletonList(null)
+      )
       .executeAndReturnList(DurationChartEntryDto.class, 200);
+
+    // then
     for (int i = 0; i < durationChart.size() / 2; i++) {
       assertThat(durationChart.get(i).getValue() <= durationChart.get(i + 1).getValue(), is(true));
     }
@@ -133,7 +148,47 @@ public class OutlierDetectionIT {
   }
 
   @Test
-  public void durationChartTest() throws SQLException {
+  public void durationChartNormalDistributionWithOutlierMarkingTest() throws SQLException {
+    // given
+    ProcessDefinitionEngineDto processDefinition =
+      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance("chartTestActivity"));
+
+    startPIsDistributedByDuration(
+      processDefinition,
+      new Gaussian(NUMBER_OF_DATAPOINTS / 2, 12),
+      NUMBER_OF_DATAPOINTS,
+      "chartTestActivity"
+    );
+    final long lowerOutlierBound = 513L;
+    final long higherOutlierBound = 39486L;
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    List<DurationChartEntryDto> durationChart = embeddedOptimizeRule.getRequestExecutor()
+      .buildFlowNodeDurationChartRequest(
+        "outlierTest",
+        Collections.singletonList("1"),
+        "chartTestActivity",
+        Collections.singletonList(null),
+        lowerOutlierBound,
+        higherOutlierBound
+      )
+      .executeAndReturnList(DurationChartEntryDto.class, 200);
+
+    // then
+    for (int i = 0; i < durationChart.size() / 2; i++) {
+      assertThat(durationChart.get(i).isOutlier(), is(durationChart.get(i).getKey() <= lowerOutlierBound));
+    }
+    for (int i = durationChart.size() / 2; i < durationChart.size(); i++) {
+      assertThat(durationChart.get(i).isOutlier(), is(durationChart.get(i).getKey() >= higherOutlierBound));
+    }
+  }
+
+  @Test
+  public void durationChartOnePerBucketTest() throws SQLException {
+    // given
     ProcessDefinitionEngineDto processDefinition =
       engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance("chartTestActivity"));
 
@@ -145,6 +200,7 @@ public class OutlierDetectionIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
+    // when
     List<DurationChartEntryDto> durationChart = embeddedOptimizeRule.getRequestExecutor()
       .buildFlowNodeDurationChartRequest(
         "outlierTest",
@@ -154,6 +210,7 @@ public class OutlierDetectionIT {
       )
       .executeAndReturnList(DurationChartEntryDto.class, 200);
 
+    // then
     assertThat(durationChart.get(0).getValue(), is(1L));
     assertThat(durationChart.stream().allMatch(e -> e.getValue().equals(durationChart.get(0).getValue())), is(true));
 

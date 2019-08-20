@@ -81,7 +81,9 @@ public class AnalysisRestService {
                                                              @QueryParam("processDefinitionKey") String processDefinitionKey,
                                                              @QueryParam("processDefinitionVersions") List<String> processDefinitionVersions,
                                                              @QueryParam("tenantIds") List<String> tenantIds,
-                                                             @QueryParam("flowNodeId") String flowNodeId) {
+                                                             @QueryParam("flowNodeId") String flowNodeId,
+                                                             @QueryParam("lowerOutlierBound") Long lowerOutlierBound,
+                                                             @QueryParam("higherOutlierBound") Long higherOutlierBound) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     List<String> normalizedTenants = normalizeTenants(tenantIds);
     return durationOutliersReader.getCountByDurationChart(
@@ -89,7 +91,9 @@ public class AnalysisRestService {
       processDefinitionVersions,
       flowNodeId,
       userId,
-      normalizedTenants
+      normalizedTenants,
+      lowerOutlierBound,
+      higherOutlierBound
     );
   }
 

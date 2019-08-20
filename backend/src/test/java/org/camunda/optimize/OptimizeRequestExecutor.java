@@ -787,12 +787,23 @@ public class OptimizeRequestExecutor {
                                                                    List<String> version,
                                                                    String flowNodeId,
                                                                    List<String> tenantIds) {
+    return buildFlowNodeDurationChartRequest(key, version, flowNodeId, tenantIds, null, null);
+  }
+
+  public OptimizeRequestExecutor buildFlowNodeDurationChartRequest(String key,
+                                                                   List<String> version,
+                                                                   String flowNodeId,
+                                                                   List<String> tenantIds,
+                                                                   Long lowerOutlierBound,
+                                                                   Long higherOutlierBound) {
     this.path = "analysis/durationChart";
     this.requestType = GET;
     this.addSingleQueryParam("processDefinitionKey", key);
     this.addSingleQueryParam("processDefinitionVersions", version);
     this.addSingleQueryParam("flowNodeId", flowNodeId);
     this.addSingleQueryParam("tenantIds", tenantIds);
+    this.addSingleQueryParam("lowerOutlierBound", lowerOutlierBound);
+    this.addSingleQueryParam("higherOutlierBound", higherOutlierBound);
     return this;
   }
 

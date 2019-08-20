@@ -17,12 +17,12 @@ public class FindingsDto {
   private Finding higherOutlier;
   private Double heat;
 
-  public void setLowerOutlier(Double percentile, Double relation, Long count) {
-    this.lowerOutlier = new Finding(percentile, relation, count);
+  public void setLowerOutlier(Long boundValue, Double percentile, Double relation, Long count) {
+    this.lowerOutlier = new Finding(boundValue, percentile, relation, count);
   }
 
-  public void setHigherOutlier(Double percentile, Double relation, Long count) {
-    this.higherOutlier = new Finding(percentile, relation, count);
+  public void setHigherOutlier(Long boundValue, Double percentile, Double relation, Long count) {
+    this.higherOutlier = new Finding(boundValue, percentile, relation, count);
   }
 
   public Long getOutlierCount() {
@@ -34,6 +34,7 @@ public class FindingsDto {
   @NoArgsConstructor
   @AllArgsConstructor
   public class Finding {
+    private Long boundValue;
     private Double percentile;
     private Double relation;
     private Long count = 0L;
