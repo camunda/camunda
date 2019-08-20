@@ -26,6 +26,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
+import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.service.es.report.command.process.util.GroupByDateVariableIntervalSelection.createDateVariableAggregation;
 import static org.camunda.optimize.service.es.report.command.util.IntervalAggregationService.RANGE_AGGREGATION;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
@@ -42,6 +44,8 @@ import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariab
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.reverseNested;
 
 public abstract class CountDecisionFrequencyGroupByVariableCommand
   extends DecisionReportCommand<SingleDecisionMapReportResult> {
@@ -49,6 +53,8 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
   private static final String NESTED_AGGREGATION = "nested";
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
   private static final String VARIABLE_VALUE_AGGREGATION = "variableValues";
+  private static final String FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION = "filteredProcInstCount";
+
 
   private final String variablePath;
 
@@ -119,13 +125,15 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
     return AggregationBuilders
       .nested(NESTED_AGGREGATION, variablePath)
       .subAggregation(
-        AggregationBuilders
-          .filter(
-            FILTERED_VARIABLES_AGGREGATION,
-            boolQuery().filter(termQuery(getVariableClauseIdField(variablePath), variableClauseId))
-          )
+        filter(
+          FILTERED_VARIABLES_AGGREGATION,
+          boolQuery().filter(termQuery(getVariableClauseIdField(variablePath), variableClauseId))
+        )
           .subAggregation(
             createVariableSubAggregation(variableClauseId, variableType)
+          )
+          .subAggregation(
+            reverseNested(FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION)
           )
       );
   }
@@ -153,6 +161,7 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
     return variableAggregation;
   }
 
+
   private DecisionReportMapResultDto mapToReportResult(final SearchResponse response) {
     final DecisionReportMapResultDto resultDto = new DecisionReportMapResultDto();
 
@@ -167,6 +176,17 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
     final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
     for (MultiBucketsAggregation.Bucket b : variableTerms.getBuckets()) {
       resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), b.getDocCount()));
+    }
+
+    final ReverseNested filteredProcessInstAggr = filteredVariables.getAggregations()
+      .get(FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION);
+    final long filteredProcInstCount = filteredProcessInstAggr.getDocCount();
+
+    if (response.getHits().getTotalHits() > filteredProcInstCount) {
+      resultData.add(new MapResultEntryDto<>(
+        MISSING_VARIABLE_KEY,
+        response.getHits().getTotalHits() - filteredProcInstCount
+      ));
     }
 
     resultDto.setData(resultData);

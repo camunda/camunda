@@ -61,6 +61,10 @@ public abstract class DecisionVariableQueryFilter implements QueryFilter<Variabl
 
   private QueryBuilder createFilterQueryBuilder(VariableFilterDataDto dto) {
     ValidationHelper.ensureNotNull("Variable filter data", dto.getData());
+    if (dto.isFilterForUndefined()) {
+      return createFilterUndefinedQueryBuilder(dto);
+    }
+
     QueryBuilder queryBuilder = matchAllQuery();
     switch (dto.getType()) {
       case BOOLEAN:
@@ -219,6 +223,14 @@ public abstract class DecisionVariableQueryFilter implements QueryFilter<Variabl
     );
   }
 
+  private QueryBuilder createFilterUndefinedQueryBuilder(VariableFilterDataDto dto) {
+    return boolQuery().mustNot(nestedQuery(
+      getVariablePath(),
+      termQuery(getVariableIdField(), dto.getName()),
+      ScoreMode.None
+    ));
+  }
+
   private RangeQueryBuilder createRangeQuery(DateVariableFilterDataDto dto) {
     ValidationHelper.ensureAtLeastOneNotNull(
       "date filter date value", dto.getData().getStart(), dto.getData().getEnd()
@@ -249,6 +261,7 @@ public abstract class DecisionVariableQueryFilter implements QueryFilter<Variabl
     switch (dto.getType()) {
       default:
       case STRING:
+      case DATE:
         return value;
       case INTEGER:
         return Integer.parseInt(value);
@@ -258,8 +271,6 @@ public abstract class DecisionVariableQueryFilter implements QueryFilter<Variabl
         return Short.parseShort(value);
       case DOUBLE:
         return Double.parseDouble(value);
-      case DATE:
-        return value;
     }
   }
 

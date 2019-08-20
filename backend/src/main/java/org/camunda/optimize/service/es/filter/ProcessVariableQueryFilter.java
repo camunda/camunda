@@ -287,7 +287,7 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
   private QueryBuilder createFilterUndefinedQueryBuilder(VariableFilterDataDto dto) {
     return boolQuery().mustNot(nestedQuery(
       VARIABLES,
-      termsQuery(getNestedVariableNameField(), dto.getName()),
+      termQuery(getNestedVariableNameField(), dto.getName()),
       ScoreMode.None
     ));
   }

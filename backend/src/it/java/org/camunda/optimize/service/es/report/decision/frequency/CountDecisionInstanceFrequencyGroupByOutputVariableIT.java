@@ -29,6 +29,7 @@ import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -579,6 +580,48 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     );
   }
 
+  @Test
+  public void missingVariablesAggregationForUndefinedAndNullOutputVariables() {
+    // given
+    final String outputClauseId = "Donald";
+    final String camInputVariable = "input";
+
+    final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleOutputDecisionDefinition(
+      outputClauseId,
+      camInputVariable,
+      "testValidMatch",
+      DecisionTypeRef.STRING
+    );
+
+    engineRule.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      ImmutableMap.of(camInputVariable, "testValidMatch")
+    );
+    engineRule.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      ImmutableMap.of(camInputVariable, "testNullValue")
+    );
+    engineRule.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      Collections.singletonMap(camInputVariable, null)
+    );
+
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
+      decisionDefinitionDto, decisionDefinitionDto.getVersionAsString(), outputClauseId, null, VariableType.STRING
+    ).getResult();
+
+
+    // then
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(2));
+    assertThat(result.getEntryForKey("testValidMatch").get().getValue(), is(1L));
+    assertThat(result.getEntryForKey("missing").get().getValue(), is(2L));
+  }
 
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() {

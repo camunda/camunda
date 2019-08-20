@@ -34,6 +34,7 @@ import org.junit.runner.RunWith;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -629,6 +630,53 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
   }
 
+
+  @Test
+  public void missingVariablesAggregationForUndefinedAndNullOutputVariables() {
+    // given
+    final String inputClauseId = "TestyTest";
+    final String camInputVariable = "putIn";
+
+    final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleInputDecisionDefinition(
+      inputClauseId,
+      camInputVariable,
+      DecisionTypeRef.STRING
+    );
+    engineRule.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      ImmutableMap.of(camInputVariable, "testValidMatch")
+    );
+    engineRule.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      ImmutableMap.of(camInputVariable, "whateverElse")
+    );
+    engineRule.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      Collections.singletonMap(camInputVariable, null)
+    );
+    engineRule.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      Collections.singletonMap(camInputVariable, null)
+    );
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+      decisionDefinitionDto, decisionDefinitionDto.getVersionAsString(), inputClauseId, null, VariableType.STRING
+    ).getResult();
+
+
+    // then
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(3));
+    assertThat(result.getEntryForKey("testValidMatch").get().getValue(), is(1L));
+    assertThat(result.getEntryForKey("whateverElse").get().getValue(), is(1L));
+    assertThat(result.getEntryForKey("missing").get().getValue(), is(2L));
+  }
+
+
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
@@ -671,17 +719,6 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       .findFirst()
       .ifPresent(drgElement -> drgElement.setId(key));
     return engineRule.deployDecisionDefinition(dmnModelInstance);
-  }
-
-  private DecisionDefinitionEngineDto deploySimpleInputDecisionDefinition(final String inputClauseId,
-                                                                          final String camInputVariable,
-                                                                          final DecisionTypeRef inputType) {
-    final DmnModelGenerator dmnModelGenerator = DmnModelGenerator.create()
-      .decision()
-      .addInput("input", inputClauseId, camInputVariable, inputType)
-      .addOutput("output", DecisionTypeRef.STRING)
-      .buildDecision();
-    return engineRule.deployDecisionDefinition(dmnModelGenerator.build());
   }
 
   private DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(

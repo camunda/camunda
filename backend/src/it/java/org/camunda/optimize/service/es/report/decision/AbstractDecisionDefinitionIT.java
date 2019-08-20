@@ -20,6 +20,8 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.decision.DecisionTypeRef;
+import org.camunda.optimize.test.util.decision.DmnModelGenerator;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
@@ -120,6 +122,33 @@ public abstract class AbstractDecisionDefinitionIT {
     return engineRule.deployDecisionDefinition(dmnModelInstance, tenantId);
   }
 
+  protected DecisionDefinitionEngineDto deploySimpleInputDecisionDefinition(final String inputClauseId,
+                                                                            final String camInputVariable,
+                                                                            final DecisionTypeRef inputType) {
+    final DmnModelGenerator dmnModelGenerator = DmnModelGenerator.create()
+      .decision()
+      .addInput("input", inputClauseId, camInputVariable, inputType)
+      .addOutput("output", DecisionTypeRef.STRING)
+      .buildDecision();
+    return engineRule.deployDecisionDefinition(dmnModelGenerator.build());
+  }
+
+  protected DecisionDefinitionEngineDto deploySimpleOutputDecisionDefinition(final String outputClauseId,
+                                                                             final String camInputVariable,
+                                                                             final String ruleExpression,
+                                                                             final DecisionTypeRef type) {
+    final DmnModelGenerator dmnModelGenerator = DmnModelGenerator.create()
+      .decision()
+      .addInput("input", camInputVariable, type)
+      .addOutput("output", outputClauseId, camInputVariable, type)
+      .rule()
+      .addStringInputEntry(type == DecisionTypeRef.STRING ? String.format("'%s'", ruleExpression) : ruleExpression)
+      .addStringOutputEntry(camInputVariable)
+      .buildRule()
+      .buildDecision();
+    return engineRule.deployDecisionDefinition(dmnModelGenerator.build());
+  }
+
   protected HashMap<String, InputVariableEntry> createInputs(final double amountValue,
                                                              final String category) {
     return new HashMap<String, InputVariableEntry>() {{
@@ -131,7 +160,8 @@ public abstract class AbstractDecisionDefinitionIT {
     }};
   }
 
-  protected HashMap<String, InputVariableEntry> createInputsWithDate(final double amountValue, final String invoiceDateTime) {
+  protected HashMap<String, InputVariableEntry> createInputsWithDate(final double amountValue,
+                                                                     final String invoiceDateTime) {
     final HashMap<String, InputVariableEntry> inputs = createInputs(amountValue, "Misc");
     inputs.put(
       INPUT_INVOICE_DATE_ID,

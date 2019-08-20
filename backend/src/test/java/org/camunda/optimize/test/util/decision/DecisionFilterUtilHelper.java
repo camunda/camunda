@@ -16,9 +16,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DoubleVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 
 import java.time.OffsetDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 
 public class DecisionFilterUtilHelper {
 
@@ -47,6 +49,7 @@ public class DecisionFilterUtilHelper {
 
     return filter;
   }
+
 
   public static InputVariableFilterDto createStringInputVariableFilter(String variableName, String operator,
                                                                        String... variableValues) {
@@ -100,6 +103,14 @@ public class DecisionFilterUtilHelper {
     variableFilterDto.setData(data);
 
     return variableFilterDto;
+  }
+
+
+  public static VariableFilterDataDto createUndefinedVariableFilterData(String variableName) {
+    VariableFilterDataDto data = new StringVariableFilterDataDto("whatever", Collections.emptyList());
+    data.setName(variableName);
+    data.setFilterForUndefined(true);
+    return data;
   }
 
 }

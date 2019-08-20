@@ -5,19 +5,26 @@
  */
 package org.camunda.optimize.service.es.filter.decision;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.InputVariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.OutputVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.service.es.filter.FilterOperatorConstants;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.junit.Test;
+
+import java.util.Collections;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createStringInputVariableFilter;
+import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createUndefinedVariableFilterData;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -145,6 +152,95 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
     );
   }
 
+  @Test
+  public void filterInputVariableForUndefined() {
+    // given
+    final String inputClauseId = "TestyTest";
+    final String camInputVariable = "putIn";
+
+    final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleInputDecisionDefinition(
+      inputClauseId,
+      camInputVariable,
+      DecisionTypeRef.STRING
+    );
+    engineRule.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      ImmutableMap.of(camInputVariable, "testValidMatch")
+    );
+    engineRule.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      ImmutableMap.of(camInputVariable, "whateverElse")
+    );
+    engineRule.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      Collections.singletonMap(camInputVariable, null)
+    );
+    engineRule.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      Collections.singletonMap(camInputVariable, null)
+    );
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
+
+    InputVariableFilterDto variableFilterDto = new InputVariableFilterDto();
+    variableFilterDto.setData(createUndefinedVariableFilterData(inputClauseId));
+
+    reportData.setFilter(Collections.singletonList(variableFilterDto));
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+
+
+    // then
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(2));
+  }
+
+  @Test
+  public void filterOutputVariableForUndefined() {
+    // given
+    final String outputClauseId = "TestOutput";
+    final String camInputVariable = "input";
+
+    final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleOutputDecisionDefinition(
+      outputClauseId,
+      camInputVariable,
+      "testValidMatch",
+      DecisionTypeRef.STRING
+    );
+
+    engineRule.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      ImmutableMap.of(camInputVariable, "testValidMatch")
+    );
+    engineRule.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      ImmutableMap.of(camInputVariable, "noMatchingOutputValue")
+    );
+    engineRule.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      Collections.singletonMap(camInputVariable, null)
+    );
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
+
+    OutputVariableFilterDto variableFilterDto = new OutputVariableFilterDto();
+    variableFilterDto.setData(createUndefinedVariableFilterData(outputClauseId));
+
+    reportData.setFilter(Collections.singletonList(variableFilterDto));
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
+
+    // then
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(2));
+  }
+
   private DecisionReportDataDto createReportWithAllVersionSet(DecisionDefinitionEngineDto decisionDefinitionDto) {
     return DecisionReportDataBuilder
       .create()
@@ -153,5 +249,4 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       .setReportDataType(DecisionReportDataType.RAW_DATA)
       .build();
   }
-
 }
