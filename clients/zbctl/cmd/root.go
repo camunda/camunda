@@ -34,7 +34,11 @@ var client zbc.ZBClient
 
 var addressFlag string
 var caCertPathFlag string
-var credsPathFlag string
+var useOAuthFlag bool
+var clientIdFlag string
+var clientSecretFlag string
+var audienceFlag string
+var authzUrlFlag string
 var insecureFlag bool
 
 var rootCmd = &cobra.Command{
@@ -58,9 +62,14 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&addressFlag, "address", "", "Specify the Zeebe addressFlag")
+	rootCmd.PersistentFlags().StringVar(&addressFlag, "address", "", "Specify a contact point address")
 	rootCmd.PersistentFlags().StringVar(&caCertPathFlag, "certPath", "", "Specify a path to a certificate with which to validate gateway requests")
-	rootCmd.PersistentFlags().StringVar(&credsPathFlag, "credsPath", "", "Specify a path to a Zeebe credentials file")
+	rootCmd.PersistentFlags().BoolVar(&useOAuthFlag, "useOAuth", false, "Specify if OAuth credentials should be used. Automatically enabled if "+
+		"at least one of the following is provided:\n  * clientId\n  * clientSecret\n  * audience\n  * authzUrl")
+	rootCmd.PersistentFlags().StringVar(&clientIdFlag, "clientId", "", "Specify a client identifier to request an access token. Can be overridden by the environment variable 'ZEEBE_CLIENT_ID'")
+	rootCmd.PersistentFlags().StringVar(&clientSecretFlag, "clientSecret", "", "Specify a client secret to request an access token. Can be overridden by the environment variable 'ZEEBE_CLIENT_SECRET'")
+	rootCmd.PersistentFlags().StringVar(&audienceFlag, "audience", "", "Specify the resource that the access token should be valid for. Can be overridden by the environment variable 'ZEEBE_TOKEN_AUDIENCE'")
+	rootCmd.PersistentFlags().StringVar(&authzUrlFlag, "authzUrl", "", "Specify an authorization server URL from which to request an access token. Can be overridden by the environment variable 'ZEEBE_AUTHORIZATION_SERVER_URL'")
 	rootCmd.PersistentFlags().BoolVar(&insecureFlag, "insecure", false, "Specify if zbctl should use an unsecured connection")
 }
 
@@ -102,11 +111,16 @@ func parseAddress() string {
 }
 
 func parseCredentials() (credsProvider zbc.CredentialsProvider, err error) {
-	if credsPathFlag == "" {
-		return nil, nil
+	if useOAuthFlag || clientIdFlag != "" || clientSecretFlag != "" || audienceFlag != "" || authzUrlFlag != "" {
+		return zbc.NewOAuthCredentialsProvider(&zbc.OAuthProviderConfig{
+			ClientId:               clientIdFlag,
+			ClientSecret:           clientSecretFlag,
+			Audience:               audienceFlag,
+			AuthorizationServerUrl: authzUrlFlag,
+		})
 	}
 
-	return zbc.NewZeebeClientCredentialsProvider(credsPathFlag)
+	return nil, nil
 }
 
 func keyArg(key *int64) cobra.PositionalArgs {
