@@ -9,17 +9,10 @@
     <format>zip</format>
   </formats>
 
-  <includeBaseDirectory>false</includeBaseDirectory>
+  <baseDirectory>camunda-operate-${project.version}</baseDirectory>
+  <includeBaseDirectory>true</includeBaseDirectory>
 
   <dependencySets>
-
-    <dependencySet>
-      <outputDirectory>server/</outputDirectory>
-      <includes>
-        <include>org.elasticsearch.distribution.zip:elasticsearch-oss:zip</include>
-      </includes>
-      <unpack>true</unpack>
-    </dependencySet>
 
     <dependencySet>
       <outputDirectory>lib/</outputDirectory>
