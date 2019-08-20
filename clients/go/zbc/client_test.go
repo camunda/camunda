@@ -137,7 +137,7 @@ func TestNewZBClientWithPathToNonExistingFile(t *testing.T) {
 	})
 
 	// then
-	require.Error(t, errors.Cause(err), FileNotFoundError)
+	require.EqualValues(t, FileNotFoundError, errors.Cause(err))
 }
 
 func createSecureServer() (net.Listener, *grpc.Server) {

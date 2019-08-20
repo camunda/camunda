@@ -15,13 +15,15 @@
 package zbc
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"github.com/go-ozzo/ozzo-validation"
+	"github.com/go-ozzo/ozzo-validation/is"
+	"github.com/pkg/errors"
 	"io/ioutil"
-	"log"
+	"net/http"
 	"os"
-	"strings"
-
-	"gopkg.in/yaml.v2"
 )
 
 // CredentialsProvider is responsible for adding credentials to each gRPC call's headers.
@@ -30,75 +32,117 @@ type CredentialsProvider interface {
 	ApplyCredentials(headers map[string]string)
 }
 
-// A built-in CredentialsProvider that expects a path to a Zeebe credentials YAML file containing a prefix and an
-// access token. Using these values it sets the 'Authorization' header of each gRPC call.
-//
-// The (current) specification for the Zeebe credentials file is as follows:
-//	endpoint:
-//		auth:
-//			credentials:
-//				access_token: <token>,
-//				token_type: <prefix>,
-type ZeebeClientCredentialsProvider struct {
-	zeebeCredentialsPath string
+// A built-in CredentialsProvider that contains contains credentials obtained from an OAuth authorization server,
+// including a token prefix and an access token. Using these values it sets the 'Authorization' header of each gRPC call.
+type OAuthCredentialsProvider struct {
+	Credentials *OauthCredentials
 }
 
-type zeebeClientCredentials struct {
-	Endpoint struct {
-		Auth struct {
-			Credentials struct {
-				AccessToken string `yaml:"access_token"`
-				ExpiresIn   string `yaml:"expires_in"`
-				TokenType   string `yaml:"token_type"`
-			}
-		}
-	}
+// Configuration data for the OAuthCredentialsProvider, containing the required data to request an access token from
+// an OAuth authorization server which will be appended to each gRPC call's headers.
+type OAuthProviderConfig struct {
+	// The client identifier used to request an access token. Can be overridden with the environment variable 'ZEEBE_CLIENT_ID'.
+	ClientId string
+	// The client secret used to request an access token. Can be overridden with the environment variable 'ZEEBE_CLIENT_SECRET'.
+	ClientSecret string
+	// The audience to which the access token will be sent. Can be overridden with the environment variable 'ZEEBE_TOKEN_AUDIENCE'.
+	Audience string
+	// The URL for the authorization server from which the access token will be requested. Can be overridden with
+	// the environment variable 'ZEEBE_AUTHORIZATION_SERVER_URL'.
+	AuthorizationServerUrl string
+}
+
+type OauthCredentials struct {
+	AccessToken string `json:"access_token"`
+	ExpiresIn   uint64 `json:"expires_in"`
+	TokenType   string `json:"token_type"`
+	Scope       string `json:"scope"`
+}
+
+type oauthRequestPayload struct {
+	ClientId     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+	Audience     string `json:"audience"`
+	GrantType    string `json:"grant_type"`
 }
 
 // Takes a map of headers as input and adds an access token prefixed by a token type to the 'Authorization'
-// header of a gRPC call. The access token and the token type are obtained from a Zeebe credentials YAML file that
-// should be found at the provided zeebeCredentialsPath.
-//
-// To use this with a JSON Web Token (JWT), the Zeebe credentials file would look like:
-//	endpoint:
-//		auth:
-//			credentials:
-//				access_token: jjjjj.wwwww.ttttt,
-//				token_type: Bearer,
-func (provider *ZeebeClientCredentialsProvider) ApplyCredentials(headers map[string]string) {
-	file, err := os.Open(provider.zeebeCredentialsPath)
-	if err != nil {
-		log.Fatalf("Failed to open the zeebe credentials file: %s", err)
-	}
-
-	bytes, err := ioutil.ReadAll(file)
-	if err != nil {
-		log.Fatalf("Failed to read the zeebe credentials file: %s", err)
-
-	}
-
-	zbCreds := &zeebeClientCredentials{}
-
-	if err = yaml.Unmarshal(bytes, zbCreds); err != nil {
-		log.Fatalf("Failed to unmarshal the zeebe credentials file from YAML: %s", err)
-	}
-
-	tokenType := strings.TrimSpace(zbCreds.Endpoint.Auth.Credentials.TokenType)
-	token := strings.TrimSpace(zbCreds.Endpoint.Auth.Credentials.AccessToken)
-
-	headers["Authorization"] = fmt.Sprintf("%s %s", tokenType, token)
+// header of a gRPC call.
+func (provider *OAuthCredentialsProvider) ApplyCredentials(headers map[string]string) {
+	headers["Authorization"] = fmt.Sprintf("%s %s", provider.Credentials.TokenType, provider.Credentials.AccessToken)
 }
 
-// Creates a ZeebeClientCredentialsProvider with a path to the Zeebe credentials YAML file.
-func NewZeebeClientCredentialsProvider(zeebeCredentialsPath string) (*ZeebeClientCredentialsProvider, error) {
-	if zeebeCredentialsPath == "" {
-		return nil, invalidPathError("Zeebe credentials file")
+// Requests credentials from an authorization server which are then used to create an OAuthCredentialsProvider.
+func NewOAuthCredentialsProvider(config *OAuthProviderConfig) (*OAuthCredentialsProvider, error) {
+	applyEnvironmentOverrides(config)
+
+	if err := validation.Validate(config.AuthorizationServerUrl, validation.Required, is.URL); err != nil {
+		return nil, invalidArgumentError("authorization server URL", err.Error())
+	} else if err := validation.Validate(config.ClientId, validation.Required); err != nil {
+		return nil, invalidArgumentError("client ID", err.Error())
+	} else if err := validation.Validate(config.ClientSecret, validation.Required); err != nil {
+		return nil, invalidArgumentError("client secret", err.Error())
+	} else if err := validation.Validate(config.Audience, validation.Required); err != nil {
+		return nil, invalidArgumentError("audience", err.Error())
 	}
 
-	if _, err := os.Stat(zeebeCredentialsPath); err != nil {
-		return nil, fileNotFoundError("Zeebe credentials file", zeebeCredentialsPath)
-
+	payload := &oauthRequestPayload{
+		ClientId:     config.ClientId,
+		ClientSecret: config.ClientSecret,
+		Audience:     config.Audience,
+		GrantType:    "client_credentials",
 	}
 
-	return &ZeebeClientCredentialsProvider{zeebeCredentialsPath: zeebeCredentialsPath}, nil
+	credentials, err := fetchAccessToken(config.AuthorizationServerUrl, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return &OAuthCredentialsProvider{Credentials: credentials}, nil
+}
+
+func applyEnvironmentOverrides(config *OAuthProviderConfig) {
+	if envClientId := os.Getenv("ZEEBE_CLIENT_ID"); envClientId != "" {
+		config.ClientId = envClientId
+	}
+	if envClientSecret := os.Getenv("ZEEBE_CLIENT_SECRET"); envClientSecret != "" {
+		config.ClientSecret = envClientSecret
+	}
+	if envAudience := os.Getenv("ZEEBE_TOKEN_AUDIENCE"); envAudience != "" {
+		config.Audience = envAudience
+	}
+	if envAuthzServerUrl := os.Getenv("ZEEBE_AUTHORIZATION_SERVER_URL"); envAuthzServerUrl != "" {
+		config.AuthorizationServerUrl = envAuthzServerUrl
+	}
+}
+
+func fetchAccessToken(authorizationServerUrl string, payload *oauthRequestPayload) (*OauthCredentials, error) {
+	jsonPayload, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	reader := bytes.NewReader(jsonPayload)
+	response, err := http.Post(authorizationServerUrl, "application/json", reader)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("failed while requesting access token from URL '%s'", authorizationServerUrl))
+	}
+
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return nil, errors.New(fmt.Sprintf("access token request failed with status code %d and message %s", response.StatusCode, response.Status))
+	}
+
+	jsonResponse, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed while reading response to access token request")
+	}
+
+	responsePayload := &OauthCredentials{}
+	if err := json.Unmarshal(jsonResponse, responsePayload); err != nil {
+		return nil, errors.Wrap(err, "failed while unmarshalling access token response from JSON")
+	}
+
+	return responsePayload, nil
 }
