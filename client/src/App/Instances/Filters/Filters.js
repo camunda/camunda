@@ -188,7 +188,6 @@ export default class Filters extends React.Component {
   };
 
   handleVariableChange = status => {
-    console.log(status);
     this.setFilterState({variable: status});
   };
 
