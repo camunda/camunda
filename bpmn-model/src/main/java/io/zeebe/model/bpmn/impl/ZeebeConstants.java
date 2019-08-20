@@ -30,6 +30,8 @@ public class ZeebeConstants {
 
   public static final String ATTRIBUTE_INPUT_COLLECTION = "inputCollection";
   public static final String ATTRIBUTE_INPUT_ELEMENT = "inputElement";
+  public static final String ATTRIBUTE_OUTPUT_COLLECTION = "outputCollection";
+  public static final String ATTRIBUTE_OUTPUT_ELEMENT = "outputElement";
 
   public static final String ELEMENT_HEADER = "header";
   public static final String ELEMENT_INPUT = "input";

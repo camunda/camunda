@@ -17,6 +17,7 @@ package io.zeebe.model.bpmn.validation.zeebe;
 
 import io.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
+import java.util.Optional;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -30,7 +31,8 @@ public class ZeebeLoopCharacteristicsValidator
 
   @Override
   public void validate(
-      ZeebeLoopCharacteristics element, ValidationResultCollector validationResultCollector) {
+      final ZeebeLoopCharacteristics element,
+      final ValidationResultCollector validationResultCollector) {
 
     final String inputCollection = element.getInputCollection();
 
@@ -40,6 +42,26 @@ public class ZeebeLoopCharacteristicsValidator
           String.format(
               "Attribute '%s' must be present and not empty",
               ZeebeConstants.ATTRIBUTE_INPUT_COLLECTION));
+    }
+
+    final Optional<String> outputCollection =
+        Optional.ofNullable(element.getOutputCollection()).filter(o -> !o.isEmpty());
+    final Optional<String> outputElement =
+        Optional.ofNullable(element.getOutputElement()).filter(o -> !o.isEmpty());
+
+    if (outputCollection.isPresent() && !outputElement.isPresent()) {
+      validationResultCollector.addError(
+          0,
+          String.format(
+              "Attribute '%s' must be present if the attribute '%s' is set",
+              ZeebeConstants.ATTRIBUTE_OUTPUT_ELEMENT, ZeebeConstants.ATTRIBUTE_OUTPUT_COLLECTION));
+
+    } else if (outputElement.isPresent() && !outputCollection.isPresent()) {
+      validationResultCollector.addError(
+          0,
+          String.format(
+              "Attribute '%s' must be present if the attribute '%s' is set",
+              ZeebeConstants.ATTRIBUTE_OUTPUT_COLLECTION, ZeebeConstants.ATTRIBUTE_OUTPUT_ELEMENT));
     }
   }
 }

@@ -126,6 +126,10 @@ public class ElementInstance implements DbValue {
     return multiInstanceLoopCounter;
   }
 
+  public void setMultiInstanceLoopCounter(final int loopCounter) {
+    multiInstanceLoopCounter = loopCounter;
+  }
+
   public void incrementMultiInstanceLoopCounter() {
     multiInstanceLoopCounter += 1;
   }

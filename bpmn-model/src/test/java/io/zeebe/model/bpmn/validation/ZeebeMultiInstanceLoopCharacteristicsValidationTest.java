@@ -50,6 +50,35 @@ public class ZeebeMultiInstanceLoopCharacteristicsValidationTest
                 ZeebeLoopCharacteristics.class,
                 "Attribute 'inputCollection' must be present and not empty"))
       },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeTaskType("test")
+                        .multiInstance(
+                            b -> b.zeebeInputCollection("xs").zeebeOutputCollection("ys")))
+            .done(),
+        singletonList(
+            expect(
+                ZeebeLoopCharacteristics.class,
+                "Attribute 'outputElement' must be present if the attribute 'outputCollection' is set"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeTaskType("test")
+                        .multiInstance(b -> b.zeebeInputCollection("xs").zeebeOutputElement("y")))
+            .done(),
+        singletonList(
+            expect(
+                ZeebeLoopCharacteristics.class,
+                "Attribute 'outputCollection' must be present if the attribute 'outputElement' is set"))
+      },
     };
   }
 }

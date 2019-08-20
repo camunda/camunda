@@ -105,6 +105,17 @@ public class MultiInstanceActivityTransformer implements ModelElementTransformer
             .filter(e -> !e.isEmpty())
             .map(BufferUtil::wrapString);
 
-    return new ExecutableLoopCharacteristics(isSequential, inputCollection, inputElement);
+    final Optional<DirectBuffer> outputCollection =
+        Optional.ofNullable(zeebeLoopCharacteristics.getOutputCollection())
+            .filter(e -> !e.isEmpty())
+            .map(BufferUtil::wrapString);
+
+    final Optional<JsonPathQuery> outputElement =
+        Optional.ofNullable(zeebeLoopCharacteristics.getOutputElement())
+            .filter(e -> !e.isEmpty())
+            .map(e -> context.getJsonPathQueryCompiler().compile(e));
+
+    return new ExecutableLoopCharacteristics(
+        isSequential, inputCollection, inputElement, outputCollection, outputElement);
   }
 }

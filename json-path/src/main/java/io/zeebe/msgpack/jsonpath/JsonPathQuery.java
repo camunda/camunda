@@ -9,6 +9,7 @@ package io.zeebe.msgpack.jsonpath;
 
 import io.zeebe.msgpack.filter.MsgPackFilter;
 import io.zeebe.msgpack.query.MsgPackFilterContext;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -27,11 +28,11 @@ public class JsonPathQuery {
   protected int invalidPosition;
   protected String errorMessage;
 
-  public JsonPathQuery(MsgPackFilter[] filters) {
+  public JsonPathQuery(final MsgPackFilter[] filters) {
     this.filters = filters;
   }
 
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     filterInstances.clear();
     invalidPosition = NO_INVALID_POSITION;
 
@@ -46,9 +47,9 @@ public class JsonPathQuery {
     return filters;
   }
 
-  public void invalidate(int position, String message) {
-    this.invalidPosition = position;
-    this.errorMessage = message;
+  public void invalidate(final int position, final String message) {
+    invalidPosition = position;
+    errorMessage = message;
   }
 
   public boolean isValid() {
@@ -63,6 +64,11 @@ public class JsonPathQuery {
     return errorMessage;
   }
 
+  @Override
+  public String toString() {
+    return "JsonPathQuery{" + "expression=" + BufferUtil.bufferAsString(expressionBuffer) + '}';
+  }
+
   public DirectBuffer getExpression() {
     return expressionBuffer;
   }
@@ -71,7 +77,7 @@ public class JsonPathQuery {
     return variableName;
   }
 
-  public void setVariableName(byte[] topLevelVariable) {
-    this.variableName.wrap(topLevelVariable);
+  public void setVariableName(final byte[] topLevelVariable) {
+    variableName.wrap(topLevelVariable);
   }
 }

@@ -13,22 +13,45 @@ import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
 import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import java.util.List;
 import java.util.function.Function;
+import org.agrona.DirectBuffer;
 
 public class MultiInstanceBodyCompletingHandler extends AbstractMultiInstanceBodyHandler {
 
   private final CatchEventSubscriber catchEventSubscriber;
 
   public MultiInstanceBodyCompletingHandler(
-      Function<BpmnStep, BpmnStepHandler> innerHandlerLookup,
-      CatchEventSubscriber catchEventSubscriber) {
+      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup,
+      final CatchEventSubscriber catchEventSubscriber) {
     super(WorkflowInstanceIntent.ELEMENT_COMPLETED, innerHandlerLookup);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   @Override
-  protected boolean handleMultiInstanceBody(BpmnStepContext<ExecutableMultiInstanceBody> context) {
+  protected boolean handleMultiInstanceBody(
+      final BpmnStepContext<ExecutableMultiInstanceBody> context) {
     catchEventSubscriber.unsubscribeFromEvents(context);
+
+    context
+        .getElement()
+        .getLoopCharacteristics()
+        .getOutputCollection()
+        .ifPresent(variableName -> propagateVariable(context, variableName));
+
     return true;
+  }
+
+  private void propagateVariable(
+      final BpmnStepContext<ExecutableMultiInstanceBody> context, final DirectBuffer variableName) {
+    final var variablesState = context.getElementInstanceState().getVariablesState();
+
+    final var sourceScope = context.getKey();
+    final var targetScope = context.getFlowScopeInstance().getKey();
+    final var workflowKey = context.getValue().getWorkflowKey();
+
+    final var document = variablesState.getVariablesAsDocument(sourceScope, List.of(variableName));
+
+    variablesState.setVariablesFromDocument(targetScope, workflowKey, document);
   }
 }
