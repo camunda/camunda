@@ -29,7 +29,6 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
-import one.util.streamex.StreamEx;
 
 public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements Stream<T> {
   private final Stream<T> wrappedStream;
@@ -45,15 +44,14 @@ public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements
    * predicate.
    */
   public S skipUntil(Predicate<T> predicate) {
-    return supply(StreamEx.of(this).dropWhile(predicate.negate()));
+    return supply(this.dropWhile(predicate.negate()));
   }
 
   /**
    * short-circuiting operation; limits the stream to the first element that fulfills the predicate
    */
   public S limit(Predicate<T> predicate) {
-    // #takeWhile comes with Java >= 9
-    return supply(StreamEx.of(this).takeWhileInclusive(predicate.negate()));
+    return supply(this.takeWhile(predicate.negate()));
   }
 
   // Helper to extract values
