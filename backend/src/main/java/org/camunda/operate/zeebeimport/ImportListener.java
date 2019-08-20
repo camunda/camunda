@@ -10,4 +10,26 @@ public interface ImportListener {
   public void finished(int count);
   public void failed(int count);
 
+  public class Compound implements ImportListener{
+
+    private ImportListener[] delegates;
+
+    public Compound(ImportListener ...listeners) {
+      this.delegates = listeners;
+    }
+    @Override
+    public void finished(int count) {
+      for(ImportListener delegate: delegates) {
+        delegate.finished(count);
+      }
+    }
+
+    @Override
+    public void failed(int count) {
+      for(ImportListener delegate: delegates) {
+        delegate.failed(count);
+      }
+    }
+    
+  }
 }

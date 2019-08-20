@@ -20,7 +20,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 
@@ -64,10 +63,10 @@ public class MetricIT extends OperateZeebeIntegrationTest{
       .startWorkflowInstance("demoProcess","{\"a\": \"b\"}").waitUntil().workflowInstanceIsFinished();
     // Then
     assertThatMetricsFrom(mockMvc,allOf(
-        containsString("operate_events_processed_total{type=\"DEPLOYMENT\",}"),
-        containsString("operate_events_processed_total{type=\"WORKFLOW_INSTANCE\",}"),
-        containsString("operate_events_processed_total{type=\"VARIABLE\",}"),
-        containsString("operate_events_processed_total{type=\"JOB\",}")
+        containsString("operate_events_processed_total{status=\"succeeded\",type=\"DEPLOYMENT\",}"),
+        containsString("operate_events_processed_total{status=\"succeeded\",type=\"WORKFLOW_INSTANCE\",}"),
+        containsString("operate_events_processed_total{status=\"succeeded\",type=\"VARIABLE\",}"),
+        containsString("operate_events_processed_total{status=\"succeeded\",type=\"JOB\",}")
     ));
   }
   
@@ -82,9 +81,9 @@ public class MetricIT extends OperateZeebeIntegrationTest{
       .failTask("taskA","Some error").waitUntil().incidentIsActive();
     // Then
     assertThatMetricsFrom(mockMvc,allOf(
-        containsString("operate_events_processed_total{type=\"DEPLOYMENT\",}"),
-        containsString("operate_events_processed_total{type=\"WORKFLOW_INSTANCE\",}"),
-        containsString("operate_events_processed_total{type=\"INCIDENT\",}")
+        containsString("operate_events_processed_total{status=\"succeeded\",type=\"DEPLOYMENT\",}"),
+        containsString("operate_events_processed_total{status=\"succeeded\",type=\"WORKFLOW_INSTANCE\",}"),
+        containsString("operate_events_processed_total{status=\"succeeded\",type=\"INCIDENT\",}")
     ));
   }
   

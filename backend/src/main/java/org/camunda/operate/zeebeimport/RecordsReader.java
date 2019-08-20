@@ -13,6 +13,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import org.camunda.operate.Metrics;
 import org.camunda.operate.es.schema.indices.ImportPositionIndex;
 import org.camunda.operate.exceptions.NoSuchIndexException;
 import org.camunda.operate.exceptions.OperateRuntimeException;
@@ -100,6 +102,9 @@ public class RecordsReader {
 
   @Autowired
   private BeanFactory beanFactory;
+  
+  @Autowired
+  Metrics metrics;
 
   private ImportListener importListener;
   
@@ -160,7 +165,8 @@ public class RecordsReader {
       JavaType valueType = objectMapper.getTypeFactory().constructParametricType(RecordImpl.class, importValueType.getRecordValueClass());
       final List<Record> result = ElasticsearchUtil.mapSearchHits(searchResponse.getHits().getHits(), objectMapper, valueType);
 
-      return new ImportBatch(partitionId, importValueType, result, importListener);
+      ImportListener metricsImportListener = new MetricsCounterImportListener(metrics, Metrics.COUNTER_NAME_EVENTS_PROCESSED, importValueType.getValueType().name());  
+      return new ImportBatch(partitionId, importValueType, result, new ImportListener.Compound(importListener,metricsImportListener));
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
       logger.error(message, e);
