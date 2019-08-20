@@ -10,6 +10,7 @@ import static org.camunda.operate.util.MetricAssert.assertThatMetricsFrom;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 
+import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.it.OperateTester;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
@@ -99,7 +100,7 @@ public class MetricIT extends OperateZeebeIntegrationTest{
       .updateVariableOperation("a","\"newValue\"").waitUntil().operationIsCompleted();
     // Then
     assertThatMetricsFrom(mockMvc,
-        containsString("operate_commands_total{status=\"succeeded\",type=\""+OperationType.UPDATE_VARIABLE+"\",}"));
+        containsString("operate_commands_total{status=\""+OperationState.SENT+"\",type=\""+OperationType.UPDATE_VARIABLE+"\",}"));
   }
   
   @Test // OPE-642
@@ -120,7 +121,7 @@ public class MetricIT extends OperateZeebeIntegrationTest{
       .cancelWorkflowInstanceOperation().waitUntil().operationIsCompleted();
     // Then
     assertThatMetricsFrom(mockMvc,
-        containsString("operate_commands_total{status=\"failed\",type=\""+OperationType.CANCEL_WORKFLOW_INSTANCE+"\",}"));
+        containsString("operate_commands_total{status=\""+OperationState.FAILED+"\",type=\""+OperationType.CANCEL_WORKFLOW_INSTANCE+"\",}"));
   }
   
 }

@@ -44,20 +44,11 @@ public abstract class AbstractOperationHandler implements OperationHandler {
     }
   }
   
-  protected void recordCommandMetric(final String result,final OperationEntity operation) {
-    metrics.recordCounts(Metrics.COUNTER_NAME_COMMANDS, 1, Metrics.TAG_KEY_STATUS,result,Metrics.TAG_KEY_TYPE, operation.getType().name()); 
+  protected void recordCommandMetric(final OperationEntity operation) {
+    metrics.recordCounts(Metrics.COUNTER_NAME_COMMANDS, 1, Metrics.TAG_KEY_STATUS,operation.getState().name(),Metrics.TAG_KEY_TYPE, operation.getType().name()); 
   }
-  
-  protected void recordCommandSucceededMetric(final OperationEntity operation) {
-    recordCommandMetric(Metrics.TAG_VALUE_SUCCEEDED, operation);
-  }
-  
-  protected void recordCommandFailedMetric(final OperationEntity operation) {
-    recordCommandMetric(Metrics.TAG_VALUE_FAILED, operation);
-  }
-
+ 
   protected void failOperation(OperationEntity operation, String errorMsg) throws PersistenceException {
-    recordCommandFailedMetric(operation);
     if (operation.getState().equals(OperationState.LOCKED) && operation.getLockOwner().equals(operateProperties.getOperationExecutor().getWorkerId())
       && operation.getType().equals(getType())) {
       operation.setState(OperationState.FAILED);
@@ -68,10 +59,10 @@ public abstract class AbstractOperationHandler implements OperationHandler {
       batchOperationWriter.updateOperation(operation);
       logger.debug("Operation {} failed with message: {} ", operation.getId(), operation.getErrorMessage());
     }
+    recordCommandMetric(operation);
   }
 
   protected void markAsSucceeded(OperationEntity operation) throws PersistenceException {
-    recordCommandSucceededMetric(operation);
     if (operation.getState().equals(OperationState.LOCKED) && operation.getLockOwner().equals(operateProperties.getOperationExecutor().getWorkerId())
       && operation.getType().equals(getType())) {
       operation.setState(OperationState.SENT);
@@ -80,5 +71,6 @@ public abstract class AbstractOperationHandler implements OperationHandler {
       batchOperationWriter.updateOperation(operation);
       logger.debug("Operation {} was sent to Zeebe", operation.getId());
     }
+    recordCommandMetric(operation);
   }
 }
