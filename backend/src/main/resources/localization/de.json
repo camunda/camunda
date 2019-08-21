@@ -159,7 +159,7 @@
     "editReportMessage": "<p> Wählen Sie oben die Schaltfläche <b> Bearbeiten </b>. </p>",
     "totalCount": {
       "instance": "Gesamtanzahl der Instanzen: <b> {count} </b> ",
-      "evaluation": "Gesamtbewertung </br> Anzahl: <b> {count} </b> "
+      "evaluation": "Anzahl  der Gesamtbewert&shy;ungen: </br> <b> {count} </b> "
     },
     "definition": {
       "process": "Prozessdefinition",

@@ -26,5 +26,7 @@
     text-align: center;
     border-left: 1px solid lightgray;
     width: 175px;
+    overflow-wrap: break-word;
+    hyphens: auto;
   }
 }
