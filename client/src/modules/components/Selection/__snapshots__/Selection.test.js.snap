@@ -167,7 +167,7 @@ exports[`Selection should contain Actions 1`] = `
                           data-test="dropdown-toggle"
                           onClick={[Function]}
                           onKeyDown={[Function]}
-                          theme="dark"
+                          theme="light"
                         >
                           <StyledComponent
                             buttonStyles={
@@ -186,7 +186,7 @@ exports[`Selection should contain Actions 1`] = `
                                 "componentStyle": ComponentStyle {
                                   "componentId": "sc-jzJRlG",
                                   "isStatic": false,
-                                  "lastClassName": "fBbEHG",
+                                  "lastClassName": "jsiRWO",
                                   "rules": Array [
                                     "
   /* Positioning */
@@ -237,10 +237,10 @@ exports[`Selection should contain Actions 1`] = `
                             forwardedRef={null}
                             onClick={[Function]}
                             onKeyDown={[Function]}
-                            theme="dark"
+                            theme="light"
                           >
                             <button
-                              className="sc-jzJRlG fBbEHG"
+                              className="sc-jzJRlG jsiRWO"
                               data-button-open={false}
                               data-test="dropdown-toggle"
                               onClick={[Function]}
@@ -454,7 +454,7 @@ exports[`Selection should contain Instances 1`] = `
           data-test="addInstanceTransition"
           in={true}
           onExited={[Function]}
-          theme="dark"
+          theme="light"
           timeout={800}
         >
           <StyledComponent
@@ -498,7 +498,7 @@ exports[`Selection should contain Instances 1`] = `
             forwardedRef={null}
             in={true}
             onExited={[Function]}
-            theme="dark"
+            theme="light"
             timeout={800}
           >
             <Transition
@@ -506,7 +506,7 @@ exports[`Selection should contain Instances 1`] = `
               data-test="addInstanceTransition"
               in={true}
               onExited={[Function]}
-              theme="dark"
+              theme="light"
               timeout={800}
             >
               <CSSTransition
@@ -515,7 +515,7 @@ exports[`Selection should contain Instances 1`] = `
                 data-test="addInstanceTransition"
                 in={true}
                 onExited={[Function]}
-                theme="dark"
+                theme="light"
                 timeout={800}
               >
                 <Transition
@@ -532,25 +532,25 @@ exports[`Selection should contain Instances 1`] = `
                   onExit={[Function]}
                   onExited={[Function]}
                   onExiting={[Function]}
-                  theme="dark"
+                  theme="light"
                   timeout={800}
                   unmountOnExit={false}
                 >
                   <Themed(styled.li)
                     className="sc-cvbbAY fiOHD"
                     data-test="addInstanceTransition"
-                    theme="dark"
+                    theme="light"
                   >
                     <Themed
                       className="sc-cvbbAY fiOHD"
                       data-test="addInstanceTransition"
                       forwardedRef={null}
-                      theme="dark"
+                      theme="light"
                     >
                       <styled.li
                         className="sc-cvbbAY fiOHD"
                         data-test="addInstanceTransition"
-                        theme="dark"
+                        theme="light"
                       >
                         <StyledComponent
                           className="sc-cvbbAY fiOHD"
@@ -562,7 +562,7 @@ exports[`Selection should contain Instances 1`] = `
                               "componentStyle": ComponentStyle {
                                 "componentId": "sc-fBuWsC",
                                 "isStatic": false,
-                                "lastClassName": "bRIQmb",
+                                "lastClassName": "liucns",
                                 "rules": Array [
                                   "
   display: flex;
@@ -613,10 +613,10 @@ exports[`Selection should contain Instances 1`] = `
                             }
                           }
                           forwardedRef={null}
-                          theme="dark"
+                          theme="light"
                         >
                           <li
-                            className="sc-cvbbAY fiOHD sc-fBuWsC bRIQmb"
+                            className="sc-cvbbAY fiOHD sc-fBuWsC liucns"
                             data-test="addInstanceTransition"
                           >
                             <styled.div>
@@ -659,10 +659,10 @@ exports[`Selection should contain Instances 1`] = `
                                     >
                                       <StateIcon
                                         state="ACTIVE"
-                                        theme="dark"
+                                        theme="light"
                                       >
                                         <Styled(ReactComponent)
-                                          theme="dark"
+                                          theme="light"
                                         >
                                           <StyledComponent
                                             forwardedComponent={
@@ -700,15 +700,15 @@ exports[`Selection should contain Instances 1`] = `
                                               }
                                             }
                                             forwardedRef={null}
-                                            theme="dark"
+                                            theme="light"
                                           >
                                             <ReactComponent
                                               className="sc-bwzfXH cjPJyG"
-                                              theme="dark"
+                                              theme="light"
                                             >
                                               <svg
                                                 className="sc-bwzfXH cjPJyG"
-                                                theme="dark"
+                                                theme="light"
                                               >
                                                 state-ok.svg
                                               </svg>
@@ -869,7 +869,7 @@ exports[`Selection should contain Instances 1`] = `
                                               "componentStyle": ComponentStyle {
                                                 "componentId": "sc-dxgOiQ",
                                                 "isStatic": false,
-                                                "lastClassName": "fnVsKo",
+                                                "lastClassName": "evSBFh",
                                                 "rules": Array [
                                                   "
   margin: 0 5px;
@@ -998,7 +998,7 @@ exports[`Selection should contain Instances 1`] = `
                                           >
                                             <Styled(Spinner)
                                               className="sc-caSCKo lEUMA"
-                                              theme="dark"
+                                              theme="light"
                                               title="Instance id_1 has scheduled Operations"
                                             >
                                               <StyledComponent
@@ -1010,7 +1010,7 @@ exports[`Selection should contain Instances 1`] = `
                                                     "componentStyle": ComponentStyle {
                                                       "componentId": "sc-dxgOiQ",
                                                       "isStatic": false,
-                                                      "lastClassName": "fnVsKo",
+                                                      "lastClassName": "evSBFh",
                                                       "rules": Array [
                                                         "
   margin: 0 5px;
@@ -1034,32 +1034,32 @@ exports[`Selection should contain Instances 1`] = `
                                                   }
                                                 }
                                                 forwardedRef={null}
-                                                theme="dark"
+                                                theme="light"
                                                 title="Instance id_1 has scheduled Operations"
                                               >
                                                 <Spinner
-                                                  className="sc-caSCKo lEUMA sc-dxgOiQ fnVsKo"
-                                                  theme="dark"
+                                                  className="sc-caSCKo lEUMA sc-dxgOiQ evSBFh"
+                                                  theme="light"
                                                   title="Instance id_1 has scheduled Operations"
                                                 >
                                                   <Themed(styled.div)
-                                                    className="sc-caSCKo lEUMA sc-dxgOiQ fnVsKo"
-                                                    theme="dark"
+                                                    className="sc-caSCKo lEUMA sc-dxgOiQ evSBFh"
+                                                    theme="light"
                                                     title="Instance id_1 has scheduled Operations"
                                                   >
                                                     <Themed
-                                                      className="sc-caSCKo lEUMA sc-dxgOiQ fnVsKo"
+                                                      className="sc-caSCKo lEUMA sc-dxgOiQ evSBFh"
                                                       forwardedRef={null}
-                                                      theme="dark"
+                                                      theme="light"
                                                       title="Instance id_1 has scheduled Operations"
                                                     >
                                                       <styled.div
-                                                        className="sc-caSCKo lEUMA sc-dxgOiQ fnVsKo"
-                                                        theme="dark"
+                                                        className="sc-caSCKo lEUMA sc-dxgOiQ evSBFh"
+                                                        theme="light"
                                                         title="Instance id_1 has scheduled Operations"
                                                       >
                                                         <StyledComponent
-                                                          className="sc-caSCKo lEUMA sc-dxgOiQ fnVsKo"
+                                                          className="sc-caSCKo lEUMA sc-dxgOiQ evSBFh"
                                                           forwardedComponent={
                                                             Object {
                                                               "$$typeof": Symbol(react.forward_ref),
@@ -1067,7 +1067,7 @@ exports[`Selection should contain Instances 1`] = `
                                                               "componentStyle": ComponentStyle {
                                                                 "componentId": "sc-kpOJdX",
                                                                 "isStatic": false,
-                                                                "lastClassName": "uWbJd",
+                                                                "lastClassName": "gZIIml",
                                                                 "rules": Array [
                                                                   "
   border-radius: 50%;
@@ -1110,11 +1110,11 @@ exports[`Selection should contain Instances 1`] = `
                                                             }
                                                           }
                                                           forwardedRef={null}
-                                                          theme="dark"
+                                                          theme="light"
                                                           title="Instance id_1 has scheduled Operations"
                                                         >
                                                           <div
-                                                            className="sc-caSCKo lEUMA sc-dxgOiQ fnVsKo sc-kpOJdX uWbJd"
+                                                            className="sc-caSCKo lEUMA sc-dxgOiQ evSBFh sc-kpOJdX gZIIml"
                                                             title="Instance id_1 has scheduled Operations"
                                                           />
                                                         </StyledComponent>

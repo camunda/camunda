@@ -13,8 +13,8 @@ import {STATE} from 'modules/constants';
 import {parsedDiagram} from 'modules/utils/bpmn';
 import {ReactComponent as IncidentIcon} from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
 import {ReactComponent as ActiveIcon} from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
-import {ReactComponent as CompletedDarkIcon} from 'modules/components/Icon/diagram-badge-single-instance-completed-dark.svg';
-import {ReactComponent as CanceledDarkIcon} from 'modules/components/Icon/diagram-badge-single-instance-canceled-dark.svg';
+import {ReactComponent as CompletedLightIcon} from 'modules/components/Icon/diagram-badge-single-instance-completed-light.svg';
+import {ReactComponent as CanceledLightIcon} from 'modules/components/Icon/diagram-badge-single-instance-canceled-light.svg';
 
 import Diagram from './Diagram';
 import DiagramControls from './DiagramControls';
@@ -301,8 +301,8 @@ describe('Diagram', () => {
       expect(node.find('Overlay')).toHaveLength(flowNodeStateOverlays.length);
       expect(node.find(ActiveIcon)).toHaveLength(1);
       expect(node.find(IncidentIcon)).toHaveLength(1);
-      expect(node.find(CompletedDarkIcon)).toHaveLength(1);
-      expect(node.find(CanceledDarkIcon)).toHaveLength(1);
+      expect(node.find(CompletedLightIcon)).toHaveLength(1);
+      expect(node.find(CanceledLightIcon)).toHaveLength(1);
     });
   });
 
@@ -363,7 +363,7 @@ describe('Diagram', () => {
       // then
       const overlayNode = node.find('Overlay');
       expect(overlayNode).toHaveLength(1);
-      expect(overlayNode.find(CompletedDarkIcon)).toHaveLength(1);
+      expect(overlayNode.find(CompletedLightIcon)).toHaveLength(1);
       expect(overlayNode.contains(7)).toBe(true);
     });
 
@@ -383,7 +383,7 @@ describe('Diagram', () => {
       // then
       const overlayNode = node.find('Overlay');
       expect(overlayNode).toHaveLength(1);
-      expect(overlayNode.find(CanceledDarkIcon)).toHaveLength(1);
+      expect(overlayNode.find(CanceledLightIcon)).toHaveLength(1);
       expect(overlayNode.contains(7)).toBe(true);
     });
   });
