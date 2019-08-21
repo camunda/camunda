@@ -36,8 +36,8 @@ class ThemeProvider extends React.Component {
     this.setBodyBackground();
   }
 
-  // we start with the dark theme as default
-  state = {theme: THEME_NAME.DARK};
+  // we start with the light theme as default
+  state = {theme: THEME_NAME.LIGHT};
 
   componentDidMount() {
     const localStorage = this.props.getStateLocally('theme');
