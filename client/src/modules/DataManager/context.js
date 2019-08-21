@@ -6,7 +6,6 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {SUBSCRIPTION_TOPIC} from 'modules/constants';
 import {DataManager} from './core';
 
 const DataContext = React.createContext({});
@@ -30,7 +29,7 @@ function withData(Component) {
 }
 
 function DataManagerProvider(props) {
-  const dataManager = new DataManager(SUBSCRIPTION_TOPIC);
+  const dataManager = new DataManager();
 
   return (
     <DataContext.Provider value={{dataManager}}>
