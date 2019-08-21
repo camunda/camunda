@@ -110,7 +110,7 @@
     <dependencies>
       <dependency>
         <groupId>io.zeebe</groupId>
-        <artifactId>zeebe-broker-core</artifactId>
+        <artifactId>zeebe-broker</artifactId>
         <version>${project.version}</version>
         <classifier>tests</classifier>
         <type>test-jar</type>

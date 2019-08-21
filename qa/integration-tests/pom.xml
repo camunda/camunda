@@ -14,7 +14,7 @@
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-broker-core</artifactId>
+      <artifactId>zeebe-broker</artifactId>
     </dependency>
 
     <dependency>
@@ -115,7 +115,7 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-broker-core</artifactId>
+      <artifactId>zeebe-broker</artifactId>
       <type>test-jar</type>
       <classifier>tests</classifier>
       <scope>test</scope>
