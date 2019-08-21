@@ -35,7 +35,6 @@ public class BufferAssert extends AbstractAssert<BufferAssert, DirectBuffer> {
     try {
       actual.getBytes(position, actualBytes, 0, actualBytes.length);
     } catch (final Exception e) {
-      e.printStackTrace();
       failWithMessage(
           "Unable to read %d bytes from actual: %s", actualBytes.length, e.getMessage());
     }

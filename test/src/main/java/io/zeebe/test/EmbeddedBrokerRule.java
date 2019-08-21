@@ -157,7 +157,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
       try {
         FileUtil.deleteFolder(newTemporaryFolder.getAbsolutePath());
       } catch (final IOException e) {
-        e.printStackTrace();
+        LOG.error("Unexpected error on deleting data.", e);
       }
     }
   }

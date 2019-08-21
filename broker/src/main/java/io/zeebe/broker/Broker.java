@@ -50,8 +50,10 @@ public class Broker implements AutoCloseable {
   }
 
   protected void start() {
-    LOG.info("Version: {}", VERSION);
-    LOG.info("Starting broker with configuration {}", getConfig().toJson());
+    if (LOG.isInfoEnabled()) {
+      LOG.info("Version: {}", VERSION);
+      LOG.info("Starting broker with configuration {}", getConfig().toJson());
+    }
 
     brokerContext.addComponent(new SystemComponent());
     brokerContext.addComponent(new TransportComponent());

@@ -88,8 +88,8 @@ public class DebugLogExporter implements Exporter {
   }
 
   public static class DebugExporterConfiguration {
-    String logLevel = "debug";
-    boolean prettyPrint = false;
+    private final String logLevel = "debug";
+    private final boolean prettyPrint = false;
 
     LogLevel getLogLevel() {
       return LogLevel.valueOf(logLevel.trim().toUpperCase());

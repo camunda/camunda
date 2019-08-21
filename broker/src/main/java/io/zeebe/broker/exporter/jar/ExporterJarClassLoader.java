@@ -16,19 +16,19 @@ import java.nio.file.Path;
  * Provides a class loader which isolates external exporters from other exporters, while exposing
  * our own code to ensure versions match at runtime.
  */
-public class ExporterJarClassLoader extends URLClassLoader {
-  public static final String JAVA_PACKAGE_PREFIX = "java.";
-  public static final String JAR_URL_FORMAT = "jar:%s!/";
+public final class ExporterJarClassLoader extends URLClassLoader {
+  private static final String JAVA_PACKAGE_PREFIX = "java.";
+  private static final String JAR_URL_FORMAT = "jar:%s!/";
 
   /** lists of packages from broker base that are exposed at runtime to the external exporters */
-  public static final String[] EXPOSED_PACKAGE_PREFIXES =
+  private static final String[] EXPOSED_PACKAGE_PREFIXES =
       new String[] {"io.zeebe.exporter.api", "org.slf4j.", "org.apache.logging.log4j."};
 
-  public ExporterJarClassLoader(URL[] urls) {
+  private ExporterJarClassLoader(URL[] urls) {
     super(urls);
   }
 
-  public static ExporterJarClassLoader ofPath(final Path jarPath) throws ExporterJarLoadException {
+  static ExporterJarClassLoader ofPath(final Path jarPath) throws ExporterJarLoadException {
     final URL jarUrl;
 
     try {
