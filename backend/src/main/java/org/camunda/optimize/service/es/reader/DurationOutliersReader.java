@@ -49,6 +49,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_DURATION;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
@@ -119,7 +120,10 @@ public class DurationOutliersReader {
       .stream()
       .map(b -> {
         final Long durationKey = Double.valueOf(b.getKeyAsString()).longValue();
-        return new DurationChartEntryDto(durationKey, b.getDocCount(), isOutlier(lowerOutlierBound, higherOutlierBound, durationKey)
+        return new DurationChartEntryDto(
+          durationKey,
+          b.getDocCount(),
+          isOutlier(lowerOutlierBound, higherOutlierBound, durationKey)
         );
       })
       .collect(Collectors.toList());
@@ -193,8 +197,8 @@ public class DurationOutliersReader {
     ExtendedStatsAggregationBuilder stats = AggregationBuilders.extendedStats(STATS_AGG)
       .field(EVENTS + "." + ACTIVITY_DURATION);
 
-
     TermsAggregationBuilder terms = AggregationBuilders.terms(EVENTS)
+      .size(LIST_FETCH_LIMIT)
       .field(EVENTS + "." + ProcessInstanceIndex.ACTIVITY_ID)
       .subAggregation(stats);
 
@@ -229,60 +233,61 @@ public class DurationOutliersReader {
       .get(EVENTS))
       .getBuckets();
     buckets.forEach((bucket) -> {
-      ExtendedStats statsAgg = bucket.getAggregations().get(STATS_AGG);
-      FindingsDto finding = new FindingsDto();
-
-      Double stdDeviationBoundLower = statsAgg.getStdDeviationBound(ExtendedStats.Bounds.LOWER);
-      Double stdDeviationBoundHigher = statsAgg.getStdDeviationBound(ExtendedStats.Bounds.UPPER);
-      double avg = statsAgg.getAvg();
-
-      double[] values = {stdDeviationBoundHigher, stdDeviationBoundLower};
-      PercentileRanksAggregationBuilder percentileRanks = AggregationBuilders.percentileRanks(
-        RANKS_AGG, values
-      ).field(EVENTS + "." + ACTIVITY_DURATION);
-
-      NestedAggregationBuilder nested = buildNestedAggregation(bucket.getKeyAsString(), percentileRanks);
-
-      SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-        .query(query)
-        .fetchSource(false)
-        .aggregation(nested)
-        .size(0);
-
-      SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-        .types(PROCESS_INSTANCE_INDEX_NAME)
-        .source(searchSourceBuilder);
-
-      Aggregations singleNodeAggregation;
-      try {
-        singleNodeAggregation = esClient.search(searchRequest, RequestOptions.DEFAULT).getAggregations();
-      } catch (IOException e) {
-        throw new OptimizeRuntimeException(e.getMessage(), e);
-      }
-      PercentileRanks ranks = ((Filter) (((Nested) singleNodeAggregation.get(EVENTS)).getAggregations()
-        .get(FILTERED_FLOW_NODES_AGG))).getAggregations().get(RANKS_AGG);
-
-      if (stdDeviationBoundLower > statsAgg.getMin()) {
-        double percent = ranks.percent(stdDeviationBoundLower);
-        finding.setLowerOutlier(
-          stdDeviationBoundLower.longValue(),
-          percent,
-          avg / stdDeviationBoundLower,
-          Math.round(statsAgg.getCount() * 0.01 * percent)
-        );
-      }
-
-      if (stdDeviationBoundHigher < statsAgg.getMax()) {
-        double percent = ranks.percent(stdDeviationBoundHigher);
-        finding.setHigherOutlier(
-          stdDeviationBoundHigher.longValue(),
-          100 - percent,
-          stdDeviationBoundHigher / avg,
-          Math.round(statsAgg.getCount() * 0.01 * (100 - percent))
-        );
-      }
-
+      final ExtendedStats statsAgg = bucket.getAggregations().get(STATS_AGG);
+      final FindingsDto finding = new FindingsDto();
       result.put(bucket.getKeyAsString(), finding);
+
+      if (statsAgg.getStdDeviation() != 0.0D) {
+        double avg = statsAgg.getAvg();
+        double stdDeviationBoundLower = statsAgg.getStdDeviationBound(ExtendedStats.Bounds.LOWER);
+        double stdDeviationBoundHigher = statsAgg.getStdDeviationBound(ExtendedStats.Bounds.UPPER);
+
+        PercentileRanksAggregationBuilder percentileRanks = AggregationBuilders.percentileRanks(
+          RANKS_AGG, new double[]{stdDeviationBoundHigher, stdDeviationBoundLower}
+        ).field(EVENTS + "." + ACTIVITY_DURATION);
+
+        NestedAggregationBuilder nested = buildNestedAggregation(bucket.getKeyAsString(), percentileRanks);
+
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+          .query(query)
+          .fetchSource(false)
+          .aggregation(nested)
+          .size(0);
+
+        SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+          .types(PROCESS_INSTANCE_INDEX_NAME)
+          .source(searchSourceBuilder);
+
+        Aggregations singleNodeAggregation;
+        try {
+          singleNodeAggregation = esClient.search(searchRequest, RequestOptions.DEFAULT).getAggregations();
+
+          PercentileRanks ranks = ((Filter) (((Nested) singleNodeAggregation.get(EVENTS)).getAggregations()
+            .get(FILTERED_FLOW_NODES_AGG))).getAggregations().get(RANKS_AGG);
+
+          if (stdDeviationBoundLower > statsAgg.getMin()) {
+            double percent = ranks.percent(stdDeviationBoundLower);
+            finding.setLowerOutlier(
+              (long) stdDeviationBoundLower,
+              percent,
+              avg / stdDeviationBoundLower,
+              Math.round(statsAgg.getCount() * 0.01 * percent)
+            );
+          }
+
+          if (stdDeviationBoundHigher < statsAgg.getMax()) {
+            double percent = ranks.percent(stdDeviationBoundHigher);
+            finding.setHigherOutlier(
+              (long) stdDeviationBoundHigher,
+              100 - percent,
+              stdDeviationBoundHigher / avg,
+              Math.round(statsAgg.getCount() * 0.01 * (100 - percent))
+            );
+          }
+        } catch (IOException e) {
+          throw new OptimizeRuntimeException(e.getMessage(), e);
+        }
+      }
     });
     Long totalOutlierCount = result.values()
       .stream()

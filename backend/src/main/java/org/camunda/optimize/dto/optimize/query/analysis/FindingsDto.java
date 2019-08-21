@@ -15,7 +15,7 @@ import java.util.Optional;
 public class FindingsDto {
   private Finding lowerOutlier;
   private Finding higherOutlier;
-  private Double heat;
+  private Double heat = 0.0D;
 
   public void setLowerOutlier(Long boundValue, Double percentile, Double relation, Long count) {
     this.lowerOutlier = new Finding(boundValue, percentile, relation, count);

@@ -26,9 +26,11 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 
@@ -110,6 +112,61 @@ public class OutlierDetectionIT {
 
     // then
     assertThat(outlierTest.get("testActivity").getOutlierCount(), is(0L));
+  }
+
+  @Test
+  public void allDurationsSameValueNoOutliers() throws SQLException {
+    // given
+    ProcessDefinitionEngineDto processDefinition =
+      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance("testActivity"));
+
+    startPIsDistributedByDuration(
+      processDefinition,
+      // one data point => no distribution
+      new Gaussian(1, 1),
+      1,
+      "testActivity"
+    );
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    HashMap<String, FindingsDto> outlierTest = embeddedOptimizeRule.getRequestExecutor()
+      .buildFlowNodeOutliersRequest("outlierTest", Collections.singletonList("1"), Collections.singletonList(null))
+      .execute(new TypeReference<HashMap<String, FindingsDto>>() {
+      });
+
+    // then
+    assertThat(outlierTest.get("testActivity").getLowerOutlier(), is(nullValue()));
+    assertThat(outlierTest.get("testActivity").getHigherOutlier(), is(nullValue()));
+    assertThat(outlierTest.get("testActivity").getOutlierCount(), is(0L));
+  }
+
+  @Test
+  public void moreThan10Activities() throws SQLException {
+    // 10 is the default terms limit of elasticearch, this ensures the default does not apply
+
+    // given
+    ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(
+      getBpmnModelInstance(IntStream.range(0,10).mapToObj(i -> "testActivity" + i).toArray(String[]::new))
+    );
+
+    // one instance is suffice, we just need data from each activity, having in total >10 activities
+    final ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstance.getId(), 1L);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    HashMap<String, FindingsDto> outlierTest = embeddedOptimizeRule.getRequestExecutor()
+      .buildFlowNodeOutliersRequest("outlierTest", Collections.singletonList("1"), Collections.singletonList(null))
+      .execute(new TypeReference<HashMap<String, FindingsDto>>() {
+      });
+
+    // then
+    assertThat(outlierTest.size(), is(12));
   }
 
   @Test
