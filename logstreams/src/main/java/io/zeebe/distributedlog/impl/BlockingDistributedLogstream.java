@@ -10,16 +10,13 @@ package io.zeebe.distributedlog.impl;
 import io.atomix.primitive.Synchronous;
 import io.zeebe.distributedlog.AsyncDistributedLogstream;
 import io.zeebe.distributedlog.DistributedLogstream;
-import io.zeebe.logstreams.impl.Loggers;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.slf4j.Logger;
 
 public class BlockingDistributedLogstream extends Synchronous<AsyncDistributedLogstream>
     implements DistributedLogstream {
 
-  private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
   private final DistributedLogstreamProxy distributedLogstreamProxy;
   private final long timeout;
 
@@ -31,27 +28,11 @@ public class BlockingDistributedLogstream extends Synchronous<AsyncDistributedLo
   }
 
   @Override
-  public long append(String partition, String nodeId, long commitPosition, byte[] blockBuffer) {
-    try {
-      return distributedLogstreamProxy
-          .append(partition, nodeId, commitPosition, blockBuffer)
-          .get(timeout, TimeUnit.MILLISECONDS);
-    } catch (InterruptedException | ExecutionException | TimeoutException e) {
-      LOG.error("Unexpected exception appeared during blocking append.", e);
-    }
-    // Append failed
-    return -1;
-  }
-
-  @Override
-  public void claimLeaderShip(String partition, String nodeId, long leaderTerm) {
-    try {
-      distributedLogstreamProxy
-          .claimLeaderShip(partition, nodeId, leaderTerm)
-          .get(timeout, TimeUnit.MILLISECONDS);
-    } catch (InterruptedException | ExecutionException | TimeoutException e) {
-      LOG.error("Unexpected exception appeared during blocking claim leadership.", e);
-    }
+  public long append(String partition, String nodeId, long commitPosition, byte[] blockBuffer)
+      throws InterruptedException, ExecutionException, TimeoutException {
+    return distributedLogstreamProxy
+        .append(partition, nodeId, commitPosition, blockBuffer)
+        .get(timeout, TimeUnit.MILLISECONDS);
   }
 
   @Override
