@@ -27,16 +27,20 @@ export const LogoIcon = styled(Logo)`
   margin-right: 20px;
 `;
 
+export const Brand = themed(styled(
+  withStrippedProps(['toggleTheme', 'isActive'])(Link)
+)`
+  display: inline-block;
+  padding: 0 20px;
+  border-right: 1px solid ${separator};
+`);
+
 export const Dashboard = themed(styled(
   withStrippedProps(['toggleTheme', 'isActive'])(Link)
 )`
   display: inline-block;
   padding: 0 20px;
   border-right: 1px solid ${separator};
-
-  ${LogoIcon} {
-    ${({isActive}) => (isActive ? '' : `opacity: 0.8`)};
-  }
 
   span {
     ${({isActive}) => (isActive ? '' : `opacity: 0.5;`)};

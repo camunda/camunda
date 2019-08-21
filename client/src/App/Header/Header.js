@@ -184,22 +184,25 @@ class Header extends React.Component {
     ) : (
       <Styled.Header role="banner">
         <Styled.Menu role="navigation">
+          <li data-test="header-link-brand">
+            <Styled.Brand to="/" title="View Dashboard">
+              <Styled.LogoIcon />
+              <span>Camunda Operate</span>
+            </Styled.Brand>
+          </li>
           <li data-test="header-link-dashboard">
             <Styled.Dashboard
               to="/"
               isActive={active === 'dashboard'}
               title="View Dashboard"
             >
-              <Styled.LogoIcon />
               <span>Dashboard</span>
             </Styled.Dashboard>
           </li>
           <li data-test="header-link-instances">
             <Styled.ListLink
               isActive={active === 'instances' && isRunningInstanceFilter}
-              title={`View ${
-                this.state.runningInstancesCount
-              } Running Instances`}
+              title={`View ${this.state.runningInstancesCount} Running Instances`}
               {...this.getListLinksProps('instances')}
             >
               <span>Running Instances</span>

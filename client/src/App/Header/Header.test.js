@@ -102,14 +102,18 @@ describe('Header', () => {
       expect(node.find(Styled.Menu)).toExist();
       expect(node.find(Styled.Menu).props().role).toBe('navigation');
 
-      expect(node.find(Styled.Menu).find('li').length).toBe(5);
+      expect(node.find(Styled.Menu).find('li').length).toBe(6);
+
+      const BrandLinkNode = node.find('[data-test="header-link-brand"]');
+      expect(BrandLinkNode).toExist();
+      expect(BrandLinkNode.text()).toContain('Camunda Operate');
+      expect(BrandLinkNode.find(Styled.LogoIcon)).toExist();
 
       const DashboardLinkNode = node.find(
         '[data-test="header-link-dashboard"]'
       );
       expect(DashboardLinkNode).toExist();
       expect(DashboardLinkNode.text()).toContain('Dashboard');
-      expect(DashboardLinkNode.find(Styled.LogoIcon)).toExist();
 
       const InstancesLinkNode = node.find(
         '[data-test="header-link-instances"]'
