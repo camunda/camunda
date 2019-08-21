@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Spliterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
@@ -29,7 +30,6 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
-import one.util.streamex.StreamEx;
 
 public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements Stream<T> {
   private final Stream<T> wrappedStream;
@@ -45,15 +45,24 @@ public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements
    * predicate.
    */
   public S skipUntil(Predicate<T> predicate) {
-    return supply(StreamEx.of(this).dropWhile(predicate.negate()));
+    return supply(this.dropWhile(predicate.negate()));
   }
 
   /**
    * short-circuiting operation; limits the stream to the first element that fulfills the predicate
    */
   public S limit(Predicate<T> predicate) {
-    // #takeWhile comes with Java >= 9
-    return supply(StreamEx.of(this).takeWhileInclusive(predicate.negate()));
+    final AtomicBoolean inclusionFlag = new AtomicBoolean(true);
+    return supply(
+        this.takeWhile(
+            s ->
+                // #takeWhile + inclusion of element which fulfills the predicate
+                // when predicate negation becomes false, this means predicate is fulfilled
+                // we toggle the flag, this means we will add this to the stream
+                // not to add everything after that we have to check the inclusion flag,
+                // which is then false -> takeWhile will stop then
+                (inclusionFlag.get() && predicate.negate().test(s))
+                    || inclusionFlag.compareAndSet(true, false)));
   }
 
   // Helper to extract values
