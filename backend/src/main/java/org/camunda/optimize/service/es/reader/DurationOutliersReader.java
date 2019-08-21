@@ -111,7 +111,7 @@ public class DurationOutliersReader {
       search = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       log.warn("Couldn't retrieve duration chart");
-      throw new OptimizeRuntimeException(e.getMessage());
+      throw new OptimizeRuntimeException(e.getMessage(), e);
     }
 
     return ((Histogram) ((Filter) ((Nested) search.getAggregations().get(EVENTS)).getAggregations()
@@ -151,7 +151,7 @@ public class DurationOutliersReader {
     try {
       search = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      throw new OptimizeRuntimeException(e.getMessage());
+      throw new OptimizeRuntimeException(e.getMessage(), e);
     }
 
     double min = ((Stats) ((Filter) ((Nested) search.getAggregations()
@@ -216,7 +216,7 @@ public class DurationOutliersReader {
       aggregations = esClient.search(searchRequest, RequestOptions.DEFAULT).getAggregations();
     } catch (IOException e) {
       log.warn("Couldn't retrieve outliers from Elasticsearch");
-      throw new OptimizeRuntimeException(e.getMessage());
+      throw new OptimizeRuntimeException(e.getMessage(), e);
     }
 
     return mapToFlowNodeOutlierMap(query, aggregations);
@@ -257,7 +257,7 @@ public class DurationOutliersReader {
       try {
         singleNodeAggregation = esClient.search(searchRequest, RequestOptions.DEFAULT).getAggregations();
       } catch (IOException e) {
-        throw new OptimizeRuntimeException(e.getMessage());
+        throw new OptimizeRuntimeException(e.getMessage(), e);
       }
       PercentileRanks ranks = ((Filter) (((Nested) singleNodeAggregation.get(EVENTS)).getAggregations()
         .get(FILTERED_FLOW_NODES_AGG))).getAggregations().get(RANKS_AGG);
