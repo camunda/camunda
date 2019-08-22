@@ -41,3 +41,7 @@ if [ "${SKIP_DOWNLOAD}" = "false" ]; then
 else
   useLocalArtifact
 fi
+
+# Prevent environment-config.yaml from overriding service-config.yaml since the
+# service-config.yaml allows usage of OPTIMIZE_ environment variables: SRE-523
+rm environment/environment-config.yaml

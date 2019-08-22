@@ -54,7 +54,7 @@ engines:
       # the name used for this tenant when displayed in the UI
       name: null
     #A base URL that will be used for connections to the Camunda Engine REST API.
-    rest: 'http://localhost:8080/engine-rest'
+    rest: '${OPTIMIZE_CAMUNDABPM_REST_URL:http://localhost:8080/engine-rest}'
     # Determines whether this instance of Optimize should import definition & historical data from this engine.
     importEnabled: true
     authentication:
@@ -77,7 +77,7 @@ engines:
     # Optimize directly to a dedicated process instance in Cockpit
     webapps:
       # Defines the endpoint where to find the camunda webapps for the given engine
-      endpoint: 'http://localhost:8080/camunda'
+      endpoint: '${OPTIMIZE_CAMUNDABPM_WEBAPPS_URL:http://localhost:8080/camunda}'
       # Enables/disables linking to other Camunda Web Applications
       enabled: true
 
