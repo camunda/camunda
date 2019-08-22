@@ -9,12 +9,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
 import org.camunda.operate.entities.UserEntity;
 import org.camunda.operate.rest.exception.NotFoundException;
 import org.camunda.operate.util.OperateIntegrationTest;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,6 +29,9 @@ public class UserStorageIT extends OperateIntegrationTest{
   @Autowired
   UserStorage userStorage;
   
+  @Autowired
+  RestHighLevelClient esClient;
+  
   protected List<String> allUsernames(){
     return Arrays.asList("test-user,act,demo".split(","));
   }
@@ -34,6 +41,7 @@ public class UserStorageIT extends OperateIntegrationTest{
   }
   
   protected void assertAllUsersAreDeleted() {
+    refreshIndexes();
     allUsernames().forEach( username -> {
       assertThatExceptionOfType(NotFoundException.class).isThrownBy(() -> userStorage.getByName(username));
     });
@@ -44,6 +52,14 @@ public class UserStorageIT extends OperateIntegrationTest{
     assertThat(userStorage).isNotNull();
     deleteAllUsers();
     assertAllUsersAreDeleted();
+  }
+  
+  protected void refreshIndexes() {
+    try {
+      esClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
+    } catch (IOException e) {
+       // ignore
+    }
   }
   
   @After
@@ -57,17 +73,8 @@ public class UserStorageIT extends OperateIntegrationTest{
     assertThatThrownBy(() -> userStorage.getByName("test-user")).isInstanceOf(NotFoundException.class);
     UserEntity user = UserEntity.from("test-user","test-password","USER");
     userStorage.create(user);
+    refreshIndexes();
     assertThat(userStorage.getByName("test-user")).isEqualTo(user);
-  }
-
-  @Test
-  public void testSave() {
-    UserEntity user = UserEntity.from("test-user","test-password","USER");
-    userStorage.create(user);
-    assertThat(userStorage.getByName("test-user")).isEqualTo(user);
-    user.setPassword("test-another-password");
-    userStorage.save(user);
-    assertThat(userStorage.getByName("test-user").getPassword()).isEqualTo("test-another-password");
   }
 
 }

@@ -6,9 +6,7 @@
 package org.camunda.operate.es.schema.indices;
 
 import java.io.IOException;
-import org.camunda.operate.property.OperateProperties;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -25,9 +23,6 @@ public class WorkflowIndex extends AbstractIndexCreator {
   public static final String ACTIVITIES = "activities";
   public static final String ACTIVITY_NAME = "name";
   public static final String ACTIVITY_TYPE = "type";
-
-  @Autowired
-  private OperateProperties operateProperties;
 
   @Override
   public String getIndexName() {

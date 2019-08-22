@@ -12,6 +12,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @SpringBootApplication
 @ComponentScan(basePackages = "org.camunda.operate",
@@ -25,10 +27,16 @@ public class TestApplication {
     SpringApplication.run(TestApplication.class, args);
   }
 
+  private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
   @Bean(name = "dataGenerator")
   @ConditionalOnMissingBean
   public DataGenerator stubDataGenerator() {
     return DataGenerator.DO_NOTHING;
   }
 
+  @Bean(name = "passwordEncoder")
+  public PasswordEncoder getPasswordEncoder() {
+    return passwordEncoder  ;
+  }
 }

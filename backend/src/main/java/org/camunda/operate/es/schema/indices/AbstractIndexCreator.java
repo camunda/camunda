@@ -6,9 +6,12 @@
 package org.camunda.operate.es.schema.indices;
 
 import java.io.IOException;
+
+import org.camunda.operate.property.OperateProperties;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
@@ -19,6 +22,8 @@ public abstract class AbstractIndexCreator implements IndexCreator {
 
   public static final String PARTITION_ID = "partitionId";
 
+  @Autowired
+  protected OperateProperties operateProperties;
   @Override
   public XContentBuilder getSource() throws IOException {
     //TODO copy-pasted from Optimize, we need to check if this settings suit our needs

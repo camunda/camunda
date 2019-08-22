@@ -14,6 +14,7 @@ import org.camunda.operate.data.DataGenerator;
 import org.camunda.operate.es.ElasticsearchConnector;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.es.archiver.Archiver;
+import org.camunda.operate.user.ElasticSearchUserDetailsService;
 import org.camunda.operate.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -35,6 +36,9 @@ public class StartupBean {
   
   @Autowired
   private ElasticsearchSchemaManager elasticsearchSchemaManager;
+  
+  @Autowired
+  private ElasticSearchUserDetailsService elasticsearchUserDetailsService;
 
   @Autowired
   private DataGenerator dataGenerator;
@@ -52,6 +56,8 @@ public class StartupBean {
   public void initApplication() {
     logger.info("INIT: Initialize Elasticsearch schema...");
     elasticsearchSchemaManager.initializeSchema();
+    logger.info("INIT: Create users in elasticsearch if not exists ...");
+    elasticsearchUserDetailsService.initializeUsers();
     logger.debug("INIT: Generate demo data...");
     try {
       dataGenerator.createZeebeDataAsync(false);

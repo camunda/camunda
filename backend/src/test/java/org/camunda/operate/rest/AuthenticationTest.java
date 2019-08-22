@@ -20,13 +20,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.camunda.operate.TestApplication;
 import org.camunda.operate.entities.UserEntity;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.UserDto;
 import org.camunda.operate.security.WebSecurityConfig;
+import org.camunda.operate.user.ElasticSearchUserDetailsService;
 import org.camunda.operate.user.UserStorage;
 import org.camunda.operate.util.MetricAssert;
-import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -50,7 +51,7 @@ import org.springframework.util.MultiValueMap;
 @RunWith(SpringRunner.class)
 @SpringBootTest(
   classes = {
-      OperateProperties.class,TestApplicationWithNoBeans.class,WebSecurityConfig.class, AuthenticationRestService.class
+      OperateProperties.class,TestApplication.class,WebSecurityConfig.class, AuthenticationRestService.class,ElasticSearchUserDetailsService.class
   },
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
@@ -84,12 +85,13 @@ public class AuthenticationTest {
     addWebUser(METRICS_USER, METRICS_PASSWORD, METRICS_ROLE);
   }
   
-  protected void addWebUser(String name,String password, String roles) {
+  protected void addWebUser(String name,String password, String role) {
     given(userStorage.getByName(name))
     .willReturn(new UserEntity()
     .setUsername(name)
     .setPassword(
-        new BCryptPasswordEncoder().encode(password)).setRoles(roles));
+        new BCryptPasswordEncoder().encode(password)
+     ).setRole(role));
   }
 
   @Test
@@ -215,7 +217,7 @@ public class AuthenticationTest {
     return testRestTemplate.postForEntity(LOGOUT_RESOURCE, request, String.class);
   }
 
-  
+ 
   protected void assertThatCookiesAreSet(HttpHeaders headers) {
     assertThat(headers).containsKey(SET_COOKIE_HEADER);
     assertThat(headers.get(SET_COOKIE_HEADER).get(0)).contains(COOKIE_JSESSIONID);

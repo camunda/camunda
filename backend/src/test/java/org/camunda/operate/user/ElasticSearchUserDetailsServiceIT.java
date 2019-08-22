@@ -13,8 +13,6 @@ import org.camunda.operate.util.OperateIntegrationTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 public class ElasticSearchUserDetailsServiceIT extends OperateIntegrationTest {
 
@@ -22,23 +20,15 @@ public class ElasticSearchUserDetailsServiceIT extends OperateIntegrationTest {
   OperateProperties operateProperties;
   
   @Autowired
-  UserStorage userStorage;
+  ElasticSearchUserDetailsService userDetailsService;
   
   @Test
   public void testAddConfigurationAndActUserWhenNotExistsToElasticSearch() {
-    // Given
-    operateProperties.setUsername("test-user");
-    operateProperties.setPassword("test-password");
-    
-    // When
-    UserDetailsService userDetailsService = new ElasticSearchUserDetailsService(operateProperties, userStorage, new BCryptPasswordEncoder());
-    
-    // Then
-    UserDetails testUser = userDetailsService.loadUserByUsername("test-user");
-    assertThat(testUser.getUsername()).isEqualTo("test-user");
+    String username = operateProperties.getUsername();
+    UserDetails testUser = userDetailsService.loadUserByUsername(username);
+    assertThat(testUser.getUsername()).isEqualTo(username);
     UserDetails actUser = userDetailsService.loadUserByUsername("act");
     assertThat(actUser.getUsername()).isEqualTo("act");
   }
   
-
 }

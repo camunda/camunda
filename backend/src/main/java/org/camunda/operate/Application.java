@@ -9,13 +9,13 @@ import org.camunda.operate.data.DataGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @SpringBootApplication
-@EnableAutoConfiguration
 public class Application {
 
   private static final Logger logger = LoggerFactory.getLogger(Application.class);
@@ -30,6 +30,8 @@ public class Application {
     springApplication.run(args);
   }
 
+  private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
   @Bean(name = "dataGenerator")
   @ConditionalOnMissingBean
   public DataGenerator stubDataGenerator() {
@@ -37,5 +39,9 @@ public class Application {
     return DataGenerator.DO_NOTHING;
   }
 
+  @Bean(name = "passwordEncoder")
+  public PasswordEncoder getPasswordEncoder() {
+    return passwordEncoder ;
+  }
 }
 

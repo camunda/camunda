@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.operate.es.schema.templates;
+package org.camunda.operate.es.schema.indices;
 
 import java.io.IOException;
 
@@ -11,17 +11,17 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UserTemplate extends AbstractTemplateCreator {
+public class UserIndex extends AbstractIndexCreator {
 
   private static final String INDEX_NAME = "user";
   public static final String ID = "id";
   public static final String USERNAME = "username";
   public static final String PASSWORD = "password";
-  public static final String ROLES = "roles";
+  public static final String ROLE = "role";
 
   @Override
-  protected String getIndexNameFormat() {
-    return INDEX_NAME;
+  public String getIndexName() {
+    return String.format("%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), INDEX_NAME);
   }
 
   @Override
@@ -36,7 +36,7 @@ public class UserTemplate extends AbstractTemplateCreator {
         .startObject(PASSWORD)
            .field("type","keyword")
         .endObject()
-        .startObject(ROLES)
+        .startObject(ROLE)
           .field("type","keyword")
         .endObject();
       return newBuilder;

@@ -5,14 +5,15 @@
  */
 package org.camunda.operate.user;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 import org.camunda.operate.entities.UserEntity;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.rest.exception.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -20,54 +21,59 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.util.Assert;
+import org.springframework.stereotype.Component;
 
+@Component
 public class ElasticSearchUserDetailsService implements UserDetailsService{
+
+  private static final String ACT_USERNAME = "act", ACT_PASSWORD = ACT_USERNAME;
+
+  private static final String ACT_ADMIN_ROLE = "ACTRADMIN";
+
+  private static final String USER_ROLE = "USER";
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticSearchUserDetailsService.class);
 
+  @Autowired
   private UserStorage userStorage;
+    
+  @Autowired
+  private OperateProperties operateProperties;
   
+  @Autowired
   private PasswordEncoder passwordEncoder;
-
-  public ElasticSearchUserDetailsService(OperateProperties operateProperties, UserStorage userStorage, PasswordEncoder passwordEncoder) {
-    this.userStorage = userStorage;
-    this.passwordEncoder = passwordEncoder;
+  
+  public void initializeUsers() {
     String username = operateProperties.getUsername();
     if(!userExists(username)) {
-      createUserFrom(operateProperties.getUsername(), operateProperties.getPassword(), "USER");
+      addUserWith(username, operateProperties.getPassword(), USER_ROLE);
     }   
-    if(!userExists("act")) {
-      createUserFrom("act", "act", "ACTRADMIN");
+    if(!userExists(ACT_USERNAME)) {
+      addUserWith(ACT_USERNAME, ACT_PASSWORD, ACT_ADMIN_ROLE);
     }
   }
 
-  protected ElasticSearchUserDetailsService createUserFrom(String username,String password,String role) {
+  protected ElasticSearchUserDetailsService addUserWith(String username,String password,String role) {
     logger.info("Create user in ElasticSearch for username {}",username);
     String passwordEncoded = passwordEncoder.encode(password);
-    UserDetails userDetails = User.builder()
-      .username(username)
-      .password(passwordEncoded)
-      .roles(role)
-      .build();
-    userStorage.create(UserEntity.fromUserDetails(userDetails));
+    userStorage.create(UserEntity.from(username, passwordEncoded, role));
     return this;
   }
   
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-    UserEntity userEntity = userStorage.getByName(username);
-    return new User(userEntity.getUsername(), userEntity.getPassword(),true,
-        true, true,
-        true, toAuthorities(userEntity.getRoles()));
+    try {
+      UserEntity userEntity = userStorage.getByName(username);
+      return new User(userEntity.getUsername(), userEntity.getPassword(),true,
+          true, true,
+          true, toAuthorities(userEntity.getRole()));
+    }catch(NotFoundException e) {
+      throw new UsernameNotFoundException(String.format("User with username '%s' not found.",username),e);
+    }
   }
 
   protected Collection<? extends GrantedAuthority> toAuthorities(String role) {
-    List<GrantedAuthority> authorities = new ArrayList<>();
-    Assert.isTrue(!role.startsWith("ROLE_"), () -> role
-          + " cannot start with ROLE_ (it is automatically added)");
-    authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-    return authorities;
+    return Arrays.asList(new SimpleGrantedAuthority("ROLE_" + role));
   }
   
   protected boolean userExists(String username) {
@@ -77,4 +83,5 @@ public class ElasticSearchUserDetailsService implements UserDetailsService{
       return false;
     }
   }
+
 }

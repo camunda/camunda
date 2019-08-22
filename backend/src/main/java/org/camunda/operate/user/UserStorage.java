@@ -9,7 +9,7 @@ import java.io.IOException;
 
 import org.camunda.operate.entities.UserEntity;
 import org.camunda.operate.es.reader.AbstractReader;
-import org.camunda.operate.es.schema.templates.UserTemplate;
+import org.camunda.operate.es.schema.indices.UserIndex;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.rest.exception.NotFoundException;
 import org.camunda.operate.util.ElasticsearchUtil;
@@ -17,8 +17,6 @@ import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
-import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -30,23 +28,23 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+
 @Component
 public class UserStorage extends AbstractReader {
 
   private static final Logger logger = LoggerFactory.getLogger(UserStorage.class);
-  private static final RefreshPolicy REFRESH_POLICY = RefreshPolicy.IMMEDIATE;
-  private static final RequestOptions REQUEST_OPTIONS = RequestOptions.DEFAULT;
+
   private static final XContentType XCONTENT_TYPE = XContentType.JSON;
 
   @Autowired
-  private UserTemplate userTemplate;
+  private UserIndex userIndex;
 
   public UserEntity getByName(String username) {
-    final SearchRequest searchRequest = new SearchRequest(userTemplate.getAlias())
+    final SearchRequest searchRequest = new SearchRequest(userIndex.getAlias())
         .source(new SearchSourceBuilder()
-          .query(QueryBuilders.matchQuery(UserTemplate.USERNAME, username)));
+          .query(QueryBuilders.termQuery(UserIndex.USERNAME, username)));
       try {
-        final SearchResponse response = esClient.search(searchRequest,REQUEST_OPTIONS);
+        final SearchResponse response = esClient.search(searchRequest,RequestOptions.DEFAULT);
         if (response.getHits().totalHits == 1) {
           return ElasticsearchUtil.fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, UserEntity.class);
         } else if (response.getHits().totalHits > 1) {
@@ -63,31 +61,18 @@ public class UserStorage extends AbstractReader {
 
   public void create(UserEntity user) {
     try {
-      IndexRequest request = new IndexRequest(userTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE,user.getId())
-          .source(userEntityToJSONString(user), XCONTENT_TYPE)
-          .setRefreshPolicy(REFRESH_POLICY);
-      esClient.index(request,REQUEST_OPTIONS);
+      IndexRequest request = new IndexRequest(userIndex.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE,user.getId())
+          .source(userEntityToJSONString(user), XCONTENT_TYPE);
+      esClient.index(request,RequestOptions.DEFAULT);
     } catch (Throwable t) {
       logger.error("Could not create user with username {}", user.getUsername(), t);
     }    
   }
 
-  public void save(UserEntity user) {
-    try {
-      UpdateRequest request = new UpdateRequest(userTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, user.getId())
-          .setRefreshPolicy(REFRESH_POLICY)
-          .doc(userEntityToJSONString(user),XCONTENT_TYPE);
-      esClient.update(request,REQUEST_OPTIONS);
-    }catch (Throwable t) {
-      logger.error("Could not save user with username {}", user.getUsername(), t);
-    }
-  }
-
   public void deleteById(String id) {
     try {
-      DeleteRequest request = new DeleteRequest(userTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE,id)
-          .setRefreshPolicy(REFRESH_POLICY); 
-      esClient.delete(request,REQUEST_OPTIONS);
+      DeleteRequest request = new DeleteRequest(userIndex.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE,id);
+      esClient.delete(request,RequestOptions.DEFAULT);
     } catch (Throwable t) {
       logger.error("Could not delete user by id {}", id, t);
     }    
