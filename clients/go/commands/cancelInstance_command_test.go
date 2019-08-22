@@ -35,7 +35,7 @@ func TestCancelWorkflowInstanceCommand(t *testing.T) {
 
 	client.EXPECT().CancelWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCancelInstanceCommand(client, utils.DefaultTestTimeout)
+	command := NewCancelInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
 
 	response, err := command.WorkflowInstanceKey(123).Send()
 

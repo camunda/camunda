@@ -54,6 +54,7 @@ type ActivateJobsCommand struct {
 	request        *pb.ActivateJobsRequest
 	gateway        pb.GatewayClient
 	requestTimeout time.Duration
+	retryPredicate func(error) bool
 }
 
 func (cmd *ActivateJobsCommand) JobType(jobType string) ActivateJobsCommandStep2 {
@@ -93,6 +94,9 @@ func (cmd *ActivateJobsCommand) Send() ([]entities.Job, error) {
 
 	stream, err := cmd.gateway.ActivateJobs(ctx, cmd.request)
 	if err != nil {
+		if cmd.retryPredicate(err) {
+			return cmd.Send()
+		}
 		return nil, err
 	}
 
@@ -114,14 +118,15 @@ func (cmd *ActivateJobsCommand) Send() ([]entities.Job, error) {
 	return activatedJobs, nil
 }
 
-func NewActivateJobsCommand(gateway pb.GatewayClient, requestTimeout time.Duration) ActivateJobsCommandStep1 {
+func NewActivateJobsCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) ActivateJobsCommandStep1 {
 	return &ActivateJobsCommand{
 		request: &pb.ActivateJobsRequest{
-			Timeout: DefaultJobTimeoutInMs,
-			Worker:  DefaultJobWorkerName,
+			Timeout:        DefaultJobTimeoutInMs,
+			Worker:         DefaultJobWorkerName,
 			RequestTimeout: int64(requestTimeout / time.Millisecond),
 		},
 		gateway:        gateway,
 		requestTimeout: requestTimeout + RequestTimeoutOffset,
+		retryPredicate: retryPredicate,
 	}
 }

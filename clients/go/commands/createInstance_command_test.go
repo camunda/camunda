@@ -49,7 +49,7 @@ func TestCreateWorkflowInstanceCommand(t *testing.T) {
 
 	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
 
 	response, err := command.WorkflowKey(123).Send()
 
@@ -81,7 +81,7 @@ func TestCreateWorkflowInstanceCommandByBpmnProcessId(t *testing.T) {
 
 	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
 
 	response, err := command.BPMNProcessId("foo").LatestVersion().Send()
 
@@ -113,7 +113,7 @@ func TestCreateWorkflowInstanceCommandByBpmnProcessIdAndVersion(t *testing.T) {
 
 	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
 
 	response, err := command.BPMNProcessId("foo").Version(56).Send()
 
@@ -147,7 +147,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromString(t *testing.T) {
 
 	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
 
 	variablesCommand, err := command.WorkflowKey(123).VariablesFromString(variables)
 	if err != nil {
@@ -186,7 +186,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromStringer(t *testing.T) {
 
 	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
 
 	variablesCommand, err := command.WorkflowKey(123).VariablesFromStringer(DataType{Foo: "bar"})
 	if err != nil {
@@ -225,7 +225,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromObject(t *testing.T) {
 
 	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
 
 	variablesCommand, err := command.WorkflowKey(123).VariablesFromObject(DataType{Foo: "bar"})
 	if err != nil {
@@ -264,7 +264,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromObjectOmitempty(t *testin
 
 	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
 
 	variablesCommand, err := command.WorkflowKey(123).VariablesFromObject(DataType{Foo: ""})
 	if err != nil {
@@ -303,7 +303,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromObjectIgnoreOmitempty(t *
 
 	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
 
 	variablesCommand, err := command.WorkflowKey(123).VariablesFromObjectIgnoreOmitempty(DataType{Foo: ""})
 	if err != nil {
@@ -344,7 +344,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromMap(t *testing.T) {
 
 	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
 
 	variablesCommand, err := command.WorkflowKey(123).VariablesFromMap(variablesMap)
 	if err != nil {

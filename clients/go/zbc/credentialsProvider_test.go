@@ -16,7 +16,6 @@ package zbc
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
@@ -25,16 +24,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"io/ioutil"
 	"net"
-	"net/http"
-	"os"
 	"strings"
 	"testing"
 )
 
 // request data
-const clientId = "someClient"
+const clientID = "someClient"
 const clientSecret = "someSecret"
 const audience = "localhost"
 
@@ -42,191 +38,26 @@ const audience = "localhost"
 const accessToken = "someToken"
 const tokenType = "Bearer"
 
-func TestOAuthCredentialsProvider(t *testing.T) {
-	// given
-	interceptor := &recordingInterceptor{}
-	gatewayLis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
-
-	go grpcServer.Serve(gatewayLis)
-	defer func() {
-		grpcServer.Stop()
-		_ = gatewayLis.Close()
-	}()
-
-	authServerLis := createMockAuthorizationServer(t)
-	defer authServerLis.Close()
-
-	authServerUrl := fmt.Sprintf("http://%s/oauth/token", authServerLis.Addr().String())
-	credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
-		ClientId:               clientId,
-		ClientSecret:           clientSecret,
-		Audience:               audience,
-		AuthorizationServerUrl: authServerUrl,
-	})
-
-	require.NoError(t, err)
-	parts := strings.Split(gatewayLis.Addr().String(), ":")
-	client, err := NewZBClient(&ZBClientConfig{
-		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		UsePlaintextConnection: true,
-		CredentialsProvider:    credsProvider,
-	})
-	require.NoError(t, err)
-
-	// when
-	_, err = client.NewTopologyCommand().Send()
-
-	// then
-	require.Error(t, err)
-	if errorStatus, ok := status.FromError(err); ok {
-		require.Equal(t, codes.Unimplemented, errorStatus.Code())
-	}
-	require.Equal(t, tokenType+" "+accessToken, interceptor.capturedToken)
+type customCredentialsProvider struct {
+	customToken    string
+	retryPredicate func(error) bool
 }
 
-var configErrorTests = []struct {
-	name       string
-	config     *OAuthProviderConfig
-	err        ZBError
-	errMessage string
-}{
-	{"missing authorization server URL",
-		&OAuthProviderConfig{
-			ClientId:     clientId,
-			ClientSecret: clientSecret,
-			Audience:     audience,
-		},
-		InvalidArgumentError,
-		invalidArgumentError("authorization server URL", "cannot be blank").Error(),
-	},
-	{
-		"malformed authorization server URL",
-		&OAuthProviderConfig{
-			ClientId:               clientId,
-			ClientSecret:           clientSecret,
-			Audience:               audience,
-			AuthorizationServerUrl: "foo",
-		},
-		InvalidArgumentError,
-		invalidArgumentError("authorization server URL", "must be a valid URL").Error(),
-	},
-	{
-		"missing client id",
-		&OAuthProviderConfig{
-
-			ClientSecret:           clientSecret,
-			Audience:               audience,
-			AuthorizationServerUrl: "http://foo",
-		},
-		InvalidArgumentError,
-		invalidArgumentError("client ID", "cannot be blank").Error(),
-	},
-	{
-		"missing client secret",
-		&OAuthProviderConfig{
-			ClientId:               clientId,
-			Audience:               audience,
-			AuthorizationServerUrl: "http://foo",
-		},
-		InvalidArgumentError,
-		invalidArgumentError("client secret", "cannot be blank").Error(),
-	},
-	{
-		"missing audience",
-		&OAuthProviderConfig{
-			ClientId:               clientId,
-			ClientSecret:           clientSecret,
-			AuthorizationServerUrl: "http://foo",
-		},
-		InvalidArgumentError,
-		invalidArgumentError("audience", "cannot be blank").Error(),
-	},
-}
-
-func TestInvalidOAuthProviderConfigurations(t *testing.T) {
-	for _, test := range configErrorTests {
-		t.Run(test.name, func(t *testing.T) {
-			// when
-			_, err := NewOAuthCredentialsProvider(test.config)
-
-			//then
-			require.EqualValues(t, test.err, errors.Cause(err))
-			require.EqualValues(t, test.errMessage, err.Error())
-		})
-	}
-}
-
-type fieldExtractor func(config *OAuthProviderConfig) string
-
-var envVarTests = []struct {
-	name           string
-	envVar         string
-	value          string
-	fieldExtractor fieldExtractor
-}{
-	{
-		"environment variable client id",
-		"ZEEBE_CLIENT_ID",
-		"envClient",
-		func(c *OAuthProviderConfig) string { return c.ClientId },
-	},
-	{
-		"environment variable client secret",
-		"ZEEBE_CLIENT_SECRET",
-		"envSecret",
-		func(c *OAuthProviderConfig) string { return c.ClientSecret },
-	},
-	{
-		"environment variable audience",
-		"ZEEBE_TOKEN_AUDIENCE",
-		"envAudience",
-		func(c *OAuthProviderConfig) string { return c.Audience },
-	},
-	{
-		"environment variable authorization server URL",
-		"ZEEBE_AUTHORIZATION_SERVER_URL",
-		"https://envAuthzUrl",
-		func(c *OAuthProviderConfig) string { return c.AuthorizationServerUrl },
-	},
-}
-
-func TestOAuthProviderWithEnvVars(t *testing.T) {
-	for _, test := range envVarTests {
-		t.Run(test.name, func(t *testing.T) {
-			if err := os.Setenv(test.envVar, test.value); err != nil {
-				panic(err)
-			}
-
-			config := &OAuthProviderConfig{
-				ClientId:               clientId,
-				ClientSecret:           clientSecret,
-				Audience:               audience,
-				AuthorizationServerUrl: "http://foo",
-			}
-
-			// when
-			_, _ = NewOAuthCredentialsProvider(config)
-
-			// then
-			require.EqualValues(t, test.value, test.fieldExtractor(config))
-		})
-		if err := os.Unsetenv(test.envVar); err != nil {
-			panic(err)
-		}
-	}
-}
-
-type CustomCredentialsProvider struct {
-	customToken string
-}
-
-func (t CustomCredentialsProvider) ApplyCredentials(headers map[string]string) {
+func (t customCredentialsProvider) ApplyCredentials(headers map[string]string) {
 	headers["Authorization"] = t.customToken
+}
+
+func (t customCredentialsProvider) ShouldRetryRequest(err error) bool {
+	if t.retryPredicate != nil {
+		return t.retryPredicate(err)
+	}
+
+	return false
 }
 
 func TestCustomCredentialsProvider(t *testing.T) {
 	// given
-	interceptor := &recordingInterceptor{}
+	interceptor := newRecordingInterceptor(nil)
 	lis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
 
 	go grpcServer.Serve(lis)
@@ -235,7 +66,7 @@ func TestCustomCredentialsProvider(t *testing.T) {
 		_ = lis.Close()
 	}()
 
-	credsProvider := &CustomCredentialsProvider{customToken: accessToken}
+	credsProvider := &customCredentialsProvider{customToken: accessToken}
 
 	parts := strings.Split(lis.Addr().String(), ":")
 
@@ -254,50 +85,82 @@ func TestCustomCredentialsProvider(t *testing.T) {
 	if errorStatus, ok := status.FromError(err); ok {
 		require.Equal(t, codes.Unimplemented, errorStatus.Code())
 	}
-	require.Equal(t, accessToken, interceptor.capturedToken)
+	require.Equal(t, accessToken, interceptor.authHeader)
 }
 
-func createMockAuthorizationServer(t *testing.T) net.Listener {
-	http.HandleFunc("/oauth/token", func(writer http.ResponseWriter, request *http.Request) {
-		bytes, err := ioutil.ReadAll(request.Body)
-		if err != nil {
-			panic(err)
-		}
-
-		requestPayload := &oauthRequestPayload{}
-		err = json.Unmarshal(bytes, requestPayload)
-		if err != nil {
-			panic(err)
-		}
-
-		require.EqualValues(t, &oauthRequestPayload{
-			ClientId:     clientId,
-			ClientSecret: clientSecret,
-			Audience:     audience,
-			GrantType:    "client_credentials",
-		}, requestPayload)
-
-		writer.WriteHeader(200)
-		responsePayload := []byte("{\"access_token\": \"" + accessToken + "\"," +
-			"\"expires_in\": 3600," +
-			"\"token_type\": \"" + tokenType + "\"," +
-			"\"scope\": \"grpc\"}")
-
-		_, err = writer.Write(responsePayload)
-		if err != nil {
-			panic(err)
-		}
+func TestRetryMoreThanOnce(t *testing.T) {
+	// given
+	retries := 2
+	interceptor := newRecordingInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		return nil, status.Error(codes.Unknown, "expected")
 	})
-	listener, err := net.Listen("tcp", ":0")
-	if err != nil {
-		panic(err)
-	}
 
-	go func() {
-		_ = http.Serve(listener, nil)
+	lis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
+
+	go grpcServer.Serve(lis)
+	defer func() {
+		grpcServer.Stop()
+		_ = lis.Close()
 	}()
 
-	return listener
+	provider := &customCredentialsProvider{
+		customToken: accessToken,
+		retryPredicate: func(e error) bool {
+			retries--
+			return retries >= 0
+		},
+	}
+
+	parts := strings.Split(lis.Addr().String(), ":")
+	client, err := NewZBClient(&ZBClientConfig{
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		UsePlaintextConnection: true,
+		CredentialsProvider:    provider,
+	})
+	require.NoError(t, err)
+
+	// when
+	_, err = client.NewTopologyCommand().Send()
+
+	// then
+	require.Error(t, err)
+	if errorStatus, ok := status.FromError(err); ok {
+		require.Equal(t, codes.Unknown, errorStatus.Code())
+	}
+	require.EqualValues(t, 3, interceptor.interceptCounter)
+}
+
+func TestNoRetryWithoutProvider(t *testing.T) {
+	// given
+	interceptor := newRecordingInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		return nil, status.Error(codes.Unauthenticated, "expected")
+	})
+
+	lis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
+
+	go grpcServer.Serve(lis)
+	defer func() {
+		grpcServer.Stop()
+		_ = lis.Close()
+	}()
+
+	parts := strings.Split(lis.Addr().String(), ":")
+	client, err := NewZBClient(&ZBClientConfig{
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		UsePlaintextConnection: true,
+		CredentialsProvider:    nil,
+	})
+	require.NoError(t, err)
+
+	// when
+	_, err = client.NewTopologyCommand().Send()
+
+	// then
+	require.Error(t, err)
+	if errorStatus, ok := status.FromError(err); ok {
+		require.Equal(t, codes.Unauthenticated, errorStatus.Code())
+	}
+	require.EqualValues(t, 1, interceptor.interceptCounter)
 }
 
 func createServerWithInterceptor(interceptorFunc grpc.UnaryServerInterceptor) (net.Listener, *grpc.Server) {
@@ -309,18 +172,39 @@ func createServerWithInterceptor(interceptorFunc grpc.UnaryServerInterceptor) (n
 	return listener, grpcServer
 }
 
+// recordingInterceptor has several features. For each intercepted gRPC call, it will:
+//  * capture the authorization header (allowing you to check  its value)
+//  * execute an interceptAction, if any exists (allowing you to reject calls with specific codes, modify headers, etc)
+//  * increment an intercept counter (allowing you to verify how many calls were made)
 type recordingInterceptor struct {
-	capturedToken string
+	authHeader       string
+	interceptAction  interceptFunc
+	interceptCounter int
 }
 
-func (interceptor *recordingInterceptor) unaryClientInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-	headers, success := metadata.FromIncomingContext(ctx)
+type interceptFunc func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error)
 
+func (interceptor *recordingInterceptor) unaryClientInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	interceptor.interceptCounter++
+
+	headers, success := metadata.FromIncomingContext(ctx)
 	if !success {
 		return nil, errors.New("recording interceptor failed at retrieving headers")
 	}
 
-	interceptor.capturedToken = headers.Get("Authorization")[0]
+	interceptor.authHeader = strings.Join(headers.Get("Authorization"), "")
+
+	if interceptor.interceptAction != nil {
+		return interceptor.interceptAction(ctx, req, info, handler)
+	}
 
 	return handler(ctx, req)
+}
+
+// Creates a new recording interceptor with a given interception function
+func newRecordingInterceptor(action interceptFunc) *recordingInterceptor {
+	interceptor := &recordingInterceptor{}
+	interceptor.interceptAction = action
+
+	return interceptor
 }
