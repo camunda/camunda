@@ -30,9 +30,10 @@ import java.util.stream.IntStream;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
 
 public class OutlierDetectionIT {
   private static final int NUMBER_OF_DATAPOINTS = 40;
@@ -72,19 +73,36 @@ public class OutlierDetectionIT {
     // then
     // assuming normal distribution, left and right outliers should be of the same percentile
     final FindingsDto activity1Findings = outlierTest.get("testActivity1");
-    final FindingsDto activity2Findings = outlierTest.get("testActivity2");
-    assertThat(activity1Findings.getHigherOutlier().getBoundValue(), is(39486L));
-    assertThat(activity1Findings.getLowerOutlier().getBoundValue(), is(513L));
+    assertThat(activity1Findings.getHigherOutlier().isPresent(), is(true));
+    assertThat(activity1Findings.getHigherOutlier().get().getBoundValue(), is(39486L));
     assertThat(
-      activity1Findings.getHigherOutlier().getPercentile(),
-      closeTo(activity1Findings.getLowerOutlier().getPercentile(), 0.00001)
+      activity1Findings.getHigherOutlier().get().getPercentile(),
+      closeTo(activity1Findings.getLowerOutlier().get().getPercentile(), 0.00001)
     );
-    assertThat(activity1Findings.getLowerOutlier().getCount(), is(activity1Findings.getHigherOutlier().getCount()));
-    assertThat(activity1Findings.getOutlierCount(), is(activity1Findings.getHigherOutlier().getCount() * 2));
+    assertThat(activity1Findings.getLowerOutlier().isPresent(), is(true));
+    assertThat(activity1Findings.getLowerOutlier().get().getBoundValue(), is(513L));
+    assertThat(
+      activity1Findings.getLowerOutlier().get().getCount(), is(activity1Findings.getHigherOutlier().get().getCount())
+    );
+    assertThat(
+      activity1Findings.getOutlierCount(),
+      is(activity1Findings.getLowerOutlier().get().getCount() + activity1Findings.getHigherOutlier().get().getCount())
+    );
+    assertThat(activity1Findings.getLowerOutlierHeat(), is(1.0D));
+    assertThat(activity1Findings.getHigherOutlierHeat(), is(greaterThan(0.0D)));
+    assertThat(activity1Findings.getHeat(), is(greaterThan(0.0D)));
 
-    assertThat(activity2Findings.getHeat() > activity1Findings.getHeat(), is(true));
+    final FindingsDto activity2Findings = outlierTest.get("testActivity2");
     // second activity only has higher outliers
-    assertThat(activity2Findings.getOutlierCount(), is(activity2Findings.getHigherOutlier().getCount()));
+    assertThat(activity2Findings.getLowerOutlier().isPresent(), is(false));
+    assertThat(activity2Findings.getHigherOutlier().isPresent(), is(true));
+    assertThat(activity2Findings.getOutlierCount(), is(activity2Findings.getHigherOutlier().get().getCount()));
+    assertThat(activity2Findings.getHigherOutlierHeat(), is(greaterThan(0.0D)));
+    assertThat(activity2Findings.getLowerOutlierHeat(), is(0.0D));
+    // second activity has way more higher outliers and thus heat than activity 1
+    assertThat(activity2Findings.getHeat(), is(greaterThan(activity1Findings.getHeat())));
+    assertThat(activity2Findings.getHigherOutlierHeat(), is(greaterThan(activity1Findings.getHigherOutlierHeat())));
+    assertThat(activity2Findings.getLowerOutlierHeat(), is(lessThan(activity1Findings.getLowerOutlierHeat())));
   }
 
   @Test
@@ -138,9 +156,13 @@ public class OutlierDetectionIT {
       });
 
     // then
-    assertThat(outlierTest.get("testActivity").getLowerOutlier(), is(nullValue()));
-    assertThat(outlierTest.get("testActivity").getHigherOutlier(), is(nullValue()));
-    assertThat(outlierTest.get("testActivity").getOutlierCount(), is(0L));
+    final FindingsDto testActivity = outlierTest.get("testActivity");
+    assertThat(testActivity.getOutlierCount(), is(0L));
+    assertThat(testActivity.getLowerOutlier().isPresent(), is(false));
+    assertThat(testActivity.getHigherOutlier().isPresent(), is(false));
+    assertThat(testActivity.getLowerOutlierHeat(), is(0.0D));
+    assertThat(testActivity.getHigherOutlierHeat(), is(0.0D));
+    assertThat(testActivity.getHeat(), is(0.0D));
   }
 
   @Test
@@ -149,7 +171,7 @@ public class OutlierDetectionIT {
 
     // given
     ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(
-      getBpmnModelInstance(IntStream.range(0,10).mapToObj(i -> "testActivity" + i).toArray(String[]::new))
+      getBpmnModelInstance(IntStream.range(0, 10).mapToObj(i -> "testActivity" + i).toArray(String[]::new))
     );
 
     // one instance is suffice, we just need data from each activity, having in total >10 activities

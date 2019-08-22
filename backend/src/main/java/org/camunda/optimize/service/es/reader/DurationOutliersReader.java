@@ -42,13 +42,17 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
 import java.io.IOException;
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
@@ -60,8 +64,6 @@ public class DurationOutliersReader {
   private static final String HISTOGRAM_AGG = "histogram";
   private static final String STATS_AGG = "stats";
   private static final String FILTERED_FLOW_NODES_AGG = "filteredFlowNodes";
-  private static final String EVENTS = "events";
-  private static final String ACTIVITY_ID = "activityId";
   private static final String NESTED_AGG = "nested";
   private static final String RANKS_AGG = "ranks_agg";
 
@@ -69,14 +71,13 @@ public class DurationOutliersReader {
   private final OptimizeElasticsearchClient esClient;
   private ProcessDefinitionReader processDefinitionReader;
 
-
-  public List<DurationChartEntryDto> getCountByDurationChart(String procDefKey,
-                                                             List<String> procDefVersion,
-                                                             String flowNodeId,
-                                                             String userId,
-                                                             List<String> tenantId,
-                                                             Long lowerOutlierBound,
-                                                             Long higherOutlierBound) {
+  public List<DurationChartEntryDto> getCountByDurationChart(final String procDefKey,
+                                                             final List<String> procDefVersion,
+                                                             final String flowNodeId,
+                                                             final String userId,
+                                                             final List<String> tenantId,
+                                                             final Long lowerOutlierBound,
+                                                             final Long higherOutlierBound) {
     if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, tenantId)) {
       throw new ForbiddenException("Current user is not authorized to access data of the provided tenant");
     }
@@ -94,7 +95,7 @@ public class DurationOutliersReader {
       .field(EVENTS + "." + ProcessInstanceIndex.DURATION)
       .interval(interval);
 
-    NestedAggregationBuilder termsAgg = buildNestedAggregation(flowNodeId, histogram);
+    NestedAggregationBuilder termsAgg = buildNestedFlowNodeFilterAggregation(flowNodeId, histogram);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
@@ -129,16 +130,173 @@ public class DurationOutliersReader {
       .collect(Collectors.toList());
   }
 
+  public Map<String, FindingsDto> getFlowNodeOutlierMap(final String procDefKey,
+                                                        final List<String> procDefVersion,
+                                                        final String userId,
+                                                        final List<String> tenantId) {
+    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, tenantId)) {
+      throw new ForbiddenException("Current user is not authorized to access data of the provided tenant");
+    }
+
+    final BoolQueryBuilder processInstanceQuery = DefinitionQueryUtil.createDefinitionQuery(
+      procDefKey,
+      procDefVersion,
+      tenantId,
+      new ProcessInstanceIndex(),
+      processDefinitionReader::getLatestVersionToKey
+    );
+    ExtendedStatsAggregationBuilder stats = AggregationBuilders.extendedStats(STATS_AGG)
+      .field(EVENTS + "." + ACTIVITY_DURATION);
+
+    TermsAggregationBuilder terms = AggregationBuilders.terms(EVENTS)
+      .size(LIST_FETCH_LIMIT)
+      .field(EVENTS + "." + ProcessInstanceIndex.ACTIVITY_ID)
+      .subAggregation(stats);
+
+    NestedAggregationBuilder nested = AggregationBuilders.nested(NESTED_AGG, EVENTS)
+      .subAggregation(terms);
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(processInstanceQuery)
+      .fetchSource(false)
+      .aggregation(nested)
+      .size(0);
+
+    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+      .types(PROCESS_INSTANCE_INDEX_NAME)
+      .source(searchSourceBuilder);
+
+    Aggregations flowNodeDurationStatAggregations;
+    try {
+      flowNodeDurationStatAggregations = esClient.search(searchRequest, RequestOptions.DEFAULT).getAggregations();
+    } catch (IOException e) {
+      log.warn("Couldn't retrieve outliers from Elasticsearch");
+      throw new OptimizeRuntimeException(e.getMessage(), e);
+    }
+
+    return createFlowNodeOutlierMap(processInstanceQuery, flowNodeDurationStatAggregations);
+  }
+
+  private Map<String, FindingsDto> createFlowNodeOutlierMap(final BoolQueryBuilder processInstanceQuery,
+                                                            final Aggregations flowNodeDurationStatAggregations) {
+    final List<? extends Terms.Bucket> buckets =
+      ((Terms) ((Nested) flowNodeDurationStatAggregations.get(NESTED_AGG)).getAggregations()
+        .get(EVENTS))
+        .getBuckets();
+
+    final Map<String, ExtendedStats> statsByFlowNodeId = new HashMap<>();
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(processInstanceQuery)
+      .fetchSource(false)
+      .size(0);
+    final NestedAggregationBuilder nestedFlowNodeAggregation = AggregationBuilders.nested(EVENTS, EVENTS);
+    searchSourceBuilder.aggregation(nestedFlowNodeAggregation);
+    buckets
+      .forEach((bucket) -> {
+        final String flowNodeId = bucket.getKeyAsString();
+        final ExtendedStats statsAgg = bucket.getAggregations().get(STATS_AGG);
+        statsByFlowNodeId.put(flowNodeId, statsAgg);
+
+        if (statsAgg.getStdDeviation() != 0.0D) {
+          double stdDeviationBoundLower = statsAgg.getStdDeviationBound(ExtendedStats.Bounds.LOWER);
+          double stdDeviationBoundHigher = statsAgg.getStdDeviationBound(ExtendedStats.Bounds.UPPER);
+
+          PercentileRanksAggregationBuilder percentileRanks = AggregationBuilders.percentileRanks(
+            RANKS_AGG, new double[]{stdDeviationBoundLower, stdDeviationBoundHigher}
+          ).field(EVENTS + "." + ACTIVITY_DURATION);
+
+          final TermQueryBuilder terms = QueryBuilders.termQuery(EVENTS + "." + ACTIVITY_ID, flowNodeId);
+          final FilterAggregationBuilder filteredFlowNodes = AggregationBuilders.filter(
+            getFilteredFlowNodeAggregationName(flowNodeId), terms
+          );
+          filteredFlowNodes.subAggregation(percentileRanks);
+          nestedFlowNodeAggregation.subAggregation(filteredFlowNodes);
+        }
+      });
+
+    final SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+      .types(PROCESS_INSTANCE_INDEX_NAME)
+      .source(searchSourceBuilder);
+    try {
+      final Aggregations allFlowNodesPercentileRanks = esClient.search(searchRequest, RequestOptions.DEFAULT)
+        .getAggregations();
+      final Aggregations allFlowNodeFilterAggs = ((Nested) allFlowNodesPercentileRanks.get(EVENTS)).getAggregations();
+      return mapToFlowNodeFindingsMap(statsByFlowNodeId, allFlowNodeFilterAggs);
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException(e.getMessage(), e);
+    }
+  }
+
+  private Map<String, FindingsDto> mapToFlowNodeFindingsMap(final Map<String, ExtendedStats> statsByFlowNodeId,
+                                                            final Aggregations allFlowNodeFilterAggs) {
+    final AtomicLong totalLowerOutlierCount = new AtomicLong(0L);
+    final AtomicLong totalHigherOutlierCount = new AtomicLong(0L);
+    final Map<String, FindingsDto> findingsDtoMap = statsByFlowNodeId.entrySet().stream()
+      .map(flowNodeStatsEntry -> {
+        final String flowNodeId = flowNodeStatsEntry.getKey();
+        final ExtendedStats stats = flowNodeStatsEntry.getValue();
+        final FindingsDto finding = new FindingsDto();
+
+        if (stats.getStdDeviation() != 0.0D
+          && allFlowNodeFilterAggs.get(getFilteredFlowNodeAggregationName(flowNodeId)) != null) {
+          final PercentileRanks ranks =
+            (PercentileRanks) ((Filter) allFlowNodeFilterAggs.get(getFilteredFlowNodeAggregationName(flowNodeId)))
+              .getAggregations().iterator().next();
+
+          double avg = stats.getAvg();
+          double stdDeviationBoundLower = stats.getStdDeviationBound(ExtendedStats.Bounds.LOWER);
+          double stdDeviationBoundHigher = stats.getStdDeviationBound(ExtendedStats.Bounds.UPPER);
+
+          if (stdDeviationBoundLower > stats.getMin()) {
+            double percent = ranks.percent(stdDeviationBoundLower);
+            final long count = Math.round(stats.getCount() * 0.01 * percent);
+            finding.setLowerOutlier(
+              (long) stdDeviationBoundLower, percent, avg / stdDeviationBoundLower, count
+            );
+            totalLowerOutlierCount.addAndGet(count);
+          }
+
+          if (stdDeviationBoundHigher < stats.getMax()) {
+            double percent = ranks.percent(stdDeviationBoundHigher);
+            final long count = Math.round(stats.getCount() * 0.01 * (100 - percent));
+            finding.setHigherOutlier(
+              (long) stdDeviationBoundHigher, 100 - percent, stdDeviationBoundHigher / avg, count
+            );
+            totalHigherOutlierCount.addAndGet(count);
+          }
+        }
+
+        return new AbstractMap.SimpleEntry<>(flowNodeId, finding);
+      })
+      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+    final long totalOutlierCount = totalLowerOutlierCount.get() + totalHigherOutlierCount.get();
+    findingsDtoMap.values().forEach(finding -> {
+      finding.getLowerOutlier().ifPresent(
+        lowerOutlier -> finding.setLowerOutlierHeat((double) lowerOutlier.getCount() / totalLowerOutlierCount.get())
+      );
+      finding.getHigherOutlier().ifPresent(
+        higherOutlier -> finding.setHigherOutlierHeat((double) higherOutlier.getCount() / totalHigherOutlierCount.get())
+      );
+      finding.setHeat((double) finding.getOutlierCount() / totalOutlierCount);
+    });
+    return findingsDtoMap;
+  }
+
+  private String getFilteredFlowNodeAggregationName(final String flowNodeId) {
+    return FILTERED_FLOW_NODES_AGG + flowNodeId;
+  }
+
   private boolean isOutlier(final Long lowerOutlierBound, final Long higherOutlierBound, final Long durationValue) {
     return Optional.ofNullable(lowerOutlierBound).map(value -> durationValue <= value).orElse(false)
       || Optional.ofNullable(higherOutlierBound).map(value -> durationValue >= value).orElse(false);
   }
 
-  private long getInterval(BoolQueryBuilder query, String flowNodeId) {
+  private long getInterval(final BoolQueryBuilder query, final String flowNodeId) {
     StatsAggregationBuilder statsAgg = AggregationBuilders.stats(STATS_AGG)
       .field(EVENTS + "." + ProcessInstanceIndex.DURATION);
 
-    NestedAggregationBuilder termsAgg = buildNestedAggregation(flowNodeId, statsAgg);
+    NestedAggregationBuilder termsAgg = buildNestedFlowNodeFilterAggregation(flowNodeId, statsAgg);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
@@ -168,131 +326,13 @@ public class DurationOutliersReader {
     return (long) Math.ceil((max - min) / (NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
   }
 
-  private NestedAggregationBuilder buildNestedAggregation(String flowNodeId, AggregationBuilder... agg) {
+  private NestedAggregationBuilder buildNestedFlowNodeFilterAggregation(final String flowNodeId,
+                                                                        final AggregationBuilder subAggregation) {
     TermQueryBuilder terms = QueryBuilders.termQuery(EVENTS + "." + ACTIVITY_ID, flowNodeId);
 
     FilterAggregationBuilder filteredFlowNodes = AggregationBuilders.filter(FILTERED_FLOW_NODES_AGG, terms);
-    for (AggregationBuilder aggregationBuilder : agg) {
-      filteredFlowNodes.subAggregation(aggregationBuilder);
-    }
-    return AggregationBuilders.nested(EVENTS, EVENTS)
-      .subAggregation(filteredFlowNodes);
-  }
+    filteredFlowNodes.subAggregation(subAggregation);
 
-  public Map<String, FindingsDto> getFlowNodeOutlierMap(String procDefKey,
-                                                        List<String> procDefVersion,
-                                                        String userId,
-                                                        List<String> tenantId) {
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, tenantId)) {
-      throw new ForbiddenException("Current user is not authorized to access data of the provided tenant");
-    }
-
-    final BoolQueryBuilder query = DefinitionQueryUtil.createDefinitionQuery(
-      procDefKey,
-      procDefVersion,
-      tenantId,
-      new ProcessInstanceIndex(),
-      processDefinitionReader::getLatestVersionToKey
-    );
-    ExtendedStatsAggregationBuilder stats = AggregationBuilders.extendedStats(STATS_AGG)
-      .field(EVENTS + "." + ACTIVITY_DURATION);
-
-    TermsAggregationBuilder terms = AggregationBuilders.terms(EVENTS)
-      .size(LIST_FETCH_LIMIT)
-      .field(EVENTS + "." + ProcessInstanceIndex.ACTIVITY_ID)
-      .subAggregation(stats);
-
-    NestedAggregationBuilder nested = AggregationBuilders.nested(NESTED_AGG, EVENTS)
-      .subAggregation(terms);
-
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
-      .fetchSource(false)
-      .aggregation(nested)
-      .size(0);
-
-    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-      .types(PROCESS_INSTANCE_INDEX_NAME)
-      .source(searchSourceBuilder);
-
-    Aggregations aggregations;
-    try {
-      aggregations = esClient.search(searchRequest, RequestOptions.DEFAULT).getAggregations();
-    } catch (IOException e) {
-      log.warn("Couldn't retrieve outliers from Elasticsearch");
-      throw new OptimizeRuntimeException(e.getMessage(), e);
-    }
-
-    return mapToFlowNodeOutlierMap(query, aggregations);
-  }
-
-  private Map<String, FindingsDto> mapToFlowNodeOutlierMap(BoolQueryBuilder query, Aggregations aggregations) {
-    HashMap<String, FindingsDto> result = new HashMap<>();
-
-    List<? extends Terms.Bucket> buckets = ((Terms) ((Nested) aggregations.get(NESTED_AGG)).getAggregations()
-      .get(EVENTS))
-      .getBuckets();
-    buckets.forEach((bucket) -> {
-      final ExtendedStats statsAgg = bucket.getAggregations().get(STATS_AGG);
-      final FindingsDto finding = new FindingsDto();
-      result.put(bucket.getKeyAsString(), finding);
-
-      if (statsAgg.getStdDeviation() != 0.0D) {
-        double avg = statsAgg.getAvg();
-        double stdDeviationBoundLower = statsAgg.getStdDeviationBound(ExtendedStats.Bounds.LOWER);
-        double stdDeviationBoundHigher = statsAgg.getStdDeviationBound(ExtendedStats.Bounds.UPPER);
-
-        PercentileRanksAggregationBuilder percentileRanks = AggregationBuilders.percentileRanks(
-          RANKS_AGG, new double[]{stdDeviationBoundHigher, stdDeviationBoundLower}
-        ).field(EVENTS + "." + ACTIVITY_DURATION);
-
-        NestedAggregationBuilder nested = buildNestedAggregation(bucket.getKeyAsString(), percentileRanks);
-
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-          .query(query)
-          .fetchSource(false)
-          .aggregation(nested)
-          .size(0);
-
-        SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-          .types(PROCESS_INSTANCE_INDEX_NAME)
-          .source(searchSourceBuilder);
-
-        Aggregations singleNodeAggregation;
-        try {
-          singleNodeAggregation = esClient.search(searchRequest, RequestOptions.DEFAULT).getAggregations();
-
-          PercentileRanks ranks = ((Filter) (((Nested) singleNodeAggregation.get(EVENTS)).getAggregations()
-            .get(FILTERED_FLOW_NODES_AGG))).getAggregations().get(RANKS_AGG);
-
-          if (stdDeviationBoundLower > statsAgg.getMin()) {
-            double percent = ranks.percent(stdDeviationBoundLower);
-            finding.setLowerOutlier(
-              (long) stdDeviationBoundLower,
-              percent,
-              avg / stdDeviationBoundLower,
-              Math.round(statsAgg.getCount() * 0.01 * percent)
-            );
-          }
-
-          if (stdDeviationBoundHigher < statsAgg.getMax()) {
-            double percent = ranks.percent(stdDeviationBoundHigher);
-            finding.setHigherOutlier(
-              (long) stdDeviationBoundHigher,
-              100 - percent,
-              stdDeviationBoundHigher / avg,
-              Math.round(statsAgg.getCount() * 0.01 * (100 - percent))
-            );
-          }
-        } catch (IOException e) {
-          throw new OptimizeRuntimeException(e.getMessage(), e);
-        }
-      }
-    });
-    Long totalOutlierCount = result.values()
-      .stream()
-      .reduce(0L, (accumulator, finding) -> accumulator + finding.getOutlierCount(), Long::sum);
-    result.values().forEach(v -> v.setHeat((double) v.getOutlierCount() / totalOutlierCount));
-    return result;
+    return AggregationBuilders.nested(EVENTS, EVENTS).subAggregation(filteredFlowNodes);
   }
 }
