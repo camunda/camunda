@@ -407,8 +407,6 @@ pipeline {
                     --build-arg SKIP_DOWNLOAD=true \
                     --build-arg VERSION=${VERSION} \
                     --build-arg SNAPSHOT=${SNAPSHOT} \
-                    --build-arg USERNAME="${NEXUS_USR}" \
-                    --build-arg PASSWORD="${NEXUS_PSW}" \
                     .
 
                   docker push ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG}
