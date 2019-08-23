@@ -5,16 +5,16 @@
  */
 
 import React from 'react';
-import {NavItem} from 'components';
+import {NavItem} from '../NavItem';
 
-import './HeaderNav.scss';
+import './SubNav.scss';
 
-export default function HeaderNav(props) {
+export default function SubNav(props) {
   return (
-    <ul role="navigation" className="HeaderNav">
+    <ul role="navigation" className="SubNav">
       {props.children}
     </ul>
   );
 }
 
-HeaderNav.Item = NavItem;
+SubNav.Item = NavItem;

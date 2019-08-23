@@ -19,7 +19,7 @@ exports[`matches the snapshot 1`] = `
     </span>
   </Link>
   <HeaderNav>
-    <HeaderNavItem
+    <NavItem
       active={
         Array [
           "/",
@@ -30,12 +30,17 @@ exports[`matches the snapshot 1`] = `
       linksTo="/"
       name="Dashboards & Reports"
     />
-    <HeaderNavItem
-      active="/analysis"
+    <NavItem
+      active={
+        Array [
+          "/analysis/",
+          "/analysis/*",
+        ]
+      }
       linksTo="/analysis"
       name="Analysis"
     />
-    <HeaderNavItem
+    <NavItem
       active="/alerts"
       linksTo="/alerts"
       name="Alerts"

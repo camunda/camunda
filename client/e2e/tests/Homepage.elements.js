@@ -12,7 +12,7 @@ export const option = text => Selector('.DropdownOption').withText(text);
 export const collectionOption = text =>
   Selector('.CollectionsDropdown.is-open .DropdownOption').withText(text);
 export const submenuOption = text => Selector('.Submenu .DropdownOption').withText(text);
-export const homepageLink = Selector('.HeaderNav__item').withText('Dashboards & Reports');
+export const homepageLink = Selector('.NavItem').withText('Dashboards & Reports');
 export const reportItem = Selector('.ReportItem');
 export const dashboardItem = Selector('.DashboardItem');
 export const collectionItem = Selector('.CollectionItem');

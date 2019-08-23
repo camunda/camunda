@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {HashRouter as Router, Route} from 'react-router-dom';
+import {HashRouter as Router, Route, Switch} from 'react-router-dom';
 import {init} from 'translation';
 
 import {
@@ -67,12 +67,15 @@ class App extends React.Component {
                   {!hideHeader && <Header name="Camunda Optimize" />}
                   <main>
                     <ErrorBoundary>
-                      <PrivateRoute exact path="/" component={Overview} />
-                      <PrivateRoute exact path="/analysis" component={Analysis} />
-                      <PrivateRoute exact path="/alerts" component={Alerts} />
-                      <Route exact path="/share/:type/:id" component={Sharing} />
-                      <PrivateRoute path="/report/:id/:viewMode?" component={Report} />
-                      <PrivateRoute path="/dashboard/:id/:viewMode?" component={Dashboard} />
+                      <Switch>
+                        <PrivateRoute exact path="/" component={Overview} />
+                        <PrivateRoute path="/analysis" component={Analysis} />
+                        <PrivateRoute exact path="/alerts" component={Alerts} />
+                        <Route exact path="/share/:type/:id" component={Sharing} />
+                        <PrivateRoute path="/report/:id/:viewMode?" component={Report} />
+                        <PrivateRoute path="/dashboard/:id/:viewMode?" component={Dashboard} />
+                        <PrivateRoute path="*" component={ErrorPage} />
+                      </Switch>
                     </ErrorBoundary>
                   </main>
                   {!hideHeader && <Footer />}

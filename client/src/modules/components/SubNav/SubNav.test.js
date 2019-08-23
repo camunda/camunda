@@ -7,19 +7,19 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import HeaderNav from './HeaderNav';
+import SubNav from './SubNav';
 
 it('renders without crashing', () => {
-  shallow(<HeaderNav />);
+  shallow(<SubNav />);
 });
 
 it('renders itself and its children', () => {
   const node = shallow(
-    <HeaderNav>
+    <SubNav>
       <div>foo</div>
-    </HeaderNav>
+    </SubNav>
   );
 
-  expect(node.find('.HeaderNav')).toExist();
+  expect(node.find('.SubNav')).toExist();
   expect(node).toIncludeText('foo');
 });

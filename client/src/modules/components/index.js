@@ -41,3 +41,5 @@ export {CollectionsDropdown} from './CollectionsDropdown';
 export {EditCollectionModal} from './EditCollectionModal';
 export {Form} from './Form';
 export {Badge} from './Badge';
+export {SubNav} from './SubNav';
+export {NavItem} from './NavItem';
