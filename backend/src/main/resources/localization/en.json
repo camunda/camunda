@@ -315,6 +315,16 @@
     "cannotSave": "Alert \"{name}\" could not be saved."
   },
   "analysis": {
+    "branchAnalysis": "Branch Analysis",
+    "outlier": {
+      "label": "Outlier Analysis",
+      "info": "Heatmap displays the incidence of higher outliers based on duration. Calculated by z-score.",
+      "tooltipText": "{count} instances took {percentage}% longer than average.",
+      "detailsModal": {
+        "title": "Execution of {name} Flow Node"
+      }
+    },
+
     "selectLabel": "For",
     "gatwayLabel": "analyse how the branches of",
     "endEventLabel": "affect the probability that an instance reached",
@@ -356,6 +366,7 @@
     "all": "All",
     "above": "above",
     "below": "below",
+    "viewDetails": "View Details",
     "multiSelect": {
       "available": "Available items",
       "selected": "Selected items",

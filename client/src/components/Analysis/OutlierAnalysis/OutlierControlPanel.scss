@@ -1,0 +1,32 @@
+.OutlierControlPanel {
+  background-color: #f4f4f4;
+  border-radius: 8px;
+  border: 1px solid #dfdfdf;
+  padding: 12px;
+  margin-bottom: 1em;
+
+  .list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: inline;
+
+    .item {
+      display: inline;
+      position: relative;
+      padding-right: 20px;
+      line-height: 50px;
+
+      .DefinitionSelection {
+        display: inline-block;
+        margin: 0 0.5em;
+        line-height: normal;
+        width: 220px;
+
+        .Popover__button {
+          padding-left: 20px;
+        }
+      }
+    }
+  }
+}

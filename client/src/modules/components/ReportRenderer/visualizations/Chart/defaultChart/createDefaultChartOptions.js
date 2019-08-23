@@ -4,10 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {createDurationFormattingOptions, getFormattedTargetValue} from './service';
+import {getFormattedTargetValue} from './service';
 import {formatTooltip, getTooltipLabelColor, canBeInterpolated} from '../service';
-import {isDurationReport} from 'services';
+import {isDurationReport, formatters} from 'services';
 import {getColorFor, createColors, determineBarColor} from '../colorsUtils';
+
+const {createDurationFormattingOptions} = formatters;
 
 export default function createDefaultChartOptions({report, targetValue, theme, formatter}) {
   const {

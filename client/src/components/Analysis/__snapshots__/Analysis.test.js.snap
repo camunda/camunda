@@ -1,0 +1,48 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should render sub navigation 1`] = `
+<div
+  className="Analysis"
+>
+  <SubNav>
+    <withRouter(NavItem)
+      active={
+        Array [
+          "/analysis",
+          "/analysis/outlierAnalysis",
+        ]
+      }
+      linksTo="/analysis/outlierAnalysis"
+      name="Outlier Analysis"
+    />
+    <withRouter(NavItem)
+      active={
+        Array [
+          "/analysis/branchAnalysis",
+        ]
+      }
+      linksTo="/analysis/branchAnalysis"
+      name="Branch Analysis"
+    />
+  </SubNav>
+  <Switch>
+    <Route
+      component={[Function]}
+      exact={true}
+      path="/analysis/"
+    />
+    <Route
+      component={[Function]}
+      path="/analysis/branchAnalysis"
+    />
+    <Route
+      component={[Function]}
+      path="/analysis/outlierAnalysis"
+    />
+    <Route
+      component={[Function]}
+      path="*"
+    />
+  </Switch>
+</div>
+`;

@@ -13,7 +13,8 @@ import {
   convertToMilliseconds,
   getHighlightedText,
   camelCaseToLabel,
-  formatReportResult
+  formatReportResult,
+  createDurationFormattingOptions
 } from './formatters';
 const nbsp = '\u00A0';
 
@@ -339,4 +340,13 @@ describe('automatic interval selection', () => {
       {key: result[1].key, label: '2017 ', value: 3}
     ]);
   });
+});
+
+it('should show nice ticks for duration formats on the y axis', () => {
+  const maxValue = 7 * 24 * 60 * 60 * 1000;
+
+  const config = createDurationFormattingOptions(0, maxValue);
+
+  expect(config.stepSize).toBe(1 * 24 * 60 * 60 * 1000);
+  expect(config.callback(3 * 24 * 60 * 60 * 1000)).toBe('3d');
 });

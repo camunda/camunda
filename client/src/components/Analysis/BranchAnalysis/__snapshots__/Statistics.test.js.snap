@@ -1,0 +1,145 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should create two Charts 1`] = `
+<div
+  className="Statistics"
+>
+  <p
+    dangerouslySetInnerHTML={
+      Object {
+        "__html": "Of all <b>3 instances</b> that passed the Gateway <i>g</i>",
+      }
+    }
+  />
+  <ul>
+    <li
+      dangerouslySetInnerHTML={
+        Object {
+          "__html": "<b>1</b> (33%) took the  <i>a</i> branch, <b>3</b> (300%) of those then continued to reach the end event <i>e</i>",
+        }
+      }
+      key="a"
+    />
+    <li
+      dangerouslySetInnerHTML={
+        Object {
+          "__html": "<b>2</b> (67%) took the  <i>b</i> branch, <b>2</b> (100%) of those then continued to reach the end event <i>e</i>",
+        }
+      }
+      key="b"
+    />
+  </ul>
+  <p
+    dangerouslySetInnerHTML={
+      Object {
+        "__html": "Distribution of Instances at the Gateway <i>g</i>:",
+      }
+    }
+  />
+  <div
+    className="diagram-container"
+  >
+    <canvas />
+  </div>
+  <p
+    dangerouslySetInnerHTML={
+      Object {
+        "__html": "Probability to reach the end event <i>e</i> after taking a branch:",
+      }
+    }
+  />
+  <div
+    className="diagram-container"
+  >
+    <canvas />
+  </div>
+</div>
+`;
+
+exports[`should show a loading indicator while stuff is loading 1`] = `
+<div
+  className="Statistics"
+>
+  <LoadingIndicator />
+</div>
+`;
+
+exports[`should show a message if no instances passed the gateway 1`] = `
+<div
+  className="Statistics"
+>
+  <div
+    className="placeholder"
+  >
+    No Instances in the current filter passed the selected Gateway.
+  </div>
+</div>
+`;
+
+exports[`should show a placeholder text initially 1`] = `
+<div
+  className="Statistics"
+>
+  <div
+    className="placeholder"
+  >
+    Please select a Process Definition, a Gateway and an End Event to perform the Analysis.
+  </div>
+</div>
+`;
+
+exports[`should show a summary after loading is complete 1`] = `
+<div
+  className="Statistics"
+>
+  <p
+    dangerouslySetInnerHTML={
+      Object {
+        "__html": "Of all <b>3 instances</b> that passed the Gateway <i>g</i>",
+      }
+    }
+  />
+  <ul>
+    <li
+      dangerouslySetInnerHTML={
+        Object {
+          "__html": "<b>1</b> (33%) took the  <i>testLabel</i> branch, <b>3</b> (300%) of those then continued to reach the end event <i>e</i>",
+        }
+      }
+      key="testLabel"
+    />
+    <li
+      dangerouslySetInnerHTML={
+        Object {
+          "__html": "<b>2</b> (67%) took the  <i>bar</i> branch, <b>2</b> (100%) of those then continued to reach the end event <i>e</i>",
+        }
+      }
+      key="bar"
+    />
+  </ul>
+  <p
+    dangerouslySetInnerHTML={
+      Object {
+        "__html": "Distribution of Instances at the Gateway <i>g</i>:",
+      }
+    }
+  />
+  <div
+    className="diagram-container"
+  >
+    <canvas />
+  </div>
+  <p
+    dangerouslySetInnerHTML={
+      Object {
+        "__html": "Probability to reach the end event <i>e</i> after taking a branch:",
+      }
+    }
+  />
+  <div
+    className="diagram-container"
+  >
+    <canvas />
+  </div>
+</div>
+`;

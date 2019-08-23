@@ -1,0 +1,57 @@
+@import 'shared-styles/shared-styles.scss';
+
+.bjs-container:not(.highlight-single-path) .analysis-part-highlight {
+  @include diagram-highlight;
+}
+
+.DiagramBehavior__clickable {
+  cursor: pointer;
+}
+
+.DiagramBehavior__clickable .djs-outline {
+  stroke-width: 2px !important;
+  stroke: #276e8c !important;
+  fill: rgba(188, 211, 220, 0.4) !important;
+  cursor: pointer;
+}
+
+.DiagramBehavior__highlight .djs-outline {
+  stroke-width: 2px !important;
+  stroke: #276e8c !important;
+  fill: rgba(48, 116, 142, 0.6) !important;
+}
+
+.DiagramBehavior__selected .djs-outline {
+  stroke-width: 2px !important;
+  stroke: rgba(66, 180, 21, 1) !important;
+  fill: rgba(66, 180, 21, 0.7) !important;
+}
+
+g.chart-hover path {
+  stroke: $cam-red !important;
+  stroke-width: 3px !important;
+}
+
+.DiagramBehavior__overlay {
+  display: inline-block;
+  background-color: white;
+}
+
+.DiagramBehavior__end-event-statistics {
+  border: 1px solid gray;
+  width: 350px;
+  margin-bottom: 0;
+
+  tr {
+    background-color: white;
+  }
+
+  td {
+    vertical-align: middle;
+  }
+
+  td:first-child {
+    font-size: 2rem;
+    text-align: right;
+  }
+}

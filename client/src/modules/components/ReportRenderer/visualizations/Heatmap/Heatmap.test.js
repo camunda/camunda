@@ -8,7 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import Heatmap from './Heatmap';
-import HeatmapOverlay from './HeatmapOverlay';
+import {HeatmapOverlay} from 'components';
 import {calculateTargetValueHeat} from './service';
 import {formatters} from 'services';
 
@@ -16,6 +16,7 @@ const {convertToMilliseconds} = formatters;
 
 jest.mock('components', () => {
   return {
+    HeatmapOverlay: props => <div {...props}>{props.children}</div>,
     BPMNDiagram: props => (
       <div id="diagram">
         Diagram {props.children} {props.xml}

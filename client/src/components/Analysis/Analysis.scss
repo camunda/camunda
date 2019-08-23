@@ -1,17 +1,4 @@
 .Analysis {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
+  padding-top: 30px;
   height: 100%;
-
-  .content {
-    display: flex;
-    flex-direction: row;
-    flex-grow: 1;
-  }
-}
-
-.Analysis__diagram {
-  display: flex;
-  flex-grow: 1;
 }

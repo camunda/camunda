@@ -1,0 +1,27 @@
+.Statistics {
+  width: 500px;
+  overflow: auto;
+  padding: 0.5em;
+  border-left: 1px solid lightgray;
+  position: relative;
+
+  .diagram-container {
+    width: 100%;
+    height: 100px;
+    display: inline-block;
+  }
+
+  .placeholder {
+    margin: 1em;
+    border-radius: 10px;
+    background-color: #eee;
+    position: absolute;
+    font-size: 1.4em;
+    padding: 1em;
+    color: #777;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    height: auto;
+  }
+}

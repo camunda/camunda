@@ -14,7 +14,7 @@ import {t} from 'translation';
 
 import './Header.scss';
 
-export default withRouter(function Header({name, location}) {
+function Header({name, location}) {
   return (
     <header role="banner" className="Header">
       <Link to="/" replace={location.pathname === '/'} className="Header__link" title={name}>
@@ -27,10 +27,16 @@ export default withRouter(function Header({name, location}) {
           linksTo="/"
           active={['/', '/report/*', '/dashboard/*']}
         />
-        <HeaderNav.Item name={t('navigation.analysis')} linksTo="/analysis" active="/analysis" />
+        <HeaderNav.Item
+          name={t('navigation.analysis')}
+          linksTo="/analysis"
+          active={['/analysis/', '/analysis/*']}
+        />
         <HeaderNav.Item name={t('alert.label-plural')} linksTo="/alerts" active="/alerts" />
       </HeaderNav>
       <LogoutButton />
     </header>
   );
-});
+}
+
+export default withRouter(Header);

@@ -6,8 +6,7 @@
 
 import React from 'react';
 
-import {BPMNDiagram, TargetValueBadge, LoadingIndicator} from 'components';
-import HeatmapOverlay from './HeatmapOverlay';
+import {BPMNDiagram, TargetValueBadge, LoadingIndicator, HeatmapOverlay} from 'components';
 
 import {calculateTargetValueHeat} from './service';
 import {formatters, getTooltipText} from 'services';

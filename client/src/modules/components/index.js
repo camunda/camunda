@@ -43,3 +43,4 @@ export {Form} from './Form';
 export {Badge} from './Badge';
 export {SubNav} from './SubNav';
 export {NavItem} from './NavItem';
+export {HeatmapOverlay} from './HeatmapOverlay';

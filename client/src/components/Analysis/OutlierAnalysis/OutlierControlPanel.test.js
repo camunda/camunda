@@ -7,10 +7,18 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import Analysis from './Analysis';
+import OutlierControlPanel from './OutlierControlPanel';
 
-it('should render sub navigation', () => {
-  const node = shallow(<Analysis />);
+const data = {
+  processDefinitionKey: 'aKey',
+  processDefinitionVersions: ['aVersion'],
+  tenantIds: [],
+  filter: null,
+  xml: 'aFooXml'
+};
+
+it('show display a definition selection and an info message', () => {
+  const node = shallow(<OutlierControlPanel {...data} />);
 
   expect(node).toMatchSnapshot();
 });

@@ -1,0 +1,33 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`show display a definition selection and an info message 1`] = `
+<div
+  className="OutlierControlPanel"
+>
+  <ul
+    className="list"
+  >
+    <li
+      className="item"
+    >
+      <DefinitionSelection
+        definitionKey="aKey"
+        onChange={[Function]}
+        tenants={Array []}
+        type="process"
+        versions={
+          Array [
+            "aVersion",
+          ]
+        }
+        xml="aFooXml"
+      />
+    </li>
+    <li
+      className="item"
+    >
+      Heatmap displays the incidence of higher outliers based on duration. Calculated by z-score.
+    </li>
+  </ul>
+</div>
+`;
