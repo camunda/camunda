@@ -11,7 +11,6 @@ import com.google.common.collect.Multimap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDataDto;
@@ -133,7 +132,10 @@ public class CollectionReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(QueryBuilders.termsQuery(COLLECTION_ID, collectionIds))
       .size(LIST_FETCH_LIMIT);
+    return runSearchRequest(searchSourceBuilder);
+  }
 
+  private List<CollectionEntity> runSearchRequest(SearchSourceBuilder searchSourceBuilder) {
     SearchRequest searchRequest =
       new SearchRequest(SINGLE_PROCESS_REPORT_INDEX_NAME,
                         SINGLE_DECISION_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME, DASHBOARD_INDEX_NAME

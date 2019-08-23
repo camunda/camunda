@@ -16,5 +16,7 @@ public enum ConflictedItemType {
   DASHBOARD,
   @JsonProperty("collection")
   COLLECTION,
+  @JsonProperty("report")
+  REPORT,
   ;
 }

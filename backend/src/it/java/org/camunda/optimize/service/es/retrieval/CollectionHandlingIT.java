@@ -8,23 +8,23 @@ package org.camunda.optimize.service.es.retrieval;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionEntityUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRole;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -409,6 +409,145 @@ public class CollectionHandlingIT {
     assertDashboardIsDeleted(dashboardId);
     assertReportIsDeleted(singleReportId);
     assertReportIsDeleted(combinedReportId);
+  }
+
+  @Test
+  public void addDefinitionScopeEntry() {
+    String collectionId = createNewCollection();
+    CollectionScopeEntryDto entry = new CollectionScopeEntryDto();
+    entry.setDefinitionKey("_KEY_");
+    entry.setDefinitionType("PROCESS");
+    entry.setTenants(Collections.singletonList(null));
+    entry.setVersions(Collections.singletonList("ALL"));
+
+    embeddedOptimizeRule.getRequestExecutor()
+      .buildAddScopeEntryToCollectionRequest(collectionId, entry)
+      .execute(204);
+
+
+    SimpleCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeRule.getRequestExecutor()
+      .buildGetCollectionRequest(collectionId)
+      .execute(SimpleCollectionDefinitionDto.class, 200);
+
+    assertThat(collectionDefinitionDto.getData().getScope().size(), is(1));
+    assertThat(collectionDefinitionDto.getData().getScope().get(0).getId(), is("PROCESS:_KEY_"));
+  }
+
+
+  @Test
+  public void addConflictedScopeDefinition() {
+    String collectionId = createNewCollection();
+    CollectionScopeEntryDto entry = new CollectionScopeEntryDto();
+    entry.setDefinitionKey("_KEY_");
+    entry.setDefinitionType("PROCESS");
+    entry.setTenants(Collections.singletonList(null));
+    entry.setVersions(Collections.singletonList("ALL"));
+
+    embeddedOptimizeRule.getRequestExecutor()
+      .buildAddScopeEntryToCollectionRequest(collectionId, entry)
+      .execute(204);
+
+
+    embeddedOptimizeRule.getRequestExecutor()
+      .buildAddScopeEntryToCollectionRequest(collectionId, entry)
+      .execute(409);
+  }
+
+  @Test
+  public void removeScopeDefinitionWithDependingReport() {
+    String collectionId = createNewCollection();
+    CollectionScopeEntryDto entry = new CollectionScopeEntryDto();
+    entry.setDefinitionKey("_KEY_");
+    entry.setDefinitionType("PROCESS");
+    entry.setTenants(Collections.singletonList(null));
+    entry.setVersions(Collections.singletonList("ALL"));
+
+    embeddedOptimizeRule.getRequestExecutor()
+      .buildAddScopeEntryToCollectionRequest(collectionId, entry)
+      .execute(204);
+
+
+    String reportId = createNewSingleReport();
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
+    report.getData().setProcessDefinitionKey("_KEY_");
+
+    updateReport(reportId, report);
+
+    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
+      .buildCopyReportRequest(reportId, collectionId)
+      .execute(IdDto.class, 200);
+
+    ConflictResponseDto conflictResponseDto = embeddedOptimizeRule.getRequestExecutor()
+      .buildRemoveScopeEntryFromCollectionRequest(collectionId, "PROCESS:_KEY_")
+      .execute(ConflictResponseDto.class, 409);
+
+    assertThat(conflictResponseDto.getConflictedItems().stream().anyMatch(i -> i.getId().equals(copyId.getId())), is(true));
+  }
+
+  @Test
+  public void removeScopeDefinition() {
+    String collectionId = createNewCollection();
+    CollectionScopeEntryDto entry = new CollectionScopeEntryDto();
+    entry.setDefinitionKey("_KEY_");
+    entry.setDefinitionType("PROCESS");
+    entry.setTenants(Collections.singletonList(null));
+    entry.setVersions(Collections.singletonList("ALL"));
+
+    embeddedOptimizeRule.getRequestExecutor()
+      .buildAddScopeEntryToCollectionRequest(collectionId, entry)
+      .execute(204);
+
+    SimpleCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeRule.getRequestExecutor()
+      .buildGetCollectionRequest(collectionId)
+      .execute(SimpleCollectionDefinitionDto.class, 200);
+
+    assertThat(collectionDefinitionDto.getData().getScope().size(), is(1));
+
+     embeddedOptimizeRule.getRequestExecutor()
+      .buildRemoveScopeEntryFromCollectionRequest(collectionId, "PROCESS:_KEY_")
+      .execute(204);
+
+    collectionDefinitionDto = embeddedOptimizeRule.getRequestExecutor()
+      .buildGetCollectionRequest(collectionId)
+      .execute(SimpleCollectionDefinitionDto.class, 200);
+
+    assertThat(collectionDefinitionDto.getData().getScope().size(), is(0));
+  }
+
+  @Test
+  public void removeNotExistingScopeDefinition() {
+    String collectionId = createNewCollection();
+
+    embeddedOptimizeRule.getRequestExecutor()
+      .buildRemoveScopeEntryFromCollectionRequest(collectionId, "PROCESS:_KEY_")
+      .execute(404);
+  }
+
+
+  @Test
+  public void editDefinitionScopeEntry() {
+    String collectionId = createNewCollection();
+    CollectionScopeEntryDto entry = new CollectionScopeEntryDto();
+    entry.setDefinitionKey("_KEY_");
+    entry.setDefinitionType("PROCESS");
+    entry.setTenants(Collections.singletonList(null));
+    entry.setVersions(Collections.singletonList("ALL"));
+
+    embeddedOptimizeRule.getRequestExecutor()
+      .buildAddScopeEntryToCollectionRequest(collectionId, entry)
+      .execute(204);
+
+    entry.setVersions(Collections.singletonList("1"));
+    embeddedOptimizeRule.getRequestExecutor()
+      .buildUpdateCollectionScopeEntryRequest(collectionId, new CollectionScopeEntryUpdateDto(entry), "PROCESS:_KEY_")
+      .execute(204);
+
+    SimpleCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeRule.getRequestExecutor()
+      .buildGetCollectionRequest(collectionId)
+      .execute(SimpleCollectionDefinitionDto.class, 200);
+
+    assertThat(collectionDefinitionDto.getData().getScope().get(0).getVersions().size(), is(1));
+    assertThat(collectionDefinitionDto.getData().getScope().get(0).getVersions().get(0), is("1"));
   }
 
   private void assertReportIsDeleted(final String singleReportIdToDelete) {

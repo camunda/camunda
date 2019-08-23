@@ -19,4 +19,5 @@ import java.util.List;
 public class CollectionDataDto {
   protected Object configuration = new HashMap<>();
   private List<CollectionRoleDto> roles = new ArrayList<>();
+  private List<CollectionScopeEntryDto> scope = new ArrayList<>();
 }

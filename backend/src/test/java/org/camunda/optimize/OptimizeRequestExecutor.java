@@ -15,6 +15,8 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntityUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -828,6 +830,31 @@ public class OptimizeRequestExecutor {
     Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
     return this;
   }
+
+  public OptimizeRequestExecutor buildAddScopeEntryToCollectionRequest(String collectionId,
+                                                                       CollectionScopeEntryDto entryDto) {
+    this.path = "collection/" + collectionId + "/scope";
+    this.requestType = POST;
+    this.body = getBody(entryDto);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildRemoveScopeEntryFromCollectionRequest(String collectionId,
+                                                                       String entryId) {
+    this.path = "collection/" + collectionId + "/scope/" + entryId;
+    this.requestType = DELETE;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildUpdateCollectionScopeEntryRequest(String collectionId,
+                                                                        CollectionScopeEntryUpdateDto entryDto,
+                                                                        String entryId) {
+    this.path = "collection/" + collectionId + "/scope/" + entryId;
+    this.requestType = PUT;
+    this.body = getBody(entryDto);
+    return this;
+  }
+
 
   private Entity getBody(Object entity) {
     try {

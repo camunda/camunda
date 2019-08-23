@@ -8,25 +8,35 @@ package org.camunda.optimize.service.collection;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.es.reader.CollectionReader;
+import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.relations.CollectionRelationService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.checkerframework.checker.units.qual.C;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.MultivaluedMap;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Component
@@ -34,6 +44,7 @@ public class CollectionService {
 
   private final CollectionWriter collectionWriter;
   private final CollectionReader collectionReader;
+  private final ReportReader reportReader;
   private final CollectionRelationService collectionRelationService;
 
 
@@ -56,6 +67,45 @@ public class CollectionService {
     updateDto.setLastModifier(userId);
     updateDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     collectionWriter.updateCollection(updateDto, collectionId);
+  }
+
+  public void addScopeEntryToCollection(String collectionId, CollectionScopeEntryDto entryDto, String userId) throws
+                                                                                                              OptimizeConflictException {
+    collectionWriter.addScopeEntryToCollection(collectionId, entryDto, userId);
+  }
+
+  public void removeScopeEntry(String collectionId, String scopeEntryId, String userId) throws
+                                                                                        NotFoundException, OptimizeConflictException {
+    List<ReportDefinitionDto> entities = reportReader.findReportsForCollection(collectionId);
+    CollectionScopeEntryDto scopeEntry = new CollectionScopeEntryDto(scopeEntryId);
+
+    List<ReportDefinitionDto> conflictedItems = entities.stream()
+      .filter(report -> report.getData() instanceof SingleReportDataDto)
+      .filter(report -> ((SingleReportDataDto) report.getData()).getDefinitionKey().equals(scopeEntry.getDefinitionKey())
+        && report.getReportType().toString().equals(scopeEntry.getDefinitionType()))
+      .collect(Collectors.toList());
+
+    if (conflictedItems.size() == 0) {
+      collectionWriter.removeScopeEntry(collectionId, scopeEntryId, userId);
+    } else {
+      throw new OptimizeConflictException(conflictedItems.stream()
+                                            .map(this::reportToConflictedItem)
+                                            .collect(Collectors.toSet()));
+    }
+  }
+
+  private ConflictedItemDto reportToConflictedItem(CollectionEntity collectionEntity) {
+    return new ConflictedItemDto(
+      collectionEntity.getId(),
+      ConflictedItemType.REPORT,
+      collectionEntity.getName()
+    );
+  }
+
+  public void updateScopeEntry(String collectionId, CollectionScopeEntryUpdateDto entryDto, String userId,
+                               String scopeEntryId) throws
+                                                                                                     OptimizeConflictException {
+    collectionWriter.updateScopeEntity(collectionId, entryDto, userId, scopeEntryId);
   }
 
   public List<ResolvedCollectionDefinitionDto> getAllResolvedCollections(MultivaluedMap<String, String> queryParameters) {
@@ -84,7 +134,6 @@ public class CollectionService {
     collectionWriter.deleteCollection(collectionId);
     collectionRelationService.handleDeleted(collectionDefinition);
   }
-
 
   public CollectionRoleDto addRoleToCollection(final String collectionId, final CollectionRoleDto roleDto,
                                                final String userId)

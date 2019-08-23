@@ -6,9 +6,11 @@
 package org.camunda.optimize.service.es.schema.index;
 
 import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
@@ -71,14 +73,42 @@ public class CollectionIndex extends StrictIndexMappingCreator {
           .startObject(CollectionDataDto.Fields.configuration.name())
             .field("enabled", false)
           .endObject();
-          addRolesField(contentBuilder)
+          addRolesField(contentBuilder);
+          addScopeField(contentBuilder)
         .endObject()
       .endObject();
     // @formatter:on
     return contentBuilder;
   }
 
-  private XContentBuilder addRolesField(final XContentBuilder xContentBuilder) throws IOException {
+  private XContentBuilder addScopeField(final XContentBuilder xContentBuilder) throws IOException {
+    // @formatter:off
+    return xContentBuilder
+      .startObject(CollectionDataDto.Fields.scope.name())
+        .field("type", "nested")
+        .startObject("properties")
+          .startObject(CollectionScopeEntryDto.Fields.definitionKey.name())
+            .field("type", "keyword")
+          .endObject()
+          .startObject(CollectionScopeEntryDto.Fields.definitionType.name())
+            .field("type", "keyword")
+          .endObject()
+          .startObject(CollectionScopeEntryDto.Fields.id.name())
+            .field("type", "keyword")
+          .endObject()
+          .startObject(CollectionScopeEntryDto.Fields.versions.name())
+            .field("type", "keyword")
+          .endObject()
+          .startObject(CollectionScopeEntryDto.Fields.tenants.name())
+            .field("type", "keyword")
+          .endObject()
+        .endObject()
+      .endObject();
+
+    // @formatter:on
+  }
+
+    private XContentBuilder addRolesField(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder.
       startObject(CollectionDataDto.Fields.roles.name())

@@ -16,6 +16,8 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUp
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRole;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
@@ -42,11 +44,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 
@@ -163,6 +161,151 @@ public class CollectionWriter {
     }
   }
 
+  public CollectionScopeEntryDto addScopeEntryToCollection(String collectionId, CollectionScopeEntryDto entryDto,
+                                                           String userId) throws
+                                                                          OptimizeConflictException {
+    try {
+      final Map<String, Object> params = new HashMap<>();
+      params.put("entryDto", objectMapper.convertValue(entryDto, Object.class));
+      params.put("lastModifier", userId);
+      params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
+      final Script updateEntityScript = ElasticsearchWriterUtil.createDefaultScript(
+        "boolean exists = ctx._source.data.scope.stream()" +
+          "  .filter(s -> s.id.equals(params.entryDto.id))" +
+          "  .findFirst().isPresent();" +
+          "if (!exists) {" +
+          "  ctx._source.data.scope.add(params.entryDto);" +
+          "  ctx._source.lastModifier = params.lastModifier;" +
+          "  ctx._source.lastModified = params.lastModified;" +
+          "} else { " +
+          "  ctx.op = \"none\";" +
+          "}",
+        params
+      );
+
+      final UpdateResponse updateResponse;
+      updateResponse = executeUpdateRequest(
+        collectionId,
+        updateEntityScript,
+        "Was not able to update collection with id [%s]."
+      );
+
+
+      if (updateResponse.getResult().equals(DocWriteResponse.Result.NOOP)) {
+        final String message = String.format("Scope entity for id [%s] already exists.", entryDto.getId());
+        log.warn(message);
+        throw new OptimizeConflictException(message);
+      }
+
+      return entryDto;
+    } catch (IOException e) {
+      String errorMessage = String.format("Was not able to update collection with id [%s].", collectionId);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+  public void removeScopeEntry(String collectionId, String scopeEntryId, String userId) throws
+                                                                                        NotFoundException {
+    try {
+      final Map<String, Object> params = new HashMap<>();
+      params.put("id", scopeEntryId);
+      params.put("lastModifier", userId);
+      params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
+
+      final Script updateEntityScript = ElasticsearchWriterUtil.createDefaultScript(
+        "boolean removed = ctx._source.data.scope.removeIf(scope -> scope.id.equals(params.id));" +
+          "if (removed) { " +
+          "  ctx._source.lastModifier = params.lastModifier;" +
+          "  ctx._source.lastModified = params.lastModified;" +
+          "} else {" +
+          "  ctx.op = \"none\";" +
+          "}",
+        params
+      );
+
+      UpdateResponse updateResponse = executeUpdateRequest(
+        collectionId,
+        updateEntityScript,
+        "Was not able to update collection with id [%s]."
+      );
+
+      if (updateResponse.getResult().equals(DocWriteResponse.Result.NOOP)) {
+        final String message = String.format("Scope entry for id [%s] doesn't exists.", scopeEntryId);
+        log.warn(message);
+        throw new NotFoundException(message);
+      }
+
+    } catch (IOException e) {
+      String errorMessage = String.format("Was not able to update collection with id [%s].", collectionId);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+  public void updateScopeEntity(String collectionId, CollectionScopeEntryUpdateDto scopeEntry, String userId,
+                                String scopeEntryId) throws OptimizeConflictException {
+    try {
+      final Map<String, Object> params = new HashMap<>();
+      params.put("entryDto", objectMapper.convertValue(scopeEntry, Object.class));
+      params.put("entryId", scopeEntryId);
+      params.put("lastModifier", userId);
+      params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
+
+      final Script updateEntityScript = ElasticsearchWriterUtil.createDefaultScript(
+        "def optionalEntry = ctx._source.data.scope.stream()" +
+          "  .filter(s -> s.id.equals(params.entryId))" +
+          "  .findFirst();" +
+          "if (optionalEntry.isPresent()) {" +
+          "  def entry = optionalEntry.get();" +
+          "  entry.tenants = params.entryDto.tenants;" +
+          "  entry.versions = params.entryDto.versions;" +
+          "  ctx._source.lastModifier = params.lastModifier;" +
+          "  ctx._source.lastModified = params.lastModified;" +
+          "} else { " +
+          "  throw new Exception('Cannot find scope entry.');" +
+          "}",
+        params
+      );
+
+      final UpdateResponse updateResponse;
+      updateResponse = executeUpdateRequest(
+        collectionId,
+        updateEntityScript,
+        "Was not able to update collection with id [%s]."
+      );
+
+
+      if (updateResponse.getResult().equals(DocWriteResponse.Result.NOOP)) {
+        final String message = String.format("Scope entry for id [%s] doesn't exists.", scopeEntryId);
+        log.warn(message);
+        throw new OptimizeConflictException(message);
+      }
+
+    } catch (IOException e) {
+      String errorMessage = String.format("Was not able to update collection with id [%s].", collectionId);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+  private UpdateResponse executeUpdateRequest(String collectionId, Script updateEntityScript, String errorMessage) throws
+                                                                                                                IOException {
+    final UpdateRequest request = new UpdateRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId)
+      .script(updateEntityScript)
+      .setRefreshPolicy(IMMEDIATE)
+      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+
+    final UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
+
+    if (updateResponse.getShardInfo().getFailed() > 0) {
+      final String message = String.format(errorMessage, collectionId);
+      log.error(message, collectionId);
+      throw new OptimizeRuntimeException(message);
+    }
+    return updateResponse;
+  }
+
   public CollectionRoleDto addRoleToCollection(String collectionId, CollectionRoleDto roleDto, String userId)
     throws OptimizeConflictException {
     log.debug("Adding role [{}] to collection with id [{}] in Elasticsearch.", roleDto.getId(), collectionId);
@@ -191,18 +334,11 @@ public class CollectionWriter {
         params
       );
 
-      final UpdateRequest request = new UpdateRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId)
-        .script(addEntityScript)
-        .setRefreshPolicy(IMMEDIATE)
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
-      final UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
-
-      if (updateResponse.getShardInfo().getFailed() > 0) {
-        final String message = String.format("Was not able to update collection with id [%s].", collectionId);
-        log.error(message, collectionId);
-        throw new OptimizeRuntimeException(message);
-      }
+      final UpdateResponse updateResponse = executeUpdateRequest(
+        collectionId,
+        addEntityScript,
+        "Was not able to update collection with id [%s]."
+      );
 
       if (updateResponse.getResult().equals(DocWriteResponse.Result.NOOP)) {
         final String message = String.format("Role resource for id [%s] already exists.", roleDto.getId());
@@ -232,12 +368,8 @@ public class CollectionWriter {
     log.debug("Updating the role [{}] in collection with id [{}] in Elasticsearch.", roleEntryId, collectionId);
 
     try {
-      final Map<String, Object> params = new HashMap<>();
-      params.put("roleEntryId", roleEntryId);
+      final Map<String, Object> params = constructParamsForRoleUpdateScript(roleEntryId, userId);
       params.put("role", roleUpdateDto.getRole().name());
-      params.put("managerRole", CollectionRole.MANAGER.name());
-      params.put("lastModifier", userId);
-      params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
 
       final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScript(
         // @formatter:off
@@ -266,18 +398,11 @@ public class CollectionWriter {
         params
       );
 
-      final UpdateRequest request = new UpdateRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId)
-        .script(addEntityScript)
-        .setRefreshPolicy(IMMEDIATE)
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
-      final UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
-
-      if (updateResponse.getShardInfo().getFailed() > 0) {
-        final String message = String.format("Was not able to update collection with id [%s].", collectionId);
-        log.error(message, collectionId);
-        throw new OptimizeRuntimeException(message);
-      }
+      final UpdateResponse updateResponse = executeUpdateRequest(
+        collectionId,
+        addEntityScript,
+        "Was not able to update collection with id [%s]."
+      );
 
       if (updateResponse.getResult().equals(DocWriteResponse.Result.NOOP)) {
         final String message = String.format(
@@ -308,11 +433,7 @@ public class CollectionWriter {
     log.debug("Deleting the role [{}] in collection with id [{}] in Elasticsearch.", roleEntryId, collectionId);
 
     try {
-      final Map<String, Object> params = new HashMap<>();
-      params.put("roleEntryId", roleEntryId);
-      params.put("managerRole", CollectionRole.MANAGER.name());
-      params.put("lastModifier", userId);
-      params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
+      final Map<String, Object> params = constructParamsForRoleUpdateScript(roleEntryId, userId);
 
       final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScript(
         // @formatter:off
@@ -341,18 +462,11 @@ public class CollectionWriter {
         params
       );
 
-      final UpdateRequest request = new UpdateRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId)
-        .script(addEntityScript)
-        .setRefreshPolicy(IMMEDIATE)
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
-      final UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
-
-      if (updateResponse.getShardInfo().getFailed() > 0) {
-        final String message = String.format("Was not able to delete role from collection with id [%s].", collectionId);
-        log.error(message, collectionId);
-        throw new OptimizeRuntimeException(message);
-      }
+      final UpdateResponse updateResponse = executeUpdateRequest(
+        collectionId,
+        addEntityScript,
+        "Was not able to delete role from collection with id [%s]."
+      );
 
       if (updateResponse.getResult() == DocWriteResponse.Result.NOOP) {
         final String message = String.format(
@@ -374,6 +488,15 @@ public class CollectionWriter {
       log.error(errorMessage, e);
       throw new NotFoundException(errorMessage, e);
     }
+  }
+
+  private Map<String, Object> constructParamsForRoleUpdateScript(String roleEntryId, String userId) {
+    final Map<String, Object> params = new HashMap<>();
+    params.put("roleEntryId", roleEntryId);
+    params.put("managerRole", CollectionRole.MANAGER.name());
+    params.put("lastModifier", userId);
+    params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
+    return params;
   }
 
 }

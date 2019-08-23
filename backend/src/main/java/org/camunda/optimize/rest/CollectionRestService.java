@@ -10,6 +10,8 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntityUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
@@ -24,6 +26,7 @@ import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -96,6 +99,38 @@ public class CollectionRestService {
     return new IdDto(collectionRoleDto.getId());
   }
 
+  @POST
+  @Path("/{id}/scope")
+  public void addScopeEntry(@Context ContainerRequestContext requestContext,
+                             @PathParam("id") String collectionId,
+                             @NotNull CollectionScopeEntryDto entryDto) throws OptimizeConflictException {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+
+    collectionService.addScopeEntryToCollection(collectionId, entryDto, userId);
+  }
+
+  @DELETE
+  @Path("/{id}/scope/{scopeEntryId}")
+  public void removeScopeEntry(@Context ContainerRequestContext requestContext,
+                               @PathParam("id") String collectionId,
+                               @PathParam("scopeEntryId") String scopeEntryId) throws OptimizeConflictException,
+                                                                                      NotFoundException {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+
+    collectionService.removeScopeEntry(collectionId, scopeEntryId, userId);
+  }
+
+  @PUT
+  @Path("/{id}/scope/{scopeEntryId}")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void updateScopeEntry(@Context ContainerRequestContext requestContext,
+                               @PathParam("id") String collectionId,
+                               @NotNull CollectionScopeEntryUpdateDto entryDto,
+                               @PathParam("scopeEntryId") String scopeEntryId) throws OptimizeConflictException {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    collectionService.updateScopeEntry(collectionId, entryDto, userId, scopeEntryId);
+  }
+
   @PUT
   @Path("/{id}/role/{roleEntryId}")
   @Consumes(MediaType.APPLICATION_JSON)
@@ -105,7 +140,7 @@ public class CollectionRestService {
                          @PathParam("roleEntryId") String roleEntryId,
                          @NotNull CollectionRoleUpdateDto roleUpdateDto) throws OptimizeConflictException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    //
+
     collectionService.updateRoleOfCollection(collectionId, roleEntryId, roleUpdateDto, userId);
   }
 
