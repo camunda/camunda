@@ -77,16 +77,21 @@ export async function request(payload) {
   }
 }
 
-export function formatQuery(query) {
+export function formatQuery(query, queryStr = '') {
   return Object.keys(query).reduce((queryStr, key) => {
     const value = query[key];
+
+    if (Array.isArray(value)) {
+      const str = value.map(val => `${key}=${val}`).join('&');
+      return queryStr === '' ? str : queryStr + '&' + str;
+    }
 
     if (queryStr === '') {
       return `${key}=${encodeURIComponent(value)}`;
     }
 
     return `${queryStr}&${key}=${encodeURIComponent(value)}`;
-  }, '');
+  }, queryStr);
 }
 
 function processBody(body) {

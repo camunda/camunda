@@ -248,6 +248,15 @@ describe('methods shortcuts functions', () => {
       expect(fetchPayload.method).toBe('GET');
     });
 
+    it('should call request with correct options for array value', async () => {
+      await get(url, {param: ['a', 'b', 'c']});
+
+      const fetchPayload = fetch.mock.calls[0][1];
+
+      expect(fetch.mock.calls[0][0]).toBe(url + '?param=a&param=b&param=c');
+      expect(fetchPayload.method).toBe('GET');
+    });
+
     it('should use custom options', async () => {
       await get(url, body, {
         headers: {d: 12}
