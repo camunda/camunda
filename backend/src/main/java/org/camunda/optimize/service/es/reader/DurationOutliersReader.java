@@ -31,8 +31,6 @@ import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.percentiles.PercentileRanks;
-import org.elasticsearch.search.aggregations.metrics.percentiles.PercentileRanksAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.stats.Stats;
 import org.elasticsearch.search.aggregations.metrics.stats.StatsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStats;
@@ -65,7 +63,8 @@ public class DurationOutliersReader {
   private static final String STATS_AGG = "stats";
   private static final String FILTERED_FLOW_NODES_AGG = "filteredFlowNodes";
   private static final String NESTED_AGG = "nested";
-  private static final String RANKS_AGG = "ranks_agg";
+  private static final String LOWER_DURATION_AGG = "lowerDurationAgg";
+  private static final String HIGHER_DURATION_AGG = "higherDurationAgg";
 
   private TenantAuthorizationService tenantAuthorizationService;
   private final OptimizeElasticsearchClient esClient;
@@ -201,15 +200,22 @@ public class DurationOutliersReader {
           double stdDeviationBoundLower = statsAgg.getStdDeviationBound(ExtendedStats.Bounds.LOWER);
           double stdDeviationBoundHigher = statsAgg.getStdDeviationBound(ExtendedStats.Bounds.UPPER);
 
-          PercentileRanksAggregationBuilder percentileRanks = AggregationBuilders.percentileRanks(
-            RANKS_AGG, new double[]{stdDeviationBoundLower, stdDeviationBoundHigher}
-          ).field(EVENTS + "." + ACTIVITY_DURATION);
+          final FilterAggregationBuilder lowerOutlierEventFilter = AggregationBuilders.filter(
+            LOWER_DURATION_AGG,
+            QueryBuilders.rangeQuery(EVENTS + "." + ACTIVITY_DURATION).lte(stdDeviationBoundLower)
+          );
+
+          final FilterAggregationBuilder higherOutlierEventFilter = AggregationBuilders.filter(
+            HIGHER_DURATION_AGG,
+            QueryBuilders.rangeQuery(EVENTS + "." + ACTIVITY_DURATION).gte(stdDeviationBoundHigher)
+          );
 
           final TermQueryBuilder terms = QueryBuilders.termQuery(EVENTS + "." + ACTIVITY_ID, flowNodeId);
           final FilterAggregationBuilder filteredFlowNodes = AggregationBuilders.filter(
             getFilteredFlowNodeAggregationName(flowNodeId), terms
           );
-          filteredFlowNodes.subAggregation(percentileRanks);
+          filteredFlowNodes.subAggregation(lowerOutlierEventFilter);
+          filteredFlowNodes.subAggregation(higherOutlierEventFilter);
           nestedFlowNodeAggregation.subAggregation(filteredFlowNodes);
         }
       });
@@ -239,28 +245,29 @@ public class DurationOutliersReader {
 
         if (stats.getStdDeviation() != 0.0D
           && allFlowNodeFilterAggs.get(getFilteredFlowNodeAggregationName(flowNodeId)) != null) {
-          final PercentileRanks ranks =
-            (PercentileRanks) ((Filter) allFlowNodeFilterAggs.get(getFilteredFlowNodeAggregationName(flowNodeId)))
-              .getAggregations().iterator().next();
+          final Filter flowNodeFilterAgg = (Filter) allFlowNodeFilterAggs.get(getFilteredFlowNodeAggregationName(
+            flowNodeId));
+          final Filter lowerOutlierFilterAgg = (Filter) flowNodeFilterAgg.getAggregations().get(LOWER_DURATION_AGG);
+          final Filter higherOutlierFilterAgg = (Filter) flowNodeFilterAgg.getAggregations().get(HIGHER_DURATION_AGG);
 
           double avg = stats.getAvg();
           double stdDeviationBoundLower = stats.getStdDeviationBound(ExtendedStats.Bounds.LOWER);
           double stdDeviationBoundHigher = stats.getStdDeviationBound(ExtendedStats.Bounds.UPPER);
 
-          if (stdDeviationBoundLower > stats.getMin()) {
-            double percent = ranks.percent(stdDeviationBoundLower);
-            final long count = (long) Math.ceil(stats.getCount() * 0.01 * percent);
+          if (stdDeviationBoundLower > stats.getMin() && lowerOutlierFilterAgg.getDocCount() > 0L) {
+            final long count = lowerOutlierFilterAgg.getDocCount();
+            double percent = (double) count / flowNodeFilterAgg.getDocCount();
             finding.setLowerOutlier(
               (long) stdDeviationBoundLower, percent, avg / stdDeviationBoundLower, count
             );
             totalLowerOutlierCount.addAndGet(count);
           }
 
-          if (stdDeviationBoundHigher < stats.getMax()) {
-            double percent = ranks.percent(stdDeviationBoundHigher);
-            final long count = (long) Math.ceil(stats.getCount() * 0.01 * (100 - percent));
+          if (stdDeviationBoundHigher < stats.getMax() && higherOutlierFilterAgg.getDocCount() > 0) {
+            final long count = higherOutlierFilterAgg.getDocCount();
+            double percent = (double) count / flowNodeFilterAgg.getDocCount();
             finding.setHigherOutlier(
-              (long) stdDeviationBoundHigher, 100 - percent, stdDeviationBoundHigher / avg, count
+              (long) stdDeviationBoundHigher, percent, stdDeviationBoundHigher / avg, count
             );
             totalHigherOutlierCount.addAndGet(count);
           }

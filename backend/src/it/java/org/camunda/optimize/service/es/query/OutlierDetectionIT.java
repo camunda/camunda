@@ -133,6 +133,43 @@ public class OutlierDetectionIT {
   }
 
   @Test
+  public void singleOutlierFoundTest() throws SQLException {
+    // given
+    final String activityId = "testActivity";
+    ProcessDefinitionEngineDto processDefinition =
+      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
+
+    // a couple of normally distributed instances
+    startPIsDistributedByDuration(
+      processDefinition, new Gaussian(10 / 2, 15), 5, activityId
+    );
+    // a single higher outlier instance
+    ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(
+      processInstance.getId(),
+      activityId,
+      Math.round(Math.exp(NUMBER_OF_DATAPOINTS) * 100_000)
+    );
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    HashMap<String, FindingsDto> outlierTest = embeddedOptimizeRule.getRequestExecutor()
+      .buildFlowNodeOutliersRequest("outlierTest", Collections.singletonList("1"), Collections.singletonList(null))
+      .execute(new TypeReference<HashMap<String, FindingsDto>>() {
+      });
+
+    // then
+    assertThat(outlierTest.get(activityId).getOutlierCount(), is(1L));
+    assertThat(outlierTest.get(activityId).getLowerOutlierHeat(), is(0.0D));
+    assertThat(outlierTest.get(activityId).getHigherOutlierHeat(), is(greaterThan(0.0D)));
+    assertThat(outlierTest.get(activityId).getLowerOutlier().isPresent(), is(false));
+    assertThat(outlierTest.get(activityId).getHigherOutlier().isPresent(), is(true));
+    assertThat(outlierTest.get(activityId).getHigherOutlier().get().getCount(), is(1L));
+  }
+
+  @Test
   public void allDurationsSameValueNoOutliers() throws SQLException {
     // given
     ProcessDefinitionEngineDto processDefinition =
