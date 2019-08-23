@@ -249,7 +249,7 @@ public class DurationOutliersReader {
 
           if (stdDeviationBoundLower > stats.getMin()) {
             double percent = ranks.percent(stdDeviationBoundLower);
-            final long count = Math.round(stats.getCount() * 0.01 * percent);
+            final long count = (long) Math.ceil(stats.getCount() * 0.01 * percent);
             finding.setLowerOutlier(
               (long) stdDeviationBoundLower, percent, avg / stdDeviationBoundLower, count
             );
@@ -258,7 +258,7 @@ public class DurationOutliersReader {
 
           if (stdDeviationBoundHigher < stats.getMax()) {
             double percent = ranks.percent(stdDeviationBoundHigher);
-            final long count = Math.round(stats.getCount() * 0.01 * (100 - percent));
+            final long count = (long) Math.ceil(stats.getCount() * 0.01 * (100 - percent));
             finding.setHigherOutlier(
               (long) stdDeviationBoundHigher, 100 - percent, stdDeviationBoundHigher / avg, count
             );
