@@ -318,6 +318,17 @@
     "branchAnalysis": "Branchenanalyse",
     "outlier": {
       "label": "Ausreißeranalyse",
+      "tooltip": {
+        "outlier": {
+          "label": "Ausreißer",
+          "label-plural": "Outliers"
+        },
+        "instance": {
+          "label": "Instanz",
+          "label-plural": "Instanzen"
+        },
+        "tookDuration": "Dauerte"
+      },
       "info": "Heatmap zeigt die Häufigkeit höherer Ausreißer basierend auf der Dauer an. Berechnet mit Z-Score.",
       "tooltipText": "{count} Instanzen haben {percentage}% länger gedauert als der Durchschnitt.",
       "detailsModal": {

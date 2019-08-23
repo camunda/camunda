@@ -17,6 +17,7 @@ fixture('Process Analysis')
 
 test('show the statistics diagram', async t => {
   await t.click(Analysis.navItem);
+  await t.click(Analysis.branchAnalysisLink);
 
   await u.selectDefinition(t, 'Lead Qualification');
 
@@ -28,6 +29,7 @@ test('show the statistics diagram', async t => {
 
 test('show end event statistics on hover', async t => {
   await t.click(Analysis.navItem);
+  await t.click(Analysis.branchAnalysisLink);
 
   await u.selectDefinition(t, 'Lead Qualification');
 
@@ -45,6 +47,7 @@ test('show end event statistics on hover', async t => {
 
 test('should deselect elements by clicking on the node or on the control panel', async t => {
   await t.click(Analysis.navItem);
+  await t.click(Analysis.branchAnalysisLink);
 
   await u.selectDefinition(t, 'Lead Qualification');
 
@@ -61,4 +64,24 @@ test('should deselect elements by clicking on the node or on the control panel',
   await t.click(Analysis.gatewayCancelButton);
 
   await t.expect(Analysis.gatewayInput.textContent).eql('Select Gateway');
+});
+
+test('should show outliers heatmap when selecting a process definition', async t => {
+  await t.click(Analysis.navItem);
+
+  await u.selectDefinition(t, 'Lead Qualification');
+
+  await t.expect(Analysis.heatmapEl.visible).ok();
+});
+
+test('should show outlier details modal when clicking view details on a flow node', async t => {
+  await t.click(Analysis.navItem);
+
+  await u.selectDefinition(t, 'Lead Qualification', 'All');
+
+  await t.hover(Analysis.flowNode('ServiceTask_4'));
+
+  await t.click(Analysis.tooltipDetailsButton);
+
+  await t.expect(Analysis.chart.visible).ok();
 });

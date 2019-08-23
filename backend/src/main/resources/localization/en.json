@@ -318,13 +318,23 @@
     "branchAnalysis": "Branch Analysis",
     "outlier": {
       "label": "Outlier Analysis",
+      "tooltip": {
+        "outlier": {
+          "label": "Outlier",
+          "label-plural": "Outliers"
+        },
+        "instance": {
+          "label": "instance",
+          "label-plural": "instances"
+        },
+        "tookDuration": "Took a duration of"
+      },
       "info": "Heatmap displays the incidence of higher outliers based on duration. Calculated by z-score.",
       "tooltipText": "{count} instances took {percentage}% longer than average.",
       "detailsModal": {
         "title": "Execution of {name} Flow Node"
       }
     },
-
     "selectLabel": "For",
     "gatwayLabel": "analyse how the branches of",
     "endEventLabel": "affect the probability that an instance reached",

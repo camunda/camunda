@@ -48,8 +48,8 @@ export default class OutlierDetailsModal extends Component {
         },
         tooltips: {
           callbacks: {
-            title: data => 'Instance Count: ' + data[0].value,
-            label: ({xLabel}) => ' Duration: ' + xLabel
+            title: this.createTooltipTitle,
+            label: ({xLabel}) => ' ' + t('analysis.outlier.tooltip.tookDuration') + ' ' + xLabel
           }
         },
         scales: {
@@ -60,7 +60,8 @@ export default class OutlierDetailsModal extends Component {
               },
               scaleLabel: {
                 display: true,
-                labelString: 'Duration'
+                labelString: 'Duration',
+                fontStyle: 'bold'
               }
             }
           ],
@@ -68,13 +69,27 @@ export default class OutlierDetailsModal extends Component {
             {
               scaleLabel: {
                 display: true,
-                labelString: 'Instance Count'
+                labelString: 'Instance Count',
+                fontStyle: 'bold'
               }
             }
           ]
         }
       }
     });
+  };
+
+  createTooltipTitle = data => {
+    let unit = 'instance';
+    if (this.props.selectedNode.data[data[0].index].outlier) {
+      unit = 'outlier';
+    }
+
+    const unitLabel = t(
+      `analysis.outlier.tooltip.${unit}.label${+data[0].value !== 1 ? '-plural' : ''}`
+    );
+
+    return data[0].value + ' ' + unitLabel;
   };
 
   render() {

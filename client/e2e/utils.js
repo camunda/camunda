@@ -18,13 +18,13 @@ export async function createNewReport(t) {
   await t.click(Selector('a').withText('Create Process Report'));
 }
 
-export async function selectDefinition(t, name) {
+export async function selectDefinition(t, name, version = 'Specific versions') {
   await t
     .click('.Popover.DefinitionSelection')
     .typeText('.Typeahead.name input', name, {replace: true})
     .click(Selector('.Typeahead.name .DropdownOption').withText(name))
     .click('.VersionPopover')
-    .click(Selector('input[type="radio"]').nth(2))
+    .click(Selector('.label').withText(version))
     .click('.Popover.DefinitionSelection');
 }
 

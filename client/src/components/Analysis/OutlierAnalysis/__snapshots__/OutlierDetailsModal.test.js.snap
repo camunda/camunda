@@ -39,6 +39,7 @@ Object {
       Object {
         "scaleLabel": Object {
           "display": true,
+          "fontStyle": "bold",
           "labelString": "Duration",
         },
         "ticks": Object {
@@ -51,6 +52,7 @@ Object {
       Object {
         "scaleLabel": Object {
           "display": true,
+          "fontStyle": "bold",
           "labelString": "Instance Count",
         },
       },
