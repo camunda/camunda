@@ -8,6 +8,7 @@ static String MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
 static String DIND_DOCKER_IMAGE() { return "docker:18.06-dind" }
 
 static String PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
+static String PUBLIC_DOCKER_IMAGE() { return "optimize.registry.camunda.cloud/optimize" }
 
 String calculatePreviousVersion(releaseVersion) {
   def version = releaseVersion.tokenize('.')
@@ -235,11 +236,13 @@ pipeline {
       environment {
         VERSION = "${params.RELEASE_VERSION}"
         GCR_REGISTRY = credentials('docker-registry-ci3')
+        REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
       }
       steps {
         container('docker') {
           sh ("""
             echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
+            echo '${REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize optimize.registry.camunda.cloud --password-stdin
 
             docker build -t ${PROJECT_DOCKER_IMAGE()}:${VERSION} \
               --build-arg SKIP_DOWNLOAD=true \
@@ -248,6 +251,9 @@ pipeline {
               .
 
             docker push ${PROJECT_DOCKER_IMAGE()}:${VERSION}
+
+            docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${PUBLIC_DOCKER_IMAGE()}:${VERSION}
+            docker push ${PUBLIC_DOCKER_IMAGE()}:${VERSION}
           """)
         }
       }
