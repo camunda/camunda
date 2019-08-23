@@ -208,8 +208,7 @@ public class ProcessHyperMapExportServiceIT {
         historicUserTaskInstanceDto ->
         {
           try {
-            engineDatabaseRule.changeUserTaskClaimOperationTimestamp(
-              processInstanceDto.getId(),
+            engineDatabaseRule.changeUserTaskAssigneeOperationTimestamp(
               historicUserTaskInstanceDto.getId(),
               historicUserTaskInstanceDto.getStartTime().plus(millis, ChronoUnit.MILLIS)
             );

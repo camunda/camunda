@@ -1022,8 +1022,7 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
         historicUserTaskInstanceDto ->
         {
           try {
-            engineDatabaseRule.changeUserTaskClaimOperationTimestamp(
-              processInstanceDto.getId(),
+            engineDatabaseRule.changeUserTaskAssigneeOperationTimestamp(
               historicUserTaskInstanceDto.getId(),
               now.minus(offsetDuration, ChronoUnit.MILLIS)
             );

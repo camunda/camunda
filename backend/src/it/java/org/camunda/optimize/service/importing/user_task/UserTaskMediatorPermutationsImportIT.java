@@ -17,7 +17,7 @@ import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
 import org.camunda.optimize.service.engine.importing.service.mediator.CompletedProcessInstanceEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.CompletedUserTaskEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
-import org.camunda.optimize.service.engine.importing.service.mediator.UserOperationLogEngineImportMediator;
+import org.camunda.optimize.service.engine.importing.service.mediator.IdentityLinkLogEngineImportMediator;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
@@ -57,7 +57,7 @@ public class UserTaskMediatorPermutationsImportIT {
     return Collections2.permutations(
       ImmutableList.of(
         CompletedUserTaskEngineImportMediator.class.getSimpleName(),
-        UserOperationLogEngineImportMediator.class.getSimpleName(),
+        IdentityLinkLogEngineImportMediator.class.getSimpleName(),
         CompletedProcessInstanceEngineImportMediator.class.getSimpleName()
       )
     );
@@ -106,7 +106,8 @@ public class UserTaskMediatorPermutationsImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    final SearchResponse idsResp = elasticSearchRule.getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
+    final SearchResponse idsResp =
+      elasticSearchRule.getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
@@ -122,7 +123,8 @@ public class UserTaskMediatorPermutationsImportIT {
           assertThat(userTask.getEndDate(), is(notNullValue()));
           assertThat(userTask.getIdleDurationInMs(), is(idleDuration));
           assertThat(userTask.getWorkDurationInMs(), is(userTask.getTotalDurationInMs() - idleDuration));
-          assertThat(userTask.getUserOperations().size(), is(2));
+          assertThat(userTask.getAssigneeOperations().size(), is(1));
+          assertThat(userTask.getClaimDate(), is(userTask.getAssigneeOperations().get(0).getTimestamp()));
         });
     }
   }
@@ -159,8 +161,7 @@ public class UserTaskMediatorPermutationsImportIT {
     engineRule.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(historicUserTaskInstanceDto -> {
         try {
-          engineDatabaseRule.changeUserTaskClaimOperationTimestamp(
-            processInstanceDto.getId(),
+          engineDatabaseRule.changeUserTaskAssigneeOperationTimestamp(
             historicUserTaskInstanceDto.getId(),
             historicUserTaskInstanceDto.getStartTime().plus(idleDuration, ChronoUnit.MILLIS)
           );

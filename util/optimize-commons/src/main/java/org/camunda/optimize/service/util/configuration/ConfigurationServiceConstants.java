@@ -33,7 +33,6 @@ public interface ConfigurationServiceConstants {
   String ENGINE_IMPORT_PROCESS_DEFINITION_XML_MAX_PAGE_SIZE = "$.import.data.process-definition-xml.maxPageSize";
   String ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE = "$.import.data.activity-instance.maxPageSize";
   String ENGINE_IMPORT_USER_TASK_INSTANCE_MAX_PAGE_SIZE = "$.import.data.user-task-instance.maxPageSize";
-  String ENGINE_IMPORT_USER_OPERATION_LOG_ENTRY_MAX_PAGE_SIZE = "$.import.data.user-operation-log-entry.maxPageSize";
   String ENGINE_IMPORT_IDENTITY_LING_LOG_MAX_PAGE_SIZE = "$.import.data.identity-link-log.maxPageSize";
   String ENGINE_IMPORT_PROCESS_INSTANCE_MAX_PAGE_SIZE = "$.import.data.process-instance.maxPageSize";
   String ENGINE_IMPORT_VARIABLE_INSTANCE_MAX_PAGE_SIZE = "$.import.data.variable.maxPageSize";

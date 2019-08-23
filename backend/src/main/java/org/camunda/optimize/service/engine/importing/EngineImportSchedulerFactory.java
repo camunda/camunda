@@ -24,7 +24,6 @@ import org.camunda.optimize.service.engine.importing.service.mediator.RunningPro
 import org.camunda.optimize.service.engine.importing.service.mediator.RunningUserTaskInstanceEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndexesEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.TenantImportMediator;
-import org.camunda.optimize.service.engine.importing.service.mediator.UserOperationLogEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.VariableUpdateEngineImportMediator;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -129,9 +128,7 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
     mediators.add(
       beanFactory.getBean(RunningUserTaskInstanceEngineImportMediator.class, engineContext)
     );
-    mediators.add(
-      beanFactory.getBean(UserOperationLogEngineImportMediator.class, engineContext)
-    );
+
     if (configurationService.getImportDmnDataEnabled()) {
       mediators.add(
         beanFactory.getBean(DecisionInstanceEngineImportMediator.class, engineContext)

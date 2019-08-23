@@ -71,15 +71,6 @@ public class ProcessInstanceIndex extends StrictIndexMappingCreator implements D
 
   public static final String USER_TASK_DELETE_REASON = "deleteReason";
 
-  public static final String USER_OPERATIONS = "userOperations";
-  public static final String USER_OPERATION_ID = "id";
-  public static final String USER_OPERATION_USER_ID = "userId";
-  public static final String USER_OPERATION_TIMESTAMP = "timestamp";
-  public static final String USER_OPERATION_TYPE = "type";
-  public static final String USER_OPERATION_PROPERTY = "property";
-  public static final String USER_OPERATION_ORIGINAL_VALUE = "originalValue";
-  public static final String USER_OPERATION_NEW_VALUE = "newValue";
-
   public static final String ENGINE = "engine";
   public static final String TENANT_ID = "tenantId";
 
@@ -272,12 +263,6 @@ public class ProcessInstanceIndex extends StrictIndexMappingCreator implements D
       .startObject(USER_TASK_DELETE_REASON)
         .field("type", "keyword")
       .endObject()
-      .startObject(USER_OPERATIONS)
-        .field("type", "nested")
-        .startObject("properties");
-          addNestedUserOperationsField(builder)
-        .endObject()
-      .endObject()
       .startObject(USER_TASK_ASSIGNEE)
         .field("type", "keyword")
       .endObject()
@@ -299,37 +284,6 @@ public class ProcessInstanceIndex extends StrictIndexMappingCreator implements D
       ;
     // @formatter:on
     return builder;
-  }
-
-
-  private XContentBuilder addNestedUserOperationsField(final XContentBuilder builder) throws IOException {
-    // @formatter:off
-    builder
-      .startObject(USER_OPERATION_ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(USER_OPERATION_USER_ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(USER_OPERATION_TIMESTAMP)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      .startObject(USER_OPERATION_TYPE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(USER_OPERATION_PROPERTY)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(USER_OPERATION_ORIGINAL_VALUE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(USER_OPERATION_NEW_VALUE)
-        .field("type", "keyword")
-      .endObject()
-      ;
-    return builder;
-    // @formatter:on
   }
 
   private XContentBuilder addNestedAssigneeOperations(final XContentBuilder builder) throws IOException {

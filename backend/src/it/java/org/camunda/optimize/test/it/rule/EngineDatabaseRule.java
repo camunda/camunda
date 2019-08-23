@@ -296,17 +296,16 @@ public class EngineDatabaseRule extends TestWatcher {
     connection.commit();
   }
 
-  public void changeUserTaskClaimOperationTimestamp(final String processInstanceId,
-                                                    final String taskId,
-                                                    final OffsetDateTime timestamp) throws SQLException {
-    String sql = "UPDATE ACT_HI_OP_LOG " +
+  public void changeUserTaskAssigneeOperationTimestamp(final String taskId,
+                                                       final OffsetDateTime timestamp) throws SQLException {
+    String sql = "UPDATE ACT_HI_IDENTITYLINK " +
       "SET TIMESTAMP_ = ? WHERE " +
-      "PROC_INST_ID_ = ?" +
+      "TYPE_ = ?" +
       "AND TASK_ID_ = ?" +
-      "AND OPERATION_TYPE_ = 'Claim'";
+      "AND OPERATION_TYPE_ = 'add'";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
     statement.setTimestamp(1, toLocalTimestampWithoutNanos(timestamp));
-    statement.setString(2, processInstanceId);
+    statement.setString(2, IDENTITY_LINK_TYPE_ASSIGNEE);
     statement.setString(3, taskId);
     statement.executeUpdate();
     connection.commit();

@@ -374,4 +374,29 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     }
   }
 
+  @Test
+  public void onlyUserAssigneeOperationLogsRelatedToProcessInstancesAreImported() throws IOException {
+    // given
+    deployAndStartOneUserTaskProcess();
+    engineRule.createIndependentUserTask();
+    engineRule.finishAllRunningUserTasks();
+
+    // when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // then
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    for (SearchHit searchHitFields : idsResp.getHits()) {
+      final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
+        searchHitFields.getSourceAsString(), ProcessInstanceDto.class
+      );
+      assertThat(processInstanceDto.getUserTasks().size(), is(1));
+      processInstanceDto.getUserTasks()
+        .forEach(userTask -> assertThat(userTask.getAssigneeOperations().size(), is(1)));
+    }
+  }
+
+
 }

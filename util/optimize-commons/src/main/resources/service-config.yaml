@@ -124,9 +124,6 @@ import:
     user-task-instance:
       # Determines the page size for historic user task instance fetching
       maxPageSize: 10000
-    user-operation-log-entry:
-      # Determines the page size for historic user operation log entry fetching.
-      maxPageSize: 10000
     identity-link-log:
       # Determines the page size for identity link log fetching.
       maxPageSize: 10000

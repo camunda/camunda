@@ -207,14 +207,20 @@ public class ESIndexAdjuster {
             throw new UpgradeRuntimeException(taskResponse.getError().toString());
           }
 
+          final TaskResponse.Status taskStatus = taskResponse.getStatus();
+
           int currentProgress = new Double(taskResponse.getProgress() * 100.0).intValue();
           if (currentProgress != progress) {
             progress = currentProgress;
             logger.info(
-              "Reindexing from {} to {}, progress: {}%",
+              "Reindexing from {} to {}, progress: {}%. Reindex status= total: {}, updated: {}, created: {}, deleted: {}",
               sourceIndex,
               destinationIndex,
-              progress
+              progress,
+              taskStatus.getTotal(),
+              taskStatus.getUpdated(),
+              taskStatus.getCreated(),
+              taskStatus.getDeleted()
             );
           }
 

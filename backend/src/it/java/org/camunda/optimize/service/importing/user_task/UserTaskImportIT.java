@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing.user_task;
 
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.importing.UserOperationDto;
 import org.camunda.optimize.dto.optimize.importing.UserTaskInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.elasticsearch.action.search.SearchResponse;
@@ -64,7 +63,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
         assertThat(simpleUserTaskInstanceDto.getTotalDurationInMs(), is(notNullValue()));
         assertThat(simpleUserTaskInstanceDto.getIdleDurationInMs(), is(notNullValue()));
         assertThat(simpleUserTaskInstanceDto.getWorkDurationInMs(), is(notNullValue()));
-        assertThat(simpleUserTaskInstanceDto.getUserOperations(), is(notNullValue()));
+        assertThat(simpleUserTaskInstanceDto.getAssigneeOperations(), is(notNullValue()));
       });
     }
   }
@@ -224,67 +223,6 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
           containsInAnyOrder(USER_TASK_1)
         );
       }
-    }
-  }
-
-  @Test
-  public void userOperationsAreImported() throws IOException {
-    // given
-    deployAndStartTwoUserTasksProcess();
-    engineRule.finishAllRunningUserTasks();
-    engineRule.finishAllRunningUserTasks();
-
-    // when
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
-    for (SearchHit searchHitFields : idsResp.getHits()) {
-      final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
-        searchHitFields.getSourceAsString(), ProcessInstanceDto.class
-      );
-      persistedProcessInstanceDto.getUserTasks()
-        .forEach(userTask -> {
-          assertThat(userTask.getUserOperations().size(), is(2));
-          assertThat(
-            userTask.getUserOperations().stream().map(UserOperationDto::getType).collect(toList()),
-            containsInAnyOrder("Claim", "Complete")
-          );
-          userTask.getUserOperations().forEach(userOperationDto -> {
-            assertThat(userOperationDto.getId(), is(notNullValue()));
-            assertThat(userOperationDto.getUserId(), is(notNullValue()));
-            assertThat(userOperationDto.getTimestamp(), is(notNullValue()));
-            assertThat(userOperationDto.getType(), is(notNullValue()));
-            assertThat(userOperationDto.getProperty(), is(notNullValue()));
-            assertThat(userOperationDto.getNewValue(), is(notNullValue()));
-          });
-        });
-    }
-  }
-
-  @Test
-  public void onlyUserOperationsRelatedToProcessInstancesAreImported() throws IOException {
-    // given
-    deployAndStartOneUserTaskProcess();
-    engineRule.createIndependentUserTask();
-    engineRule.finishAllRunningUserTasks();
-
-    // when
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
-    for (SearchHit searchHitFields : idsResp.getHits()) {
-      final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
-        searchHitFields.getSourceAsString(), ProcessInstanceDto.class
-      );
-      assertThat(processInstanceDto.getUserTasks().size(), is(1));
-      processInstanceDto.getUserTasks()
-        .forEach(userTask -> assertThat(userTask.getUserOperations().size(), is(2)));
     }
   }
 

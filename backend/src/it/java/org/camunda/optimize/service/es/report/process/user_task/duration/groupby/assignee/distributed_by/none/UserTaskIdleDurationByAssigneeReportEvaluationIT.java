@@ -37,8 +37,7 @@ public class UserTaskIdleDurationByAssigneeReportEvaluationIT
     engineRule.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(
         historicUserTaskInstanceDto ->
-          changeUserOperationClaimTimestamp(
-            processInstanceDto,
+          changeUserClaimTimestamp(
             setDuration,
             historicUserTaskInstanceDto
           )
@@ -52,8 +51,7 @@ public class UserTaskIdleDurationByAssigneeReportEvaluationIT
     engineRule.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
       .forEach(
         historicUserTaskInstanceDto ->
-          changeUserOperationClaimTimestamp(
-            processInstanceDto,
+          changeUserClaimTimestamp(
             duration,
             historicUserTaskInstanceDto
           )
@@ -71,12 +69,10 @@ public class UserTaskIdleDurationByAssigneeReportEvaluationIT
       .build();
   }
 
-  private void changeUserOperationClaimTimestamp(final ProcessInstanceEngineDto processInstanceDto,
-                                                 final long millis,
-                                                 final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
+  private void changeUserClaimTimestamp(final long millis,
+                                        final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
     try {
-      engineDatabaseRule.changeUserTaskClaimOperationTimestamp(
-        processInstanceDto.getId(),
+      engineDatabaseRule.changeUserTaskAssigneeOperationTimestamp(
         historicUserTaskInstanceDto.getId(),
         historicUserTaskInstanceDto.getStartTime().plus(millis, ChronoUnit.MILLIS)
       );

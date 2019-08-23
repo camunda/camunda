@@ -73,9 +73,9 @@ public class UpgradeFrom25To26 implements Upgrade {
   private ConfigurationService configurationService = new ConfigurationService();
   private OptimizeIndexNameService indexNameService = new OptimizeIndexNameService(configurationService);
   private OptimizeElasticsearchClient client = new OptimizeElasticsearchClient(
-      ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-      indexNameService
-    );
+    ElasticsearchHighLevelRestClientBuilder.build(configurationService),
+    indexNameService
+  );
   private ObjectMapper objectMapper = new ObjectMapper();
 
   private static final String DEFINITION_ID_TO_VAR_NAMES_PARAMETER_NAME = "definitionIdToVarNames";
@@ -114,7 +114,7 @@ public class UpgradeFrom25To26 implements Upgrade {
       .addUpgradeStep(createDecisionDefinitionInputVariableNames())
       .addUpgradeStep(createDecisionDefinitionOutputVariableNames())
       .addUpgradeStep(createDefaultManagerRoleForCollections())
-      .addUpgradeStep(moveProcessVariablesToSingleField())
+      .addUpgradeStep(createProcessInstanceIndexUpgrade())
       .build();
   }
 
@@ -136,6 +136,7 @@ public class UpgradeFrom25To26 implements Upgrade {
         .build()
     );
     String script = substitutor.replace(
+      // @formatter:off
       "String definition = ctx._source.${reportDataField}.${definitionVersionField};\n" +
       "if (definition != null && !definition.isEmpty()) {\n" +
         "def list = new ArrayList();\n" +
@@ -143,6 +144,7 @@ public class UpgradeFrom25To26 implements Upgrade {
         "ctx._source.${reportDataField}.${definitionVersionsField} = list; \n" +
         "ctx._source.${reportDataField}.remove(\"${definitionVersionField}\");\n" +
       "}\n"
+      // @formatter:on
     );
     return new UpdateDataStep(
       esType,
@@ -171,9 +173,9 @@ public class UpgradeFrom25To26 implements Upgrade {
         .build()
     );
 
+    // @formatter:off
     Map<String, Object> params =
       objectMapper.convertValue(definitionIdToVariableNames, new TypeReference<Map<String, Object>>() {});
-    // @formatter:off
     String script = substitutor.replace(
       "if (params.${definitionToVarNamesParam}.containsKey(ctx._source.${definitionIdField})) {\n" +
         "ctx._source.${variableNamesFiled} = " +
@@ -200,7 +202,8 @@ public class UpgradeFrom25To26 implements Upgrade {
     return getDecisionDefinitionVariableNames(DmnModelUtility::extractOutputVariables);
   }
 
-  private Map<String, List<DecisionVariableNameDto>> getDecisionDefinitionVariableNames(BiFunction<DmnModelInstance, String, List<DecisionVariableNameDto>> extractVariables) {
+  private Map<String, List<DecisionVariableNameDto>> getDecisionDefinitionVariableNames(BiFunction<DmnModelInstance,
+    String, List<DecisionVariableNameDto>> extractVariables) {
     final Map<String, List<DecisionVariableNameDto>> result = new HashMap<>();
     try {
       final TimeValue scrollTimeOut = new TimeValue(configurationService.getElasticsearchScrollTimeout());
@@ -262,7 +265,13 @@ public class UpgradeFrom25To26 implements Upgrade {
 
   }
 
-  private UpgradeStep moveProcessVariablesToSingleField() {
+  private UpgradeStep createProcessInstanceIndexUpgrade() {
+    StringBuilder scriptBuilder = moveProcessVariablesToSingleField();
+    scriptBuilder.append(getRemoveUserOperationsLogsScript());
+    return new UpdateIndexStep(new ProcessInstanceIndex(), scriptBuilder.toString());
+  }
+
+  private StringBuilder moveProcessVariablesToSingleField() {
     List<String> oldVariableFields = asList(
       "stringVariables",
       "integerVariables",
@@ -296,6 +305,16 @@ public class UpgradeFrom25To26 implements Upgrade {
       scriptBuilder.append(substitutor.replace(replaceVarFieldScript));
     }
     scriptBuilder.append("ctx._source." + VARIABLES + " = variables;");
-    return new UpdateIndexStep(new ProcessInstanceIndex(), scriptBuilder.toString());
+    return scriptBuilder;
+  }
+
+  private String getRemoveUserOperationsLogsScript() {
+    // @formatter:off
+    return "if (ctx._source.userTasks != null && !ctx._source.userTasks.isEmpty()) {" +
+      "ctx._source.userTasks.forEach( currUserTask -> { " +
+      "  currUserTask.remove(\"userOperations\");" +
+      "});" +
+    "}";
+    // @formatter:on
   }
 }

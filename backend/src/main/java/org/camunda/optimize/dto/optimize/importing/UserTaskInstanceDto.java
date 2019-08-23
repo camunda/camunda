@@ -50,14 +50,10 @@ public class UserTaskInstanceDto implements OptimizeDto {
   private Long idleDurationInMs;
   private Long workDurationInMs;
 
-  private Set<UserOperationDto> userOperations = new HashSet<>();
-
-  public UserTaskInstanceDto(final String id, final String processInstanceId, final String engine,
-                             final Set<UserOperationDto> userOperations) {
+  public UserTaskInstanceDto(final String id, final String processInstanceId, final String engine) {
     this.id = id;
     this.processInstanceId = processInstanceId;
     this.engine = engine;
-    this.userOperations = userOperations;
   }
 
   public UserTaskInstanceDto(final String id, final String processInstanceId, final String engine,

@@ -166,8 +166,8 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
       .reduce((first, second) -> {
         boolean sameTimestampAndFirstIsAddOperation = first.getTimestamp().equals(second.getTimestamp()) &&
           IDENTITY_LINK_OPERATION_ADD.equals(first.getOperationType()) &&
-            !IDENTITY_LINK_OPERATION_ADD.equals(second.getOperationType());
-        return sameTimestampAndFirstIsAddOperation? first: second;
+          !IDENTITY_LINK_OPERATION_ADD.equals(second.getOperationType());
+        return sameTimestampAndFirstIsAddOperation ? first : second;
       })
       .map(this::mapLogEntryToAssignee)
       .orElse(null);
@@ -201,7 +201,8 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
 
     UpdateRequest request = new UpdateRequest(
       PROCESS_INSTANCE_INDEX_NAME,
-      PROCESS_INSTANCE_INDEX_NAME, processInstanceId)
+      PROCESS_INSTANCE_INDEX_NAME, processInstanceId
+    )
       .script(updateScript)
       .upsert(newEntryIfAbsent, XContentType.JSON)
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -242,7 +243,8 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
         "}\n" +
       "}\n" +
        createUpdateAssigneeScript() +
-       createUpdateCandidateGroupScript()
+       createUpdateCandidateGroupScript() +
+       createUpdateUserTaskMetricsScript()
       ,
       // @formatter:on
       ImmutableMap.of(

@@ -65,8 +65,7 @@ public abstract class AbstractUserTaskImportIT {
     engineRule.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(historicUserTaskInstanceDto -> {
         try {
-          engineDatabaseRule.changeUserTaskClaimOperationTimestamp(
-            processInstanceDto.getId(),
+          engineDatabaseRule.changeUserTaskAssigneeOperationTimestamp(
             historicUserTaskInstanceDto.getId(),
             historicUserTaskInstanceDto.getStartTime().plus(idleDuration, ChronoUnit.MILLIS)
           );
@@ -82,8 +81,7 @@ public abstract class AbstractUserTaskImportIT {
       .forEach(historicUserTaskInstanceDto -> {
         if (historicUserTaskInstanceDto.getEndTime() != null) {
           try {
-            engineDatabaseRule.changeUserTaskClaimOperationTimestamp(
-              processInstanceDto.getId(),
+            engineDatabaseRule.changeUserTaskAssigneeOperationTimestamp(
               historicUserTaskInstanceDto.getId(),
               historicUserTaskInstanceDto.getEndTime().minus(workDuration, ChronoUnit.MILLIS)
             );
