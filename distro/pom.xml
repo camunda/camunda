@@ -21,7 +21,7 @@
 
     <dependency>
       <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate</artifactId>
+      <artifactId>camunda-operate-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>exec</classifier>
     </dependency>

@@ -20,7 +20,7 @@
 
     <dependency>
       <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate</artifactId>
+      <artifactId>camunda-operate-importer</artifactId>
       <version>${project.version}</version>
     </dependency>
 

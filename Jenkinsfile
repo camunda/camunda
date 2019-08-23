@@ -88,13 +88,13 @@ pipeline {
               // MaxRAMFraction = LIMITS_CPU+1 because there are LIMITS_CPU surefire threads + one maven thread
               sh '''
                 JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+1))" \
-                mvn verify -f backend/pom.xml -s settings.xml -P -docker -B -T$LIMITS_CPU --fail-at-end
+                mvn verify -f qa/integration-tests/pom.xml -s settings.xml -P -docker -B -T$LIMITS_CPU --fail-at-end
               '''
             }
           }
           post {
             always {
-              junit testResults: 'backend/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
+              junit testResults: ' qa/integration-tests/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
             }
           }
         }

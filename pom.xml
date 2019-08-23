@@ -10,7 +10,12 @@
 
   <modules>
     <module>client</module>
-    <module>backend</module>
+    <module>util</module>
+    <module>elasticsearch</module>
+    <module>data-generator</module>
+    <module>importer</module>
+    <module>webapp</module>
+    <module>qa/integration-tests</module>
     <module>distro</module>
   </modules>
 

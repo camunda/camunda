@@ -20,7 +20,7 @@ import org.apache.http.client.CookieStore;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.camunda.operate.qa.performance.util.StatefulRestTemplate;
 import org.camunda.operate.qa.performance.util.URLUtil;
-import org.camunda.operate.security.WebSecurityConfig;
+import org.camunda.operate.webapp.security.WebSecurityConfig;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ConversionUtils;
 import org.junit.Before;

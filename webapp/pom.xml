@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.camunda.operate</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.1.0-SNAPSHOT</version>
+  </parent>
+
+  <name>Camunda Operate Webapp</name>
+  <artifactId>camunda-operate-webapp</artifactId>
+
+  <properties>
+    <plugin.version.license>3.0</plugin.version.license>
+    <license.header>${project.baseUri}/../license/license-header</license.header>
+  </properties>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>org.camunda.operate</groupId>
+      <artifactId>camunda-operate-util</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.camunda.operate</groupId>
+      <artifactId>camunda-operate-elasticsearch</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.camunda.operate</groupId>
+      <artifactId>camunda-operate-data-generator</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- TODO this must be removed, when modules are separated -->
+    <dependency>
+      <groupId>org.camunda.operate</groupId>
+      <artifactId>camunda-operate-importer</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- ZEEBE -->
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-client-java</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+    </dependency>
+
+    <!-- SPRING BOOT -->
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.elasticsearch.client</groupId>
+          <artifactId>transport</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-log4j2</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+
+    <!-- ELASTICSEARCH -->
+
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-high-level-client</artifactId>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
+
+    <dependency>
+      <groupId>org.glassfish</groupId>
+      <artifactId>javax.json</artifactId>
+    </dependency>
+
+    <!-- SWAGGER -->
+
+    <dependency>
+      <groupId>io.springfox</groupId>
+      <artifactId>springfox-swagger2</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.springfox</groupId>
+      <artifactId>springfox-swagger-ui</artifactId>
+    </dependency>
+
+    <!-- WEBJAR -->
+
+    <dependency>
+      <groupId>org.camunda.operate</groupId>
+      <artifactId>camunda-operate-webjar</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    
+    <!-- Micrometer Prometheus -->
+    <dependency>
+  	  <groupId>io.micrometer</groupId>
+  	  <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
+
+    <!-- TEST -->
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+
+    <plugins>
+
+      <!-- LICENSE PLUGIN -->
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <version>${plugin.version.license}</version>
+        <configuration>
+          <header>${license.header}</header>
+          <includes>
+            <include>**/*.java</include>
+          </includes>
+          <mapping>
+            <java>SLASHSTAR_STYLE</java>
+          </mapping>
+        </configuration>
+        <executions>
+          <execution>
+            <id>add-license</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>format</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>repackage</id>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+            <configuration>
+              <classifier>exec</classifier>
+              <layout>ZIP</layout>
+              <mainClass>org.camunda.operate.webapp.Application</mainClass>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+
+</project>

@@ -12,7 +12,7 @@
   <Loggers>
     <Logger name="org.camunda.operate.util.ElasticsearchUtil" level="OFF" />
     <Logger name="org.camunda.operate.es.reader.ListViewReader" level="OFF" />
-    <Logger name="org.camunda.operate.zeebe.operation.AbstractOperationHandler" level="OFF" />
+    <Logger name="org.camunda.operate.webapp.zeebe.operation.AbstractOperationHandler" level="OFF" />
     <Logger name="org.camunda.operate.qa.performance.BatchOperationPerformanceTest" level="INFO"/>
     <Root level="OFF">
       <AppenderRef ref="Console"/>
