@@ -87,7 +87,10 @@ export default class BranchAnalysis extends React.Component {
     const procDefChanged =
       prevConfig.processDefinitionKey !== config.processDefinitionKey ||
       !equal(prevConfig.processDefinitionVersions, config.processDefinitionVersions);
-    if (procDefConfigured && (procDefChanged || prevConfig.filter !== config.filter)) {
+    const tenantsChanged = !equal(prevConfig.tenantIds, config.tenantIds);
+    const filterChanged = !equal(prevConfig.filter, config.filter);
+
+    if (procDefConfigured && (procDefChanged || tenantsChanged || filterChanged)) {
       this.setState({
         data: await loadFrequencyData(
           config.processDefinitionKey,

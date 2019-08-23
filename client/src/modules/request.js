@@ -77,12 +77,15 @@ export async function request(payload) {
   }
 }
 
-export function formatQuery(query, queryStr = '') {
+export function formatQuery(query) {
   return Object.keys(query).reduce((queryStr, key) => {
     const value = query[key];
 
     if (Array.isArray(value)) {
       const str = value.map(val => `${key}=${val}`).join('&');
+      if (!str) {
+        return queryStr;
+      }
       return queryStr === '' ? str : queryStr + '&' + str;
     }
 
@@ -91,7 +94,7 @@ export function formatQuery(query, queryStr = '') {
     }
 
     return `${queryStr}&${key}=${encodeURIComponent(value)}`;
-  }, queryStr);
+  }, '');
 }
 
 function processBody(body) {

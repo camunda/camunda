@@ -73,7 +73,8 @@ export default class OutlierAnalysis extends Component {
     const procDefChanged =
       prevConfig.processDefinitionKey !== config.processDefinitionKey ||
       !equal(prevConfig.processDefinitionVersions, config.processDefinitionVersions);
-    if (procDefConfigured && procDefChanged) {
+    const tenantsChanged = !equal(prevConfig.tenantIds, config.tenantIds);
+    if (procDefConfigured && (procDefChanged || tenantsChanged)) {
       await this.loadOutlierData(config);
     }
   }
