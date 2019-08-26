@@ -107,7 +107,7 @@ test('add relative end date filter', async t => {
   await t.click(Filter.relativeDateButton);
   await t.typeText(Filter.relativeDateInput, '5', {replace: true});
   await t.click(Filter.relativeDateDropdown);
-  await t.click(Report.option('Months'));
+  await t.click(Report.option('months'));
   await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();
 });
@@ -120,7 +120,7 @@ test('add duration filter', async t => {
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Duration'));
   await t.click(Filter.durationFilterOperator);
-  await t.click(Report.option('less'));
+  await t.click(Report.option('less than'));
 
   await t.typeText(Filter.durationFilterInput, '30', {replace: true});
 

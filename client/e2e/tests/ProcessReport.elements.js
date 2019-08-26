@@ -23,7 +23,9 @@ export const groupbyDropdownButton = groupbyDropdown.find('button');
 export const visualizationDropdown = Selector('.label')
   .withText('Visualization')
   .nextSibling();
-export const option = text => Selector('.DropdownOption').withText(text);
+export const option = text => Selector('.DropdownOption').withExactText(text);
+export const configurationOption = text =>
+  Selector('.Configuration .DropdownOption').withExactText(text);
 export const reportTable = reportRenderer.find('.Table');
 export const reportChart = reportRenderer.find('canvas');
 export const reportDiagram = reportRenderer.find('svg');

@@ -46,10 +46,12 @@ export const selectVisualization = selectControlPanelOption('Visualization');
 
 export async function save(t) {
   await t.click('.save-button');
+  await t.expect(Selector('.edit-button').visible).ok();
 }
 
 export async function cancel(t) {
   await t.click('.cancel-button');
+  await t.expect(Selector('.edit-button').visible).ok();
 }
 
 export async function selectAggregation(t, type) {

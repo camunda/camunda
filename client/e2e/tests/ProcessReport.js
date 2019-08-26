@@ -54,14 +54,6 @@ test('version selection', async t => {
   await t.expect(rangeNumber > latestNumber).ok();
 });
 
-test('add a report to a collection', async t => {
-  await t.click(e.report);
-  await t.click(e.collectionsDropdown);
-  await t.click(e.collectionOption('Add to new Collection'));
-  await t.click(e.createCollectionButton);
-  await t.expect(e.collectionsDropdown.textContent).contains('In 1 Collection');
-});
-
 test('sort table columns', async t => {
   await t.hover(e.report);
   await t.click(e.editButton);
@@ -465,7 +457,7 @@ test('should be able to distribute candidate group by user task', async t => {
 
   await t.click(e.distributedBySelect);
 
-  await t.click(e.option('User Task'));
+  await t.click(e.configurationOption('User Task'));
 
   await t.expect(e.visualizationDropdown.textContent).contains('Bar Chart');
 

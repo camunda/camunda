@@ -29,7 +29,8 @@ test('create a dmn js table report', async t => {
   await t.click(Report.gradientBarsSwitch);
 
   await t.expect(Report.decisionTable.visible).ok();
-  await t.expect(Report.decisionTableCell(1, 5).textContent).eql('2 (33.3%)');
+  await t.expect(Report.decisionTable.textContent).contains('Hits');
+  await t.expect(Report.decisionTableCell(1, 2).textContent).eql('"Misc"');
 });
 
 test('create raw date report', async t => {
