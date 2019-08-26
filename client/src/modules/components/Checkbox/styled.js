@@ -39,6 +39,7 @@ export const Input = themed(styled.input`
   opacity: 0;
 
   height: 100%;
+  width: 15px;
   top: 0;
   left: 0;
   margin: 0;
