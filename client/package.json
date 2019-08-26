@@ -20,7 +20,7 @@
     "inferno": "~5.0.5",
     "moment": "^2.24.0",
     "object.values": "^1.1.0",
-    "react": "16.8.6",
+    "react": "16.9.0",
     "react-app-polyfill": "^1.0.0",
     "react-date-range": "^0.9.4",
     "react-dom": "^16.8.6",
