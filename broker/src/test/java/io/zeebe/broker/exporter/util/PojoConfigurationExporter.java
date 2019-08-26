@@ -29,13 +29,53 @@ public class PojoConfigurationExporter implements Exporter {
 
   public class PojoExporterConfiguration {
 
-    public String foo;
-    public int x;
-    public PojoExporterConfigurationPart nested;
+    private String foo = "";
+    private int x;
+    private PojoExporterConfigurationPart nested;
+
+    public String getFoo() {
+      return foo;
+    }
+
+    public void setFoo(String foo) {
+      this.foo = foo;
+    }
+
+    public int getX() {
+      return x;
+    }
+
+    public void setX(int x) {
+      this.x = x;
+    }
+
+    public PojoExporterConfigurationPart getNested() {
+      return nested;
+    }
+
+    public void setNested(PojoExporterConfigurationPart nested) {
+      this.nested = nested;
+    }
   }
 
   public class PojoExporterConfigurationPart {
-    public String bar;
-    public double y;
+    private String bar;
+    private double y;
+
+    public String getBar() {
+      return bar;
+    }
+
+    public void setBar(String bar) {
+      this.bar = bar;
+    }
+
+    public double getY() {
+      return y;
+    }
+
+    public void setY(double y) {
+      this.y = y;
+    }
   }
 }

@@ -177,6 +177,7 @@ public class SystemContext implements AutoCloseable {
       LOG.error("Failed to close broker within {} seconds.", CLOSE_TIMEOUT, e);
     } catch (final ExecutionException | InterruptedException e) {
       LOG.error("Exception while closing broker", e);
+      Thread.currentThread().interrupt();
     } finally {
 
       for (final Closeable delegate : closeablesToReleaseResources) {
@@ -193,6 +194,7 @@ public class SystemContext implements AutoCloseable {
         LOG.error("Failed to close scheduler within {} seconds", CLOSE_TIMEOUT, e);
       } catch (final ExecutionException | InterruptedException e) {
         LOG.error("Exception while closing scheduler", e);
+        Thread.currentThread().interrupt();
       }
     }
   }

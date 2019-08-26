@@ -10,9 +10,11 @@ package io.zeebe.logstreams.impl;
 import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
 
-public class Loggers {
+public final class Loggers {
+
   public static final Logger LOGSTREAMS_LOGGER = new ZbLogger("io.zeebe.logstreams");
   public static final Logger PROCESSOR_LOGGER = new ZbLogger("io.zeebe.processor");
-  public static final Logger ROCKSDB_LOGGER = new ZbLogger("io.zeebe.logstreams.rocksdb");
   public static final Logger SNAPSHOT_LOGGER = new ZbLogger("io.zeebe.logstreams.snapshot");
+
+  private Loggers() {}
 }

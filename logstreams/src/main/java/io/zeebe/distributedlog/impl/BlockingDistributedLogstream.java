@@ -28,35 +28,11 @@ public class BlockingDistributedLogstream extends Synchronous<AsyncDistributedLo
   }
 
   @Override
-  public long append(String partition, String nodeId, long commitPosition, byte[] blockBuffer) {
-    try {
-      return distributedLogstreamProxy
-          .append(partition, nodeId, commitPosition, blockBuffer)
-          .get(timeout, TimeUnit.MILLISECONDS);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    } catch (ExecutionException e) {
-      e.printStackTrace();
-    } catch (TimeoutException e) {
-      e.printStackTrace();
-    }
-    // Append failed
-    return -1;
-  }
-
-  @Override
-  public void claimLeaderShip(String partition, String nodeId, long leaderTerm) {
-    try {
-      distributedLogstreamProxy
-          .claimLeaderShip(partition, nodeId, leaderTerm)
-          .get(timeout, TimeUnit.MILLISECONDS);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    } catch (ExecutionException e) {
-      e.printStackTrace();
-    } catch (TimeoutException e) {
-      e.printStackTrace();
-    }
+  public long append(String partition, String nodeId, long commitPosition, byte[] blockBuffer)
+      throws InterruptedException, ExecutionException, TimeoutException {
+    return distributedLogstreamProxy
+        .append(partition, nodeId, commitPosition, blockBuffer)
+        .get(timeout, TimeUnit.MILLISECONDS);
   }
 
   @Override

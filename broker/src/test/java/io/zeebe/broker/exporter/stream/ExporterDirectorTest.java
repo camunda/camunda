@@ -155,10 +155,10 @@ public class ExporterDirectorTest {
     waitUntil(() -> PojoConfigurationExporter.configuration != null);
     final PojoExporterConfiguration configuration = PojoConfigurationExporter.configuration;
 
-    assertThat(configuration.foo).isEqualTo(foo);
-    assertThat(configuration.x).isEqualTo(x);
-    assertThat(configuration.nested.bar).isEqualTo(bar);
-    assertThat(configuration.nested.y).isEqualTo(y);
+    assertThat(configuration.getFoo()).isEqualTo(foo);
+    assertThat(configuration.getX()).isEqualTo(x);
+    assertThat(configuration.getNested().getBar()).isEqualTo(bar);
+    assertThat(configuration.getNested().getY()).isEqualTo(y);
   }
 
   @Test

@@ -8,12 +8,13 @@
 package io.zeebe.distributedlog;
 
 import io.atomix.primitive.SyncPrimitive;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 public interface DistributedLogstream extends SyncPrimitive {
 
-  long append(String partition, String nodeId, long commitPosition, byte[] blockBuffer);
-
-  void claimLeaderShip(String partition, String nodeId, long leaderTerm);
+  long append(String partition, String nodeId, long commitPosition, byte[] blockBuffer)
+      throws InterruptedException, ExecutionException, TimeoutException;
 
   @Override
   AsyncDistributedLogstream async();

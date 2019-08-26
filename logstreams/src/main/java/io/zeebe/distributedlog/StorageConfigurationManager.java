@@ -7,6 +7,7 @@
  */
 package io.zeebe.distributedlog;
 
+import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.Actor;
@@ -17,12 +18,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
 
 /**
  * Manages {@link StorageConfiguration} instances. When the broker is started, it loads the stored
  * files. Knows where to put new configuration files when a new raft is started.
  */
 public class StorageConfigurationManager extends Actor {
+
+  private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
   private static final String PARTITION_LOG_DIR = "segments";
   private static final String PARTITION_STATES_DIR = "state";
 
@@ -105,7 +109,7 @@ public class StorageConfigurationManager extends Actor {
                 // try to deleted partially created dirs / files
                 FileUtil.deleteFolder(partitionDirectory.getAbsolutePath());
               } catch (IOException e1) {
-                e1.printStackTrace();
+                LOG.error("Unexpected error occurred on clean up.", e1);
               }
 
               future.completeExceptionally(e);

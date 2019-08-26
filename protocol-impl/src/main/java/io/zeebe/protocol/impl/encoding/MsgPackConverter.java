@@ -121,21 +121,23 @@ public final class MsgPackConverter {
   private static void convert(
       InputStream in, OutputStream out, JsonFactory inFormat, JsonFactory outFormat)
       throws Exception {
-    final JsonParser parser = inFormat.createParser(in);
-    final JsonGenerator generator = outFormat.createGenerator(out, JSON_ENCODING);
-    final JsonToken token = parser.nextToken();
-    if (!token.isStructStart() && !token.isScalarValue()) {
-      throw new RuntimeException(
-          "Document does not begin with an object, an array, or a scalar value");
+    try (JsonParser parser = inFormat.createParser(in);
+        JsonGenerator generator = outFormat.createGenerator(out, JSON_ENCODING)) {
+
+      final JsonToken token = parser.nextToken();
+      if (!token.isStructStart() && !token.isScalarValue()) {
+        throw new RuntimeException(
+            "Document does not begin with an object, an array, or a scalar value");
+      }
+
+      generator.copyCurrentStructure(parser);
+
+      if (parser.nextToken() != null) {
+        throw new RuntimeException("Document has more content than a single object/array");
+      }
+
+      generator.flush();
     }
-
-    generator.copyCurrentStructure(parser);
-
-    if (parser.nextToken() != null) {
-      throw new RuntimeException("Document has more content than a single object/array");
-    }
-
-    generator.flush();
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////

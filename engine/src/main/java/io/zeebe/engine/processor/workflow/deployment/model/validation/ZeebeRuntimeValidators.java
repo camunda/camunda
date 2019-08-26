@@ -7,22 +7,19 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.validation;
 
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 
 public class ZeebeRuntimeValidators {
 
-  public static final Collection<ModelElementValidator<?>> VALIDATORS;
-
-  static {
-    final ZeebeExpressionValidator expressionValidator = new ZeebeExpressionValidator();
-
-    VALIDATORS = new ArrayList<>();
-    VALIDATORS.add(new ZeebeInputValidator(expressionValidator));
-    VALIDATORS.add(new ZeebeOutputValidator(expressionValidator));
-    VALIDATORS.add(new SequenceFlowValidator(expressionValidator));
-    VALIDATORS.add(new ZeebeSubscriptionValidator(expressionValidator));
-    VALIDATORS.add(new ZeebeLoopCharacteristicsValidator(expressionValidator));
-  }
+  private static final ZeebeExpressionValidator EXPRESSION_VALIDATOR =
+      new ZeebeExpressionValidator();
+  public static final Collection<ModelElementValidator<?>> VALIDATORS =
+      List.of(
+          new ZeebeInputValidator(EXPRESSION_VALIDATOR),
+          new ZeebeOutputValidator(EXPRESSION_VALIDATOR),
+          new SequenceFlowValidator(EXPRESSION_VALIDATOR),
+          new ZeebeSubscriptionValidator(EXPRESSION_VALIDATOR),
+          new ZeebeLoopCharacteristicsValidator(EXPRESSION_VALIDATOR));
 }
