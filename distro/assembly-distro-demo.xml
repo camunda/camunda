@@ -38,6 +38,10 @@
       </excludes>
       <outputDirectory>environment/</outputDirectory>
     </fileSet>
+    <fileSet>
+      <directory>${project.basedir}/../backend/src/main/resources/localization/</directory>
+      <outputDirectory>environment/localization</outputDirectory>
+    </fileSet>
 
     <fileSet>
       <!--create empty plugin directory-->
