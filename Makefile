@@ -19,4 +19,4 @@ env-clean: env-down
 .PHONY: start-backend
 start-backend:
 	docker-compose up -d elasticsearch zeebe \
-	&& mvn -f backend/pom.xml compile exec:java -Dexec.mainClass="org.camunda.operate.Application" -Dspring.profiles.active=dev-data
+	&& mvn -f backend/pom.xml install -DskipTests=true exec:java -Dexec.mainClass="org.camunda.operate.Application" -Dspring.profiles.active=dev-data
