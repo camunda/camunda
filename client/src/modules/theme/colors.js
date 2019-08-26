@@ -44,10 +44,14 @@ const Colors = {
   darkDiagram: '#dedede',
 
   // Link Colors
-  darkLinkBlue: '#D9EAFF',
+  darkLinkDefault: '#d9eaff',
+  darkLinkHover: '#c8e1ff',
+  darkLinkActive: '#eaf3ff',
   darkLinkVisited: '#c889fe',
 
-  lightLinkBlue: '#346AC4',
+  lightLinkDefault: '#346ac4',
+  lightLinkHover: '#4b7ccf',
+  lightLinkActive: '#29549c',
   lightLinkVisited: '#a846fe',
 
   // Focus Colors

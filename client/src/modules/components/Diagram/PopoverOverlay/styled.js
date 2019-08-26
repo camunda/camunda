@@ -244,10 +244,25 @@ export const Button = themed(styled.button`
   border: 0;
   font-size: 12px;
   text-decoration: underline;
+
   color: ${themeStyle({
-    dark: Colors.darkLinkBlue,
-    light: Colors.lightLinkBlue
+    dark: Colors.darkLinkDefault,
+    light: Colors.lightLinkDefault
   })};
+
+  &:hover {
+    color: ${themeStyle({
+      dark: Colors.darkLinkHover,
+      light: Colors.lightLinkHover
+    })};
+  }
+
+  &:active {
+    color: ${themeStyle({
+      dark: Colors.darkLinkActive,
+      light: Colors.lightLinkActive
+    })};
+  }
 `);
 
 export const ModalBody = themed(styled(Modal.Body)`

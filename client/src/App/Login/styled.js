@@ -82,10 +82,33 @@ export const PasswordInput = themed(styled(LoginInput)`
 
 export const Anchor = themed(styled.a`
   text-decoration: underline;
-  color: ${themeStyle({
-    dark: Colors.darkLinkBlue,
-    light: Colors.lightLinkBlue
-  })};
+  &:link {
+    color: ${themeStyle({
+      dark: Colors.darkLinkDefault,
+      light: Colors.lightLinkDefault
+    })};
+  }
+
+  &:hover {
+    color: ${themeStyle({
+      dark: Colors.darkLinkHover,
+      light: Colors.lightLinkHover
+    })};
+  }
+
+  &:active {
+    color: ${themeStyle({
+      dark: Colors.darkLinkActive,
+      light: Colors.lightLinkActive
+    })};
+  }
+
+  &:visited {
+    color: ${themeStyle({
+      dark: Colors.darkLinkVisited,
+      light: Colors.lightLinkVisited
+    })};
+  }
 `);
 
 export const Disclaimer = themed(styled.div`
