@@ -31,7 +31,7 @@ import org.slf4j.helpers.NOPLogger;
 
 public class DefaultLogReplicationRequestHandlerTest {
   private static final TemporaryFolder LOG_FOLDER = new TemporaryFolder();
-  private static final LogStreamRule LOG_STREAM_RULE = new LogStreamRule(LOG_FOLDER);
+  private static final LogStreamRule LOG_STREAM_RULE = LogStreamRule.startByDefault(LOG_FOLDER);
   private static final LogStreamWriterRule LOG_STREAM_WRITER_RULE =
       new LogStreamWriterRule(LOG_STREAM_RULE);
   private static final LogStreamReaderRule LOG_STREAM_READER_RULE =

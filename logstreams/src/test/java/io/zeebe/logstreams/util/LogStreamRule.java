@@ -18,7 +18,9 @@ import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.sched.ActorScheduler;
@@ -34,32 +36,55 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.mockito.stubbing.Answer;
 
-public class LogStreamRule extends ExternalResource {
+public final class LogStreamRule extends ExternalResource {
   private final TemporaryFolder temporaryFolder;
   private final ControlledActorClock clock = new ControlledActorClock();
-  private final Consumer<LogStreamBuilder> streamBuilder;
+  private Consumer<LogStreamBuilder> streamBuilder;
   private ActorScheduler actorScheduler;
   private ServiceContainer serviceContainer;
   private LogStream logStream;
+  private BufferedLogStreamReader logStreamReader;
   private DistributedLogstreamService distributedLogImpl;
   private LogStreamBuilder builder;
   private ActorSchedulerRule actorSchedulerRule;
+  private final boolean shouldStartByDefault;
 
-  public LogStreamRule(final TemporaryFolder temporaryFolder) {
-    this(temporaryFolder, b -> {});
+  private LogStreamRule(
+      final TemporaryFolder temporaryFolder,
+      final boolean shouldStart,
+      final Consumer<LogStreamBuilder> streamBuilder) {
+    this.temporaryFolder = temporaryFolder;
+    this.shouldStartByDefault = shouldStart;
+    this.streamBuilder = streamBuilder;
   }
 
-  public LogStreamRule(
+  public static LogStreamRule startByDefault(
       final TemporaryFolder temporaryFolder, final Consumer<LogStreamBuilder> streamBuilder) {
-    this.temporaryFolder = temporaryFolder;
+    return new LogStreamRule(temporaryFolder, true, streamBuilder);
+  }
+
+  public static LogStreamRule startByDefault(final TemporaryFolder temporaryFolder) {
+    return new LogStreamRule(temporaryFolder, true, b -> {});
+  }
+
+  public static LogStreamRule createRuleWithoutStarting(final TemporaryFolder temporaryFolder) {
+    return new LogStreamRule(temporaryFolder, false, b -> {});
+  }
+
+  public LogStream startLogStreamWithConfiguration(Consumer<LogStreamBuilder> streamBuilder) {
     this.streamBuilder = streamBuilder;
+    startLogStream();
+    return logStream;
   }
 
   @Override
   protected void before() {
     actorSchedulerRule = new ActorSchedulerRule(clock);
     actorSchedulerRule.before();
-    startLogStream();
+
+    if (shouldStartByDefault) {
+      startLogStream();
+    }
   }
 
   @Override
@@ -91,6 +116,11 @@ public class LogStreamRule extends ExternalResource {
       logStream.close();
     }
 
+    if (logStreamReader != null) {
+      logStreamReader.close();
+      logStreamReader = null;
+    }
+
     try {
       serviceContainer.close(5, TimeUnit.SECONDS);
     } catch (final TimeoutException | ExecutionException | InterruptedException e) {
@@ -108,11 +138,6 @@ public class LogStreamRule extends ExternalResource {
           distributedLogImpl,
           DefaultDistributedLogstreamService.class.getDeclaredField("logStream"),
           logStream);
-
-      FieldSetter.setField(
-          distributedLogImpl,
-          DefaultDistributedLogstreamService.class.getDeclaredField("logStorage"),
-          logStream.getLogStorage());
 
       FieldSetter.setField(
           distributedLogImpl,
@@ -153,16 +178,20 @@ public class LogStreamRule extends ExternalResource {
     logStream.openAppender().join();
   }
 
+  public LogStreamReader getLogStreamReader() {
+    if (logStream == null) {
+      throw new IllegalStateException("Log stream is not open!");
+    }
+
+    if (logStreamReader == null) {
+      logStreamReader = new BufferedLogStreamReader();
+    }
+    logStreamReader.wrap(logStream);
+    return logStreamReader;
+  }
+
   public LogStream getLogStream() {
     return logStream;
-  }
-
-  public long getCommitPosition() {
-    return logStream.getCommitPosition();
-  }
-
-  public void setCommitPosition(final long position) {
-    logStream.setCommitPosition(position);
   }
 
   public ControlledActorClock getClock() {

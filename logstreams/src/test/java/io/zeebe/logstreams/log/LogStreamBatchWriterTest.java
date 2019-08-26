@@ -44,7 +44,7 @@ public class LogStreamBatchWriterTest {
   @Rule public ExpectedException expectedException = ExpectedException.none();
 
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
-  public LogStreamRule logStreamRule = new LogStreamRule(temporaryFolder);
+  public LogStreamRule logStreamRule = LogStreamRule.startByDefault(temporaryFolder);
   public LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
   public LogStreamWriterRule writerRule = new LogStreamWriterRule(logStreamRule);
 

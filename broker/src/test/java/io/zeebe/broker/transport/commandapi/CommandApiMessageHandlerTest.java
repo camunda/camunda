@@ -114,11 +114,6 @@ public class CommandApiMessageHandlerTest {
 
       FieldSetter.setField(
           distributedLogImpl,
-          DefaultDistributedLogstreamService.class.getDeclaredField("logStorage"),
-          logStream.getLogStorage());
-
-      FieldSetter.setField(
-          distributedLogImpl,
           DefaultDistributedLogstreamService.class.getDeclaredField("currentLeader"),
           nodeId);
 

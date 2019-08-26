@@ -34,7 +34,7 @@ public class LogStreamReaderTest {
       new UnsafeBuffer(new byte[BufferedLogStreamReader.DEFAULT_INITIAL_BUFFER_CAPACITY * 2]);
   @Rule public ExpectedException expectedException = ExpectedException.none();
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
-  public LogStreamRule logStreamRule = new LogStreamRule(temporaryFolder);
+  public LogStreamRule logStreamRule = LogStreamRule.startByDefault(temporaryFolder);
   public LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
   public LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
 
@@ -179,15 +179,30 @@ public class LogStreamReaderTest {
     final long lastPosition = writer.writeEvents(eventCount, EVENT_VALUE);
 
     // when
-    reader.seekToLastEvent();
+    final long seekedPosition = reader.seekToEnd();
 
     // then
+    assertThat(reader.hasNext()).isFalse();
+    assertThat(lastPosition).isEqualTo(seekedPosition);
+  }
+
+  @Test
+  public void shouldReturnNextAfterSeekToEnd() {
+    // given
+    final int eventCount = 10;
+    final long lastEventPosition = writer.writeEvents(eventCount, EVENT_VALUE);
+    final long seekedPosition = reader.seekToEnd();
+
+    // when
+    final long newLastPosition = writer.writeEvent(EVENT_VALUE);
+
+    // then
+    assertThat(lastEventPosition).isEqualTo(seekedPosition);
+    assertThat(newLastPosition).isGreaterThan(seekedPosition);
+
     assertThat(reader.hasNext()).isTrue();
     final LoggedEvent loggedEvent = reader.next();
-    assertThat(loggedEvent.getKey()).isEqualTo(eventCount);
-    assertThat(loggedEvent.getPosition()).isEqualTo(lastPosition);
-
-    assertThat(reader.hasNext()).isFalse();
+    assertThat(loggedEvent.getPosition()).isEqualTo(newLastPosition);
   }
 
   @Test
@@ -251,13 +266,10 @@ public class LogStreamReaderTest {
     final long lastPosition = writer.writeEvents(eventCount, BIG_EVENT_VALUE);
 
     // when
-    reader.seekToLastEvent();
+    final long seekedPosition = reader.seekToEnd();
 
     // then
-    final LoggedEvent loggedEvent = reader.next();
-    assertThat(loggedEvent.getKey()).isEqualTo(eventCount);
-    assertThat(loggedEvent.getPosition()).isEqualTo(lastPosition);
-
+    assertThat(lastPosition).isEqualTo(seekedPosition);
     assertThat(reader.hasNext()).isFalse();
   }
 
