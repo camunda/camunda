@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.export;
 
-import org.apache.commons.io.IOUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -26,15 +25,14 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
+import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
@@ -89,7 +87,7 @@ public class ProcessHyperMapExportServiceIT {
     // then
     assertThat(response.getStatus(), is(200));
 
-    String actualContent = getActualContentAsString(response);
+    String actualContent = getResponseContentAsString(response);
     String stringExpected =
       getExpectedContentAsString("/csv/process/hyper/usertask_frequency_group_by_assignee_by_usertask.csv");
 
@@ -118,7 +116,7 @@ public class ProcessHyperMapExportServiceIT {
     // then
     assertThat(response.getStatus(), is(200));
 
-    String actualContent = getActualContentAsString(response);
+    String actualContent = getResponseContentAsString(response);
     String stringExpected =
       getExpectedContentAsString("/csv/process/hyper/usertask_duration_group_by_assignee_by_usertask.csv");
 
@@ -143,7 +141,7 @@ public class ProcessHyperMapExportServiceIT {
     // then
     assertThat(response.getStatus(), is(200));
 
-    String actualContent = getActualContentAsString(response);
+    String actualContent = getResponseContentAsString(response);
     String stringExpected =
       getExpectedContentAsString("/csv/process/hyper/hypermap_empty_result.csv");
 
@@ -216,13 +214,6 @@ public class ProcessHyperMapExportServiceIT {
             throw new RuntimeException(ex);
           }
         });
-  }
-
-  private String getActualContentAsString(Response response) throws IOException {
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    IOUtils.copy(response.readEntity(InputStream.class), bos);
-    byte[] result = bos.toByteArray();
-    return new String(result);
   }
 
   private String getExpectedContentAsString(String pathToExpectedCSV) throws IOException {

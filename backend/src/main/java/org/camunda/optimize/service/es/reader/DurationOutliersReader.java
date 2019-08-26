@@ -5,13 +5,17 @@
  */
 package org.camunda.optimize.service.es.reader;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.stat.inference.TestUtils;
-import org.camunda.optimize.dto.optimize.query.FlowNodeOutlierParametersDto;
-import org.camunda.optimize.dto.optimize.query.ProcessDefinitionParametersDto;
+import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
+import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierParametersDto;
+import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierVariableParametersDto;
+import org.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParametersDto;
+import org.camunda.optimize.dto.optimize.query.analysis.ProcessInstanceIdDto;
 import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
@@ -19,14 +23,13 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.camunda.optimize.service.security.TenantAuthorizationService;
 import org.camunda.optimize.service.util.DefinitionQueryUtil;
-import org.camunda.optimize.service.variable.ProcessVariableService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -49,7 +52,6 @@ import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStat
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.AbstractMap;
@@ -66,12 +68,18 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_NAME;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_VALUE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @AllArgsConstructor
 @Component
@@ -87,17 +95,13 @@ public class DurationOutliersReader {
   private static final String LOWER_DURATION_AGG = "lowerDurationAgg";
   private static final String HIGHER_DURATION_AGG = "higherDurationAgg";
 
-  private TenantAuthorizationService tenantAuthorizationService;
   private final OptimizeElasticsearchClient esClient;
-  private ProcessDefinitionReader processDefinitionReader;
-  private ProcessVariableService processVariableService;
+  private final ObjectMapper objectMapper;
+  private final ProcessDefinitionReader processDefinitionReader;
+  private final ProcessVariableReader processVariableReader;
+  private final ConfigurationService configurationService;
 
-  public List<DurationChartEntryDto> getCountByDurationChart(final FlowNodeOutlierParametersDto outlierParams,
-                                                             final String userId) {
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, outlierParams.getTenantIds())) {
-      throw new ForbiddenException("Current user is not authorized to access data of the provided tenant");
-    }
-
+  public List<DurationChartEntryDto> getCountByDurationChart(final FlowNodeOutlierParametersDto outlierParams) {
     final BoolQueryBuilder query = createProcessDefinitionFilterQuery(outlierParams);
 
     long interval = getInterval(query, outlierParams.getFlowNodeId());
@@ -140,12 +144,7 @@ public class DurationOutliersReader {
       .collect(Collectors.toList());
   }
 
-  public Map<String, FindingsDto> getFlowNodeOutlierMap(final ProcessDefinitionParametersDto processDefinitionParams,
-                                                        final String userId) {
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, processDefinitionParams.getTenantIds())) {
-      throw new ForbiddenException("Current user is not authorized to access data of the provided tenant");
-    }
-
+  public Map<String, FindingsDto> getFlowNodeOutlierMap(final ProcessDefinitionParametersDto processDefinitionParams) {
     final BoolQueryBuilder processInstanceQuery = createProcessDefinitionFilterQuery(processDefinitionParams);
     ExtendedStatsAggregationBuilder stats = AggregationBuilders.extendedStats(AGG_STATS)
       .field(EVENTS + "." + ACTIVITY_DURATION);
@@ -179,21 +178,14 @@ public class DurationOutliersReader {
     return createFlowNodeOutlierMap(processInstanceQuery, flowNodeDurationStatAggregations);
   }
 
-  public List<VariableTermDto> getSignificantOutlierVariableTerms(final FlowNodeOutlierParametersDto outlierParams,
-                                                                  final String userId) {
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, outlierParams.getTenantIds())) {
-      throw new ForbiddenException("Current user is not authorized to access data of the provided tenant");
-    }
-
+  public List<VariableTermDto> getSignificantOutlierVariableTerms(final FlowNodeOutlierParametersDto outlierParams) {
     if (outlierParams.getLowerOutlierBound() == null && outlierParams.getHigherOutlierBound() == null) {
       throw new OptimizeValidationException("One of lowerOutlierBound or higherOutlierBound must be set.");
     }
 
     try {
       // #1 get top variable value terms of outliers
-      final ParsedReverseNested outlierNestedProcessInstancesAgg = getTopVariableTermsOfOutliers(
-        outlierParams, userId
-      );
+      final ParsedReverseNested outlierNestedProcessInstancesAgg = getTopVariableTermsOfOutliers(outlierParams);
       final Map<String, Map<String, Long>> outlierVariableTermOccurrences = createVariableTermOccurrencesMap(
         outlierNestedProcessInstancesAgg.getAggregations().get(AGG_VARIABLES)
       );
@@ -242,6 +234,62 @@ public class DurationOutliersReader {
     }
   }
 
+  public List<ProcessInstanceIdDto> getSignificantOutlierVariableTermsInstanceIds(final FlowNodeOutlierVariableParametersDto outlierParams) {
+    // filter by definition
+    final BoolQueryBuilder mainFilterQuery = createProcessDefinitionFilterQuery(outlierParams);
+    // flowNode id & outlier duration
+    final BoolQueryBuilder flowNodeFilterQuery = createFlowNodeOutlierQuery(outlierParams);
+    mainFilterQuery.must(nestedQuery(EVENTS, flowNodeFilterQuery, ScoreMode.None));
+    // variable name & term
+    final BoolQueryBuilder variableTermFilterQuery = boolQuery()
+      .must(termQuery(VARIABLES + "." + VARIABLE_NAME, outlierParams.getVariableName()))
+      .must(termQuery(VARIABLES + "." + VARIABLE_VALUE, outlierParams.getVariableTerm()));
+    mainFilterQuery.must(nestedQuery(VARIABLES, variableTermFilterQuery, ScoreMode.None));
+
+    final Integer recordLimit = configurationService.getExportCsvLimit();
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(mainFilterQuery)
+      .fetchSource(PROCESS_INSTANCE_ID, null)
+      // size of each scroll page, needs to be capped to max size of elasticsearch
+      .size(recordLimit > MAX_RESPONSE_SIZE_LIMIT ? MAX_RESPONSE_SIZE_LIMIT : recordLimit);
+
+    final SearchRequest scrollSearchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
+      .types(PROCESS_INSTANCE_INDEX_NAME)
+      .source(searchSourceBuilder)
+      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+
+    try {
+      final SearchResponse response = esClient.search(scrollSearchRequest, RequestOptions.DEFAULT);
+      return ElasticsearchHelper.retrieveScrollResultsTillLimit(
+        response,
+        ProcessInstanceIdDto.class,
+        objectMapper,
+        esClient,
+        configurationService.getElasticsearchScrollTimeout(),
+        recordLimit
+      );
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Could not obtain outlier instance ids.", e);
+    }
+  }
+
+  private BoolQueryBuilder createFlowNodeOutlierQuery(final FlowNodeOutlierParametersDto outlierParams) {
+    final BoolQueryBuilder flowNodeFilterQuery = boolQuery()
+      .must(termQuery(EVENTS + "." + ACTIVITY_ID, outlierParams.getFlowNodeId()))
+      .minimumShouldMatch(1);
+    if (outlierParams.getHigherOutlierBound() != null) {
+      flowNodeFilterQuery.should(
+        rangeQuery(EVENTS + "." + ACTIVITY_DURATION).gt(outlierParams.getHigherOutlierBound())
+      );
+    }
+    if (outlierParams.getLowerOutlierBound() != null) {
+      flowNodeFilterQuery.should(
+        rangeQuery(EVENTS + "." + ACTIVITY_DURATION).lt(outlierParams.getLowerOutlierBound())
+      );
+    }
+    return flowNodeFilterQuery;
+  }
+
   private ParsedReverseNested getVariableTermOccurrencesOfNonOutliers(final FlowNodeOutlierParametersDto outlierParams,
                                                                       final Map<String, Set<String>> outlierVariableTerms)
     throws IOException {
@@ -253,10 +301,9 @@ public class DurationOutliersReader {
     );
   }
 
-  private ParsedReverseNested getTopVariableTermsOfOutliers(final FlowNodeOutlierParametersDto outlierParams,
-                                                            final String userId) throws IOException {
-    final List<String> variableNames = processVariableService.getVariableNames(
-      userId,
+  private ParsedReverseNested getTopVariableTermsOfOutliers(final FlowNodeOutlierParametersDto outlierParams)
+    throws IOException {
+    final List<String> variableNames = processVariableReader.getVariableNames(
       new ProcessVariableNameRequestDto(
         outlierParams.getProcessDefinitionKey(),
         outlierParams.getProcessDefinitionVersions(),
@@ -305,26 +352,13 @@ public class DurationOutliersReader {
 
   private SearchRequest createTopVariableTermsOfOutliersQuery(final FlowNodeOutlierParametersDto outlierParams,
                                                               final List<String> variableNames) {
-    final BoolQueryBuilder flowNodeFilterQuery = QueryBuilders.boolQuery()
-      .must(QueryBuilders.termQuery(EVENTS + "." + ACTIVITY_ID, outlierParams.getFlowNodeId()))
-      .minimumShouldMatch(1);
-
-    if (outlierParams.getHigherOutlierBound() != null) {
-      flowNodeFilterQuery.should(
-        QueryBuilders.rangeQuery(EVENTS + "." + ACTIVITY_DURATION).gt(outlierParams.getHigherOutlierBound())
-      );
-    }
-    if (outlierParams.getLowerOutlierBound() != null) {
-      flowNodeFilterQuery.should(
-        QueryBuilders.rangeQuery(EVENTS + "." + ACTIVITY_DURATION).lt(outlierParams.getLowerOutlierBound())
-      );
-    }
+    final BoolQueryBuilder flowNodeFilterQuery = createFlowNodeOutlierQuery(outlierParams);
 
     final NestedAggregationBuilder nestedVariableAggregation = AggregationBuilders.nested(AGG_VARIABLES, VARIABLES);
     variableNames.stream().distinct().forEach(variableName -> {
       nestedVariableAggregation.subAggregation(
         AggregationBuilders.filter(
-          variableName, QueryBuilders.termQuery(VARIABLES + "." + VARIABLE_NAME, variableName)
+          variableName, termQuery(VARIABLES + "." + VARIABLE_NAME, variableName)
         ).subAggregation(
           AggregationBuilders.terms(AGG_VARIABLE_VALUE_TERMS).field(VARIABLES + "." + VARIABLE_VALUE)
             // This corresponds to the min doc count also used by elasticsearch's own significant terms implementation
@@ -342,18 +376,18 @@ public class DurationOutliersReader {
 
   private SearchRequest createTopVariableTermsOfNonOutliersQuery(final FlowNodeOutlierParametersDto outlierParams,
                                                                  final Map<String, Set<String>> variablesAndTerms) {
-    final BoolQueryBuilder flowNodeFilterQuery = QueryBuilders.boolQuery()
-      .must(QueryBuilders.termQuery(EVENTS + "." + ACTIVITY_ID, outlierParams.getFlowNodeId()))
+    final BoolQueryBuilder flowNodeFilterQuery = boolQuery()
+      .must(termQuery(EVENTS + "." + ACTIVITY_ID, outlierParams.getFlowNodeId()))
       .minimumShouldMatch(1);
 
     if (outlierParams.getHigherOutlierBound() != null) {
       flowNodeFilterQuery.should(
-        QueryBuilders.rangeQuery(EVENTS + "." + ACTIVITY_DURATION).lte(outlierParams.getHigherOutlierBound())
+        rangeQuery(EVENTS + "." + ACTIVITY_DURATION).lte(outlierParams.getHigherOutlierBound())
       );
     }
     if (outlierParams.getLowerOutlierBound() != null) {
       flowNodeFilterQuery.should(
-        QueryBuilders.rangeQuery(EVENTS + "." + ACTIVITY_DURATION).gte(outlierParams.getLowerOutlierBound())
+        rangeQuery(EVENTS + "." + ACTIVITY_DURATION).gte(outlierParams.getLowerOutlierBound())
       );
     }
 
@@ -361,7 +395,7 @@ public class DurationOutliersReader {
     variablesAndTerms
       .forEach((variableName, value) -> nestedVariableAggregation.subAggregation(
         AggregationBuilders.filter(
-          variableName, QueryBuilders.termQuery(VARIABLES + "." + VARIABLE_NAME, variableName)
+          variableName, termQuery(VARIABLES + "." + VARIABLE_NAME, variableName)
         ).subAggregation(
           AggregationBuilders.terms(AGG_VARIABLE_VALUE_TERMS).field(VARIABLES + "." + VARIABLE_VALUE)
             // only include provided terms
@@ -484,15 +518,15 @@ public class DurationOutliersReader {
 
           final FilterAggregationBuilder lowerOutlierEventFilter = AggregationBuilders.filter(
             LOWER_DURATION_AGG,
-            QueryBuilders.rangeQuery(EVENTS + "." + ACTIVITY_DURATION).lte(stdDeviationBoundLower)
+            rangeQuery(EVENTS + "." + ACTIVITY_DURATION).lte(stdDeviationBoundLower)
           );
 
           final FilterAggregationBuilder higherOutlierEventFilter = AggregationBuilders.filter(
             HIGHER_DURATION_AGG,
-            QueryBuilders.rangeQuery(EVENTS + "." + ACTIVITY_DURATION).gte(stdDeviationBoundHigher)
+            rangeQuery(EVENTS + "." + ACTIVITY_DURATION).gte(stdDeviationBoundHigher)
           );
 
-          final TermQueryBuilder terms = QueryBuilders.termQuery(EVENTS + "." + ACTIVITY_ID, flowNodeId);
+          final TermQueryBuilder terms = termQuery(EVENTS + "." + ACTIVITY_ID, flowNodeId);
           final FilterAggregationBuilder filteredFlowNodes = AggregationBuilders.filter(
             getFilteredFlowNodeAggregationName(flowNodeId), terms
           );
@@ -612,12 +646,17 @@ public class DurationOutliersReader {
       .get(EVENTS)).getAggregations().get(AGG_FILTERED_FLOW_NODES)).getAggregations()
       .get(AGG_STATS)).getMax();
 
-    return (long) Math.ceil((max - min) / (NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
+    if (max == min) {
+      // in case there is no distribution fallback to an interval of 1 as 0 is not a valid interval
+      return 1L;
+    } else {
+      return (long) Math.ceil((max - min) / (NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
+    }
   }
 
   private NestedAggregationBuilder buildNestedFlowNodeFilterAggregation(final String flowNodeId,
                                                                         final AggregationBuilder subAggregation) {
-    TermQueryBuilder terms = QueryBuilders.termQuery(EVENTS + "." + ACTIVITY_ID, flowNodeId);
+    TermQueryBuilder terms = termQuery(EVENTS + "." + ACTIVITY_ID, flowNodeId);
 
     FilterAggregationBuilder filteredFlowNodes = AggregationBuilders.filter(AGG_FILTERED_FLOW_NODES, terms);
     filteredFlowNodes.subAggregation(subAggregation);
@@ -632,8 +671,7 @@ public class DurationOutliersReader {
       .get(AGG_REVERSE_NESTED_PROCESS_INSTANCE);
   }
 
-  private BoolQueryBuilder createProcessDefinitionFilterQuery(
-    final ProcessDefinitionParametersDto processDefinitionParams) {
+  private BoolQueryBuilder createProcessDefinitionFilterQuery(final ProcessDefinitionParametersDto processDefinitionParams) {
     return DefinitionQueryUtil.createDefinitionQuery(
       processDefinitionParams.getProcessDefinitionKey(),
       processDefinitionParams.getProcessDefinitionVersions(),

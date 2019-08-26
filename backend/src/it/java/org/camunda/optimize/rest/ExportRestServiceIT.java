@@ -20,10 +20,10 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
-import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,8 +37,10 @@ import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.IsNot.not;
 
 
@@ -103,10 +105,7 @@ public class ExportRestServiceIT {
 
     // then
     assertThat(response.getStatus(), is(200));
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    IOUtils.copy(response.readEntity(InputStream.class), bos);
-    byte[] result = bos.toByteArray();
-    assertThat(result.length, is(not(0)));
+    assertThat(getResponseContentAsString(response).length(), is(greaterThan(0)));
   }
 
   @Test

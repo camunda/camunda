@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.export;
 
 import com.opencsv.CSVReader;
-import org.apache.commons.io.IOUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
@@ -31,9 +30,7 @@ import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -41,6 +38,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsByteArray;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -81,9 +79,7 @@ public class ExportLimitsIT {
 
 
     assertThat(response.getStatus(), is(200));
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    IOUtils.copy(response.readEntity(InputStream.class), bos);
-    byte[] result = bos.toByteArray();
+    byte[] result = getResponseContentAsByteArray(response);
     CSVReader reader = new CSVReader(new InputStreamReader(new ByteArrayInputStream(result)));
 
     // then
@@ -111,9 +107,7 @@ public class ExportLimitsIT {
       .execute();
 
     assertThat(response.getStatus(), is(200));
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    IOUtils.copy(response.readEntity(InputStream.class), bos);
-    byte[] result = bos.toByteArray();
+    byte[] result = getResponseContentAsByteArray(response);
     CSVReader reader = new CSVReader(new InputStreamReader(new ByteArrayInputStream(result)));
 
     // then
@@ -143,9 +137,7 @@ public class ExportLimitsIT {
       .execute();
 
     assertThat(response.getStatus(), is(200));
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    IOUtils.copy(response.readEntity(InputStream.class), bos);
-    byte[] result = bos.toByteArray();
+    byte[] result = getResponseContentAsByteArray(response);
     CSVReader reader = new CSVReader(new InputStreamReader(new ByteArrayInputStream(result)));
 
     // then

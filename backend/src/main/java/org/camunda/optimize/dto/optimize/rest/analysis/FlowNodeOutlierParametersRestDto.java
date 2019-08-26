@@ -3,18 +3,17 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.rest;
+package org.camunda.optimize.dto.optimize.rest.analysis;
 
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.ProcessDefinitionParametersDto;
-import org.camunda.optimize.rest.queryparam.QueryParamUtil;
+import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierParametersDto;
 
 import javax.ws.rs.QueryParam;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @NoArgsConstructor
-public class ProcessDefinitionParametersRestDto extends ProcessDefinitionParametersDto {
+public class FlowNodeOutlierParametersRestDto extends FlowNodeOutlierParametersDto {
+
   @Override
   @QueryParam("processDefinitionKey")
   public void setProcessDefinitionKey(final String processDefinitionKey) {
@@ -30,10 +29,25 @@ public class ProcessDefinitionParametersRestDto extends ProcessDefinitionParamet
   @Override
   @QueryParam("tenantIds")
   public void setTenantIds(List<String> tenantIds) {
-    this.tenantIds = normalizeTenants(tenantIds);
+    super.setTenantIds(tenantIds);
   }
 
-  private List<String> normalizeTenants(List<String> tenantIds) {
-    return tenantIds.stream().map(QueryParamUtil::normalizeNullStringValue).collect(Collectors.toList());
+  @Override
+  @QueryParam("flowNodeId")
+  public void setFlowNodeId(final String flowNodeId) {
+    super.setFlowNodeId(flowNodeId);
   }
+
+  @Override
+  @QueryParam("lowerOutlierBound")
+  public void setLowerOutlierBound(final Long lowerOutlierBound) {
+    super.setLowerOutlierBound(lowerOutlierBound);
+  }
+
+  @Override
+  @QueryParam("higherOutlierBound")
+  public void setHigherOutlierBound(final Long higherOutlierBound) {
+    super.setHigherOutlierBound(higherOutlierBound);
+  }
+
 }

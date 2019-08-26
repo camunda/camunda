@@ -786,8 +786,8 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildFlowNodeDurationChartRequest(String key,
                                                                    List<String> version,
-                                                                   String flowNodeId,
-                                                                   List<String> tenantIds) {
+                                                                   List<String> tenantIds,
+                                                                   String flowNodeId) {
     return buildFlowNodeDurationChartRequest(key, version, flowNodeId, tenantIds, null, null);
   }
 
@@ -810,8 +810,8 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildSignificantOutlierVariableTermsRequest(String key,
                                                                              List<String> version,
-                                                                             String flowNodeId,
                                                                              List<String> tenantIds,
+                                                                             String flowNodeId,
                                                                              Long lowerOutlierBound,
                                                                              Long higherOutlierBound) {
     this.path = "analysis/significantOutlierVariableTerms";
@@ -822,6 +822,27 @@ public class OptimizeRequestExecutor {
     this.addSingleQueryParam("tenantIds", tenantIds);
     this.addSingleQueryParam("lowerOutlierBound", lowerOutlierBound);
     this.addSingleQueryParam("higherOutlierBound", higherOutlierBound);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildSignificantOutlierVariableTermsInstanceIdsRequest(String key,
+                                                                                        List<String> version,
+                                                                                        List<String> tenantIds,
+                                                                                        String flowNodeId,
+                                                                                        Long lowerOutlierBound,
+                                                                                        Long higherOutlierBound,
+                                                                                        String variableName,
+                                                                                        String variableTerm) {
+    this.path = "analysis/significantOutlierVariableTerms/processInstanceIdsExport";
+    this.requestType = GET;
+    this.addSingleQueryParam("processDefinitionKey", key);
+    this.addSingleQueryParam("processDefinitionVersions", version);
+    this.addSingleQueryParam("flowNodeId", flowNodeId);
+    this.addSingleQueryParam("tenantIds", tenantIds);
+    this.addSingleQueryParam("lowerOutlierBound", lowerOutlierBound);
+    this.addSingleQueryParam("higherOutlierBound", higherOutlierBound);
+    this.addSingleQueryParam("variableName", variableName);
+    this.addSingleQueryParam("variableTerm", variableTerm);
     return this;
   }
 
@@ -856,7 +877,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildRemoveScopeEntryFromCollectionRequest(String collectionId,
-                                                                       String entryId) {
+                                                                            String entryId) {
     this.path = "collection/" + collectionId + "/scope/" + entryId;
     this.requestType = DELETE;
     return this;

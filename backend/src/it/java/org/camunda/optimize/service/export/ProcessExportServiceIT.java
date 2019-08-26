@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.export;
 
 import lombok.SneakyThrows;
-import org.apache.commons.io.IOUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -28,9 +27,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import javax.ws.rs.core.Response;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,6 +37,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -167,17 +165,10 @@ public class ProcessExportServiceIT {
     // then
     assertThat(response.getStatus(), is(200));
 
-    String actualContent = getActualContentAsString(response);
+    String actualContent = getResponseContentAsString(response);
     String stringExpected = getExpectedContentAsString(processInstance);
 
     assertThat(actualContent, is(stringExpected));
-  }
-
-  private String getActualContentAsString(Response response) throws IOException {
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    IOUtils.copy(response.readEntity(InputStream.class), bos);
-    byte[] result = bos.toByteArray();
-    return new String(result);
   }
 
   private String getExpectedContentAsString(ProcessInstanceEngineDto processInstance) throws IOException {

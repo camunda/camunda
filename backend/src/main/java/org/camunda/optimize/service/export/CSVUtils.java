@@ -5,17 +5,21 @@
  */
 package org.camunda.optimize.service.export;
 
+import com.opencsv.CSVWriter;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
+import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStreamWriter;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,13 +34,41 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 
+@Slf4j
 public class CSVUtils {
 
-  private static final Logger logger = LoggerFactory.getLogger(CSVUtils.class);
+  static final String VARIABLE_PREFIX = "variable:";
+  static final String INPUT_PREFIX = "input:";
+  static final String OUTPUT_PREFIX = "output:";
 
-  public static final String VARIABLE_PREFIX = "variable:";
-  public static final String INPUT_PREFIX = "input:";
-  public static final String OUTPUT_PREFIX = "output:";
+  public static byte[] mapCsvLinesToCsvBytes(final List<String[]> csvStrings) {
+    final ByteArrayOutputStream arrayOutputStream = new ByteArrayOutputStream();
+    final BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(arrayOutputStream));
+    final CSVWriter csvWriter = new CSVWriter(bufferedWriter);
+
+    byte[] bytes = null;
+    try {
+      csvWriter.writeAll(csvStrings);
+      bufferedWriter.flush();
+      bufferedWriter.close();
+      arrayOutputStream.flush();
+      bytes = arrayOutputStream.toByteArray();
+      arrayOutputStream.close();
+    } catch (Exception e) {
+      log.error("can't write CSV to buffer", e);
+    }
+    return bytes;
+  }
+
+  public static <T extends IdDto> List<String[]> mapIdList(final List<T> ids) {
+    final List<String[]> result = new ArrayList<>();
+
+    result.add(new String[]{"processInstanceId"});
+
+    ids.forEach(idDto -> result.add(new String[]{idDto.getId()}));
+
+    return result;
+  }
 
   public static List<String[]> mapRawProcessReportInstances(List<RawDataProcessInstanceDto> rawData) {
     return mapRawProcessReportInstances(rawData, null, null, Collections.emptySet());
@@ -237,13 +269,13 @@ public class CSVUtils {
           try {
             value = Optional.ofNullable(descriptor.getReadMethod().invoke(instanceDto));
           } catch (Exception e) {
-            logger.error("can't read value of field", e);
+            log.error("can't read value of field", e);
           }
           return value.map(Object::toString).orElse(null);
         });
     } catch (IntrospectionException e) {
       // no field like that
-      logger.error(
+      log.error(
         "Tried to access RawDataInstanceDto field that did not exist {} on class {}",
         fieldKey,
         instanceClass

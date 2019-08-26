@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.export;
 
-import org.apache.commons.io.IOUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -24,15 +23,14 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
+import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -76,7 +74,7 @@ public class CombinedProcessExportServiceIT {
     // then
     assertThat(response.getStatus(), is(200));
 
-    String actualContent = getActualContentAsString(response);
+    String actualContent = getResponseContentAsString(response);
     String stringExpected =
       getExpectedContentAsString("/csv/process/combined/combined_flow_node_frequency_group_by_flow_node.csv");
 
@@ -105,7 +103,7 @@ public class CombinedProcessExportServiceIT {
     // then
     assertThat(response.getStatus(), is(200));
 
-    String actualContent = getActualContentAsString(response);
+    String actualContent = getResponseContentAsString(response);
     String stringExpected =
       getExpectedContentAsString("/csv/process/combined/combined_flow_node_duration_group_by_flow_node.csv");
 
@@ -132,7 +130,7 @@ public class CombinedProcessExportServiceIT {
     // then
     assertThat(response.getStatus(), is(200));
 
-    String actualContent = getActualContentAsString(response);
+    String actualContent = getResponseContentAsString(response);
     String stringExpected =
       getExpectedContentAsString(
         "/csv/process/combined/combined_flow_node_frequency_group_by_flow_node_different_order.csv"
@@ -161,7 +159,7 @@ public class CombinedProcessExportServiceIT {
     // then
     assertThat(response.getStatus(), is(200));
 
-    String actualContent = getActualContentAsString(response);
+    String actualContent = getResponseContentAsString(response);
     String stringExpected =
       getExpectedContentAsString("/csv/process/combined/combined_pi_frequency_group_by_none.csv");
 
@@ -194,7 +192,7 @@ public class CombinedProcessExportServiceIT {
     // then
     assertThat(response.getStatus(), is(200));
 
-    String actualContent = getActualContentAsString(response);
+    String actualContent = getResponseContentAsString(response);
     String stringExpected =
       getExpectedContentAsString("/csv/process/combined/combined_pi_duration_group_by_none.csv");
 
@@ -218,7 +216,7 @@ public class CombinedProcessExportServiceIT {
     // then
     assertThat(response.getStatus(), is(200));
 
-    String actualContent = getActualContentAsString(response);
+    String actualContent = getResponseContentAsString(response);
     String stringExpected =
       getExpectedContentAsString("/csv/process/combined/combined_empty_report.csv");
 
@@ -240,15 +238,8 @@ public class CombinedProcessExportServiceIT {
 
     // then
     assertThat(response.getStatus(), is(200));
-    String actualContent = getActualContentAsString(response);
+    String actualContent = getResponseContentAsString(response);
     assertThat(actualContent.trim(), isEmptyString());
-  }
-
-  private String getActualContentAsString(Response response) throws IOException {
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    IOUtils.copy(response.readEntity(InputStream.class), bos);
-    byte[] result = bos.toByteArray();
-    return new String(result);
   }
 
   private String getExpectedContentAsString(String pathToExpectedCSV) throws IOException {

@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.query;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.analysis.function.Gaussian;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -24,27 +25,39 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.IntStream;
 
+import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 
-public class OutlierDetectionIT {
+public class OutlierAnalysisIT {
   private static final int NUMBER_OF_DATAPOINTS = 40;
   private static final int NUMBER_OF_DATAPOINTS_FOR_CHART = NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
   private static final String VARIABLE_1_NAME = "var1";
   private static final String VARIABLE_2_NAME = "var2";
   private static final String VARIABLE_VALUE_OUTLIER = "outlier";
-  public static final String VARIABLE_VALUE_NORMAL = "normal";
+  private static final String VARIABLE_VALUE_NORMAL = "normal";
+  private static final String FLOW_NODE_ID_TEST = "testActivity";
+  private static final String PROCESS_DEFINITION_KEY = "outlierTest";
+  private static final Random RANDOM = new Random();
+  // this particular value is obtained from precalculation
+  // given the distribution and outlier setup created by #createNormalDistributionAnd3Outliers
+  private static final long SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND = 30738L;
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -54,20 +67,21 @@ public class OutlierDetectionIT {
   @Rule
   public RuleChain chain = RuleChain
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
-  public static final Random RANDOM = new Random();
 
   @Test
   public void outlierDetectionNormalDistribution() throws SQLException {
     // given
+    final String testActivity1 = "testActivity1";
+    final String testActivity2 = "testActivity2";
     ProcessDefinitionEngineDto processDefinition =
-      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance("testActivity1", "testActivity2"));
+      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(testActivity1, testActivity2));
 
     startPIsDistributedByDuration(
       processDefinition,
       new Gaussian(NUMBER_OF_DATAPOINTS / 2, 12),
       NUMBER_OF_DATAPOINTS,
-      "testActivity1",
-      "testActivity2"
+      testActivity1,
+      testActivity2
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -75,13 +89,17 @@ public class OutlierDetectionIT {
 
     // when
     HashMap<String, FindingsDto> outlierTest = embeddedOptimizeRule.getRequestExecutor()
-      .buildFlowNodeOutliersRequest("outlierTest", Collections.singletonList("1"), Collections.singletonList(null))
+      .buildFlowNodeOutliersRequest(
+        PROCESS_DEFINITION_KEY,
+        Collections.singletonList("1"),
+        Collections.singletonList(null)
+      )
       .execute(new TypeReference<HashMap<String, FindingsDto>>() {
       });
 
     // then
     // assuming normal distribution, left and right outliers should be of the same percentile
-    final FindingsDto activity1Findings = outlierTest.get("testActivity1");
+    final FindingsDto activity1Findings = outlierTest.get(testActivity1);
     assertThat(activity1Findings.getHigherOutlier().isPresent(), is(true));
     assertThat(activity1Findings.getHigherOutlier().get().getBoundValue(), is(39486L));
     assertThat(
@@ -101,7 +119,7 @@ public class OutlierDetectionIT {
     assertThat(activity1Findings.getHigherOutlierHeat(), is(greaterThan(0.0D)));
     assertThat(activity1Findings.getHeat(), is(greaterThan(0.0D)));
 
-    final FindingsDto activity2Findings = outlierTest.get("testActivity2");
+    final FindingsDto activity2Findings = outlierTest.get(testActivity2);
     // second activity only has higher outliers
     assertThat(activity2Findings.getLowerOutlier().isPresent(), is(false));
     assertThat(activity2Findings.getHigherOutlier().isPresent(), is(true));
@@ -118,14 +136,14 @@ public class OutlierDetectionIT {
   public void noOutliersFoundTest() throws SQLException {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance("testActivity"));
+      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     // high sigma value, so that no process instances are out of 2*sigma bounds
     startPIsDistributedByDuration(
       processDefinition,
       new Gaussian(NUMBER_OF_DATAPOINTS / 2, 15),
       NUMBER_OF_DATAPOINTS,
-      "testActivity"
+      FLOW_NODE_ID_TEST
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -133,59 +151,66 @@ public class OutlierDetectionIT {
 
     // when
     HashMap<String, FindingsDto> outlierTest = embeddedOptimizeRule.getRequestExecutor()
-      .buildFlowNodeOutliersRequest("outlierTest", Collections.singletonList("1"), Collections.singletonList(null))
+      .buildFlowNodeOutliersRequest(
+        PROCESS_DEFINITION_KEY,
+        Collections.singletonList("1"),
+        Collections.singletonList(null)
+      )
       .execute(new TypeReference<HashMap<String, FindingsDto>>() {
       });
 
     // then
-    assertThat(outlierTest.get("testActivity").getOutlierCount(), is(0L));
+    assertThat(outlierTest.get(FLOW_NODE_ID_TEST).getOutlierCount(), is(0L));
   }
 
   @Test
   public void singleOutlierFoundTest() throws SQLException {
     // given
-    final String activityId = "testActivity";
     ProcessDefinitionEngineDto processDefinition =
-      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
+      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     // a couple of normally distributed instances
     startPIsDistributedByDuration(
-      processDefinition, new Gaussian(10 / 2, 15), 5, activityId
+      processDefinition, new Gaussian(10 / 2, 15), 5, FLOW_NODE_ID_TEST
     );
     // a single higher outlier instance
     ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseRule.changeActivityDuration(processInstance.getId(), activityId, 100_000);
+    engineDatabaseRule.changeActivityDuration(processInstance.getId(), FLOW_NODE_ID_TEST, 100_000);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     HashMap<String, FindingsDto> outlierTest = embeddedOptimizeRule.getRequestExecutor()
-      .buildFlowNodeOutliersRequest("outlierTest", Collections.singletonList("1"), Collections.singletonList(null))
+      .buildFlowNodeOutliersRequest(
+        PROCESS_DEFINITION_KEY,
+        Collections.singletonList("1"),
+        Collections.singletonList(null)
+      )
       .execute(new TypeReference<HashMap<String, FindingsDto>>() {
       });
 
     // then
-    assertThat(outlierTest.get(activityId).getOutlierCount(), is(1L));
-    assertThat(outlierTest.get(activityId).getLowerOutlierHeat(), is(0.0D));
-    assertThat(outlierTest.get(activityId).getHigherOutlierHeat(), is(greaterThan(0.0D)));
-    assertThat(outlierTest.get(activityId).getLowerOutlier().isPresent(), is(false));
-    assertThat(outlierTest.get(activityId).getHigherOutlier().isPresent(), is(true));
-    assertThat(outlierTest.get(activityId).getHigherOutlier().get().getCount(), is(1L));
+    assertThat(outlierTest.get(FLOW_NODE_ID_TEST).getOutlierCount(), is(1L));
+    assertThat(outlierTest.get(FLOW_NODE_ID_TEST).getLowerOutlierHeat(), is(0.0D));
+    assertThat(outlierTest.get(FLOW_NODE_ID_TEST).getHigherOutlierHeat(), is(greaterThan(0.0D)));
+    assertThat(outlierTest.get(FLOW_NODE_ID_TEST).getLowerOutlier().isPresent(), is(false));
+    assertThat(outlierTest.get(FLOW_NODE_ID_TEST).getHigherOutlier().isPresent(), is(true));
+    assertThat(outlierTest.get(FLOW_NODE_ID_TEST).getHigherOutlier().get().getCount(), is(1L));
   }
 
   @Test
   public void allDurationsSameValueNoOutliers() throws SQLException {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance("testActivity"));
+      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     startPIsDistributedByDuration(
       processDefinition,
       // one data point => no distribution
       new Gaussian(1, 1),
       1,
-      "testActivity"
+      FLOW_NODE_ID_TEST
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -193,12 +218,16 @@ public class OutlierDetectionIT {
 
     // when
     HashMap<String, FindingsDto> outlierTest = embeddedOptimizeRule.getRequestExecutor()
-      .buildFlowNodeOutliersRequest("outlierTest", Collections.singletonList("1"), Collections.singletonList(null))
+      .buildFlowNodeOutliersRequest(
+        PROCESS_DEFINITION_KEY,
+        Collections.singletonList("1"),
+        Collections.singletonList(null)
+      )
       .execute(new TypeReference<HashMap<String, FindingsDto>>() {
       });
 
     // then
-    final FindingsDto testActivity = outlierTest.get("testActivity");
+    final FindingsDto testActivity = outlierTest.get(FLOW_NODE_ID_TEST);
     assertThat(testActivity.getOutlierCount(), is(0L));
     assertThat(testActivity.getLowerOutlier().isPresent(), is(false));
     assertThat(testActivity.getHigherOutlier().isPresent(), is(false));
@@ -213,7 +242,7 @@ public class OutlierDetectionIT {
 
     // given
     ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(
-      getBpmnModelInstance(IntStream.range(0, 10).mapToObj(i -> "testActivity" + i).toArray(String[]::new))
+      getBpmnModelInstance(IntStream.range(0, 10).mapToObj(i -> FLOW_NODE_ID_TEST + i).toArray(String[]::new))
     );
 
     // one instance is suffice, we just need data from each activity, having in total >10 activities
@@ -225,7 +254,11 @@ public class OutlierDetectionIT {
 
     // when
     HashMap<String, FindingsDto> outlierTest = embeddedOptimizeRule.getRequestExecutor()
-      .buildFlowNodeOutliersRequest("outlierTest", Collections.singletonList("1"), Collections.singletonList(null))
+      .buildFlowNodeOutliersRequest(
+        PROCESS_DEFINITION_KEY,
+        Collections.singletonList("1"),
+        Collections.singletonList(null)
+      )
       .execute(new TypeReference<HashMap<String, FindingsDto>>() {
       });
 
@@ -237,13 +270,13 @@ public class OutlierDetectionIT {
   public void durationChartNormalDistributionTest() throws SQLException {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance("chartTestActivity"));
+      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     startPIsDistributedByDuration(
       processDefinition,
       new Gaussian(NUMBER_OF_DATAPOINTS_FOR_CHART / 2, 15),
       NUMBER_OF_DATAPOINTS_FOR_CHART,
-      "chartTestActivity"
+      FLOW_NODE_ID_TEST
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -252,10 +285,10 @@ public class OutlierDetectionIT {
     // when
     List<DurationChartEntryDto> durationChart = embeddedOptimizeRule.getRequestExecutor()
       .buildFlowNodeDurationChartRequest(
-        "outlierTest",
+        PROCESS_DEFINITION_KEY,
         Collections.singletonList("1"),
-        "chartTestActivity",
-        Collections.singletonList(null)
+        Collections.singletonList(null),
+        FLOW_NODE_ID_TEST
       )
       .executeAndReturnList(DurationChartEntryDto.class, 200);
 
@@ -272,13 +305,13 @@ public class OutlierDetectionIT {
   public void durationChartNormalDistributionWithOutlierMarkingTest() throws SQLException {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance("chartTestActivity"));
+      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     startPIsDistributedByDuration(
       processDefinition,
       new Gaussian(NUMBER_OF_DATAPOINTS / 2, 12),
       NUMBER_OF_DATAPOINTS,
-      "chartTestActivity"
+      FLOW_NODE_ID_TEST
     );
     final long lowerOutlierBound = 513L;
     final long higherOutlierBound = 39486L;
@@ -289,9 +322,9 @@ public class OutlierDetectionIT {
     // when
     List<DurationChartEntryDto> durationChart = embeddedOptimizeRule.getRequestExecutor()
       .buildFlowNodeDurationChartRequest(
-        "outlierTest",
+        PROCESS_DEFINITION_KEY,
         Collections.singletonList("1"),
-        "chartTestActivity",
+        FLOW_NODE_ID_TEST,
         Collections.singletonList(null),
         lowerOutlierBound,
         higherOutlierBound
@@ -311,11 +344,11 @@ public class OutlierDetectionIT {
   public void durationChartOnePerBucketTest() throws SQLException {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance("chartTestActivity"));
+      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     for (int i = 0; i < 80; i++) {
       ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(processDefinition.getId());
-      engineDatabaseRule.changeActivityDuration(processInstance.getId(), "chartTestActivity", i * 1000);
+      engineDatabaseRule.changeActivityDuration(processInstance.getId(), FLOW_NODE_ID_TEST, i * 1000);
     }
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -324,10 +357,10 @@ public class OutlierDetectionIT {
     // when
     List<DurationChartEntryDto> durationChart = embeddedOptimizeRule.getRequestExecutor()
       .buildFlowNodeDurationChartRequest(
-        "outlierTest",
+        PROCESS_DEFINITION_KEY,
         Collections.singletonList("1"),
-        "chartTestActivity",
-        Collections.singletonList(null)
+        Collections.singletonList(null),
+        FLOW_NODE_ID_TEST
       )
       .executeAndReturnList(DurationChartEntryDto.class, 200);
 
@@ -340,25 +373,10 @@ public class OutlierDetectionIT {
   @Test
   public void significantOutlierVariableValues() throws SQLException {
     // given
-    final String activityId = "testActivity";
     ProcessDefinitionEngineDto processDefinition =
-      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
+      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
     // a couple of normally distributed instances
-    startPIsDistributedByDuration(
-      processDefinition, new Gaussian(10 / 2, 15), 5, activityId
-    );
-    // 3 higher outlier instance
-    // 3 is the minDoc count for which terms are considered to eliminate high cardinality variables
-    for (int i = 0; i < 3; i++) {
-      ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(
-        processDefinition.getId(),
-        // VAR 2 has a value that is not present among non outliers
-        ImmutableMap.of(VARIABLE_1_NAME, RANDOM.nextInt(), VARIABLE_2_NAME, VARIABLE_VALUE_OUTLIER)
-      );
-      engineDatabaseRule.changeActivityDuration(processInstance.getId(), activityId, 100_000);
-    }
-    // this particular value is obtained from precalculation, given the distribution and outlier setup
-    final long activityHigherOutlierBound = 30738L;
+    createNormalDistributionAnd3Outliers(processDefinition, VARIABLE_VALUE_OUTLIER);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -368,10 +386,10 @@ public class OutlierDetectionIT {
       .buildSignificantOutlierVariableTermsRequest(
         processDefinition.getKey(),
         Collections.singletonList("1"),
-        activityId,
         Collections.singletonList(null),
+        FLOW_NODE_ID_TEST,
         null,
-        activityHigherOutlierBound
+        SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND
       )
       .executeAndReturnList(VariableTermDto.class, 200);
 
@@ -386,25 +404,11 @@ public class OutlierDetectionIT {
   @Test
   public void noSignificantOutlierVariableValues() throws SQLException {
     // given
-    final String activityId = "testActivity";
     ProcessDefinitionEngineDto processDefinition =
-      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
-    // a couple of normally distributed instances
-    startPIsDistributedByDuration(
-      processDefinition, new Gaussian(10 / 2, 15), 5, activityId
-    );
-    // 3 higher outlier instance
-    // 3 is the minDoc count for which terms are considered to eliminate high cardinality variables
-    for (int i = 0; i < 3; i++) {
-      ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(
-        processDefinition.getId(),
-        // VAR2 has the same value as all non outliers
-        ImmutableMap.of(VARIABLE_1_NAME, RANDOM.nextInt(), VARIABLE_2_NAME, VARIABLE_VALUE_NORMAL)
-      );
-      engineDatabaseRule.changeActivityDuration(processInstance.getId(), activityId, 100_000);
-    }
+      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+    createNormalDistributionAnd3Outliers(processDefinition, VARIABLE_VALUE_NORMAL);
     // this particular value is obtained from precalculation, given the distribution and outlier setup
-    final long activityHigherOutlierBound = 30738L;
+    final long activityHigherOutlierBound = SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND;
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -414,8 +418,8 @@ public class OutlierDetectionIT {
       .buildSignificantOutlierVariableTermsRequest(
         processDefinition.getKey(),
         Collections.singletonList("1"),
-        activityId,
         Collections.singletonList(null),
+        FLOW_NODE_ID_TEST,
         null,
         activityHigherOutlierBound
       )
@@ -428,15 +432,14 @@ public class OutlierDetectionIT {
   @Test
   public void noOutliersResultsInNotFoundOnVariables() throws SQLException {
     // given
-    final String activityId = "testActivity";
     ProcessDefinitionEngineDto processDefinition =
-      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
+      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     startPIsDistributedByDuration(
       processDefinition,
       new Gaussian(NUMBER_OF_DATAPOINTS_FOR_CHART / 2, 15),
       NUMBER_OF_DATAPOINTS_FOR_CHART,
-      activityId
+      FLOW_NODE_ID_TEST
     );
 
     // high duration for which there are no instances
@@ -450,13 +453,77 @@ public class OutlierDetectionIT {
       .buildSignificantOutlierVariableTermsRequest(
         processDefinition.getKey(),
         Collections.singletonList("1"),
-        activityId,
         Collections.singletonList(null),
+        FLOW_NODE_ID_TEST,
         null,
         activityHigherOutlierBound
       )
       // then
       .executeAndReturnList(VariableTermDto.class, 404);
+  }
+
+  @Test
+  public void significantOutlierVariableValuesProcessInstanceIdExport() throws SQLException, IOException {
+    // given
+    ProcessDefinitionEngineDto processDefinition =
+      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+
+    List<String> expectedOutlierInstanceIds = createNormalDistributionAnd3Outliers(
+      processDefinition, VARIABLE_VALUE_OUTLIER
+    );
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildSignificantOutlierVariableTermsInstanceIdsRequest(
+        processDefinition.getKey(),
+        Collections.singletonList("1"),
+        Collections.singletonList(null),
+        FLOW_NODE_ID_TEST,
+        null,
+        SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND,
+        VARIABLE_2_NAME,
+        VARIABLE_VALUE_OUTLIER
+      )
+      .execute();
+
+    // then
+    assertThat(response.getStatus(), is(200));
+    final String csvContent = getResponseContentAsString(response);
+    final String[] lines = csvContent.split("\\n");
+    assertThat(lines.length, is(4));
+    assertThat(lines[0], is("\"processInstanceId\""));
+    assertThat(
+      Arrays.asList(ArrayUtils.subarray(lines, 1, 4)),
+      containsInAnyOrder(expectedOutlierInstanceIds.stream().map(s -> "\"" + s + "\"").toArray())
+    );
+  }
+
+  private List<String> createNormalDistributionAnd3Outliers(final ProcessDefinitionEngineDto processDefinition,
+                                                            final String outlierVariable2Value)
+    throws SQLException {
+    // a couple of normally distributed instances
+    startPIsDistributedByDuration(
+      processDefinition, new Gaussian(10 / 2, 15), 5, FLOW_NODE_ID_TEST
+    );
+
+    List<String> outlierInstanceIds = new ArrayList<>();
+    // 3 higher outlier instance
+    // 3 is the minDoc count for which terms are considered to eliminate high cardinality variables
+    for (int i = 0; i < 3; i++) {
+      ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(
+        processDefinition.getId(),
+        // VAR2 has the same value as all non outliers
+        ImmutableMap.of(VARIABLE_1_NAME, RANDOM.nextInt(), VARIABLE_2_NAME, outlierVariable2Value)
+      );
+      engineDatabaseRule.changeActivityDuration(processInstance.getId(), FLOW_NODE_ID_TEST, 100_000);
+      outlierInstanceIds.add(processInstance.getId());
+    }
+
+    return outlierInstanceIds;
   }
 
   private void startPIsDistributedByDuration(ProcessDefinitionEngineDto processDefinition,
@@ -509,7 +576,7 @@ public class OutlierDetectionIT {
   }
 
   private BpmnModelInstance getBpmnModelInstance(String... activityId) {
-    StartEventBuilder builder = Bpmn.createExecutableProcess("outlierTest")
+    StartEventBuilder builder = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
       .name("aProcessName")
       .startEvent("start");
     for (String activity : activityId) {
@@ -518,4 +585,5 @@ public class OutlierDetectionIT {
     }
     return builder.endEvent("end").done();
   }
+
 }
