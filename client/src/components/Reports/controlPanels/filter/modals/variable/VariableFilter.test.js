@@ -9,6 +9,7 @@ import React from 'react';
 import VariableFilter from './VariableFilter';
 
 import {DateInput} from './date';
+import {StringInput} from './string';
 
 import {mount} from 'enzyme';
 
@@ -22,6 +23,7 @@ jest.mock('components', () => {
     Modal,
     Typeahead: props => <div>Typeahead {JSON.stringify(props)}</div>,
     Button: props => <button {...props}>{props.children}</button>,
+    Form: props => <div {...props}>{props.children}</div>,
     Labeled: props => (
       <div>
         <label id={props.id}>{props.label}</label>
@@ -29,6 +31,12 @@ jest.mock('components', () => {
       </div>
     )
   };
+});
+
+jest.mock('./FilterForUndefined', () => {
+  return ({filterForUndefined, changeFilterForUndefined, ...props}) => (
+    <div {...props}>{props.children}</div>
+  );
 });
 
 jest.mock('./boolean', () => {
@@ -79,6 +87,64 @@ it('should disable add filter button if no variable is selected', () => {
   expect(buttons.at(1).prop('disabled')).toBeTruthy(); // create filter
 });
 
+it('should enable add filter button if filter for undefined is checked', async () => {
+  const node = mount(<VariableFilter {...props} />);
+
+  await node.setState({
+    valid: true,
+    selectedVariable: {type: 'String', name: 'StrVar'},
+    filterForUndefined: true
+  });
+
+  const buttons = node.find('#modal_actions button');
+  expect(buttons.at(0).prop('disabled')).toBeFalsy();
+  expect(buttons.at(1).prop('disabled')).toBeFalsy();
+});
+
+it('should disable value input if filter for undefined is checked', async () => {
+  const node = await mount(<VariableFilter {...props} />);
+
+  await node.setState({
+    valid: true,
+    selectedVariable: {type: 'String', name: 'StrVar'},
+    filterForUndefined: true
+  });
+
+  expect(node.find(StringInput).prop('disabled')).toBeTruthy();
+});
+
+it('should take filter given by properties', async () => {
+  const filterData = {
+    type: 'variable',
+    data: {
+      name: 'foo',
+      type: 'String',
+      data: {
+        operator: 'not in',
+        values: ['value1', 'value2']
+      },
+      filterForUndefined: true
+    }
+  };
+  const spy = jest.fn();
+  const node = mount(<VariableFilter {...props} filterData={filterData} addFilter={spy} />);
+
+  node.find('button[variant="primary"]').simulate('click');
+
+  expect(spy).toHaveBeenCalledWith({
+    type: 'variable',
+    data: {
+      name: 'foo',
+      type: 'String',
+      data: {
+        operator: 'not in',
+        values: ['value1', 'value2']
+      },
+      filterForUndefined: true
+    }
+  });
+});
+
 it('should enable add filter button if variable selection is valid', async () => {
   const node = mount(<VariableFilter {...props} />);
 
@@ -114,7 +180,31 @@ it('should create a new filter', () => {
       data: {
         operator: 'not in',
         values: ['value1', 'value2']
-      }
+      },
+      filterForUndefined: false
+    }
+  });
+});
+
+it('should create a new filter even if only filter for undefined is checked', () => {
+  const spy = jest.fn();
+  const node = mount(<VariableFilter {...props} addFilter={spy} />);
+
+  node.setState({
+    selectedVariable: {name: 'foo', type: 'String'},
+    valid: true,
+    filterForUndefined: true
+  });
+
+  node.find('button[variant="primary"]').simulate('click');
+
+  expect(spy).toHaveBeenCalledWith({
+    type: 'variable',
+    data: {
+      name: 'foo',
+      type: 'String',
+      data: {},
+      filterForUndefined: true
     }
   });
 });
@@ -154,7 +244,7 @@ it('should use custom filter adding logic from input components', () => {
 
   node.find('button[variant="primary"]').simulate('click');
 
-  expect(DateInput.addFilter).toHaveBeenCalledWith(spy, selectedVariable, filter);
+  expect(DateInput.addFilter).toHaveBeenCalledWith(spy, selectedVariable, filter, false);
 });
 
 it('should load available variables', () => {

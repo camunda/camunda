@@ -474,6 +474,10 @@
           "nor": "noch",
           "or": "oder"
         },
+        "values": {
+          "null": "null",
+          "undefined": "nicht definiert"
+        },
         "running": "Nur laufende Prozessinstanzen",
         "completed": "Nur abgeschlossene Prozessinstanzen",
         "canceled": "Nur abgebrochene Prozessinstanzen",
@@ -519,6 +523,7 @@
         "inputPlaceholder": "Variable auswählen oder suchen",
         "noVariables": "Keine Variablen gefunden",
         "loadMore": "Mehr anzeigen",
+        "filterForUndefined": "Filter nach Instanzen, wo die angegebene Variable entweder null oder nicht definiert ist.",
         "bool": {
           "isTrue": "ist wahr",
           "isFalse": "ist falsch"

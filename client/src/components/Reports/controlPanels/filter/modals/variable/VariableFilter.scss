@@ -19,3 +19,8 @@
     margin-bottom: 0;
   }
 }
+
+.DisableInput {
+  pointer-events: none;
+  opacity: 0.6;
+}

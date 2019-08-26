@@ -7,6 +7,7 @@
 import React from 'react';
 
 import {ButtonGroup, Button} from 'components';
+
 import {t} from 'translation';
 
 export default class BooleanInput extends React.Component {
@@ -24,7 +25,7 @@ export default class BooleanInput extends React.Component {
   render() {
     return (
       <div className="VariableFilter__buttonRow">
-        <ButtonGroup>
+        <ButtonGroup disabled={this.props.disabled}>
           <Button onClick={this.setOperator(true)} active={this.props.filter.value === true}>
             {t('common.filter.variableModal.bool.isTrue')}
           </Button>

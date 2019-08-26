@@ -43,6 +43,11 @@ input[type='checkbox'] {
     background-position: 0.5px;
   }
 
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
   &:indeterminate {
     background: linear-gradient(
       180deg,

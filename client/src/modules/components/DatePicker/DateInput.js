@@ -25,6 +25,7 @@ class DateInput extends React.PureComponent {
           onKeyDown={this.onKeyDown}
           onChange={this.onInputChange}
           isInvalid={this.props.error}
+          disabled={this.props.disabled}
         />
         {this.props.error && (
           <ErrorMessage className="DateInput__warning">

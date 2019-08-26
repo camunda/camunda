@@ -5,12 +5,13 @@
  */
 
 import React from 'react';
-import {Modal, Button, Typeahead, Labeled} from 'components';
+import {Modal, Button, Typeahead, Labeled, Form} from 'components';
 
 import {BooleanInput} from './boolean';
 import {NumberInput} from './number';
 import {StringInput} from './string';
 import {DateInput} from './date';
+import FilterForUndefined from './FilterForUndefined';
 
 import './VariableFilter.scss';
 import {t} from 'translation';
@@ -20,7 +21,8 @@ export default class VariableFilter extends React.Component {
     valid: false,
     filter: {},
     variables: [],
-    selectedVariable: null
+    selectedVariable: null,
+    filterForUndefined: false
   };
 
   componentDidMount = async () => {
@@ -35,7 +37,8 @@ export default class VariableFilter extends React.Component {
       this.setState({
         selectedVariable: {id: filterData.id, name: filterData.name, type: filterData.type},
         filter,
-        valid: true
+        valid: true,
+        filterForUndefined: filterData.filterForUndefined
       });
     }
 
@@ -47,7 +50,8 @@ export default class VariableFilter extends React.Component {
   selectVariable = async variable => {
     this.setState({
       selectedVariable: variable,
-      filter: this.getInputComponentForVariable(variable).defaultFilter
+      filter: this.getInputComponentForVariable(variable).defaultFilter,
+      filterForUndefined: false
     });
   };
 
@@ -72,8 +76,10 @@ export default class VariableFilter extends React.Component {
 
   changeFilter = filter => this.setState({filter});
 
+  changeFilterForUndefined = filterForUndefined => this.setState({filterForUndefined});
+
   render() {
-    const {selectedVariable, variables} = this.state;
+    const {selectedVariable, variables, filterForUndefined} = this.state;
 
     const ValueInput = this.getInputComponentForVariable(selectedVariable);
 
@@ -95,20 +101,29 @@ export default class VariableFilter extends React.Component {
               noValuesMessage={t('common.filter.variableModal.noVariables')}
             />
           </Labeled>
-          <ValueInput
-            config={this.props.config}
-            variable={selectedVariable}
-            setValid={this.setValid}
-            changeFilter={this.changeFilter}
-            filter={this.state.filter}
-          />
+          <Form>
+            <ValueInput
+              config={this.props.config}
+              variable={selectedVariable}
+              setValid={this.setValid}
+              changeFilter={this.changeFilter}
+              filter={this.state.filter}
+              disabled={filterForUndefined}
+            />
+          </Form>
+          {selectedVariable && (
+            <FilterForUndefined
+              filterForUndefined={filterForUndefined}
+              changeFilterForUndefined={this.changeFilterForUndefined}
+            />
+          )}
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.props.close}>{t('common.cancel')}</Button>
           <Button
             variant="primary"
             color="blue"
-            disabled={!this.state.valid}
+            disabled={!this.state.valid && !filterForUndefined}
             onClick={this.createFilter}
           >
             {this.props.filterData ? t('common.filter.editFilter') : t('common.filter.addFilter')}
@@ -127,13 +142,19 @@ export default class VariableFilter extends React.Component {
     const InputComponent = this.getInputComponentForVariable(variable);
 
     InputComponent.addFilter
-      ? InputComponent.addFilter(this.props.addFilter, variable, this.state.filter)
+      ? InputComponent.addFilter(
+          this.props.addFilter,
+          variable,
+          this.state.filter,
+          this.state.filterForUndefined
+        )
       : this.props.addFilter({
           type: this.props.filterType,
           data: {
             name: variable.id || variable.name,
             type: variable.type,
-            data: this.state.filter
+            data: this.state.filter,
+            filterForUndefined: this.state.filterForUndefined
           }
         });
   };

@@ -70,7 +70,7 @@ export default class NumberInput extends React.Component {
     return (
       <React.Fragment>
         <div className="VariableFilter__buttonRow">
-          <ButtonGroup>
+          <ButtonGroup disabled={this.props.disabled}>
             <Button onClick={this.setOperator('in')} active={operator === 'in'}>
               {t('common.filter.list.operators.is')}
             </Button>
@@ -96,6 +96,7 @@ export default class NumberInput extends React.Component {
                     data-idx={idx}
                     onChange={this.changeValue}
                     placeholder={t('common.filter.variableModal.enterValue')}
+                    disabled={this.props.disabled}
                   />
                   {values.length > 1 && (
                     <Button
@@ -104,6 +105,7 @@ export default class NumberInput extends React.Component {
                         this.removeValue(idx);
                       }}
                       className="NumberInput__removeItemButton"
+                      disabled={this.props.disabled}
                     >
                       ×
                     </Button>
@@ -113,7 +115,11 @@ export default class NumberInput extends React.Component {
             })}
             {!onlyOneValueAllowed && (
               <li className="NumberInput__valueListButton">
-                <Button onClick={this.addValue} className="NumberInput__addValueButton">
+                <Button
+                  onClick={this.addValue}
+                  className="NumberInput__addValueButton"
+                  disabled={this.props.disabled}
+                >
                   {t('common.filter.variableModal.addValue')}
                 </Button>
               </li>

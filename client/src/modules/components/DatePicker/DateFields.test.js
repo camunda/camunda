@@ -8,6 +8,7 @@ import React from 'react';
 import moment from 'moment';
 
 import DateFields from './DateFields';
+import DateInput from './DateInput';
 import {mount} from 'enzyme';
 
 jest.mock('./DateRange', () => props => `DateRange: props: ${JSON.stringify(props)}`);
@@ -120,4 +121,34 @@ it('should selected endDate after second selection', () => {
   node.instance().onDateRangeChange(moment('2020-06-05'));
 
   expect(spy).toBeCalledWith('endDate', '2020-06-05');
+});
+
+it('should selected endDate after second selection', () => {
+  const spy = jest.fn();
+  const node = mount(
+    <DateFields
+      format={format}
+      startDate={startDate}
+      endDate={endDate}
+      onDateChange={spy}
+      enableAddButton={jest.fn()}
+    />
+  );
+  node.setState({popupOpen: true, currentlySelectedField: 'startDate'});
+
+  node.instance().endDateField = document.createElement('input');
+  node.instance().onDateRangeChange(moment(['2017-08-29']));
+  node.instance().onDateRangeChange(moment('2020-06-05'));
+
+  expect(spy).toBeCalledWith('endDate', '2020-06-05');
+});
+
+it('should be possible to disable the date fields', () => {
+  const node = mount(
+    <DateFields format={format} startDate={startDate} endDate={endDate} disabled />
+  );
+
+  const dateInputs = node.find(DateInput);
+  expect(dateInputs.at(0).props('disabled')).toBeTruthy();
+  expect(dateInputs.at(1).props('disabled')).toBeTruthy();
 });

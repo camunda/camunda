@@ -80,6 +80,24 @@ it('should display a simple variable filter', () => {
   expect(node).toIncludeText('varName is varValue');
 });
 
+it('should display a variable filter with filter for undefined values selected', () => {
+  const data = [
+    {
+      type: 'variable',
+      data: {
+        name: 'varName',
+        type: 'String',
+        filterForUndefined: true,
+        data: {}
+      }
+    }
+  ];
+
+  const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()} />);
+
+  expect(node).toIncludeText('varName is null or undefined');
+});
+
 it('should use the variables prop to resolve variable names', () => {
   const data = [
     {

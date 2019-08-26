@@ -94,9 +94,33 @@ export default class FilterList extends React.Component {
         }
       } else {
         if (filter.type.toLowerCase().includes('variable')) {
-          const {name, type, data} = filter.data;
+          const {name, type, data, filterForUndefined} = filter.data;
 
-          if (type === 'Date') {
+          if (filterForUndefined) {
+            list.push(
+              <li
+                key={i}
+                onClick={this.props.openEditFilterModal(filter)}
+                className="FilterList__item"
+              >
+                <ActionItem
+                  onClick={evt => {
+                    evt.stopPropagation();
+                    this.props.deleteFilter(filter);
+                  }}
+                  className="FilterList__action-item"
+                >
+                  <span className="FilterList__parameter-name">
+                    {this.getVariableName(filter.type, name)}
+                  </span>
+                  {this.createOperator(t('common.filter.list.operators.is'))}
+                  <span className="highlighted">{t('common.filter.list.values.null')}</span>
+                  {this.createOperator(t('common.filter.list.operators.or'))}
+                  <span className="highlighted">{t('common.filter.list.values.undefined')}</span>
+                </ActionItem>
+              </li>
+            );
+          } else if (type === 'Date') {
             list.push(
               <li
                 key={i}

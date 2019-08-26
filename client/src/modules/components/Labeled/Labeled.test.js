@@ -27,3 +27,9 @@ it('should include the child content', () => {
 
   expect(node).toIncludeText('some child content');
 });
+
+it('should can be disabled', () => {
+  const node = mount(<Labeled id="someId" disabled />);
+
+  expect(node).toHaveProp('disabled', true);
+});

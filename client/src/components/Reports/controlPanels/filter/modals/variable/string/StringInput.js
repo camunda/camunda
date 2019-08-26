@@ -127,7 +127,7 @@ export default class StringInput extends React.Component {
     return (
       <React.Fragment>
         <div className="VariableFilter__buttonRow">
-          <ButtonGroup>
+          <ButtonGroup disabled={this.props.disabled}>
             <Button onClick={this.setOperator('in')} active={operator === 'in'}>
               {t('common.filter.list.operators.is')}
             </Button>
@@ -150,12 +150,13 @@ export default class StringInput extends React.Component {
                 search: t('common.filter.variableModal.multiSelect.search'),
                 empty: t('common.filter.variableModal.multiSelect.empty')
               }}
+              disabled={this.props.disabled}
             />
             {!this.state.valuesAreComplete && (
               <Button
                 className="StringInput__load-more-button"
                 onClick={this.loadMore}
-                disabled={this.state.loading}
+                disabled={this.state.loading && this.props.disabled}
               >
                 {this.state.loading ? (
                   <LoadingIndicator small />

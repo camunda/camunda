@@ -74,8 +74,15 @@ export default class DateFields extends React.PureComponent {
             onClick={this.toggleDateRangeForStart}
             date={startDate}
             error={!startDateValid}
+            disabled={this.props.disabled}
           />
-          <span className="DateFields__divider">{t('common.filter.dateModal.to')}</span>
+          <span
+            className={classnames('DateFields__divider', {
+              DateFields__divider_disabled: this.props.disabled
+            })}
+          >
+            {t('common.filter.dateModal.to')}
+          </span>
           <DateInput
             className={classnames('DateInput__end', {
               'DateInput__start--highlight': this.isFieldSelected('endDate')
@@ -90,6 +97,7 @@ export default class DateFields extends React.PureComponent {
             onClick={this.toggleDateRangeForEnd}
             date={endDate}
             error={!endDateValid}
+            disabled={this.props.disabled}
           />
         </div>
         {this.state.popupOpen && (

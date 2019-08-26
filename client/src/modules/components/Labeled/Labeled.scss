@@ -6,3 +6,8 @@
     font-size: 0.875em;
   }
 }
+
+.disabled,
+[disabled] {
+  color: graytext;
+}

@@ -24,6 +24,7 @@ export default class DateInput extends React.Component {
           startDate: this.props.filter.startDate,
           endDate: this.props.filter.endDate
         }}
+        disabled={this.props.disabled}
       />
     );
   }
@@ -44,12 +45,13 @@ export default class DateInput extends React.Component {
     };
   };
 
-  static addFilter = (addFilter, variable, filter) => {
+  static addFilter = (addFilter, variable, filter, filterForUndefined) => {
     addFilter({
       type: 'variable',
       data: {
         name: variable.name,
         type: variable.type,
+        filterForUndefined,
         data: {
           start: filter.startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss'),
           end: filter.endDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss')

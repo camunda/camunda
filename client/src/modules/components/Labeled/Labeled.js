@@ -9,9 +9,9 @@ import React from 'react';
 import classnames from 'classnames';
 import './Labeled.scss';
 
-export default function Labeled({label, className, appendLabel, children, ...props}) {
+export default function Labeled({label, className, appendLabel, children, disabled, ...props}) {
   return (
-    <div className={classnames('Labeled', className)}>
+    <div className={classnames('Labeled', className)} disabled={disabled}>
       <label onClick={catchClick} {...props}>
         {!appendLabel && <span className="label before">{label}</span>}
         {children}

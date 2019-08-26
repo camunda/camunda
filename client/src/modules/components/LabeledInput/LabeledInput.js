@@ -16,6 +16,7 @@ export default function LabeledInput({label, className, children, ...props}) {
         id={props.id}
         label={label}
         appendLabel={props.type === 'checkbox' || props.type === 'radio'}
+        disabled={props.disabled}
       >
         <Input {...props} />
       </Labeled>

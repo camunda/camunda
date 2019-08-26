@@ -40,16 +40,17 @@ export default class DatePicker extends React.Component {
             startDate={this.state.startDate}
             endDate={this.state.endDate}
             setValidState={this.setValidState}
+            disabled={this.props.disabled}
           />
         </div>
         <div className="DatePicker__buttons">
-          <ButtonGroup className="DatePicker__buttonRow">
+          <ButtonGroup className="DatePicker__buttonRow" disabled={this.props.disabled}>
             {this.getDateButtons(['today', 'yesterday', 'past7', 'past30'])}
           </ButtonGroup>
-          <ButtonGroup className="DatePicker__buttonRow">
+          <ButtonGroup className="DatePicker__buttonRow" disabled={this.props.disabled}>
             {this.getDateButtons(['lastWeek', 'lastMonth', 'lastYear'])}
           </ButtonGroup>
-          <ButtonGroup className="DatePicker__buttonRow">
+          <ButtonGroup className="DatePicker__buttonRow" disabled={this.props.disabled}>
             {this.getDateButtons(['thisWeek', 'thisMonth', 'thisYear'])}
           </ButtonGroup>
         </div>

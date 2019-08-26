@@ -7,6 +7,8 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
+import {Labeled} from 'components';
+
 import LabeledInput from './LabeledInput';
 
 jest.mock('components', () => ({
@@ -29,4 +31,10 @@ it('should include the child content', () => {
   const node = mount(<LabeledInput>some child content</LabeledInput>);
 
   expect(node).toIncludeText('some child content');
+});
+
+it('should can be disabled', () => {
+  const node = mount(<LabeledInput disabled>some child content</LabeledInput>);
+
+  expect(node.find(Labeled)).toHaveProp('disabled', true);
 });

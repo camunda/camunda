@@ -474,6 +474,10 @@
           "nor": "nor",
           "or": "or"
         },
+        "values": {
+          "null": "null",
+          "undefined": "undefined"
+        },
         "running": "Running Process Instances Only",
         "completed": "Completed Process Instances Only",
         "canceled": "Canceled Process Instances Only",
@@ -519,6 +523,7 @@
         "inputPlaceholder": "Select or search for a variable here",
         "noVariables": "No variables found",
         "loadMore": "Load More",
+        "filterForUndefined": "Include only instances where this variable is null or undefined.",
         "bool": {
           "isTrue": "is true",
           "isFalse": "is false"

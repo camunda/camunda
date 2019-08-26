@@ -30,6 +30,7 @@ const exampleFilter = {
   data: {
     name: 'aVariableName',
     type: 'Date',
+    filterForUndefined: false,
     data: {
       start: '2018-07-09T00:00:00',
       end: '2018-07-12T23:59:59'
@@ -58,7 +59,8 @@ it('should convert a start and end-date to two compatible variable filters', () 
     {
       startDate: moment('2018-07-09'),
       endDate: moment('2018-07-12')
-    }
+    },
+    false
   );
 
   expect(spy).toHaveBeenCalledWith(exampleFilter);
