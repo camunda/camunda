@@ -14,9 +14,11 @@ const opn = require('opn');
 const ansiHTML = require('ansi-html');
 const xml2js = require('xml2js');
 
-// adjust for number of process instances to generate
-const numberOfProcessInstances = 5000;
-let dataGenerationComplete = false;
+// argument to determine if we are in CI mode
+const ciMode = process.argv.indexOf('ci') > -1;
+
+// if we are in ci mode we assume data generation is already complete
+let dataGenerationComplete = ciMode;
 
 fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) => {
   xml2js.parseString(data, {explicitArray: false}, (err, data) => {
@@ -31,10 +33,14 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
 
     startManagementServer();
 
-    buildBackend().then(() => {
+    if (ciMode) {
       startBackend();
-      startDocker().then(generateDemoData);
-    });
+    } else {
+      buildBackend().then(() => {
+        startBackend();
+        startDocker().then(generateDemoData);
+      });
+    }
 
     const logs = {
       backend: [],
@@ -132,29 +138,17 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
 
     function generateDemoData() {
-      const generateDataProcess = spawn(
-        'mvn',
-        [
-          'clean',
-          'compile',
-          'exec:java',
-          `-Dexec.args="--numberOfProcessInstances ${numberOfProcessInstances}"`
-        ],
-        {
-          cwd: path.resolve(__dirname, '..', '..', './qa/data-generation'),
-          shell: true
-        }
-      );
+      const dataGenerator = spawn('yarn', ['run', 'generate-data']);
 
-      generateDataProcess.stdout.on('data', data => addLog(data, 'dataGenerator'));
-      generateDataProcess.stderr.on('data', data => addLog(data, 'dataGenerator', true));
+      dataGenerator.stdout.on('data', data => addLog(data, 'dataGenerator'));
+      dataGenerator.stderr.on('data', data => addLog(data, 'dataGenerator', true));
 
-      generateDataProcess.on('exit', () => {
+      process.on('SIGINT', () => dataGenerator.kill('SIGINT'));
+      process.on('SIGTERM', () => dataGenerator.kill('SIGTERM'));
+
+      dataGenerator.on('exit', () => {
         dataGenerationComplete = true;
       });
-
-      process.on('SIGINT', () => generateDataProcess.kill('SIGINT'));
-      process.on('SIGTERM', () => generateDataProcess.kill('SIGTERM'));
     }
 
     function startManagementServer() {
@@ -216,6 +210,10 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
         });
       });
 
+      // closing the server to not having to manually kill it
+      process.on('SIGINT', () => wss.close(() => server.close()));
+      process.on('SIGTERM', () => wss.close(() => server.close()));
+
       server.listen(8100);
 
       opn('http://localhost:8100');
@@ -224,6 +222,16 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
 
     function addLog(data, type, error) {
+      if (ciMode) {
+        // to see what's going on in jenkins
+        let outLog = type + ':' + data.toString();
+        if (!!error) {
+          console.error('  -' + outLog);
+        } else {
+          console.log('  -' + outLog);
+        }
+      }
+
       logs[type].push({data: ansiHTML(data.toString()), error: !!error});
 
       if (logs[type].length > 500) {

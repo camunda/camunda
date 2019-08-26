@@ -38,10 +38,12 @@
     "test": "react-scripts test --verbose=false",
     "test:ci": "CI=true react-scripts test --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
     "e2e": "testcafe chrome e2e/tests/*.js",
-    "e2e:ci": "node scripts/e2e",
+    "e2e:local": "node scripts/e2e",
+    "e2e:ci": "node scripts/e2e ci",
     "eject": "react-scripts eject",
     "postinstall": "node scripts/wireModules",
     "start-backend": "node scripts/start-backend",
+    "generate-data": "node scripts/generate-data",
     "dependencies": "node scripts/dependencies.js"
   },
   "husky": {

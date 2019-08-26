@@ -11,9 +11,18 @@ const chalk = require('chalk');
 const {spawn} = require('child_process');
 const net = require('net');
 const kill = require('tree-kill');
+const fs = require('fs');
 
-process.env.BROWSERSTACK_USERNAME = 'optimize@camunda.com';
-process.env.BROWSERSTACK_ACCESS_KEY = 'QDQfPYkTYy8SQBYYt1zB';
+// argument to determine if we are in CI mode
+const ciMode = process.argv.indexOf('ci') > -1;
+
+console.debug('executing e2e script in [ci=' + ciMode + ']');
+
+if (!ciMode) {
+  // credentials for local testing, in CI we get credentials from jenkins
+  process.env.BROWSERSTACK_USERNAME = 'optimize@camunda.com';
+  process.env.BROWSERSTACK_ACCESS_KEY = 'QDQfPYkTYy8SQBYYt1zB';
+}
 process.env.BROWSERSTACK_USE_AUTOMATE = '1';
 
 const browsers = [
@@ -23,8 +32,16 @@ const browsers = [
   'browserstack:Chrome'
 ];
 
-const backendProcess = spawn('yarn', ['run', 'start-backend']);
+const backendProcess = spawn('yarn', ['run', 'start-backend', ciMode ? 'ci' : undefined]);
 const frontendProcess = spawn('yarn', ['start']);
+
+if (ciMode) {
+  backendProcess.stderr.on('data', data => console.error(data.toString()));
+
+  const logStream = fs.createWriteStream('./build/backendLogs.log', {flags: 'a'});
+  backendProcess.stdout.pipe(logStream);
+  backendProcess.stderr.pipe(logStream);
+}
 
 let dataInterval;
 const connectionInterval = setInterval(async () => {
@@ -32,9 +49,9 @@ const connectionInterval = setInterval(async () => {
   const frontendDone = await checkPort(3000);
 
   console.log(
-    `waiting for servers to be started: ${(backendDone ? chalk.green : chalk.red)(
-      'backend'
-    )} ${(frontendDone ? chalk.green : chalk.red)('frontend')}`
+    `waiting for servers to be started: backend = ${
+      backendDone ? 'started' : 'not started'
+    } , frontend = ${frontendDone ? 'started' : 'not started'}`
   );
 
   if (backendDone && frontendDone) {
