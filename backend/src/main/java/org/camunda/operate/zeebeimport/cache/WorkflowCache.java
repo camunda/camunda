@@ -6,9 +6,9 @@
 package org.camunda.operate.zeebeimport.cache;
 
 import java.util.Iterator;
-import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
-
+import java.util.concurrent.ConcurrentHashMap;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.reader.WorkflowReader;
 import org.camunda.operate.rest.exception.NotFoundException;
@@ -23,7 +23,7 @@ public class WorkflowCache {
   
   private static final Logger logger = LoggerFactory.getLogger(WorkflowCache.class);
 
-  private LinkedHashMap<Long, WorkflowEntity> cache = new LinkedHashMap<>();
+  private Map<Long, WorkflowEntity> cache = new ConcurrentHashMap<>();
 
   private static final int CACHE_MAX_SIZE = 100;
   private static final int MAX_ATTEMPTS = 5;
@@ -95,5 +95,4 @@ public class WorkflowCache {
   public void clearCache() {
     cache.clear();
   }
-
 }
