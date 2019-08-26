@@ -10,6 +10,15 @@
 
 ## Running locally
 
+### Using Maven 
+To run the application locally without docker you can use 
+```
+make start-backend
+```
+This starts elasticsearch and zeebe docker containers, then compiles operate backend components and starts the server.
+You can shutdown the application with Control-C
+
+### Use docker only
 To run the application locally you can use `docker`, `docker-compose` and
 `make`. Make sure to have a recent version of these tools installed
 locally: you should be able to run these commands on your shell without
