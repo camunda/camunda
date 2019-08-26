@@ -15,3 +15,8 @@ env-status:
 .PHONY: env-clean
 env-clean: env-down
 	docker system prune -a
+
+.PHONY: start-backend
+start-backend:
+	docker-compose up -d elasticsearch zeebe \
+	&& mvn -f backend/pom.xml compile exec:java -Dexec.mainClass="org.camunda.operate.Application" -Dspring.profiles.active=dev-data
