@@ -5,30 +5,18 @@
  */
 package org.camunda.operate.rest;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.webapp.rest.AuthenticationRestService.AUTHENTICATION_URL;
-import static org.camunda.operate.webapp.security.WebSecurityConfig.COOKIE_JSESSIONID;
-import static org.camunda.operate.webapp.security.WebSecurityConfig.LOGIN_RESOURCE;
-import static org.camunda.operate.webapp.security.WebSecurityConfig.LOGOUT_RESOURCE;
-import static org.camunda.operate.webapp.security.WebSecurityConfig.X_CSRF_HEADER;
-import static org.camunda.operate.webapp.security.WebSecurityConfig.X_CSRF_TOKEN;
-import static org.mockito.BDDMockito.given;
-import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.camunda.operate.TestApplication;
 import org.camunda.operate.entities.UserEntity;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.util.MetricAssert;
 import org.camunda.operate.webapp.rest.AuthenticationRestService;
 import org.camunda.operate.webapp.rest.dto.UserDto;
 import org.camunda.operate.webapp.security.WebSecurityConfig;
 import org.camunda.operate.webapp.user.ElasticSearchUserDetailsService;
 import org.camunda.operate.webapp.user.UserStorage;
-import org.camunda.operate.util.MetricAssert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -48,16 +36,26 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.webapp.rest.AuthenticationRestService.AUTHENTICATION_URL;
+import static org.camunda.operate.webapp.security.WebSecurityConfig.COOKIE_JSESSIONID;
+import static org.camunda.operate.webapp.security.WebSecurityConfig.LOGIN_RESOURCE;
+import static org.camunda.operate.webapp.security.WebSecurityConfig.LOGOUT_RESOURCE;
+import static org.camunda.operate.webapp.security.WebSecurityConfig.X_CSRF_HEADER;
+import static org.camunda.operate.webapp.security.WebSecurityConfig.X_CSRF_TOKEN;
+import static org.mockito.BDDMockito.given;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
   classes = {
-      OperateProperties.class,TestApplication.class,WebSecurityConfig.class, AuthenticationRestService.class,ElasticSearchUserDetailsService.class
+      OperateProperties.class, TestApplication.class, WebSecurityConfig.class, AuthenticationRestService.class, ElasticSearchUserDetailsService.class
   },
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ActiveProfiles("auth")
-public class AuthenticationIT {
+public class AuthenticationTest {
 
   private static final String SET_COOKIE_HEADER = "Set-Cookie";
 
@@ -72,13 +70,13 @@ public class AuthenticationIT {
   private static final String METRICS_PASSWORD = "act";
 
   @Autowired
-  OperateProperties operateProperties;
+  private OperateProperties operateProperties;
   
   @Autowired
   private TestRestTemplate testRestTemplate;
   
   @MockBean(name = "userStorage")
-  UserStorage userStorage;
+  private UserStorage userStorage;
   
   @Before
   public void setUp() {

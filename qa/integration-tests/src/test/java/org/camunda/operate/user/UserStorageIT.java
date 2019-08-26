@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.camunda.operate.entities.UserEntity;
+import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.webapp.user.UserStorage;
@@ -22,16 +23,20 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class UserStorageIT extends OperateIntegrationTest{
 
+  @Rule
+  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+
   @Autowired
-  UserStorage userStorage;
+  private UserStorage userStorage;
   
   @Autowired
-  RestHighLevelClient esClient;
+  private RestHighLevelClient esClient;
   
   protected List<String> allUsernames(){
     return Arrays.asList("test-user,act,demo".split(","));
