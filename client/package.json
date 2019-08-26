@@ -11,7 +11,7 @@
     "classnames": "^2.2.6",
     "debounce": "^1.2.0",
     "deep-equal": "^1.0.1",
-    "dmn-js": "^6.3.2",
+    "dmn-js": "^7.0.1",
     "element-closest": "^3.0.1",
     "es6-shim": "^0.35.5",
     "focus-visible": "^5.0.2",

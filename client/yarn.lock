@@ -4175,13 +4175,6 @@ dezalgo@^1.0.0:
     asap "^2.0.0"
     wrappy "1"
 
-diagram-js-direct-editing@^1.4.0:
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-1.4.0.tgz#93c6c1798dcff790ba842262f3176d5722f9d6d4"
-  dependencies:
-    min-dash "^3.0.0"
-    min-dom "^3.0.0"
-
 diagram-js-direct-editing@^1.4.2:
   version "1.4.2"
   resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-1.4.2.tgz#fe3d7a37d252cfb201bbd1c72f2bb3ad7a10a7b9"
@@ -4189,9 +4182,17 @@ diagram-js-direct-editing@^1.4.2:
     min-dash "^3.0.0"
     min-dom "^3.0.0"
 
-diagram-js@^3.1.3:
-  version "3.1.3"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-3.1.3.tgz#8f953a771e019de5eaee54a4842ff34f35363c94"
+diagram-js-direct-editing@^1.5.0:
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-1.6.0.tgz#8c0e220266c8234969a46a47c0f5609decfe1ee3"
+  integrity sha512-bO9FqB6lJm+kaA6tSrXO0jT+Fu++yJTHbBf/wYb+AfJYAB92zZJrxwHRPTRhZGB4Md7XMEba5LAuNL8u9bjf3w==
+  dependencies:
+    min-dash "^3.0.0"
+    min-dom "^3.0.0"
+
+diagram-js@^3.3.0:
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-3.3.0.tgz#3113bf24adc4bcf5a5ba13a22dc8135bdac12feb"
   dependencies:
     css.escape "^1.5.1"
     didi "^4.0.0"
@@ -4203,15 +4204,16 @@ diagram-js@^3.1.3:
     path-intersection "^1.0.2"
     tiny-svg "^2.2.1"
 
-diagram-js@^3.3.0:
-  version "3.3.0"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-3.3.0.tgz#3113bf24adc4bcf5a5ba13a22dc8135bdac12feb"
+diagram-js@^4.0.1:
+  version "4.0.3"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-4.0.3.tgz#a38ff9b2e2701644d3accafb0d98ee2dd9681bc6"
+  integrity sha512-BzcWUEnRfO2tpdc8XHvG/wsX+GrE/7qGRDf1khn5b0UrzrqqLhj1yiguvpgb0rQSTPeBtkot6PUA4wB2QAQutA==
   dependencies:
     css.escape "^1.5.1"
     didi "^4.0.0"
     hammerjs "^2.0.1"
     inherits "^2.0.1"
-    min-dash "^3.2.0"
+    min-dash "^3.5.0"
     min-dom "^3.0.0"
     object-refs "^0.3.0"
     path-intersection "^1.0.2"
@@ -4258,48 +4260,52 @@ discontinuous-range@1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/discontinuous-range/-/discontinuous-range-1.0.0.tgz#e38331f0844bba49b9a9cb71c771585aab1bc65a"
 
-dmn-js-decision-table@^6.3.2:
-  version "6.3.2"
-  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-6.3.2.tgz#3dceec882dcc25102a25914ffbd70878747911ca"
+dmn-js-decision-table@^7.0.1:
+  version "7.0.1"
+  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-7.0.1.tgz#2a8125e5bc934e776125b76a14413dfeb90d66bd"
+  integrity sha512-Tn7TjnkRp/sPksBKnbCy9vrcb1J/feb6nzsf03McEz20kWe1kXTQRA2U08p/qwEglnnUkJD/g61ES2qqN0C2sg==
   dependencies:
     css.escape "^1.5.1"
-    diagram-js "^3.1.3"
-    dmn-js-shared "^6.3.2"
+    diagram-js "^4.0.1"
+    dmn-js-shared "^7.0.0"
     escape-html "^1.0.3"
     inferno "~5.0.5"
     min-dash "^3.0.0"
     min-dom "^3.1.1"
     selection-ranges "^3.0.2"
-    table-js "^5.1.0"
+    table-js "^6.0.0"
 
-dmn-js-drd@^6.3.2:
-  version "6.3.2"
-  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-6.3.2.tgz#9bf1250b4a6f2f6c5d74b178edb0b1657e9e7b3f"
+dmn-js-drd@^7.0.0:
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-7.0.0.tgz#f431a5b9a9e1aa4d61ba076b31c91cb9f78e853a"
+  integrity sha512-6YrS++kIxSntzueMSbYeZfp5XZEqyxVR9ND0Xf4vwcyXDawfRyRfsa4zcn4hFdpumr7esMEMMyK3eCO+PWR1VQ==
   dependencies:
-    diagram-js "^3.1.3"
-    diagram-js-direct-editing "^1.4.0"
-    dmn-js-shared "^6.3.2"
+    diagram-js "^4.0.1"
+    diagram-js-direct-editing "^1.5.0"
+    dmn-js-shared "^7.0.0"
     inherits "^2.0.1"
     min-dash "^3.0.0"
     min-dom "^3.1.1"
     tiny-svg "^2.2.1"
 
-dmn-js-literal-expression@^6.3.2:
-  version "6.3.2"
-  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-6.3.2.tgz#4c4b986513172acd2dca33efa3ac8e926a59fcce"
+dmn-js-literal-expression@^7.0.0:
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-7.0.0.tgz#72c3697f2684934b53e93262127b6dbb54c86c84"
+  integrity sha512-xJ7FrgYIcFWfoBV8XoqOWy1UM4WTWBN7tN/jmxP61vqek/n9SlZ2cTzhISSV2LkgVOKGz1B83f6ZGMUN98mnkA==
   dependencies:
-    diagram-js "^3.1.3"
-    dmn-js-shared "^6.3.2"
+    diagram-js "^4.0.1"
+    dmn-js-shared "^7.0.0"
     escape-html "^1.0.3"
     inferno "~5.0.5"
     min-dash "^3.0.0"
     min-dom "^3.1.1"
 
-dmn-js-shared@^6.3.2:
-  version "6.3.2"
-  resolved "https://registry.yarnpkg.com/dmn-js-shared/-/dmn-js-shared-6.3.2.tgz#43da3f3010d8ff4398381470dc1aa1bb67b47be8"
+dmn-js-shared@^7.0.0:
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-shared/-/dmn-js-shared-7.0.0.tgz#03ec2c36718e6b2d91ba18cf2a73af7795f57e0c"
+  integrity sha512-rr4DK15reo654YIHrkm0l8cMdE20KIrXFcHDbQmQv7dEkyFUZ7NAe0Cqe+9vLy2toJkoLnR5iwt1PCGDr5WimQ==
   dependencies:
-    diagram-js "^3.1.3"
+    diagram-js "^4.0.1"
     dmn-moddle "^5.0.0"
     ids "^0.2.0"
     inferno "~5.0.5"
@@ -4307,16 +4313,17 @@ dmn-js-shared@^6.3.2:
     min-dom "^3.1.1"
     selection-ranges "^3.0.2"
     selection-update "^0.1.2"
-    table-js "^5.1.0"
+    table-js "^6.0.0"
 
-dmn-js@^6.3.2:
-  version "6.3.2"
-  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-6.3.2.tgz#e0d2a298b2f991b5b91387229f68c91cbd09937a"
+dmn-js@^7.0.1:
+  version "7.0.1"
+  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-7.0.1.tgz#ebc0e31dcec88931f5f201c700c35894070df098"
+  integrity sha512-Bd/xR9McsD0jUeICLCHZ1AeB51SzlBWhd38fPNfGbaMfpQ7AIJSITlgXJXarsgqF6nQs2AIvj8HSQlV+OwopKg==
   dependencies:
-    dmn-js-decision-table "^6.3.2"
-    dmn-js-drd "^6.3.2"
-    dmn-js-literal-expression "^6.3.2"
-    dmn-js-shared "^6.3.2"
+    dmn-js-decision-table "^7.0.1"
+    dmn-js-drd "^7.0.0"
+    dmn-js-literal-expression "^7.0.0"
+    dmn-js-shared "^7.0.0"
 
 dmn-moddle@^5.0.0:
   version "5.0.0"
@@ -6168,6 +6175,11 @@ ids@^0.2.0:
   resolved "https://registry.yarnpkg.com/ids/-/ids-0.2.2.tgz#c23140dd06f5e5e95b1a5e5e98877ea734965540"
   dependencies:
     hat "^0.0.3"
+
+ids@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/ids/-/ids-1.0.0.tgz#df67f2d37b81d7c2effc87e03d17ebff95a58c05"
+  integrity sha512-Zvtq1xUto4LttpstyOlFum8lKx+i1OmRfg+6A9drFS9iSZsDPMHG4Sof/qwNR4kCU7jBeWFPrY2ocHxiz7cCRw==
 
 ieee754@^1.1.4:
   version "1.1.8"
@@ -8180,6 +8192,11 @@ mimic-fn@^2.1.0:
 min-dash@^3.0.0, min-dash@^3.2.0, min-dash@^3.4.0:
   version "3.4.0"
   resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-3.4.0.tgz#994346eb1fe831516f47467b72cca78bdf8a961c"
+
+min-dash@^3.5.0:
+  version "3.5.1"
+  resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-3.5.1.tgz#0fdd41afe8f538340ec3c57acaf7c1277bd2f838"
+  integrity sha512-fOWMCwOr7DwL8Lfgj3MvvCRtwfkG5CmrtZ7Cm1QUk9y/z+01S5sYK84HCXqgIsuOxUY5SzyQACnmyo4Mfy01QA==
 
 min-document@^2.19.0:
   version "2.19.0"
@@ -11077,7 +11094,7 @@ select-hose@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/select-hose/-/select-hose-2.0.0.tgz#625d8658f865af43ec962bfc376a37359a4994ca"
 
-selection-ranges@^3.0.0, selection-ranges@^3.0.2:
+selection-ranges@^3.0.0, selection-ranges@^3.0.2, selection-ranges@^3.0.3:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/selection-ranges/-/selection-ranges-3.0.3.tgz#7f346169d606b76e28e0fa721a115eb6efe97be1"
   dependencies:
@@ -11812,6 +11829,17 @@ table-js@^5.1.0:
     min-dash "^3.0.0"
     min-dom "^3.0.0"
     selection-ranges "^3.0.0"
+
+table-js@^6.0.0:
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/table-js/-/table-js-6.0.0.tgz#5f875eeef0e8f3ac7c9e37567762329e9ddde353"
+  integrity sha512-O/Tl343kYG0IjViPzzb/17D94swaeT6q3RU3BGacFrDXnSlOYjQOj0fygZWPmXOILQtea9lnSZSBCJshL7UIVQ==
+  dependencies:
+    didi "^4.0.0"
+    ids "^1.0.0"
+    min-dash "^3.5.0"
+    min-dom "^3.0.0"
+    selection-ranges "^3.0.3"
 
 table@^5.2.3:
   version "5.2.3"
