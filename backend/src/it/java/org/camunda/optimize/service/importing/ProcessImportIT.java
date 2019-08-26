@@ -109,7 +109,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_DEFINITION_INDEX_NAME);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(ProcessDefinitionIndex.TENANT_ID), is(tenantId));
@@ -127,7 +127,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_DEFINITION_INDEX_NAME);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(ProcessDefinitionIndex.TENANT_ID), is(tenantId));
@@ -146,7 +146,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_DEFINITION_INDEX_NAME);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(ProcessDefinitionIndex.TENANT_ID), is(expectedTenantId));
@@ -176,7 +176,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(ProcessInstanceIndex.TENANT_ID), is(tenantId));
@@ -194,7 +194,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(ProcessInstanceIndex.TENANT_ID), is(tenantId));
@@ -213,7 +213,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(ProcessInstanceIndex.TENANT_ID), is(expectedTenantId));
@@ -272,7 +272,7 @@ public class ProcessImportIT extends AbstractImportIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex();
     elasticSearchRule.refreshAllOptimizeIndices();
 
-    SearchResponse response = getSearchResponseForAllDocumentsOfType(PROCESS_DEFINITION_INDEX_NAME);
+    SearchResponse response = getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(response.getHits().getTotalHits(), is(2L));
     response.getHits().forEach((SearchHit hit) -> {
       Map<String, Object> source = hit.getSourceAsMap();
@@ -294,7 +294,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       List events = (List) searchHitFields.getSourceAsMap().get(EVENTS);
       assertThat(events.size(), is(3));
@@ -311,7 +311,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(
       idsResp.getHits().getAt(0).getSourceAsMap().get(ProcessInstanceIndex.STATE),
       is(CanceledInstancesOnlyQueryFilter.EXTERNALLY_TERMINATED)
@@ -325,7 +325,7 @@ public class ProcessImportIT extends AbstractImportIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
 
     //then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       List events = (List) searchHitFields.getSourceAsMap().get(EVENTS);
       assertThat(events.size(), is(2));
@@ -339,7 +339,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
+    idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       Object date = searchHitFields.getSourceAsMap().get(END_DATE);
       assertThat(date, is(notNullValue()));
@@ -405,7 +405,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     SearchHit hit = idsResp.getHits().getAt(0);
     List events = (List) hit.getSourceAsMap().get(EVENTS);
@@ -429,7 +429,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     SearchHit hit = idsResp.getHits().getAt(0);
     List<Map> events = (List) hit.getSourceAsMap().get(EVENTS);
@@ -464,7 +464,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     SearchHit hit = idsResp.getHits().getAt(0);
     List<Map> events = (List) hit.getSourceAsMap().get(EVENTS);

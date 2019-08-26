@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.test.util;
 
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
+
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,6 +27,15 @@ public class VariableTestUtil {
     variables.put("longVar", 1L);
     variables.put("doubleVar", 1.1);
     variables.put("dateVar", new Date());
+    return variables;
+  }
+
+  public static Map<String, Object> createAllPrimitiveTypeVariablesWithNullValues() {
+    Map<String, Object> variables = new HashMap<>();
+    for (VariableType type : VariableType.values()) {
+      String varName = String.format("%sVar", type.getId().toLowerCase());
+      variables.put(varName, new ComplexVariableDto().setType(type.getId()).setValue(null));
+    }
     return variables;
   }
 }

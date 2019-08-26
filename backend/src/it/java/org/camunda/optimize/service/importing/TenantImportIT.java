@@ -31,7 +31,7 @@ public class TenantImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(TENANT_INDEX_NAME);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(TenantDto.Fields.id.name()), is(tenantId));
@@ -57,7 +57,7 @@ public class TenantImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(TENANT_INDEX_NAME);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(TenantDto.Fields.id.name()), is(tenantId));

@@ -89,7 +89,7 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_DEFINITION_INDEX_NAME);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(DecisionDefinitionIndex.TENANT_ID), is(tenantId));
@@ -107,7 +107,7 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_DEFINITION_INDEX_NAME);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(DecisionDefinitionIndex.TENANT_ID), is(tenantId));
@@ -126,7 +126,7 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_DEFINITION_INDEX_NAME);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(DecisionDefinitionIndex.TENANT_ID), is(expectedTenantId));
@@ -142,7 +142,7 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_INDEX_NAME);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
 
     final SearchHit hit = idsResp.getHits().getHits()[0];
@@ -161,7 +161,7 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_INDEX_NAME);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(DecisionInstanceIndex.TENANT_ID), is(tenantId));
@@ -179,7 +179,7 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_INDEX_NAME);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(DecisionInstanceIndex.TENANT_ID), is(tenantId));
@@ -200,7 +200,7 @@ public class DecisionImportIT extends AbstractImportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_INDEX_NAME);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(DecisionInstanceIndex.TENANT_ID), is(expectedTenantId));
@@ -305,22 +305,22 @@ public class DecisionImportIT extends AbstractImportIT {
   }
 
   @Override
-  protected void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchType,
+  protected void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
                                                                final long count) throws IOException {
-    allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchType, count, false);
+    allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchIndex, count, false);
   }
 
-  private void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchType,
+  private void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
                                                              final long count,
                                                              final boolean expectTenant) throws IOException {
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticsearchType);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(elasticsearchIndex);
 
     assertThat(idsResp.getHits().getTotalHits(), is(count));
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
       // in this test suite we only care about decision types, no asserts besides count on others
-      if (DECISION_INSTANCE_INDEX_NAME.equals(elasticsearchType)) {
+      if (DECISION_INSTANCE_INDEX_NAME.equals(elasticsearchIndex)) {
         assertDecisionInstanceFieldSetAsExpected(searchHit, expectTenant);
-      } else if (DECISION_DEFINITION_INDEX_NAME.equals(elasticsearchType)) {
+      } else if (DECISION_DEFINITION_INDEX_NAME.equals(elasticsearchIndex)) {
         assertAllFieldsSet(DECISION_DEFINITION_NULLABLE_FIELDS, searchHit);
       }
     }

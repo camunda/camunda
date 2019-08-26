@@ -20,16 +20,22 @@ import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.VariableTestUtil;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.search.SearchHit;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 
@@ -115,14 +121,27 @@ public class VariableImportIT extends AbstractImportIT {
     assertThat(variablesResponseDtos.size(), is(variables.size()));
   }
 
-  private List<ProcessVariableNameResponseDto> getVariables(ProcessInstanceEngineDto instanceDto) {
-    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
-    variableRequestDto.setProcessDefinitionKey(instanceDto.getProcessDefinitionKey());
-    variableRequestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildProcessVariableNamesRequest(variableRequestDto)
-      .executeAndReturnList(ProcessVariableNameResponseDto.class, 200);
+  @Test
+  public void variablesCanHaveNullValue() throws IOException {
+    //given
+    BpmnModelInstance processModel = createSimpleProcessDefinition();
+
+    Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariablesWithNullValues();
+    ProcessInstanceEngineDto instanceDto =
+      engineRule.deployAndStartProcessWithVariables(processModel, variables);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    SearchResponse responseForAllDocumentsOfIndex =
+      getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+
+    // then
+    for (SearchHit searchHit : responseForAllDocumentsOfIndex.getHits()) {
+      List<Map> retrievedVariables = (List<Map>) searchHit.getSourceAsMap().get(VARIABLES);
+      assertThat(retrievedVariables.size(), is(variables.size()));
+      retrievedVariables.forEach(var -> assertThat(var.get("value"), nullValue()));
+    }
   }
 
   @Test
@@ -251,7 +270,6 @@ public class VariableImportIT extends AbstractImportIT {
     assertThat(variableValues.get(0), is("2"));
   }
 
-
   @Test
   public void oldVariableUpdatesAreOverwritten() {
     //given
@@ -326,6 +344,16 @@ public class VariableImportIT extends AbstractImportIT {
 
     //then
     assertThat(variableValues.size(), is(0));
+  }
+
+  private List<ProcessVariableNameResponseDto> getVariables(ProcessInstanceEngineDto instanceDto) {
+    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
+    variableRequestDto.setProcessDefinitionKey(instanceDto.getProcessDefinitionKey());
+    variableRequestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildProcessVariableNamesRequest(variableRequestDto)
+      .executeAndReturnList(ProcessVariableNameResponseDto.class, 200);
   }
 
   private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstances() {

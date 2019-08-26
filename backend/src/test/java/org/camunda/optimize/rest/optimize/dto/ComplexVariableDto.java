@@ -7,19 +7,25 @@ package org.camunda.optimize.rest.optimize.dto;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 
 import java.io.Serializable;
 
+@Getter
+@Setter
+@Accessors(chain = true)
 public class ComplexVariableDto implements Serializable {
 
-  @Getter @Setter private String type;
-  @Getter @Setter private Object value;
+  private String type;
+  private Object value;
 
-  @Getter @Setter private ValueInfo valueInfo;
+  private ValueInfo valueInfo = new ValueInfo();
 
+  @Getter
+  @Setter
   public static class ValueInfo {
-    @Getter @Setter private String objectTypeName;
-    @Getter @Setter private String serializationDataFormat;
+    private String objectTypeName;
+    private String serializationDataFormat;
   }
 
 }

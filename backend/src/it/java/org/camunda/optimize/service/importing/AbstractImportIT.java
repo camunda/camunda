@@ -43,22 +43,22 @@ public abstract class AbstractImportIT {
   public RuleChain chain = RuleChain
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
 
-  protected void allEntriesInElasticsearchHaveAllData(String elasticsearchType, final Set<String> excludedFields) throws
+  protected void allEntriesInElasticsearchHaveAllData(String elasticsearchIndex, final Set<String> excludedFields) throws
                                                                                                                   IOException {
-    allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchType, 1L, excludedFields);
+    allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchIndex, 1L, excludedFields);
   }
 
 
-  protected void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchType,
+  protected void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
                                                                final long count) throws IOException {
-    allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchType, count, Collections.emptySet());
+    allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchIndex, count, Collections.emptySet());
   }
 
-  protected void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchType,
+  protected void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
                                                                final long count,
                                                                final Set<String> nullValueFields)
     throws IOException {
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticsearchType);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(elasticsearchIndex);
 
     assertThat(idsResp.getHits().getTotalHits(), is(count));
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
@@ -67,7 +67,7 @@ public abstract class AbstractImportIT {
   }
 
   protected void assertAllFieldsSet(final Set<String> nullValueFields, final SearchHit searchHit) {
-    for (Map.Entry searchHitField : searchHit.getSourceAsMap().entrySet()) {
+    for (Map.Entry<String, Object> searchHitField : searchHit.getSourceAsMap().entrySet()) {
       if (nullValueFields.contains(searchHitField.getKey())) {
         assertThat(searchHitField.getValue(), is(nullValue()));
       } else {
@@ -82,14 +82,14 @@ public abstract class AbstractImportIT {
     }
   }
 
-  protected SearchResponse getSearchResponseForAllDocumentsOfType(String elasticsearchType) throws IOException {
+  protected SearchResponse getSearchResponseForAllDocumentsOfIndex(String elasticsearchIndex) throws IOException {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(matchAllQuery())
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(elasticsearchType)
-      .types(elasticsearchType)
+      .indices(elasticsearchIndex)
+      .types(elasticsearchIndex)
       .source(searchSourceBuilder);
 
     return elasticSearchRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
