@@ -18,7 +18,7 @@ export async function createNewReport(t) {
   await t.click(Selector('a').withText('Create Process Report'));
 }
 
-export async function selectDefinition(t, name, version = 'Specific versions') {
+export async function selectDefinition(t, name, version = 'Specific version') {
   await t
     .click('.Popover.DefinitionSelection')
     .typeText('.Typeahead.name input', name, {replace: true})

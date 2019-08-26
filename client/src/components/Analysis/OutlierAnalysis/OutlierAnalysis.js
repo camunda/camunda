@@ -140,7 +140,6 @@ export default class OutlierAnalysis extends Component {
               <HeatmapOverlay
                 noSequenceHighlight
                 data={heatData}
-                alwaysShow={false}
                 formatter={(data, id) => {
                   const div = document.createElement('div');
                   div.className = 'nodeTooltip';

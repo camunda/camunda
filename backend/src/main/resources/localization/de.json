@@ -315,7 +315,7 @@
     "cannotSave": "Alarm \"{name}\" konnte nicht gespeichert werden."
   },
   "analysis": {
-    "branchAnalysis": "Branchenanalyse",
+    "branchAnalysis": "Zweiganalyse",
     "outlier": {
       "label": "Ausreißeranalyse",
       "tooltip": {

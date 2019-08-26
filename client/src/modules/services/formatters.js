@@ -224,7 +224,7 @@ export function createDurationFormattingOptions(targetLine, dataMinStep) {
   }
 
   return {
-    callback: v => v / niceStepSize.base + niceStepSize.unit,
+    callback: v => +(v / niceStepSize.base).toFixed(2) + niceStepSize.unit,
     stepSize: niceStepSize.value
   };
 }
