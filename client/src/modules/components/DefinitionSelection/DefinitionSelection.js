@@ -41,29 +41,50 @@ export default class DefinitionSelection extends React.Component {
   hasDefinition = () => this.props.definitionKey;
 
   changeDefinition = ({key}) => {
+    if (this.props.definitionKey === key) {
+      return;
+    }
     const definitionObject = this.getDefinitionObject(key);
-    const latestVersion = [definitionObject.versions[0].version];
+    const latestDefinition = definitionObject.versions[0];
+    const latestVersion = [latestDefinition.version];
+    const tenants = this.getAvailableTenants(key, latestVersion);
 
     this.setState({selectedSpecificVersions: latestVersion});
-    this.props.onChange(key, latestVersion, definitionObject.tenants.map(({id}) => id));
+    this.props.onChange(key, latestVersion, tenants.map(({id}) => id));
   };
 
   getDefinitionObject = key => this.state.availableDefinitions.find(def => def.key === key);
   canRenderDiagram = () => this.props.renderDiagram && this.props.xml;
 
-  getAvailableTenants = key => {
-    const definition = this.getDefinitionObject(key);
-    if (definition) {
-      return definition.tenants;
+  getAvailableTenants = (key, versions) => {
+    const definitionObject = this.getDefinitionObject(key);
+    if (versions && versions.length === 1 && versions[0] === 'all') {
+      return definitionObject.allTenants;
+    }
+    if (definitionObject && versions) {
+      const specificVersions =
+        versions[0] === 'latest' ? [definitionObject.versions[0].version] : versions;
+      const allTenantsWithDuplicates = definitionObject.versions
+        .filter(versionEntry => specificVersions.includes(versionEntry.version))
+        .map(versionEntry => versionEntry.tenants)
+        .flat();
+      return this.filterDuplicateTenants(allTenantsWithDuplicates);
     }
     return [];
   };
 
+  filterDuplicateTenants = arrayOfTenantsWithDuplicates => {
+    return arrayOfTenantsWithDuplicates.filter(
+      (object, index, self) => index === self.findIndex(o => o.id === object.id)
+    );
+  };
+
   hasTenants = () => {
-    const definition = this.getDefinitionObject(this.props.definitionKey);
-    if (definition) {
-      return definition.tenants.length >= 2;
+    if (this.props.definitionKey && this.props.versions) {
+      const tenants = this.getAvailableTenants(this.props.definitionKey, this.props.versions);
+      return tenants.length > 1;
     }
+    return false;
   };
 
   getSelectedTenants = () => this.props.tenants;
@@ -73,9 +94,9 @@ export default class DefinitionSelection extends React.Component {
   };
 
   getAvailableVersions = key => {
-    const definition = this.getDefinitionObject(key);
-    if (definition) {
-      return definition.versions;
+    const definitionObject = this.getDefinitionObject(key);
+    if (definitionObject) {
+      return definitionObject.versions.map(({version, versionTag}) => ({version, versionTag}));
     }
     return [];
   };
@@ -86,7 +107,8 @@ export default class DefinitionSelection extends React.Component {
     if (this.isSpecificVersion(versions)) {
       this.setState({selectedSpecificVersions: versions});
     }
-    this.props.onChange(this.props.definitionKey, versions, this.props.tenants);
+    const tenants = this.getAvailableTenants(this.props.definitionKey, versions);
+    this.props.onChange(this.props.definitionKey, versions, tenants.map(({id}) => id));
   };
 
   isSpecificVersion = versions => versions && versions[0] !== 'latest' && versions[0] !== 'all';
@@ -95,7 +117,7 @@ export default class DefinitionSelection extends React.Component {
     const {definitionKey, versions, type} = this.props;
 
     if (definitionKey && versions) {
-      const availableTenants = this.getAvailableTenants(definitionKey);
+      const availableTenants = this.getAvailableTenants(definitionKey, versions);
       const selectedTenants = this.getSelectedTenants();
 
       const definition = this.getDefinitionObject(definitionKey).name;
@@ -182,7 +204,7 @@ export default class DefinitionSelection extends React.Component {
               <div className="tenant entry">
                 <Labeled label={t('common.definitionSelection.tenant.label')} />
                 <TenantPopover
-                  tenants={this.getAvailableTenants(selectedKey)}
+                  tenants={this.getAvailableTenants(selectedKey, versions)}
                   selected={this.getSelectedTenants()}
                   onChange={this.changeTenants}
                 />

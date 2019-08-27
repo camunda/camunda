@@ -11,6 +11,7 @@ import {LoadingIndicator} from 'components';
 
 import DefinitionSelection from './DefinitionSelection';
 import VersionPopover from './VersionPopover';
+import TenantPopover from './TenantPopover';
 
 import {loadDefinitions} from 'services';
 
@@ -23,14 +24,78 @@ jest.mock('services', () => {
       {
         key: 'foo',
         name: 'Foo',
-        versions: [{version: '2', versionTag: null}, {version: '1', versionTag: null}],
-        tenants: [{id: null, name: 'Not defined'}, {id: 'sales', name: 'sales'}]
+        versions: [
+          {
+            version: '3',
+            versionTag: 'Tag',
+            tenants: [
+              {
+                id: null,
+                name: 'Not defined'
+              }
+            ]
+          },
+          {
+            version: '2',
+            versionTag: 'Another Tag',
+            tenants: [
+              {
+                id: 'a',
+                name: 'Tenant A'
+              },
+              {
+                id: 'b',
+                name: 'Tenant B'
+              }
+            ]
+          },
+          {
+            version: '1',
+            versionTag: 'Tag',
+            tenants: [
+              {
+                id: 'a',
+                name: 'Tenant A'
+              }
+            ]
+          }
+        ],
+        allTenants: [
+          {
+            id: null,
+            name: 'Not defined'
+          },
+          {
+            id: 'a',
+            name: 'Tenant A'
+          },
+          {
+            id: 'b',
+            name: 'Tenant B'
+          }
+        ]
       },
       {
         key: 'bar',
         name: 'Bar',
-        versions: [{version: '1', versionTag: null}],
-        tenants: [{id: null, name: 'Not defined'}]
+        versions: [
+          {
+            version: '1',
+            versionTag: null,
+            tenants: [
+              {
+                id: null,
+                name: 'Not defined'
+              }
+            ]
+          }
+        ],
+        allTenants: [
+          {
+            id: null,
+            name: 'Not defined'
+          }
+        ]
       }
     ])
   };
@@ -66,7 +131,7 @@ it('should update to most recent version when key is selected', async () => {
 
   await node.instance().changeDefinition({key: 'foo'});
 
-  expect(spy.mock.calls[0][1]).toEqual(['2']);
+  expect(spy.mock.calls[0][1]).toEqual(['3']);
 });
 
 it('should store specifically selected versions', async () => {
@@ -101,19 +166,31 @@ it('should disable typeahead if no reports are avaialbe', async () => {
 
 it('should set key and version, if process definition is already available', async () => {
   const definitionConfig = {
-    definitionKey: 'foo',
-    versions: ['2']
+    definitionKey: 'bar',
+    versions: ['1']
   };
   const node = await shallow(<DefinitionSelection {...definitionConfig} {...props} />);
 
   expect(node.find('.name')).toHaveProp('initialValue', {
-    id: 'foo',
-    key: 'foo',
-    name: 'Foo',
-    versions: [{version: '2', versionTag: null}, {version: '1', versionTag: null}],
-    tenants: [{id: null, name: 'Not defined'}, {id: 'sales', name: 'sales'}]
+    key: 'bar',
+    name: 'Bar',
+    versions: [{version: '1', versionTag: null, tenants: [{id: null, name: 'Not defined'}]}],
+    allTenants: [{id: null, name: 'Not defined'}],
+    id: 'bar'
   });
-  expect(node.find(VersionPopover).prop('selected')).toEqual(['2']);
+  expect(node.find(VersionPopover).prop('selected')).toEqual(['1']);
+});
+
+it('should not call on change if key didnt change', async () => {
+  const definitionConfig = {
+    definitionKey: 'bar',
+    versions: ['1']
+  };
+  const node = await shallow(<DefinitionSelection {...definitionConfig} {...props} />);
+
+  spy.mockClear();
+  await node.instance().changeDefinition({key: 'bar'});
+  expect(spy).not.toHaveBeenCalled();
 });
 
 it('should call onChange function on change of the definition', async () => {
@@ -151,7 +228,7 @@ it('should disable version selection, if no key is selected', async () => {
 
 it('should show a note if more than one version is selected', async () => {
   const node = await shallow(
-    <DefinitionSelection {...props} enableAllVersionSelection versions={['all']} />
+    <DefinitionSelection {...props} definitionKey="foo" versions={['all']} />
   );
 
   expect(node.find('InfoMessage')).toExist();
@@ -216,24 +293,117 @@ it('should hide the tenant selection by default', async () => {
   expect(node.find('.container')).not.toHaveClassName('withTenants');
 });
 
+it('should merge tenenats from all selected versions and duplicates are filtered out', async () => {
+  const node = await shallow(
+    <DefinitionSelection {...props} definitionKey="foo" versions={['1', '2']} />
+  );
+
+  expect(node.find(TenantPopover)).toHaveProp('tenants', [
+    {id: 'a', name: 'Tenant A'},
+    {id: 'b', name: 'Tenant B'}
+  ]);
+});
+
+it('should show all tenants if version is set to all', async () => {
+  const node = await shallow(
+    <DefinitionSelection {...props} definitionKey="foo" versions={['all']} />
+  );
+
+  expect(node.find(TenantPopover)).toHaveProp('tenants', [
+    {id: null, name: 'Not defined'},
+    {id: 'a', name: 'Tenant A'},
+    {id: 'b', name: 'Tenant B'}
+  ]);
+});
+
+it('should show tenants from latest version if version is set to latest', async () => {
+  const node = await shallow(
+    <DefinitionSelection {...props} definitionKey="foo" versions={['latest']} />
+  );
+
+  expect(node.find(TenantPopover)).toHaveProp('tenants', [{id: null, name: 'Not defined'}]);
+});
+
+it('should change tenants if version changes', async () => {
+  const node = await shallow(
+    <DefinitionSelection {...props} definitionKey="foo" versions={['1']} />
+  );
+
+  expect(node.find(TenantPopover)).toHaveProp('tenants', [{id: 'a', name: 'Tenant A'}]);
+
+  spy.mockClear();
+  await node.instance().changeVersions(['2']);
+  expect(spy).toHaveBeenCalledWith('foo', ['2'], ['a', 'b']);
+});
+
 describe('tenants', () => {
   beforeAll(() => {
     loadDefinitions.mockReturnValue([
       {
         key: 'foo',
         name: 'Foo',
-        versions: [{version: '2', versionTag: null}, {version: '1', versionTag: null}],
-        tenants: [
-          {id: 'a', name: 'Tenant A'},
-          {id: 'b', name: 'Tenant B'},
-          {id: null, name: 'Not defined'}
+        versions: [
+          {
+            version: '3',
+            versionTag: 'Tag',
+            tenants: [
+              {
+                id: null,
+                name: 'Not defined'
+              },
+              {
+                id: 'a',
+                name: 'Tenant A'
+              },
+              {
+                id: 'b',
+                name: 'Tenant B'
+              }
+            ]
+          },
+          {
+            version: '2',
+            versionTag: null,
+            tenants: [
+              {
+                id: 'a',
+                name: 'Tenant A'
+              },
+              {
+                id: 'b',
+                name: 'Tenant B'
+              }
+            ]
+          },
+          {
+            version: '1',
+            versionTag: 'Tag',
+            tenants: [
+              {
+                id: 'c',
+                name: 'Tenant C'
+              }
+            ]
+          }
+        ],
+        allTenants: [
+          {
+            id: null,
+            name: 'Not defined'
+          },
+          {
+            id: 'a',
+            name: 'Tenant A'
+          },
+          {
+            id: 'b',
+            name: 'Tenant B'
+          },
+          {
+            id: 'c',
+            name: 'Tenant C'
+          }
         ]
-      },
-      {
-        key: 'bar',
-        name: 'Bar',
-        versions: [],
-        tenants: []
       }
     ]);
   });
@@ -245,34 +415,34 @@ describe('tenants', () => {
 
     await node.setProps({
       definitionKey: 'foo',
-      versions: ['1'],
+      versions: ['3'],
       xml: 'whatever',
       tenants: []
     });
 
-    expect(node.find('Popover')).toHaveProp('title', 'Foo : 1 : -');
+    expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : -');
 
     await node.setProps({
       tenants: ['a']
     });
 
-    expect(node.find('Popover')).toHaveProp('title', 'Foo : 1 : Tenant A');
+    expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : Tenant A');
 
     await node.setProps({
       tenants: ['a', 'b']
     });
 
-    expect(node.find('Popover')).toHaveProp('title', 'Foo : 1 : Multiple');
+    expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : Multiple');
     await node.setProps({
-      tenants: ['a', 'b', null]
+      tenants: [null, 'a', 'b']
     });
 
-    expect(node.find('Popover')).toHaveProp('title', 'Foo : 1 : All');
+    expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : All');
   });
 
   it('should show a tenant selection component', async () => {
     const node = await shallow(
-      <DefinitionSelection {...props} definitionKey="foo" versions={['1']} />
+      <DefinitionSelection {...props} definitionKey="foo" versions={['3']} />
     );
 
     expect(node.find('.container')).toHaveClassName('withTenants');
@@ -285,6 +455,6 @@ describe('tenants', () => {
 
     spy.mockClear();
     node.instance().changeDefinition({key: 'foo'});
-    expect(spy).toHaveBeenCalledWith('foo', ['2'], ['a', 'b', null]);
+    expect(spy).toHaveBeenCalledWith('foo', ['3'], [null, 'a', 'b']);
   });
 });
