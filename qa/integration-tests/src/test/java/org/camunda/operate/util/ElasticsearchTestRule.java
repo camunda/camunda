@@ -196,7 +196,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     }
   }
 
-  private void waitForQueuesEmptiness(Collection<RecordsReader> recordsReaders) throws InterruptedException {
+  public void waitForQueuesEmptiness(Collection<RecordsReader> recordsReaders) throws InterruptedException {
     int queueCheckAttempts = 0;
     boolean queuesAreEmpty = true;
     do {
@@ -213,7 +213,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     }
   }
 
-  private int importOneType(ImportValueType importValueType) throws IOException {
+  public int importOneType(ImportValueType importValueType) throws IOException {
     List<RecordsReader> readers = getRecordsReaders(importValueType);
     int count = 0;
     for (RecordsReader reader: readers) {
@@ -222,7 +222,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     return count;
   }
 
-  private List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
+  public List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
     return recordsReaderHolder.getAllRecordsReaders().stream()
         .filter(rr -> rr.getImportValueType().equals(importValueType)).collect(Collectors.toList());
   }

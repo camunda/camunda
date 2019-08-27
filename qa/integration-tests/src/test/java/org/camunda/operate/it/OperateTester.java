@@ -12,7 +12,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
@@ -25,9 +27,11 @@ import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.util.ConversionUtils;
+import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
+import org.camunda.operate.zeebeimport.ImportValueType;
 import org.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -46,6 +50,8 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 
 @Component
 public class OperateTester {
+  
+  private ElasticsearchTestRule elasticsearchTestRule;
   
   Logger logger = LoggerFactory.getLogger(getClass());
   
@@ -92,6 +98,8 @@ public class OperateTester {
   
   @Autowired
   protected OperationExecutor operationExecutor;
+
+  private Map<Object,Long> countImported = new HashMap<>();
   
   public Long getWorkflowInstanceKey() {
     return workflowInstanceKey;
@@ -99,6 +107,11 @@ public class OperateTester {
 
   public OperateTester setMockMvcTestRule(MockMvcTestRule mockMvcTestRule) {
     this.mockMvcTestRule = mockMvcTestRule;
+    return this;
+  }
+  
+  public OperateTester setElasticsearchTestrule(ElasticsearchTestRule elasticsearchTestRule) {
+    this.elasticsearchTestRule = elasticsearchTestRule;
     return this;
   }
 
@@ -278,5 +291,58 @@ public class OperateTester {
       fail(e.getMessage(), e);
     }
   }
+
+  public Long getWorkflowKey() {
+    return workflowKey;
+  }
+  
+  protected Map<Object,Long> updateMap(Map<Object,Long> map,Object key,Long value){
+    if(!map.containsKey(key)) {
+      map.put(key, value);
+    }else {
+      map.put(key,map.get(key)+value);
+    }
+    return map;
+  }
+
+  public OperateTester process(ImportValueType importValueType) {
+    countImported.put(importValueType, 0L);
+    long entitiesCount = 0;
+    try {
+      while (entitiesCount == 0) {
+        try {
+          entitiesCount = elasticsearchTestRule.importOneType(importValueType);
+          updateMap(countImported,importValueType,entitiesCount);
+        } catch (Throwable e) {
+          
+        }
+        Thread.sleep(500L);
+      }
+      while (entitiesCount > 0) {
+        try {
+          entitiesCount = elasticsearchTestRule.importOneType(importValueType);
+          updateMap(countImported,importValueType,entitiesCount);
+        } catch (Throwable e) {
+         
+        }
+        Thread.sleep(500L);
+      }
+    } catch (InterruptedException ie) {
+      logger.error(ie.getMessage(), ie);
+    }
+    return this;
+  }
+
+  public OperateTester then() {
+    return this;
+  }
+
+  public OperateTester refreshElasticsearch() {
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    return this;
+  }
  
+  public long getCountImportedFor(Object key) {
+    return countImported.get(key);
+  }
 }
