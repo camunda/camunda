@@ -2,28 +2,28 @@
   "navigation": {
     "homepage": "Dashboards & Berichte",
     "analysis": "Analyse",
-    "logout": "Ausloggen",
+    "logout": "Abmelden",
     "logoutFailed": "Abmeldung fehlgeschlagen"
   },
   "login": {
     "username": "Nutzername",
     "password": "Passwort",
     "btn": "Einloggen",
-    "error": "Ein Fehler ist aufgetreten. Konnte dich nicht einloggen."
+    "error": "Bei der Anmeldung ist ein Fehler aufgetreten."
   },
   "footer": {
-    "importing": "importiert...",
-    "connected": "Ist verbunden",
-    "notConnected": "ist nicht verbunden ",
+    "importing": "wird importiert ...",
+    "connected": "ist verbunden",
+    "notConnected": "ist nicht verbunden",
     "rightsReserved": "Alle Rechte vorbehalten"
   },
   "license": {
-    "licensedFor": "Lizenziert für ",
+    "licensedFor": "Lizenziert für",
     "validUntil": "Gültig bis",
-    "redirectMessage": "Sie werden in Kürze zur Anmeldeseite weitergeleitet. <a href=\"./\"> Klicken Sie hier, um sofort zur Anmeldeseite zu gelangen </a> ",
+    "redirectMessage": "Sie werden in Kürze zur Anmeldeseite weitergeleitet. <a href=\"./\">Klicken Sie hier, um sofort zur Anmeldeseite zu gelangen</a> ",
     "licenseKey": "Lizenzschlüssel",
-    "enterLicense": "Bitte geben Sie den Lizenzschlüssel ein ",
-    "submit": "Einreichen"
+    "enterLicense": "Bitte geben Sie den Lizenzschlüssel ein",
+    "submit": "Absenden"
   },
   "home": {
     "search": "Nach Namen filtern ...",
@@ -41,9 +41,9 @@
     "collection": {
       "empty": "Berichte und Dashboards in Sammlungen gruppieren",
       "create": "Sammlung erstellen ...",
-      "Item": "Item",
-      "Items": "Artikel",
-      "noItems": "Es sind keine Artikel in dieser Sammlung.",
+      "Item": "Element",
+      "Items": "Elemente",
+      "noItems": "Es sind keine Elemente in dieser Sammlung vorhanden.",
       "noSearchResult": "Keine mit '{searchQuery}' übereinstimmenden Sammlungen",
       "edit": "Sammlung bearbeiten",
       "delete": "Sammlung löschen"
@@ -63,20 +63,20 @@
         "decision": "Entscheidungsbericht erstellen"
       },
       "noSearchResult": "Keine Berichte, die mit '{searchQuery}' übereinstimmen",
-      "duplicate": "Doppelter Bericht",
+      "duplicate": "Bericht duplizieren",
       "edit": "Bericht bearbeiten",
       "delete": "Bericht löschen",
       "badge": {
-        "combined": "kombiniert",
-        "decision": "Entscheidung"
+        "combined": "Kombiniert",
+        "decision": "Entscheidungsbericht"
       },
       "types": {
-        "number": "Zahlenbericht",
-        "bar": "Balkendiagrammbericht",
-        "line": "Liniendiagrammbericht",
-        "heat": "Heatmapbericht",
-        "pie": "Tortendiagrammbericht",
-        "table": "Tabellenbericht"
+        "number": "Zahlen-Bericht",
+        "bar": "Balkendiagramm-Bericht",
+        "line": "Liniendiagramm-Bericht",
+        "heat": "Heatmap-Bericht",
+        "pie": "Tortendiagramm-Bericht",
+        "table": "Tabellen-Bericht"
       }
     }
   },
@@ -88,26 +88,26 @@
     "downloadCSV": "CSV herunterladen",
     "incomplete": "Anzeigen von {count} Datenpunkten im Ergebnis. Um die Ergebnismenge zu verfeinern, bearbeiten Sie die oben angegebene Einstellung.",
     "view": {
-      "label": "Aussicht",
+      "label": "Ansicht",
       "rawData": "Rohdaten",
       "pi": "Prozessinstanz",
-      "fn": "Flow Node",
-      "userTask": "User Task",
+      "fn": "Prozessknoten",
+      "userTask": "Benutzeraufgabe",
       "count": "Anzahl",
       "duration": "Dauer",
-      "evaluationCount": "Bewertungszahl"
+      "evaluationCount": "Evaluierungsanzahl"
     },
     "groupBy": {
       "label": "Gruppiere nach",
       "none": "Keiner",
-      "flowNodes": "Flow Nodes",
+      "flowNodes": "Prozessknoten",
       "startDate": "Startdatum der Prozessinstanz",
       "automatic": "Automatisch",
       "endDate": "Enddatum der Prozessinstanz",
       "variable": "Variable",
-      "userAssignee": "Beauftragter",
-      "userGroup": "Kandidatengruppe",
-      "evaluationDate": "Bewertungstag",
+      "userAssignee": "Bearbeiter",
+      "userGroup": "Potenzielle Gruppe",
+      "evaluationDate": "Evaluierungsdatum",
       "rules": "Regeln",
       "inputVariable": "Eingabevariable",
       "outputVariable": "Ausgabevariable",
@@ -122,57 +122,57 @@
       "number": "Nummer",
       "bar": "Balkendiagramm",
       "line": "Liniendiagramm",
-      "pie": "Kuchendiagramm",
+      "pie": "Tortendiagramm",
       "table": "Tabelle",
       "heat": "Heatmap"
     },
     "processPart": {
-      "label": "Prozessinstanzteil",
-      "title": "Prozessinstanzteil festlegen",
-      "description": "Betrachte nur einen Teil zwischen",
+      "label": "Prozessinstanz-Abschnitt",
+      "title": "Prozessinstanz-Abschnitt festlegen",
+      "description": "Betrachte nur den Teil zwischen",
       "selectStart": "Start auswählen",
       "selectEnd": "Ende auswählen",
       "noPathWarning": "Sie haben zwei Knoten ausgewählt, es besteht jedoch keine offensichtliche Verbindung zwischen diesen Knoten. Die Berichtsergebnisse sind möglicherweise leer oder irreführend."
     },
     "heatTarget": {
-      "label": "Zielwert",
+      "label": "Sollwert",
       "title": "Sollwertvergleich",
       "table": {
         "activity": "Aktivität",
         "value": "Tatsächlicher Wert",
-        "target": "Zielwert"
+        "target": "Sollwert"
       },
       "noChangeWarning": "Bitte ändern Sie mindestens einen Wert",
       "invalidValue": "Alle Felder sollten einen numerischen Wert haben",
-      "targetDuration": "Zieldauer",
-      "actualDuration": "tatsächliche Dauer: {duration} <br/> {percentage}% des Zielwerts",
-      "noValueAvailable": "Kein aktueller Wert verfügbar. <br/> Soll- und Istwert können nicht verglichen werden."
+      "targetDuration": "Solldauer",
+      "actualDuration": "tatsächliche Dauer: {duration}<br/>{percentage}% des Sollwerts",
+      "noValueAvailable": "Kein aktueller Wert verfügbar.<br/>Soll- und Istwert können nicht verglichen werden."
     },
-    "invalidCominationError": "Es können keine Daten für die angegebenen Berichteinstellungen angezeigt werden. Bitte wählen Sie eine andere Kombination! ",
-    "noDataNotice": "Keine Daten zum Anzeigen ",
-    "editSetupMessage": "Um diesen Bericht anzuzeigen, bearbeiten Sie Ihre Einstellungen oben. ",
+    "invalidCominationError": "Es können keine Daten für die angegebenen Einstellungen angezeigt werden. Bitte wählen Sie eine andere Kombination!",
+    "noDataNotice": "Keine Daten zur Ansicht vorhanden",
+    "editSetupMessage": "Um diesen Bericht anzuzeigen, bearbeiten Sie Ihre Einstellungen oben.",
     "incompleteNotice": {
-      "message": "Um diesen Bericht anzuzeigen, ",
-      "action": "komplettes Setup ... "
+      "message": "Um diesen Bericht anzuzeigen,",
+      "action": "Konfiguration vervollständigen ... "
     },
-    "setupNotice": "Richten Sie Ihren Bericht ein ",
-    "editReportMessage": "<p> Wählen Sie oben die Schaltfläche <b> Bearbeiten </b>. </p>",
+    "setupNotice": "Konfigurieren Sie Ihren Bericht",
+    "editReportMessage": "<p>Wählen Sie oben die Schaltfläche <b> Bearbeiten</b>.</p>",
     "totalCount": {
-      "instance": "Gesamtanzahl der Instanzen: <b> {count} </b> ",
-      "evaluation": "Anzahl  der Gesamtbewert&shy;ungen: </br> <b> {count} </b> "
+      "instance": "Gesamtanzahl der Instanzen: <b>{count}</b>",
+      "evaluation": "Gesamtanzahl</br> Evaluierungen: <b>{count}</b>"
     },
     "definition": {
       "process": "Prozessdefinition",
       "decision": "Entscheidungsdefinition"
     },
     "noDefintionMessage": {
-      "process": "Wählen Sie oben eine <b> Prozessdefinition </b> aus.",
-      "decision": "Wählen Sie oben eine <b> Entscheidungsdefinition </b> aus."
+      "process": "Wählen Sie oben eine <b>Prozessdefinition</b> aus.",
+      "decision": "Wählen Sie oben eine <b>Entscheidungsdefinition</b> aus."
     },
-    "combinedEmptyMessage": "Um einen Bericht anzuzeigen, wählen Sie bitte einen oder mehrere Berichte aus der Liste aus. ",
-    "noViewMessage": "Wählen Sie eine Option für die <b> Ansicht </b> oben aus.",
-    "noGroupByMessage": "Wählen Sie aus, nach was Sie <b> gruppieren </b> möchten.",
-    "noVisualizationMessage": "Wählen Sie oben eine Option für die <b> Visualisierung </b> aus.",
+    "combinedEmptyMessage": "Um einen Bericht anzuzeigen, wählen Sie bitte einen oder mehrere Berichte aus der Liste aus.",
+    "noViewMessage": "Wählen Sie oben eine Option für <b>Ansicht</b> aus.",
+    "noGroupByMessage": "Wählen Sie oben eine Option für <b>Gruppieren nach</b> aus.",
+    "noVisualizationMessage": "Wählen Sie oben eine Option für <b>Visualisierung</b> aus.",
     "variables": {
       "default": "Variablen",
       "input": "Eingabevariablen",
@@ -202,32 +202,32 @@
       "reset": "Zurücksetzen auf Standardwerte",
       "showCount": {
         "instance": "Instanzanzahl anzeigen",
-        "evaluation": "Zeige Bewertungszahl"
+        "evaluation": "Zeige Evaluierungsanzahl"
       },
       "aggregation": {
-        "legend": "Anhäufung",
+        "legend": "Aggregation",
         "minimum": "Minimum",
-        "average": "Durchschnittlich",
+        "average": "Durchschnitt",
         "median": "Median",
-        "maximum": "Maximal"
+        "maximum": "Maximum"
       },
       "userTaskDuration": {
-        "legend": "Dauer der Benutzeraufgabe Zeit",
-        "idle": "Leerlauf",
-        "work": "Arbeit",
+        "legend": "Dauer der Benutzeraufgabe",
+        "idle": "Wartezeit",
+        "work": "Arbeitszeit",
         "total": "Summe"
       },
       "userTaskDistributedBy": "Verteilt durch",
       "nodeStatus": {
-        "legend": "Flow Node Status",
-        "running": "läuft",
+        "legend": "Prozessknoten-Status",
+        "running": "In Ausführung",
         "completed": "Abgeschlossen"
       },
       "visibleNodes": {
         "legend": "Ausgewählte Knoten, die angezeigt werden sollen",
-        "btn": "Flow Nodes anzeigen....",
+        "btn": "Prozessknoten anzeigen....",
         "modal": {
-          "title": "Flow Nodes anzeigen",
+          "title": "Prozessknoten anzeigen",
           "description": "Ausgewählte Knoten erscheinen in der Visualisierung."
         }
       },
@@ -240,9 +240,9 @@
         "showAbsolute": "Absolutwert anzeigen"
       },
       "axisLabels": {
-        "legend": "Achsenbeschriftungen",
-        "xAxis": "X-Achsenbeschriftung",
-        "yAxis": "Y-Achsenbeschriftung"
+        "legend": "Achsen-Beschriftungen",
+        "xAxis": "X-Achse Beschriftung",
+        "yAxis": "Y-Achse Beschriftung"
       },
       "goal": {
         "legend": "Ziel",
@@ -257,87 +257,87 @@
         "disableMarkers": "Punktmarkierungen deaktivieren"
       },
       "limitPrecision": {
-        "legend": "Präzision begrenzen",
+        "legend": "Genauigkeit begrenzen",
         "numberOf": {
-          "digits": "Anzahl der Ziffern",
+          "digits": "Nachkommestellen",
           "units": "Anzahl der Einheiten"
         }
       },
-      "includeTableColumn": "Tabellenspalten, die mit",
-      "showGradientBars": "Gradientenbalken anzeigen"
+      "includeTableColumn": "Zu berücksichtigende Tabellenspalten",
+      "showGradientBars": "Verlaufsbalken anzeigen"
     }
   },
   "dashboard": {
-    "label": "Instrumententafel",
+    "label": "Dashboard",
     "label-plural": "Dashboards",
     "new": "Neues Dashboard",
     "cannotSave": "Dashboard \"{name}\" konnte nicht gespeichert werden",
-    "cannotShare": "Sie können dieses Dashboard nicht teilen, da Sie nicht Zugriff auf alle Reports auf diesem Dashboard haben",
-    "toggleTheme": "Design umschalten",
+    "cannotShare": "Sie können dieses Dashboard nicht teilen, da Sie nicht Zugriff auf alle Reports in diesem Dashboard haben!",
+    "toggleTheme": "Design wechseln",
     "enterFullscreen": "Vollbildmodus aktivieren",
     "leaveFullscreen": "Vollbildmodus verlassen",
-    "autoRefresh": "Auto-Aktualisieren",
+    "autoRefresh": "Aktualisierunsrate",
     "addButton": {
       "addReport": "Einen Report hinzufügen",
       "selectReport": "Report auswählen",
       "addExternal": "Externe Quelle hinzufügen",
       "addReportLabel": "Report hinzufügen",
       "selectReportPlaceholder": "Einen Report auswählen",
-      "noReports": "Es wurden keine Reports erstellt",
+      "noReports": "Es wurden noch keine Reports erstellt",
       "externalUrl": "Externe URL"
     }
   },
   "alert": {
     "label": "Alarm",
     "label-plural": "Alarme",
-    "createNew": "Neuen Alert erstellen",
-    "newAlert": "New Alert",
-    "edit": "Benachrichtigung bearbeiten",
-    "delete": "Warnung löschen",
-    "description": "Warnung <span> {email} </span>, wenn Bericht <span> {name} </span> einen Wert <span> {aboveOrBelow} {thresholdValue} </span> aufweist",
-    "emailWarning": "Der E-Mail-Benachrichtigungsdienst ist nicht konfiguriert. Optimize kann Sie nicht über kritische Werte informieren. Lesen Sie in der <a href='{docsLink}'> Dokumentation zum Optimieren </a> nach, wie Sie den Benachrichtigungsdienst aktivieren.",
+    "createNew": "Neuen Alarm erstellen",
+    "newAlert": "Neuer Alarm",
+    "edit": "Alarm bearbeiten",
+    "delete": "Alarm löschen",
+    "description": "Alarmiere <span>{email}</span>, wenn Bericht <span>{name}</span> einen Wert <span>{aboveOrBelow} {thresholdValue}</span> aufweist",
+    "emailWarning": "Der E-Mail-Benachrichtigungsdienst ist nicht konfiguriert. Optimize kann Sie nicht über kritische Werte informieren. Lesen Sie in der <a href='{docsLink}'>Optimize Dokumentation</a> nach, wie Sie den Benachrichtigungsdienst aktivieren.",
     "form": {
-      "name": "Alarmname",
+      "name": "Alarm Name",
       "report": "Wenn der Bericht",
-      "reportPlaceholder": "Wählen Sie einen Bericht",
-      "noReports": "Es wurden keine Nummernberichte erstellt",
-      "reportInfo": "Warnmeldungen nur für Berichte verfügbar, die als Zahlen angezeigt werden",
+      "reportPlaceholder": "Bericht auswählen",
+      "noReports": "Es wurden keine Zahlen-Berichte erstellt",
+      "reportInfo": "Alarme sind nur für Berichte verfügbar, die als Zahlen-Bericht konfiguriert wurden",
       "threshold": "Hat einen Wert",
-      "frequency": "Prüfbericht Jede",
-      "email": "Schicke eine Email an",
+      "frequency": "Bericht prüfen, jede",
+      "email": "Schicke eine E-Mail an",
       "emailPlaceholder": "E-Mail-Addresse",
       "sendNotification": "Benachrichtigung senden, wenn gelöst",
-      "reminder": "Erinnerungsbenachrichtigung senden",
-      "reminderFrequency": "jeden"
+      "reminder": "Erinnerung senden",
+      "reminderFrequency": "jede"
     },
     "apply": "Änderungen übernehmen",
-    "create": "Benachrichtigung erstellen",
+    "create": "Alarm erstellen",
     "cannotSave": "Alarm \"{name}\" konnte nicht gespeichert werden."
   },
   "analysis": {
-    "branchAnalysis": "Zweiganalyse",
+    "branchAnalysis": "Verlaufsanalyse",
     "outlier": {
       "label": "Ausreißeranalyse",
       "tooltip": {
         "outlier": {
           "label": "Ausreißer",
-          "label-plural": "Outliers"
+          "label-plural": "Ausreißer"
         },
         "instance": {
           "label": "Instanz",
           "label-plural": "Instanzen"
         },
-        "tookDuration": "Dauerte"
+        "tookDuration": "Benötigte eine Dauer von"
       },
-      "info": "Heatmap zeigt die Häufigkeit höherer Ausreißer basierend auf der Dauer an. Berechnet mit Z-Score.",
+      "info": "Die Heatmap zeigt die Häufigkeit nach oben abweichender Ausreißer basierend auf der Dauer an. Berechnet mit dem Z-Score.",
       "tooltipText": "{count} Instanzen haben {percentage}% länger gedauert als der Durchschnitt.",
       "detailsModal": {
-        "title": "Ausführung von {name} Flow Node"
+        "title": "Ausführung von {name} Prozessknoten"
       }
     },
     "selectLabel": "Für",
-    "gatwayLabel": "Analysieren Sie, wie die Zweige von",
-    "endEventLabel": "beeinflussen die Wahrscheinlichkeit, dass eine Instanz erreicht wurde",
+    "gatwayLabel": "Analysieren Sie, wie der Verlauf von",
+    "endEventLabel": "die Wahrscheinlichkeit beeinflusst, dass eine Instanz erreichte",
     "emptySelectionLabel": {
       "gateway": "Gateway auswählen",
       "endEvent": "Endereignis auswählen"
@@ -345,13 +345,13 @@
     "instructionMessage": "Bitte wählen Sie eine Prozessdefinition, ein Gateway und ein Endereignis aus, um die Analyse durchzuführen.",
     "noInstances": "Keine Instanzen im aktuellen Filter haben das ausgewählte Gateway passiert.",
     "gatewayInstances": "Von allen <b>{totalGateway} Instanzen</b>, die das Gateway <i>{gatewayName}</i> passiert haben",
-    "branchDistribution": "<b>{count}</b> ({branchPercentage}%) nahm den <i>{key}</i> branch, <b>{reached}</b> ({reachedEndPercentage}%) von denen, die dann weiter das Endereignis <i>{endEventName}</i> erreichten",
+    "branchDistribution": "<b>{count}</b> nahmen ({branchPercentage}%) den <i>{key}</i> Verlauf, <b>{reached}</b> ({reachedEndPercentage}%) von denenerreichten dann das Endereignis <i>{endEventName}</i>",
     "gatewayDistribution": "Verteilung von Instanzen am Gateway <i>{gatewayName}</i>:",
-    "endEventProbability": "Wahrscheinlichkeit, das Endereignis zu erreichen <i>{endEventName}</i> nach der Aufnahme eines Zweiges:",
+    "endEventProbability": "Wahrscheinlichkeit, das Endereignis <i>{endEventName}</i> zu erreichen bei diesem Verlauf:",
     "tooltip": {
       "totalInstances": "Prozessinstanzen insgesamt",
-      "reachedEnd": "Prozessinstanzen haben diesen Status erreicht",
-      "reachedEndPercentage": "von Prozessinstanzen haben diesen Status erreicht"
+      "reachedEnd": "Prozessinstanzen, die diesen Stand erreicht",
+      "reachedEndPercentage": "von Prozessinstanzen, die diesen Status erreicht haben"
     }
   },
   "common": {
@@ -359,46 +359,46 @@
     "edit": "Bearbeiten",
     "delete": "Löschen",
     "save": "Speichern",
-    "apply": "Verwenden",
+    "apply": "Anwenden",
     "cancel": "Abbrechen",
     "copy": "Kopieren",
     "saving": "Speichern ... ",
-    "creating": "Erstellen...",
-    "select": "Wählen...",
-    "enableAll": "Alles aktivieren",
+    "creating": "Erstellen ...",
+    "select": "Auswählen ...",
+    "enableAll": "Alle aktivieren",
     "disableAll": "Alle deaktivieren",
-    "selectAll": "Wählen Sie Alle",
+    "selectAll": "Alle auswählen",
     "deselectAll": "Alle abwählen",
     "and": "und",
     "off": "Aus",
     "you": "Sie",
     "none": "Keiner",
-    "all": "Alles",
+    "all": "Alle",
     "above": "über",
-    "below": "unten",
+    "below": "unter",
     "viewDetails": "Details anzeigen",
     "multiSelect": {
-      "available": "Verfügbare Artikel",
+      "available": "Verfügbare Elemente",
       "selected": "Ausgewählte Elemente",
-      "search": "Nach Artikeln suchen",
-      "empty": "Keine Artikel gefunden"
+      "search": "Nach Elementen suchen",
+      "empty": "Keine Elemente gefunden"
     },
     "entity": {
-      "empty": "Es ist keine {label} konfiguriert.",
+      "empty": "Es sind keine {label} konfiguriert.",
       "create": {
         "Report": "Neuen Bericht erstellen ...",
         "Dashboard": "Neues Dashboard erstellen ...",
-        "Alert": "Neuen Alert erstellen"
+        "Alert": "Neuen Alarm erstellen"
       },
-      "created": "Erstellt ",
+      "created": "Erstellt",
       "changed": "Zuletzt geändert",
       "modified": "Zuletzt bearbeitet",
       "by": "durch",
-      "showAll": "Zeige alles...",
-      "showLess": "Zeige weniger...",
+      "showAll": "Zeige alle ...",
+      "showLess": "Zeige weniger ...",
       "namePlaceholder": {
-        "Report": "Berichtsname ",
-        "Dashboard": "Name des Dashboards "
+        "Report": "Berichtsname",
+        "Dashboard": "Dashboard-Name"
       }
     },
     "collection": {
@@ -412,7 +412,7 @@
       "modal": {
         "title": {
           "new": "Neue Sammlung erstellen",
-          "edit": "Sammlungsname bearbeiten"
+          "edit": "Sammlungs-Name bearbeiten"
         },
         "createBtn": "Sammlung erstellen",
         "inputLabel": "Name hinzufügen",
@@ -420,11 +420,11 @@
       }
     },
     "sharing": {
-      "buttonTitle": "Aktie",
-      "disabled": "Freigabe ist pro Konfiguration deaktiviert",
-      "popoverTitle": "Freigabe aktivieren",
+      "buttonTitle": "Teilen",
+      "disabled": "Teilen ist per Konfiguration deaktiviert",
+      "popoverTitle": "Teilen aktivieren",
       "link": {
-        "title": "Verknüpfung",
+        "title": "Link",
         "description": {
           "report": "Verwenden Sie die folgende URL, um den Bericht für Personen freizugeben, die kein Camunda Optimize-Konto haben:",
           "dashboard": "Verwenden Sie die folgende URL, um das Dashboard für Personen freizugeben, die kein Camunda Optimize-Konto haben:"
@@ -441,15 +441,15 @@
     "filter": {
       "types": {
         "running": "Nur laufende Instanzen",
-        "completed": "Nur erledigte Instanzen",
-        "canceled": "Nur gelöschte Instanzen",
-        "nonCanceled": "Nur nicht stornierte Instanzen",
+        "completed": "Nur abgeschlossene Instanzen",
+        "canceled": "Nur abgebrochene Instanzen",
+        "nonCanceled": "Nur nicht abgebrochene Instanzen",
         "startDate": "Startdatum",
         "endDate": "Enddatum",
         "duration": "Dauer",
-        "variable": "Variabel",
-        "flowNode": "Durchflussknoten",
-        "evaluationDateTime": "Bewertungsdatum Uhrzeit",
+        "variable": "Variable",
+        "flowNode": "Prozessknoten",
+        "evaluationDateTime": "Evaluierungszeitpunkt",
         "inputVariable": "Eingangsvariable",
         "outputVariable": "Ausgabevariable"
       },
@@ -459,7 +459,7 @@
           "more": "ist mehr als",
           "less": "ist weniger als",
           "greater": "ist größer als",
-          "lessAgo": "liegt vor weniger als <span class='highlighted'>{duration}</span>",
+          "lessAgo": "ist weniger als <span class='highlighted'>{duration}</span> her",
           "is": "ist",
           "not": "ist nicht",
           "neither": "ist weder",
@@ -470,24 +470,24 @@
         "completed": "Nur abgeschlossene Prozessinstanzen",
         "canceled": "Nur abgebrochene Prozessinstanzen",
         "nonCanceled": "Nur nicht abgebrochene Prozessinstanzen",
-        "executedFlowNode": "Ausgeführtes Flow Node"
+        "executedFlowNode": "Ausgeführter Prozessknoten"
       },
       "instanceCount": {
         "label": "{count} Instanz im aktuellen Filter",
         "label-plural": "{count} Instanzen im aktuellen Filter"
       },
-      "modalHeader": "Hinzufügen {type} Filter",
+      "modalHeader": "Füge {type} Filter hinzu",
       "addFilter": "Filter hinzufügen",
       "editFilter": "Filter bearbeiten",
       "dateModal": {
         "endDateWarning": "Berichte mit einem aktiven Enddatumsfilter zeigen nur abgeschlossene Instanzen an.",
         "fixedDate": "Festes Datum",
         "relativeDate": "Relatives Datum",
-        "selectDates": "Wählen Sie Start- und Enddatum aus, nach dem gefiltert werden soll:",
+        "selectDates": "Wählen Sie Start- und Enddatum aus, nach welchem gefiltert werden soll:",
         "includeInstances": {
           "startDate": "Nur Prozessinstanzen berücksichtigen, die gestartet wurden:",
           "endDate": "Nur Prozessinstanzen einbeziehen, die beendet wurden:",
-          "evaluationDateTime": "Nur ausgewertete Prozessinstanzen einbeziehen:"
+          "evaluationDateTime": "Nur evaluierte Prozessinstanzen einbeziehen:"
         },
         "inLast": "In der letzten",
         "invalidInput": "Bitte geben Sie einen Zahlenwert ein",
@@ -504,13 +504,13 @@
           "thisYear": "Dieses Jahr"
         },
         "to": "bis",
-        "invalidDate": "Bitte geben Sie ein gültiges Datum ein"
+        "invalidDate": "Bitte gültiges Datum eingeben"
       },
       "variableModal": {
         "inputLabel": "Variablenname",
-        "inputPlaceholder": "Hier können Sie eine Variable auswählen oder suchen",
+        "inputPlaceholder": "Variable auswählen oder suchen",
         "noVariables": "Keine Variablen gefunden",
-        "loadMore": "Mehr laden",
+        "loadMore": "Mehr anzeigen",
         "bool": {
           "isTrue": "ist wahr",
           "isFalse": "ist falsch"
@@ -525,18 +525,18 @@
         }
       },
       "durationModal": {
-        "onlyCompletedWarning": "Berichte mit einem aktiven Laufzeitfilter zeigen nur abgeschlossene Instanzen an.",
-        "includeInstance": "Berücksichtigen Sie nur Prozessinstanzen, die gelaufen sind für....",
+        "onlyCompletedWarning": "Berichte mit einem aktiven Zeitraumfilter zeigen nur abgeschlossene Instanzen an.",
+        "includeInstance": "Berücksichtigen Sie nur Prozessinstanzen, die gelaufen sind für ...",
         "moreThan": "mehr als",
         "lessThan": "weniger als",
-        "invalidInput": "Bitte gib einen positiven Zahlenwert ein"
+        "invalidInput": "Bitte einen positiven Zahlenwert eingeben"
       },
       "nodeModal": {
         "executed": "wurde ausgeführt",
         "notExecuted": "wurde nicht ausgeführt",
-        "previewLabel": "Dies ist der Filter, den du erstellen möchtest: "
+        "previewLabel": "Das ist der Filter, der gerade erstellt wird: "
       },
-      "incompatibleFilters": "Es werden keine Daten angezeigt, da die Filterkombination nicht miteinander kompatibel ist."
+      "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind."
     },
     "definitionSelection": {
       "latest": "Neueste",
@@ -547,15 +547,15 @@
         "decision": "Entscheidung auswählen"
       },
       "version": {
-        "label": "Ausführung",
-        "alwaysLatest": "Immer das Neueste anzeigen",
+        "label": "Version",
+        "alwaysLatest": "Immer Neueste anzeigen",
         "specific": {
           "label": "Spezifische Version",
           "label-plural": "Spezifische Versionen"
         }
       },
       "tenant": {
-        "label": "Mieter",
+        "label": "Mandant",
         "includeData": "Daten einschließen von"
       },
       "versionWarning": "Hinweis: Daten aus älteren Versionen können abweichen, daher können die Berichtsdaten inkonsistent sein."
@@ -566,11 +566,11 @@
         "save": "{entityName} speichern"
       },
       "description": {
-        "label": "Das folgende Element ist von Ihrer Aktion betroffen:",
-        "label-plural": "Die folgenden Elemente sind von Ihrer Aktion betroffen:"
+        "label": "Das folgende Element ist von der Aktion betroffen:",
+        "label-plural": "Die folgenden Elemente sind von der Aktion betroffen:"
       },
       "affectedMessage": {
-        "alerts": "\"{item}\" wird aus den Benachrichtigungen gelöscht",
+        "alerts": "\"{item}\" wird aus den Alarmen gelöscht",
         "combined_report": "\"{item}\" wird aus dem kombinierten Bericht: \"{container}\" entfernt",
         "dashboard": "\"{item}\" wird aus dem Dashboard: \"{container}\" entfernt",
         "collection": "\"{item}\" wird aus der Sammlung: \"{container}\" entfernt"
@@ -579,12 +579,12 @@
     },
     "unit": {
       "milli": {
-        "label": "Millisekunde ",
+        "label": "Millisekunde",
         "label-plural": "Millisekunden "
       },
       "second": {
         "label": "Sekunde",
-        "label-plural": "Sekunden "
+        "label-plural": "Sekunden"
       },
       "minute": {
         "label": "Minute",
@@ -604,7 +604,7 @@
       },
       "month": {
         "label": "Monat",
-        "label-plural": "Monate "
+        "label-plural": "Monate"
       },
       "year": {
         "label": "Jahr",
