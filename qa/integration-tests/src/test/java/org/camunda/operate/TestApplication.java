@@ -7,7 +7,6 @@ package org.camunda.operate;
 
 import org.camunda.operate.data.DataGenerator;
 import org.camunda.operate.webapp.Application;
-import org.camunda.operate.zeebeimport.startup.ImportApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -40,6 +39,6 @@ public class TestApplication {
 
   @Bean(name = "passwordEncoder")
   public PasswordEncoder getPasswordEncoder() {
-    return passwordEncoder  ;
+    return passwordEncoder;
   }
 }

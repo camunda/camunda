@@ -24,12 +24,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(value = AUTHENTICATION_URL)
 public class AuthenticationRestService {
 
-  public static final String AUTHENTICATION_URL = "/api/authentications";
+  public static final String AUTHENTICATION_URL = "/api/authentications/";
+  public static final String USER_ENDPOINT = "/user";
 
   @Autowired
   private UserDetailsService userDetailsService;
 
-  @GetMapping(path = "/user")
+  @GetMapping(path = USER_ENDPOINT)
   public UserDto getCurrentAuthentication() {
     SecurityContext context = SecurityContextHolder.getContext();
     Authentication authentication = context.getAuthentication();

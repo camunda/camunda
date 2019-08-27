@@ -5,20 +5,29 @@
  */
 package org.camunda.operate.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.webapp.rest.AuthenticationRestService.AUTHENTICATION_URL;
+import static org.camunda.operate.webapp.rest.AuthenticationRestService.USER_ENDPOINT;
+import static org.camunda.operate.webapp.security.WebSecurityConfig.COOKIE_JSESSIONID;
+import static org.camunda.operate.webapp.security.WebSecurityConfig.LOGIN_RESOURCE;
+import static org.camunda.operate.webapp.security.WebSecurityConfig.LOGOUT_RESOURCE;
+import static org.camunda.operate.webapp.security.WebSecurityConfig.X_CSRF_HEADER;
+import static org.camunda.operate.webapp.security.WebSecurityConfig.X_CSRF_TOKEN;
+import static org.mockito.BDDMockito.given;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.camunda.operate.TestApplication;
-import org.camunda.operate.entities.UserEntity;
+
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.MetricAssert;
+import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.camunda.operate.webapp.rest.AuthenticationRestService;
 import org.camunda.operate.webapp.rest.dto.UserDto;
 import org.camunda.operate.webapp.security.WebSecurityConfig;
-import org.camunda.operate.webapp.user.ElasticSearchUserDetailsService;
-import org.camunda.operate.webapp.user.UserStorage;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,27 +39,20 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.support.BasicAuthenticationInterceptor;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.webapp.rest.AuthenticationRestService.AUTHENTICATION_URL;
-import static org.camunda.operate.webapp.security.WebSecurityConfig.COOKIE_JSESSIONID;
-import static org.camunda.operate.webapp.security.WebSecurityConfig.LOGIN_RESOURCE;
-import static org.camunda.operate.webapp.security.WebSecurityConfig.LOGOUT_RESOURCE;
-import static org.camunda.operate.webapp.security.WebSecurityConfig.X_CSRF_HEADER;
-import static org.camunda.operate.webapp.security.WebSecurityConfig.X_CSRF_TOKEN;
-import static org.mockito.BDDMockito.given;
-import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
   classes = {
-      OperateProperties.class, TestApplication.class, WebSecurityConfig.class, AuthenticationRestService.class, ElasticSearchUserDetailsService.class
+      TestApplicationWithNoBeans.class,OperateProperties.class,WebSecurityConfig.class,AuthenticationRestService.class
   },
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
@@ -59,40 +61,27 @@ public class AuthenticationTest {
 
   private static final String SET_COOKIE_HEADER = "Set-Cookie";
 
-  public static final String CURRENT_USER_URL = AUTHENTICATION_URL + "/user";
+  public static final String CURRENT_USER_URL = AUTHENTICATION_URL + USER_ENDPOINT;
 
   public static final String USERNAME = "demo";
-  public static final String PASSWORD = "demo";
-
-  private static final String USER_ROLE = "USER";
-  private static final String METRICS_ROLE = "ACTRADMIN";
-  private static final String METRICS_USER = "act";
-  private static final String METRICS_PASSWORD = "act";
+  public static final String PASSWORD = USERNAME;
 
   @Autowired
   private OperateProperties operateProperties;
   
   @Autowired
   private TestRestTemplate testRestTemplate;
-  
-  @MockBean(name = "userStorage")
-  private UserStorage userStorage;
+ 
+  @MockBean
+  UserDetailsService userDetailsService;
   
   @Before
   public void setUp() {
-    addWebUser(USERNAME, PASSWORD, USER_ROLE);
-    addWebUser(METRICS_USER, METRICS_PASSWORD, METRICS_ROLE);
+    PasswordEncoder encoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    UserDetails userDetails = User.builder().passwordEncoder(encoder::encode).username(USERNAME).password(PASSWORD).roles("USER").build();
+    given(userDetailsService.loadUserByUsername(USERNAME)).willReturn(userDetails);
   }
   
-  protected void addWebUser(String name,String password, String role) {
-    given(userStorage.getByName(name))
-    .willReturn(new UserEntity()
-    .setUsername(name)
-    .setPassword(
-        new BCryptPasswordEncoder().encode(password)
-     ).setRole(role));
-  }
-
   @Test
   public void shouldSetCookieAndCSRFToken() {
     // given
@@ -153,7 +142,7 @@ public class AuthenticationTest {
     //when user is logged in
     ResponseEntity<Void> loginResponse = login(USERNAME, PASSWORD);
     
-    //then endpoints are accessible
+    //then endpoint are accessible
     ResponseEntity<Object> responseEntity = testRestTemplate.exchange(CURRENT_USER_URL, HttpMethod.GET, prepareRequestWithCookies(loginResponse), Object.class);
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(responseEntity.getBody()).isNotNull();
@@ -168,9 +157,8 @@ public class AuthenticationTest {
     assertThat(responseEntity.getHeaders().containsKey(X_CSRF_TOKEN)).isFalse();
   }
   
-  @Ignore @Test
-  public void testMetricsUserCanAccessMetricsEndpoint() {
-    testRestTemplate.getRestTemplate().getInterceptors().add(new BasicAuthenticationInterceptor(METRICS_USER, METRICS_USER));
+  @Test
+  public void testCanAccessMetricsEndpoint() {
     ResponseEntity<String> response = testRestTemplate.getForEntity("/actuator",String.class);
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(response.getBody()).contains("actuator/info");
@@ -215,7 +203,6 @@ public class AuthenticationTest {
     HttpEntity<Map<String, String>> request = prepareRequestWithCookies(response);
     return testRestTemplate.postForEntity(LOGOUT_RESOURCE, request, String.class);
   }
-
 
   protected void assertThatCookiesAreSet(HttpHeaders headers) {
     assertThat(headers).containsKey(SET_COOKIE_HEADER);
