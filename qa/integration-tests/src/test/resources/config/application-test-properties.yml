@@ -1,6 +1,5 @@
 camunda.operate:
   csrfPreventionEnabled: false
-  startLoadingDataOnStartup: false
   batchOperationMaxSize: 500
   elasticsearch:
     clusterName: clusterName
@@ -16,6 +15,8 @@ camunda.operate:
     dateFormat: dd-MM-yyyy
     batchSize: 222
     prefix: somePrefix
+  importProperties:
+    startLoadingDataOnStartup: false
   zeebe:
     brokerContactPoint: someZeebeHost:999
   operationExecutor:

@@ -19,11 +19,9 @@ public class OperateProperties {
   public static final String PREFIX = "camunda.operate";
   public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 10000L;
 
-  /**
-   * Indicates, whether loading of Zeebe data should start on startup.
-   */
-  private boolean startLoadingDataOnStartup = true;
-  
+  private boolean importerEnabled = true;
+  private boolean webappEnabled = true;
+
   /**
    * Indicates, whether CSRF prevention is enabled.
    */
@@ -55,12 +53,20 @@ public class OperateProperties {
   @NestedConfigurationProperty
   private ImportProperties importProperties = new ImportProperties();
 
-  public boolean isStartLoadingDataOnStartup() {
-    return startLoadingDataOnStartup;
+  public boolean isImporterEnabled() {
+    return importerEnabled;
   }
 
-  public void setStartLoadingDataOnStartup(boolean startLoadingDataOnStartup) {
-    this.startLoadingDataOnStartup = startLoadingDataOnStartup;
+  public void setImporterEnabled(boolean importerEnabled) {
+    this.importerEnabled = importerEnabled;
+  }
+
+  public boolean isWebappEnabled() {
+    return webappEnabled;
+  }
+
+  public void setWebappEnabled(boolean webappEnabled) {
+    this.webappEnabled = webappEnabled;
   }
 
   public Long getBatchOperationMaxSize() {

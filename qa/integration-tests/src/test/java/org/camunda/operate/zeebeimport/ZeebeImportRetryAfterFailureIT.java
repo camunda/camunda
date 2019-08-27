@@ -17,7 +17,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  */
 @SpringBootTest(
   classes = {RetryAfterFailureTestConfig.class, TestApplication.class},
-  properties = {OperateProperties.PREFIX + ".startLoadingDataOnStartup = false", "spring.main.allow-bean-definition-overriding=true"})
+  properties = {OperateProperties.PREFIX + ".importProperties.startLoadingDataOnStartup = false", "spring.main.allow-bean-definition-overriding=true"})
 public class ZeebeImportRetryAfterFailureIT extends ZeebeImportIT {
 
   @Autowired

@@ -23,6 +23,11 @@ public class ImportProperties {
 
   private int schedulerBackoff = DEFAULT_SCHEDULER_BACKOFF;
 
+  /**
+   * Indicates, whether loading of Zeebe data should start on startup.
+   */
+  private boolean startLoadingDataOnStartup = true;
+
   private Integer[] partitionIds = {};
 
   /**
@@ -34,6 +39,14 @@ public class ImportProperties {
    * Id of current node, starts from 0.
    */
   private Integer currentNodeId;
+
+  public boolean isStartLoadingDataOnStartup() {
+    return startLoadingDataOnStartup;
+  }
+
+  public void setStartLoadingDataOnStartup(boolean startLoadingDataOnStartup) {
+    this.startLoadingDataOnStartup = startLoadingDataOnStartup;
+  }
 
   public int getThreadsCount() {
     return threadsCount;

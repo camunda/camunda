@@ -6,7 +6,7 @@
 package org.camunda.operate;
 
 import org.camunda.operate.data.DataGenerator;
-import org.camunda.operate.webapp.Application;
+import org.camunda.operate.Application;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -20,7 +20,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @ComponentScan(basePackages = "org.camunda.operate",
   excludeFilters = {
     @ComponentScan.Filter(type=FilterType.REGEX,pattern="org\\.camunda\\.operate\\.util\\.apps\\..*"),
-    @ComponentScan.Filter(type= FilterType.REGEX,pattern="org\\.camunda\\.operate\\.zeebeimport\\.startup\\..*"),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,value = Application.class),
   })
 public class TestApplication {

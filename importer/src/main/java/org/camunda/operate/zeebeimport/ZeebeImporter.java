@@ -6,6 +6,7 @@
 package org.camunda.operate.zeebeimport;
 
 import java.io.IOException;
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.camunda.operate.property.OperateProperties;
@@ -46,15 +47,16 @@ public class ZeebeImporter extends Thread implements ImportListener {
   private Long imported = 0L;
   private Long failed = 0L;
 
+  @PostConstruct
   public void startImportingData() {
-    if (operateProperties.isStartLoadingDataOnStartup()) {
+    if (operateProperties.getImportProperties().isStartLoadingDataOnStartup()) {
       start();
     }
   }
 
   @Override
   public void run() {
-    logger.debug("Start importing data");
+    logger.debug("INIT: Start importing data...");
     while (!shutdown) {
       synchronized (importFinished) {
         try {

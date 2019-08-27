@@ -1,7 +1,6 @@
 camunda.operate:
   username: demo
   password: demo
-  startLoadingDataOnStartup: false
   elasticsearch:
     clusterName: docker-cluster
     host: localhost
@@ -20,6 +19,7 @@ camunda.operate:
   importProperties:
     readerBackoff: 0
     schedulerBackoff: 0
+    startLoadingDataOnStartup: false
 logging:
   level:
     ROOT: INFO

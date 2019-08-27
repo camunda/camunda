@@ -184,7 +184,7 @@
             <configuration>
               <classifier>exec</classifier>
               <layout>ZIP</layout>
-              <mainClass>org.camunda.operate.webapp.Application</mainClass>
+              <mainClass>org.camunda.operate.Application</mainClass>
             </configuration>
           </execution>
         </executions>

@@ -16,7 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  */
 @SpringBootTest(
   classes = {ZeebeImportIdempotencyTestConfig.class, TestApplication.class},
-  properties = {OperateProperties.PREFIX + ".startLoadingDataOnStartup = false", "spring.main.allow-bean-definition-overriding=true"})
+  properties = {OperateProperties.PREFIX + ".importProperties.startLoadingDataOnStartup = false", "spring.main.allow-bean-definition-overriding=true"})
 public class ZeebeImportIdempotencyIT extends ZeebeImportIT {
 
   @Autowired

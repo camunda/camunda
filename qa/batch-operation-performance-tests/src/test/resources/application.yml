@@ -2,7 +2,6 @@ camunda.operate:
   csrfPreventionEnabled: false
   #increase batch operation max size to avoid validation errors
   batchOperationMaxSize: 1000000
-  startLoadingDataOnStartup: false
   elasticsearch:
     # disable rollover
     rolloverEnabled: false
@@ -20,6 +19,8 @@ camunda.operate:
     host: localhost
     port: 9200
     prefix: zeebe-record
+  importProperties:
+    startLoadingDataOnStartup: false
 logging:
   level:
     ROOT: INFO

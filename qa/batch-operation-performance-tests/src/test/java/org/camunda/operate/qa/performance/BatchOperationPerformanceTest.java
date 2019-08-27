@@ -7,7 +7,7 @@ package org.camunda.operate.qa.performance;
 
 import java.time.Duration;
 import java.time.Instant;
-import org.camunda.operate.webapp.Application;
+import org.camunda.operate.Application;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
 import org.camunda.operate.es.writer.BatchOperationWriter;

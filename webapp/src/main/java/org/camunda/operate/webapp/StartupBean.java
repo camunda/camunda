@@ -41,10 +41,6 @@ public class StartupBean {
   @Autowired
   private DataGenerator dataGenerator;
 
-  //FIXME
-  @Autowired
-  private ZeebeImporter zeebeImporter;
-
   @Autowired
   private OperationExecutor operationExecutor;
 
@@ -64,8 +60,6 @@ public class StartupBean {
       logger.debug("Demo data could not be generated. Cause: {}", ex.getMessage());
       logger.error("Error occurred when generating demo data.", ex);
     }
-    logger.info("INIT: Start importing Zeebe data...");
-    zeebeImporter.startImportingData();
     logger.info("INIT: Start operation executor...");
     operationExecutor.startExecuting();
     logger.info("INIT: Start archiving data...");

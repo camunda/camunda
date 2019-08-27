@@ -1,5 +1,4 @@
 camunda.operate:
-  startLoadingDataOnStartup: false
   elasticsearch:
   # disable rollover
     rolloverEnabled: false
@@ -17,6 +16,8 @@ camunda.operate:
     host: localhost
     port: 9200
     prefix: zeebe-record
+  importProperties:
+    startLoadingDataOnStartup: false
 logging:
   level:
     ROOT: INFO

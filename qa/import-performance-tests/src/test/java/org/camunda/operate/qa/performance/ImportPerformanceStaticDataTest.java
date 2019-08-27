@@ -8,7 +8,7 @@ package org.camunda.operate.qa.performance;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import org.camunda.operate.webapp.Application;
+import org.camunda.operate.Application;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.property.OperateProperties;
