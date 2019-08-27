@@ -16,8 +16,8 @@
 package io.zeebe.client;
 
 import io.grpc.Metadata;
-import io.zeebe.client.impl.OAuthCredentialsProvider;
-import io.zeebe.client.impl.OAuthCredentialsProviderBuilder;
+import io.zeebe.client.impl.oauth.OAuthCredentialsProvider;
+import io.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 
 public interface CredentialsProvider {
 

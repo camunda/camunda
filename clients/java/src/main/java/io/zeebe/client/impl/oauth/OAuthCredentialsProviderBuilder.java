@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl;
+package io.zeebe.client.impl.oauth;
 
-import java.net.MalformedURLException;
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.util.Objects;
 
@@ -27,6 +28,8 @@ public class OAuthCredentialsProviderBuilder {
   private String audience;
   private String authorizationServerUrl;
   private URL authorizationServer;
+  private String credentialsCachePath;
+  private File credentialsCache;
 
   /** Client id to be used when requesting access token from OAuth authorization server. */
   public OAuthCredentialsProviderBuilder clientId(String clientId) {
@@ -72,8 +75,30 @@ public class OAuthCredentialsProviderBuilder {
     return authorizationServer;
   }
 
+  /**
+   * The location for the credentials cache file. If none (or null) is specified the default will be
+   * $HOME/.camunda/credentials
+   */
+  public OAuthCredentialsProviderBuilder credentialsCachePath(String cachePath) {
+    this.credentialsCachePath = cachePath;
+    return this;
+  }
+
+  /** @see OAuthCredentialsProviderBuilder#credentialsCachePath(String) */
+  File getCredentialsCache() {
+    return credentialsCache;
+  }
+
   /** @return a new {@link OAuthCredentialsProvider} with the provided configuration options. */
   public OAuthCredentialsProvider build() {
+    checkEnvironmentOverrides();
+    applyDefaults();
+
+    validate();
+    return new OAuthCredentialsProvider(this);
+  }
+
+  private void checkEnvironmentOverrides() {
     if (System.getenv("ZEEBE_CLIENT_ID") != null) {
       this.clientId = System.getenv("ZEEBE_CLIENT_ID");
     }
@@ -86,9 +111,16 @@ public class OAuthCredentialsProviderBuilder {
     if (System.getenv("ZEEBE_AUTHORIZATION_SERVER_URL") != null) {
       this.authorizationServerUrl = System.getenv("ZEEBE_AUTHORIZATION_SERVER_URL");
     }
+    if (System.getenv("ZEEBE_CLIENT_CONFIG_PATH") != null) {
+      this.credentialsCachePath = System.getenv("ZEEBE_CLIENT_CONFIG_PATH");
+    }
+  }
 
-    validate();
-    return new OAuthCredentialsProvider(this);
+  private void applyDefaults() {
+    if (credentialsCachePath == null) {
+      this.credentialsCachePath =
+          System.getProperty("user.home") + File.separator + ".camunda/credentials";
+    }
   }
 
   private void validate() {
@@ -100,7 +132,13 @@ public class OAuthCredentialsProviderBuilder {
           authorizationServerUrl, String.format(INVALID_ARGUMENT_MSG, "authorization server URL"));
 
       authorizationServer = new URL(authorizationServerUrl);
-    } catch (MalformedURLException | NullPointerException e) {
+      credentialsCache = new File(credentialsCachePath);
+
+      if (credentialsCache.isDirectory()) {
+        throw new IllegalArgumentException(
+            "Expected specified credentials cache to be a file but found directory instead.");
+      }
+    } catch (NullPointerException | IOException e) {
       throw new IllegalArgumentException(e);
     }
   }
