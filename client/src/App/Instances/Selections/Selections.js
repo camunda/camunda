@@ -7,7 +7,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import CollapsablePanel from 'modules/components/CollapsablePanel';
 import Badge from 'modules/components/Badge';
 import ComboBadge from 'modules/components/ComboBadge';
 import {CollapsablePanelConsumer} from 'modules/contexts/CollapsablePanelContext';
