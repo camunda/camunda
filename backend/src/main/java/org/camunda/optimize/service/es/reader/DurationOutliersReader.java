@@ -311,12 +311,12 @@ public class DurationOutliersReader {
 
     if (outlierParams.getHigherOutlierBound() != null) {
       flowNodeFilterQuery.should(
-        QueryBuilders.rangeQuery(EVENTS + "." + ACTIVITY_DURATION).gte(outlierParams.getHigherOutlierBound())
+        QueryBuilders.rangeQuery(EVENTS + "." + ACTIVITY_DURATION).gt(outlierParams.getHigherOutlierBound())
       );
     }
     if (outlierParams.getLowerOutlierBound() != null) {
       flowNodeFilterQuery.should(
-        QueryBuilders.rangeQuery(EVENTS + "." + ACTIVITY_DURATION).lte(outlierParams.getLowerOutlierBound())
+        QueryBuilders.rangeQuery(EVENTS + "." + ACTIVITY_DURATION).lt(outlierParams.getLowerOutlierBound())
       );
     }
 
@@ -348,12 +348,12 @@ public class DurationOutliersReader {
 
     if (outlierParams.getHigherOutlierBound() != null) {
       flowNodeFilterQuery.should(
-        QueryBuilders.rangeQuery(EVENTS + "." + ACTIVITY_DURATION).lt(outlierParams.getHigherOutlierBound())
+        QueryBuilders.rangeQuery(EVENTS + "." + ACTIVITY_DURATION).lte(outlierParams.getHigherOutlierBound())
       );
     }
     if (outlierParams.getLowerOutlierBound() != null) {
       flowNodeFilterQuery.should(
-        QueryBuilders.rangeQuery(EVENTS + "." + ACTIVITY_DURATION).gt(outlierParams.getLowerOutlierBound())
+        QueryBuilders.rangeQuery(EVENTS + "." + ACTIVITY_DURATION).gte(outlierParams.getLowerOutlierBound())
       );
     }
 
