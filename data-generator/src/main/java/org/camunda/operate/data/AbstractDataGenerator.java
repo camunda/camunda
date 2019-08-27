@@ -43,14 +43,13 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
 
   @PreDestroy
-  @Override
   public void shutdown() {
     logger.info("Shutdown DataGenerator");
     shutdown = true;
     if(scheduler!=null && !scheduler.isShutdown()) {
       scheduler.shutdown();
       try {
-        if (!scheduler.awaitTermination(2, TimeUnit.MINUTES)) {
+        if (!scheduler.awaitTermination(200, TimeUnit.MILLISECONDS)) {
           scheduler.shutdownNow();
         }
       } catch (InterruptedException e) {

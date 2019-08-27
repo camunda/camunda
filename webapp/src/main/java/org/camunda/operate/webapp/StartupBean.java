@@ -5,12 +5,9 @@
  */
 package org.camunda.operate.webapp;
 
-import java.util.Arrays;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import org.camunda.operate.Shutdownable;
 import org.camunda.operate.data.DataGenerator;
 import org.camunda.operate.es.ElasticsearchConnector;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
@@ -78,12 +75,7 @@ public class StartupBean {
   
   @PreDestroy
   public void shutdown() {
-    logger.info("Shutdown Operate application");
-    for(Shutdownable shutdownable: Arrays.asList(archiver,operationExecutor,dataGenerator)) {
-      if(shutdownable!=null) {
-        shutdownable.shutdown();
-      }
-    }
+    logger.info("Shutdown elasticsearch clients.");
     ElasticsearchConnector.closeEsClient(esClient);
     ElasticsearchConnector.closeEsClient(zeebeEsClient);
   }

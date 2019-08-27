@@ -8,7 +8,6 @@ package org.camunda.operate.zeebeimport;
 import java.io.IOException;
 import javax.annotation.PreDestroy;
 
-import org.camunda.operate.Shutdownable;
 import org.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +20,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
-public class ZeebeImporter extends Thread implements ImportListener,Shutdownable  {
+public class ZeebeImporter extends Thread implements ImportListener {
 
   private static final Logger logger = LoggerFactory.getLogger(ZeebeImporter.class);
 
@@ -102,15 +101,11 @@ public class ZeebeImporter extends Thread implements ImportListener,Shutdownable
   }
 
   @PreDestroy
-  @Override
   public void shutdown() {
     logger.info("Shutdown ZeebeImporter");
     shutdown = true;
     synchronized (importFinished) {
       importFinished.notifyAll();
-    }
-    if(importExecutor!=null) {
-      importExecutor.shutdown();
     }
   }
 

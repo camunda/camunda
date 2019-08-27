@@ -5,17 +5,11 @@
  */
 package org.camunda.operate.data;
 
-import org.camunda.operate.Shutdownable;
-
-public interface DataGenerator extends Shutdownable{
+public interface DataGenerator {
 
   void createZeebeDataAsync(boolean manuallyCalled);
   
   public static final DataGenerator DO_NOTHING = new DataGenerator() {
-    
-    @Override
-    public void shutdown() {
-    }
     
     @Override
     public void createZeebeDataAsync(boolean manuallyCalled) {
