@@ -15,6 +15,7 @@
  */
 package io.zeebe.model.bpmn.validation.zeebe;
 
+import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.ExtensionElements;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.Message;
@@ -25,6 +26,8 @@ import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import java.util.Collection;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -81,11 +84,12 @@ public class MessageValidator implements ModelElementValidator<Message> {
 
   private boolean isReferedByCatchEvent(Message element) {
     final Collection<IntermediateCatchEvent> intermediateCatchEvents =
-        element.getParentElement().getChildElementsByType(Process.class).stream()
-            .flatMap(p -> p.getChildElementsByType(IntermediateCatchEvent.class).stream())
-            .collect(Collectors.toList());
+        getAllElementsByType(element, IntermediateCatchEvent.class);
 
-    return intermediateCatchEvents.stream()
+    final Collection<BoundaryEvent> boundaryEvents =
+        getAllElementsByType(element, BoundaryEvent.class);
+
+    return Stream.concat(intermediateCatchEvents.stream(), boundaryEvents.stream())
         .flatMap(i -> i.getEventDefinitions().stream())
         .anyMatch(
             e ->
@@ -94,11 +98,15 @@ public class MessageValidator implements ModelElementValidator<Message> {
   }
 
   private boolean isReferedByReceiveTask(Message element) {
-    final Collection<ReceiveTask> receiveTasks =
-        element.getParentElement().getChildElementsByType(Process.class).stream()
-            .flatMap(p -> p.getChildElementsByType(ReceiveTask.class).stream())
-            .collect(Collectors.toList());
+    final Collection<ReceiveTask> receiveTasks = getAllElementsByType(element, ReceiveTask.class);
 
     return receiveTasks.stream().anyMatch(r -> r.getMessage() == element);
+  }
+
+  private <T extends ModelElementInstance> Collection<T> getAllElementsByType(
+      Message element, Class<T> type) {
+    return element.getParentElement().getChildElementsByType(Process.class).stream()
+        .flatMap(p -> p.getChildElementsByType(type).stream())
+        .collect(Collectors.toList());
   }
 }

@@ -143,6 +143,35 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
         singletonList(
             expect("start-message", "A message cannot be referred by more than one start event"))
       },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeTaskType("test"))
+            .boundaryEvent(
+                "boundary-1",
+                b -> b.message(m -> m.name(null).zeebeCorrelationKey("correlationKey")))
+            .endEvent()
+            .moveToActivity("task")
+            .boundaryEvent(
+                "boundary-2",
+                b -> b.message(m -> m.name(null).zeebeCorrelationKey("correlationKey")))
+            .endEvent()
+            .done(),
+        Arrays.asList(
+            expect(Message.class, "Name must be present and not empty"),
+            expect(Message.class, "Name must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .receiveTask("task")
+            .message(m -> m.name("message").zeebeCorrelationKey("correlationKey"))
+            .boundaryEvent("boundary")
+            .message(m -> m.name(null).zeebeCorrelationKey("correlationKey"))
+            .endEvent()
+            .done(),
+        singletonList(expect(Message.class, "Name must be present and not empty"))
+      },
     };
   }
 

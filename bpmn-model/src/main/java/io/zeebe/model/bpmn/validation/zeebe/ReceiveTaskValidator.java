@@ -16,8 +16,10 @@
 package io.zeebe.model.bpmn.validation.zeebe;
 
 import io.zeebe.model.bpmn.instance.Message;
+import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
 import io.zeebe.model.bpmn.util.ModelUtil;
+import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -35,11 +37,16 @@ public class ReceiveTaskValidator implements ModelElementValidator<ReceiveTask> 
       validationResultCollector.addError(0, "Must reference a message");
     }
 
-    final boolean hasDuplicateMessageListener =
-        ModelUtil.getActivityMessageBoundaryEvents(element).stream()
-            .anyMatch(event -> event.getMessage().getName().equals(message.getName()));
+    final Stream<String> messageNames =
+        ModelUtil.getActivityMessageBoundaryEvents(element)
+            .map(MessageEventDefinition::getMessage)
+            .filter(m -> m.getName() != null && !m.getName().isEmpty())
+            .map(Message::getName);
 
-    if (hasDuplicateMessageListener) {
+    final boolean hasDuplicateMessageName =
+        messageNames.anyMatch(name -> name.equals(message.getName()));
+
+    if (hasDuplicateMessageName) {
       validationResultCollector.addError(
           0, "Cannot reference the same message name as a boundary event");
     }
