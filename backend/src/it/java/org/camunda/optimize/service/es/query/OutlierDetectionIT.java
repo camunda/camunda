@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.query;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.math3.analysis.function.Gaussian;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -13,6 +14,7 @@ import org.camunda.bpm.model.bpmn.builder.StartEventBuilder;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
+import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -26,6 +28,7 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.IntStream;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
@@ -38,6 +41,11 @@ import static org.hamcrest.Matchers.lessThan;
 public class OutlierDetectionIT {
   private static final int NUMBER_OF_DATAPOINTS = 40;
   private static final int NUMBER_OF_DATAPOINTS_FOR_CHART = NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+  private static final String VARIABLE_1_NAME = "var1";
+  private static final String VARIABLE_2_NAME = "var2";
+  private static final String VARIABLE_VALUE_OUTLIER = "outlier";
+  public static final String VARIABLE_VALUE_NORMAL = "normal";
+
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -46,6 +54,7 @@ public class OutlierDetectionIT {
   @Rule
   public RuleChain chain = RuleChain
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
+  public static final Random RANDOM = new Random();
 
   @Test
   public void outlierDetectionNormalDistribution() throws SQLException {
@@ -145,11 +154,7 @@ public class OutlierDetectionIT {
     );
     // a single higher outlier instance
     ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseRule.changeActivityDuration(
-      processInstance.getId(),
-      activityId,
-      Math.round(Math.exp(NUMBER_OF_DATAPOINTS) * 100_000)
-    );
+    engineDatabaseRule.changeActivityDuration(processInstance.getId(), activityId, 100_000);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -332,23 +337,173 @@ public class OutlierDetectionIT {
 
   }
 
+  @Test
+  public void significantOutlierVariableValues() throws SQLException {
+    // given
+    final String activityId = "testActivity";
+    ProcessDefinitionEngineDto processDefinition =
+      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
+    // a couple of normally distributed instances
+    startPIsDistributedByDuration(
+      processDefinition, new Gaussian(10 / 2, 15), 5, activityId
+    );
+    // 3 higher outlier instance
+    // 3 is the minDoc count for which terms are considered to eliminate high cardinality variables
+    for (int i = 0; i < 3; i++) {
+      ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(
+        processDefinition.getId(),
+        // VAR 2 has a value that is not present among non outliers
+        ImmutableMap.of(VARIABLE_1_NAME, RANDOM.nextInt(), VARIABLE_2_NAME, VARIABLE_VALUE_OUTLIER)
+      );
+      engineDatabaseRule.changeActivityDuration(processInstance.getId(), activityId, 100_000);
+    }
+    // this particular value is obtained from precalculation, given the distribution and outlier setup
+    final long activityHigherOutlierBound = 30738L;
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    List<VariableTermDto> variableTermDtosActivity = embeddedOptimizeRule.getRequestExecutor()
+      .buildSignificantOutlierVariableTermsRequest(
+        processDefinition.getKey(),
+        Collections.singletonList("1"),
+        activityId,
+        Collections.singletonList(null),
+        null,
+        activityHigherOutlierBound
+      )
+      .executeAndReturnList(VariableTermDto.class, 200);
+
+    // then
+    assertThat(variableTermDtosActivity.size(), is(1));
+    final VariableTermDto variableTermDto = variableTermDtosActivity.get(0);
+    assertThat(variableTermDto.getVariableName(), is(VARIABLE_2_NAME));
+    assertThat(variableTermDto.getVariableTerm(), is(VARIABLE_VALUE_OUTLIER));
+    assertThat(variableTermDto.getInstanceCount(), is(3L));
+  }
+
+  @Test
+  public void noSignificantOutlierVariableValues() throws SQLException {
+    // given
+    final String activityId = "testActivity";
+    ProcessDefinitionEngineDto processDefinition =
+      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
+    // a couple of normally distributed instances
+    startPIsDistributedByDuration(
+      processDefinition, new Gaussian(10 / 2, 15), 5, activityId
+    );
+    // 3 higher outlier instance
+    // 3 is the minDoc count for which terms are considered to eliminate high cardinality variables
+    for (int i = 0; i < 3; i++) {
+      ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(
+        processDefinition.getId(),
+        // VAR2 has the same value as all non outliers
+        ImmutableMap.of(VARIABLE_1_NAME, RANDOM.nextInt(), VARIABLE_2_NAME, VARIABLE_VALUE_NORMAL)
+      );
+      engineDatabaseRule.changeActivityDuration(processInstance.getId(), activityId, 100_000);
+    }
+    // this particular value is obtained from precalculation, given the distribution and outlier setup
+    final long activityHigherOutlierBound = 30738L;
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    List<VariableTermDto> variableTermDtosActivity = embeddedOptimizeRule.getRequestExecutor()
+      .buildSignificantOutlierVariableTermsRequest(
+        processDefinition.getKey(),
+        Collections.singletonList("1"),
+        activityId,
+        Collections.singletonList(null),
+        null,
+        activityHigherOutlierBound
+      )
+      .executeAndReturnList(VariableTermDto.class, 200);
+
+    // then
+    assertThat(variableTermDtosActivity.size(), is(0));
+  }
+
+  @Test
+  public void noOutliersResultsInNotFoundOnVariables() throws SQLException {
+    // given
+    final String activityId = "testActivity";
+    ProcessDefinitionEngineDto processDefinition =
+      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
+
+    startPIsDistributedByDuration(
+      processDefinition,
+      new Gaussian(NUMBER_OF_DATAPOINTS_FOR_CHART / 2, 15),
+      NUMBER_OF_DATAPOINTS_FOR_CHART,
+      activityId
+    );
+
+    // high duration for which there are no instances
+    final long activityHigherOutlierBound = 100_000L;
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    embeddedOptimizeRule.getRequestExecutor()
+      .buildSignificantOutlierVariableTermsRequest(
+        processDefinition.getKey(),
+        Collections.singletonList("1"),
+        activityId,
+        Collections.singletonList(null),
+        null,
+        activityHigherOutlierBound
+      )
+      // then
+      .executeAndReturnList(VariableTermDto.class, 404);
+  }
+
   private void startPIsDistributedByDuration(ProcessDefinitionEngineDto processDefinition,
                                              Gaussian gaussian,
                                              int numberOfDataPoints,
-                                             String... activityId) throws SQLException {
+                                             String firstActivityId) throws SQLException {
+    startPIsDistributedByDuration(processDefinition, gaussian, numberOfDataPoints, firstActivityId, null);
+  }
 
+  private void startPIsDistributedByDuration(ProcessDefinitionEngineDto processDefinition,
+                                             Gaussian gaussian,
+                                             int numberOfDataPoints,
+                                             String firstActivityId,
+                                             String secondActivityId) throws SQLException {
+    startPIsDistributedByDuration(
+      processDefinition,
+      gaussian,
+      numberOfDataPoints,
+      firstActivityId,
+      secondActivityId,
+      0L
+    );
+  }
+
+  private void startPIsDistributedByDuration(ProcessDefinitionEngineDto processDefinition,
+                                             Gaussian gaussian,
+                                             int numberOfDataPoints,
+                                             String firstActivityId,
+                                             String secondActivityId,
+                                             long higherDurationOutlierBoundary) throws SQLException {
     for (int i = 0; i <= numberOfDataPoints; i++) {
       for (int x = 0; x <= gaussian.value(i) * 1000; x++) {
-        ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(processDefinition.getId());
-        engineDatabaseRule.changeActivityDuration(processInstance.getId(), activityId[0], i * 1000);
-        if (activityId.length > 1) {
-          // a more "stretched" distribution to get more heat on the node
-          engineDatabaseRule.changeActivityDuration(
-            processInstance.getId(),
-            activityId[1],
-            Math.round(i * 1000 + Math.exp(i) * 1000)
-          );
-        }
+        final long firstActivityDuration = i * 1000L;
+        // a more "stretched" distribution on the second activity
+        final long secondActivityDuration = Math.round(firstActivityDuration + Math.exp(i) * 1000);
+        ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(
+          processDefinition.getId(),
+          ImmutableMap.of(
+            VARIABLE_1_NAME,
+            RANDOM.nextInt(),
+            VARIABLE_2_NAME,
+            secondActivityId != null && secondActivityDuration > higherDurationOutlierBoundary ?
+              VARIABLE_VALUE_OUTLIER : VARIABLE_VALUE_NORMAL
+          )
+        );
+        engineDatabaseRule.changeActivityDuration(processInstance.getId(), firstActivityId, firstActivityDuration);
+        engineDatabaseRule.changeActivityDuration(processInstance.getId(), secondActivityId, secondActivityDuration);
       }
     }
   }

@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionEntityUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
@@ -799,6 +798,23 @@ public class OptimizeRequestExecutor {
                                                                    Long lowerOutlierBound,
                                                                    Long higherOutlierBound) {
     this.path = "analysis/durationChart";
+    this.requestType = GET;
+    this.addSingleQueryParam("processDefinitionKey", key);
+    this.addSingleQueryParam("processDefinitionVersions", version);
+    this.addSingleQueryParam("flowNodeId", flowNodeId);
+    this.addSingleQueryParam("tenantIds", tenantIds);
+    this.addSingleQueryParam("lowerOutlierBound", lowerOutlierBound);
+    this.addSingleQueryParam("higherOutlierBound", higherOutlierBound);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildSignificantOutlierVariableTermsRequest(String key,
+                                                                             List<String> version,
+                                                                             String flowNodeId,
+                                                                             List<String> tenantIds,
+                                                                             Long lowerOutlierBound,
+                                                                             Long higherOutlierBound) {
+    this.path = "analysis/significantOutlierVariableTerms";
     this.requestType = GET;
     this.addSingleQueryParam("processDefinitionKey", key);
     this.addSingleQueryParam("processDefinitionVersions", version);

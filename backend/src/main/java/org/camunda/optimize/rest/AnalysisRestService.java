@@ -10,25 +10,26 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
+import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
+import org.camunda.optimize.dto.optimize.rest.FlowNodeOutlierParametersRestDto;
+import org.camunda.optimize.dto.optimize.rest.ProcessDefinitionParametersRestDto;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.rest.queryparam.QueryParamUtil;
 import org.camunda.optimize.service.es.reader.BranchAnalysisReader;
 import org.camunda.optimize.service.es.reader.DurationOutliersReader;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Secured
@@ -60,44 +61,27 @@ public class AnalysisRestService {
   @Path("/flowNodeOutliers")
   @Produces(MediaType.APPLICATION_JSON)
   public Map<String, FindingsDto> getFlowNodeOutlierMap(@Context ContainerRequestContext requestContext,
-                                                        @QueryParam("processDefinitionKey") String processDefinitionKey,
-                                                        @QueryParam("processDefinitionVersions") List<String> processDefinitionVersions,
-                                                        @QueryParam("tenantIds") List<String> tenantIds
-  ) {
+                                                        @BeanParam ProcessDefinitionParametersRestDto parameters) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    List<String> normalizedTenants = normalizeTenants(tenantIds);
-    return durationOutliersReader.getFlowNodeOutlierMap(
-      processDefinitionKey,
-      processDefinitionVersions,
-      userId,
-      normalizedTenants
-    );
+    return durationOutliersReader.getFlowNodeOutlierMap(parameters, userId);
   }
 
   @GET
   @Path("/durationChart")
   @Produces(MediaType.APPLICATION_JSON)
   public List<DurationChartEntryDto> getCountByDurationChart(@Context ContainerRequestContext requestContext,
-                                                             @QueryParam("processDefinitionKey") String processDefinitionKey,
-                                                             @QueryParam("processDefinitionVersions") List<String> processDefinitionVersions,
-                                                             @QueryParam("tenantIds") List<String> tenantIds,
-                                                             @QueryParam("flowNodeId") String flowNodeId,
-                                                             @QueryParam("lowerOutlierBound") Long lowerOutlierBound,
-                                                             @QueryParam("higherOutlierBound") Long higherOutlierBound) {
+                                                             @BeanParam FlowNodeOutlierParametersRestDto parameters) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    List<String> normalizedTenants = normalizeTenants(tenantIds);
-    return durationOutliersReader.getCountByDurationChart(
-      processDefinitionKey,
-      processDefinitionVersions,
-      flowNodeId,
-      userId,
-      normalizedTenants,
-      lowerOutlierBound,
-      higherOutlierBound
-    );
+    return durationOutliersReader.getCountByDurationChart(parameters, userId);
   }
 
-  private List<String> normalizeTenants(List<String> tenantIds) {
-    return tenantIds.stream().map(QueryParamUtil::normalizeNullStringValue).collect(Collectors.toList());
+  @GET
+  @Path("/significantOutlierVariableTerms")
+  @Produces(MediaType.APPLICATION_JSON)
+  public List<VariableTermDto> getSignificantOutlierVariableTerms(@Context ContainerRequestContext requestContext,
+                                                                  @BeanParam FlowNodeOutlierParametersRestDto parameters) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return durationOutliersReader.getSignificantOutlierVariableTerms(parameters, userId);
   }
+
 }
