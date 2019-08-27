@@ -8,6 +8,7 @@ import styled, {css} from 'styled-components';
 
 import {themed, themeStyle} from 'modules/theme';
 import Panel from 'modules/components/Panel';
+import CollapsablePanel from 'modules/components/CollapsablePanel';
 import BasicCollapseButton from 'modules/components/CollapseButton';
 import VerticalCollapseButton from 'modules/components/VerticalCollapseButton';
 import BasicTextInput from 'modules/components/Input';
@@ -29,8 +30,10 @@ export const CollapseButton = styled(BasicCollapseButton)`
 
 export const Filters = styled.div`
   padding: 20px 21px 0 19px;
+`;
+
+export const FiltersBody = styled(CollapsablePanel.Body)`
   overflow: auto;
-  overflow-x: hidden;
 `;
 
 export const FiltersHeader = styled(Panel.Header)`
@@ -95,7 +98,7 @@ export const ResetButtonContainer = themed(styled(Panel.Footer)`
   display: flex;
   justify-content: center;
   height: 56px;
-  width: 320px;
+  width: 100%;
   box-shadow: ${themeStyle({
     dark: '0px -2px 4px 0px rgba(0,0,0,0.1)',
     light: '0px -1px 2px 0px rgba(0,0,0,0.1)'

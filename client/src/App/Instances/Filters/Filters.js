@@ -236,7 +236,7 @@ export default class Filters extends React.Component {
               Filters
               <Badge type={BADGE_TYPE.FILTERS}>{this.props.filterCount}</Badge>
             </Styled.FiltersHeader>
-            <CollapsablePanel.Body>
+            <Styled.FiltersBody>
               <Styled.Filters>
                 <Fragment>
                   <Styled.Field>
@@ -352,7 +352,7 @@ export default class Filters extends React.Component {
                   />
                 </Fragment>
               </Styled.Filters>
-            </CollapsablePanel.Body>
+            </Styled.FiltersBody>
             <Styled.ResetButtonContainer>
               <Button
                 title="Reset filters"
