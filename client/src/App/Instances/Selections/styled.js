@@ -36,6 +36,10 @@ export const SelectionHeader = styled(BasicCollapsablePanel.Header)`
   border-radius: 3px 0 0 0;
 `;
 
+export const SelectionBody = styled(BasicCollapsablePanel.Body)`
+  overflow: auto;
+`;
+
 export const Badge = styled(BadgeComponent)`
   margin-left: 13px;
 `;

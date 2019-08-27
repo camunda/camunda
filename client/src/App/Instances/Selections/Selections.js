@@ -52,10 +52,9 @@ function Selections(props) {
                 </ComboBadge.Right>
               </ComboBadge>
             </Styled.SelectionHeader>
-            <CollapsablePanel.Body>
+            <Styled.SelectionBody>
               <SelectionList />
-            </CollapsablePanel.Body>
-            <CollapsablePanel.Footer />
+            </Styled.SelectionBody>
           </Styled.CollapsablePanel>
         )}
       </CollapsablePanelConsumer>
