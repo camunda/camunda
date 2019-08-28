@@ -1,12 +1,25 @@
 .OutlierDetailsModal {
+  width: 70%;
   .description {
     font-weight: bold;
     padding-top: 0px;
     padding-bottom: 20px;
   }
 
-  .diagram-container {
+  .diagramContainer {
     width: 100%;
-    height: 400px;
+    height: 500px;
+  }
+
+  .tableContainer {
+    margin-top: 40px;
+
+    .Table {
+      height: 500px;
+    }
+
+    button {
+      float: right;
+    }
   }
 }

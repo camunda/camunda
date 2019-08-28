@@ -85,3 +85,17 @@ test('should show outlier details modal when clicking view details on a flow nod
 
   await t.expect(Analysis.chart.visible).ok();
 });
+
+test('should show common outliers variables as a table', async t => {
+  await t.click(Analysis.navItem);
+
+  await u.selectDefinition(t, 'Lead Qualification', 'All');
+
+  await t.hover(Analysis.flowNode('ServiceTask_4'));
+
+  await t.click(Analysis.tooltipDetailsButton);
+
+  await t.click(Analysis.commonVariablesButton);
+
+  await t.expect(Analysis.variablesTable.visible).ok();
+});

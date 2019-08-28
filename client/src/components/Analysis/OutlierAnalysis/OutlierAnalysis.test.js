@@ -109,6 +109,7 @@ it('display load chart data and display details modal when loadChartData is call
 
   expect(node.state().selectedNode).toEqual({
     name: 'nodeName',
+    id: 'nodeKey',
     ...nodeData,
     data: [{key: 'test', outlier: false, value: 'testVal'}]
   });

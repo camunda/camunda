@@ -1,0 +1,42 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should render a table with correct data 1`] = `
+<div
+  className="tableContainer"
+>
+  <Table
+    body={
+      Array [
+        Array [
+          <React.Fragment>
+            50
+             
+            instances
+            <a>
+              <ForwardRef(Button)>
+                <Icon
+                  type="save"
+                />
+                Instance ID's CSV
+              </ForwardRef(Button)>
+            </a>
+          </React.Fragment>,
+          1,
+          10,
+          "department=engineering",
+        ],
+      ]
+    }
+    disablePagination={true}
+    foot={Array []}
+    head={
+      Array [
+        "Number of Outlier Instances",
+        "% of Total Instances",
+        "% of Outlier Instances",
+        "Variables",
+      ]
+    }
+  />
+</div>
+`;

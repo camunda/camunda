@@ -7,8 +7,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import Chart from 'chart.js';
 import OutlierDetailsModal from './OutlierDetailsModal';
+import {Button} from 'components';
 
 jest.mock('chart.js');
 
@@ -17,26 +17,23 @@ const selectedNode = {
   higherOutlier: {
     count: 4,
     relation: 1.1
-  },
-  data: [{key: '5', value: '3', outlier: true}, {key: '1', value: '20', outlier: false}]
+  }
 };
 
-it('should render a modal', () => {
+it('should render a modal with a button group showing duration chart', () => {
   const node = shallow(<OutlierDetailsModal selectedNode={selectedNode} />);
 
   expect(node).toMatchSnapshot();
+  expect(node.find('DurationChart')).toExist();
 });
 
-it('should construct a bar Chart with the noda data', () => {
-  shallow(<OutlierDetailsModal selectedNode={selectedNode} />);
+it('switch to Variable table when clicking the variable button in the button group', () => {
+  const node = shallow(<OutlierDetailsModal selectedNode={selectedNode} />);
 
-  expect(Chart).toHaveBeenCalled();
-  expect(Chart.mock.calls[0][1].type).toBe('bar');
-  expect(Chart.mock.calls[0][1].data).toMatchSnapshot();
-});
+  node
+    .find(Button)
+    .at(1)
+    .simulate('click');
 
-it('should create correct chart options', () => {
-  shallow(<OutlierDetailsModal selectedNode={selectedNode} />);
-
-  expect(Chart.mock.calls[0][1].options).toMatchSnapshot();
+  expect(node.find('VariablesTable')).toExist();
 });

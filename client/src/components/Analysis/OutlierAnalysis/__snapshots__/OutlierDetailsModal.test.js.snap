@@ -1,92 +1,35 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`should construct a bar Chart with the noda data 1`] = `
-Object {
-  "datasets": Array [
-    Object {
-      "backgroundColor": Array [
-        "#1991c8",
-        "#eeeeee",
-      ],
-      "borderColor": Array [
-        "#1991c8",
-        "#eeeeee",
-      ],
-      "borderWidth": 2,
-      "data": Array [
-        "3",
-        "20",
-      ],
-    },
-  ],
-  "labels": Array [
-    "5",
-    "1",
-  ],
-}
-`;
-
-exports[`should create correct chart options 1`] = `
-Object {
-  "animation": false,
-  "legend": Object {
-    "display": false,
-  },
-  "maintainAspectRatio": false,
-  "responsive": true,
-  "scales": Object {
-    "xAxes": Array [
-      Object {
-        "scaleLabel": Object {
-          "display": true,
-          "fontStyle": "bold",
-          "labelString": "Duration",
-        },
-        "ticks": Object {
-          "callback": [Function],
-          "stepSize": 1,
-        },
-      },
-    ],
-    "yAxes": Array [
-      Object {
-        "scaleLabel": Object {
-          "display": true,
-          "fontStyle": "bold",
-          "labelString": "Instance Count",
-        },
-      },
-    ],
-  },
-  "tooltips": Object {
-    "callbacks": Object {
-      "label": [Function],
-      "title": [Function],
-    },
-  },
-}
-`;
-
-exports[`should render a modal 1`] = `
+exports[`should render a modal with a button group showing duration chart 1`] = `
 <Modal
   className="OutlierDetailsModal"
   open={true}
   size="large"
 >
   <Component>
-    Execution of test Flow Node
+    Outliers of test Flow Node
   </Component>
   <Component>
+    <ButtonGroup>
+      <ForwardRef(Button)
+        active={true}
+        onClick={[Function]}
+      >
+        Duration Distribution chart
+      </ForwardRef(Button)>
+      <ForwardRef(Button)
+        active={false}
+        onClick={[Function]}
+      >
+        Common Significant Variables Table
+      </ForwardRef(Button)>
+    </ButtonGroup>
     <p
       className="description"
     >
       4 instances took 110% longer than average.
     </p>
-    <div
-      className="diagram-container"
-    >
-      <canvas />
-    </div>
+    <DurationChart />
   </Component>
 </Modal>
 `;

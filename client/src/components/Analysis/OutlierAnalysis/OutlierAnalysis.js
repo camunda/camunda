@@ -123,6 +123,7 @@ export default class OutlierAnalysis extends Component {
     this.setState({
       selectedNode: {
         name: this.state.flowNodeNames[id] || id,
+        id,
         data,
         ...nodeData
       }
@@ -154,6 +155,7 @@ export default class OutlierAnalysis extends Component {
           <OutlierDetailsModal
             onClose={() => this.setState({selectedNode: null})}
             selectedNode={this.state.selectedNode}
+            config={this.state.config}
           />
         )}
       </div>

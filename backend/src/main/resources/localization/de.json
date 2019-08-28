@@ -332,7 +332,15 @@
       "info": "Die Heatmap zeigt die Häufigkeit nach oben abweichender Ausreißer basierend auf der Dauer an. Berechnet mit dem Z-Score.",
       "tooltipText": "{count} Instanzen haben {percentage}% länger gedauert als der Durchschnitt.",
       "detailsModal": {
-        "title": "Ausführung von {name} Prozessknoten"
+        "title": "Ausreißer von {name} Prozessknoten",
+        "durationChart": "Laufzeitverteilungsdiagramm",
+        "variablesTable": "Tabelle der signifikanten Variablenwerte",
+        "table": {
+          "emptyTableMessage": "Es wurden keine signifikanten Variablenwerte unter den Ausreißerinstanzen gefunden",
+          "outliersNumber": "Anzahl der Ausreißerinstanzen",
+          "ofTotalPercentage": "% aller Instanzen",
+          "ofOutliersPercentage": "% der Ausreißerinstanzen"
+        }
       }
     },
     "selectLabel": "Für",
