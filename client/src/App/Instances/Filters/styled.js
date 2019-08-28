@@ -34,6 +34,7 @@ export const Filters = styled.div`
 
 export const FiltersBody = styled(CollapsablePanel.Body)`
   overflow: auto;
+  overflow-x: hidden;
 `;
 
 export const FiltersHeader = styled(Panel.Header)`
