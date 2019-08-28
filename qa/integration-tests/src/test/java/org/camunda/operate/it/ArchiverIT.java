@@ -286,7 +286,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   }
 
   //OPE-671  
-  @Test(expected = org.camunda.operate.exceptions.PersistenceException.class) 
+  @Test
   public void testArchivedOperationsWillNotBeLocked() throws Exception {
       // given (set up) : disabled OperationExecutor
       tester.setElasticsearchTestrule(elasticsearchTestRule)
