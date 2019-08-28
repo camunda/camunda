@@ -66,8 +66,10 @@ public class FsLogSegments {
 
   public void closeAll() {
     final FsLogSegment[] segments = this.segments;
-    for (FsLogSegment readableLogSegment : segments) {
-      readableLogSegment.closeSegment();
+
+    for (int i = 0; i < segments.length; i++) {
+      segments[i].closeSegment();
+      segments[i] = null;
     }
 
     this.segments = new FsLogSegment[0];

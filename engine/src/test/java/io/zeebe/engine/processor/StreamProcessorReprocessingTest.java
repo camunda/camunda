@@ -67,7 +67,7 @@ public class StreamProcessorReprocessingTest {
 
     verify(typedRecordProcessor, TIMEOUT.times(1))
         .processRecord(eq(secondPosition), any(), any(), any(), any());
-    streamProcessor.closeAsync().join();
+    streamProcessorRule.closeStreamProcessor();
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
@@ -106,16 +106,15 @@ public class StreamProcessorReprocessingTest {
 
     // when
     final TypedRecordProcessor typedRecordProcessor = mock(TypedRecordProcessor.class);
-    final StreamProcessor streamProcessor =
-        streamProcessorRule.startTypedStreamProcessor(
-            (processors, state) ->
-                processors
-                    .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
-                    .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
+    streamProcessorRule.startTypedStreamProcessor(
+        (processors, state) ->
+            processors
+                .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
+                .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
 
     verify(typedRecordProcessor, TIMEOUT.times(1))
         .processRecord(eq(normalProcessingPosition), any(), any(), any(), any());
-    streamProcessor.closeAsync().join();
+    streamProcessorRule.closeStreamProcessor();
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
@@ -165,7 +164,7 @@ public class StreamProcessorReprocessingTest {
 
     verify(typedRecordProcessor, TIMEOUT.times(1))
         .processRecord(eq(secondPosition), any(), any(), any(), any());
-    streamProcessor.closeAsync().join();
+    streamProcessorRule.closeStreamProcessor();
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);

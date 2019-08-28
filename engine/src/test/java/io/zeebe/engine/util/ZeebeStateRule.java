@@ -46,6 +46,7 @@ public class ZeebeStateRule extends ExternalResource {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+    tempFolder.delete();
   }
 
   public ZeebeState getZeebeState() {
