@@ -96,7 +96,7 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
         singletonList(
             expect(
                 "task",
-                "Cannot have two message catch boundary events with the same name: message"))
+                "Multiple message boundary events with the same name 'message' are not allowed."))
       },
     };
   }

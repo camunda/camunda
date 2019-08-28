@@ -18,8 +18,8 @@ package io.zeebe.model.bpmn.validation.zeebe;
 import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.util.ModelUtil;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
+import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -31,25 +31,17 @@ public class ActivityValidator implements ModelElementValidator<Activity> {
 
   @Override
   public void validate(Activity element, ValidationResultCollector validationResultCollector) {
-    final Set<String> messageNames = new HashSet<>();
-    ModelUtil.getActivityMessageBoundaryEvents(element)
-        .forEach(
-            event ->
-                validateMessageTriggerUniqueness(validationResultCollector, messageNames, event));
-  }
 
-  private void validateMessageTriggerUniqueness(
-      ValidationResultCollector validationResultCollector,
-      Set<String> boundaryEventMessageNames,
-      MessageEventDefinition messageDefinition) {
-    final String name = messageDefinition.getMessage().getName();
-    final boolean didNotContain = boundaryEventMessageNames.add(name);
+    final Stream<MessageEventDefinition> boundaryEvents =
+        ModelUtil.getActivityMessageBoundaryEvents(element);
+    final List<String> duplicateMessageNames = ModelUtil.getDuplicateMessageNames(boundaryEvents);
 
-    if (!didNotContain) {
-      validationResultCollector.addError(
-          0,
-          String.format(
-              "Cannot have two message catch boundary events with the same name: %s", name));
-    }
+    duplicateMessageNames.forEach(
+        name ->
+            validationResultCollector.addError(
+                0,
+                String.format(
+                    "Multiple message boundary events with the same name '%s' are not allowed.",
+                    name)));
   }
 }
