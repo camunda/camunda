@@ -57,6 +57,23 @@ public class CollectionReader {
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
+  public boolean checkIfCollectionExists(String collectionId) {
+    log.debug("Checking if collection with id [{}] exists", collectionId);
+
+    GetRequest getRequest = new GetRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId);
+    getRequest.fetchSourceContext(FetchSourceContext.DO_NOT_FETCH_SOURCE);
+
+    final GetResponse getResponse;
+    try {
+      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Could not check if collection with id [%s] exists", collectionId);
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+    return getResponse.isExists();
+  }
+
   public SimpleCollectionDefinitionDto getCollection(String collectionId) {
     log.debug("Fetching collection with id [{}]", collectionId);
     GetRequest getRequest = new GetRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId);
@@ -89,23 +106,14 @@ public class CollectionReader {
     }
   }
 
-  public boolean checkIfCollectionExists(String collectionId) {
-    log.debug("Checking if collection with id [{}] exists", collectionId);
+  public ResolvedCollectionDefinitionDto getResolvedCollection(String collectionId) {
+    log.debug("Fetching resolved collection with id [{}]", collectionId);
 
-    GetRequest getRequest = new GetRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId);
-    getRequest.fetchSourceContext(FetchSourceContext.DO_NOT_FETCH_SOURCE);
+    final SimpleCollectionDefinitionDto simpleCollectionDefinitionDto = getCollection(collectionId);
+    final List<CollectionEntity> collectionEntities = getAllCollectionEntities(simpleCollectionDefinitionDto);
 
-    final GetResponse getResponse;
-    try {
-      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String reason = String.format("Could not check if collection with id [%s] exists", collectionId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-    return getResponse.isExists();
+    return mapToResolvedCollection(simpleCollectionDefinitionDto, collectionEntities);
   }
-
 
   public List<ResolvedCollectionDefinitionDto> getAllResolvedCollections() {
     final List<SimpleCollectionDefinitionDto> allCollections = getAllCollections();
@@ -118,8 +126,16 @@ public class CollectionReader {
 
     log.debug("Mapping all available entity collections to resolved entity collections.");
     return allCollections.stream()
-      .map(c -> mapToResolvedCollection(c, collectionEntityMultimap))
+      .map(c -> mapToResolvedCollection(c, collectionEntityMultimap.get(c.getId())))
       .collect(Collectors.toList());
+  }
+
+  private List<CollectionEntity> getAllCollectionEntities(final SimpleCollectionDefinitionDto collection) {
+    log.debug("Fetching all available entities for collection [{}]", collection.getId());
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(QueryBuilders.termQuery(COLLECTION_ID, collection.getId()))
+      .size(LIST_FETCH_LIMIT);
+    return runSearchRequest(searchSourceBuilder);
   }
 
   private List<CollectionEntity> getAllCollectionEntities(final List<SimpleCollectionDefinitionDto> collections) {
@@ -161,7 +177,7 @@ public class CollectionReader {
   }
 
   private ResolvedCollectionDefinitionDto mapToResolvedCollection(SimpleCollectionDefinitionDto collectionDefinitionDto,
-                                                                  Multimap<String, CollectionEntity> collectionIdToEntityMap) {
+                                                                  Collection<CollectionEntity> collectionEntities) {
     final ResolvedCollectionDefinitionDto resolvedCollection = new ResolvedCollectionDefinitionDto();
     resolvedCollection.setId(collectionDefinitionDto.getId());
     resolvedCollection.setName(collectionDefinitionDto.getName());
@@ -176,11 +192,8 @@ public class CollectionReader {
     if (collectionData != null) {
       resolvedCollectionData.setConfiguration(collectionData.getConfiguration());
       resolvedCollectionData.setRoles(collectionData.getRoles());
+      resolvedCollectionData.setScope(collectionData.getScope());
     }
-
-    final Collection<CollectionEntity> collectionEntities =
-      collectionIdToEntityMap.get(collectionDefinitionDto.getId());
-
 
     resolvedCollectionData.setEntities(
       collectionEntities

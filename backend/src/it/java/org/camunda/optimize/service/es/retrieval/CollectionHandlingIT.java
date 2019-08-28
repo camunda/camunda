@@ -20,11 +20,11 @@ import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefini
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -112,6 +112,30 @@ public class CollectionHandlingIT {
     // then
     assertThat(collections, is(notNullValue()));
     assertThat(collections.size(), is(0));
+  }
+
+  @Test
+  public void getResolvedCollection() {
+    //given
+    final String collectionId = createNewCollection();
+    final String dashboardId = createNewDashboard();
+    final String reportId = createNewSingleReport();
+
+    moveDashboardToCollection(dashboardId, collectionId);
+    moveReportToCollection(reportId, collectionId);
+
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ResolvedCollectionDefinitionDto collection = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildGetCollectionRequest(collectionId)
+      .execute(ResolvedCollectionDefinitionDto.class, 200);
+
+    // then
+    assertThat(collection, is(notNullValue()));
+    assertThat(collection.getId(), is(collectionId));
+    assertThat(collection.getData().getEntities().size(), is(2));
   }
 
   @Test
@@ -542,9 +566,11 @@ public class CollectionHandlingIT {
       .buildUpdateCollectionScopeEntryRequest(collectionId, new CollectionScopeEntryUpdateDto(entry), "PROCESS:_KEY_")
       .execute(204);
 
-    SimpleCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeRule.getRequestExecutor()
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    ResolvedCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeRule.getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
-      .execute(SimpleCollectionDefinitionDto.class, 200);
+      .execute(ResolvedCollectionDefinitionDto.class, 200);
 
     assertThat(collectionDefinitionDto.getData().getScope().get(0).getVersions().size(), is(1));
     assertThat(collectionDefinitionDto.getData().getScope().get(0).getVersions().get(0), is("1"));

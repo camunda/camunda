@@ -29,7 +29,6 @@ import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.relations.CollectionRelationService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.checkerframework.checker.units.qual.C;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
@@ -108,6 +107,14 @@ public class CollectionService {
     collectionWriter.updateScopeEntity(collectionId, entryDto, userId, scopeEntryId);
   }
 
+  public SimpleCollectionDefinitionDto getCollectionDefinition(String collectionId) {
+    return collectionReader.getCollection(collectionId);
+  }
+
+  public ResolvedCollectionDefinitionDto getResolvedCollection(String collectionId) {
+    return collectionReader.getResolvedCollection(collectionId);
+  }
+
   public List<ResolvedCollectionDefinitionDto> getAllResolvedCollections(MultivaluedMap<String, String> queryParameters) {
     List<ResolvedCollectionDefinitionDto> resolvedConnections = collectionReader.getAllResolvedCollections();
     resolvedConnections = QueryParamAdjustmentUtil.adjustCollectionResultsToQueryParameters(
@@ -115,10 +122,6 @@ public class CollectionService {
       queryParameters
     );
     return resolvedConnections;
-  }
-
-  public SimpleCollectionDefinitionDto getCollectionDefinition(String collectionId) {
-    return collectionReader.getCollection(collectionId);
   }
 
   public void deleteCollection(String collectionId, boolean force) throws OptimizeConflictException {

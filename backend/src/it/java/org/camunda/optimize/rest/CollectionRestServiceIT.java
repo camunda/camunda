@@ -9,7 +9,6 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -177,16 +176,16 @@ public class CollectionRestServiceIT {
     String id = addEmptyCollectionToOptimize();
 
     // when
-    SimpleCollectionDefinitionDto collection = embeddedOptimizeRule
+    ResolvedCollectionDefinitionDto collection = embeddedOptimizeRule
       .getRequestExecutor()
       .buildGetCollectionRequest(id)
-      .execute(SimpleCollectionDefinitionDto.class, 200);
+      .execute(ResolvedCollectionDefinitionDto.class, 200);
 
     // then
     assertThat(collection, is(notNullValue()));
     assertThat(collection.getId(), is(id));
+    assertThat(collection.getData().getEntities().size(), is(0));
   }
-
 
   @Test
   public void getAllCollectionsOrderedByName() {

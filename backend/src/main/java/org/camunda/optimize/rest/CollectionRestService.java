@@ -7,14 +7,12 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionEntityUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.collection.CollectionService;
@@ -58,6 +56,25 @@ public class CollectionRestService {
     return collectionService.createNewCollectionAndReturnId(userId);
   }
 
+  /**
+   * Get a list of all available entity collections with their entities being resolved
+   * instead of just containing the ids of the report.
+   */
+  @GET
+  @Produces(MediaType.APPLICATION_JSON)
+  public List<ResolvedCollectionDefinitionDto> getAllResolvedCollections(@Context UriInfo uriInfo) {
+    return collectionService.getAllResolvedCollections(uriInfo.getQueryParameters());
+  }
+
+  /**
+   * Retrieve the collection to the specified id.
+   */
+  @GET
+  @Path("/{id}")
+  @Produces(MediaType.APPLICATION_JSON)
+  public ResolvedCollectionDefinitionDto getCollection(@PathParam("id") String collectionId) {
+    return collectionService.getResolvedCollection(collectionId);
+  }
 
   /**
    * Updates the name and/or configuration of a collection
@@ -78,25 +95,26 @@ public class CollectionRestService {
     collectionService.updatePartialCollection(collectionId, userId, updatedCollection);
   }
 
-  @GET
-  @Path("/{id}/role/")
-  @Consumes(MediaType.APPLICATION_JSON)
+  /**
+   * Delete the collection to the specified id.
+   */
+  @DELETE
+  @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public List<CollectionRoleDto> getRoles(@Context ContainerRequestContext requestContext,
-                       @PathParam("id") String collectionId){
-    return  collectionService.getCollectionDefinition(collectionId).getData().getRoles();
+  public void deleteCollection(@PathParam("id") String collectionId,
+                               @QueryParam("force") boolean force) throws OptimizeConflictException {
+    collectionService.deleteCollection(collectionId, force);
   }
 
-  @POST
-  @Path("/{id}/role/")
-  @Consumes(MediaType.APPLICATION_JSON)
+  /**
+   * Retrieve the conflicting items that would occur on performing a delete.
+   */
+  @GET
+  @Path("/{id}/delete-conflicts")
   @Produces(MediaType.APPLICATION_JSON)
-  public IdDto addRole(@Context ContainerRequestContext requestContext,
-                       @PathParam("id") String collectionId,
-                       @NotNull CollectionRoleDto roleDtoRequest) throws OptimizeConflictException {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    CollectionRoleDto collectionRoleDto = collectionService.addRoleToCollection(collectionId, roleDtoRequest, userId);
-    return new IdDto(collectionRoleDto.getId());
+  public ConflictResponseDto getDeleteConflicts(@Context ContainerRequestContext requestContext,
+                                                @PathParam("id") String collectionId) {
+    return collectionService.getDeleteConflictingItems(collectionId);
   }
 
   @POST
@@ -131,6 +149,27 @@ public class CollectionRestService {
     collectionService.updateScopeEntry(collectionId, entryDto, userId, scopeEntryId);
   }
 
+  @GET
+  @Path("/{id}/role/")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public List<CollectionRoleDto> getRoles(@Context ContainerRequestContext requestContext,
+                                          @PathParam("id") String collectionId){
+    return  collectionService.getCollectionDefinition(collectionId).getData().getRoles();
+  }
+
+  @POST
+  @Path("/{id}/role/")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public IdDto addRole(@Context ContainerRequestContext requestContext,
+                       @PathParam("id") String collectionId,
+                       @NotNull CollectionRoleDto roleDtoRequest) throws OptimizeConflictException {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    CollectionRoleDto collectionRoleDto = collectionService.addRoleToCollection(collectionId, roleDtoRequest, userId);
+    return new IdDto(collectionRoleDto.getId());
+  }
+
   @PUT
   @Path("/{id}/role/{roleEntryId}")
   @Consumes(MediaType.APPLICATION_JSON)
@@ -152,48 +191,6 @@ public class CollectionRestService {
                          @PathParam("roleEntryId") String roleEntryId) throws OptimizeConflictException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionService.removeRoleFromCollection(collectionId, roleEntryId, userId);
-  }
-
-  /**
-   * Get a list of all available entity collections with their entities being resolved
-   * instead of just containing the ids of the report.
-   */
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
-  public List<ResolvedCollectionDefinitionDto> getAllResolvedCollections(@Context UriInfo uriInfo) {
-    return collectionService.getAllResolvedCollections(uriInfo.getQueryParameters());
-  }
-
-  /**
-   * Retrieve the collection to the specified id.
-   */
-  @GET
-  @Path("/{id}")
-  @Produces(MediaType.APPLICATION_JSON)
-  public SimpleCollectionDefinitionDto getCollection(@PathParam("id") String collectionId) {
-    return collectionService.getCollectionDefinition(collectionId);
-  }
-
-  /**
-   * Delete the collection to the specified id.
-   */
-  @DELETE
-  @Path("/{id}")
-  @Produces(MediaType.APPLICATION_JSON)
-  public void deleteCollection(@PathParam("id") String collectionId,
-                               @QueryParam("force") boolean force) throws OptimizeConflictException {
-    collectionService.deleteCollection(collectionId, force);
-  }
-
-  /**
-   * Retrieve the conflicting items that would occur on performing a delete.
-   */
-  @GET
-  @Path("/{id}/delete-conflicts")
-  @Produces(MediaType.APPLICATION_JSON)
-  public ConflictResponseDto getDeleteConflicts(@Context ContainerRequestContext requestContext,
-                                                @PathParam("id") String collectionId) {
-    return collectionService.getDeleteConflictingItems(collectionId);
   }
 
 }
