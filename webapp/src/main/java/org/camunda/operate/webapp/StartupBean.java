@@ -7,14 +7,12 @@ package org.camunda.operate.webapp;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-
 import org.camunda.operate.data.DataGenerator;
 import org.camunda.operate.es.ElasticsearchConnector;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.es.archiver.Archiver;
 import org.camunda.operate.webapp.user.ElasticSearchUserDetailsService;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
-import org.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

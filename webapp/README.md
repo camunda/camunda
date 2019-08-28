@@ -4,9 +4,9 @@
 > and [docker-compose](https://docs.docker.com/compose/install/) installed
 > in your machine
 
-# Running the tests
+## Build the backend
 
-To run the tests you can use maven:
+To build the backend you can use maven:
 
 ```
 mvn clean install
@@ -15,7 +15,20 @@ mvn clean install
 This command runs also all the test suite, that you can skip using the
 option `-DskipTests=true`.
 
-# Demo data
+## Run Webapp and Importer separately
+
+In case you want to scale import to be run on several nodes, you can run Webapp and Importer separately.
+
+For this you can use following configuration parameters:
+* `camunda.operate.importerEnabled`: when `true` will include the import in current run, default: true
+* `camunda.operate.webappEnabled`: when `true` will include the webapp in current run, default: true
+* `camunda.operate.importProperties.partitionIds`: array of Zeebe partition ids, this Importer node must be responsible for, default: empty array, meaning all partitions data is loaded
+* `camunda.operate.importProperties.nodeCount`: total amount of Importer nodes in cluster
+* `camunda.operate.importProperties.currentNodeId`: id of current Importer node, starting from 0
+
+It's enough to configure either `partitionIds` or pair of `nodeCount` and `currentNodeId`.
+
+## Demo data
 
 There are two sets of data, defined in two different Spring profiles:
 

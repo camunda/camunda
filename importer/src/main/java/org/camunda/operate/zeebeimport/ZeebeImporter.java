@@ -56,7 +56,7 @@ public class ZeebeImporter extends Thread implements ImportListener {
 
   @Override
   public void run() {
-    logger.debug("INIT: Start importing data...");
+    logger.info("INIT: Start importing data...");
     while (!shutdown) {
       synchronized (importFinished) {
         try {
