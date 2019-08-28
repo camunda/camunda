@@ -23,11 +23,15 @@ import {
 } from 'modules/testUtils';
 import {EXPAND_STATE, DEFAULT_SORTING, DEFAULT_FILTER} from 'modules/constants';
 
-import ListView from './ListView';
+import ListPanel from './ListPanel';
 import List from './List';
 import ListFooter from './ListFooter';
 
 import * as api from 'modules/api/instances/instances';
+
+// const ListPanelWrapped = ListPanel.WrappedComponent;
+
+jest.mock('modules/utils/bpmn');
 
 // mock props
 const filterCount = 27;
@@ -66,15 +70,15 @@ const mockPropsWithNoOperation = {
   instances: [INSTANCE],
   instancesLoaded: true
 };
-const Component = <ListView.WrappedComponent {...mockProps} />;
+const Component = <ListPanel.WrappedComponent {...mockProps} />;
 const ComponentWithInstances = (
-  <ListView.WrappedComponent {...mockPropsWithInstances} />
+  <ListPanel.WrappedComponent {...mockPropsWithInstances} />
 );
 
 // api mocks
 api.fetchWorkflowInstances = mockResolvedAsyncFn([]);
 
-describe('ListView', () => {
+describe('ListPanel', () => {
   it('should have initially default state', () => {
     // given
     const node = shallow(Component);
@@ -114,7 +118,7 @@ describe('ListView', () => {
                 filter={FILTER_SELECTION.incidents}
               >
                 <InstancesPollProvider>
-                  <ListView {...mockPropsWithNoOperation} />
+                  <ListPanel {...mockPropsWithNoOperation} />
                 </InstancesPollProvider>
               </SelectionProvider>
             </CollapsablePanelProvider>
@@ -170,7 +174,7 @@ describe('ListView', () => {
                 filter={FILTER_SELECTION.incidents}
               >
                 <InstancesPollProvider>
-                  <ListView {...mockPropsWithNoOperation} />
+                  <ListPanel {...mockPropsWithNoOperation} />
                 </InstancesPollProvider>
               </SelectionProvider>
             </CollapsablePanelProvider>
@@ -195,7 +199,7 @@ describe('ListView', () => {
         }
       };
       const node = shallow(
-        <ListView.WrappedComponent {...mockPropsWithPoll} />
+        <ListPanel.WrappedComponent {...mockPropsWithPoll} />
       );
 
       // when
@@ -223,7 +227,7 @@ describe('ListView', () => {
                 filter={FILTER_SELECTION.incidents}
               >
                 <InstancesPollProvider>
-                  <ListView {...mockPropsWithNoOperation} />
+                  <ListPanel {...mockPropsWithNoOperation} />
                 </InstancesPollProvider>
               </SelectionProvider>
             </CollapsablePanelProvider>
@@ -256,7 +260,7 @@ describe('ListView', () => {
         }
       };
       const node = shallow(
-        <ListView.WrappedComponent {...mockPropsWithPoll} />
+        <ListPanel.WrappedComponent {...mockPropsWithPoll} />
       );
 
       // when
@@ -282,7 +286,7 @@ describe('ListView', () => {
         }
       };
       const node = shallow(
-        <ListView.WrappedComponent {...mockPropsWithPoll} />
+        <ListPanel.WrappedComponent {...mockPropsWithPoll} />
       );
 
       // when

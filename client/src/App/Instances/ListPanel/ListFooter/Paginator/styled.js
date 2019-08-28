@@ -42,9 +42,7 @@ export const Page = themed(styled.button`
       if (theme === 'dark') {
         return 'background-color: #34353a; cursor: default; color: rgba(255,255,255,0.4)';
       } else {
-        return `background-color: #f1f2f5; cursor: default; color: ${
-          Colors.uiLight03
-        }`;
+        return `background-color: #f1f2f5; cursor: default; color: ${Colors.uiLight03}`;
       }
     }
   }};

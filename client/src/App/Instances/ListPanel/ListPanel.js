@@ -18,7 +18,7 @@ import {withPoll} from 'modules/contexts/InstancesPollContext';
 import {getInstancesWithActiveOperations} from 'modules/utils/instance';
 import * as Styled from './styled';
 
-class ListView extends React.Component {
+class ListPanel extends React.Component {
   static propTypes = {
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
     filter: PropTypes.object.isRequired,
@@ -171,4 +171,7 @@ class ListView extends React.Component {
   }
 }
 
-export default withData(withPoll(ListView));
+const WrappedListPanel = withData(withPoll(ListPanel));
+WrappedListPanel.WrappedComponent = ListPanel;
+
+export default WrappedListPanel;

@@ -10,7 +10,7 @@ import PropTypes from 'prop-types';
 import Table from 'modules/components/Table';
 import Button from 'modules/components/Button';
 import {IncidentAction} from 'modules/components/Actions';
-import ColumnHeader from '../../../Instances/ListView/List/ColumnHeader';
+import ColumnHeader from '../../../Instances/ListPanel/List/ColumnHeader';
 import Modal from 'modules/components/Modal';
 import {formatDate} from 'modules/utils/date';
 import {TransitionGroup} from 'modules/components/Transition';
