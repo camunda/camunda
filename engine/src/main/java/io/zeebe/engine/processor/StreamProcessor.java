@@ -76,7 +76,7 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
 
   @Override
   public String getName() {
-    return "stream-processor";
+    return "partition-" + partitionId + "-processor";
   }
 
   @Override
