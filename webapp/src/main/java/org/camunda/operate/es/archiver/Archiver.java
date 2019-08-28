@@ -107,7 +107,10 @@ public class Archiver extends Thread {
   }
 
   public int archiveNextBatch() throws ReindexException {
-    final FinishedAtDateIds finishedAtDateIds = queryFinishedWorkflowInstances();
+    return archiveNextBatch(queryFinishedWorkflowInstances());
+  }
+  
+  public int archiveNextBatch(FinishedAtDateIds finishedAtDateIds) throws ReindexException {
     if (finishedAtDateIds != null) {
       logger.debug("Following workflow instances are found for archiving: {}", finishedAtDateIds);
       try {
@@ -132,7 +135,6 @@ public class Archiver extends Thread {
   }
 
   public FinishedAtDateIds queryFinishedWorkflowInstances() {
-
     final QueryBuilder endDateQ =
       rangeQuery(ListViewTemplate.END_DATE)
         .lte("now-1h");
@@ -194,7 +196,7 @@ public class Archiver extends Thread {
     }
   }
 
-  static class FinishedAtDateIds {
+  public static class FinishedAtDateIds {
 
     private String finishDate;
     private List<Long> workflowInstanceKeys;

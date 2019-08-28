@@ -91,6 +91,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
   private DateTimeFormatter dateTimeFormatter;
 
+  @Autowired
+  OperateTester tester;
+  
   @Before
   public void before() {
     super.before();
@@ -282,4 +285,37 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     return ids;
   }
 
+  //OPE-671  
+  @Test(expected = org.camunda.operate.exceptions.PersistenceException.class) 
+  public void testArchivedOperationsWillNotBeLocked() throws Exception {
+      // given (set up) : disabled OperationExecutor
+      tester.setElasticsearchTestrule(elasticsearchTestRule)
+            .setMockMvcTestRule(mockMvcTestRule)
+            .setZeebeClient(getClient())
+            .disableOperationExecutor();
+      // and given workflowInstance
+      final String bpmnProcessId = "startEndProcess";
+      final BpmnModelInstance startEndProcess =
+        Bpmn.createExecutableProcess(bpmnProcessId)
+          .startEvent()
+          .endEvent()
+          .done();
+      
+      tester
+        .deployWorkflow(startEndProcess, "startEndProcess.bpmn")
+        .and()
+        .startWorkflowInstance(bpmnProcessId).waitUntil().workflowInstanceIsStarted()
+        .and()
+        // when
+        // 1. Schedule operation (with disabled operation executor)
+        .cancelWorkflowInstanceOperation().waitUntil().operationIsCompleted()
+        // 2. Finish workflow instance
+        .then()
+        .waitUntil().workflowInstanceIsFinished() 
+        // 3. Wait till workflow instance is archived 
+        .archive().waitUntil().archiveIsDone()
+        // 4. Enable the operation executor
+        .then()
+        .enableOperationExecutor();
+  }
 }

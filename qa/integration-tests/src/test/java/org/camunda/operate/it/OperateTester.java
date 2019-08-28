@@ -22,7 +22,10 @@ import java.util.function.Predicate;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
 import org.camunda.operate.entities.OperationType;
+import org.camunda.operate.es.archiver.Archiver;
+import org.camunda.operate.es.archiver.Archiver.FinishedAtDateIds;
 import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto;
@@ -46,6 +49,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 
 @Component
@@ -90,6 +94,9 @@ public class OperateTester {
   @Qualifier("operationsByWorkflowInstanceAreCompletedCheck")
   private Predicate<Object[]> operationsByWorkflowInstanceAreCompletedCheck;
   
+  @Autowired
+  private Archiver archiver;
+
   int waitingRound = 1;
 
   private Long jobKey;
@@ -100,6 +107,8 @@ public class OperateTester {
   protected OperationExecutor operationExecutor;
 
   private Map<Object,Long> countImported = new HashMap<>();
+
+  private boolean operationExecutorEnabled = true;
   
   public Long getWorkflowInstanceKey() {
     return workflowInstanceKey;
@@ -117,6 +126,16 @@ public class OperateTester {
 
   public OperateTester setZeebeClient(ZeebeClient zeebeClient) {
     this.zeebeClient = zeebeClient;
+    return this;
+  }
+  
+  public OperateTester createAndDeploySimpleWorkflow(String processId,String activityId) {
+    BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
+        .startEvent("start")
+        .serviceTask(activityId).zeebeTaskType(activityId)
+        .endEvent()
+        .done();
+    workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, workflow,processId+".bpmn");
     return this;
   }
 
@@ -240,21 +259,12 @@ public class OperateTester {
     batchOperationDto.getQueries().add(workflowInstanceQuery);
     batchOperationDto.setOperationType(OperationType.CANCEL_WORKFLOW_INSTANCE);
     
-    MockHttpServletRequestBuilder postOperationRequest =
-      post("/api/workflow-instances/operation")
-        .content(mockMvcTestRule.json(batchOperationDto))
-        .contentType(mockMvcTestRule.getContentType());
-     
-    mockMvcTestRule.getMockMvc().perform(postOperationRequest)
-        .andExpect(status().is(HttpStatus.SC_OK))
-        .andReturn();
-    
+    postOperation(batchOperationDto);
     refreshIndexesInElasticsearch();
-    executeOneBatch();
     return this;
   }
   
-  public OperateTester operationIsCompleted() {
+  public OperateTester operationIsCompleted() throws Exception {
     executeOneBatch();
     processAllRecordsAndWait(operationsByWorkflowInstanceAreCompletedCheck, workflowInstanceKey);
     return this;
@@ -282,14 +292,12 @@ public class OperateTester {
     }
   }
 
-  private void executeOneBatch() {
-    try {
+  private int executeOneBatch() throws Exception {
+    if(!operationExecutorEnabled) return 0;
       List<Future<?>> futures = operationExecutor.executeOneBatch();
       //wait till all scheduled tasks are executed
-      for(Future f: futures) { f.get(); }
-    } catch (Exception e) {
-      fail(e.getMessage(), e);
-    }
+      for(Future f: futures) { f.get();}
+      return 0;//return futures.size()
   }
 
   public Long getWorkflowKey() {
@@ -344,5 +352,35 @@ public class OperateTester {
  
   public long getCountImportedFor(Object key) {
     return countImported.get(key);
+  }
+
+  public OperateTester disableOperationExecutor() {
+    operationExecutorEnabled = false;
+    return this;
+  }
+  
+  public OperateTester enableOperationExecutor() throws Exception {
+    operationExecutorEnabled = true;
+    return executeOperations();
+  }
+
+  public OperateTester archive() {
+    try {
+      Archiver.FinishedAtDateIds finishedAtDateIds = new FinishedAtDateIds("_test_archived", Arrays.asList(workflowInstanceKey));
+      archiver.archiveNextBatch(finishedAtDateIds);
+    } catch (ReindexException e) {
+      return this;
+    }
+    return this;
+  }
+
+  public OperateTester executeOperations() throws Exception {
+     executeOneBatch();
+     return this;
+  }
+
+  public OperateTester archiveIsDone() {
+    refreshIndexesInElasticsearch();
+    return this;
   }
 }
