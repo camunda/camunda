@@ -24,6 +24,10 @@
     border-radius: 0;
     position: relative;
 
+    &:not(:last-child) {
+      border-right-width: 0;
+    }
+
     &.isActive {
       color: white;
       background-color: $blue;
