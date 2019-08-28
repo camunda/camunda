@@ -17,19 +17,28 @@ import io.zeebe.engine.state.instance.VariablesState;
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.spec.MsgPackHelper;
+import io.zeebe.msgpack.spec.MsgPackWriter;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.Collections;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public abstract class AbstractMultiInstanceBodyHandler
     extends AbstractHandler<ExecutableMultiInstanceBody> {
 
   private static final DirectBuffer NIL_VALUE = new UnsafeBuffer(MsgPackHelper.NIL);
+  private static final DirectBuffer LOOP_COUNTER_VARIABLE = BufferUtil.wrapString("loopCounter");
 
   private final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup;
   private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
+
+  private final MutableDirectBuffer loopCounterVariableBuffer =
+      new UnsafeBuffer(new byte[Long.BYTES + 1]);
+  private final DirectBuffer loopCounterVariableView = new UnsafeBuffer(0, 0);
+  private final MsgPackWriter variableWriter = new MsgPackWriter();
 
   public AbstractMultiInstanceBodyHandler(
       final WorkflowInstanceIntent nextState,
@@ -139,5 +148,21 @@ public abstract class AbstractMultiInstanceBodyHandler
             variableName ->
                 variablesState.setVariableLocal(
                     elementInstanceKey, workflowKey, variableName, NIL_VALUE));
+
+    variablesState.setVariableLocal(
+        elementInstanceKey,
+        workflowKey,
+        LOOP_COUNTER_VARIABLE,
+        wrapLoopCounter(innerInstance.getMultiInstanceLoopCounter()));
+  }
+
+  private DirectBuffer wrapLoopCounter(int loopCounter) {
+    variableWriter.wrap(loopCounterVariableBuffer, 0);
+
+    variableWriter.writeInteger(loopCounter);
+    final var length = variableWriter.getOffset();
+
+    loopCounterVariableView.wrap(loopCounterVariableBuffer, 0, length);
+    return loopCounterVariableView;
   }
 }
