@@ -27,7 +27,6 @@ public class IOMappingHelper {
     final T element = context.getElement();
     final WorkflowInstanceRecord record = context.getValue();
     final long elementInstanceKey = context.getKey();
-    final long flowScopeKey = record.getFlowScopeKey();
     final long workflowKey = record.getWorkflowKey();
     final Mapping[] outputMappings = element.getOutputMappings();
     final boolean hasOutputMappings = outputMappings.length > 0;
@@ -55,7 +54,8 @@ public class IOMappingHelper {
       mergeTool.mergeDocumentStrictly(variables, outputMappings);
       final DirectBuffer mergedVariables = mergeTool.writeResultToBuffer();
 
-      variablesState.setVariablesFromDocument(flowScopeKey, workflowKey, mergedVariables);
+      variablesState.setVariablesFromDocument(
+          getVariableScopeKey(context), workflowKey, mergedVariables);
     }
   }
 
@@ -68,8 +68,9 @@ public class IOMappingHelper {
       mergeTool.reset();
 
       final VariablesState variablesState = context.getElementInstanceState().getVariablesState();
+
       final DirectBuffer scopeVariables =
-          determineVariables(variablesState, context.getFlowScopeInstance().getKey(), mappings);
+          determineVariables(variablesState, getVariableScopeKey(context), mappings);
 
       mergeTool.mergeDocumentStrictly(scopeVariables, mappings);
       final DirectBuffer mappedVariables = mergeTool.writeResultToBuffer();
@@ -90,5 +91,16 @@ public class IOMappingHelper {
       variableNames.add(m.getSource().getVariableName());
     }
     return variablesState.getVariablesAsDocument(elementInstanceKey, variableNames);
+  }
+
+  private long getVariableScopeKey(BpmnStepContext<?> context) {
+    final var elementInstanceKey = context.getKey();
+    final var flowScopeKey = context.getValue().getFlowScopeKey();
+
+    // an inner multi-instance activity needs to read from/write to its own scope
+    // to access the input and output element variables
+    final var isMultiInstanceActivity =
+        context.getElementInstance().getMultiInstanceLoopCounter() > 0;
+    return isMultiInstanceActivity ? elementInstanceKey : flowScopeKey;
   }
 }

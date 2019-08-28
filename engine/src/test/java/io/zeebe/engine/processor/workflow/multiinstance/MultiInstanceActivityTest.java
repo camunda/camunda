@@ -14,6 +14,7 @@ import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.MultiInstanceLoopCharacteristicsBuilder;
+import io.zeebe.model.bpmn.instance.ServiceTask;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
@@ -708,6 +709,99 @@ public class MultiInstanceActivityTest {
             tuple(elementInstanceKeys.get(0), "1"),
             tuple(elementInstanceKeys.get(1), "2"),
             tuple(elementInstanceKeys.get(2), "3"));
+  }
+
+  @Test
+  public void shouldApplyInputMapping() {
+    // given
+    final ServiceTask task = workflow(miBuilder).getModelElementById(ELEMENT_ID);
+    final var workflow =
+        task.builder()
+            .zeebeInput(INPUT_ELEMENT_VARIABLE, "x")
+            .zeebeInput("loopCounter", "y")
+            .done();
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    final var elementInstanceKeys =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withElementId(ELEMENT_ID)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .limit(3)
+            .map(Record::getKey)
+            .collect(Collectors.toList());
+
+    assertThat(
+            RecordingExporter.records()
+                .limitToWorkflowInstance(workflowInstanceKey)
+                .variableRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getScopeKey(), v.getName(), v.getValue()))
+        .contains(
+            tuple(elementInstanceKeys.get(0), "x", JsonUtil.toJson(INPUT_COLLECTION.get(0))),
+            tuple(elementInstanceKeys.get(0), "y", "1"),
+            tuple(elementInstanceKeys.get(1), "x", JsonUtil.toJson(INPUT_COLLECTION.get(1))),
+            tuple(elementInstanceKeys.get(1), "y", "2"),
+            tuple(elementInstanceKeys.get(2), "x", JsonUtil.toJson(INPUT_COLLECTION.get(2))),
+            tuple(elementInstanceKeys.get(2), "y", "3"));
+  }
+
+  @Test
+  public void shouldApplyOutputMapping() {
+    // given
+    final ServiceTask task = workflow(miBuilder).getModelElementById(ELEMENT_ID);
+    final var workflow =
+        task.builder()
+            .zeebeOutput("loopCounter", OUTPUT_ELEMENT_VARIABLE) // overrides the variable
+            .zeebeOutput("loopCounter", "global") // propagates to root scope
+            .done();
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.variableRecords()
+                .withScopeKey(workflowInstanceKey)
+                .withName(OUTPUT_COLLECTION_VARIABLE)
+                .getFirst()
+                .getValue())
+        .hasValue("[1,2,3]");
+
+    assertThat(
+            RecordingExporter.records()
+                .limitToWorkflowInstance(workflowInstanceKey)
+                .variableRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withName("global"))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getScopeKey(), v.getValue()))
+        .containsExactly(
+            tuple(workflowInstanceKey, "1"),
+            tuple(workflowInstanceKey, "2"),
+            tuple(workflowInstanceKey, "3"));
   }
 
   private void completeJobs(final long workflowInstanceKey, final int count) {
