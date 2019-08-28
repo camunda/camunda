@@ -30,6 +30,7 @@
       <validValue name="INVALID_MESSAGE_TEMPLATE">5</validValue>
       <validValue name="INVALID_DEPLOYMENT_PARTITION">6</validValue>
       <validValue name="WORKFLOW_NOT_FOUND">7</validValue>
+      <validValue name="RESOURCE_EXHAUSTED">8</validValue>
     </enum>
 
     <enum name="ValueType" encodingType="uint8" description="The type of a record value">
