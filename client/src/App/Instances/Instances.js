@@ -23,14 +23,11 @@ import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 
 import Header from '../Header';
 import DiagramPanel from './DiagramPanel';
-import ListView from './ListView';
+import ListPanel from './ListPanel';
 import Filters from './Filters';
 import Selections from './Selections';
 
-import {
-  getWorkflowByVersionFromFilter,
-  getWorkflowNameFromFilter
-} from './service';
+import {getWorkflowNameFromFilter} from './service';
 
 import {getFlowNodes} from 'modules/utils/flowNodes';
 import * as Styled from './styled.js';
@@ -74,10 +71,6 @@ export default class Instances extends Component {
 
   render() {
     const {filter, groupedWorkflows} = this.props;
-    const currentWorkflowByVersion = getWorkflowByVersionFromFilter({
-      filter,
-      groupedWorkflows
-    });
 
     const workflowName = getWorkflowNameFromFilter({filter, groupedWorkflows});
     const {ids: selectableIds, flowNodes: selectableFlowNodes} = getFlowNodes(
@@ -94,7 +87,9 @@ export default class Instances extends Component {
             <InstancesPollProvider
               onWorkflowInstancesRefresh={this.props.onWorkflowInstancesRefresh}
               onSelectionsRefresh={selections.onInstancesInSelectionsRefresh}
-              visibleIdsInListView={this.props.workflowInstances.map(x => x.id)}
+              visibleIdsInListPanel={this.props.workflowInstances.map(
+                x => x.id
+              )}
               visibleIdsInSelections={getInstancesIdsFromSelections(
                 selections.selections
               )}
@@ -126,20 +121,17 @@ export default class Instances extends Component {
                   <Styled.SplitPane
                     titles={{top: 'Workflow', bottom: 'Instances'}}
                   >
-                    <Styled.Pane>
-                      <DiagramPanel
-                        workflowName={workflowName}
-                        onFlowNodeSelection={this.props.onFlowNodeSelection}
-                        noWorkflowSelected={!filter.workflow}
-                        noVersionSelected={filter.version === 'all'}
-                        definitions={this.props.diagramModel.definitions}
-                        flowNodesStatistics={this.props.statistics}
-                        selectedFlowNodeId={this.props.filter.activityId}
-                        selectableFlowNodes={selectableIds}
-                        currentWorkflowByVersion={currentWorkflowByVersion}
-                      />
-                    </Styled.Pane>
-                    <ListView
+                    <DiagramPanel
+                      workflowName={workflowName}
+                      onFlowNodeSelection={this.props.onFlowNodeSelection}
+                      noWorkflowSelected={!filter.workflow}
+                      noVersionSelected={filter.version === 'all'}
+                      definitions={this.props.diagramModel.definitions}
+                      flowNodesStatistics={this.props.statistics}
+                      selectedFlowNodeId={this.props.filter.activityId}
+                      selectableFlowNodes={selectableIds}
+                    />
+                    <ListPanel
                       instances={this.props.workflowInstances}
                       filter={this.props.filter}
                       filterCount={this.props.filterCount}
