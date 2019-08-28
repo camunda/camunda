@@ -9,21 +9,18 @@ import React from 'react';
 import {Switch, Form} from 'components';
 import {t} from 'translation';
 
-import './FilterForUndefined.scss';
-
 export default function FilterForUndefined({filterForUndefined, changeFilterForUndefined}) {
   return (
-    <Form.Group className="FilterForUndefined">
-      <label className="FilterForUndefined_Label">
-        <Switch
-          className="FilterForUndefined_Switch"
-          checked={filterForUndefined}
-          onChange={({target: {checked}}) => changeFilterForUndefined(checked)}
-        />
-        <div className="FilterForUndefined_Text">
+    <Form>
+      <Form.Group>
+        <label>
+          <Switch
+            checked={filterForUndefined}
+            onChange={({target: {checked}}) => changeFilterForUndefined(checked)}
+          />
           {t(`common.filter.variableModal.filterForUndefined`)}
-        </div>
-      </label>
-    </Form.Group>
+        </label>
+      </Form.Group>
+    </Form>
   );
 }

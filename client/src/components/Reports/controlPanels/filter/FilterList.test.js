@@ -93,9 +93,9 @@ it('should display a variable filter with filter for undefined values selected',
     }
   ];
 
-  const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()} />);
+  const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
 
-  expect(node).toIncludeText('varName is null or undefined');
+  expect(node.find('ActionItem').dive()).toIncludeText('varName is null or undefined');
 });
 
 it('should use the variables prop to resolve variable names', () => {

@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {Modal, Button, Typeahead, Labeled, Form} from 'components';
+import {Modal, Button, Typeahead, Labeled} from 'components';
 
 import {BooleanInput} from './boolean';
 import {NumberInput} from './number';
@@ -101,16 +101,14 @@ export default class VariableFilter extends React.Component {
               noValuesMessage={t('common.filter.variableModal.noVariables')}
             />
           </Labeled>
-          <Form>
-            <ValueInput
-              config={this.props.config}
-              variable={selectedVariable}
-              setValid={this.setValid}
-              changeFilter={this.changeFilter}
-              filter={this.state.filter}
-              disabled={filterForUndefined}
-            />
-          </Form>
+          <ValueInput
+            config={this.props.config}
+            variable={selectedVariable}
+            setValid={this.setValid}
+            changeFilter={this.changeFilter}
+            filter={this.state.filter}
+            disabled={filterForUndefined}
+          />
           {selectedVariable && (
             <FilterForUndefined
               filterForUndefined={filterForUndefined}

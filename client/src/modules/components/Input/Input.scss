@@ -33,6 +33,11 @@ input[type='checkbox'] {
   appearance: none;
   background-color: #fff;
   border: 1px solid #d3d3d3;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
 }
 
 input[type='checkbox'] {
@@ -41,11 +46,6 @@ input[type='checkbox'] {
   &:checked {
     background: url('./check-small.svg');
     background-position: 0.5px;
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
   }
 
   &:indeterminate {
