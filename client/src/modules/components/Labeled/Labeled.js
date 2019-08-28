@@ -22,7 +22,7 @@ export default function Labeled({label, className, appendLabel, children, ...pro
 }
 
 function catchClick(evt) {
-  if (!evt.target.closest('.label')) {
+  if (!evt.target.classList.contains('label') && !evt.target.classList.contains('Input')) {
     evt.preventDefault();
   }
 }
