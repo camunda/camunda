@@ -4,7 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {LOADING_STATE} from 'modules/constants';
+import {
+  fetchWorkflowInstancesStatistics,
+  fetchWorkflowInstances
+} from 'modules/api/instances';
+import {fetchWorkflowXML} from 'modules/api/diagram';
+import {parseDiagramXML} from 'modules/utils/bpmn';
+import {LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
 
 export class Publisher {
   constructor(subscriptionTopics) {
@@ -55,20 +61,58 @@ export class Publisher {
 }
 
 export class DataManager extends Publisher {
-  async _publishLoadingState(topic, request) {
-    this.publish(topic, {state: LOADING_STATE.LOADING});
+  constructor() {
+    super();
+    this.loadingStates = LOADING_STATE;
+    this.registeredTopics = SUBSCRIPTION_TOPIC;
+  }
 
-    const response = await request();
+  async _publishLoadingState(topic, request, params) {
+    this.publish(topic, {state: 'LOADING'});
+
+    const response = await request(params);
 
     if (response.error) {
       this.publish(topic, {
-        state: LOADING_STATE.LOAD_FAILED,
+        state: 'LOAD_FAILED',
         response
       });
     } else {
-      this.publish(topic, {state: LOADING_STATE.LOADED, response});
+      this.publish(topic, {state: 'LOADED', response});
     }
 
     return response;
+  }
+
+  // Wrapped API calls
+
+  async getWorkflowInstances(params) {
+    return await this._publishLoadingState(
+      this.registeredTopics.LOAD_STATE_INSTANCES,
+      fetchWorkflowInstances,
+      params
+    );
+  }
+
+  async getWorkflowInstancesStatistics(params) {
+    return await this._publishLoadingState(
+      this.registeredTopics.LOAD_STATE_STATISTICS,
+      fetchWorkflowInstancesStatistics,
+      params
+    );
+  }
+  // helper function used to create a single function
+  // which can be passed to the publishLoadingState function
+  async fetchDiagramModel(params) {
+    const xml = await fetchWorkflowXML(params);
+    return await parseDiagramXML(xml);
+  }
+
+  async getWorkflowXML(params) {
+    return await this._publishLoadingState(
+      this.registeredTopics.LOAD_STATE_DEFINITIONS,
+      this.fetchDiagramModel,
+      params
+    );
   }
 }

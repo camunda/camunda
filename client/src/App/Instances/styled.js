@@ -65,3 +65,11 @@ export const Badge = styled(BadgeComponent)`
   top: 2px;
   margin-left: 13px;
 `;
+
+export const Pane = styled(SplitPane.Pane)`
+  border-radius: 3px 3px 0 0;
+`;
+
+export const PaneHeader = styled(SplitPane.Pane.Header)`
+  border-radius: 3px 3px 0 0;
+`;

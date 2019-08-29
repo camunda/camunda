@@ -4,13 +4,21 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {LOADING_STATE} from 'modules/constants';
+import {mockResolvedAsyncFn} from 'modules/testUtils';
+import {LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
 import {DataManager, Publisher} from './core';
+
+import * as instancesApi from 'modules/api/instances/instances';
+import * as diagramApi from 'modules/api/diagram/diagram';
+
+jest.mock('modules/utils/bpmn');
 
 const MOCK_TOPICS = {
   FETCH_STATE_FOO: 'FETCH_STATE_FOO',
   FETCH_STATE_BAR: 'FETCH_STATE_BAR'
 };
+
+const mockParams = {};
 
 const mockApiData = {
   success: {data: ['someData', 'someMoreData'], error: null},
@@ -21,6 +29,12 @@ const mockApi = {
   success: jest.fn(() => Promise.resolve(mockApiData.success)),
   error: jest.fn(() => Promise.resolve(mockApiData.error))
 };
+
+// api mocks
+instancesApi.fetchWorkflowInstancesStatistics = mockResolvedAsyncFn();
+instancesApi.fetchWorkflowInstances = mockResolvedAsyncFn();
+
+diagramApi.fetchWorkflowXML = mockResolvedAsyncFn('<xml />');
 
 describe('Publisher', () => {
   let publisher;
@@ -196,9 +210,9 @@ describe('Publisher', () => {
 });
 
 describe('DataManager', () => {
-  let dataManger;
+  let dataManager;
   beforeEach(() => {
-    dataManger = new DataManager(MOCK_TOPICS);
+    dataManager = new DataManager(MOCK_TOPICS);
   });
 
   describe('_publishLoadingState', () => {
@@ -207,8 +221,8 @@ describe('DataManager', () => {
       const topic = MOCK_TOPICS.FETCH_STATE_FOO;
       const callback = jest.fn();
 
-      dataManger.subscribe({[topic]: callback});
-      await dataManger._publishLoadingState(topic, mockApi.success);
+      dataManager.subscribe({[topic]: callback});
+      await dataManager._publishLoadingState(topic, mockApi.success);
 
       expect(callback.mock.calls[0][0]).toEqual({
         state: LOADING_STATE.LOADING
@@ -221,8 +235,8 @@ describe('DataManager', () => {
       const callback = jest.fn();
 
       // when
-      dataManger.subscribe({[topic]: callback});
-      await dataManger._publishLoadingState(topic, mockApi.success);
+      dataManager.subscribe({[topic]: callback});
+      await dataManager._publishLoadingState(topic, mockApi.success);
 
       // then
       expect(callback.mock.calls).toEqual([
@@ -242,8 +256,8 @@ describe('DataManager', () => {
       const callback = jest.fn();
 
       // when
-      dataManger.subscribe({[topic]: callback});
-      await dataManger._publishLoadingState(topic, mockApi.error);
+      dataManager.subscribe({[topic]: callback});
+      await dataManager._publishLoadingState(topic, mockApi.error);
 
       // then
       expect(callback.mock.calls).toEqual([
@@ -255,6 +269,54 @@ describe('DataManager', () => {
           }
         ]
       ]);
+    });
+  });
+
+  describe('API calls', () => {
+    beforeEach(() => {
+      dataManager._publishLoadingState = jest.fn();
+      // dataManager._publishLoadingState.mockClear();
+    });
+
+    describe('fetch workflow instances', () => {
+      it('should publish loading stats to topic', () => {
+        // when
+        dataManager.getWorkflowInstances(mockParams);
+
+        // then
+        expect(dataManager._publishLoadingState).toHaveBeenCalledWith(
+          SUBSCRIPTION_TOPIC.LOAD_STATE_INSTANCES,
+          instancesApi.fetchWorkflowInstances,
+          mockParams
+        );
+      });
+    });
+
+    describe('fetch workflow instance statistics', () => {
+      it('should publish loading stats to topic', () => {
+        // when
+        dataManager.getWorkflowInstancesStatistics(mockParams);
+
+        // then
+        expect(dataManager._publishLoadingState).toHaveBeenCalledWith(
+          SUBSCRIPTION_TOPIC.LOAD_STATE_STATISTICS,
+          instancesApi.fetchWorkflowInstancesStatistics,
+          mockParams
+        );
+      });
+    });
+    describe('fetch workflow XML', () => {
+      it('should publish loading stats to topic', () => {
+        // when
+        dataManager.getWorkflowXML(mockParams);
+
+        // then
+        expect(dataManager._publishLoadingState).toHaveBeenCalledWith(
+          SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS,
+          dataManager.fetchDiagramModel,
+          mockParams
+        );
+      });
     });
   });
 });

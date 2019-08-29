@@ -50,9 +50,7 @@ export const SelectionButton = themed(styled.button`
   &:focus {
     box-shadow: ${themeStyle({
       dark: `0 0 0 1px ${Colors.focusOuter},0 0 0 4px ${Colors.darkFocusInner}`,
-      light: `0 0 0 1px ${Colors.focusOuter}, 0 0 0 4px ${
-        Colors.lightFocusInner
-      }`
+      light: `0 0 0 1px ${Colors.focusOuter}, 0 0 0 4px ${Colors.lightFocusInner}`
     })}
 `);
 

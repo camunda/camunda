@@ -7,7 +7,7 @@
 import {isEmpty} from 'lodash';
 import {isValidJSON} from 'modules/utils';
 import {parseDiagramXML} from 'modules/utils/bpmn';
-import {fetchWorkflowXML} from 'modules/api/diagram';
+
 import {getWorkflowByVersion} from 'modules/utils/filter';
 
 export function parseQueryString(queryString = '') {
@@ -67,8 +67,8 @@ export function getWorkflowName(workflow) {
   return workflow ? workflow.name || workflow.bpmnProcessId : 'Workflow';
 }
 
-export async function fetchDiagramModel(workflowId) {
-  const xml = await fetchWorkflowXML(workflowId);
+export async function fetchDiagramModel(dataManager, workflowId) {
+  const xml = await dataManager.getWorkflowXML(workflowId);
   return await parseDiagramXML(xml);
 }
 

@@ -11,70 +11,64 @@ import {ThemeProvider} from 'modules/theme';
 import {SelectionProvider} from 'modules/contexts/SelectionContext';
 import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
+import {DataManager} from 'modules/DataManager/core';
+
 import {HashRouter as Router} from 'react-router-dom';
 import {formatGroupedWorkflows} from 'modules/utils/instance';
 import {FILTER_SELECTION} from 'modules/constants';
 import {
   flushPromises,
-  createInstance,
-  createOperation,
   mockResolvedAsyncFn,
   groupedWorkflowsMock
 } from 'modules/testUtils';
-import {EXPAND_STATE, DEFAULT_SORTING, DEFAULT_FILTER} from 'modules/constants';
 
-import ListView from './ListView';
+import {
+  mockProps,
+  mockPropsWithInstances,
+  mockPropsWithNoOperation,
+  mockPropsWithPoll,
+  ACTIVE_INSTANCE
+} from './ListPanel.setup';
+
+import ListPanel from './ListPanel';
 import List from './List';
 import ListFooter from './ListFooter';
 
 import * as api from 'modules/api/instances/instances';
 
-// mock props
-const filterCount = 27;
-const onFirstElementChange = jest.fn();
-const INSTANCE = createInstance({
-  id: '1',
-  operations: [createOperation({state: 'FAILED'})],
-  hasActiveOperation: false
-});
-const ACTIVE_INSTANCE = createInstance({
-  id: '2',
-  operations: [createOperation({state: 'SENT'})],
-  hasActiveOperation: true
-});
+jest.mock('modules/utils/bpmn');
+jest.mock('modules/DataManager/core');
 
-const mockProps = {
-  expandState: EXPAND_STATE.DEFAULT,
-  filter: DEFAULT_FILTER,
-  filterCount: filterCount,
-  instancesLoaded: false,
-  instances: [],
-  sorting: DEFAULT_SORTING,
-  onSort: jest.fn(),
-  firstElement: 0,
-  onFirstElementChange: onFirstElementChange,
-  onWorkflowInstancesRefresh: jest.fn()
-};
-const mockPropsWithInstances = {
-  ...mockProps,
-  instances: [INSTANCE, ACTIVE_INSTANCE],
-  instancesLoaded: true
-};
-
-const mockPropsWithNoOperation = {
-  ...mockProps,
-  instances: [INSTANCE],
-  instancesLoaded: true
-};
-const Component = <ListView.WrappedComponent {...mockProps} />;
-const ComponentWithInstances = (
-  <ListView.WrappedComponent {...mockPropsWithInstances} />
-);
+DataManager.mockImplementation(() => {
+  return {
+    subscribe: jest.fn(),
+    getWorkflowXML: jest.fn(),
+    getWorkflowInstances: jest.fn(),
+    getWorkflowInstancesStatistics: jest.fn()
+  };
+});
 
 // api mocks
 api.fetchWorkflowInstances = mockResolvedAsyncFn([]);
 
-describe('ListView', () => {
+describe('ListPanel', () => {
+  let Component, ComponentWithInstances;
+  let dataManager;
+  beforeEach(() => {
+    jest.clearAllMocks();
+    dataManager = new DataManager();
+
+    Component = (
+      <ListPanel.WrappedComponent {...mockProps} {...{dataManager}} />
+    );
+    ComponentWithInstances = (
+      <ListPanel.WrappedComponent
+        {...mockPropsWithInstances}
+        {...{dataManager}}
+      />
+    );
+  });
+
   it('should have initially default state', () => {
     // given
     const node = shallow(Component);
@@ -105,6 +99,7 @@ describe('ListView', () => {
 
     it('should pass a method to the footer to change the firstElement', async () => {
       // given
+
       const node = mount(
         <Router>
           <ThemeProvider>
@@ -114,7 +109,10 @@ describe('ListView', () => {
                 filter={FILTER_SELECTION.incidents}
               >
                 <InstancesPollProvider>
-                  <ListView {...mockPropsWithNoOperation} />
+                  <ListPanel.WrappedComponent
+                    {...mockPropsWithNoOperation}
+                    {...{dataManager}}
+                  />
                 </InstancesPollProvider>
               </SelectionProvider>
             </CollapsablePanelProvider>
@@ -170,7 +168,10 @@ describe('ListView', () => {
                 filter={FILTER_SELECTION.incidents}
               >
                 <InstancesPollProvider>
-                  <ListView {...mockPropsWithNoOperation} />
+                  <ListPanel.WrappedComponent
+                    {...mockPropsWithNoOperation}
+                    {...{dataManager}}
+                  />
                 </InstancesPollProvider>
               </SelectionProvider>
             </CollapsablePanelProvider>
@@ -195,7 +196,7 @@ describe('ListView', () => {
         }
       };
       const node = shallow(
-        <ListView.WrappedComponent {...mockPropsWithPoll} />
+        <ListPanel.WrappedComponent {...mockPropsWithPoll} {...{dataManager}} />
       );
 
       // when
@@ -203,8 +204,8 @@ describe('ListView', () => {
       node.setState({entriesPerPage: 2});
 
       // simulate change of instances displayed
-      node.setProps({instancesLoaded: false});
-      node.setProps({instancesLoaded: true});
+      node.setState({instancesLoaded: false});
+      node.setState({instancesLoaded: true});
 
       // then
       expect(mockPropsWithPoll.polling.addIds).toHaveBeenCalledWith([
@@ -223,7 +224,10 @@ describe('ListView', () => {
                 filter={FILTER_SELECTION.incidents}
               >
                 <InstancesPollProvider>
-                  <ListView {...mockPropsWithNoOperation} />
+                  <ListPanel.WrappedComponent
+                    {...mockPropsWithPoll}
+                    {...{dataManager}}
+                  />
                 </InstancesPollProvider>
               </SelectionProvider>
             </CollapsablePanelProvider>
@@ -241,22 +245,14 @@ describe('ListView', () => {
       node.update();
 
       // then
-      expect(node.find(InstancesPollProvider).state().ids).toEqual([
+      expect(mockPropsWithPoll.polling.addIds).toHaveBeenCalledWith([
         node.find(List).props().data[0].id
       ]);
     });
 
     it('should not poll for instances with active operations that are no longer in view after collapsing', async () => {
-      const mockPropsWithPoll = {
-        ...mockPropsWithNoOperation,
-        polling: {
-          ids: [],
-          addIds: jest.fn(),
-          removeIds: jest.fn()
-        }
-      };
       const node = shallow(
-        <ListView.WrappedComponent {...mockPropsWithPoll} />
+        <ListPanel.WrappedComponent {...mockPropsWithPoll} {...{dataManager}} />
       );
 
       // when
@@ -264,8 +260,8 @@ describe('ListView', () => {
       node.setState({entriesPerPage: 2});
 
       // simulate change of instances displayed
-      node.setProps({instancesLoaded: false});
-      node.setProps({instancesLoaded: true});
+      node.setState({instancesLoaded: false});
+      node.setState({instancesLoaded: true});
 
       // then
       expect(mockPropsWithPoll.polling.addIds).not.toHaveBeenCalled();
@@ -273,16 +269,8 @@ describe('ListView', () => {
 
     // https://app.camunda.com/jira/browse/OPE-395
     it('should refetch instances when expanding the list panel', async () => {
-      const mockPropsWithPoll = {
-        ...mockPropsWithInstances,
-        polling: {
-          ids: [],
-          addIds: jest.fn(),
-          removeIds: jest.fn()
-        }
-      };
       const node = shallow(
-        <ListView.WrappedComponent {...mockPropsWithPoll} />
+        <ListPanel.WrappedComponent {...mockPropsWithPoll} {...{dataManager}} />
       );
 
       // when
@@ -290,14 +278,16 @@ describe('ListView', () => {
       node.setState({entriesPerPage: 2});
 
       // simulate load of instances in list
-      node.setProps({instancesLoaded: false});
-      node.setProps({instancesLoaded: true});
+      node.setState({instancesLoaded: false});
+      node.setState({instancesLoaded: true});
 
-      node.setState({entriesPerPage: 2});
+      node.setState({entriesPerPage: 3});
       await flushPromises();
       node.update();
 
-      expect(mockProps.onWorkflowInstancesRefresh).toHaveBeenCalledTimes(1);
+      expect(
+        mockPropsWithPoll.onWorkflowInstancesRefresh
+      ).toHaveBeenCalledTimes(1);
     });
   });
 });

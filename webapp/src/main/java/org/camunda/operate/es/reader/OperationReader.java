@@ -69,7 +69,7 @@ public class OperationReader extends AbstractReader {
 
     ConstantScoreQueryBuilder constantScoreQuery = constantScoreQuery(operationsQuery);
 
-    final SearchRequest searchRequest = new SearchRequest(operationTemplate.getAlias())
+    final SearchRequest searchRequest = new SearchRequest(operationTemplate.getMainIndexName())
       .source(new SearchSourceBuilder()
         .query(constantScoreQuery)
         .sort(OperationTemplate.START_DATE, SortOrder.ASC)

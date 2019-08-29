@@ -6,7 +6,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-
+import {withData} from 'modules/DataManager';
 import SplitPane from 'modules/components/SplitPane';
 import {EXPAND_STATE} from 'modules/constants';
 
@@ -18,12 +18,12 @@ import {withPoll} from 'modules/contexts/InstancesPollContext';
 import {getInstancesWithActiveOperations} from 'modules/utils/instance';
 import * as Styled from './styled';
 
-class ListView extends React.Component {
+class ListPanel extends React.Component {
   static propTypes = {
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
     filter: PropTypes.object.isRequired,
     filterCount: PropTypes.number.isRequired,
-    instancesLoaded: PropTypes.bool,
+
     instances: PropTypes.array.isRequired,
     sorting: PropTypes.object.isRequired,
     onSort: PropTypes.func.isRequired,
@@ -36,16 +36,33 @@ class ListView extends React.Component {
     super(props);
 
     this.state = {
-      entriesPerPage: 0
+      entriesPerPage: 0,
+      instancesLoaded: false
     };
+
+    this.subscriptions = {
+      LOAD_STATE_INSTANCES: response => {
+        if (response.state === 'LOADING') {
+          this.setState({instancesLoaded: false});
+        }
+
+        if (response.state === 'LOADED') {
+          this.setState({instancesLoaded: true});
+        }
+      }
+    };
+  }
+
+  componentDidMount() {
+    this.props.dataManager.subscribe(this.subscriptions);
   }
 
   componentDidUpdate(prevProps, prevState) {
     const hasListChanged =
-      !prevProps.instancesLoaded && this.props.instancesLoaded;
+      !prevState.instancesLoaded && this.state.instancesLoaded;
 
     const hasEntriesPerPageChanged =
-      this.props.instancesLoaded &&
+      this.state.instancesLoaded &&
       this.state.entriesPerPage !== prevState.entriesPerPage;
     const isListExpanded = this.state.entriesPerPage > prevState.entriesPerPage;
 
@@ -85,6 +102,10 @@ class ListView extends React.Component {
         }
       }
     }
+  }
+
+  componentWillUnmount() {
+    this.props.dataManager.unsubscribe(this.subscriptions);
   }
 
   checkForInstancesWithActiveOperations = () => {
@@ -150,4 +171,7 @@ class ListView extends React.Component {
   }
 }
 
-export default withPoll(ListView);
+const WrappedListPanel = withData(withPoll(ListPanel));
+WrappedListPanel.WrappedComponent = ListPanel;
+
+export default WrappedListPanel;

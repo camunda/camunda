@@ -11,9 +11,8 @@ import {
   DEFAULT_FILTER,
   DEFAULT_FILTER_CONTROLLED_VALUES
 } from 'modules/constants';
-import {isEmpty} from 'lodash';
 
-import Diagram from 'modules/components/Diagram';
+// import Diagram from 'modules/components/Diagram';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import {
   SelectionProvider,
@@ -23,15 +22,12 @@ import {getInstancesIdsFromSelections} from 'modules/contexts/SelectionContext/s
 import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 
 import Header from '../Header';
-import TopPane from './TopPane';
-import ListView from './ListView';
+import DiagramPanel from './DiagramPanel';
+import ListPanel from './ListPanel';
 import Filters from './Filters';
 import Selections from './Selections';
 
-import {
-  getWorkflowByVersionFromFilter,
-  getWorkflowNameFromFilter
-} from './service';
+import {getWorkflowNameFromFilter} from './service';
 
 import {getFlowNodes} from 'modules/utils/flowNodes';
 import * as Styled from './styled.js';
@@ -58,7 +54,6 @@ export default class Instances extends Component {
     filterCount: PropTypes.number.isRequired,
     groupedWorkflows: PropTypes.object.isRequired,
     workflowInstances: PropTypes.array.isRequired,
-    workflowInstancesLoaded: PropTypes.bool.isRequired,
     firstElement: PropTypes.number.isRequired,
     onFirstElementChange: PropTypes.func.isRequired,
     sorting: PropTypes.object.isRequired,
@@ -76,13 +71,8 @@ export default class Instances extends Component {
 
   render() {
     const {filter, groupedWorkflows} = this.props;
-    const currentWorkflowByVersion = getWorkflowByVersionFromFilter({
-      filter,
-      groupedWorkflows
-    });
 
     const workflowName = getWorkflowNameFromFilter({filter, groupedWorkflows});
-
     const {ids: selectableIds, flowNodes: selectableFlowNodes} = getFlowNodes(
       this.props.diagramModel.bpmnElements
     );
@@ -97,7 +87,9 @@ export default class Instances extends Component {
             <InstancesPollProvider
               onWorkflowInstancesRefresh={this.props.onWorkflowInstancesRefresh}
               onSelectionsRefresh={selections.onInstancesInSelectionsRefresh}
-              visibleIdsInListView={this.props.workflowInstances.map(x => x.id)}
+              visibleIdsInListPanel={this.props.workflowInstances.map(
+                x => x.id
+              )}
               visibleIdsInSelections={getInstancesIdsFromSelections(
                 selections.selections
               )}
@@ -126,31 +118,21 @@ export default class Instances extends Component {
                       onFilterChange={this.props.onFilterChange}
                     />
                   </Styled.FilterSection>
-
                   <Styled.SplitPane
                     titles={{top: 'Workflow', bottom: 'Instances'}}
                   >
-                    <TopPane
+                    <DiagramPanel
                       workflowName={workflowName}
-                      renderNoWorkflowMessage={!filter.workflow}
-                      renderNoVersionMessage={filter.version === 'all'}
-                      renderChildren={
-                        !isEmpty(currentWorkflowByVersion) &&
-                        !!this.props.diagramModel.definitions
-                      }
-                    >
-                      <Diagram
-                        definitions={this.props.diagramModel.definitions}
-                        flowNodesStatistics={this.props.statistics}
-                        onFlowNodeSelection={this.props.onFlowNodeSelection}
-                        selectedFlowNodeId={this.props.filter.activityId}
-                        selectableFlowNodes={selectableIds}
-                      />
-                    </TopPane>
-
-                    <ListView
+                      onFlowNodeSelection={this.props.onFlowNodeSelection}
+                      noWorkflowSelected={!filter.workflow}
+                      noVersionSelected={filter.version === 'all'}
+                      definitions={this.props.diagramModel.definitions}
+                      flowNodesStatistics={this.props.statistics}
+                      selectedFlowNodeId={this.props.filter.activityId}
+                      selectableFlowNodes={selectableIds}
+                    />
+                    <ListPanel
                       instances={this.props.workflowInstances}
-                      instancesLoaded={this.props.workflowInstancesLoaded}
                       filter={this.props.filter}
                       filterCount={this.props.filterCount}
                       onSort={this.props.onSort}

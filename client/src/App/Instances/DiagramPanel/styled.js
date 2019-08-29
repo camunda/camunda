@@ -5,8 +5,8 @@
  */
 
 import styled from 'styled-components';
-import SplitPane from 'modules/components/SplitPane';
 import EmptyMessage from '../EmptyMessage';
+import {default as SplitPaneComponent} from 'modules/components/SplitPane';
 
 export const EmptyMessageWrapper = styled.div`
   position: relative;
@@ -20,10 +20,6 @@ export const DiagramEmptyMessage = styled(EmptyMessage)`
   top: 0;
 `;
 
-export const Pane = styled(SplitPane.Pane)`
-  border-radius: 3px 3px 0 0;
-`;
-
-export const PaneHeader = styled(SplitPane.Pane.Header)`
+export const PaneHeader = styled(SplitPaneComponent.Pane.Header)`
   border-radius: 3px 3px 0 0;
 `;

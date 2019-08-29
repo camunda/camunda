@@ -10,7 +10,7 @@ import {mount} from 'enzyme';
 import Table from 'modules/components/Table';
 import {IncidentAction} from 'modules/components/Actions';
 import Button from 'modules/components/Button';
-import ColumnHeader from '../../../Instances/ListView/List/ColumnHeader';
+import ColumnHeader from '../../../Instances/ListPanel/List/ColumnHeader';
 import Modal from 'modules/components/Modal';
 
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
