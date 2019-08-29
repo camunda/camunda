@@ -60,7 +60,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
             '-DskipTests',
             '-Dskip.docker',
             '-Dskip.fe.build',
-            '-pl backend',
+            '-pl backend,qa/data-generation',
             '-am'
           ],
           {
