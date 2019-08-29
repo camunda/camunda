@@ -29,6 +29,9 @@ import (
 	"os"
 )
 
+// OAuthDefaultAuthzURL points to the expected default URL for this credentials provider, the Camunda Cloud endpoint.
+const OAuthDefaultAuthzURL = "https://login.cloud.camunda.io/oauth/token/"
+
 // OAuthCredentialsProvider is a built-in CredentialsProvider that contains credentials obtained from an OAuth
 // authorization server, including a token prefix and an access token. Using these values it sets the 'Authorization'
 // header of each gRPC call.
@@ -96,8 +99,9 @@ func (provider *OAuthCredentialsProvider) ShouldRetryRequest(err error) bool {
 // NewOAuthCredentialsProvider requests credentials from an authorization server and uses them to create an OAuthCredentialsProvider.
 func NewOAuthCredentialsProvider(config *OAuthProviderConfig) (*OAuthCredentialsProvider, error) {
 	applyEnvironmentOverrides(config)
+	applyDefaults(config)
 
-	if err := validation.Validate(config.AuthorizationServerURL, validation.Required, is.URL); err != nil {
+	if err := validation.Validate(config.AuthorizationServerURL, is.URL); err != nil {
 		return nil, invalidArgumentError("authorization server URL", err.Error())
 	} else if err := validation.Validate(config.ClientID, validation.Required); err != nil {
 		return nil, invalidArgumentError("client ID", err.Error())
@@ -134,6 +138,12 @@ func applyEnvironmentOverrides(config *OAuthProviderConfig) {
 	}
 	if envAuthzServerURL := os.Getenv("ZEEBE_AUTHORIZATION_SERVER_URL"); envAuthzServerURL != "" {
 		config.AuthorizationServerURL = envAuthzServerURL
+	}
+}
+
+func applyDefaults(config *OAuthProviderConfig) {
+	if config.AuthorizationServerURL == "" {
+		config.AuthorizationServerURL = OAuthDefaultAuthzURL
 	}
 }
 
