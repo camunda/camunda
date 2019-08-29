@@ -30,16 +30,13 @@ import io.zeebe.distributedlog.restore.snapshot.RestoreSnapshotReplicator;
 import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreContext;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.state.FileSnapshotConsumer;
 import io.zeebe.logstreams.state.SnapshotConsumer;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.util.ZbLogger;
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
@@ -54,7 +51,6 @@ public class DefaultDistributedLogstreamService
       LoggerFactory.getLogger(DefaultDistributedLogstreamService.class);
 
   private LogStream logStream;
-  private LogStorage logStorage;
   private String logName;
   private int partitionId;
   private String currentLeader;
@@ -84,7 +80,6 @@ public class DefaultDistributedLogstreamService
           getLocalMemberId().id(),
           logName);
       logStream = getOrCreateLogStream(logName);
-      logStorage = logStream.getLogStorage();
       initLastPosition();
       logger.debug(
           "Configured with LogStream {} and last appended event at position {}",
@@ -165,13 +160,7 @@ public class DefaultDistributedLogstreamService
   }
 
   private void initLastPosition() {
-    final BufferedLogStreamReader reader = new BufferedLogStreamReader(logStream);
-    reader.seekToLastEvent();
-    lastPosition = reader.getPosition();
-    if (lastPosition > 0) {
-      logStream.setCommitPosition(lastPosition);
-    }
-    reader.close();
+    lastPosition = logStream.getCommitPosition();
   }
 
   @Override
@@ -213,29 +202,12 @@ public class DefaultDistributedLogstreamService
       return 1; // Assume the append was successful because event was previously appended.
     }
 
-    final ByteBuffer buffer = ByteBuffer.wrap(blockBuffer);
-    final long appendResult = appendBlock(buffer);
-    updateCommitPosition(commitPosition);
-    return appendResult;
-  }
-
-  private long appendBlock(ByteBuffer buffer) {
-    long appendResult = -1;
-    boolean notAppended = true;
     try {
+      final ByteBuffer buffer = ByteBuffer.wrap(blockBuffer);
+      final long appendResult = logStream.append(commitPosition, buffer);
+      lastPosition = commitPosition;
 
-      do {
-        try {
-          appendResult = logStorage.append(buffer);
-          notAppended = false;
-        } catch (IOException ioe) {
-          // we want to retry the append
-          // we avoid recursion, otherwise we can get stack overflow exceptions
-          LOG.error(
-              "Expected to append new buffer, but caught IOException. Will retry this operation.",
-              ioe);
-        }
-      } while (notAppended);
+      return appendResult;
     } catch (Exception e) {
       // block the primitive
       LOG.error(
@@ -249,8 +221,6 @@ public class DefaultDistributedLogstreamService
         }
       }
     }
-
-    return appendResult;
   }
 
   @Override
@@ -329,10 +299,5 @@ public class DefaultDistributedLogstreamService
         snapshotReplicator,
         restoreThreadContext,
         logger);
-  }
-
-  private void updateCommitPosition(long commitPosition) {
-    logStream.setCommitPosition(commitPosition);
-    lastPosition = commitPosition;
   }
 }

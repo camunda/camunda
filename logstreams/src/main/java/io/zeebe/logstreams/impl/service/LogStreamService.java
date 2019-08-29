@@ -35,6 +35,8 @@ import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
 
@@ -78,6 +80,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
     serviceContext = startContext;
     logStorage = logStorageInjector.getValue();
     this.reader = new BufferedLogStreamReader(this);
+    setCommitPosition(reader.seekToEnd());
   }
 
   @Override
@@ -115,11 +118,32 @@ public class LogStreamService implements LogStream, Service<LogStream> {
     return commitPosition.get();
   }
 
-  @Override
-  public void setCommitPosition(final long commitPosition) {
+  private void setCommitPosition(final long commitPosition) {
     this.commitPosition.setOrdered(commitPosition);
 
     onCommitPositionUpdatedConditions.signalConsumers();
+  }
+
+  @Override
+  public long append(long commitPosition, ByteBuffer buffer) {
+    long appendResult = -1;
+    boolean notAppended = true;
+    do {
+      try {
+        appendResult = logStorage.append(buffer);
+        notAppended = false;
+      } catch (IOException ioe) {
+        // we want to retry the append
+        // we avoid recursion, otherwise we can get stack overflow exceptions
+        LOG.error(
+            "Expected to append new buffer, but caught IOException. Will retry this operation.",
+            ioe);
+      }
+    } while (notAppended);
+
+    setCommitPosition(commitPosition);
+
+    return appendResult;
   }
 
   @Override

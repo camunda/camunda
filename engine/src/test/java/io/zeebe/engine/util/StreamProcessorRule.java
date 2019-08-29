@@ -24,9 +24,13 @@ import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.io.File;
+import java.io.IOException;
+import java.util.function.Supplier;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -77,6 +81,7 @@ public class StreamProcessorRule implements TestRule {
     chain =
         RuleChain.outerRule(tempFolder)
             .around(actorSchedulerRule)
+            .around(new CleanUpRule(() -> tempFolder.getRoot()))
             .around(serviceContainerRule)
             .around(closeables)
             .around(new FailedTestRecordPrinter())
@@ -289,6 +294,31 @@ public class StreamProcessorRule implements TestRule {
     protected void failed(final Throwable e, final Description description) {
       LOG.info("Test failed, following records where exported:");
       printAllRecords();
+    }
+  }
+
+  private class CleanUpRule extends ExternalResource {
+
+    private File root;
+    private final Supplier<File> rootSupplier;
+
+    CleanUpRule(Supplier<File> rootSupplier) {
+      this.rootSupplier = rootSupplier;
+    }
+
+    @Override
+    protected void before() {
+      root = rootSupplier.get();
+    }
+
+    @Override
+    protected void after() {
+      try {
+        LOG.debug("Clean up test files on path {}", root);
+        FileUtil.deleteFolder(root.toPath());
+      } catch (IOException e) {
+        LOG.error("Error on deleting root test folder", e);
+      }
     }
   }
 }

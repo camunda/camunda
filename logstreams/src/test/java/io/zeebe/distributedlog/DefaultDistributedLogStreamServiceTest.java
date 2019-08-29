@@ -8,6 +8,7 @@
 package io.zeebe.distributedlog;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
@@ -24,7 +25,6 @@ import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
@@ -66,23 +66,7 @@ public class DefaultDistributedLogStreamServiceTest {
     distributedLogRule.writeEvent(1, "message");
 
     // then
-    verify(logStreamSpy.getLogStorage(), timeout(5_000).times(1)).append(any(ByteBuffer.class));
-  }
-
-  @Test
-  public void shouldRetryAppendBlock() throws Exception {
-    // given
-    distributedLogRule.waitUntilNodesJoined();
-    distributedLogRule.becomeLeader(1);
-    final LogStream logStreamSpy = installRule.getService().getLogStreamMock();
-    final LogStorage logStorage = logStreamSpy.getLogStorage();
-    doThrow(IOException.class).when(logStorage).append(any());
-
-    // when
-    distributedLogRule.writeEvent(1, "message");
-
-    // then
-    verify(logStreamSpy.getLogStorage(), timeout(5_000).atLeast(2)).append(any(ByteBuffer.class));
+    verify(logStreamSpy, timeout(5_000).times(1)).append(anyLong(), any(ByteBuffer.class));
   }
 
   @Test
@@ -91,15 +75,14 @@ public class DefaultDistributedLogStreamServiceTest {
     distributedLogRule.waitUntilNodesJoined();
     distributedLogRule.becomeLeader(1);
     final LogStream logStreamSpy = installRule.getService().getLogStreamMock();
-    final LogStorage logStorage = logStreamSpy.getLogStorage();
-    doThrow(IllegalStateException.class).when(logStorage).append(any());
+    doThrow(IllegalStateException.class).when(logStreamSpy).append(anyLong(), any());
 
     // when
     distributedLogRule.writeEvent(1, "message");
     distributedLogRule.writeEvent(1, "message");
 
     // then
-    verify(logStreamSpy.getLogStorage(), timeout(5_000).times(1)).append(any(ByteBuffer.class));
+    verify(logStreamSpy, timeout(5_000).times(1)).append(anyLong(), any(ByteBuffer.class));
   }
 
   private class LogInstallRule extends ExternalResource {

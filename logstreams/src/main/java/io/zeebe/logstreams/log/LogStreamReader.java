@@ -63,8 +63,12 @@ public interface LogStreamReader extends Iterator<LoggedEvent>, CloseableSilentl
   /** Seek to the log position of the first event. */
   void seekToFirstEvent();
 
-  /** Seek to the log position of the last event. */
-  void seekToLastEvent();
+  /**
+   * Seek to the end of the log, which means after the last event.
+   *
+   * @return the position of the last entry
+   */
+  long seekToEnd();
 
   /**
    * Returns the current log position of the reader.

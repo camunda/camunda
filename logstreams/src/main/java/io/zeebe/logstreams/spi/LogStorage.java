@@ -119,6 +119,16 @@ public interface LogStorage {
   long read(ByteBuffer readBuffer, long addr, ReadResultProcessor processor);
 
   /**
+   * Reads bytes into the given read buffer, starts with the last written blocks and iterates with
+   * help of the given processor.
+   *
+   * @param readBuffer the buffer which will contain the last block after this method returns
+   * @param processor the processor process the read bytes
+   * @return the address of the last block
+   */
+  long readLastBlock(ByteBuffer readBuffer, ReadResultProcessor processor);
+
+  /**
    * @return true if the storage is byte addressable (each byte managed in the underlying storage
    *     can be uniquely addressed using a long addr. False in case the storage is block
    *     addressable.

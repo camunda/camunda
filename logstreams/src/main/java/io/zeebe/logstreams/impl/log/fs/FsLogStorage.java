@@ -211,6 +211,41 @@ public class FsLogStorage implements LogStorage {
   }
 
   @Override
+  public long readLastBlock(final ByteBuffer readBuffer, final ReadResultProcessor processor) {
+    ensureOpenedStorage();
+
+    final int segmentCount = logSegments.segmentCount;
+    final FsLogSegment lastSegment = logSegments.getSegment(segmentCount - 1);
+
+    if (lastSegment != null && lastSegment.getSizeVolatile() > METADATA_LENGTH) {
+      boolean findLast = true;
+      final int segmentId = lastSegment.getSegmentId();
+      long currentAddress = position(segmentId, METADATA_LENGTH);
+      final int startPosition = readBuffer.position();
+      final int limit = readBuffer.limit();
+      while (findLast) {
+        // re-init
+        readBuffer.position(startPosition);
+        readBuffer.limit(limit);
+
+        final long nextAddress = read(readBuffer, currentAddress, processor);
+
+        if (nextAddress == OP_RESULT_NO_DATA) {
+          findLast = false;
+        } else {
+          if (nextAddress < 0L) {
+            findLast = false;
+          }
+          currentAddress = nextAddress;
+        }
+      }
+
+      return currentAddress;
+    }
+    return OP_RESULT_NO_DATA;
+  }
+
+  @Override
   public void flush() throws Exception {
     ensureOpenedStorage();
 

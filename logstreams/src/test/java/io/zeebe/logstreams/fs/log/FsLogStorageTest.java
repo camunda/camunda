@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -386,6 +387,56 @@ public class FsLogStorageTest {
     fsLogStorage.read(readBuffer, address);
 
     assertThat(readBuffer.array()).isEqualTo(MSG);
+  }
+
+  @Test
+  public void shouldReadLastEntryWithProcessor() throws IOException {
+    // given
+    final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length);
+    final byte[] msg2 = "1234".getBytes();
+
+    fsLogStorage.open();
+    fsLogStorage.append(ByteBuffer.wrap(MSG));
+    final long address = fsLogStorage.append(ByteBuffer.wrap(msg2));
+
+    // when
+    final long result =
+        fsLogStorage.readLastBlock(
+            readBuffer,
+            (buffer, bytesRead) -> {
+              // size of an entry
+              return 4;
+            });
+
+    // then
+    assertThat(result).isEqualTo(address + MSG.length);
+    assertThat(readBuffer.array()).isEqualTo(msg2);
+  }
+
+  @Test
+  public void shouldReadLastEntryWithProcessorAndLargerReadBuffer() throws IOException {
+    // given
+    final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length * 2);
+    final byte[] msg2 = "1234".getBytes();
+
+    fsLogStorage.open();
+    fsLogStorage.append(ByteBuffer.wrap(MSG));
+    final long address = fsLogStorage.append(ByteBuffer.wrap(msg2));
+
+    // when
+    final long result =
+        fsLogStorage.readLastBlock(
+            readBuffer,
+            (buffer, bytesRead) -> {
+              // size of an entry
+              return 4;
+            });
+
+    // then
+    assertThat(result).isEqualTo(address + MSG.length);
+    final byte[] bytes = new byte[MSG.length];
+    new UnsafeBuffer(readBuffer).getBytes(0, bytes);
+    assertThat(bytes).isEqualTo(msg2);
   }
 
   @Test

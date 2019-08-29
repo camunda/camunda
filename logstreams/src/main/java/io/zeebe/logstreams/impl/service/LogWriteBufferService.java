@@ -11,7 +11,6 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.DispatcherBuilder;
 import io.zeebe.dispatcher.impl.PositionUtil;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
@@ -58,14 +57,8 @@ public class LogWriteBufferService implements Service<Dispatcher> {
     try (BufferedLogStreamReader logReader = new BufferedLogStreamReader()) {
       logReader.wrap(logStorage);
 
-      long lastPosition = 0;
-
       // Get position of last entry
-      logReader.seekToLastEvent();
-      if (logReader.hasNext()) {
-        final LoggedEvent lastEntry = logReader.next();
-        lastPosition = lastEntry.getPosition();
-      }
+      final long lastPosition = logReader.seekToEnd();
 
       // dispatcher needs to generate positions greater than the last position
       int partitionId = 0;
