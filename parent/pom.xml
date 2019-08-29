@@ -102,7 +102,7 @@
     <plugin.version.enforcer>3.0.0-M2</plugin.version.enforcer>
     <plugin.version.dependency>3.1.1</plugin.version.dependency>
     <plugin.version.spotbugs>3.1.12.2</plugin.version.spotbugs>
-    <plugin.version.sonar>3.6.0.1398</plugin.version.sonar>
+    <plugin.version.sonar>3.6.1.1688</plugin.version.sonar>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.6.2</extension.version.os-maven-plugin>
