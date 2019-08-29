@@ -14,29 +14,29 @@ import io.micrometer.core.instrument.MeterRegistry;
 
 @Component
 public class Metrics {
-  
+
+  private static final Logger logger = LoggerFactory.getLogger(Metrics.class);
+
   // Namespace (prefix) for operate metrics
   public static final String OPERATE_NAMESPACE = "operate.";
-  
+
   // Timers:
   public static final String TIMER_NAME_QUERY = OPERATE_NAMESPACE+"query";
   // Counters:
   public static final String COUNTER_NAME_EVENTS_PROCESSED = "events.processed";
   public static final String COUNTER_NAME_COMMANDS = "commands";
-  // Tags 
+  // Tags
   // -----
   //  Keys:
   public static final String TAG_KEY_NAME = "name",
                              TAG_KEY_TYPE="type",
                              TAG_KEY_STATUS = "status";
   //  Values:
-  public static final String TAG_VALUE_WORKFLOWINSTANCES = "workflowInstances", 
+  public static final String TAG_VALUE_WORKFLOWINSTANCES = "workflowInstances",
                              TAG_VALUE_CORESTATISTICS = "corestatistics",
-                             TAG_VALUE_SUCCEEDED="succeeded", 
+                             TAG_VALUE_SUCCEEDED="succeeded",
                              TAG_VALUE_FAILED="failed";
-  
-  Logger logger = LoggerFactory.getLogger(Metrics.class);
-  
+
   @Autowired
   private MeterRegistry registry;
 
@@ -47,7 +47,7 @@ public class Metrics {
    * 
    * @param name - Name of counter
    * @param count - Number to count 
-   * @param dimensions - key value pairs of tags as Strings - The size of tags varargs must be even.
+   * @param tags - key value pairs of tags as Strings - The size of tags varargs must be even.
    */
   public void recordCounts(String name, int count, String ... tags) {
     registry.counter(OPERATE_NAMESPACE+name, tags).increment(count); 

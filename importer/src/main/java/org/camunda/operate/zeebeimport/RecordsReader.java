@@ -58,6 +58,8 @@ public class RecordsReader {
 
   public static final String PARTITION_ID_FIELD_NAME = ImportPositionIndex.PARTITION_ID;
 
+  private MetricsCounterImportListener metricsImportListener;
+
   /**
    * Partition id.
    */
@@ -102,9 +104,6 @@ public class RecordsReader {
 
   @Autowired
   private BeanFactory beanFactory;
-  
-  @Autowired
-  Metrics metrics;
 
   private ImportListener importListener;
   
@@ -164,9 +163,7 @@ public class RecordsReader {
 
       JavaType valueType = objectMapper.getTypeFactory().constructParametricType(RecordImpl.class, importValueType.getRecordValueClass());
       final List<Record> result = ElasticsearchUtil.mapSearchHits(searchResponse.getHits().getHits(), objectMapper, valueType);
-
-      ImportListener metricsImportListener = new MetricsCounterImportListener(metrics, Metrics.COUNTER_NAME_EVENTS_PROCESSED, importValueType.getValueType().name());  
-      return new ImportBatch(partitionId, importValueType, result, new ImportListener.Compound(importListener,metricsImportListener));
+      return new ImportBatch(partitionId, importValueType, result, new ImportListener.Compound(importListener, getMetricsImportListener()));
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
       logger.error(message, e);
@@ -267,6 +264,14 @@ public class RecordsReader {
 
   public void setImportListener(ImportListener importListener) {
     this.importListener = importListener;
+  }
+
+  private MetricsCounterImportListener getMetricsImportListener() {
+    if (metricsImportListener == null) {
+      this.metricsImportListener = beanFactory
+          .getBean(MetricsCounterImportListener.class, Metrics.COUNTER_NAME_EVENTS_PROCESSED, importValueType.getValueType().name());
+    }
+    return metricsImportListener;
   }
 }
 
