@@ -9,6 +9,7 @@ import org.camunda.operate.ImportModuleConfiguration;
 import org.camunda.operate.WebappModuleConfiguration;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.apps.modules.ModulesTestApplication;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -27,11 +28,13 @@ public class OnlyImportIT {
   private ApplicationContext applicationContext;
 
   @Test
+  @Ignore
   public void testImportModuleIsPresent() {
     assertThat(applicationContext.getBean(ImportModuleConfiguration.class)).isNotNull();
   }
 
   @Test(expected = NoSuchBeanDefinitionException.class)
+  @Ignore
   public void testWebappModuleIsNotPresent() {
     applicationContext.getBean(WebappModuleConfiguration.class);
   }
