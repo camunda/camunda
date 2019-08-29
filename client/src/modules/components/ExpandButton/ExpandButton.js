@@ -9,14 +9,12 @@ import PropTypes from 'prop-types';
 import * as Styled from './styled';
 import {ExpandButtonThemes} from 'modules/theme';
 
-export default function ExpandButton({
-  children,
-  isExpanded,
-  expandTheme,
-  ...props
-}) {
+const ExpandButton = React.forwardRef(function ExpandButton(
+  {children, isExpanded, expandTheme, ...props},
+  ref
+) {
   return (
-    <Styled.Button {...props} expandTheme={expandTheme}>
+    <Styled.Button {...props} expandTheme={expandTheme} ref={ref}>
       <Styled.Transition timeout={400} in={isExpanded} appear>
         <Styled.Icon expandTheme={expandTheme}>
           <Styled.ArrowIcon />
@@ -25,7 +23,7 @@ export default function ExpandButton({
       {children}
     </Styled.Button>
   );
-}
+});
 
 ExpandButton.propTypes = {
   isExpanded: PropTypes.bool,
@@ -35,3 +33,5 @@ ExpandButton.propTypes = {
 ExpandButton.defaultProps = {
   isExpanded: false
 };
+
+export default ExpandButton;

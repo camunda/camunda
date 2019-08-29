@@ -27,26 +27,45 @@ export default class CollapsablePanel extends React.Component {
     isCollapsed: false
   };
 
+  constructor(props) {
+    super(props);
+    this.expandButtonRef = React.createRef();
+    this.expandButton = React.cloneElement(props.expandButton, {
+      onClick: this.handleButtonClick,
+      ref: this.expandButtonRef
+    });
+    this.collapseButtonRef = React.createRef();
+    this.collapseButton = React.cloneElement(props.collapseButton, {
+      onClick: this.handleButtonClick,
+      ref: this.collapseButtonRef
+    });
+  }
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    if (this.props.isCollapsed !== prevProps.isCollapsed) {
+      if (this.props.isCollapsed) {
+        setTimeout(() => this.expandButtonRef.current.focus(), 200);
+      } else {
+        setTimeout(() => this.collapseButtonRef.current.focus(), 200);
+      }
+    }
+  }
+
   handleButtonClick = () => {
     this.props.onCollapse();
   };
 
-  renderButton = button =>
-    React.cloneElement(button, {
-      onClick: this.handleButtonClick
-    });
-
   render() {
-    const {isCollapsed, children, collapseButton, expandButton} = this.props;
+    const {isCollapsed, children} = this.props;
 
     return (
       <Styled.Collapsable {...this.props} isCollapsed={isCollapsed}>
         <Styled.ExpandedPanel isCollapsed={isCollapsed}>
-          {this.renderButton(collapseButton)}
+          {this.collapseButton}
           {children}
         </Styled.ExpandedPanel>
         <Styled.CollapsedPanel isCollapsed={isCollapsed}>
-          {this.renderButton(expandButton)}
+          {this.expandButton}
         </Styled.CollapsedPanel>
       </Styled.Collapsable>
     );
