@@ -671,6 +671,45 @@ public class MultiInstanceActivityTest {
         .doesNotContain(OUTPUT_ELEMENT_VARIABLE);
   }
 
+  @Test
+  public void shouldSetLoopCounterVariable() {
+    // given
+    ENGINE.deployment().withXmlResource(workflow(miBuilder)).deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    final var elementInstanceKeys =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withElementId(ELEMENT_ID)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .limit(3)
+            .map(Record::getKey)
+            .collect(Collectors.toList());
+
+    assertThat(
+            RecordingExporter.records()
+                .limitToWorkflowInstance(workflowInstanceKey)
+                .variableRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withName("loopCounter"))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getScopeKey(), v.getValue()))
+        .containsExactly(
+            tuple(elementInstanceKeys.get(0), "1"),
+            tuple(elementInstanceKeys.get(1), "2"),
+            tuple(elementInstanceKeys.get(2), "3"));
+  }
+
   private void completeJobs(final long workflowInstanceKey, final int count) {
     IntStream.range(0, count)
         .forEach(
