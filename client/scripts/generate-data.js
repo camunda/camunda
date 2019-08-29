@@ -21,7 +21,7 @@ const generateDataProcess = spawn(
   [
     'exec:java',
     '-f ./qa/data-generation/pom.xml',
-    `-Dexec.args="--numberOfProcessInstances ${numberOfProcessInstances}"`,
+    `-Dexec.args="--numberOfProcessInstances ${numberOfProcessInstances} --removeDeployments false"`,
     ciMode ? '-s settings.xml' : undefined
   ],
   {
