@@ -16,12 +16,29 @@ console.debug('executing generate-data script in [ci=' + ciMode + ']');
 // adjust for number of process instances to generate
 const numberOfProcessInstances = 5000;
 
+const definitions = [
+  'Invoice:4',
+  'InvoiceDataFor2Tenants:2',
+  'LeadQualification:6',
+  'BranchAnalysis:2',
+  'DmnTable:3',
+  'BookRequest:1',
+  'BookRequestForOneTenant:4',
+  'MultiInstanceSubprocessRequest:3',
+  'EmbeddedSubprocessRequest:2',
+  'HiringProcess:4',
+  'HiringProcessFor5Tenants:3',
+  'ProcessRequest:12'
+];
+
 const generateDataProcess = spawn(
   'mvn',
   [
     'exec:java',
     '-f ./qa/data-generation/pom.xml',
-    `-Dexec.args="--numberOfProcessInstances ${numberOfProcessInstances} --removeDeployments false"`,
+    `-Dexec.args="--numberOfProcessInstances ${numberOfProcessInstances} --removeDeployments false --definitions ${definitions.join(
+      ','
+    )}"`,
     ciMode ? '-s settings.xml' : undefined
   ],
   {
