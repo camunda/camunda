@@ -25,11 +25,11 @@ import io.zeebe.client.CredentialsProvider;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.ZeebeClientConfiguration;
+import io.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import java.time.Duration;
 import java.util.Properties;
 
 public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
-
   private String brokerContactPoint = "0.0.0.0:26500";
   private int jobWorkerMaxJobsActive = 32;
   private int numJobWorkerExecutionThreads = 1;
@@ -41,6 +41,9 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   private boolean usePlaintextConnection = false;
   private String certificatePath;
   private CredentialsProvider credentialsProvider;
+  private String clientId;
+  private String clientSecret;
+  private String authzServerUrl;
 
   @Override
   public String getBrokerContactPoint() {
@@ -174,7 +177,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder defaultJobPollInterval(Duration pollInterval) {
+  public ZeebeClientBuilder defaultJobPollInterval(final Duration pollInterval) {
     defaultJobPollInterval = pollInterval;
     return this;
   }
@@ -186,7 +189,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder defaultRequestTimeout(Duration requestTimeout) {
+  public ZeebeClientBuilder defaultRequestTimeout(final Duration requestTimeout) {
     this.defaultRequestTimeout = requestTimeout;
     return this;
   }
@@ -204,14 +207,48 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder credentialsProvider(CredentialsProvider credentialsProvider) {
+  public ZeebeClientBuilder credentialsProvider(final CredentialsProvider credentialsProvider) {
     this.credentialsProvider = credentialsProvider;
     return this;
   }
 
   @Override
+  public ZeebeClientBuilder oAuthCredentialsProvider(
+      final String clientId, final String clientSecret) {
+    this.clientId = clientId;
+    this.clientSecret = clientSecret;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder oAuthCredentialsProvider(
+      final String clientId, final String clientSecret, final String authzServerUrl) {
+    this.authzServerUrl = authzServerUrl;
+    return oAuthCredentialsProvider(clientId, clientSecret);
+  }
+
+  @Override
   public ZeebeClient build() {
+    applyDefaults();
+
     return new ZeebeClientImpl(this);
+  }
+
+  private void applyDefaults() {
+    if (clientId != null && clientSecret != null) {
+      final int separatorIndex = brokerContactPoint.lastIndexOf(':');
+      if (separatorIndex > 0) {
+        final String audience = brokerContactPoint.substring(0, separatorIndex);
+
+        this.credentialsProvider =
+            new OAuthCredentialsProviderBuilder()
+                .clientId(clientId)
+                .clientSecret(clientSecret)
+                .audience(audience)
+                .authorizationServerUrl(authzServerUrl)
+                .build();
+      }
+    }
   }
 
   @Override

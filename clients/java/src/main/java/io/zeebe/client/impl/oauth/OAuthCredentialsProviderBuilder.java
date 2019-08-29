@@ -22,6 +22,7 @@ import java.util.Objects;
 
 public class OAuthCredentialsProviderBuilder {
   public static final String INVALID_ARGUMENT_MSG = "Expected valid %s but none was provided.";
+  private static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
 
   private String clientId;
   private String clientSecret;
@@ -32,7 +33,7 @@ public class OAuthCredentialsProviderBuilder {
   private File credentialsCache;
 
   /** Client id to be used when requesting access token from OAuth authorization server. */
-  public OAuthCredentialsProviderBuilder clientId(String clientId) {
+  public OAuthCredentialsProviderBuilder clientId(final String clientId) {
     this.clientId = clientId;
     return this;
   }
@@ -43,7 +44,7 @@ public class OAuthCredentialsProviderBuilder {
   }
 
   /** Client secret to be used when requesting access token from OAuth authorization server. */
-  public OAuthCredentialsProviderBuilder clientSecret(String clientSecret) {
+  public OAuthCredentialsProviderBuilder clientSecret(final String clientSecret) {
     this.clientSecret = clientSecret;
     return this;
   }
@@ -54,7 +55,7 @@ public class OAuthCredentialsProviderBuilder {
   }
 
   /** The resource for which the the access token should be valid. */
-  public OAuthCredentialsProviderBuilder audience(String audience) {
+  public OAuthCredentialsProviderBuilder audience(final String audience) {
     this.audience = audience;
     return this;
   }
@@ -65,7 +66,8 @@ public class OAuthCredentialsProviderBuilder {
   }
 
   /** The authorization server's URL, from which the access token will be requested. */
-  public OAuthCredentialsProviderBuilder authorizationServerUrl(String authorizationServerUrl) {
+  public OAuthCredentialsProviderBuilder authorizationServerUrl(
+      final String authorizationServerUrl) {
     this.authorizationServerUrl = authorizationServerUrl;
     return this;
   }
@@ -79,7 +81,7 @@ public class OAuthCredentialsProviderBuilder {
    * The location for the credentials cache file. If none (or null) is specified the default will be
    * $HOME/.camunda/credentials
    */
-  public OAuthCredentialsProviderBuilder credentialsCachePath(String cachePath) {
+  public OAuthCredentialsProviderBuilder credentialsCachePath(final String cachePath) {
     this.credentialsCachePath = cachePath;
     return this;
   }
@@ -121,6 +123,10 @@ public class OAuthCredentialsProviderBuilder {
       this.credentialsCachePath =
           System.getProperty("user.home") + File.separator + ".camunda/credentials";
     }
+
+    if (authorizationServerUrl == null) {
+      authorizationServerUrl = DEFAULT_AUTHZ_SERVER;
+    }
   }
 
   private void validate() {
@@ -138,7 +144,7 @@ public class OAuthCredentialsProviderBuilder {
         throw new IllegalArgumentException(
             "Expected specified credentials cache to be a file but found directory instead.");
       }
-    } catch (NullPointerException | IOException e) {
+    } catch (final NullPointerException | IOException e) {
       throw new IllegalArgumentException(e);
     }
   }
