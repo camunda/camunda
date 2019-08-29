@@ -6,6 +6,7 @@
 package org.camunda.operate;
 
 import org.camunda.operate.data.DataGenerator;
+import org.camunda.operate.webapp.sso.SSOWebSecurityConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -33,13 +34,11 @@ public class Application {
 
     //To ensure that debug logging performed using java.util.logging is routed into Log4j 2
     System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
-
     final SpringApplication springApplication = new SpringApplication(Application.class);
-    springApplication.setAdditionalProfiles("auth");
     springApplication.setAddCommandLineProperties(true);
     springApplication.run(args);
   }
-
+  
   @Bean(name = "dataGenerator")
   @ConditionalOnMissingBean
   public DataGenerator stubDataGenerator() {

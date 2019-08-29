@@ -5,11 +5,13 @@
  */
 package org.camunda.operate.webapp.rest;
 
+import org.camunda.operate.webapp.sso.SSOWebSecurityConfig;
 import static org.camunda.operate.webapp.rest.AuthenticationRestService.AUTHENTICATION_URL;
 
 import org.camunda.operate.webapp.rest.dto.UserDto;
 import org.camunda.operate.webapp.rest.exception.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Profile("!"+SSOWebSecurityConfig.SSO_AUTH_PROFILE)
 @RestController
 @RequestMapping(value = AUTHENTICATION_URL)
 public class AuthenticationRestService {

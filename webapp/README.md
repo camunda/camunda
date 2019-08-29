@@ -39,7 +39,7 @@ Ways to activated profiles:
 
 - when running via `make env-up` or `docker-compose`: edit `docker-compose.yml`, section `services.operate.environment` (always leave `dev` profile active)
 ```text
-- SPRING_PROFILES_ACTIVE=dev,dev-data
+- SPRING_PROFILES_ACTIVE=dev,dev-data,auth
 ```
 - when running from distribution via `operate` shell script or `operate.bat`:
 ```text
