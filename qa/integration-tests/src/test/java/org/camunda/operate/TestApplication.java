@@ -36,8 +36,4 @@ public class TestApplication {
     return DataGenerator.DO_NOTHING;
   }
 
-  @Bean(name = "passwordEncoder")
-  public PasswordEncoder getPasswordEncoder() {
-    return passwordEncoder;
-  }
 }

@@ -18,10 +18,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 public class ElasticSearchUserDetailsServiceIT extends OperateIntegrationTest {
 
   @Autowired
-  OperateProperties operateProperties;
+  private OperateProperties operateProperties;
   
   @Autowired
-  ElasticSearchUserDetailsService userDetailsService;
+  private ElasticSearchUserDetailsService userDetailsService;
   
   @Test
   public void testAddConfigurationAndActUserWhenNotExistsToElasticSearch() {

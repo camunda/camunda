@@ -73,7 +73,7 @@ public class AuthenticationTest {
   private TestRestTemplate testRestTemplate;
  
   @MockBean
-  UserDetailsService userDetailsService;
+  private UserDetailsService userDetailsService;
   
   @Before
   public void setUp() {
@@ -168,7 +168,7 @@ public class AuthenticationTest {
     assertThat(prometheusResponse.getBody()).contains("# TYPE system_cpu_usage gauge");
   }
   
-  protected HttpHeaders getHeaderWithCSRF(HttpHeaders responseHeaders) {
+  private HttpHeaders getHeaderWithCSRF(HttpHeaders responseHeaders) {
     HttpHeaders headers = new HttpHeaders();
     if(responseHeaders.containsKey(X_CSRF_HEADER)) {
       String csrfHeader = responseHeaders.get(X_CSRF_HEADER).get(0);
@@ -178,7 +178,7 @@ public class AuthenticationTest {
     return headers;
   }
 
-  protected HttpEntity<Map<String, String>> prepareRequestWithCookies(ResponseEntity<?> response) {
+  private HttpEntity<Map<String, String>> prepareRequestWithCookies(ResponseEntity<?> response) {
     HttpHeaders headers = getHeaderWithCSRF(response.getHeaders());
     headers.setContentType(APPLICATION_JSON);
     headers.add("Cookie", response.getHeaders().get(SET_COOKIE_HEADER).get(0));
@@ -188,7 +188,7 @@ public class AuthenticationTest {
     return new HttpEntity<>(body, headers);
   }
 
-  protected ResponseEntity<Void> login(String username,String password) {
+  private ResponseEntity<Void> login(String username,String password) {
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_FORM_URLENCODED);
     
@@ -199,12 +199,12 @@ public class AuthenticationTest {
     return testRestTemplate.postForEntity(LOGIN_RESOURCE, new HttpEntity<>(body, headers), Void.class);
   }
   
-  protected ResponseEntity<String> logout(ResponseEntity<Void> response) {
+  private ResponseEntity<String> logout(ResponseEntity<Void> response) {
     HttpEntity<Map<String, String>> request = prepareRequestWithCookies(response);
     return testRestTemplate.postForEntity(LOGOUT_RESOURCE, request, String.class);
   }
 
-  protected void assertThatCookiesAreSet(HttpHeaders headers) {
+  private void assertThatCookiesAreSet(HttpHeaders headers) {
     assertThat(headers).containsKey(SET_COOKIE_HEADER);
     assertThat(headers.get(SET_COOKIE_HEADER).get(0)).contains(COOKIE_JSESSIONID);
     if(operateProperties.isCsrfPreventionEnabled()) {
@@ -213,7 +213,7 @@ public class AuthenticationTest {
     }
   }
 
-  protected void assertThatCookiesAreDeleted(HttpHeaders headers) {
+  private void assertThatCookiesAreDeleted(HttpHeaders headers) {
     assertThat(headers).containsKey(SET_COOKIE_HEADER);
     List<String> cookies = headers.get(SET_COOKIE_HEADER);
     final String emptyValue = "=;";

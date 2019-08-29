@@ -7,23 +7,24 @@ package org.camunda.operate.webapp.user;
 
 import java.util.Arrays;
 import java.util.Collection;
-
 import org.camunda.operate.entities.UserEntity;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
 
-@Component
+@Configuration
 public class ElasticSearchUserDetailsService implements UserDetailsService{
 
   private static final String ACT_USERNAME = "act", ACT_PASSWORD = ACT_USERNAME;
@@ -43,6 +44,11 @@ public class ElasticSearchUserDetailsService implements UserDetailsService{
   @Autowired
   private PasswordEncoder passwordEncoder;
 
+  @Bean
+  public PasswordEncoder getPasswordEncoder() {
+    return new BCryptPasswordEncoder();
+  }
+
   public void initializeUsers() {
     String username = operateProperties.getUsername();
     if(!userExists(username)) {
@@ -53,7 +59,7 @@ public class ElasticSearchUserDetailsService implements UserDetailsService{
     }
   }
 
-  protected ElasticSearchUserDetailsService addUserWith(String username,String password,String role) {
+  private ElasticSearchUserDetailsService addUserWith(String username,String password,String role) {
     logger.info("Create user in ElasticSearch for username {}",username);
     String passwordEncoded = passwordEncoder.encode(password);
     userStorage.create(UserEntity.from(username, passwordEncoded, role));
@@ -72,11 +78,11 @@ public class ElasticSearchUserDetailsService implements UserDetailsService{
     }
   }
 
-  protected Collection<? extends GrantedAuthority> toAuthorities(String role) {
+  private Collection<? extends GrantedAuthority> toAuthorities(String role) {
     return Arrays.asList(new SimpleGrantedAuthority("ROLE_" + role));
   }
   
-  protected boolean userExists(String username) {
+  private boolean userExists(String username) {
     try {
       return userStorage.getByName(username)!=null;
     }catch(Throwable t) {

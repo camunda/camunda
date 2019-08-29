@@ -33,11 +33,6 @@ public class ModulesTestApplication {
     SpringApplication.run(ModulesTestApplication.class, args);
   }
 
-  @Bean(name = "passwordEncoder")
-  public PasswordEncoder getPasswordEncoder() {
-    return new BCryptPasswordEncoder();
-  }
-
   @Bean(name = "dataGenerator")
   @ConditionalOnMissingBean
   public DataGenerator stubDataGenerator() {

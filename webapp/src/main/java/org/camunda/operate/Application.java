@@ -40,8 +40,6 @@ public class Application {
     springApplication.run(args);
   }
 
-  private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
   @Bean(name = "dataGenerator")
   @ConditionalOnMissingBean
   public DataGenerator stubDataGenerator() {
@@ -49,9 +47,5 @@ public class Application {
     return DataGenerator.DO_NOTHING;
   }
 
-  @Bean(name = "passwordEncoder")
-  public PasswordEncoder getPasswordEncoder() {
-    return passwordEncoder ;
-  }
 }
 
