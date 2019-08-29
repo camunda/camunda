@@ -6,6 +6,7 @@
 
 import React, {Children, cloneElement, useContext} from 'react';
 import PropTypes from 'prop-types';
+import {isEqual} from 'lodash';
 
 import Panel from 'modules/components/Panel';
 import {CollapsablePanelConsumer} from 'modules/contexts/CollapsablePanelContext';
@@ -33,6 +34,50 @@ export default class Pane extends React.Component {
     titles: {top: 'Top', bottom: 'Bottom'}
   };
 
+  constructor(props) {
+    super(props);
+    const {
+      titles: {top, bottom}
+    } = props;
+    this.topButtonRef = React.createRef();
+    this.topButton = (
+      <Styled.PaneCollapseButton
+        onClick={this.handleTopExpand}
+        direction={DIRECTION.DOWN}
+        title={`Expand ${top}`}
+        ref={this.topButtonRef}
+      />
+    );
+    this.bottomButtonRef = React.createRef();
+    this.bottomButton = (
+      <Styled.PaneCollapseButton
+        onClick={this.handleBottomExpand}
+        direction={DIRECTION.UP}
+        title={`Expand ${bottom}`}
+        ref={this.bottomButtonRef}
+      />
+    );
+  }
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    const expandState = this.props.expandState;
+    if (!isEqual(prevProps.expandState, expandState)) {
+      const topButtonCurrent = this.topButtonRef.current;
+      const bottomButtonCurrent = this.bottomButtonRef.current;
+      if (
+        isEqual(expandState, EXPAND_STATE.EXPANDED) &&
+        topButtonCurrent != null
+      ) {
+        topButtonCurrent.focus();
+      } else if (
+        isEqual(expandState, EXPAND_STATE.COLLAPSED) &&
+        bottomButtonCurrent != null
+      ) {
+        bottomButtonCurrent.focus();
+      }
+    }
+  }
+
   handleTopExpand = () => {
     this.props.handleExpand(PANE_ID.TOP);
   };
@@ -52,10 +97,7 @@ export default class Pane extends React.Component {
   };
 
   getBottomPaneButtons = () => {
-    const {
-      expandState,
-      titles: {top, bottom}
-    } = this.props;
+    const {expandState} = this.props;
 
     const isTopButtonVisible = expandState !== EXPAND_STATE.COLLAPSED;
     const isBottomButtonVisible = expandState !== EXPAND_STATE.EXPANDED;
@@ -70,20 +112,8 @@ export default class Pane extends React.Component {
                 : false
             }
           >
-            {isTopButtonVisible && (
-              <Styled.PaneCollapseButton
-                onClick={this.handleTopExpand}
-                direction={DIRECTION.DOWN}
-                title={`Expand ${top}`}
-              />
-            )}
-            {isBottomButtonVisible && (
-              <Styled.PaneCollapseButton
-                onClick={this.handleBottomExpand}
-                direction={DIRECTION.UP}
-                title={`Expand ${bottom}`}
-              />
-            )}
+            {isTopButtonVisible && this.topButton}
+            {isBottomButtonVisible && this.bottomButton}
           </Styled.ButtonsContainer>
         )}
       </CollapsablePanelConsumer>
