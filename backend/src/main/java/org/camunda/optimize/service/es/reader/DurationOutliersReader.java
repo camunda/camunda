@@ -611,8 +611,8 @@ public class DurationOutliersReader {
   }
 
   private boolean isOutlier(final Long lowerOutlierBound, final Long higherOutlierBound, final Long durationValue) {
-    return Optional.ofNullable(lowerOutlierBound).map(value -> durationValue <= value).orElse(false)
-      || Optional.ofNullable(higherOutlierBound).map(value -> durationValue >= value).orElse(false);
+    return Optional.ofNullable(lowerOutlierBound).map(value -> durationValue < value).orElse(false)
+      || Optional.ofNullable(higherOutlierBound).map(value -> durationValue > value).orElse(false);
   }
 
   private long getInterval(final BoolQueryBuilder query, final String flowNodeId) {

@@ -333,10 +333,10 @@ public class OutlierAnalysisIT {
 
     // then
     for (int i = 0; i < durationChart.size() / 2; i++) {
-      assertThat(durationChart.get(i).isOutlier(), is(durationChart.get(i).getKey() <= lowerOutlierBound));
+      assertThat(durationChart.get(i).isOutlier(), is(durationChart.get(i).getKey() < lowerOutlierBound));
     }
     for (int i = durationChart.size() / 2; i < durationChart.size(); i++) {
-      assertThat(durationChart.get(i).isOutlier(), is(durationChart.get(i).getKey() >= higherOutlierBound));
+      assertThat(durationChart.get(i).isOutlier(), is(durationChart.get(i).getKey() > higherOutlierBound));
     }
   }
 
