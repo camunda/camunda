@@ -23,28 +23,35 @@ import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.client.impl.command.CompleteJobCommandImpl;
 import io.zeebe.client.impl.command.FailJobCommandImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import java.util.function.Predicate;
 
 public class JobClientImpl implements JobClient {
 
   private final GatewayStub asyncStub;
   private final ZeebeClientConfiguration config;
   private final ZeebeObjectMapper objectMapper;
+  private final Predicate<Throwable> retryPredicate;
 
   public JobClientImpl(
-      GatewayStub asyncStub, ZeebeClientConfiguration config, ZeebeObjectMapper objectMapper) {
+      GatewayStub asyncStub,
+      ZeebeClientConfiguration config,
+      ZeebeObjectMapper objectMapper,
+      Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.config = config;
     this.objectMapper = objectMapper;
+    this.retryPredicate = retryPredicate;
   }
 
   @Override
   public CompleteJobCommandStep1 newCompleteCommand(long jobKey) {
     return new CompleteJobCommandImpl(
-        asyncStub, objectMapper, jobKey, config.getDefaultRequestTimeout());
+        asyncStub, objectMapper, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
   }
 
   @Override
   public FailJobCommandStep1 newFailCommand(long jobKey) {
-    return new FailJobCommandImpl(asyncStub, jobKey, config.getDefaultRequestTimeout());
+    return new FailJobCommandImpl(
+        asyncStub, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
   }
 }

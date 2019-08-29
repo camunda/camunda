@@ -15,6 +15,7 @@
  */
 package io.zeebe.client.impl.command;
 
+import io.grpc.stub.StreamObserver;
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.ActivateJobsCommandStep1;
@@ -22,16 +23,18 @@ import io.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandS
 import io.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.zeebe.client.api.command.FinalCommandStep;
 import io.zeebe.client.api.response.ActivateJobsResponse;
+import io.zeebe.client.impl.RetriableStreamingFutureImpl;
 import io.zeebe.client.impl.ZeebeObjectMapper;
-import io.zeebe.client.impl.ZeebeStreamingClientFutureImpl;
 import io.zeebe.client.impl.response.ActivateJobsResponseImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest.Builder;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 public class ActivateJobsCommandImpl
     implements ActivateJobsCommandStep1, ActivateJobsCommandStep2, ActivateJobsCommandStep3 {
@@ -39,13 +42,18 @@ public class ActivateJobsCommandImpl
   private static final Duration DEADLINE_OFFSET = Duration.ofSeconds(10);
   private final GatewayStub asyncStub;
   private final ZeebeObjectMapper objectMapper;
+  private final Predicate<Throwable> retryPredicate;
   private final Builder builder;
   private Duration requestTimeout;
 
   public ActivateJobsCommandImpl(
-      GatewayStub asyncStub, ZeebeClientConfiguration config, ZeebeObjectMapper objectMapper) {
+      GatewayStub asyncStub,
+      ZeebeClientConfiguration config,
+      ZeebeObjectMapper objectMapper,
+      Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.objectMapper = objectMapper;
+    this.retryPredicate = retryPredicate;
     builder = ActivateJobsRequest.newBuilder();
     requestTimeout(config.getDefaultRequestTimeout());
     timeout(config.getDefaultJobTimeout());
@@ -104,13 +112,22 @@ public class ActivateJobsCommandImpl
     final ActivateJobsRequest request = builder.build();
 
     final ActivateJobsResponseImpl response = new ActivateJobsResponseImpl(objectMapper);
-    final ZeebeStreamingClientFutureImpl<
-            ActivateJobsResponse, io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse>
-        future = new ZeebeStreamingClientFutureImpl<>(response, response::addResponse);
+    final RetriableStreamingFutureImpl<ActivateJobsResponse, GatewayOuterClass.ActivateJobsResponse>
+        future =
+            new RetriableStreamingFutureImpl<>(
+                response,
+                response::addResponse,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
 
+    send(request, future);
+    return future;
+  }
+
+  private void send(
+      ActivateJobsRequest request, StreamObserver<GatewayOuterClass.ActivateJobsResponse> future) {
     asyncStub
         .withDeadlineAfter(requestTimeout.plus(DEADLINE_OFFSET).toMillis(), TimeUnit.MILLISECONDS)
         .activateJobs(request, future);
-    return future;
   }
 }

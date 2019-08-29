@@ -16,11 +16,16 @@
 package io.zeebe.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
 import io.grpc.ServerInterceptors;
+import io.grpc.Status;
 import io.grpc.testing.GrpcServerRule;
+import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.util.RecordingGatewayService;
@@ -28,8 +33,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class CredentialsTest {
+  private static final Key<String> AUTH_KEY =
+      Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
+
   @Rule public final GrpcServerRule serverRule = new GrpcServerRule();
 
   private final RecordingInterceptor recordingInterceptor = new RecordingInterceptor();
@@ -54,19 +63,119 @@ public class CredentialsTest {
   }
 
   @Test
-  public void shouldModifyCallMetadata() {
+  public void shouldAddTokenToCallHeaders() {
     // given
-    final Key<String> key = Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
     final String bearerToken = "Bearer someToken";
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
 
-    builder.usePlaintext().credentialsProvider(headers -> headers.put(key, bearerToken));
+    builder
+        .usePlaintext()
+        .credentialsProvider(
+            new CredentialsProvider() {
+              @Override
+              public void applyCredentials(Metadata headers) {
+                headers.put(AUTH_KEY, bearerToken);
+              }
+
+              @Override
+              public boolean shouldRetryRequest(Throwable throwable) {
+                return false;
+              }
+            });
     client = new ZeebeClientImpl(builder, serverRule.getChannel());
 
     // when
     client.newTopologyRequest().send().join();
 
     // then
-    assertThat(recordingInterceptor.getCapturedHeaders().get(key)).isEqualTo(bearerToken);
+    assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY)).isEqualTo(bearerToken);
+  }
+
+  @Test
+  public void shouldRetryRequest() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+
+    recordingInterceptor.setInterceptAction(
+        (call, headers) -> {
+          call.close(Status.UNKNOWN, headers);
+          recordingInterceptor.reset();
+        });
+
+    final CredentialsProvider provider =
+        Mockito.spy(
+            new CredentialsProvider() {
+              int attempt = 0;
+
+              @Override
+              public void applyCredentials(Metadata headers) {
+                headers.put(AUTH_KEY, String.format("Bearer token-%d", attempt++));
+              }
+
+              @Override
+              public boolean shouldRetryRequest(Throwable throwable) {
+                return true;
+              }
+            });
+    builder.usePlaintext().credentialsProvider(provider);
+    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+
+    // when
+    client.newTopologyRequest().send().join();
+
+    // then
+    Mockito.verify(provider, times(1)).shouldRetryRequest(any(Throwable.class));
+    assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY)).isEqualTo("Bearer token-1");
+  }
+
+  @Test
+  public void shouldRetryMoreThanOnce() {
+    // given
+    final int retries = 2;
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+
+    recordingInterceptor.setInterceptAction(
+        (call, headers) -> {
+          call.close(Status.UNKNOWN, headers);
+        });
+
+    final CredentialsProvider provider =
+        Mockito.spy(
+            new CredentialsProvider() {
+              int retryCounter = retries;
+
+              @Override
+              public void applyCredentials(Metadata headers) {
+                headers.put(AUTH_KEY, String.format("Bearer token-%d", retryCounter));
+              }
+
+              @Override
+              public boolean shouldRetryRequest(Throwable throwable) {
+                return retryCounter-- > 0;
+              }
+            });
+    builder.usePlaintext().credentialsProvider(provider);
+    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+
+    // when/then
+    assertThatThrownBy(() -> client.newTopologyRequest().send().join())
+        .isInstanceOf(ClientException.class);
+
+    Mockito.verify(provider, times(retries + 1)).shouldRetryRequest(any(Throwable.class));
+    assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY)).isEqualTo("Bearer token-0");
+  }
+
+  @Test
+  public void shouldNotChangeHeadersWithNoProvider() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.usePlaintext();
+    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+
+    // when
+    client.newTopologyRequest().send().join();
+
+    // then
+    assertThat(recordingInterceptor.getCapturedHeaders().containsKey(AUTH_KEY)).isFalse();
   }
 }

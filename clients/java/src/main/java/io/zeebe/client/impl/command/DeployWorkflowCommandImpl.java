@@ -19,13 +19,14 @@ import static io.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 import static io.zeebe.client.impl.command.StreamUtil.readInputStream;
 
 import com.google.protobuf.ByteString;
+import io.grpc.stub.StreamObserver;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.api.command.DeployWorkflowCommandStep1;
 import io.zeebe.client.api.command.DeployWorkflowCommandStep1.DeployWorkflowCommandBuilderStep2;
 import io.zeebe.client.api.command.FinalCommandStep;
 import io.zeebe.client.api.response.DeploymentEvent;
-import io.zeebe.client.impl.ZeebeClientFutureImpl;
+import io.zeebe.client.impl.RetriableClientFutureImpl;
 import io.zeebe.client.impl.response.DeploymentEventImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
@@ -42,24 +43,28 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 public class DeployWorkflowCommandImpl
     implements DeployWorkflowCommandStep1, DeployWorkflowCommandBuilderStep2 {
 
-  private final DeployWorkflowRequest.Builder request = DeployWorkflowRequest.newBuilder();
+  private final DeployWorkflowRequest.Builder requestBuilder = DeployWorkflowRequest.newBuilder();
   private final GatewayStub asyncStub;
+  private final Predicate<Throwable> retryPredicate;
   private Duration requestTimeout;
 
-  public DeployWorkflowCommandImpl(GatewayStub asyncStub, Duration requestTimeout) {
+  public DeployWorkflowCommandImpl(
+      GatewayStub asyncStub, Duration requestTimeout, Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
+    this.retryPredicate = retryPredicate;
   }
 
   @Override
   public DeployWorkflowCommandBuilderStep2 addResourceBytes(
       final byte[] resource, final String resourceName) {
 
-    request.addWorkflows(
+    requestBuilder.addWorkflows(
         WorkflowRequestObject.newBuilder()
             .setType(WorkflowRequestObject.ResourceType.FILE)
             .setName(resourceName)
@@ -147,12 +152,22 @@ public class DeployWorkflowCommandImpl
 
   @Override
   public ZeebeFuture<DeploymentEvent> send() {
-    final ZeebeClientFutureImpl<DeploymentEvent, DeployWorkflowResponse> future =
-        new ZeebeClientFutureImpl<>(DeploymentEventImpl::new);
+    final DeployWorkflowRequest request = requestBuilder.build();
 
+    final RetriableClientFutureImpl<DeploymentEvent, DeployWorkflowResponse> future =
+        new RetriableClientFutureImpl<>(
+            DeploymentEventImpl::new,
+            retryPredicate,
+            streamObserver -> send(request, streamObserver));
+
+    send(request, future);
+
+    return future;
+  }
+
+  private void send(DeployWorkflowRequest request, StreamObserver streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
-        .deployWorkflow(request.build(), future);
-    return future;
+        .deployWorkflow(request, streamObserver);
   }
 }

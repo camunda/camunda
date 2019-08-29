@@ -15,27 +15,35 @@
  */
 package io.zeebe.client.impl.command;
 
+import io.grpc.stub.StreamObserver;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.FailJobCommandStep1;
 import io.zeebe.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.zeebe.client.api.command.FinalCommandStep;
-import io.zeebe.client.impl.ZeebeClientFutureImpl;
+import io.zeebe.client.impl.RetriableClientFutureImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest.Builder;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 public class FailJobCommandImpl implements FailJobCommandStep1, FailJobCommandStep2 {
 
   private final GatewayStub asyncStub;
   private final Builder builder;
+  private final Predicate<Throwable> retryPredicate;
   private Duration requestTimeout;
 
-  public FailJobCommandImpl(GatewayStub asyncStub, long key, Duration requestTimeout) {
+  public FailJobCommandImpl(
+      GatewayStub asyncStub,
+      long key,
+      Duration requestTimeout,
+      Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
+    this.retryPredicate = retryPredicate;
     builder = FailJobRequest.newBuilder();
     builder.setJobKey(key);
   }
@@ -62,11 +70,17 @@ public class FailJobCommandImpl implements FailJobCommandStep1, FailJobCommandSt
   public ZeebeFuture<Void> send() {
     final FailJobRequest request = builder.build();
 
-    final ZeebeClientFutureImpl<Void, FailJobResponse> future = new ZeebeClientFutureImpl<>();
+    final RetriableClientFutureImpl<Void, FailJobResponse> future =
+        new RetriableClientFutureImpl<>(
+            retryPredicate, streamObserver -> send(request, streamObserver));
 
+    send(request, future);
+    return future;
+  }
+
+  private void send(FailJobRequest request, StreamObserver<FailJobResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
-        .failJob(request, future);
-    return future;
+        .failJob(request, streamObserver);
   }
 }

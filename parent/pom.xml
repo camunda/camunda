@@ -77,6 +77,8 @@
     <version.snakeyaml>1.25</version.snakeyaml>
     <version.toml>0.7.2</version.toml>
     <version.javax>1.3.2</version.javax>
+    <version.wiremock>2.24.1</version.wiremock>
+    <version.asm>7.0</version.asm>
 
     <!-- maven plugins -->
     <plugin.version.antrun>1.8</plugin.version.antrun>
@@ -512,6 +514,19 @@
         <version>${version.javax}</version>
       </dependency>
 
+      <dependency>
+        <groupId>com.github.tomakehurst</groupId>
+        <artifactId>wiremock-jre8</artifactId>
+        <version>${version.wiremock}</version>
+      </dependency>
+
+      <dependency>
+        <!-- NOTE: required because of https://github.com/tomakehurst/wiremock/issues/1083-->
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm</artifactId>
+        <version>${version.asm}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
@@ -910,6 +925,7 @@
                   <dep>org.apache.logging.log4j:log4j-core</dep>
                   <dep>io.zeebe:zeebe-build-tools</dep>
                   <dep>io.zeebe:zeebe-gateway-protocol</dep>
+                  <dep>org.ow2.asm:asm</dep>
                 </ignoredUnusedDeclaredDependencies>
               </configuration>
             </execution>

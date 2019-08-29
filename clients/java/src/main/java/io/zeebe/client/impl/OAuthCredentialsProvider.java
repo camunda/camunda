@@ -18,10 +18,11 @@ package io.zeebe.client.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.zeebe.client.CredentialsProvider;
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,7 +48,7 @@ public class OAuthCredentialsProvider implements CredentialsProvider {
 
   private ZeebeClientCredentials credentials;
 
-  public OAuthCredentialsProvider(OAuthCredentialsProviderBuilder builder) {
+  OAuthCredentialsProvider(OAuthCredentialsProviderBuilder builder) {
     authorizationServerUrl = builder.getAuthorizationServer();
     jsonPayload = createJsonPayload(builder);
   }
@@ -56,7 +57,9 @@ public class OAuthCredentialsProvider implements CredentialsProvider {
   @Override
   public void applyCredentials(Metadata headers) {
     try {
-      final ZeebeClientCredentials credentials = getCredentials();
+      if (credentials == null) {
+        refreshCredentials();
+      }
 
       headers.put(
           HEADER_AUTH_KEY,
@@ -67,25 +70,42 @@ public class OAuthCredentialsProvider implements CredentialsProvider {
     }
   }
 
-  private ZeebeClientCredentials getCredentials() throws IOException {
-    if (credentials == null) {
-      credentials = fetchCredentials();
+  @Override
+  public boolean shouldRetryRequest(Throwable throwable) {
+    try {
+      return throwable instanceof StatusRuntimeException
+          && ((StatusRuntimeException) throwable).getStatus() == Status.UNAUTHENTICATED
+          && refreshCredentials();
+    } catch (IOException e) {
+      LOG.error("Failed while fetching credentials: ", e);
+      return false;
+    }
+  }
+
+  /**
+   * Fetch and store new credentials.
+   *
+   * @return true if the newly fetched credentials are different from the previously stored ones,
+   *     false otherwise.
+   */
+  private boolean refreshCredentials() throws IOException {
+    final ZeebeClientCredentials fetchedCredentials = fetchCredentials();
+    if (fetchedCredentials.equals(credentials)) {
+      return false;
     }
 
-    return credentials;
+    credentials = fetchedCredentials;
+    LOG.debug("Refreshed credentials.");
+    return true;
   }
 
   private static String createJsonPayload(OAuthCredentialsProviderBuilder builder) {
     try {
-      final Map<String, String> payload =
-          new HashMap<String, String>() {
-            {
-              put("client_id", builder.getClientId());
-              put("client_secret", builder.getClientSecret());
-              put("audience", builder.getAudience());
-              put("grant_type", "client_credentials");
-            }
-          };
+      final Map<String, String> payload = new HashMap<>();
+      payload.put("client_id", builder.getClientId());
+      payload.put("client_secret", builder.getClientSecret());
+      payload.put("audience", builder.getAudience());
+      payload.put("grant_type", "client_credentials");
 
       return MAPPER.writeValueAsString(payload);
     } catch (JsonProcessingException e) {
@@ -114,9 +134,15 @@ public class OAuthCredentialsProvider implements CredentialsProvider {
     }
 
     try (InputStream in = connection.getInputStream();
-        InputStreamReader reader = new InputStreamReader(in, Charsets.UTF_8)) {
+        InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
       final String responseContent = CharStreams.toString(reader);
-      return JSON_READER.readValue(responseContent);
+      final ZeebeClientCredentials fetchedCredentials = JSON_READER.readValue(responseContent);
+
+      if (fetchedCredentials == null) {
+        throw new IOException("Expected valid fetchedCredentials but got null instead.");
+      }
+
+      return fetchedCredentials;
     }
   }
 }
