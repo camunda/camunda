@@ -1,0 +1,79 @@
+.Home {
+  width: 1000px;
+  margin: auto;
+
+  .DropdownOption:hover {
+    background-color: #f7f8fa;
+    color: inherit;
+  }
+
+  .header {
+    padding-top: 20px;
+
+    h1 {
+      font-size: 18px;
+      line-height: 30px;
+      font-weight: normal;
+      color: #000;
+      display: inline;
+    }
+
+    .CreateNewButton {
+      float: right;
+    }
+  }
+
+  ul {
+    padding-inline-start: 0;
+  }
+
+  .ListItem {
+    &.report .indicator {
+      background-color: #00acac;
+    }
+    &.dashboard .indicator {
+      background-color: #0565b2;
+    }
+  }
+
+  .ListItemSection {
+    &.icon {
+      width: 24px;
+      margin-right: 18px;
+      position: relative;
+
+      svg {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 100%;
+      }
+    }
+
+    &.name {
+      width: 332px;
+      line-height: initial;
+      padding-top: 13px;
+
+      .type {
+        font-size: 9px;
+        color: #9b9b9b;
+      }
+
+      .entityName {
+        font-size: 15px;
+        font-weight: 600;
+        color: #000;
+
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    &.containedEntities,
+    &.modifiedDate,
+    &.users {
+      width: 200px;
+    }
+  }
+}

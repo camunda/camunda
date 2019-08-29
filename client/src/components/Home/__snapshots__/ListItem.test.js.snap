@@ -1,0 +1,22 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ListItem should match snapshot 1`] = `
+<li
+  className="ListItem list-test"
+>
+  <div
+    className="indicator"
+  />
+  <ul>
+    Some child content
+  </ul>
+</li>
+`;
+
+exports[`ListItem.Section should match snapshot 1`] = `
+<li
+  className="ListItemSection list-test"
+>
+  Some child content
+</li>
+`;

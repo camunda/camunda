@@ -12,7 +12,7 @@ import {
   PrivateRoute,
   Header,
   Footer,
-  Overview,
+  Home,
   Alerts,
   Report,
   Dashboard,
@@ -68,7 +68,7 @@ class App extends React.Component {
                   <main>
                     <ErrorBoundary>
                       <Switch>
-                        <PrivateRoute exact path="/" component={Overview} />
+                        <PrivateRoute exact path="/" component={Home} />
                         <PrivateRoute path="/analysis" component={Analysis} />
                         <PrivateRoute exact path="/alerts" component={Alerts} />
                         <Route exact path="/share/:type/:id" component={Sharing} />

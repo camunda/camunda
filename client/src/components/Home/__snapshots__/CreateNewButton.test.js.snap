@@ -1,0 +1,36 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<Dropdown
+  className="CreateNewButton"
+  label="Create New"
+>
+  <ForwardRef(DropdownOption)>
+    New Collection
+  </ForwardRef(DropdownOption)>
+  <ForwardRef(DropdownOption)
+    link="/dashboard/new/edit"
+  >
+    New Dashboard
+  </ForwardRef(DropdownOption)>
+  <Submenu
+    label="New Report"
+  >
+    <ForwardRef(DropdownOption)
+      link="/report/new/edit"
+    >
+      Process Report
+    </ForwardRef(DropdownOption)>
+    <ForwardRef(DropdownOption)
+      link="/report/new-combined/edit"
+    >
+      Combined Process Report
+    </ForwardRef(DropdownOption)>
+    <ForwardRef(DropdownOption)
+      link="/report/new-decision/edit"
+    >
+      Decision Report
+    </ForwardRef(DropdownOption)>
+  </Submenu>
+</Dropdown>
+`;

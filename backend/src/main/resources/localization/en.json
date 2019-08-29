@@ -26,7 +26,6 @@
     "submit": "Submit"
   },
   "home": {
-    "search": "Filter for name...",
     "createBtn": {
       "default": "Create New",
       "collection": "New Collection",
@@ -38,46 +37,12 @@
         "decision": "Decision Report"
       }
     },
-    "collection": {
-      "empty": "Group Reports and Dashboards into Collections.",
-      "create": "Create a Collection...",
-      "Item": "Item",
-      "Items": "Items",
-      "noItems": "There are no items in this Collection.",
-      "noSearchResult": "No Collections matching '{searchQuery}'",
-      "edit": "Edit Collection",
-      "delete": "Delete Collection"
-    },
-    "dashboard": {
-      "create": "Create Dashboard",
-      "noSearchResult": "No Dashboards matching '{searchQuery}'",
-      "duplicate": "Duplicate Dashboard",
-      "edit": "Edit Dashboard",
-      "delete": "Delete Dashboard"
-    },
-    "report": {
-      "create": {
-        "default": "Create Process Report",
-        "process": "Create Process Report",
-        "combined": "Create Combined Process Report",
-        "decision": "Create Decision Report"
-      },
-      "noSearchResult": "No Reports matching '{searchQuery}'",
-      "duplicate": "Duplicate Report",
-      "edit": "Edit Report",
-      "delete": "Delete Report",
-      "badge": {
-        "combined": "Combined",
-        "decision": "Decision"
-      },
-      "types": {
-        "number": "Number Report",
-        "bar": "Bar Chart Report",
-        "line": "Line Chart Report",
-        "heat": "Heatmap Report",
-        "pie": "Pie Chart Report",
-        "table": "Table Report"
-      }
+    "title": "Collections, Dashboards, and Reports",
+    "types": {
+      "process": "Process Report",
+      "decision": "Decision Report",
+      "combined": "Combined Report",
+      "unknown": "Unknown Entity"
     }
   },
   "report": {
@@ -412,6 +377,14 @@
         "Report": "Report name",
         "Dashboard": "dashboard name"
       }
+    },
+    "user": {
+      "label": "User",
+      "label-plural": "Users"
+    },
+    "user-group": {
+      "label": "User Group",
+      "label-plural": "User Groups"
     },
     "collection": {
       "label": "Collection",

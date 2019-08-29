@@ -18,8 +18,6 @@ export default class Submenu extends React.Component {
   constructor(props) {
     super(props);
 
-    this.footerRef = document.body.querySelector('.Footer');
-    this.headerRef = document.body.querySelector('.Header');
     this.containerRef = React.createRef();
 
     this.state = {styles: {}, scrollable: false};
@@ -121,8 +119,8 @@ export default class Submenu extends React.Component {
       }
 
       const margin = 10;
-      const footerTop = this.footerRef.getBoundingClientRect().top;
-      const headerBottom = this.headerRef.getBoundingClientRect().bottom;
+      const footerTop = document.body.querySelector('.Footer').getBoundingClientRect().top;
+      const headerBottom = document.body.querySelector('.Header').getBoundingClientRect().bottom;
 
       const bottomAvailableHeight = footerTop - parentMenu.top - margin;
       if (submenu.clientHeight > bottomAvailableHeight) {

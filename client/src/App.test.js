@@ -8,7 +8,6 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import AppWithErrorHandling from './App';
-import {addNotification} from 'notifications';
 
 jest.mock('notifications', () => ({addNotification: jest.fn(), Notifications: () => <span />}));
 
@@ -43,7 +42,7 @@ it('should not include a header for shared resources', async () => {
 });
 
 it('should show an error message when it is not possible to initilize the translation', async () => {
-  const node = shallow(<App error="test error message" />);
+  const node = shallow(<App {...props} error="test error message" />);
 
   expect(node).toMatchSnapshot();
 });

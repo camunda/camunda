@@ -1,0 +1,141 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<div
+  className="Home"
+>
+  <div
+    className="header"
+  >
+    <h1>
+      Collections, Dashboards, and Reports
+    </h1>
+    <CreateNewButton />
+  </div>
+  <ul>
+    <ListItem
+      className="collection"
+      key="aCollectionId"
+    >
+      <Link
+        to="/collection/aCollectionId"
+      >
+        <ListItemSection
+          className="icon"
+        >
+          <ForwardRef(SvgCollection) />
+        </ListItemSection>
+        <ListItemSection
+          className="name"
+        >
+          <div
+            className="type"
+          >
+            Collection
+          </div>
+          <div
+            className="entityName"
+          >
+            aCollectionName
+          </div>
+        </ListItemSection>
+        <ListItemSection
+          className="containedEntities"
+        >
+          2 Dashboards, 8 Reports
+        </ListItemSection>
+        <ListItemSection
+          className="modifiedDate"
+        >
+          2017-11-11 11:11
+        </ListItemSection>
+        <ListItemSection
+          className="users"
+        >
+          2 User Groups, 5 Users
+        </ListItemSection>
+      </Link>
+    </ListItem>
+    <ListItem
+      className="dashboard"
+      key="aDashboardId"
+    >
+      <Link
+        to="/dashboard/aDashboardId"
+      >
+        <ListItemSection
+          className="icon"
+        >
+          <ForwardRef(SvgDashboard) />
+        </ListItemSection>
+        <ListItemSection
+          className="name"
+        >
+          <div
+            className="type"
+          >
+            Dashboard
+          </div>
+          <div
+            className="entityName"
+          >
+            aDashboard
+          </div>
+        </ListItemSection>
+        <ListItemSection
+          className="containedEntities"
+        >
+          8 Reports
+        </ListItemSection>
+        <ListItemSection
+          className="modifiedDate"
+        >
+          2017-11-11 11:11
+        </ListItemSection>
+        <ListItemSection
+          className="users"
+        />
+      </Link>
+    </ListItem>
+    <ListItem
+      className="report"
+      key="aReportId"
+    >
+      <Link
+        to="/report/aReportId"
+      >
+        <ListItemSection
+          className="icon"
+        >
+          <ForwardRef(SvgReport) />
+        </ListItemSection>
+        <ListItemSection
+          className="name"
+        >
+          <div
+            className="type"
+          >
+            Process Report
+          </div>
+          <div
+            className="entityName"
+          >
+            aReport
+          </div>
+        </ListItemSection>
+        <ListItemSection
+          className="containedEntities"
+        />
+        <ListItemSection
+          className="modifiedDate"
+        >
+          2017-11-11 11:11
+        </ListItemSection>
+        <ListItemSection
+          className="users"
+        />
+      </Link>
+    </ListItem>
+  </ul>
+</div>
+`;

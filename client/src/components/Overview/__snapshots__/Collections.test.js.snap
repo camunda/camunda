@@ -1,9 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`should show no result found text when no matching reports were found 1`] = `
-<p
-  className="empty"
->
-  No Collections matching 'test'
-</p>
-`;

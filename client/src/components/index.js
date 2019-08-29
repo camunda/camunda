@@ -11,4 +11,5 @@ export {PrivateRoute} from './PrivateRoute';
 export {Dashboard} from './Dashboards';
 export {Report} from './Reports';
 export {Sharing} from './Sharing';
-export {Overview, Alerts} from './Overview';
+export {Alerts} from './Alerts';
+export {Home} from './Home';

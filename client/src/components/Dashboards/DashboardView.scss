@@ -5,12 +5,12 @@
 }
 
 .fullscreen {
-  background-color: white;
   transition: background-color 0.3s;
 }
 
 .fullscreen-enabled {
   overflow: auto;
+  background-color: #f2f3f5;
 }
 
 .DashboardView {

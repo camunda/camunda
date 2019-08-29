@@ -26,7 +26,6 @@
     "submit": "Absenden"
   },
   "home": {
-    "search": "Nach Namen filtern ...",
     "createBtn": {
       "default": "Erstelle neu",
       "collection": "Neue Sammlung",
@@ -38,46 +37,12 @@
         "decision": "Entscheidungsbericht"
       }
     },
-    "collection": {
-      "empty": "Berichte und Dashboards in Sammlungen gruppieren",
-      "create": "Sammlung erstellen ...",
-      "Item": "Element",
-      "Items": "Elemente",
-      "noItems": "Es sind keine Elemente in dieser Sammlung vorhanden.",
-      "noSearchResult": "Keine mit '{searchQuery}' übereinstimmenden Sammlungen",
-      "edit": "Sammlung bearbeiten",
-      "delete": "Sammlung löschen"
-    },
-    "dashboard": {
-      "create": "Dashboard erstellen",
-      "noSearchResult": "Keine mit '{searchQuery}' übereinstimmenden Dashboards",
-      "duplicate": "Dashboard duplizieren",
-      "edit": "Dashboard bearbeiten",
-      "delete": "Dashboard löschen"
-    },
-    "report": {
-      "create": {
-        "default": "Prozessbericht erstellen",
-        "process": "Prozessbericht erstellen",
-        "combined": "Kombinierten Prozessbericht erstellen",
-        "decision": "Entscheidungsbericht erstellen"
-      },
-      "noSearchResult": "Keine Berichte, die mit '{searchQuery}' übereinstimmen",
-      "duplicate": "Bericht duplizieren",
-      "edit": "Bericht bearbeiten",
-      "delete": "Bericht löschen",
-      "badge": {
-        "combined": "Kombiniert",
-        "decision": "Entscheidungsbericht"
-      },
-      "types": {
-        "number": "Zahlen-Bericht",
-        "bar": "Balkendiagramm-Bericht",
-        "line": "Liniendiagramm-Bericht",
-        "heat": "Heatmap-Bericht",
-        "pie": "Tortendiagramm-Bericht",
-        "table": "Tabellen-Bericht"
-      }
+    "title": "Sammlungen, Dashboards, und Berichte",
+    "types": {
+      "process": "Prozessbericht",
+      "decision": "Entscheidungsbericht",
+      "combined": "Kombinierter Prozessbericht",
+      "unknown": "Unbekannte Entität"
     }
   },
   "report": {
@@ -412,6 +377,14 @@
         "Report": "Berichtsname",
         "Dashboard": "Dashboard-Name"
       }
+    },
+    "user": {
+      "label": "Benutzer",
+      "label-plural": "Benutzer"
+    },
+    "user-group": {
+      "label": "Nutzergruppe",
+      "label-plural": "Nutzergruppen"
     },
     "collection": {
       "label": "Sammlung",
