@@ -198,17 +198,18 @@ public class OperateTester {
   }
 
   private void processAllRecordsAndWait(Predicate<Object[]> waitTill, Object... arguments) {
+    long shouldImportCount = 0;
     int maxRounds = 500;
     boolean found = waitTill.test(arguments);
     long start = System.currentTimeMillis();
     while (!found && waitingRound < maxRounds) {
       zeebeImporter.resetCounters();
+      shouldImportCount = 0;
       try {
-        zeebeImporter.performOneRoundOfImport();
+        shouldImportCount += zeebeImporter.performOneRoundOfImport();
       } catch (Exception e) {
         logger.error(e.getMessage(), e);
       }
-      long shouldImportCount = zeebeImporter.getScheduledImportCount();
       long imported = zeebeImporter.getImportedCount();
       //long failed = zeebeImporter.getFailedCount();
       int waitForImports = 0;
@@ -216,13 +217,13 @@ public class OperateTester {
         waitForImports++;
         try {
           Thread.sleep(500L);
-          zeebeImporter.performOneRoundOfImport();
+          shouldImportCount += zeebeImporter.performOneRoundOfImport();
         } catch (Exception e) {
           waitingRound = 1;
           zeebeImporter.resetCounters();
+          shouldImportCount = 0;
           logger.error(e.getMessage(), e);
         }
-        shouldImportCount = zeebeImporter.getScheduledImportCount();
         imported = zeebeImporter.getImportedCount();
       }
       if(shouldImportCount!=0) {

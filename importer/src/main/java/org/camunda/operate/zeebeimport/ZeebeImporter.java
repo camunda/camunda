@@ -42,8 +42,6 @@ public class ZeebeImporter extends Thread implements ImportListener {
   @Autowired
   private RecordsReaderHolder recordsReaderHolder;
 
-  private Long allRecordsCount = 0L;
-
   private Long imported = 0L;
   private Long failed = 0L;
 
@@ -80,7 +78,6 @@ public class ZeebeImporter extends Thread implements ImportListener {
       recordsReader.setImportListener(this);
       countRecords += importOneBatch(recordsReader);
     }
-    allRecordsCount +=countRecords;
     return countRecords;
   }
 
@@ -123,10 +120,6 @@ public class ZeebeImporter extends Thread implements ImportListener {
     return imported.longValue();
   }
   
-  public long getScheduledImportCount() {
-    return allRecordsCount.longValue();
-  }
-
   public long getFailedCount() {
     return failed.longValue();
   }
@@ -144,7 +137,6 @@ public class ZeebeImporter extends Thread implements ImportListener {
 
   public void resetCounters() {
      imported = 0L;
-     allRecordsCount = 0L;
   }
 
 }
