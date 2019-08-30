@@ -41,11 +41,12 @@ type CompleteJobCommandStep2 interface {
 }
 
 type CompleteJobCommand struct {
-	utils.SerializerMixin
+    utils.SerializerMixin
 
-	request        *pb.CompleteJobRequest
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
+    request        *pb.CompleteJobRequest
+    gateway        pb.GatewayClient
+    requestTimeout time.Duration
+    retryPredicate func(error) bool
 }
 
 func (cmd *CompleteJobCommand) JobKey(jobKey int64) CompleteJobCommandStep2 {
@@ -95,14 +96,20 @@ func (cmd *CompleteJobCommand) Send() (*pb.CompleteJobResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-	return cmd.gateway.CompleteJob(ctx, cmd.request)
+    response, err := cmd.gateway.CompleteJob(ctx, cmd.request)
+    if cmd.retryPredicate(err) {
+        return cmd.Send()
+    }
+
+    return response, err
 }
 
-func NewCompleteJobCommand(gateway pb.GatewayClient, requestTimeout time.Duration) CompleteJobCommandStep1 {
+func NewCompleteJobCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) CompleteJobCommandStep1 {
 	return &CompleteJobCommand{
 		SerializerMixin: utils.NewJsonStringSerializer(),
 		request:         &pb.CompleteJobRequest{},
 		gateway:         gateway,
 		requestTimeout:  requestTimeout,
+		retryPredicate: retryPredicate,
 	}
 }

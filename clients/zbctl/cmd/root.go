@@ -113,10 +113,10 @@ func parseAddress() string {
 func parseCredentials() (credsProvider zbc.CredentialsProvider, err error) {
 	if useOAuthFlag || clientIdFlag != "" || clientSecretFlag != "" || audienceFlag != "" || authzUrlFlag != "" {
 		return zbc.NewOAuthCredentialsProvider(&zbc.OAuthProviderConfig{
-			ClientId:               clientIdFlag,
+			ClientID:               clientIdFlag,
 			ClientSecret:           clientSecretFlag,
 			Audience:               audienceFlag,
-			AuthorizationServerUrl: authzUrlFlag,
+			AuthorizationServerURL: authzUrlFlag,
 		})
 	}
 

@@ -60,6 +60,7 @@ type CreateInstanceCommand struct {
 	request        *pb.CreateWorkflowInstanceRequest
 	gateway        pb.GatewayClient
 	requestTimeout time.Duration
+	retryPredicate func(error) bool
 }
 
 func (cmd *CreateInstanceCommand) VariablesFromString(variables string) (DispatchCreateInstanceCommand, error) {
@@ -124,14 +125,20 @@ func (cmd *CreateInstanceCommand) Send() (*pb.CreateWorkflowInstanceResponse, er
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-	return cmd.gateway.CreateWorkflowInstance(ctx, cmd.request)
+    response, err := cmd.gateway.CreateWorkflowInstance(ctx, cmd.request)
+    if cmd.retryPredicate(err) {
+        return cmd.Send()
+    }
+
+    return response, err
 }
 
-func NewCreateInstanceCommand(gateway pb.GatewayClient, requestTimeout time.Duration) CreateInstanceCommandStep1 {
+func NewCreateInstanceCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) CreateInstanceCommandStep1 {
 	return &CreateInstanceCommand{
 		SerializerMixin: utils.NewJsonStringSerializer(),
 		request:         &pb.CreateWorkflowInstanceRequest{},
 		gateway:         gateway,
 		requestTimeout:  requestTimeout,
+		retryPredicate:  retryPredicate,
 	}
 }

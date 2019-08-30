@@ -59,6 +59,7 @@ type PublishMessageCommand struct {
 	request        *pb.PublishMessageRequest
 	gateway        pb.GatewayClient
 	requestTimeout time.Duration
+	retryPredicate func(error) bool
 }
 
 func (cmd *PublishMessageCommand) MessageId(messageId string) PublishMessageCommandStep3 {
@@ -123,14 +124,19 @@ func (cmd *PublishMessageCommand) Send() (*pb.PublishMessageResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-	return cmd.gateway.PublishMessage(ctx, cmd.request)
+	response, err := cmd.gateway.PublishMessage(ctx, cmd.request)
+	if cmd.retryPredicate(err) {
+		return cmd.Send()
+	}
+	return response, err
 }
 
-func NewPublishMessageCommand(gateway pb.GatewayClient, requestTimeout time.Duration) PublishMessageCommandStep1 {
+func NewPublishMessageCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) PublishMessageCommandStep1 {
 	return &PublishMessageCommand{
 		SerializerMixin: utils.NewJsonStringSerializer(),
 		request:         &pb.PublishMessageRequest{},
 		gateway:         gateway,
 		requestTimeout:  requestTimeout,
+		retryPredicate:  retryPredicate,
 	}
 }
