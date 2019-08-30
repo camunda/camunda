@@ -8,33 +8,25 @@ package org.camunda.operate.modules;
 import org.camunda.operate.ImportModuleConfiguration;
 import org.camunda.operate.WebappModuleConfiguration;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.util.apps.modules.ModulesTestApplication;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.TestPropertySource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(classes = { ModulesTestApplication.class }, properties = { OperateProperties.PREFIX + ".importProperties.startLoadingDataOnStartup = false",
-    OperateProperties.PREFIX + ".webappEnabled = false" })
-public class OnlyImportIT {
+@TestPropertySource(properties = OperateProperties.PREFIX + ".webappEnabled = false")
+public class OnlyImportIT extends ModuleIT {
 
   @Autowired
   private ApplicationContext applicationContext;
 
   @Test
-  @Ignore
   public void testImportModuleIsPresent() {
     assertThat(applicationContext.getBean(ImportModuleConfiguration.class)).isNotNull();
   }
 
   @Test(expected = NoSuchBeanDefinitionException.class)
-  @Ignore
   public void testWebappModuleIsNotPresent() {
     applicationContext.getBean(WebappModuleConfiguration.class);
   }
