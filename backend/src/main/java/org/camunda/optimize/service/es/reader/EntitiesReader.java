@@ -9,6 +9,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
+import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -17,11 +19,13 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.reader.ReportReader.REPORT_DATA_XML_PROPERTY;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
@@ -34,6 +38,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROC
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @RequiredArgsConstructor
 @Component
@@ -46,9 +51,8 @@ public class EntitiesReader {
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
-
-  public List<CollectionEntity> getAllPrivateEntities(String userId) {
-    log.debug("Fetching all available private entities for user");
+  public List<EntityDto> getAllPrivateEntities(final String userId) {
+    log.debug("Fetching all available entities for user [{}]", userId);
 
     final QueryBuilder query = boolQuery().must(termQuery(OWNER, userId))
       .mustNot(existsQuery(COLLECTION_ID));
@@ -73,6 +77,55 @@ public class EntitiesReader {
     } catch (IOException e) {
       log.error("Was not able to retrieve private entities!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve private entities!", e);
+    }
+
+    return ElasticsearchHelper.retrieveAllScrollResults(
+      scrollResp,
+      CollectionEntity.class,
+      objectMapper,
+      esClient,
+      configurationService.getElasticsearchScrollTimeout()
+    ).stream().map(CollectionEntity::toEntityDto).collect(Collectors.toList());
+  }
+
+  public List<CollectionEntity> getAllEntitiesForCollection(final SimpleCollectionDefinitionDto collection) {
+    log.debug("Fetching all available entities for collection [{}]", collection.getId());
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(QueryBuilders.termQuery(COLLECTION_ID, collection.getId()))
+      .size(LIST_FETCH_LIMIT);
+    return runSearchRequest(searchSourceBuilder);
+  }
+
+  public List<CollectionEntity> getAllEntitiesForCollections(final List<SimpleCollectionDefinitionDto> collections) {
+    log.debug("Fetching all available entities for collections");
+
+    String[] collectionIds = collections.stream()
+      .map(SimpleCollectionDefinitionDto::getId)
+      .toArray(String[]::new);
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(termsQuery(COLLECTION_ID, collectionIds))
+      .size(LIST_FETCH_LIMIT);
+    return runSearchRequest(searchSourceBuilder);
+  }
+
+  private List<CollectionEntity> runSearchRequest(SearchSourceBuilder searchSourceBuilder) {
+    SearchRequest searchRequest =
+      new SearchRequest(
+        SINGLE_PROCESS_REPORT_INDEX_NAME,
+        SINGLE_DECISION_REPORT_INDEX_NAME,
+        COMBINED_REPORT_INDEX_NAME,
+        DASHBOARD_INDEX_NAME
+      )
+        .source(searchSourceBuilder)
+        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+
+    SearchResponse scrollResp;
+    try {
+      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      log.error("Was not able to retrieve collection entities!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve entities!", e);
     }
 
     return ElasticsearchHelper.retrieveAllScrollResults(

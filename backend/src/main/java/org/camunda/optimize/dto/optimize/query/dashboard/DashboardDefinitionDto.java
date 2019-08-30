@@ -8,6 +8,8 @@ package org.camunda.optimize.dto.optimize.query.dashboard;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
+import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,4 +19,11 @@ import java.util.List;
 public class DashboardDefinitionDto extends BaseDashboardDefinitionDto implements CollectionEntity {
 
   protected List<ReportLocationDto> reports = new ArrayList<>();
+
+  @Override
+  public EntityDto toEntityDto() {
+    return new EntityDto(
+      getId(), getName(), getLastModified(), getCreated(), getOwner(), getLastModifier(), EntityType.DASHBOARD
+    );
+  }
 }

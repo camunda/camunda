@@ -489,7 +489,7 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetAllPrivateEntitiesRequest() {
+  public OptimizeRequestExecutor buildGetAllEntitiesRequest() {
     this.path = "entities/";
     this.requestType = GET;
     return this;

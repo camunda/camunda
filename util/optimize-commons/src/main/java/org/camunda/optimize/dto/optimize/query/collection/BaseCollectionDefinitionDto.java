@@ -7,6 +7,8 @@ package org.camunda.optimize.dto.optimize.query.collection;
 
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 
 import java.time.OffsetDateTime;
 
@@ -21,4 +23,10 @@ public class BaseCollectionDefinitionDto<DATA_TYPE> {
   protected String owner;
   protected String lastModifier;
   protected DATA_TYPE data;
+
+  public EntityDto toEntityDto() {
+    return new EntityDto(
+      getId(), getName(), getLastModified(), getCreated(), getOwner(), getLastModifier(), EntityType.COLLECTION
+    );
+  }
 }

@@ -90,8 +90,7 @@ public class CollectionRestServiceIT {
   public void updateNameOfCollection() {
     //given
     String id = addEmptyCollectionToOptimize();
-    final PartialCollectionUpdateDto collectionRenameDto = new PartialCollectionUpdateDto();
-    collectionRenameDto.setName("Test");
+    final PartialCollectionUpdateDto collectionRenameDto = new PartialCollectionUpdateDto("Test");
 
     // when
     Response response = embeddedOptimizeRule

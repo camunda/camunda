@@ -6,15 +6,8 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
-import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDataDto;
-import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -25,7 +18,6 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
@@ -34,20 +26,10 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @RequiredArgsConstructor
 @Component
@@ -106,108 +88,7 @@ public class CollectionReader {
     }
   }
 
-  public ResolvedCollectionDefinitionDto getResolvedCollection(String collectionId) {
-    log.debug("Fetching resolved collection with id [{}]", collectionId);
-
-    final SimpleCollectionDefinitionDto simpleCollectionDefinitionDto = getCollection(collectionId);
-    final List<CollectionEntity> collectionEntities = getAllCollectionEntities(simpleCollectionDefinitionDto);
-
-    return mapToResolvedCollection(simpleCollectionDefinitionDto, collectionEntities);
-  }
-
-  public List<ResolvedCollectionDefinitionDto> getAllResolvedCollections() {
-    final List<SimpleCollectionDefinitionDto> allCollections = getAllCollections();
-
-    Multimap<String, CollectionEntity> collectionEntityMultimap = ArrayListMultimap.create();
-
-    getAllCollectionEntities(allCollections)
-      .forEach(collectionEntity -> collectionEntityMultimap.put(collectionEntity.getCollectionId(), collectionEntity));
-
-
-    log.debug("Mapping all available entity collections to resolved entity collections.");
-    return allCollections.stream()
-      .map(c -> mapToResolvedCollection(c, collectionEntityMultimap.get(c.getId())))
-      .collect(Collectors.toList());
-  }
-
-  private List<CollectionEntity> getAllCollectionEntities(final SimpleCollectionDefinitionDto collection) {
-    log.debug("Fetching all available entities for collection [{}]", collection.getId());
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(QueryBuilders.termQuery(COLLECTION_ID, collection.getId()))
-      .size(LIST_FETCH_LIMIT);
-    return runSearchRequest(searchSourceBuilder);
-  }
-
-  private List<CollectionEntity> getAllCollectionEntities(final List<SimpleCollectionDefinitionDto> collections) {
-    log.debug("Fetching all available entities for collections");
-
-    String[] collectionIds = collections.stream()
-      .map(SimpleCollectionDefinitionDto::getId)
-      .toArray(String[]::new);
-
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(QueryBuilders.termsQuery(COLLECTION_ID, collectionIds))
-      .size(LIST_FETCH_LIMIT);
-    return runSearchRequest(searchSourceBuilder);
-  }
-
-  private List<CollectionEntity> runSearchRequest(SearchSourceBuilder searchSourceBuilder) {
-    SearchRequest searchRequest =
-      new SearchRequest(SINGLE_PROCESS_REPORT_INDEX_NAME,
-                        SINGLE_DECISION_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME, DASHBOARD_INDEX_NAME
-      )
-        .source(searchSourceBuilder)
-        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
-
-    SearchResponse scrollResp;
-    try {
-      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      log.error("Was not able to retrieve collection entities!", e);
-      throw new OptimizeRuntimeException("Was not able to retrieve entities!", e);
-    }
-
-    return ElasticsearchHelper.retrieveAllScrollResults(
-      scrollResp,
-      CollectionEntity.class,
-      objectMapper,
-      esClient,
-      configurationService.getElasticsearchScrollTimeout()
-    );
-  }
-
-  private ResolvedCollectionDefinitionDto mapToResolvedCollection(SimpleCollectionDefinitionDto collectionDefinitionDto,
-                                                                  Collection<CollectionEntity> collectionEntities) {
-    final ResolvedCollectionDefinitionDto resolvedCollection = new ResolvedCollectionDefinitionDto();
-    resolvedCollection.setId(collectionDefinitionDto.getId());
-    resolvedCollection.setName(collectionDefinitionDto.getName());
-    resolvedCollection.setLastModifier(collectionDefinitionDto.getLastModifier());
-    resolvedCollection.setOwner(collectionDefinitionDto.getOwner());
-    resolvedCollection.setCreated(collectionDefinitionDto.getCreated());
-    resolvedCollection.setLastModified(collectionDefinitionDto.getLastModified());
-
-    final ResolvedCollectionDataDto resolvedCollectionData = new ResolvedCollectionDataDto();
-
-    final CollectionDataDto collectionData = collectionDefinitionDto.getData();
-    if (collectionData != null) {
-      resolvedCollectionData.setConfiguration(collectionData.getConfiguration());
-      resolvedCollectionData.setRoles(collectionData.getRoles());
-      resolvedCollectionData.setScope(collectionData.getScope());
-    }
-
-    resolvedCollectionData.setEntities(
-      collectionEntities
-        .stream()
-        .filter(Objects::nonNull)
-        .sorted(Comparator.comparing(CollectionEntity::getLastModified).reversed())
-        .collect(Collectors.toList())
-    );
-
-    resolvedCollection.setData(resolvedCollectionData);
-    return resolvedCollection;
-  }
-
-  private List<SimpleCollectionDefinitionDto> getAllCollections() {
+  public List<SimpleCollectionDefinitionDto> getAllCollections() {
     log.debug("Fetching all available collections");
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
@@ -236,31 +117,4 @@ public class CollectionReader {
     );
   }
 
-  public List<SimpleCollectionDefinitionDto> findFirstCollectionsForEntity(String entityId) {
-    log.debug("Fetching collections using entity with id {}", entityId);
-
-    final QueryBuilder getCollectionByEntityIdQuery = QueryBuilders.boolQuery()
-      .filter(QueryBuilders.nestedQuery(
-        SimpleCollectionDefinitionDto.Fields.data.name(),
-        termQuery("data.entities", entityId),
-        ScoreMode.None
-      ));
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(getCollectionByEntityIdQuery)
-      .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(COLLECTION_INDEX_NAME)
-      .types(COLLECTION_INDEX_NAME)
-      .source(searchSourceBuilder);
-
-    SearchResponse searchResponse;
-    try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String reason = String.format("Was not able to fetch collections for entity with id [%s]", entityId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), SimpleCollectionDefinitionDto.class, objectMapper);
-  }
 }

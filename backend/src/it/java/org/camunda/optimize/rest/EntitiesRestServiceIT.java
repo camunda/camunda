@@ -6,8 +6,10 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
@@ -20,10 +22,10 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
-import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,7 +41,7 @@ public class EntitiesRestServiceIT {
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
-  public void getPrivateEntitiesWithoutAuthentification() {
+  public void getEntitiesWithoutAuthentication() {
     // when
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
@@ -52,22 +54,24 @@ public class EntitiesRestServiceIT {
   }
 
   @Test
-  public void getPrivateEntitiesReturnsMyUsersReports() {
+  public void getEntitiesReturnsMyUsersReports() {
     //given
     addSingleReportToOptimize("B Report", ReportType.PROCESS);
     addSingleReportToOptimize("A Report", ReportType.DECISION);
     addDashboardToOptimize("C Dashboard");
     addCombinedReport("D Combined");
 
+    elasticSearchRule.refreshAllOptimizeIndices();
+
     // when
-    final List<CollectionEntity> privateEntities = getPrivateEntities();
+    final List<EntityDto> privateEntities = getEntities();
 
     // then
     assertThat(privateEntities.size(), is(4));
   }
 
   @Test
-  public void getPrivateEntitiesDoesNotReturnOtherUsersReports() {
+  public void getEntitiesDoesNotReturnOtherUsersReports() {
     //given
     engineRule.addUser("kermit", "kermit");
     engineRule.grantUserOptimizeAccess("kermit");
@@ -76,134 +80,155 @@ public class EntitiesRestServiceIT {
     addDashboardToOptimize("C Dashboard", null, "kermit");
     addCombinedReport("D Combined");
 
+    elasticSearchRule.refreshAllOptimizeIndices();
+
     // when (default user)
-    final List<CollectionEntity> defaultUserEntities = getPrivateEntities();
+    final List<EntityDto> defaultUserEntities = getEntities();
 
     // then
     assertThat(defaultUserEntities.size(), is(2));
     assertThat(
-      defaultUserEntities.stream().map(CollectionEntity::getName).collect(Collectors.toList()),
+      defaultUserEntities.stream().map(EntityDto::getName).collect(Collectors.toList()),
       containsInAnyOrder("A Report", "D Combined")
     );
 
     // when
-    final List<CollectionEntity> kermitUserEntities = embeddedOptimizeRule
+    final List<EntityDto> kermitUserEntities = embeddedOptimizeRule
       .getRequestExecutor()
       .withUserAuthentication("kermit", "kermit")
-      .buildGetAllPrivateEntitiesRequest()
-      .executeAndReturnList(CollectionEntity.class, 200);
+      .buildGetAllEntitiesRequest()
+      .executeAndReturnList(EntityDto.class, 200);
 
     // then
     assertThat(kermitUserEntities.size(), is(2));
     assertThat(
-      kermitUserEntities.stream().map(CollectionEntity::getName).collect(Collectors.toList()),
+      kermitUserEntities.stream().map(EntityDto::getName).collect(Collectors.toList()),
       containsInAnyOrder("B Report", "C Dashboard")
     );
   }
 
+  @Test
+  public void getEntitiesReturnsMyUsersDashboards() {
+    //given
+    addDashboardToOptimize("A Dashboard");
+    addDashboardToOptimize("B Dashboard");
+
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final List<EntityDto> privateEntities = getEntities();
+
+    // then
+    assertThat(privateEntities.size(), is(2));
+  }
 
   @Test
-  public void getPrivateEntitiesDoesNotReturnEntitiesInCollections() {
+  public void getEntitiesDoesNotReturnOtherUsersDashboards() {
+    //given
+    engineRule.addUser("kermit", "kermit");
+    engineRule.grantUserOptimizeAccess("kermit");
+    addDashboardToOptimize("A Dashboard");
+    addDashboardToOptimize("B Dashboard", null, "kermit");
+
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when (default user)
+    final List<EntityDto> defaultUserEntities = getEntities();
+
+    // then
+    assertThat(defaultUserEntities.size(), is(1));
+    assertThat(
+      defaultUserEntities.stream().map(EntityDto::getName).collect(Collectors.toList()),
+      containsInAnyOrder("A Dashboard")
+    );
+
+    // when
+    final List<EntityDto> kermitUserEntities = embeddedOptimizeRule
+      .getRequestExecutor()
+      .withUserAuthentication("kermit", "kermit")
+      .buildGetAllEntitiesRequest()
+      .executeAndReturnList(EntityDto.class, 200);
+
+    // then
+    assertThat(kermitUserEntities.size(), is(1));
+    assertThat(
+      kermitUserEntities.stream().map(EntityDto::getName).collect(Collectors.toList()),
+      containsInAnyOrder("B Dashboard")
+    );
+  }
+
+  @Test
+  public void getEntitiesReturnsCollections() {
+    //given
+    addEmptyCollectionToOptimize();
+    addEmptyCollectionToOptimize();
+
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final List<EntityDto> privateEntities = getEntities();
+
+    // then
+    assertThat(privateEntities.size(), is(2));
+  }
+
+  @Test
+  public void getEntitiesDoesNotReturnEntitiesInCollections() {
     // given
     final String collectionId = addEmptyCollectionToOptimize();
 
-    addSingleReportToOptimize("B Report", ReportType.PROCESS, collectionId, DEFAULT_USERNAME);
     addSingleReportToOptimize("A Report", ReportType.DECISION);
+    addSingleReportToOptimize("B Report", ReportType.PROCESS, collectionId, DEFAULT_USERNAME);
     addDashboardToOptimize("C Dashboard", collectionId, DEFAULT_USERNAME);
     addCombinedReport("D Combined");
 
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final List<CollectionEntity> defaultUserEntities = getPrivateEntities();
+    final List<EntityDto> defaultUserEntities = getEntities();
 
     // then
-    assertThat(defaultUserEntities.size(), is(2));
+    assertThat(defaultUserEntities.size(), is(3));
     assertThat(
-      defaultUserEntities.stream().map(CollectionEntity::getName).collect(Collectors.toList()),
-      containsInAnyOrder("A Report", "D Combined")
+      defaultUserEntities.stream().map(EntityDto::getName).collect(Collectors.toList()),
+      containsInAnyOrder("A Report", "D Combined", DEFAULT_COLLECTION_NAME)
     );
   }
 
   @Test
-  public void getAllPrivateEntitiesOrderedByName() {
+  public void getEntitiesOrderedByTypeAndLastModified() {
     //given
-    addSingleReportToOptimize("B Report", ReportType.PROCESS);
-    addSingleReportToOptimize("A Report", ReportType.DECISION);
-    addDashboardToOptimize("C Dashboard");
+    final String collectionId1 = addEmptyCollectionToOptimize();
+    updateCollectionRequest(collectionId1, new PartialCollectionUpdateDto("B Collection"));
+    final String collectionId2 = addEmptyCollectionToOptimize();
+    updateCollectionRequest(collectionId2, new PartialCollectionUpdateDto("A Collection"));
+    addSingleReportToOptimize("D Report", ReportType.PROCESS);
+    addSingleReportToOptimize("C Report", ReportType.DECISION);
+    addDashboardToOptimize("B Dashboard");
+    addDashboardToOptimize("A Dashboard");
+
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final List<CollectionEntity> entities = embeddedOptimizeRule
+    final List<EntityDto> entities = embeddedOptimizeRule
       .getRequestExecutor()
-      .addSingleQueryParam("orderBy", "name")
-      .buildGetAllPrivateEntitiesRequest()
-      .executeAndReturnList(CollectionEntity.class, 200);
+      .buildGetAllEntitiesRequest()
+      .executeAndReturnList(EntityDto.class, 200);
 
     // then
-    assertThat(entities.size(), is(3));
-    assertThat(entities.get(0).getName(), is("A Report"));
-    assertThat(entities.get(1).getName(), is("B Report"));
-    assertThat(entities.get(2).getName(), is("C Dashboard"));
-  }
-
-  @Test
-  public void getAllPrivateEntitiesOrderedByLastModified() {
-    //given
-    addSingleReportToOptimize("B Report", ReportType.PROCESS);
-    addSingleReportToOptimize("A Report", ReportType.DECISION);
-    addDashboardToOptimize("C Dashboard");
-
-    // when
-    final List<CollectionEntity> entities = embeddedOptimizeRule
-      .getRequestExecutor()
-      .addSingleQueryParam("orderBy", "lastModified")
-      .buildGetAllPrivateEntitiesRequest()
-      .executeAndReturnList(CollectionEntity.class, 200);
-
-    // then
-    assertThat(entities.size(), is(3));
-    assertThat(entities.get(0).getName(), is("C Dashboard"));
-    assertThat(entities.get(1).getName(), is("A Report"));
-    assertThat(entities.get(2).getName(), is("B Report"));
-  }
-
-  @Test
-  public void getAllPrivateEntitiesOrderedByLastModifiedAndSortOrder() {
-    //given
-    addSingleReportToOptimize("B Report", ReportType.PROCESS);
-    addSingleReportToOptimize("A Report", ReportType.DECISION);
-    addDashboardToOptimize("C Dashboard");
-
-    // when
-    HashMap<String, Object> queryParams = new HashMap<>();
-    queryParams.put("orderBy", "lastModified");
-    queryParams.put("sortOrder", "desc");
-    List<CollectionEntity> entities = embeddedOptimizeRule
-      .getRequestExecutor()
-      .addQueryParams(queryParams)
-      .buildGetAllPrivateEntitiesRequest()
-      .executeAndReturnList(CollectionEntity.class, 200);
-
-    // then
-    assertThat(entities.size(), is(3));
-    assertThat(entities.get(0).getName(), is("B Report"));
-    assertThat(entities.get(1).getName(), is("A Report"));
-    assertThat(entities.get(2).getName(), is("C Dashboard"));
-
-
-    // when
-    queryParams.put("sortOrder", "asc");
-    entities = embeddedOptimizeRule
-      .getRequestExecutor()
-      .addQueryParams(queryParams)
-      .buildGetAllPrivateEntitiesRequest()
-      .executeAndReturnList(CollectionEntity.class, 200);
-
-    // then
-    assertThat(entities.size(), is(3));
-    assertThat(entities.get(0).getName(), is("C Dashboard"));
-    assertThat(entities.get(1).getName(), is("A Report"));
-    assertThat(entities.get(2).getName(), is("B Report"));
+    assertThat(entities.size(), is(6));
+    assertThat(entities.get(0).getName(), is("A Collection"));
+    assertThat(entities.get(0).getEntityType(), is(EntityType.COLLECTION));
+    assertThat(entities.get(1).getName(), is("B Collection"));
+    assertThat(entities.get(1).getEntityType(), is(EntityType.COLLECTION));
+    assertThat(entities.get(2).getName(), is("A Dashboard"));
+    assertThat(entities.get(2).getEntityType(), is(EntityType.DASHBOARD));
+    assertThat(entities.get(3).getName(), is("B Dashboard"));
+    assertThat(entities.get(3).getEntityType(), is(EntityType.DASHBOARD));
+    assertThat(entities.get(4).getName(), is("C Report"));
+    assertThat(entities.get(4).getEntityType(), is(EntityType.REPORT));
+    assertThat(entities.get(5).getName(), is("D Report"));
+    assertThat(entities.get(5).getEntityType(), is(EntityType.REPORT));
   }
 
   private String addSingleReportToOptimize(String name, ReportType reportType) {
@@ -296,11 +321,11 @@ public class EntitiesRestServiceIT {
     return id;
   }
 
-  private List<CollectionEntity> getPrivateEntities() {
+  private List<EntityDto> getEntities() {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildGetAllPrivateEntitiesRequest()
-      .executeAndReturnList(CollectionEntity.class, 200);
+      .buildGetAllEntitiesRequest()
+      .executeAndReturnList(EntityDto.class, 200);
   }
 
   private String addEmptyCollectionToOptimize() {
@@ -309,5 +334,13 @@ public class EntitiesRestServiceIT {
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
       .getId();
+  }
+
+  private void updateCollectionRequest(String id, PartialCollectionUpdateDto renameCollection) {
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdatePartialCollectionRequest(id, renameCollection)
+      .execute();
+    assertThat(response.getStatus(), is(204));
   }
 }

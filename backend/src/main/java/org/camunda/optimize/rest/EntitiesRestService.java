@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
+import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.EntitiesService;
 import org.camunda.optimize.service.security.SessionService;
@@ -18,7 +18,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.UriInfo;
 import java.util.List;
 
 @AllArgsConstructor
@@ -30,14 +29,10 @@ public class EntitiesRestService {
   private final EntitiesService entitiesService;
   private final SessionService sessionService;
 
-  /**
-   * Get a list of all available private entities.
-   */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<CollectionEntity> getPrivateEntities(@Context UriInfo uriInfo,
-                                                    @Context ContainerRequestContext requestContext) {
+  public List<EntityDto> getEntities(@Context ContainerRequestContext requestContext) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return entitiesService.getAllPrivateEntities(userId, uriInfo.getQueryParameters());
+    return entitiesService.getAllEntities(userId);
   }
 }

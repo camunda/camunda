@@ -47,8 +47,7 @@ public class CollectionRestServiceRoleIT {
     final SimpleCollectionDefinitionDto expectedCollection = getCollection(collectionId);
 
     // when
-    final PartialCollectionUpdateDto collectionRenameDto = new PartialCollectionUpdateDto();
-    collectionRenameDto.setName("Test");
+    final PartialCollectionUpdateDto collectionRenameDto = new PartialCollectionUpdateDto("Test");
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)
