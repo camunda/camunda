@@ -38,6 +38,17 @@
           </execution>
 
           <execution>
+            <id>update package.json version</id>
+            <goals>
+                <goal>yarn</goal>
+            </goals>
+            <configuration>
+              <skip>${skip.fe.build}</skip>
+              <arguments>version --new-version=${project.version}</arguments>
+            </configuration>
+          </execution>
+
+          <execution>
             <id>yarn install</id>
             <goals>
               <goal>yarn</goal>

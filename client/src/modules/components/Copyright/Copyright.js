@@ -11,7 +11,7 @@ function Copyright(props) {
   return (
     <Styled.Copyright {...props}>
       &copy; Camunda Services GmbH {new Date().getFullYear()}. All rights
-      reserved.
+      reserved. | {process.env.REACT_APP_VERSION}
     </Styled.Copyright>
   );
 }
