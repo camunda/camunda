@@ -523,7 +523,7 @@
         "inputPlaceholder": "Select or search for a variable here",
         "noVariables": "No variables found",
         "loadMore": "Load More",
-        "filterForUndefined": "Include only instances where this variable is null or undefined.",
+        "filterForUndefined": "Only display instances where variables are <b>null</b> or <b>undefined</b>.",
         "bool": {
           "isTrue": "is true",
           "isFalse": "is false"

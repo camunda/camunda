@@ -18,7 +18,9 @@ export default function FilterForUndefined({filterForUndefined, changeFilterForU
             checked={filterForUndefined}
             onChange={({target: {checked}}) => changeFilterForUndefined(checked)}
           />
-          {t(`common.filter.variableModal.filterForUndefined`)}
+          <span
+            dangerouslySetInnerHTML={{__html: t(`common.filter.variableModal.filterForUndefined`)}}
+          />
         </label>
       </Form.Group>
     </Form>

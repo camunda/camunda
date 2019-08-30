@@ -5,9 +5,8 @@
     margin-bottom: 10px;
     font-size: 0.875em;
   }
-}
 
-.disabled,
-[disabled] {
-  color: graytext;
+  &[disabled] {
+    color: graytext;
+  }
 }

@@ -163,7 +163,7 @@ export default class TypeaheadMultipleSelection extends React.Component {
     const loadingIndicator = loading ? <LoadingIndicator /> : '';
     if (availableValues.length === 0) {
       return (
-        <div className="TypeaheadMultipleSelection">
+        <div className="TypeaheadMultipleSelection" disabled={this.props.disabled}>
           {input}
           {loadingIndicator}
           <div className="TypeaheadMultipleSelection__valueList">
@@ -181,11 +181,7 @@ export default class TypeaheadMultipleSelection extends React.Component {
       );
     }
     return (
-      <div
-        className={classnames('TypeaheadMultipleSelection', {
-          Disabled: this.props.disabled
-        })}
-      >
+      <div className="TypeaheadMultipleSelection" disabled={this.props.disabled}>
         {input}
         {loadingIndicator}
         <div className="TypeaheadMultipleSelection__valueList">

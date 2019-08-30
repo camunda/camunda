@@ -234,5 +234,5 @@ it('can be disabled', async () => {
     expect(input.props().disabled).toBeTruthy();
   });
   expect(node.find(Input).props().disabled).toBeTruthy();
-  expect(node.find('.Disabled')).toExist();
+  expect(node.find('.TypeaheadMultipleSelection').props().disabled).toBeTruthy();
 });

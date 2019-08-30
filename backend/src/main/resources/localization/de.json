@@ -523,7 +523,7 @@
         "inputPlaceholder": "Variable auswählen oder suchen",
         "noVariables": "Keine Variablen gefunden",
         "loadMore": "Mehr anzeigen",
-        "filterForUndefined": "Filter nach Instanzen, wo die angegebene Variable entweder null oder nicht definiert ist.",
+        "filterForUndefined": "Filter nach Instanzen, wo die angegebene Variable entweder <b>null</b> oder <b>nicht definiert</b> ist.",
         "bool": {
           "isTrue": "ist wahr",
           "isFalse": "ist falsch"
