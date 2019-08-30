@@ -110,7 +110,7 @@ spec:
           cpu: 2
           memory: 4Gi
     - name: zeebe
-      image: camunda/zeebe:0.21.0-alpha1
+      image: camunda/zeebe:SNAPSHOT
       env:
         - name: JAVA_TOOL_OPTIONS
           value: |
