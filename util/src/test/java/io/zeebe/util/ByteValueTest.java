@@ -110,4 +110,28 @@ public class ByteValueTest {
 
     assertThat(new ByteValue(value.toString())).isEqualTo(value);
   }
+
+  @Test
+  public void shouldNormalizeBytesValue() {
+    assertThat(ByteValue.ofBytes(128)).isEqualTo(ByteValue.ofBytes(128));
+    assertThat(ByteValue.ofBytes(1023)).isEqualTo(ByteValue.ofBytes(1023));
+    assertThat(ByteValue.ofBytes(1024)).isEqualTo(ByteValue.ofKilobytes(1));
+    assertThat(ByteValue.ofBytes(512 * 1024)).isEqualTo(ByteValue.ofKilobytes(512));
+    assertThat(ByteValue.ofBytes(1024 * 1024)).isEqualTo(ByteValue.ofMegabytes(1));
+    assertThat(ByteValue.ofBytes(64 * 1024 * 1024)).isEqualTo(ByteValue.ofMegabytes(64));
+    assertThat(ByteValue.ofBytes(1024 * 1024 * 1024)).isEqualTo(ByteValue.ofGigabytes(1));
+    assertThat(ByteValue.ofBytes(4L * 1024 * 1024 * 1024)).isEqualTo(ByteValue.ofGigabytes(4));
+  }
+
+  @Test
+  public void shouldNormalizeValue() {
+    assertThat(ByteValue.ofBytes(512 * 1024).normalize()).isEqualTo(ByteValue.ofKilobytes(512));
+    assertThat(ByteValue.ofKilobytes(64 * 1024).normalize()).isEqualTo(ByteValue.ofMegabytes(64));
+    assertThat(ByteValue.ofMegabytes(4 * 1024).normalize()).isEqualTo(ByteValue.ofGigabytes(4));
+
+    assertThat(ByteValue.ofBytes(128).normalize()).isEqualTo(ByteValue.ofBytes(128));
+    assertThat(ByteValue.ofKilobytes(512).normalize()).isEqualTo(ByteValue.ofKilobytes(512));
+    assertThat(ByteValue.ofMegabytes(128).normalize()).isEqualTo(ByteValue.ofMegabytes(128));
+    assertThat(ByteValue.ofGigabytes(4).normalize()).isEqualTo(ByteValue.ofGigabytes(4));
+  }
 }

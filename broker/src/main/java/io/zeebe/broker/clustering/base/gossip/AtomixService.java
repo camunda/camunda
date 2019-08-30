@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 
@@ -50,7 +51,7 @@ public class AtomixService implements Service<Atomix> {
   }
 
   @Override
-  public void start(ServiceStartContext startContext) {
+  public void start(final ServiceStartContext startContext) {
     final ClusterCfg clusterCfg = configuration.getCluster();
 
     final int nodeId = clusterCfg.getNodeId();
@@ -88,41 +89,18 @@ public class AtomixService implements Service<Atomix> {
     final RaftPartitionGroup systemGroup =
         RaftPartitionGroup.builder(systemPartitionName)
             .withNumPartitions(1)
-            .withPartitionSize(configuration.getCluster().getClusterSize())
+            .withPartitionSize(clusterCfg.getClusterSize())
             .withMembers(getRaftGroupMembers(clusterCfg))
             .withDataDirectory(systemDirectory)
             .withFlushOnCommit()
             .build();
 
     final String raftPartitionGroupName = Partition.GROUP_NAME;
+    final RaftPartitionGroup partitionGroup =
+        createRaftPartitionGroup(rootDirectory, raftPartitionGroupName);
 
-    final File raftDirectory = new File(rootDirectory, raftPartitionGroupName);
-    if (!raftDirectory.exists()) {
-      try {
-        Files.createDirectory(raftDirectory.toPath());
-      } catch (final IOException e) {
-        throw new RuntimeException("Unable to create directory " + raftDirectory, e);
-      }
-    }
-
-    final Builder partitionGroupBuilder =
-        RaftPartitionGroup.builder(raftPartitionGroupName)
-            .withNumPartitions(configuration.getCluster().getPartitionsCount())
-            .withPartitionSize(configuration.getCluster().getReplicationFactor())
-            .withMembers(getRaftGroupMembers(clusterCfg))
-            .withDataDirectory(raftDirectory)
-            .withFlushOnCommit();
-
-    if (dataConfiguration.getRaftSegmentSize() != null) {
-      partitionGroupBuilder.withSegmentSize(
-          new ByteValue(dataConfiguration.getRaftSegmentSize()).toBytes());
-    }
-
-    final RaftPartitionGroup partitionGroup = partitionGroupBuilder.build();
-
-    atomixBuilder.withManagementGroup(systemGroup).withPartitionGroups(partitionGroup);
-
-    atomix = atomixBuilder.build();
+    atomix =
+        atomixBuilder.withManagementGroup(systemGroup).withPartitionGroups(partitionGroup).build();
 
     final BrokerRestoreFactory restoreFactory =
         new BrokerRestoreFactory(
@@ -130,11 +108,12 @@ public class AtomixService implements Service<Atomix> {
             atomix.getPartitionService(),
             raftPartitionGroupName,
             localMemberId);
+
     LogstreamConfig.putRestoreFactory(localMemberId, restoreFactory);
   }
 
   @Override
-  public void stop(ServiceStopContext stopContext) {
+  public void stop(final ServiceStopContext stopContext) {
     final String localMemberId = atomix.getMembershipService().getLocalMember().id().id();
     final CompletableFuture<Void> stopFuture = atomix.stop();
     stopContext.async(mapCompletableFuture(stopFuture));
@@ -146,7 +125,52 @@ public class AtomixService implements Service<Atomix> {
     return atomix;
   }
 
-  private List<String> getRaftGroupMembers(ClusterCfg clusterCfg) {
+  private RaftPartitionGroup createRaftPartitionGroup(
+      final String rootDirectory, final String raftPartitionGroupName) {
+
+    final File raftDirectory = new File(rootDirectory, raftPartitionGroupName);
+    if (!raftDirectory.exists()) {
+      try {
+        Files.createDirectory(raftDirectory.toPath());
+      } catch (final IOException e) {
+        throw new RuntimeException("Unable to create directory " + raftDirectory, e);
+      }
+    }
+
+    final ClusterCfg clusterCfg = configuration.getCluster();
+    final DataCfg dataCfg = configuration.getData();
+    final NetworkCfg networkCfg = configuration.getNetwork();
+
+    final Builder partitionGroupBuilder =
+        RaftPartitionGroup.builder(raftPartitionGroupName)
+            .withNumPartitions(clusterCfg.getPartitionsCount())
+            .withPartitionSize(clusterCfg.getReplicationFactor())
+            .withMembers(getRaftGroupMembers(clusterCfg))
+            .withDataDirectory(raftDirectory)
+            .withFlushOnCommit();
+
+    // by default, the Atomix max entry size is 1 MB
+    final ByteValue maxMessageSize = networkCfg.getMaxMessageSize();
+    partitionGroupBuilder.withMaxEntrySize((int) maxMessageSize.toBytes());
+
+    Optional.ofNullable(dataCfg.getRaftSegmentSize())
+        .map(ByteValue::new)
+        .ifPresent(
+            segmentSize -> {
+              if (segmentSize.toBytes() < maxMessageSize.toBytes()) {
+                throw new IllegalArgumentException(
+                    String.format(
+                        "Expected the raft segment size greater than the max message size of %s, but was %s.",
+                        maxMessageSize, segmentSize));
+              }
+
+              partitionGroupBuilder.withSegmentSize(segmentSize.toBytes());
+            });
+
+    return partitionGroupBuilder.build();
+  }
+
+  private List<String> getRaftGroupMembers(final ClusterCfg clusterCfg) {
     final int clusterSize = clusterCfg.getClusterSize();
     // node ids are always 0 to clusterSize - 1
     final List<String> members = new ArrayList<>();
@@ -157,7 +181,7 @@ public class AtomixService implements Service<Atomix> {
   }
 
   private NodeDiscoveryProvider createDiscoveryProvider(
-      ClusterCfg clusterCfg, String localMemberId) {
+      final ClusterCfg clusterCfg, final String localMemberId) {
     final BootstrapDiscoveryBuilder builder = BootstrapDiscoveryProvider.builder();
     final List<String> initialContactPoints = clusterCfg.getInitialContactPoints();
 
@@ -175,7 +199,7 @@ public class AtomixService implements Service<Atomix> {
     return builder.withNodes(nodes).build();
   }
 
-  private ActorFuture<Void> mapCompletableFuture(CompletableFuture<Void> atomixFuture) {
+  private ActorFuture<Void> mapCompletableFuture(final CompletableFuture<Void> atomixFuture) {
     final ActorFuture<Void> mappedActorFuture = new CompletableActorFuture<>();
 
     atomixFuture

@@ -23,15 +23,15 @@ public class RaftPersistentConfigurationManagerService
   private final BrokerCfg configuration;
   private StorageConfigurationManager service;
 
-  public RaftPersistentConfigurationManagerService(BrokerCfg configuration) {
+  public RaftPersistentConfigurationManagerService(final BrokerCfg configuration) {
     this.configuration = configuration;
   }
 
   @Override
-  public void start(ServiceStartContext startContext) {
+  public void start(final ServiceStartContext startContext) {
     final DataCfg dataConfiguration = configuration.getData();
 
-    for (String directory : dataConfiguration.getDirectories()) {
+    for (final String directory : dataConfiguration.getDirectories()) {
       final File configDirectory = new File(directory);
 
       if (!configDirectory.exists()) {
@@ -46,7 +46,9 @@ public class RaftPersistentConfigurationManagerService
 
     service =
         new StorageConfigurationManager(
-            configuration.getData().getDirectories(), configuration.getData().getLogSegmentSize());
+            configuration.getData().getDirectories(),
+            configuration.getData().getLogSegmentSize(),
+            configuration.getNetwork().getMaxMessageSize().toString());
 
     /* A temp solution so that DistributedLogstream primitive can create logs in this directory */
     LogstreamConfig.putConfig(String.valueOf(configuration.getCluster().getNodeId()), service);
@@ -55,7 +57,7 @@ public class RaftPersistentConfigurationManagerService
   }
 
   @Override
-  public void stop(ServiceStopContext stopContext) {
+  public void stop(final ServiceStopContext stopContext) {
     stopContext.async(service.close());
   }
 

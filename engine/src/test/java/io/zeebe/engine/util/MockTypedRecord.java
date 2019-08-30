@@ -28,7 +28,7 @@ public class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecor
     this.key = key;
     this.metadata = metadata;
     this.value = value;
-    this.timestamp = System.currentTimeMillis();
+    timestamp = System.currentTimeMillis();
   }
 
   @Override
@@ -53,6 +53,11 @@ public class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecor
   @Override
   public long getRequestId() {
     return metadata.getRequestId();
+  }
+
+  @Override
+  public long getLength() {
+    return metadata.getLength() + value.getLength();
   }
 
   public void setValue(T value) {

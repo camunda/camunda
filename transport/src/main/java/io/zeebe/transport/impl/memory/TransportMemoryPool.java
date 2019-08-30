@@ -13,4 +13,6 @@ public interface TransportMemoryPool {
   ByteBuffer allocate(int requestedCapacity);
 
   void reclaim(ByteBuffer buffer);
+
+  long capacity();
 }

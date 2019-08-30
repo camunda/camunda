@@ -13,6 +13,7 @@ import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT
 import io.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg.InternalApiCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg.MonitoringApiCfg;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.Environment;
 
 public class NetworkCfg implements ConfigurationEntry {
@@ -21,9 +22,11 @@ public class NetworkCfg implements ConfigurationEntry {
   public static final int DEFAULT_COMMAND_API_PORT = 26501;
   public static final int DEFAULT_INTERNAL_API_PORT = 26502;
   public static final int DEFAULT_MONITORING_API_PORT = 9600;
+  public static final String DEFAULT_MAX_MESSAGE_SIZE = "4M";
 
   private String host = DEFAULT_HOST;
   private int portOffset = 0;
+  private String maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
 
   private CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();
@@ -39,8 +42,8 @@ public class NetworkCfg implements ConfigurationEntry {
   }
 
   private void applyEnvironment(final Environment environment) {
-    environment.get(ENV_HOST).ifPresent(v -> host = v);
-    environment.getInt(ENV_PORT_OFFSET).ifPresent(v -> portOffset = v);
+    environment.get(ENV_HOST).ifPresent(this::setHost);
+    environment.getInt(ENV_PORT_OFFSET).ifPresent(this::setPortOffset);
   }
 
   public String getHost() {
@@ -59,6 +62,14 @@ public class NetworkCfg implements ConfigurationEntry {
     this.portOffset = portOffset;
   }
 
+  public ByteValue getMaxMessageSize() {
+    return new ByteValue(maxMessageSize);
+  }
+
+  public void setMaxMessageSize(final String maxMessageSize) {
+    this.maxMessageSize = maxMessageSize;
+  }
+
   public SocketBindingCfg getCommandApi() {
     return commandApi;
   }
@@ -71,7 +82,7 @@ public class NetworkCfg implements ConfigurationEntry {
     return monitoringApi;
   }
 
-  public void setMonitoringApi(MonitoringApiCfg monitoringApi) {
+  public void setMonitoringApi(final MonitoringApiCfg monitoringApi) {
     this.monitoringApi = monitoringApi;
   }
 
@@ -79,7 +90,7 @@ public class NetworkCfg implements ConfigurationEntry {
     return internalApi;
   }
 
-  public void setInternalApi(InternalApiCfg internalApi) {
+  public void setInternalApi(final InternalApiCfg internalApi) {
     this.internalApi = internalApi;
   }
 
@@ -91,6 +102,9 @@ public class NetworkCfg implements ConfigurationEntry {
         + '\''
         + ", portOffset="
         + portOffset
+        + '\''
+        + ", maxMessageSize="
+        + maxMessageSize
         + ", commandApi="
         + commandApi
         + ", internalApi="

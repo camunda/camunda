@@ -12,6 +12,7 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLeng
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.dispatcher.BlockPeek;
 import io.zeebe.dispatcher.ClaimedFragment;
@@ -39,7 +40,11 @@ public class DispatcherIntegrationTest {
       new FragmentHandler() {
         @Override
         public int onFragment(
-            DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed) {
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final int streamId,
+            final boolean isMarkedFailed) {
           return FragmentHandler.CONSUME_FRAGMENT_RESULT;
         }
       };
@@ -497,6 +502,39 @@ public class DispatcherIntegrationTest {
     assertThat(claimedOffset).isGreaterThanOrEqualTo(0);
   }
 
+  @Test
+  public void shouldFailToCreateDispatcherIfBufferTooSmall() {
+    final ByteValue frameLength = ByteValue.ofMegabytes(1);
+    final int requiredBufferSize = (int) frameLength.toBytes() * 2 * 3;
+
+    final var builder =
+        Dispatchers.create("test")
+            .actorScheduler(actorSchedulerRule.get())
+            .maxFragmentLength(frameLength)
+            .bufferSize(frameLength);
+
+    assertThatThrownBy(() -> builder.build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Expected the buffer size to be greater than %s, but was %s. The max fragment length is set to %s.",
+            requiredBufferSize, frameLength.toBytes(), frameLength.toBytes());
+  }
+
+  @Test
+  public void shouldSetBufferSizeDependingOnMaxFrameLength() {
+    final ByteValue frameLength = ByteValue.ofMegabytes(4);
+    final int expectedPartitionSize = (int) frameLength.toBytes() * 2;
+
+    final Dispatcher dispatcher =
+        Dispatchers.create("test")
+            .actorScheduler(actorSchedulerRule.get())
+            .maxFragmentLength(frameLength)
+            .build();
+
+    assertThat(dispatcher.getMaxFragmentLength()).isEqualTo(frameLength.toBytes());
+    assertThat(dispatcher.getLogBuffer().getPartitionSize()).isEqualTo(expectedPartitionSize);
+  }
+
   protected void offerMessage(
       final Dispatcher dispatcher, final UnsafeBuffer msg, final int totalWork) {
     for (int i = 1; i <= totalWork; i++) {
@@ -542,7 +580,11 @@ public class DispatcherIntegrationTest {
 
     @Override
     public int onFragment(
-        DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed) {
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final int streamId,
+        final boolean isMarkedFailed) {
       handledFragmentLengths.add(length);
       return FragmentHandler.CONSUME_FRAGMENT_RESULT;
     }
@@ -558,10 +600,10 @@ public class DispatcherIntegrationTest {
         final int offset,
         final int length,
         final int streamId,
-        boolean isMarkedFailed) {
+        final boolean isMarkedFailed) {
       final int newCounter = buffer.getInt(offset);
       counters.add(newCounter);
-      this.counter.lazySet(newCounter);
+      counter.lazySet(newCounter);
       return FragmentHandler.CONSUME_FRAGMENT_RESULT;
     }
   }

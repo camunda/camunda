@@ -100,7 +100,7 @@ public class DefaultDistributedLogstreamService
 
   private void configureFromLogName(String logName) {
     partitionId = getPartitionIdFromLogName(logName);
-    logger = new ZbLogger(String.format("%s-%d", this.getClass().getName(), partitionId));
+    logger = new ZbLogger(String.format("%s-%d", getClass().getName(), partitionId));
   }
 
   private int getPartitionIdFromLogName(String logName) {
@@ -152,7 +152,8 @@ public class DefaultDistributedLogstreamService
 
     return LogStreams.createFsLogStream(partitionId)
         .logDirectory(logDirectory.getAbsolutePath())
-        .logSegmentSize((int) config.getLogSegmentSize())
+        .logSegmentSize(config.getLogSegmentSize())
+        .maxFragmentSize(config.getMaxFragmentSize())
         .logName(logServiceName)
         .serviceContainer(serviceContainer)
         .build()
@@ -186,8 +187,8 @@ public class DefaultDistributedLogstreamService
         term);
 
     if (currentLeaderTerm < term) {
-      this.currentLeader = nodeId;
-      this.currentLeaderTerm = term;
+      currentLeader = nodeId;
+      currentLeaderTerm = term;
       return true;
     }
     return false;
@@ -200,6 +201,12 @@ public class DefaultDistributedLogstreamService
       // exceptions.
       logger.trace("Rejecting append request at position {}", commitPosition);
       return 1; // Assume the append was successful because event was previously appended.
+    }
+
+    if (logStream.getLogStorage().isClosed()) {
+      logger.warn(
+          "Rejecting append request at position {}. Log storage is closed.", commitPosition);
+      return -1;
     }
 
     try {
@@ -273,8 +280,8 @@ public class DefaultDistributedLogstreamService
 
   @Override
   public void close() {
-    super.close();
     logger.info("Closing {}", getServiceName());
+    super.close();
   }
 
   private RestoreController createRestoreController(ThreadContext restoreThreadContext) {

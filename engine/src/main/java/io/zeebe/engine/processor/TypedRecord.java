@@ -21,12 +21,10 @@ public interface TypedRecord<T extends UnifiedRecordValue> extends Record<T> {
 
   long getRequestId();
 
+  long getLength();
+
   default boolean hasRequestMetadata() {
     return getRequestId() != RecordMetadataEncoder.requestIdNullValue()
         && getRequestStreamId() != RecordMetadataEncoder.requestStreamIdNullValue();
-  }
-
-  default int getMaxValueLength() {
-    throw new UnsupportedOperationException();
   }
 }

@@ -69,7 +69,7 @@ public class BufferingServerTransportTest {
   public void shouldPostponeMessagesOnReceiveBufferBackpressure() throws InterruptedException {
     // given
     final int maximumMessageLength =
-        serverReceiveBuffer.getMaxFrameLength()
+        serverReceiveBuffer.getMaxFragmentLength()
             - TransportHeaderDescriptor.HEADER_LENGTH
             - 1; // https://github.com/zeebe-io/zb-dispatcher/issues/21
 

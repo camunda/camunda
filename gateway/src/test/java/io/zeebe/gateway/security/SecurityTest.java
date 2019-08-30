@@ -120,12 +120,12 @@ public class SecurityTest {
             new SecurityCfg()
                 .setEnabled(true)
                 .setCertificateChainPath(
-                    this.getClass()
+                    getClass()
                         .getClassLoader()
                         .getResource("security/test-chain.cert.pem")
                         .getPath())
                 .setPrivateKeyPath(
-                    this.getClass()
+                    getClass()
                         .getClassLoader()
                         .getResource("security/test-server.key.pem")
                         .getPath()));

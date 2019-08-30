@@ -11,7 +11,7 @@ public class EnvironmentConstants {
 
   public static final String ENV_GATEWAY_HOST = "ZEEBE_GATEWAY_HOST";
   public static final String ENV_GATEWAY_PORT = "ZEEBE_GATEWAY_PORT";
-  public static final String ENV_GATEWAY_TRANSPORT_BUFFER = "ZEEBE_GATEWAY_TRANSPORT_BUFFER";
+  public static final String ENV_GATEWAY_MAX_MESSAGE_SIZE = "ZEEBE_GATEWAY_MAX_MESSAGE_SIZE";
   public static final String ENV_GATEWAY_REQUEST_TIMEOUT = "ZEEBE_GATEWAY_REQUEST_TIMEOUT";
   public static final String ENV_GATEWAY_MANAGEMENT_THREADS = "ZEEBE_GATEWAY_MANAGEMENT_THREADS";
   public static final String ENV_GATEWAY_CONTACT_POINT = "ZEEBE_GATEWAY_CONTACT_POINT";

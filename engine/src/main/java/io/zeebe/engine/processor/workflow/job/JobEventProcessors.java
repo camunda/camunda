@@ -22,7 +22,8 @@ public class JobEventProcessors {
   public static void addJobProcessors(
       TypedRecordProcessors typedRecordProcessors,
       ZeebeState zeebeState,
-      Consumer<String> onJobsAvailableCallback) {
+      Consumer<String> onJobsAvailableCallback,
+      int maxRecordSize) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
     final JobState jobState = zeebeState.getJobState();
 
@@ -42,7 +43,8 @@ public class JobEventProcessors {
             new JobBatchActivateProcessor(
                 jobState,
                 workflowState.getElementInstanceState().getVariablesState(),
-                zeebeState.getKeyGenerator()))
+                zeebeState.getKeyGenerator(),
+                maxRecordSize))
         .withListener(new JobTimeoutTrigger(jobState))
         .withListener(
             new StreamProcessorLifecycleAware() {

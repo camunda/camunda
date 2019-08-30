@@ -110,7 +110,8 @@ public class LogStreamDeleteTest {
             - alignedLength(HEADER_BLOCK_LENGTH + 2 + 8)
             - 1);
     final LogStream logStream =
-        logStreamRule.startLogStreamWithConfiguration(c -> c.logSegmentSize(segmentSize));
+        logStreamRule.startLogStreamWithConfiguration(
+            c -> c.logSegmentSize(segmentSize).maxFragmentSize(segmentSize));
     final byte[] largeEvent = new byte[remainingCapacity];
 
     // log storage always returns on append as address (segment id, segment OFFSET)

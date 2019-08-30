@@ -55,7 +55,7 @@ public class IncidentStreamProcessorRule extends ExternalResource {
   private ZeebeState zeebeState;
 
   public IncidentStreamProcessorRule(StreamProcessorRule streamProcessorRule) {
-    this.environmentRule = streamProcessorRule;
+    environmentRule = streamProcessorRule;
   }
 
   @Override
@@ -76,7 +76,7 @@ public class IncidentStreamProcessorRule extends ExternalResource {
     environmentRule.startTypedStreamProcessor(
         (typedRecordProcessors, zeebeState) -> {
           this.zeebeState = zeebeState;
-          this.workflowState = zeebeState.getWorkflowState();
+          workflowState = zeebeState.getWorkflowState();
           final BpmnStepProcessor stepProcessor =
               WorkflowEventProcessors.addWorkflowProcessors(
                   zeebeState,
@@ -86,7 +86,8 @@ public class IncidentStreamProcessorRule extends ExternalResource {
                   mockTimerEventScheduler);
 
           IncidentEventProcessors.addProcessors(typedRecordProcessors, zeebeState, stepProcessor);
-          JobEventProcessors.addJobProcessors(typedRecordProcessors, zeebeState, type -> {});
+          JobEventProcessors.addJobProcessors(
+              typedRecordProcessors, zeebeState, type -> {}, Integer.MAX_VALUE);
           return typedRecordProcessors;
         });
   }
