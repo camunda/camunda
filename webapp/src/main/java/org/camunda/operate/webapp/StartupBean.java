@@ -10,7 +10,7 @@ import javax.annotation.PreDestroy;
 import org.camunda.operate.data.DataGenerator;
 import org.camunda.operate.es.ElasticsearchConnector;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
-import org.camunda.operate.es.archiver.Archiver;
+import org.camunda.operate.zeebeimport.archiver.Archiver;
 import org.camunda.operate.webapp.user.ElasticSearchUserDetailsService;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.elasticsearch.client.RestHighLevelClient;

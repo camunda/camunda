@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.operate.es.archiver;
+package org.camunda.operate.zeebeimport.archiver;
 
 import javax.annotation.PreDestroy;
 import java.io.IOException;
@@ -17,6 +17,7 @@ import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.ElasticsearchUtil;
+import org.camunda.operate.zeebeimport.PartitionHolder;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -24,6 +25,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
@@ -39,6 +41,7 @@ import org.springframework.stereotype.Component;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.dateHistogram;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 import static org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders.bucketSort;
@@ -64,6 +67,9 @@ public class Archiver extends Thread {
 
   @Autowired
   private List<WorkflowInstanceDependant> workflowInstanceDependantTemplates;
+
+  @Autowired
+  private PartitionHolder partitionHolder;
 
   public void startArchiving() {
     if (operateProperties.getElasticsearch().isRolloverEnabled()) {
@@ -139,7 +145,8 @@ public class Archiver extends Thread {
       rangeQuery(ListViewTemplate.END_DATE)
         .lte("now-1h");
     final TermQueryBuilder isWorkflowInstanceQ = termQuery(ListViewTemplate.JOIN_RELATION, ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION);
-    final ConstantScoreQueryBuilder q = constantScoreQuery(ElasticsearchUtil.joinWithAnd(endDateQ, isWorkflowInstanceQ));
+    final TermsQueryBuilder belognsToPartitions = termsQuery(ListViewTemplate.PARTITION_ID, partitionHolder.getPartitionIds());
+    final ConstantScoreQueryBuilder q = constantScoreQuery(ElasticsearchUtil.joinWithAnd(endDateQ, isWorkflowInstanceQ, belognsToPartitions));
 
     final String datesAgg = "datesAgg";
     final String instancesAgg = "instancesAgg";

@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.operate.es.archiver;
+package org.camunda.operate.zeebeimport.archiver;
 
 import java.io.IOException;
 import java.util.List;

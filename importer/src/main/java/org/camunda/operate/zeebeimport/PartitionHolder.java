@@ -87,8 +87,8 @@ public class PartitionHolder {
       }else {
         logger.debug("PartitionIds are not present or not equal. Try ({}) next round.");
       }
+      partitionIds = extractCurrentNodePartitions(partitionIds);
     }
-    partitionIds = extractCurrentNodePartitions(partitionIds);
     return partitionIds;
   }
 

@@ -15,7 +15,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = { ModulesTestApplication.class }, properties = { OperateProperties.PREFIX + ".importProperties.startLoadingDataOnStartup = false"})
 @TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
-public class ModuleIT {
+public abstract class ModuleIntegrationTest {
 
   @Autowired
   protected ApplicationContext applicationContext;

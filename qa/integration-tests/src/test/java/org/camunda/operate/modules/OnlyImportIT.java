@@ -16,7 +16,7 @@ import org.springframework.test.context.TestPropertySource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @TestPropertySource(properties = OperateProperties.PREFIX + ".webappEnabled = false")
-public class OnlyImportIT extends ModuleIT {
+public class OnlyImportIT extends ModuleIntegrationTest {
 
   @Autowired
   private ApplicationContext applicationContext;

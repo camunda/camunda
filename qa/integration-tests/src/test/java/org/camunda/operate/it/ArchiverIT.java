@@ -26,8 +26,8 @@ import java.util.Random;
 
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.es.archiver.Archiver;
-import org.camunda.operate.es.archiver.ArchiverHelper;
+import org.camunda.operate.zeebeimport.archiver.Archiver;
+import org.camunda.operate.zeebeimport.archiver.ArchiverHelper;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
