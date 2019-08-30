@@ -30,15 +30,7 @@ export default class CollapsablePanel extends React.Component {
   constructor(props) {
     super(props);
     this.expandButtonRef = React.createRef();
-    this.expandButton = React.cloneElement(props.expandButton, {
-      onClick: this.handleButtonClick,
-      ref: this.expandButtonRef
-    });
     this.collapseButtonRef = React.createRef();
-    this.collapseButton = React.cloneElement(props.collapseButton, {
-      onClick: this.handleButtonClick,
-      ref: this.collapseButtonRef
-    });
   }
 
   componentDidUpdate(prevProps, prevState, snapshot) {
@@ -55,17 +47,29 @@ export default class CollapsablePanel extends React.Component {
     this.props.onCollapse();
   };
 
+  renderCollapseButton = () =>
+    React.cloneElement(this.props.collapseButton, {
+      onClick: this.handleButtonClick,
+      ref: this.collapseButtonRef
+    });
+
+  renderExpandButton = () =>
+    React.cloneElement(this.props.expandButton, {
+      onClick: this.handleButtonClick,
+      ref: this.expandButtonRef
+    });
+
   render() {
     const {isCollapsed, children} = this.props;
 
     return (
       <Styled.Collapsable {...this.props} isCollapsed={isCollapsed}>
         <Styled.ExpandedPanel isCollapsed={isCollapsed}>
-          {this.collapseButton}
+          {this.renderCollapseButton()}
           {children}
         </Styled.ExpandedPanel>
         <Styled.CollapsedPanel isCollapsed={isCollapsed}>
-          {this.expandButton}
+          {this.renderExpandButton()}
         </Styled.CollapsedPanel>
       </Styled.Collapsable>
     );
