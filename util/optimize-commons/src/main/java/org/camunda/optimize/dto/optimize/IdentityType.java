@@ -5,8 +5,20 @@
  */
 package org.camunda.optimize.dto.optimize;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 public enum IdentityType {
   USER,
   GROUP,
   ;
+
+  @JsonValue
+  public String getId() {
+    return name().toLowerCase();
+  }
+
+  @Override
+  public String toString() {
+    return getId();
+  }
 }

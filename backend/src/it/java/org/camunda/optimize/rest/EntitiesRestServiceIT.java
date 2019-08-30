@@ -5,7 +5,11 @@
  */
 package org.camunda.optimize.rest;
 
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRole;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
@@ -231,6 +235,101 @@ public class EntitiesRestServiceIT {
     assertThat(entities.get(5).getEntityType(), is(EntityType.REPORT));
   }
 
+  @Test
+  public void getEntitiesIncludesCollectionSubEntityCountsIfThereAreNoEntities() {
+    // given
+    addEmptyCollectionToOptimize();
+
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final List<EntityDto> defaultUserEntities = getEntities();
+
+    // then
+    assertThat(defaultUserEntities.size(), is(1));
+    final EntityDto collectionEntityDto = defaultUserEntities.get(0);
+    assertThat(collectionEntityDto.getData().getSubEntityCounts().size(), is(2));
+    assertThat(collectionEntityDto.getData().getSubEntityCounts().get(EntityType.REPORT), is(0L));
+    assertThat(collectionEntityDto.getData().getSubEntityCounts().get(EntityType.DASHBOARD), is(0L));
+  }
+
+  @Test
+  public void getEntitiesIncludesCollectionSubEntityCounts() {
+    // given
+    final String collectionId = addEmptyCollectionToOptimize();
+
+    addSingleReportToOptimize("A Report", ReportType.DECISION, collectionId, DEFAULT_USERNAME);
+    addSingleReportToOptimize("B Report", ReportType.PROCESS, collectionId, DEFAULT_USERNAME);
+    addDashboardToOptimize("C Dashboard", collectionId, DEFAULT_USERNAME);
+    addCombinedReport("D Combined", collectionId, DEFAULT_USERNAME);
+
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final List<EntityDto> defaultUserEntities = getEntities();
+
+    // then
+    assertThat(defaultUserEntities.size(), is(1));
+    final EntityDto collectionEntityDto = defaultUserEntities.get(0);
+    assertThat(collectionEntityDto.getData().getSubEntityCounts().size(), is(2));
+    assertThat(collectionEntityDto.getData().getSubEntityCounts().get(EntityType.REPORT), is(3L));
+    assertThat(collectionEntityDto.getData().getSubEntityCounts().get(EntityType.DASHBOARD), is(1L));
+  }
+
+  @Test
+  public void getEntitiesIncludesCollectionRoleCountsByDefault() {
+    // given
+    addEmptyCollectionToOptimize();
+
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final List<EntityDto> defaultUserEntities = getEntities();
+
+    // then
+    assertThat(defaultUserEntities.size(), is(1));
+    final EntityDto collectionEntityDto = defaultUserEntities.get(0);
+    assertThat(collectionEntityDto.getData().getRoleCounts().size(), is(2));
+    assertThat(collectionEntityDto.getData().getRoleCounts().get(IdentityType.USER), is(1L));
+    assertThat(collectionEntityDto.getData().getRoleCounts().get(IdentityType.GROUP), is(0L));
+  }
+
+  @Test
+  public void getEntitiesIncludesCollectionRoleCounts() {
+    // given
+    final String collectionId = addEmptyCollectionToOptimize();
+    addRoleToCollection(collectionId, "user1", IdentityType.USER);
+    addRoleToCollection(collectionId, "groupA", IdentityType.GROUP);
+    addRoleToCollection(collectionId, "groupB", IdentityType.GROUP);
+    addRoleToCollection(collectionId, "groupC", IdentityType.GROUP);
+
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final List<EntityDto> defaultUserEntities = getEntities();
+
+    // then
+    assertThat(defaultUserEntities.size(), is(1));
+    final EntityDto collectionEntityDto = defaultUserEntities.get(0);
+    assertThat(collectionEntityDto.getData().getRoleCounts().size(), is(2));
+    assertThat(collectionEntityDto.getData().getRoleCounts().get(IdentityType.USER), is(2L));
+    assertThat(collectionEntityDto.getData().getRoleCounts().get(IdentityType.GROUP), is(3L));
+  }
+
+  private void addRoleToCollection(final String collectionId,
+                                   final String identityId,
+                                   final IdentityType identityType) {
+
+    final CollectionRoleDto roleDto = new CollectionRoleDto(
+      new IdentityDto(identityId, identityType),
+      CollectionRole.EDITOR
+    );
+    embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildAddRoleToCollectionRequest(collectionId, roleDto)
+      .execute(IdDto.class, 200);
+  }
+
   private String addSingleReportToOptimize(String name, ReportType reportType) {
     return addSingleReportToOptimize(name, reportType, null, DEFAULT_USERNAME);
   }
@@ -318,6 +417,9 @@ public class EntitiesRestServiceIT {
       .buildUpdateCombinedProcessReportRequest(id, definitionDto)
       .withUserAuthentication(user, user)
       .execute(204);
+
+    elasticSearchRule.moveCombinedReportToCollection(id, collectionId);
+
     return id;
   }
 

@@ -18,6 +18,10 @@ public enum EntityType {
     return name().toLowerCase();
   }
 
+  public static EntityType valueOfId(final String id) {
+    return valueOf(id.toUpperCase());
+  }
+
   @Override
   public String toString() {
     return getId();

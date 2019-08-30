@@ -9,12 +9,14 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.es.reader.EntitiesReader;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,10 +29,15 @@ public class EntitiesService {
 
   public List<EntityDto> getAllEntities(String userId) {
     final List<SimpleCollectionDefinitionDto> collectionDefinitions = collectionService.getAllCollectionDefinitions();
+    final Map<String, Map<EntityType, Long>> collectionEntityCounts = entitiesReader.countEntitiesForCollections(
+      collectionDefinitions
+    );
     final List<EntityDto> privateEntities = entitiesReader.getAllPrivateEntities(userId);
 
     return Stream.concat(
-      collectionDefinitions.stream().map(BaseCollectionDefinitionDto::toEntityDto),
+      collectionDefinitions.stream()
+        .map(BaseCollectionDefinitionDto::toEntityDto)
+        .peek(entityDto -> entityDto.getData().setSubEntityCounts(collectionEntityCounts.get(entityDto.getId()))),
       privateEntities.stream()
     ).sorted(
       Comparator.comparing(EntityDto::getEntityType)
