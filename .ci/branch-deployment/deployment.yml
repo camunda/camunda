@@ -48,7 +48,7 @@ spec:
             -XX:+UseCGroupMemoryLimitForHeap
             -XX:MaxRAMFraction=1
         - name: SPRING_PROFILES_ACTIVE
-          value: "dev-data,auth"
+          value: "dev-data"
         ports:
         - containerPort: 8080
           name: operate-http

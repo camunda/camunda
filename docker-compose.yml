@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile.build
     container_name: operate
     environment:
-      - SPRING_PROFILES_ACTIVE=dev,dev-data,auth
+      - SPRING_PROFILES_ACTIVE=dev,dev-data
       - JAVA_OPTS=-Dlogging.config=file:/usr/app/config/log4j2.xml
       - SPRING_CONFIG_LOCATION=file:/usr/app/config/application.yml
     image: camunda/operate:latest

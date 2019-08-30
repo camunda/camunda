@@ -35,16 +35,17 @@ public class Application {
     System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
     final SpringApplication springApplication = new SpringApplication(Application.class);
     springApplication.setAddCommandLineProperties(true);
-    ensureOneAuthProfileIsSet(args, springApplication).run(args);
-  }
-  
-  protected static SpringApplication ensureOneAuthProfileIsSet(String[] args,SpringApplication springApplication) {
-    String profilesFromEnv = String.format("%s", System.getenv("SPRING_PROFILES_ACTIVE"));
-    String profilesFromArgs = String.join(",",Arrays.asList(args));
-    if(! profilesFromArgs.contains("auth") && !profilesFromEnv.contains("auth")) {
+    if(!isOneAuthProfileActive(args)) {
       springApplication.setAdditionalProfiles("auth");
     }
-    return springApplication;
+    springApplication.run(args);
+  }
+  
+  protected static boolean isOneAuthProfileActive(String[] args) {
+    String profilesFromEnv = String.format("%s", System.getenv("SPRING_PROFILES_ACTIVE"));
+    String profilesFromArgs = String.join(",",Arrays.asList(args));
+    String profilesFromProperties = String.format("%s", System.getProperty("spring.profiles.active"));
+    return profilesFromArgs.contains("auth") || profilesFromEnv.contains("auth") || profilesFromProperties.contains("auth");
   }
   
   @Bean(name = "dataGenerator")
