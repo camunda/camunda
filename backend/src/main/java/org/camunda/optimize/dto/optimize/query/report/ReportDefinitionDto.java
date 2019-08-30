@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.dto.optimize.query.report;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
@@ -13,6 +15,8 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import java.time.OffsetDateTime;
 
 @Data
+@AllArgsConstructor
+@Builder(toBuilder = true)
 public class ReportDefinitionDto<RD extends ReportDataDto> implements CollectionEntity {
 
   protected String id;

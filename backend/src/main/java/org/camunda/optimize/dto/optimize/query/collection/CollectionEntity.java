@@ -17,6 +17,8 @@ public interface CollectionEntity {
 
   String getName();
 
+  String getOwner();
+
   OffsetDateTime getLastModified();
 
   EntityDto toEntityDto();

@@ -20,12 +20,6 @@ import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.service.ValidationService;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
-import org.camunda.optimize.upgrade.steps.document.InsertDataStep;
-import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
-import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
-import org.camunda.optimize.upgrade.steps.schema.DeleteIndexStep;
-import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
-import org.camunda.optimize.upgrade.steps.schema.UpdateMappingIndexStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -34,8 +28,6 @@ import org.springframework.core.type.filter.AssignableTypeFilter;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -86,7 +78,6 @@ public class UpgradeExecutionPlan implements UpgradePlan {
   public void execute() {
     validateVersions();
 
-    sortUpgradeStepsSoThatIndexAdjustmentsAreDoneFirst();
     int currentStepCount = 1;
     for (UpgradeStep step : upgradeSteps) {
       logger.info(
@@ -155,18 +146,6 @@ public class UpgradeExecutionPlan implements UpgradePlan {
 
   public void setToVersion(String toVersion) {
     this.toVersion = toVersion;
-  }
-
-  private void sortUpgradeStepsSoThatIndexAdjustmentsAreDoneFirst() {
-    List<Class> sortOrder = Arrays.asList(
-      CreateIndexStep.class,
-      DeleteIndexStep.class,
-      UpdateMappingIndexStep.class,
-      UpdateIndexStep.class,
-      InsertDataStep.class,
-      UpdateDataStep.class
-    );
-    upgradeSteps.sort(Comparator.comparingInt(step -> sortOrder.indexOf(step.getClass())));
   }
 
   private void validateVersions() {

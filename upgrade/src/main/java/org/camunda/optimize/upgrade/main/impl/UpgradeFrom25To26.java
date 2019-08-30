@@ -10,19 +10,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRole;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
 import org.camunda.optimize.service.engine.importing.DmnModelUtility;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.CollectionIndex;
+import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
+import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.Upgrade;
@@ -32,6 +32,7 @@ import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateMappingIndexStep;
+import org.camunda.optimize.upgrade.steps.schema.UpgradeCollectionIndexStep;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
@@ -76,7 +77,10 @@ public class UpgradeFrom25To26 implements Upgrade {
     ElasticsearchHighLevelRestClientBuilder.build(configurationService),
     indexNameService
   );
-  private ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper = new ObjectMapperFactory(
+    new OptimizeDateTimeFormatterFactory().getObject(),
+    new ConfigurationService()
+  ).createOptimizeMapper();
 
   private static final String DEFINITION_ID_TO_VAR_NAMES_PARAMETER_NAME = "definitionIdToVarNames";
 
@@ -113,7 +117,9 @@ public class UpgradeFrom25To26 implements Upgrade {
       .addUpgradeStep(new UpdateMappingIndexStep(new DecisionDefinitionIndex()))
       .addUpgradeStep(createDecisionDefinitionInputVariableNames())
       .addUpgradeStep(createDecisionDefinitionOutputVariableNames())
-      .addUpgradeStep(createDefaultManagerRoleForCollections())
+      .addUpgradeStep(new UpdateMappingIndexStep(new DashboardIndex()))
+      .addUpgradeStep(new UpdateMappingIndexStep(new CombinedReportIndex()))
+      .addUpgradeStep(new UpgradeCollectionIndexStep(client, configurationService, objectMapper))
       .addUpgradeStep(createProcessInstanceIndexUpgrade())
       .build();
   }
@@ -138,12 +144,12 @@ public class UpgradeFrom25To26 implements Upgrade {
     String script = substitutor.replace(
       // @formatter:off
       "String definition = ctx._source.${reportDataField}.${definitionVersionField};\n" +
-      "if (definition != null && !definition.isEmpty()) {\n" +
+        "if (definition != null && !definition.isEmpty()) {\n" +
         "def list = new ArrayList();\n" +
         "list.add(definition);\n" +
         "ctx._source.${reportDataField}.${definitionVersionsField} = list; \n" +
         "ctx._source.${reportDataField}.remove(\"${definitionVersionField}\");\n" +
-      "}\n"
+        "}\n"
       // @formatter:on
     );
     return new UpdateDataStep(
@@ -237,32 +243,6 @@ public class UpgradeFrom25To26 implements Upgrade {
       throw new UpgradeRuntimeException(errorMessage, e);
     }
     return result;
-  }
-
-  private UpgradeStep createDefaultManagerRoleForCollections() {
-
-    final StringSubstitutor substitutor = new StringSubstitutor(
-      ImmutableMap.<String, String>builder()
-        .put("collectionOwnerField", BaseCollectionDefinitionDto.Fields.owner.name())
-        .put("collectionDataField", BaseCollectionDefinitionDto.Fields.data.name())
-        .put("collectionDataRolesField", CollectionDataDto.Fields.roles.name())
-        .put("managerRole", CollectionRole.MANAGER.name())
-        .build()
-    );
-    String script = substitutor.replace(
-      // @formatter:off
-      "String owner = ctx._source.${collectionOwnerField};\n" +
-        "def identity = [ \"id\": owner, \"type\": \"USER\" ];\n" +
-        "def roleEntry = [ \"id\": \"USER:\" + owner, \"identity\": identity, \"role\": \"${managerRole}\"];\n" +
-        "ctx._source.${collectionDataField}.${collectionDataRolesField} = new ArrayList();\n" +
-        "ctx._source.${collectionDataField}.${collectionDataRolesField}.add(roleEntry);\n"
-      // @formatter:on
-    );
-    return new UpdateIndexStep(
-      new CollectionIndex(),
-      script
-    );
-
   }
 
   private UpgradeStep createProcessInstanceIndexUpgrade() {

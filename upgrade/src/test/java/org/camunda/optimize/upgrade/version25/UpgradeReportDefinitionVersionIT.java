@@ -10,7 +10,9 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
@@ -42,6 +44,8 @@ public class UpgradeReportDefinitionVersionIT extends AbstractUpgradeIT {
   private static final SingleProcessReportIndex SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndex();
   private static final Version25ProcessInstanceIndex PROCESS_INSTANCE_INDEX = new Version25ProcessInstanceIndex();
   private static final Version25CollectionIndex COLLECTION_INDEX = new Version25CollectionIndex();
+  private static final DashboardIndex DASHBOARD_INDEX = new DashboardIndex();
+  private static final CombinedReportIndex COMBINED_REPORT_INDEX = new CombinedReportIndex();
 
   @Before
   @Override
@@ -54,7 +58,9 @@ public class UpgradeReportDefinitionVersionIT extends AbstractUpgradeIT {
       SINGLE_DECISION_REPORT_INDEX,
       SINGLE_PROCESS_REPORT_INDEX,
       PROCESS_INSTANCE_INDEX,
-      COLLECTION_INDEX
+      COLLECTION_INDEX,
+      COMBINED_REPORT_INDEX,
+      DASHBOARD_INDEX
     ));
 
     setMetadataIndexVersion(FROM_VERSION);

@@ -10,7 +10,9 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
@@ -39,6 +41,8 @@ public class UpgradeProcessInstanceVariablesIT extends AbstractUpgradeIT {
   private static final SingleProcessReportIndex SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndex();
   private static final Version25ProcessInstanceIndex PROCESS_INSTANCE_INDEX = new Version25ProcessInstanceIndex();
   private static final Version25CollectionIndex COLLECTION_INDEX = new Version25CollectionIndex();
+  private static final DashboardIndex DASHBOARD_INDEX = new DashboardIndex();
+  private static final CombinedReportIndex COMBINED_REPORT_INDEX = new CombinedReportIndex();
 
   private static final String PROCESS_INSTANCE_WITH_DOUBLE_VAR = "973963f1-bcf9-11e9-82a8-0242ac120002";
   private static final String PROCESS_INSTANCE_WITH_BOOL_VAR = "74332c45-bcf9-11e9-82a8-0242ac120002";
@@ -62,7 +66,9 @@ public class UpgradeProcessInstanceVariablesIT extends AbstractUpgradeIT {
       SINGLE_DECISION_REPORT_INDEX,
       SINGLE_PROCESS_REPORT_INDEX,
       PROCESS_INSTANCE_INDEX,
-      COLLECTION_INDEX
+      COLLECTION_INDEX,
+      COMBINED_REPORT_INDEX,
+      DASHBOARD_INDEX
     ));
 
     setMetadataIndexVersion(FROM_VERSION);

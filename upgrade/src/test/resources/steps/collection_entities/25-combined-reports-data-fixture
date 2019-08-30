@@ -1,0 +1,27 @@
+{
+   "reports":[
+
+   ],
+   "visualization":"bar",
+   "configuration":{
+      "alwaysShowRelative":false,
+      "ylabel":"",
+      "alwaysShowAbsolute":false,
+      "pointMarkers":true,
+      "targetValue":{
+         "countChart":{
+            "isBelow":false,
+            "value":"100"
+         },
+         "active":false,
+         "durationChart":{
+            "unit":"hours",
+            "isBelow":false,
+            "value":"2"
+         }
+      },
+      "xlabel":"",
+      "hideRelativeValue":false,
+      "hideAbsoluteValue":false
+   }
+}
