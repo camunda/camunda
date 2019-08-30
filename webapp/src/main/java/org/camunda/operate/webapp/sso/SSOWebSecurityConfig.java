@@ -23,6 +23,8 @@ import com.auth0.AuthenticationController;
 @EnableWebSecurity
 public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
   
+  private static final String ROOT = "/";
+  private static final String API = "/api/**";
   public static final String SSO_AUTH_PROFILE = "sso-auth";
   public static final String LOGIN_RESOURCE = "/api/login";
   public static final String CALLBACK_URI = "/sso-callback";
@@ -40,19 +42,19 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
       LOGIN_RESOURCE
     };  
   /**
-   * This is your auth0 domain (tenant you have created when registering with auth0 - account name)
+   * This is auth0 domain (tenant created when registering with auth0 - account name)
    */
   @Value(value = "${camunda.operate.auth0.domain:camunda-dev.eu.auth0.com}")
   private String domain; 
 
   /**
-   * This is the client id of your auth0 application (see Settings page on auth0 dashboard)
+   * This is the client id of auth0 application (see Settings page on auth0 dashboard)
    */
   @Value(value = "${camunda.operate.auth0.clientId}")
   private String clientId;
 
   /**
-   * This is the client secret of your auth0 application (see Settings page on auth0 dashboard)
+   * This is the client secret of auth0 application (see Settings page on auth0 dashboard)
    */
   @Value(value = "${camunda.operate.auth0.clientSecret}")
   private String clientSecret;
@@ -64,44 +66,36 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
   private String organization;
   
   /**
-   * Key for claim to retrieve the username 
+   * Key for claim to retrieve the user name 
    */
   private String nameKey = "name";
 
-//  @Bean
-//  public LogoutSuccessHandler logoutSuccessHandler() {
-//      return new LogoutHandler();
-//  }
-
   @Bean
   public AuthenticationController authenticationController() throws UnsupportedEncodingException {
-      return AuthenticationController.newBuilder(domain, clientId, clientSecret)
-              .build();
+      return AuthenticationController
+          .newBuilder(domain, clientId, clientSecret)
+          .build();
   }
  
   @Override
   protected void configure(HttpSecurity http) throws Exception {
-      http.csrf().disable();
-
-      http
+    http
+      .csrf().disable()
       .authorizeRequests()
-        .antMatchers(AUTH_WHITELIST).permitAll()
-        .antMatchers("/api/**","/").authenticated();
-      // for now we don't want logout for SSO
-      //.and()
-      // .logout().logoutSuccessHandler(logoutSuccessHandler()).permitAll();
+      .antMatchers(AUTH_WHITELIST).permitAll()
+      .antMatchers(API,ROOT).authenticated();
   }
 
   public String getDomain() {
-      return domain;
+     return domain;
   }
 
   public String getClientId() {
-      return clientId;
+    return clientId;
   }
 
   public String getClientSecret() {
-      return clientSecret;
+    return clientSecret;
   }
 
   public String getClaimName() {

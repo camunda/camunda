@@ -44,16 +44,11 @@ public class AuthenticationRestService {
     if(claims.containsKey(configuration.getNameKey())) {
       name = claims.get(configuration.getNameKey()).asString();
     }
-    UserDto userDto = new UserDto();
     try {
-      userDto.setFirstname("");
-      userDto.setLastname(name);
-      userDto.setCanLogout(false);
+      return UserDto.fromName(name);
     } catch (Throwable t) {
-      userDto.setFirstname("");
-      userDto.setLastname(tokenAuth.getName());
+      return UserDto.fromName(tokenAuth.getName());
     }
-    return userDto;
   }
 
 }

@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 public class UserDto {
 
+  private static final String EMPTY = "";
   private String firstname;
   private String lastname;
   private boolean canLogout;
@@ -25,24 +26,33 @@ public class UserDto {
     return canLogout;
   }
 
-  public void setFirstname(String firstname) {
+  public UserDto setFirstname(String firstname) {
     this.firstname = firstname;
+    return this;
   }
 
-  public void setLastname(String lastname) {
+  public UserDto setLastname(String lastname) {
     this.lastname = lastname;
+    return this;
   }
 
-  public void setCanLogout(boolean canLogout) {
+  public UserDto setCanLogout(boolean canLogout) {
     this.canLogout = canLogout;
+    return this;
   }
 
   public static UserDto fromUserDetails(UserDetails userDetails) {
-    UserDto dto = new UserDto();
-    dto.firstname = "Trial";
-    dto.lastname = "License";
-    dto.canLogout = true;
-    return dto;
+    return new UserDto()
+        .setFirstname("Trial")
+        .setLastname("License")
+        .setCanLogout(true);
+  }
+  
+  public static UserDto fromName(String name) {
+    return new UserDto()
+        .setFirstname(EMPTY)
+        .setLastname(name)
+        .setCanLogout(false);
   }
 
 }
