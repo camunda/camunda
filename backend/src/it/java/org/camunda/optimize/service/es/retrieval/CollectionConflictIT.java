@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.retrieval;
 
 import junitparams.JUnitParamsRunner;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportType;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
@@ -71,22 +70,20 @@ public class CollectionConflictIT {
   private String createNewDashboardAddedToCollection(String collectionId) {
     final String id = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateDashboardRequest()
+      .buildCreateDashboardRequest(collectionId)
       .execute(IdDto.class, 200)
       .getId();
 
-    elasticSearchRule.moveDashboardToCollection(id, collectionId);
     return id;
   }
 
   private String createNewReportAddedToCollection(String collectionId) {
     final String id = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
+      .buildCreateSingleProcessReportRequest(collectionId)
       .execute(IdDto.class, 200)
       .getId();
 
-    elasticSearchRule.moveSingleReportToCollection(id, ReportType.PROCESS, collectionId);
     return id;
   }
 

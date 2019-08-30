@@ -51,9 +51,10 @@ public class DashboardRestService {
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdDto createNewDashboard(@Context ContainerRequestContext requestContext) {
+  public IdDto createNewDashboard(@Context final ContainerRequestContext requestContext,
+                                  @QueryParam("collectionId") final String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return dashboardService.createNewDashboardAndReturnId(userId);
+    return dashboardService.createNewDashboardAndReturnId(userId, collectionId);
   }
 
   /**

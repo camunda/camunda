@@ -339,36 +339,36 @@ public class EntitiesRestServiceIT {
       case PROCESS:
         final String processReportId = embeddedOptimizeRule
           .getRequestExecutor()
-          .buildCreateSingleProcessReportRequest()
+          .buildCreateSingleProcessReportRequest(collectionId)
           .withUserAuthentication(user, user)
           .execute(IdDto.class, 200)
           .getId();
 
         SingleProcessReportDefinitionDto processReportDefinition = new SingleProcessReportDefinitionDto();
         processReportDefinition.setName(name);
+
         embeddedOptimizeRule.getRequestExecutor()
           .withUserAuthentication(user, user)
           .buildUpdateSingleProcessReportRequest(processReportId, processReportDefinition)
           .execute(204);
 
-        elasticSearchRule.moveSingleReportToCollection(processReportId, reportType, collectionId);
         return processReportId;
       case DECISION:
         final String decisionReportId = embeddedOptimizeRule
           .getRequestExecutor()
-          .buildCreateSingleDecisionReportRequest()
+          .buildCreateSingleDecisionReportRequest(collectionId)
           .withUserAuthentication(user, user)
           .execute(IdDto.class, 200)
           .getId();
 
         SingleDecisionReportDefinitionDto decisionReportDefinition = new SingleDecisionReportDefinitionDto();
         decisionReportDefinition.setName(name);
+
         embeddedOptimizeRule.getRequestExecutor()
           .withUserAuthentication(user, user)
           .buildUpdateSingleDecisionReportRequest(decisionReportId, decisionReportDefinition)
           .execute(204);
 
-        elasticSearchRule.moveSingleReportToCollection(decisionReportId, reportType, collectionId);
         return decisionReportId;
       default:
         throw new IllegalStateException("ReportType not allowed!");
@@ -382,19 +382,19 @@ public class EntitiesRestServiceIT {
   private String addDashboardToOptimize(String name, String collectionId, String user) {
     final String id = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateDashboardRequest()
+      .buildCreateDashboardRequest(collectionId)
       .withUserAuthentication(user, user)
       .execute(IdDto.class, 200)
       .getId();
 
     DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
     dashboardDefinitionDto.setName(name);
+
     embeddedOptimizeRule.getRequestExecutor()
       .buildUpdateDashboardRequest(id, dashboardDefinitionDto)
       .withUserAuthentication(user, user)
       .execute(204);
 
-    elasticSearchRule.moveDashboardToCollection(id, collectionId);
     return id;
   }
 
@@ -405,20 +405,17 @@ public class EntitiesRestServiceIT {
   private String addCombinedReport(String name, String collectionId, String user) {
     final String id = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateCombinedReportRequest()
+      .buildCreateCombinedReportRequest(collectionId)
       .withUserAuthentication(user, user)
       .execute(IdDto.class, 200).getId();
 
     CombinedReportDefinitionDto definitionDto = new CombinedReportDefinitionDto();
     definitionDto.setName(name);
-    definitionDto.setCollectionId(collectionId);
 
     embeddedOptimizeRule.getRequestExecutor()
       .buildUpdateCombinedProcessReportRequest(id, definitionDto)
       .withUserAuthentication(user, user)
       .execute(204);
-
-    elasticSearchRule.moveCombinedReportToCollection(id, collectionId);
 
     return id;
   }

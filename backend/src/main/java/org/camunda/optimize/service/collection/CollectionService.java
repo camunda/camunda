@@ -178,8 +178,10 @@ public class CollectionService {
     collectionWriter.removeRoleFromCollection(collectionId, roleEntryId, userId);
   }
 
-  public boolean existsCollection(String collectionId) {
-    return collectionReader.checkIfCollectionExists(collectionId);
+  public void validateCollectionExists(final String collectionId) throws NotFoundException {
+    if (collectionId != null && !collectionReader.checkIfCollectionExists(collectionId)) {
+      throw new NotFoundException(String.format("Collection [%s] does not exist!", collectionId));
+    }
   }
 
   public ConflictResponseDto getDeleteConflictingItems(String collectionId) {

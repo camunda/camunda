@@ -9,7 +9,6 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -336,7 +335,7 @@ public class CollectionRestServiceIT {
 
     final String reportId = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
+      .buildCreateSingleProcessReportRequest(collectionId)
       .execute(IdDto.class, 200)
       .getId();
 
@@ -345,8 +344,6 @@ public class CollectionRestServiceIT {
 
     final Response response = embeddedOptimizeRule.getRequestExecutor()
       .buildUpdateSingleProcessReportRequest(reportId, newReport).execute();
-
-    elasticSearchRule.moveSingleReportToCollection(reportId, ReportType.PROCESS, collectionId);
 
     assertThat(response.getStatus(), is(204));
 

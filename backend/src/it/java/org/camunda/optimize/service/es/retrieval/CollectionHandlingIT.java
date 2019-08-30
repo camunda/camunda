@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.service.es.retrieval;
 
-import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRole;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
@@ -18,7 +18,8 @@ import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionData
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -32,23 +33,23 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
-
 
 public class CollectionHandlingIT {
 
@@ -104,7 +105,7 @@ public class CollectionHandlingIT {
   @Test
   public void returnEmptyListWhenNoCollectionIsDefined() {
     // given
-    createNewSingleReport();
+    createNewSingleProcessReportInCollection(null);
 
     // when
     List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
@@ -118,11 +119,8 @@ public class CollectionHandlingIT {
   public void getResolvedCollection() {
     //given
     final String collectionId = createNewCollection();
-    final String dashboardId = createNewDashboard();
-    final String reportId = createNewSingleReport();
-
-    moveDashboardToCollection(dashboardId, collectionId);
-    moveReportToCollection(reportId, collectionId);
+    final String dashboardId = createNewDashboardInCollection(collectionId);
+    final String reportId = createNewSingleProcessReportInCollection(collectionId);
 
     elasticSearchRule.refreshAllOptimizeIndices();
 
@@ -136,6 +134,10 @@ public class CollectionHandlingIT {
     assertThat(collection, is(notNullValue()));
     assertThat(collection.getId(), is(collectionId));
     assertThat(collection.getData().getEntities().size(), is(2));
+    assertThat(
+      collection.getData().getEntities().stream().map(CollectionEntity::getId).collect(Collectors.toList()),
+      containsInAnyOrder(dashboardId, reportId)
+    );
   }
 
   @Test
@@ -173,7 +175,6 @@ public class CollectionHandlingIT {
   public void updatePartialCollection() {
     // given
     String id = createNewCollection();
-    String reportId = createNewSingleReport();
     OffsetDateTime now = OffsetDateTime.parse("2019-04-23T18:00:00+01:00");
     LocalDateUtil.setCurrentTime(now);
 
@@ -232,13 +233,60 @@ public class CollectionHandlingIT {
   }
 
   @Test
-  public void dashboardCanBeAddedToCollection() {
+  public void singleProcessReportCanBeCreatedInsideCollection() {
     // given
     String collectionId = createNewCollection();
-    String dashboardId = createNewDashboard();
+    String reportId = createNewSingleProcessReportInCollection(collectionId);
 
     // when
-    moveDashboardToCollection(dashboardId, collectionId);
+    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+
+    // then
+    assertThat(collections.size(), is(1));
+    ResolvedCollectionDefinitionDto collection1 = collections.get(0);
+    SingleProcessReportDefinitionDto report = (SingleProcessReportDefinitionDto) collection1.getData().getEntities().get(0);
+    assertThat(report.getId(), is(reportId));
+  }
+
+  @Test
+  public void singleDecisionReportCanBeCreatedInsideCollection() {
+    // given
+    String collectionId = createNewCollection();
+    String reportId = createNewSingleDecisionReportInCollection(collectionId);
+
+    // when
+    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+
+    // then
+    assertThat(collections.size(), is(1));
+    ResolvedCollectionDefinitionDto collection1 = collections.get(0);
+    SingleDecisionReportDefinitionDto report = (SingleDecisionReportDefinitionDto) collection1.getData().getEntities().get(0);
+    assertThat(report.getId(), is(reportId));
+  }
+
+  @Test
+  public void combinedProcessReportCanBeCreatedInsideCollection() {
+    // given
+    String collectionId = createNewCollection();
+    String reportId = createNewCombinedReportInCollection(collectionId);
+
+    // when
+    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+
+    // then
+    assertThat(collections.size(), is(1));
+    ResolvedCollectionDefinitionDto collection1 = collections.get(0);
+    CombinedReportDefinitionDto report = (CombinedReportDefinitionDto) collection1.getData().getEntities().get(0);
+    assertThat(report.getId(), is(reportId));
+  }
+
+  @Test
+  public void dashboardCanBeCreatedInsideCollection() {
+    // given
+    String collectionId = createNewCollection();
+    String dashboardId = createNewDashboardInCollection(collectionId);
+
+    // when
     List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
 
     // then
@@ -249,15 +297,73 @@ public class CollectionHandlingIT {
   }
 
   @Test
+  public void singleProcessReportCanNotBeCreatedForInvalidCollection() {
+    // given
+    String invalidCollectionId = "invalidId";
+
+    // when
+    final Response createResponse = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest(invalidCollectionId)
+      .execute();
+
+    // then
+    assertThat(createResponse.getStatus(), is(HttpServletResponse.SC_NOT_FOUND));
+  }
+
+  @Test
+  public void singleDecisionReportCanNotBeCreatedForInvalidCollection() {
+    // given
+    String invalidCollectionId = "invalidId";
+
+    // when
+    final Response createResponse = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateSingleDecisionReportRequest(invalidCollectionId)
+      .execute();
+
+    // then
+    assertThat(createResponse.getStatus(), is(HttpServletResponse.SC_NOT_FOUND));
+  }
+
+  @Test
+  public void combinedProcessReportCanNotBeCreatedForInvalidCollection() {
+    // given
+    String invalidCollectionId = "invalidId";
+
+    // when
+    final Response createResponse = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateCombinedReportRequest(invalidCollectionId)
+      .execute();
+
+    // then
+    assertThat(createResponse.getStatus(), is(HttpServletResponse.SC_NOT_FOUND));
+  }
+
+  @Test
+  public void dashboardCanNotBeCreatedForInvalidCollection() {
+    // given
+    String invalidCollectionId = "invalidId";
+
+    // when
+    final Response createResponse = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateDashboardRequest(invalidCollectionId)
+      .execute();
+
+    // then
+    assertThat(createResponse.getStatus(), is(HttpServletResponse.SC_NOT_FOUND));
+  }
+
+  @Test
   public void collectionItemsAreOrderedByModificationDateDescending() {
     // given
     String collectionId = createNewCollection();
-    String reportId1 = createNewSingleReport();
-    String reportId2 = createNewSingleReport();
-    String dashboardId = createNewDashboard();
+    String reportId1 = createNewSingleProcessReportInCollection(collectionId);
+    String reportId2 = createNewSingleProcessReportInCollection(collectionId);
+    String dashboardId = createNewDashboardInCollection(collectionId);
 
-    moveReportsToCollection(ImmutableList.of(reportId1, reportId2), collectionId);
-    moveDashboardToCollection(dashboardId, collectionId);
     updateReport(reportId1, new SingleProcessReportDefinitionDto());
 
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -271,63 +377,6 @@ public class CollectionHandlingIT {
     assertThat(collection.getData().getEntities().get(0).getId(), is(reportId1));
     assertThat(collection.getData().getEntities().get(1).getId(), is(dashboardId));
     assertThat(collection.getData().getEntities().get(2).getId(), is(reportId2));
-  }
-
-  @Test
-  public void entityCanBeAddedAndRemovedFromCollection() {
-    // given
-    String collectionId = createNewCollection();
-    String dashboardId = createNewDashboard();
-
-    // when (add)
-    moveDashboardToCollection(dashboardId, collectionId);
-    elasticSearchRule.refreshAllOptimizeIndices();
-    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
-
-    // then
-    assertThat(collections.size(), is(1));
-    ResolvedCollectionDefinitionDto collection1 = collections.get(0);
-    DashboardDefinitionDto dashboard = (DashboardDefinitionDto) collection1.getData().getEntities().get(0);
-    assertThat(dashboard.getId(), is(dashboardId));
-
-
-    // when (remove)
-    removeDashboardFromCollection(dashboardId);
-    elasticSearchRule.refreshAllOptimizeIndices();
-    collections = getAllResolvedCollections();
-
-    // then
-    assertThat(collections.size(), is(1));
-    collection1 = collections.get(0);
-    assertThat(collection1.getData().getEntities().size(), is(0));
-  }
-
-
-  @Test
-  public void entityCanOnlyBeInOneCollectionAtATime() {
-    // given
-    String collectionId1 = createNewCollection();
-    String collectionId2 = createNewCollection();
-    String reportId = createNewSingleReport();
-    moveReportToCollection(reportId, collectionId1);
-    moveReportToCollection(reportId, collectionId2);
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
-
-    // then
-    assertThat(collections.size(), is(2));
-    final Map<String, ResolvedCollectionDefinitionDto> resultMap = collections.stream()
-      .collect(toMap(entry -> entry.getId(), entry -> entry));
-
-    final ResolvedCollectionDefinitionDto collection1 = resultMap.get(collectionId1);
-    assertThat(collection1.getData().getEntities().size(), is(0));
-
-    final ResolvedCollectionDefinitionDto collection2 = resultMap.get(collectionId2);
-    assertThat(collection2.getData().getEntities().size(), is(1));
-    ReportDefinitionDto report = (ReportDefinitionDto) collection2.getData().getEntities().get(0);
-    assertThat(report.getId(), is(reportId));
   }
 
   @Test
@@ -372,15 +421,13 @@ public class CollectionHandlingIT {
     assertThat(collections.get(1).getId(), is(id1));
   }
 
-
   @Test
   public void deletedReportsAreRemovedFromCollectionWhenForced() {
     // given
     String collectionId = createNewCollection();
-    String singleReportIdToDelete = createNewSingleReport();
-    String combinedReportIdToDelete = createNewCombinedReport();
+    String singleReportIdToDelete = createNewSingleProcessReportInCollection(collectionId);
+    String combinedReportIdToDelete = createNewCombinedReportInCollection(collectionId);
 
-    moveReportsToCollection(Arrays.asList(singleReportIdToDelete, combinedReportIdToDelete), collectionId);
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
@@ -397,9 +444,8 @@ public class CollectionHandlingIT {
   public void deletedDashboardsAreRemovedFromCollectionWhenForced() {
     // given
     String collectionId = createNewCollection();
-    String dashboardIdToDelete = createNewDashboard();
+    String dashboardIdToDelete = createNewDashboardInCollection(collectionId);
 
-    moveDashboardToCollection(dashboardIdToDelete, collectionId);
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
@@ -415,12 +461,10 @@ public class CollectionHandlingIT {
   public void entitiesAreDeletedOnCollectionDelete() {
     // given
     String collectionId = createNewCollection();
-    String singleReportId = createNewSingleReport();
-    String combinedReportId = createNewCombinedReport();
-    String dashboardId = createNewDashboard();
+    String singleReportId = createNewSingleProcessReportInCollection(collectionId);
+    String combinedReportId = createNewCombinedReportInCollection(collectionId);
+    String dashboardId = createNewDashboardInCollection(collectionId);
 
-    moveReportsToCollection(Arrays.asList(singleReportId, combinedReportId), collectionId);
-    moveDashboardToCollection(dashboardId, collectionId);
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
@@ -457,7 +501,6 @@ public class CollectionHandlingIT {
     assertThat(collectionDefinitionDto.getData().getScope().get(0).getId(), is("PROCESS:_KEY_"));
   }
 
-
   @Test
   public void addConflictedScopeDefinition() {
     String collectionId = createNewCollection();
@@ -491,7 +534,7 @@ public class CollectionHandlingIT {
       .execute(204);
 
 
-    String reportId = createNewSingleReport();
+    String reportId = createNewSingleProcessReportInCollection(collectionId);
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.getData().setProcessDefinitionKey("_KEY_");
 
@@ -547,7 +590,6 @@ public class CollectionHandlingIT {
       .execute(404);
   }
 
-
   @Test
   public void editDefinitionScopeEntry() {
     String collectionId = createNewCollection();
@@ -590,55 +632,34 @@ public class CollectionHandlingIT {
     assertThat(response.getStatus(), is(404));
   }
 
-  private void moveDashboardToCollection(String entityId, String collectionId) {
-    elasticSearchRule.moveDashboardToCollection(entityId, collectionId);
-  }
-
-
-  private String moveReportToCollection(String reportId, final String collectionId) {
-    final ReportDefinitionDto definition = embeddedOptimizeRule.getRequestExecutor()
-      .buildGetReportRequest(reportId)
-      .execute(ReportDefinitionDto.class, 200);
-
-    if (definition.getCombined()) {
-      elasticSearchRule.moveCombinedReportToCollection(reportId, collectionId);
-    } else {
-      elasticSearchRule.moveSingleReportToCollection(reportId, definition.getReportType(), collectionId);
-    }
-    return collectionId;
-  }
-
-
-  private void moveReportsToCollection(List<String> entityIds, String collectionId) {
-    for (String id : entityIds) {
-      moveReportToCollection(id, collectionId);
-    }
-  }
-
-  private void removeDashboardFromCollection(String entityId) {
-    moveDashboardToCollection(entityId, null);
-  }
-
-  private String createNewSingleReport() {
+  private String createNewSingleProcessReportInCollection(final String collectionId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
+      .buildCreateSingleProcessReportRequest(collectionId)
       .execute(IdDto.class, 200)
       .getId();
   }
 
-  private String createNewDashboard() {
+  private String createNewSingleDecisionReportInCollection(final String collectionId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateDashboardRequest()
+      .buildCreateSingleDecisionReportRequest(collectionId)
       .execute(IdDto.class, 200)
       .getId();
   }
 
-  private String createNewCombinedReport() {
+  private String createNewDashboardInCollection(final String collectionId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateCombinedReportRequest()
+      .buildCreateDashboardRequest(collectionId)
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
+  private String createNewCombinedReportInCollection(final String collectionId) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateCombinedReportRequest(collectionId)
       .execute(IdDto.class, 200)
       .getId();
   }

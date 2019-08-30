@@ -317,21 +317,35 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-
   public OptimizeRequestExecutor buildCreateSingleProcessReportRequest() {
+    return buildCreateSingleProcessReportRequest(null);
+  }
+
+  public OptimizeRequestExecutor buildCreateSingleProcessReportRequest(final String collectionId) {
     this.path = "report/process/single";
+    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
     this.requestType = POST;
     return this;
   }
 
   public OptimizeRequestExecutor buildCreateSingleDecisionReportRequest() {
+    return buildCreateSingleDecisionReportRequest(null);
+  }
+
+  public OptimizeRequestExecutor buildCreateSingleDecisionReportRequest(final String collectionId) {
     this.path = "report/decision/single";
+    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
     this.requestType = POST;
     return this;
   }
 
   public OptimizeRequestExecutor buildCreateCombinedReportRequest() {
+    return buildCreateCombinedReportRequest(null);
+  }
+
+  public OptimizeRequestExecutor buildCreateCombinedReportRequest(final String collectionId) {
     this.path = "report/process/combined";
+    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
     this.requestType = POST;
     return this;
   }
@@ -400,7 +414,12 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildCreateDashboardRequest() {
+    return buildCreateDashboardRequest(null);
+  }
+
+  public OptimizeRequestExecutor buildCreateDashboardRequest(final String collectionId) {
     this.requestType = POST;
+    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
     this.body = Entity.json("");
     this.path = "dashboard";
     return this;

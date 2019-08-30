@@ -15,7 +15,6 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.EvaluationResultDto;
 import org.camunda.optimize.rest.mapper.ReportEvaluationResultMapper;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.rest.queryparam.QueryParamUtil;
 import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.report.ReportService;
@@ -60,9 +59,10 @@ public class ReportRestService {
   @Path("/process/single/")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdDto createNewSingleProcessReport(@Context ContainerRequestContext requestContext) {
+  public IdDto createNewSingleProcessReport(@Context final ContainerRequestContext requestContext,
+                                            @QueryParam("collectionId") final String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return reportService.createNewSingleProcessReport(userId);
+    return reportService.createNewSingleProcessReport(userId, collectionId);
   }
 
   /**
@@ -74,9 +74,10 @@ public class ReportRestService {
   @Path("/decision/single/")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdDto createNewSingleDecisionReport(@Context ContainerRequestContext requestContext) {
+  public IdDto createNewSingleDecisionReport(@Context final ContainerRequestContext requestContext,
+                                             @QueryParam("collectionId") final String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return reportService.createNewSingleDecisionReport(userId);
+    return reportService.createNewSingleDecisionReport(userId, collectionId);
   }
 
   /**
@@ -88,9 +89,10 @@ public class ReportRestService {
   @Path("/process/combined/")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdDto createNewCombinedProcessReport(@Context ContainerRequestContext requestContext) {
+  public IdDto createNewCombinedProcessReport(@Context final ContainerRequestContext requestContext,
+                                              @QueryParam("collectionId") final String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return reportService.createNewCombinedProcessReport(userId);
+    return reportService.createNewCombinedProcessReport(userId, collectionId);
   }
 
   @POST

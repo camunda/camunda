@@ -72,8 +72,8 @@ public class ReportWriter {
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
 
-  public IdDto createNewCombinedReport(final String userId) {
-    return createNewCombinedReport(userId, new CombinedReportDataDto(), DEFAULT_REPORT_NAME, null);
+  public IdDto createNewCombinedReport(final String userId, final String collectionId) {
+    return createNewCombinedReport(userId, new CombinedReportDataDto(), DEFAULT_REPORT_NAME, collectionId);
   }
 
   public IdDto createNewCombinedReport(final String userId,
@@ -116,8 +116,8 @@ public class ReportWriter {
   }
 
 
-  public IdDto createNewSingleProcessReport(final String userId) {
-    return createNewSingleProcessReport(userId, new ProcessReportDataDto(), DEFAULT_REPORT_NAME, null);
+  public IdDto createNewSingleProcessReport(final String userId, final String collectionId) {
+    return createNewSingleProcessReport(userId, new ProcessReportDataDto(), DEFAULT_REPORT_NAME, collectionId);
   }
 
   public IdDto createNewSingleProcessReport(final String userId,
@@ -160,10 +160,9 @@ public class ReportWriter {
     }
   }
 
-  public IdDto createNewSingleDecisionReport(final String userId) {
-    return createNewSingleDecisionReport(userId, new DecisionReportDataDto(), DEFAULT_REPORT_NAME, null);
+  public IdDto createNewSingleDecisionReport(final String userId, final String collectionId) {
+    return createNewSingleDecisionReport(userId, new DecisionReportDataDto(), DEFAULT_REPORT_NAME, collectionId);
   }
-
 
   public IdDto createNewSingleDecisionReport(final String userId,
                                              DecisionReportDataDto reportData,

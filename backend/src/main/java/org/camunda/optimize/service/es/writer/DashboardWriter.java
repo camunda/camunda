@@ -55,15 +55,14 @@ public class DashboardWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-
-  public IdDto createNewDashboard(String userId) {
-    return createNewDashboard(userId, null, DEFAULT_DASHBOARD_NAME, null);
+  public IdDto createNewDashboard(final String userId, final String collectionId) {
+    return createNewDashboard(userId, collectionId, DEFAULT_DASHBOARD_NAME, null);
   }
 
-  public IdDto createNewDashboard(String userId,
-                                  String collectionId,
-                                  String dashboardName,
-                                  List<ReportLocationDto> reports) {
+  public IdDto createNewDashboard(final String userId,
+                                  final String collectionId,
+                                  final String dashboardName,
+                                  final List<ReportLocationDto> reports) {
     log.debug("Writing new dashboard to Elasticsearch");
 
     String id = IdGenerator.getNextId();

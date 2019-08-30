@@ -190,9 +190,9 @@ public class ReportRestServiceIT {
   @Test
   public void getStoredReportsWithNameFromXml() {
     //given
-    String idProcessReport = addEmptyProcessReportToOptimize();
+    String idProcessReport = addEmptyProcessReport();
     updateReportWithValidXml(idProcessReport, PROCESS);
-    String idDecisionReport = addEmptyDecisionReportToOptimize();
+    String idDecisionReport = addEmptyDecisionReport();
     updateReportWithValidXml(idDecisionReport, DECISION);
 
     // when
@@ -222,7 +222,7 @@ public class ReportRestServiceIT {
   @Test
   public void getStoredReportsWithNoNameFromXml() throws IOException {
     //given
-    final String idProcessReport = addEmptyProcessReportToOptimize();
+    final String idProcessReport = addEmptyProcessReport();
     final SingleProcessReportDefinitionDto processReportDefinitionDto = getProcessReportDefinitionDtoWithXml(
       PROCESS_DEFINITION_XML_WO_NAME
     );
@@ -231,7 +231,7 @@ public class ReportRestServiceIT {
       .buildUpdateSingleProcessReportRequest(idProcessReport, processReportDefinitionDto)
       .execute();
 
-    final String idDecisionReport = addEmptyDecisionReportToOptimize();
+    final String idDecisionReport = addEmptyDecisionReport();
     final SingleDecisionReportDefinitionDto decisionReportDefinitionDto = getDecisionReportDefinitionDtoWithXml(
       DECISION_DEFINITION_XML_WO_NAME
     );
@@ -534,7 +534,7 @@ public class ReportRestServiceIT {
     engineIntegrationRule.addUser("john", "john");
     engineIntegrationRule.grantAllAuthorizations("john");
 
-    IdDto id = createAndUpdateCombinedReport(combined);
+    IdDto id = createAndUpdateCombinedReport(combined, null);
 
     IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
       .buildCopyReportRequest(id.getId())
@@ -603,15 +603,15 @@ public class ReportRestServiceIT {
   public void copyPrivateCombinedReportAndMoveToCollection() {
     // given
     final String collectionId = addEmptyCollectionToOptimize();
-    final String report1 = addEmptyProcessReportToOptimize();
-    final String report2 = addEmptyProcessReportToOptimize();
+    final String report1 = addEmptyProcessReport();
+    final String report2 = addEmptyProcessReport();
     CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReport(report1, report2);
 
 
     engineIntegrationRule.addUser("john", "john");
     engineIntegrationRule.grantAllAuthorizations("john");
 
-    IdDto id = createAndUpdateCombinedReport(combined);
+    IdDto id = createAndUpdateCombinedReport(combined, null);
 
     // when
     IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
@@ -641,9 +641,7 @@ public class ReportRestServiceIT {
   public void copySingleReportFromCollectionToPrivateEntities(ReportType reportType) {
     // given
     final String collectionId = addEmptyCollectionToOptimize();
-    String id = createSingleReport(reportType);
-    elasticSearchRule.moveSingleReportToCollection(id, reportType, collectionId);
-
+    String id = createSingleReport(reportType, collectionId);
 
     engineIntegrationRule.addUser("john", "john");
     engineIntegrationRule.grantAllAuthorizations("john");
@@ -669,15 +667,14 @@ public class ReportRestServiceIT {
     // given
     final String collectionId = addEmptyCollectionToOptimize();
 
-    final String report1 = addEmptyProcessReportToOptimize();
-    final String report2 = addEmptyProcessReportToOptimize();
+    final String report1 = addEmptyProcessReport();
+    final String report2 = addEmptyProcessReport();
     CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReport(report1, report2);
 
     engineIntegrationRule.addUser("john", "john");
     engineIntegrationRule.grantAllAuthorizations("john");
 
-    IdDto id = createAndUpdateCombinedReport(combined);
-    elasticSearchRule.moveCombinedReportToCollection(id.getId(), collectionId);
+    IdDto id = createAndUpdateCombinedReport(combined, collectionId);
 
     // when
     IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
@@ -708,9 +705,7 @@ public class ReportRestServiceIT {
   public void copySingleReportFromCollectionToDifferentCollection(ReportType reportType) {
     // given
     final String collectionId = addEmptyCollectionToOptimize();
-    String id = createSingleReport(reportType);
-    elasticSearchRule.moveSingleReportToCollection(id, reportType, collectionId);
-
+    String id = createSingleReport(reportType, collectionId);
 
     engineIntegrationRule.addUser("john", "john");
     engineIntegrationRule.grantAllAuthorizations("john");
@@ -738,15 +733,14 @@ public class ReportRestServiceIT {
     // given
     final String collectionId = addEmptyCollectionToOptimize();
 
-    final String report1 = addEmptyProcessReportToOptimize();
-    final String report2 = addEmptyProcessReportToOptimize();
+    final String report1 = addEmptyProcessReport();
+    final String report2 = addEmptyProcessReport();
     CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReport(report1, report2);
 
     engineIntegrationRule.addUser("john", "john");
     engineIntegrationRule.grantAllAuthorizations("john");
 
-    IdDto id = createAndUpdateCombinedReport(combined);
-    elasticSearchRule.moveCombinedReportToCollection(id.getId(), collectionId);
+    IdDto id = createAndUpdateCombinedReport(combined, collectionId);
 
     final String newCollectionId = addEmptyCollectionToOptimize();
 
@@ -813,7 +807,8 @@ public class ReportRestServiceIT {
     AbstractSharingIT.assertErrorFields(response);
   }
 
-  private Response updateSingleReportRequest(final String reportId, final ReportType reportType,
+  private Response updateSingleReportRequest(final String reportId,
+                                             final ReportType reportType,
                                              final String collectionId) {
     final ReportDefinitionDto reportDef = embeddedOptimizeRule.getRequestExecutor()
       .buildGetReportRequest(reportId).execute(ReportDefinitionDto.class, 200);
@@ -878,8 +873,8 @@ public class ReportRestServiceIT {
 
   private String addEmptyReportToOptimize(final ReportType reportType) {
     return PROCESS.equals(reportType)
-      ? addEmptyProcessReportToOptimize()
-      : addEmptyDecisionReportToOptimize();
+      ? addEmptyProcessReport()
+      : addEmptyDecisionReport();
   }
 
   private ReportDefinitionDto getReport(String id) {
@@ -890,22 +885,26 @@ public class ReportRestServiceIT {
   }
 
   private String createSingleReport(final ReportType reportType) {
+    return createSingleReport(reportType, null);
+  }
+
+  private String createSingleReport(final ReportType reportType, final String collectionId) {
     switch (reportType) {
       case PROCESS:
         SingleProcessReportDefinitionDto processDef = constructProcessReportWithFakePD();
-        return createAndStoreDefaultProcessReportDefinition(processDef.getData());
+        return createAndStoreDefaultProcessReportDefinition(processDef.getData(), collectionId);
       case DECISION:
         SingleDecisionReportDefinitionDto decisionDef = constructDecisionReportWithFakeDD();
-        return createAndStoreDefaultDecisionReportDefinition(decisionDef.getData());
+        return createAndStoreDefaultDecisionReportDefinition(decisionDef.getData(), collectionId);
       default:
         throw new IllegalStateException("Unexpected value: " + reportType);
     }
   }
 
-  private IdDto createAndUpdateCombinedReport(final CombinedReportDataDto combined) {
+  private IdDto createAndUpdateCombinedReport(final CombinedReportDataDto combined, final String collectionId) {
     IdDto id = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateCombinedReportRequest()
+      .buildCreateCombinedReportRequest(collectionId)
       .execute(IdDto.class, 200);
 
     embeddedOptimizeRule.getRequestExecutor()
@@ -914,8 +913,13 @@ public class ReportRestServiceIT {
     return id;
   }
 
-  private String createAndStoreDefaultProcessReportDefinition(ProcessReportDataDto processReportDataDto) {
-    String id = addEmptyProcessReportToOptimize();
+  private String createAndStoreDefaultProcessReportDefinition(final ProcessReportDataDto processReportDataDto) {
+    return createAndStoreDefaultProcessReportDefinition(processReportDataDto, null);
+  }
+
+  private String createAndStoreDefaultProcessReportDefinition(final ProcessReportDataDto processReportDataDto,
+                                                              final String collectionId) {
+    String id = addEmptyProcessReport(collectionId);
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(processReportDataDto);
     report.setId(id);
@@ -929,8 +933,13 @@ public class ReportRestServiceIT {
     return id;
   }
 
-  private String createAndStoreDefaultDecisionReportDefinition(DecisionReportDataDto decisionReportDataDto) {
-    String id = addEmptyDecisionReportToOptimize();
+  private String createAndStoreDefaultDecisionReportDefinition(final DecisionReportDataDto decisionReportDataDto) {
+    return createAndStoreDefaultDecisionReportDefinition(decisionReportDataDto, null);
+  }
+
+  private String createAndStoreDefaultDecisionReportDefinition(final DecisionReportDataDto decisionReportDataDto,
+                                                               final String collectionId) {
+    String id = addEmptyDecisionReport(collectionId);
     SingleDecisionReportDefinitionDto report = new SingleDecisionReportDefinitionDto();
     report.setData(decisionReportDataDto);
     report.setId(id);
@@ -962,18 +971,26 @@ public class ReportRestServiceIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  private String addEmptyProcessReportToOptimize() {
+  private String addEmptyProcessReport() {
+    return addEmptyProcessReport(null);
+  }
+
+  private String addEmptyProcessReport(final String collectionId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
+      .buildCreateSingleProcessReportRequest(collectionId)
       .execute(IdDto.class, 200)
       .getId();
   }
 
-  private String addEmptyDecisionReportToOptimize() {
+  private String addEmptyDecisionReport() {
+    return addEmptyDecisionReport(null);
+  }
+
+  private String addEmptyDecisionReport(final String collectionId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleDecisionReportRequest()
+      .buildCreateSingleDecisionReportRequest(collectionId)
       .execute(IdDto.class, 200)
       .getId();
   }

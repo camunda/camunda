@@ -9,7 +9,6 @@ import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportType;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -92,7 +91,7 @@ public class DashboardRestServiceIT {
   @Test
   public void updateDashboard() {
     //given
-    String id = addEmptyDashboardToOptimize();
+    String id = addEmptyDashboard();
 
     // when
     Response response = embeddedOptimizeRule
@@ -108,9 +107,7 @@ public class DashboardRestServiceIT {
   public void updateDashboardDoesNotChangeCollectionId() {
     //given
     final String collectionId = addEmptyCollectionToOptimize();
-    String id = addEmptyDashboardToOptimize();
-
-    elasticSearchRule.moveDashboardToCollection(id, collectionId);
+    String id = addEmptyDashboardToCollection(collectionId);
 
     // when
     embeddedOptimizeRule
@@ -126,7 +123,7 @@ public class DashboardRestServiceIT {
   @Test
   public void copyDashboard() {
     // given
-    String dashboardId = addEmptyDashboardToOptimize();
+    String dashboardId = addEmptyDashboard();
     addEmptyReportToDashboard(dashboardId);
 
     engineIntegrationRule.addUser("john", "john");
@@ -158,7 +155,7 @@ public class DashboardRestServiceIT {
   @Test
   public void copyDashboardWithNameParameter() {
     // given
-    final String dashboardId = addEmptyDashboardToOptimize();
+    final String dashboardId = addEmptyDashboard();
     addEmptyReportToDashboard(dashboardId);
 
     final String testDashboardCopyName = "This is my new report copy! ;-)";
@@ -180,7 +177,7 @@ public class DashboardRestServiceIT {
   public void copyPrivateDashboardAndMoveToCollection() {
     // given
     final String collectionId = addEmptyCollectionToOptimize();
-    String dashboardId = addEmptyDashboardToOptimize();
+    String dashboardId = addEmptyDashboard();
     addEmptyReportToDashboard(dashboardId);
 
     engineIntegrationRule.addUser("john", "john");
@@ -215,8 +212,7 @@ public class DashboardRestServiceIT {
   public void copyDashboardFromCollectionToPrivateEntities() {
     // given
     final String collectionId = addEmptyCollectionToOptimize();
-    String dashboardId = addEmptyDashboardToOptimize();
-    elasticSearchRule.moveDashboardToCollection(dashboardId, collectionId);
+    String dashboardId = addEmptyDashboardToCollection(collectionId);
     addEmptyReportToDashboard(dashboardId, collectionId);
 
     engineIntegrationRule.addUser("john", "john");
@@ -252,8 +248,7 @@ public class DashboardRestServiceIT {
   public void copyDashboardFromCollectionToDifferentCollection() {
     // given
     final String oldCollectionId = addEmptyCollectionToOptimize();
-    String dashboardId = addEmptyDashboardToOptimize();
-    elasticSearchRule.moveDashboardToCollection(dashboardId, oldCollectionId);
+    String dashboardId = addEmptyDashboardToCollection(oldCollectionId);
     addEmptyReportToDashboard(dashboardId, oldCollectionId);
 
     engineIntegrationRule.addUser("john", "john");
@@ -334,7 +329,7 @@ public class DashboardRestServiceIT {
   @Test
   public void getDashboard() {
     //given
-    String id = addEmptyDashboardToOptimize();
+    String id = addEmptyDashboard();
 
     // when
     DashboardDefinitionDto dashboard = embeddedOptimizeRule
@@ -375,7 +370,7 @@ public class DashboardRestServiceIT {
   @Test
   public void deleteNewDashboard() {
     //given
-    String id = addEmptyDashboardToOptimize();
+    String id = addEmptyDashboard();
 
     // when
     Response response = embeddedOptimizeRule
@@ -400,18 +395,26 @@ public class DashboardRestServiceIT {
     assertThat(response.getStatus(), is(404));
   }
 
-  private String addEmptyDashboardToOptimize() {
+  private String addEmptyDashboard() {
+    return addEmptyDashboardToCollection(null);
+  }
+
+  private String addEmptyDashboardToCollection(final String collectionId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateDashboardRequest()
+      .buildCreateDashboardRequest(collectionId)
       .execute(IdDto.class, 200)
       .getId();
   }
 
-  private String addEmptySingleProcessReportToOptimize() {
+  private String addEmptySingleProcessReport() {
+    return addEmptySingleProcessReportToCollection(null);
+  }
+
+  private String addEmptySingleProcessReportToCollection(final String collectionId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
+      .buildCreateSingleProcessReportRequest(collectionId)
       .execute(IdDto.class, 200)
       .getId();
   }
@@ -457,8 +460,7 @@ public class DashboardRestServiceIT {
   }
 
   private void addEmptyReportToDashboard(final String dashboardId, String collectionId) {
-    final String reportId = addEmptySingleProcessReportToOptimize();
-    elasticSearchRule.moveSingleReportToCollection(reportId, ReportType.PROCESS, collectionId);
+    final String reportId = addEmptySingleProcessReport();
     final ReportLocationDto reportLocationDto = new ReportLocationDto();
     reportLocationDto.setId(reportId);
     updateDashboardRequest(dashboardId, Collections.singletonList(reportLocationDto));
