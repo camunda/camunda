@@ -5,8 +5,9 @@
  */
 package org.camunda.operate;
 
+import java.util.Arrays;
+
 import org.camunda.operate.data.DataGenerator;
-import org.camunda.operate.webapp.sso.SSOWebSecurityConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -16,8 +17,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 @SpringBootApplication
 @ComponentScan(basePackages = "org.camunda.operate",
@@ -36,7 +35,16 @@ public class Application {
     System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
     final SpringApplication springApplication = new SpringApplication(Application.class);
     springApplication.setAddCommandLineProperties(true);
-    springApplication.run(args);
+    ensureOneAuthProfileIsSet(args, springApplication).run(args);
+  }
+  
+  protected static SpringApplication ensureOneAuthProfileIsSet(String[] args,SpringApplication springApplication) {
+    String profilesFromEnv = String.format("%s", System.getenv("SPRING_PROFILES_ACTIVE"));
+    String profilesFromArgs = String.join(",",Arrays.asList(args));
+    if(! profilesFromArgs.contains("auth") && !profilesFromEnv.contains("auth")) {
+      springApplication.setAdditionalProfiles("auth");
+    }
+    return springApplication;
   }
   
   @Bean(name = "dataGenerator")
