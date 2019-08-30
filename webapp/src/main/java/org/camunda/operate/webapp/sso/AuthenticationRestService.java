@@ -48,6 +48,7 @@ public class AuthenticationRestService {
     try {
       userDto.setFirstname("");
       userDto.setLastname(name);
+      userDto.setCanLogout(false);
     } catch (Throwable t) {
       userDto.setFirstname("");
       userDto.setLastname(tokenAuth.getName());

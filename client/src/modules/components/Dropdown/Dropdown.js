@@ -95,12 +95,15 @@ export default class Dropdown extends React.Component {
 
   renderChildrenWithProps = () =>
     React.Children.map(this.props.children, (child, index) => {
-      return React.cloneElement(child, {
-        isSubMenuOpen: this.state.isSubMenuOpen,
-        isSubmenuFixed: this.state.isSubmenuFixed,
-        onStateChange: this.handleStateChange,
-        placement: this.props.placement
-      });
+      return (
+        child != null &&
+        React.cloneElement(child, {
+          isSubMenuOpen: this.state.isSubMenuOpen,
+          isSubmenuFixed: this.state.isSubmenuFixed,
+          onStateChange: this.handleStateChange,
+          placement: this.props.placement
+        })
+      );
     });
 
   renderLabel = () =>

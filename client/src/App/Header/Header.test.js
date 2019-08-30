@@ -27,7 +27,8 @@ import * as Styled from './styled.js';
 const USER = {
   user: {
     firstname: 'Jonny',
-    lastname: 'Prosciutto'
+    lastname: 'Prosciutto',
+    canLogout: true
   }
 };
 

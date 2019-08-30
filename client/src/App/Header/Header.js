@@ -163,7 +163,7 @@ class Header extends React.Component {
 
   render() {
     const {active, detail} = this.props;
-    const {firstname, lastname} = this.state.user || {};
+    const {firstname, lastname, canLogout = true} = this.state.user || {};
 
     const filterQuery = this.state.filter
       ? getFilterQueryString(this.state.filter)
@@ -288,11 +288,13 @@ class Header extends React.Component {
                   onClick={toggleTheme}
                 />
 
-                <Dropdown.Option
-                  label="Logout"
-                  data-test="logout-button"
-                  onClick={this.handleLogout}
-                />
+                {canLogout && (
+                  <Dropdown.Option
+                    label="Logout"
+                    data-test="logout-button"
+                    onClick={this.handleLogout}
+                  />
+                )}
               </Dropdown>
             )}
           </ThemeConsumer>
