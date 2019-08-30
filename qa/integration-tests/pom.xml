@@ -145,6 +145,7 @@
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
           <systemPropertyVariables>
             <testForkNumber>$${surefire.forkNumber}</testForkNumber>
+            <SPRING_PROFILES_ACTIVE>test</SPRING_PROFILES_ACTIVE>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -158,6 +159,7 @@
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
           <systemPropertyVariables>
             <testForkNumber>$${surefire.forkNumber}</testForkNumber>
+            <SPRING_PROFILES_ACTIVE>test</SPRING_PROFILES_ACTIVE>
           </systemPropertyVariables>
         </configuration>
         <executions>

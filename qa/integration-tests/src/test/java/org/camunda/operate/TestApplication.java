@@ -6,15 +6,12 @@
 package org.camunda.operate;
 
 import org.camunda.operate.data.DataGenerator;
-import org.camunda.operate.Application;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 @SpringBootApplication
 @ComponentScan(basePackages = "org.camunda.operate",
@@ -27,8 +24,6 @@ public class TestApplication {
   public static void main(String[] args) throws Exception {
     SpringApplication.run(TestApplication.class, args);
   }
-
-  private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
   @Bean(name = "dataGenerator")
   @ConditionalOnMissingBean
