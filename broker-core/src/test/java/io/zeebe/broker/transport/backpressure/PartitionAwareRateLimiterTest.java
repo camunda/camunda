@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.netflix.concurrency.limits.Limit;
 import com.netflix.concurrency.limits.limit.SettableLimit;
+import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.junit.Before;
@@ -19,6 +21,7 @@ import org.junit.Test;
 public class PartitionAwareRateLimiterTest {
   private static final Supplier<Limit> LIMIT_SUPPLIER = () -> new SettableLimit(1);
   private static final int PARTITIONS = 3;
+  private final Intent context = WorkflowInstanceCreationIntent.CREATE;
 
   private final PartitionAwareRequestLimiter partitionedLimiter =
       new PartitionAwareRequestLimiter(LIMIT_SUPPLIER);
@@ -31,20 +34,20 @@ public class PartitionAwareRateLimiterTest {
   @Test
   public void shouldPartitionsHaveItsOwnLimiter() {
     IntStream.range(0, PARTITIONS)
-        .forEach(i -> assertThat(partitionedLimiter.tryAcquire(i, 0, 1, null)).isTrue());
+        .forEach(i -> assertThat(partitionedLimiter.tryAcquire(i, 0, 1, context)).isTrue());
   }
 
   @Test
   public void shouldUpdateOnResponse() {
     // given
-    partitionedLimiter.tryAcquire(0, 0, 1, null);
-    assertThat(partitionedLimiter.tryAcquire(0, 0, 2, null)).isFalse();
+    partitionedLimiter.tryAcquire(0, 0, 1, context);
+    assertThat(partitionedLimiter.tryAcquire(0, 0, 2, context)).isFalse();
 
     // when
     partitionedLimiter.onResponse(0, 0, 1);
 
     // then
-    assertThat(partitionedLimiter.tryAcquire(0, 0, 2, null)).isTrue();
+    assertThat(partitionedLimiter.tryAcquire(0, 0, 2, context)).isTrue();
   }
 
   @Test
@@ -52,14 +55,14 @@ public class PartitionAwareRateLimiterTest {
     final int mainPartitionId = 0;
     final int otherPartitionId = 1;
     // given
-    partitionedLimiter.tryAcquire(mainPartitionId, 0, 1, null);
-    partitionedLimiter.tryAcquire(otherPartitionId, 0, 1, null);
-    assertThat(partitionedLimiter.tryAcquire(mainPartitionId, 0, 2, null)).isFalse();
+    partitionedLimiter.tryAcquire(mainPartitionId, 0, 1, context);
+    partitionedLimiter.tryAcquire(otherPartitionId, 0, 1, context);
+    assertThat(partitionedLimiter.tryAcquire(mainPartitionId, 0, 2, context)).isFalse();
 
     // when
     partitionedLimiter.onResponse(otherPartitionId, 0, 1);
 
     // then
-    assertThat(partitionedLimiter.tryAcquire(mainPartitionId, 0, 2, null)).isFalse();
+    assertThat(partitionedLimiter.tryAcquire(mainPartitionId, 0, 2, context)).isFalse();
   }
 }

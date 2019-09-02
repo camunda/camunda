@@ -8,6 +8,7 @@
 package io.zeebe.broker.transport.backpressure;
 
 import com.netflix.concurrency.limits.Limit;
+import io.zeebe.protocol.record.intent.Intent;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -15,7 +16,7 @@ import java.util.function.Supplier;
 /** A request limiter that manages the limits for each partition independently. */
 public class PartitionAwareRequestLimiter {
 
-  final Map<Integer, RequestLimiter<Void>> partitionLimiters = new ConcurrentHashMap<>();
+  final Map<Integer, RequestLimiter<Intent>> partitionLimiters = new ConcurrentHashMap<>();
 
   final Supplier<Limit> limitSupplier;
 
@@ -23,8 +24,8 @@ public class PartitionAwareRequestLimiter {
     this.limitSupplier = limiterSupplier;
   }
 
-  public boolean tryAcquire(int partitionId, int streamId, long requestId, Void context) {
-    final RequestLimiter<Void> limiter = getLimiter(partitionId);
+  public boolean tryAcquire(int partitionId, int streamId, long requestId, Intent context) {
+    final RequestLimiter<Intent> limiter = getLimiter(partitionId);
     return limiter.tryAcquire(streamId, requestId, context);
   }
 
@@ -43,11 +44,11 @@ public class PartitionAwareRequestLimiter {
     partitionLimiters.remove(partitionId);
   }
 
-  public RequestLimiter<Void> getLimiter(int partitionId) {
+  public RequestLimiter<Intent> getLimiter(int partitionId) {
     return getOrCreateLimiter(partitionId);
   }
 
-  private RequestLimiter<Void> getOrCreateLimiter(int partitionId) {
+  private RequestLimiter<Intent> getOrCreateLimiter(int partitionId) {
     return partitionLimiters.computeIfAbsent(
         partitionId, k -> CommandRateLimiter.builder().limit(limitSupplier.get()).build());
   }

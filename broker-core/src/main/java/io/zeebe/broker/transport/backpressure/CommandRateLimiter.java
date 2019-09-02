@@ -9,12 +9,14 @@ package io.zeebe.broker.transport.backpressure;
 
 import com.netflix.concurrency.limits.limiter.AbstractLimiter;
 import io.zeebe.broker.Loggers;
+import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.protocol.record.intent.JobIntent;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class CommandRateLimiter extends AbstractLimiter<Void> implements RequestLimiter<Void> {
+public class CommandRateLimiter extends AbstractLimiter<Intent> implements RequestLimiter<Intent> {
 
   private final Map<ListenerId, Listener> responseListeners = new ConcurrentHashMap<>();
 
@@ -23,8 +25,8 @@ public class CommandRateLimiter extends AbstractLimiter<Void> implements Request
   }
 
   @Override
-  public Optional<Listener> acquire(Void context) {
-    if (getInflight() >= getLimit()) {
+  public Optional<Listener> acquire(Intent intent) {
+    if (getInflight() >= getLimit() && intent != JobIntent.COMPLETE) {
       return createRejectedListener();
     }
     final Listener listener = createListener();
@@ -37,8 +39,8 @@ public class CommandRateLimiter extends AbstractLimiter<Void> implements Request
   }
 
   @Override
-  public boolean tryAcquire(int streamId, long requestId, Void context) {
-    final Optional<Listener> acquired = acquire(null);
+  public boolean tryAcquire(int streamId, long requestId, Intent context) {
+    final Optional<Listener> acquired = acquire(context);
     return acquired
         .map(
             listener -> {
