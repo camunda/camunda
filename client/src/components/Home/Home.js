@@ -9,6 +9,9 @@ import moment from 'moment';
 import {Link} from 'react-router-dom';
 
 import {t} from 'translation';
+import {withErrorHandling} from 'HOC';
+import {LoadingIndicator, Icon} from 'components';
+import {addNotification} from 'notifications';
 
 import CreateNewButton from './CreateNewButton';
 import ListItem from './ListItem';
@@ -21,52 +24,81 @@ import {loadEntities} from './service';
 
 import './Home.scss';
 
-export default class Home extends React.Component {
-  state = {
-    entities: []
-  };
+export default withErrorHandling(
+  class Home extends React.Component {
+    state = {
+      entities: null
+    };
 
-  async componentDidMount() {
-    this.setState({
-      entities: await loadEntities()
-    });
-  }
+    componentDidMount() {
+      this.props.mightFail(
+        loadEntities(),
+        entities => this.setState({entities}),
+        async error => {
+          let text = error;
 
-  render() {
-    return (
-      <div className="Home">
-        <div className="header">
-          <h1>{t('home.title')}</h1>
-          <CreateNewButton />
+          if (typeof error.json === 'function') {
+            text = (await error.json()).errorMessage;
+          } else if (error.message) {
+            text = error.message;
+          }
+
+          addNotification({type: 'error', text});
+          this.setState({entities: []});
+        }
+      );
+    }
+
+    render() {
+      return (
+        <div className="Home">
+          <div className="header">
+            <h1>{t('home.title')}</h1>
+            <CreateNewButton />
+          </div>
+          <ul>{this.renderList()}</ul>
+          <div className="data-hint">
+            Do you miss any data? The last update introduced user permissions. Ask your
+            administrator for access rights.
+          </div>
         </div>
-        <ul>
-          {this.state.entities.map(
-            ({id, entityType, lastModified, name, data, reportType, combined}) => (
-              <ListItem key={id} className={entityType}>
-                <Link to={formatLink(id, entityType)}>
-                  <ListItem.Section className="icon">{getEntityIcon(entityType)}</ListItem.Section>
-                  <ListItem.Section className="name">
-                    <div className="type">{formatType(entityType, reportType, combined)}</div>
-                    <div className="entityName">{name}</div>
-                  </ListItem.Section>
-                  <ListItem.Section className="containedEntities">
-                    {formatSubEntities(data.subEntityCounts)}
-                  </ListItem.Section>
-                  <ListItem.Section className="modifiedDate">
-                    {moment(lastModified).format('YYYY-MM-DD HH:mm')}
-                  </ListItem.Section>
-                  <ListItem.Section className="users">
-                    {formatUserCount(data.roleCounts)}
-                  </ListItem.Section>
-                </Link>
-              </ListItem>
-            )
-          )}
-        </ul>
-      </div>
-    );
+      );
+    }
+
+    renderList() {
+      if (this.state.entities === null) {
+        return <LoadingIndicator />;
+      }
+
+      if (this.state.entities.length === 0) {
+        return <div className="empty">There are no items created yet</div>;
+      }
+
+      return this.state.entities.map(
+        ({id, entityType, lastModified, name, data, reportType, combined}) => (
+          <ListItem key={id} className={entityType}>
+            <Link to={formatLink(id, entityType)}>
+              <ListItem.Section className="icon">{getEntityIcon(entityType)}</ListItem.Section>
+              <ListItem.Section className="name">
+                <div className="type">{formatType(entityType, reportType, combined)}</div>
+                <div className="entityName">{name}</div>
+              </ListItem.Section>
+              <ListItem.Section className="containedEntities">
+                {formatSubEntities(data.subEntityCounts)}
+              </ListItem.Section>
+              <ListItem.Section className="modifiedDate">
+                {moment(lastModified).format('YYYY-MM-DD HH:mm')}
+              </ListItem.Section>
+              <ListItem.Section className="users">
+                {formatUserCount(data.roleCounts)}
+              </ListItem.Section>
+            </Link>
+          </ListItem>
+        )
+      );
+    }
   }
-}
+);
 
 function formatLink(id, type) {
   return `/${type}/${id}`;

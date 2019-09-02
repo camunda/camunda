@@ -137,5 +137,10 @@ exports[`should match snapshot 1`] = `
       </Link>
     </ListItem>
   </ul>
+  <div
+    className="data-hint"
+  >
+    Do you miss any data? The last update introduced user permissions. Ask your administrator for access rights.
+  </div>
 </div>
 `;

@@ -2,6 +2,22 @@
   width: 1000px;
   margin: auto;
 
+  .empty {
+    height: 56px;
+    border-radius: 4px;
+    border: solid 1px #d8dce3;
+    text-align: center;
+    line-height: 56px;
+    font-size: 14px;
+    color: #9b9b9b;
+  }
+
+  .data-hint {
+    text-align: center;
+    font-size: 12px;
+    color: #9b9b9b;
+  }
+
   .DropdownOption:hover {
     background-color: #f7f8fa;
     color: inherit;
@@ -9,6 +25,7 @@
 
   .header {
     padding-top: 20px;
+    margin-bottom: 20px;
 
     h1 {
       font-size: 18px;
@@ -25,6 +42,7 @@
 
   ul {
     padding-inline-start: 0;
+    margin: 0 0 20px 0;
   }
 
   .ListItem {

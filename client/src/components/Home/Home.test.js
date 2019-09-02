@@ -7,8 +7,10 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import Home from './Home';
+import HomeWithErrorHandling from './Home';
 import {loadEntities} from './service';
+
+const Home = HomeWithErrorHandling.WrappedComponent;
 
 jest.mock('./service', () => ({
   loadEntities: jest.fn().mockReturnValue([
@@ -61,14 +63,31 @@ jest.mock('./service', () => ({
   ])
 }));
 
-it('should load entities', async () => {
-  await shallow(<Home />);
+const props = {
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
+};
+
+it('should load entities', () => {
+  shallow(<Home {...props} />);
 
   expect(loadEntities).toHaveBeenCalled();
 });
 
-it('should match snapshot', async () => {
-  const node = await shallow(<Home />);
+it('should match snapshot', () => {
+  const node = shallow(<Home {...props} />);
 
   expect(node).toMatchSnapshot();
+});
+
+it('should show a loading indicator', () => {
+  const node = shallow(<Home mightFail={() => {}} />);
+
+  expect(node.find('LoadingIndicator')).toExist();
+});
+
+it('should show an empty message if no entities exist', () => {
+  loadEntities.mockReturnValueOnce(() => []);
+  const node = shallow(<Home {...props} />);
+
+  expect(node.find('.empty')).toExist();
 });
