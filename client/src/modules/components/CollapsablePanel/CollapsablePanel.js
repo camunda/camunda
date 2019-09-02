@@ -31,14 +31,21 @@ export default class CollapsablePanel extends React.Component {
     super(props);
     this.expandButtonRef = React.createRef();
     this.collapseButtonRef = React.createRef();
+    this.transitionTimeout = 200;
   }
 
-  componentDidUpdate(prevProps, prevState, snapshot) {
+  componentDidUpdate(prevProps) {
     if (this.props.isCollapsed !== prevProps.isCollapsed) {
       if (this.props.isCollapsed) {
-        setTimeout(() => this.expandButtonRef.current.focus(), 200);
+        setTimeout(
+          () => this.expandButtonRef.current.focus(),
+          this.transitionTimeout
+        );
       } else {
-        setTimeout(() => this.collapseButtonRef.current.focus(), 200);
+        setTimeout(
+          () => this.collapseButtonRef.current.focus(),
+          this.transitionTimeout
+        );
       }
     }
   }
@@ -64,11 +71,14 @@ export default class CollapsablePanel extends React.Component {
 
     return (
       <Styled.Collapsable {...this.props} isCollapsed={isCollapsed}>
-        <Styled.ExpandedPanel isCollapsed={isCollapsed}>
+        <Styled.ExpandedPanel isCollapsed={isCollapsed} transitionTimeout={200}>
           {this.renderCollapseButton()}
           {children}
         </Styled.ExpandedPanel>
-        <Styled.CollapsedPanel isCollapsed={isCollapsed}>
+        <Styled.CollapsedPanel
+          isCollapsed={isCollapsed}
+          transitionTimeout={200}
+        >
           {this.renderExpandButton()}
         </Styled.CollapsedPanel>
       </Styled.Collapsable>

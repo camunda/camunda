@@ -40,12 +40,13 @@ export const Collapsable = themed(styled(
 `);
 
 const panelStyle = css`
-position: absolute;
-top: 0;
-left: 0;
-height: 100%;
-width 100%;
-transition: visibility 0.2s ease-out, opacity 0.2s ease-out;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  transition: ${({transitionTimeout}) =>
+    `visibility  ${transitionTimeout}ms ease-out, opacity ${transitionTimeout}ms ease-out`};
 `;
 
 export const ExpandedPanel = styled(BasicPanel)`
