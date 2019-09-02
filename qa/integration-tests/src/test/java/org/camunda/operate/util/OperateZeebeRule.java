@@ -7,6 +7,7 @@ package org.camunda.operate.util;
 
 import java.util.Map;
 import java.util.Properties;
+
 import org.assertj.core.api.Assertions;
 import org.camunda.operate.property.OperateProperties;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -17,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.test.ClientRule;
@@ -24,6 +26,8 @@ import io.zeebe.test.EmbeddedBrokerRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 
 public class OperateZeebeRule extends TestWatcher {
+
+  private static final String REQUEST_TIMEOUT_IN_MILLISECONDS = "15000"; // 15 seconds 
 
   private static final Logger logger = LoggerFactory.getLogger(OperateZeebeRule.class);
 
@@ -119,7 +123,7 @@ public class OperateZeebeRule extends TestWatcher {
       ClientProperties.BROKER_CONTACTPOINT,
       getBrokerConfig().getGateway().getNetwork().toSocketAddress().toString());
     properties.putIfAbsent(ClientProperties.USE_PLAINTEXT_CONNECTION, true);
-
+    properties.setProperty(ClientProperties.DEFAULT_REQUEST_TIMEOUT, REQUEST_TIMEOUT_IN_MILLISECONDS);
     return properties;
   }
 
