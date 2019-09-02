@@ -20,7 +20,8 @@ public class CommandRateLimiterTest {
 
   private static final int INITIAL_LIMIT = 5;
   private final SettableLimit limit = new SettableLimit(INITIAL_LIMIT);
-  private final CommandRateLimiter rateLimiter = CommandRateLimiter.builder().limit(limit).build();
+
+  private final CommandRateLimiter rateLimiter = CommandRateLimiter.builder().limit(limit).build(0);
   private final Intent context = WorkflowInstanceCreationIntent.CREATE;
 
   @Test

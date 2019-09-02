@@ -11,9 +11,9 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADE
 import static io.zeebe.broker.transport.TransportServiceNames.COMMAND_API_SERVER_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.COMMAND_API_SERVICE_NAME;
 
-import com.netflix.concurrency.limits.limit.VegasLimit;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
+import io.zeebe.broker.system.configuration.BackpressureCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.zeebe.broker.transport.commandapi.CommandApiMessageHandler;
@@ -31,17 +31,21 @@ public class TransportComponent implements Component {
     createSocketBindings(context);
   }
 
-  private PartitionAwareRequestLimiter createRequestLimiter() {
-    return new PartitionAwareRequestLimiter(VegasLimit::newDefault);
+  private PartitionAwareRequestLimiter createPartitionRequestLimiter(final SystemContext context) {
+    final BackpressureCfg backpressure = context.getBrokerConfiguration().getBackpressure();
+    if (backpressure.isEnabled()) {
+      return PartitionAwareRequestLimiter.newLimiter(
+          backpressure.getAlgorithm(), backpressure.useWindowed());
+    }
+    return PartitionAwareRequestLimiter.newNoopLimiter();
   }
 
   private void createSocketBindings(final SystemContext context) {
     final NetworkCfg networkCfg = context.getBrokerConfiguration().getNetwork();
     final ServiceContainer serviceContainer = context.getServiceContainer();
 
-    final PartitionAwareRequestLimiter limiter = createRequestLimiter();
     final CommandApiMessageHandler commandApiMessageHandler = new CommandApiMessageHandler();
-
+    final PartitionAwareRequestLimiter limiter = createPartitionRequestLimiter(context);
     final CommandApiService commandHandler =
         new CommandApiService(commandApiMessageHandler, limiter);
     serviceContainer
