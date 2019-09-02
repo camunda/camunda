@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.zeebeimport.archiver;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -71,6 +72,7 @@ public class Archiver extends Thread {
   @Autowired
   private PartitionHolder partitionHolder;
 
+  @PostConstruct
   public void startArchiving() {
     if (operateProperties.getElasticsearch().isRolloverEnabled()) {
       start();
@@ -85,7 +87,7 @@ public class Archiver extends Thread {
 
   @Override
   public void run() {
-    logger.debug("Start archiving data");
+    logger.info("INIT: Start archiving data...");
     while (!shutdown) {
       try {
 

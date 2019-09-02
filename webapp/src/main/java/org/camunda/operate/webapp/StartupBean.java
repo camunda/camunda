@@ -10,7 +10,6 @@ import javax.annotation.PreDestroy;
 import org.camunda.operate.data.DataGenerator;
 import org.camunda.operate.es.ElasticsearchConnector;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
-import org.camunda.operate.zeebeimport.archiver.Archiver;
 import org.camunda.operate.webapp.user.ElasticSearchUserDetailsService;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -42,9 +41,6 @@ public class StartupBean {
   @Autowired
   private OperationExecutor operationExecutor;
 
-  @Autowired
-  private Archiver archiver;
-
   @PostConstruct
   public void initApplication() {
     logger.info("INIT: Initialize Elasticsearch schema...");
@@ -60,8 +56,6 @@ public class StartupBean {
     }
     logger.info("INIT: Start operation executor...");
     operationExecutor.startExecuting();
-    logger.info("INIT: Start archiving data...");
-    archiver.startArchiving();
     logger.info("INIT: DONE");
   }
   
