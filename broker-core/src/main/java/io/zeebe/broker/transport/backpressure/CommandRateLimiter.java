@@ -19,9 +19,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CommandRateLimiter extends AbstractLimiter<Intent> implements RequestLimiter<Intent> {
 
   private final Map<ListenerId, Listener> responseListeners = new ConcurrentHashMap<>();
+  private final int partitionId;
+  private final BackpressureMetrics metrics = new BackpressureMetrics();
 
-  protected CommandRateLimiter(CommandRateLimiterBuilder builder) {
+  protected CommandRateLimiter(CommandRateLimiterBuilder builder, int partitionId) {
     super(builder);
+    this.partitionId = partitionId;
+    metrics.setInflight(partitionId, 0);
+    metrics.setNewLimit(partitionId, getLimit());
   }
 
   @Override
@@ -45,6 +50,7 @@ public class CommandRateLimiter extends AbstractLimiter<Intent> implements Reque
         .map(
             listener -> {
               registerListener(streamId, requestId, listener);
+              metrics.incInflight(partitionId);
               return true;
             })
         .orElse(false);
@@ -55,6 +61,7 @@ public class CommandRateLimiter extends AbstractLimiter<Intent> implements Reque
     final Listener listener = responseListeners.remove(new ListenerId(streamId, requestId));
     if (listener != null) {
       listener.onSuccess();
+      metrics.decInflight(partitionId);
     } else {
       // Ignore this message, if it happens immediately after failover. It can happen when a request
       // committed by the old leader is processed by the new leader.
@@ -70,12 +77,19 @@ public class CommandRateLimiter extends AbstractLimiter<Intent> implements Reque
     final Listener listener = responseListeners.remove(new ListenerId(streamId, requestId));
     if (listener != null) {
       listener.onIgnore();
+      metrics.decInflight(partitionId);
     }
   }
 
   @Override
   public int getInflightCount() {
     return getInflight();
+  }
+
+  @Override
+  protected void onNewLimit(int newLimit) {
+    super.onNewLimit(newLimit);
+    metrics.setNewLimit(partitionId, newLimit);
   }
 
   public static CommandRateLimiterBuilder builder() {
@@ -90,8 +104,8 @@ public class CommandRateLimiter extends AbstractLimiter<Intent> implements Reque
       return this;
     }
 
-    public CommandRateLimiter build() {
-      return new CommandRateLimiter(this);
+    public CommandRateLimiter build(int partitionId) {
+      return new CommandRateLimiter(this, partitionId);
     }
   }
 

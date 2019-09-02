@@ -314,7 +314,7 @@ public class CommandApiMessageHandlerTest {
   public void shouldSendErrorMessageOnRequestLimitReached() {
     // given
     final CommandRateLimiter settableLimiter =
-        CommandRateLimiter.builder().limit(new SettableLimit(1)).build();
+        CommandRateLimiter.builder().limit(new SettableLimit(1)).build(logStream.getPartitionId());
     messageHandler = new CommandApiMessageHandler();
     messageHandler.addPartition(logStream, settableLimiter);
     settableLimiter.tryAcquire(0, 1, null);
@@ -341,7 +341,7 @@ public class CommandApiMessageHandlerTest {
   public void shouldNotSendErrorMessageOnRequestLimitReachedIfJobComplete() {
     // given
     final CommandRateLimiter settableLimiter =
-        CommandRateLimiter.builder().limit(new SettableLimit(1)).build();
+        CommandRateLimiter.builder().limit(new SettableLimit(1)).build(logStream.getPartitionId());
     messageHandler = new CommandApiMessageHandler();
     messageHandler.addPartition(logStream, settableLimiter);
     settableLimiter.tryAcquire(0, 1, null);
