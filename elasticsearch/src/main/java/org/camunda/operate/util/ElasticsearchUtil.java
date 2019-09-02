@@ -310,11 +310,15 @@ public abstract class ElasticsearchUtil {
   }
 
   public static List<String> scrollFieldToList(SearchRequest request, String fieldName, RestHighLevelClient esClient) throws IOException {
-    List<String> result = new ArrayList<>();
-    Function<SearchHit,String> searchHitFieldToString = (searchHit) -> searchHit.getSourceAsMap().get(fieldName).toString();
-    
+    return scrollFieldToTypedList(request, fieldName, esClient);
+  }
+
+  public static <T> List<T> scrollFieldToTypedList(SearchRequest request, String fieldName, RestHighLevelClient esClient) throws IOException {
+    List<T> result = new ArrayList<>();
+    Function<SearchHit, T> searchHitFieldToString = (searchHit) -> (T)searchHit.getSourceAsMap().get(fieldName);
+
     Consumer<SearchHits> collectFields = (hits) -> {
-        result.addAll(map(hits.getHits(),searchHitFieldToString));
+        result.addAll(map(hits.getHits(), searchHitFieldToString));
     };
 
     scrollWith(request, esClient, collectFields,null, collectFields);

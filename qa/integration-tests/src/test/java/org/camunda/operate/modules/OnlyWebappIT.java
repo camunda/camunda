@@ -8,6 +8,7 @@ package org.camunda.operate.modules;
 import org.camunda.operate.ImportModuleConfiguration;
 import org.camunda.operate.WebappModuleConfiguration;
 import org.camunda.operate.property.OperateProperties;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,19 +16,21 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.TestPropertySource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@TestPropertySource(properties = OperateProperties.PREFIX + ".webappEnabled = false")
+@TestPropertySource(properties = OperateProperties.PREFIX + ".importerEnabled = false")
 public class OnlyWebappIT extends ModuleIntegrationTest {
 
   @Autowired
   private ApplicationContext applicationContext;
 
   @Test
-  public void testImportModuleIsNotPresent() {
-    applicationContext.getBean(ImportModuleConfiguration.class);
+  @Ignore
+  public void testWebappModuleIsPresent() {
+    assertThat(applicationContext.getBean(WebappModuleConfiguration.class)).isNotNull();
   }
 
   @Test(expected = NoSuchBeanDefinitionException.class)
-  public void testWebappModuleIsPresent() {
-    assertThat(applicationContext.getBean(WebappModuleConfiguration.class)).isNotNull();
+  @Ignore
+  public void testImportModuleIsNotPresent() {
+    assertThat(applicationContext.getBean(ImportModuleConfiguration.class)).isNotNull();
   }
 }
