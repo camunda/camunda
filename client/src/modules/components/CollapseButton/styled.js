@@ -13,12 +13,13 @@ import {ReactComponent as LeftBar} from 'modules/components/Icon/left-bar.svg';
 import {ReactComponent as RightBar} from 'modules/components/Icon/right-bar.svg';
 
 export const CollapseButton = themed(styled.button`
-  padding-left: 11.5px;
-  padding-right: 15px;
-  padding-top: 13px;
-  padding-bottom: 13px;
+  margin: 3px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
   width: 39px;
-  height: 38px;
+  height: 32px;
 
   background: transparent;
 

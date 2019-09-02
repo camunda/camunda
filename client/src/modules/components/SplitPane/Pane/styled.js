@@ -39,6 +39,8 @@ export const Footer = styled(Panel.Footer)`
 `;
 
 export const PaneCollapseButton = styled(CollapseButton)`
+  margin: 0;
+  margin-top: 3px;
   border-top: none;
   border-bottom: none;
   border-right: none;

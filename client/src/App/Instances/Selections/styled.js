@@ -30,7 +30,7 @@ export const CollapsablePanel = styled(BasicCollapsablePanel)`
 export const SelectionHeader = styled(BasicCollapsablePanel.Header)`
   display: flex;
   justify-content: flex-start;
-  padding-left: 45px;
+  padding-left: 47px;
   align-items: center;
   flex-shrink: 0;
   border-radius: 3px 0 0 0;
