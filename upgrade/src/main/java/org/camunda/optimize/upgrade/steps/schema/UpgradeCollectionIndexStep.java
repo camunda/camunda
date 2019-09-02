@@ -10,10 +10,10 @@ import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRole;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -70,7 +70,7 @@ public class UpgradeCollectionIndexStep extends UpdateIndexStep {
         .put("collectionOwnerField", BaseCollectionDefinitionDto.Fields.owner.name())
         .put("collectionDataField", BaseCollectionDefinitionDto.Fields.data.name())
         .put("collectionDataRolesField", CollectionDataDto.Fields.roles.name())
-        .put("managerRole", CollectionRole.MANAGER.name())
+        .put("managerRole", RoleType.MANAGER.name())
         .build()
     );
     return substitutor.replace(

@@ -10,10 +10,10 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRole;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
@@ -72,7 +72,7 @@ public class CollectionWriter {
     collection.setName(DEFAULT_COLLECTION_NAME);
     final CollectionDataDto newData = new CollectionDataDto();
     newData.getRoles().add(
-      new CollectionRoleDto(new IdentityDto(userId, IdentityType.USER), CollectionRole.MANAGER)
+      new CollectionRoleDto(new IdentityDto(userId, IdentityType.USER), RoleType.MANAGER)
     );
     collection.setData(newData);
 
@@ -161,9 +161,9 @@ public class CollectionWriter {
     }
   }
 
-  public CollectionScopeEntryDto addScopeEntryToCollection(String collectionId, CollectionScopeEntryDto entryDto,
-                                                           String userId) throws
-                                                                          OptimizeConflictException {
+  public CollectionScopeEntryDto addScopeEntryToCollection(String collectionId,
+                                                           CollectionScopeEntryDto entryDto,
+                                                           String userId) throws OptimizeConflictException {
     try {
       final Map<String, Object> params = new HashMap<>();
       params.put("entryDto", objectMapper.convertValue(entryDto, Object.class));
@@ -205,8 +205,7 @@ public class CollectionWriter {
     }
   }
 
-  public void removeScopeEntry(String collectionId, String scopeEntryId, String userId) throws
-                                                                                        NotFoundException {
+  public void removeScopeEntry(String collectionId, String scopeEntryId, String userId) throws NotFoundException {
     try {
       final Map<String, Object> params = new HashMap<>();
       params.put("id", scopeEntryId);
@@ -243,8 +242,10 @@ public class CollectionWriter {
     }
   }
 
-  public void updateScopeEntity(String collectionId, CollectionScopeEntryUpdateDto scopeEntry, String userId,
-                                String scopeEntryId) throws OptimizeConflictException {
+  public void updateScopeEntity(String collectionId,
+                                CollectionScopeEntryUpdateDto scopeEntry,
+                                String userId,
+                                String scopeEntryId) {
     try {
       final Map<String, Object> params = new HashMap<>();
       params.put("entryDto", objectMapper.convertValue(scopeEntry, Object.class));
@@ -268,29 +269,28 @@ public class CollectionWriter {
         params
       );
 
-      final UpdateResponse updateResponse;
-      updateResponse = executeUpdateRequest(
-        collectionId,
-        updateEntityScript,
-        "Was not able to update collection with id [%s]."
+      executeUpdateRequest(
+        collectionId, updateEntityScript, "Was not able to update collection with id [%s]."
       );
-
-
-      if (updateResponse.getResult().equals(DocWriteResponse.Result.NOOP)) {
-        final String message = String.format("Scope entry for id [%s] doesn't exists.", scopeEntryId);
-        log.warn(message);
-        throw new OptimizeConflictException(message);
-      }
 
     } catch (IOException e) {
       String errorMessage = String.format("Was not able to update collection with id [%s].", collectionId);
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
+    } catch (ElasticsearchStatusException e) {
+      String errorMessage = String.format(
+        "Was not able to update scope entry with id [%s] on collection with id [%s]." +
+          " Collection or scope Entry does not exist!",
+        scopeEntryId,
+        collectionId
+      );
+      log.error(errorMessage, e);
+      throw new NotFoundException(errorMessage, e);
     }
   }
 
-  private UpdateResponse executeUpdateRequest(String collectionId, Script updateEntityScript, String errorMessage) throws
-                                                                                                                IOException {
+  private UpdateResponse executeUpdateRequest(String collectionId, Script updateEntityScript, String errorMessage)
+    throws IOException {
     final UpdateRequest request = new UpdateRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId)
       .script(updateEntityScript)
       .setRefreshPolicy(IMMEDIATE)
@@ -407,7 +407,7 @@ public class CollectionWriter {
       if (updateResponse.getResult().equals(DocWriteResponse.Result.NOOP)) {
         final String message = String.format(
           "Cannot assign lower privileged role to last [%s] of collection [%s].",
-          CollectionRole.MANAGER,
+          RoleType.MANAGER,
           collectionId
         );
         log.warn(message);
@@ -470,7 +470,7 @@ public class CollectionWriter {
 
       if (updateResponse.getResult() == DocWriteResponse.Result.NOOP) {
         final String message = String.format(
-          "Cannot delete last [%s] of collection [%s].", CollectionRole.MANAGER, collectionId
+          "Cannot delete last [%s] of collection [%s].", RoleType.MANAGER, collectionId
         );
         log.warn(message);
         throw new OptimizeConflictException(message);
@@ -493,7 +493,7 @@ public class CollectionWriter {
   private Map<String, Object> constructParamsForRoleUpdateScript(String roleEntryId, String userId) {
     final Map<String, Object> params = new HashMap<>();
     params.put("roleEntryId", roleEntryId);
-    params.put("managerRole", CollectionRole.MANAGER.name());
+    params.put("managerRole", RoleType.MANAGER.name());
     params.put("lastModifier", userId);
     params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
     return params;

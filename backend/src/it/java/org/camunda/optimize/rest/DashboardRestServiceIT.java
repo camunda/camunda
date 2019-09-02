@@ -31,6 +31,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class DashboardRestServiceIT {
 
+  public static final String USER_JOHN = "john";
   public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -126,13 +127,13 @@ public class DashboardRestServiceIT {
     String dashboardId = addEmptyDashboard();
     addEmptyReportToDashboard(dashboardId);
 
-    engineIntegrationRule.addUser("john", "john");
-    engineIntegrationRule.grantAllAuthorizations("john");
+    engineIntegrationRule.addUser(USER_JOHN, USER_JOHN);
+    engineIntegrationRule.grantAllAuthorizations(USER_JOHN);
 
     // when
     IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId)
-      .withUserAuthentication("john", "john")
+      .withUserAuthentication(USER_JOHN, USER_JOHN)
       .execute(IdDto.class, 200);
 
     // then
@@ -140,7 +141,7 @@ public class DashboardRestServiceIT {
     DashboardDefinitionDto dashboard = getDashboard(copyId.getId());
     assertThat(dashboard.toString(), is(oldDashboard.toString()));
     assertThat(dashboard.getName(), is(oldDashboard.getName() + " – Copy"));
-    assertThat(dashboard.getLastModifier(), is("john"));
+    assertThat(dashboard.getLastModifier(), is(USER_JOHN));
 
     final List<String> newReportIds = dashboard.getReports()
       .stream()
@@ -176,24 +177,24 @@ public class DashboardRestServiceIT {
   @Test
   public void copyPrivateDashboardAndMoveToCollection() {
     // given
-    final String collectionId = addEmptyCollectionToOptimize();
     String dashboardId = addEmptyDashboard();
     addEmptyReportToDashboard(dashboardId);
 
-    engineIntegrationRule.addUser("john", "john");
-    engineIntegrationRule.grantAllAuthorizations("john");
+    engineIntegrationRule.addUser(USER_JOHN, USER_JOHN);
+    engineIntegrationRule.grantAllAuthorizations(USER_JOHN);
+    final String collectionId = addEmptyCollectionToOptimizeAsUser(USER_JOHN, USER_JOHN);
 
     // when
     IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId, collectionId)
-      .withUserAuthentication("john", "john")
+      .withUserAuthentication(USER_JOHN, USER_JOHN)
       .execute(IdDto.class, 200);
 
     // then
     DashboardDefinitionDto oldDashboard = getDashboard(dashboardId);
     DashboardDefinitionDto dashboard = getDashboard(copyId.getId());
     assertThat(dashboard.getName(), is(oldDashboard.getName() + " – Copy"));
-    assertThat(dashboard.getLastModifier(), is("john"));
+    assertThat(dashboard.getLastModifier(), is(USER_JOHN));
     assertThat(dashboard.getCollectionId(), is(collectionId));
     assertThat(oldDashboard.getCollectionId(), is(nullValue()));
 
@@ -215,22 +216,22 @@ public class DashboardRestServiceIT {
     String dashboardId = addEmptyDashboardToCollection(collectionId);
     addEmptyReportToDashboard(dashboardId, collectionId);
 
-    engineIntegrationRule.addUser("john", "john");
-    engineIntegrationRule.grantAllAuthorizations("john");
+    engineIntegrationRule.addUser(USER_JOHN, USER_JOHN);
+    engineIntegrationRule.grantAllAuthorizations(USER_JOHN);
 
 
     // when
     IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId)
       .addSingleQueryParam("collectionId", "null")
-      .withUserAuthentication("john", "john")
+      .withUserAuthentication(USER_JOHN, USER_JOHN)
       .execute(IdDto.class, 200);
 
     // then
     DashboardDefinitionDto oldDashboard = getDashboard(dashboardId);
     DashboardDefinitionDto dashboard = getDashboard(copyId.getId());
     assertThat(dashboard.getName(), is(oldDashboard.getName() + " – Copy"));
-    assertThat(dashboard.getLastModifier(), is("john"));
+    assertThat(dashboard.getLastModifier(), is(USER_JOHN));
     assertThat(dashboard.getCollectionId(), is(nullValue()));
     assertThat(oldDashboard.getCollectionId(), is(collectionId));
 
@@ -251,23 +252,23 @@ public class DashboardRestServiceIT {
     String dashboardId = addEmptyDashboardToCollection(oldCollectionId);
     addEmptyReportToDashboard(dashboardId, oldCollectionId);
 
-    engineIntegrationRule.addUser("john", "john");
-    engineIntegrationRule.grantAllAuthorizations("john");
+    engineIntegrationRule.addUser(USER_JOHN, USER_JOHN);
+    engineIntegrationRule.grantAllAuthorizations(USER_JOHN);
 
-    final String newCollectionId = addEmptyCollectionToOptimize();
+    final String newCollectionId = addEmptyCollectionToOptimizeAsUser(USER_JOHN, USER_JOHN);
 
     // when
     IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId)
       .addSingleQueryParam("collectionId", newCollectionId)
-      .withUserAuthentication("john", "john")
+      .withUserAuthentication(USER_JOHN, USER_JOHN)
       .execute(IdDto.class, 200);
 
     // then
     DashboardDefinitionDto oldDashboard = getDashboard(dashboardId);
     DashboardDefinitionDto newDashboard = getDashboard(copyId.getId());
     assertThat(newDashboard.getName(), is(oldDashboard.getName() + " – Copy"));
-    assertThat(newDashboard.getLastModifier(), is("john"));
+    assertThat(newDashboard.getLastModifier(), is(USER_JOHN));
     assertThat(newDashboard.getCollectionId(), is(newCollectionId));
     assertThat(oldDashboard.getCollectionId(), is(oldCollectionId));
 
@@ -441,6 +442,14 @@ public class DashboardRestServiceIT {
       .getId();
   }
 
+  private String addEmptyCollectionToOptimizeAsUser(final String user, final String password) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .withUserAuthentication(user, password)
+      .buildCreateCollectionRequest()
+      .execute(IdDto.class, 200)
+      .getId();
+  }
 
   private void updateDashboardRequest(final String dashboardId,
                                       final List<ReportLocationDto> reports) {

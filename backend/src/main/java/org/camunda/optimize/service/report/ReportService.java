@@ -85,7 +85,7 @@ public class ReportService implements CollectionReferencingService {
   }
 
   public IdDto copyAndMoveReport(String reportId, String userId, String collectionId, String newReportName) {
-    collectionService.validateCollectionExists(collectionId);
+    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
     return copyReport(reportId, userId, collectionId, false, newReportName);
   }
 
@@ -126,17 +126,17 @@ public class ReportService implements CollectionReferencingService {
   }
 
   public IdDto createNewSingleDecisionReport(final String userId, final String collectionId) {
-    collectionService.validateCollectionExists(collectionId);
+    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
     return reportWriter.createNewSingleDecisionReport(userId, collectionId);
   }
 
   public IdDto createNewSingleProcessReport(final String userId, final String collectionId) {
-    collectionService.validateCollectionExists(collectionId);
+    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
     return reportWriter.createNewSingleProcessReport(userId, collectionId);
   }
 
   public IdDto createNewCombinedProcessReport(final String userId, final String collectionId) {
-    collectionService.validateCollectionExists(collectionId);
+    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
     return reportWriter.createNewCombinedReport(userId, collectionId);
   }
 

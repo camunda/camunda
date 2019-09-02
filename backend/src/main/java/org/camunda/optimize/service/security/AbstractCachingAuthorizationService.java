@@ -65,7 +65,6 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
     initState();
-    authorizationLoadingCache.invalidateAll();
   }
 
   protected void initState() {

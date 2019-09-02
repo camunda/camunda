@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.rest.queryparam.adjustment;
 
-import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
-import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefinitionDto;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OffsetResultListDecorator;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OrderByQueryParamResultListDecorator;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OriginalResultList;
@@ -29,7 +28,6 @@ public class QueryParamAdjustmentUtil {
   private static final String ORDER_BY = "orderBy";
   private static final Map<String, Comparator> reportComparators = new HashMap<>();
   private static final Map<String, Comparator> collectionComparators = new HashMap<>();
-  private static final Map<String, Comparator> entitiesComparators = new HashMap<>();
 
   private static final String LAST_MODIFIED = "lastModified";
   private static final String NAME = "name";
@@ -43,18 +41,24 @@ public class QueryParamAdjustmentUtil {
       NAME, Comparator.comparing(ReportDefinitionDto<ReportDataDto>::getName)
     );
 
-    collectionComparators.put(CREATED, Comparator.comparing(ResolvedCollectionDefinitionDto::getCreated).reversed());
-    collectionComparators.put(NAME, Comparator.comparing(ResolvedCollectionDefinitionDto::getName));
-
-    entitiesComparators.put(LAST_MODIFIED, Comparator.comparing(CollectionEntity::getLastModified).reversed());
-    entitiesComparators.put(NAME, Comparator.comparing(CollectionEntity::getName));
+    collectionComparators.put(
+      CREATED,
+      Comparator
+        .comparing(o -> ((AuthorizedResolvedCollectionDefinitionDto) o).getDefinitionDto().getCreated())
+        .reversed()
+    );
+    collectionComparators.put(
+      NAME,
+      Comparator
+        .comparing(o -> ((AuthorizedResolvedCollectionDefinitionDto) o).getDefinitionDto().getName().toLowerCase())
+    );
   }
 
   public static List<ReportDefinitionDto> adjustReportResultsToQueryParameters(
     List<ReportDefinitionDto> resultList,
     MultivaluedMap<String, String> queryParameters
   ) {
-    Comparator<ReportDefinitionDto> sorting;
+    Comparator sorting;
 
     List<String> key = queryParameters.get(ORDER_BY);
     String queryParam = (key == null || key.isEmpty()) ? LAST_MODIFIED : key.get(0);
@@ -74,10 +78,11 @@ public class QueryParamAdjustmentUtil {
     return adjustResultListAccordingToQueryParameters(resultList, queryParameters, sorting, "lastModified");
   }
 
+  @SuppressWarnings("unchecked")
   private static <T> List<T> adjustResultListAccordingToQueryParameters(
     List<T> resultList,
     MultivaluedMap<String, String> queryParameters,
-    Comparator<T> comparator,
+    Comparator comparator,
     String orderField
   ) {
     QueryParameterAdjustedResultList<T> adjustedResultList =
@@ -97,24 +102,15 @@ public class QueryParamAdjustmentUtil {
     return resultList;
   }
 
-  public static List<ResolvedCollectionDefinitionDto> adjustCollectionResultsToQueryParameters(
-    List<ResolvedCollectionDefinitionDto> resultList,
+  public static List<AuthorizedResolvedCollectionDefinitionDto> adjustCollectionResultsToQueryParameters(
+    List<AuthorizedResolvedCollectionDefinitionDto> resultList,
     MultivaluedMap<String, String> queryParameters
   ) {
     List<String> key = queryParameters.get(ORDER_BY);
     String queryParam = (key == null || key.isEmpty()) ? CREATED : key.get(0);
-    Comparator<ResolvedCollectionDefinitionDto> comparator = collectionComparators.get(queryParam);
+    Comparator comparator = collectionComparators.get(queryParam);
 
     return adjustResultListAccordingToQueryParameters(resultList, queryParameters, comparator, queryParam);
   }
 
-  public static List<CollectionEntity> adjustEntityResultsToQueryParameters(List<CollectionEntity> resultList,
-                                                                            MultivaluedMap<String, String> queryParameters
-  ) {
-    List<String> key = queryParameters.get(ORDER_BY);
-    String queryParam = (key == null || key.isEmpty()) ? LAST_MODIFIED : key.get(0);
-    Comparator<CollectionEntity> comparator = entitiesComparators.get(queryParam);
-
-    return adjustResultListAccordingToQueryParameters(resultList, queryParameters, comparator, queryParam);
-  }
 }

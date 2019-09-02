@@ -903,8 +903,8 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildUpdateCollectionScopeEntryRequest(String collectionId,
-                                                                        CollectionScopeEntryUpdateDto entryDto,
-                                                                        String entryId) {
+                                                                        String entryId,
+                                                                        CollectionScopeEntryUpdateDto entryDto) {
     this.path = "collection/" + collectionId + "/scope/" + entryId;
     this.requestType = PUT;
     this.body = getBody(entryDto);

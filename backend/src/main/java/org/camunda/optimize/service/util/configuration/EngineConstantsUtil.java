@@ -10,7 +10,6 @@ public class EngineConstantsUtil {
   public static final String MAX_RESULTS_TO_RETURN = "maxResults";
   public static final String INDEX_OF_FIRST_RESULT = "firstResult";
 
-  public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String ID = "id";
 
   public static final String FINISHED_AFTER = "finishedAfter";

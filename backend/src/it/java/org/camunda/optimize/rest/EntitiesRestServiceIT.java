@@ -8,8 +8,8 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRole;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
@@ -328,7 +328,7 @@ public class EntitiesRestServiceIT {
 
     final CollectionRoleDto roleDto = new CollectionRoleDto(
       new IdentityDto(identityId, identityType),
-      CollectionRole.EDITOR
+      RoleType.EDITOR
     );
     embeddedOptimizeRule
       .getRequestExecutor()

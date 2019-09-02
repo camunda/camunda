@@ -8,7 +8,7 @@ package org.camunda.optimize.upgrade.version25;
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRole;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
@@ -17,10 +17,10 @@ import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
-import org.camunda.optimize.upgrade.version25.indexes.Version25CollectionIndex;
-import org.camunda.optimize.upgrade.version25.indexes.Version25ProcessInstanceIndex;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom25To26;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
+import org.camunda.optimize.upgrade.version25.indexes.Version25CollectionIndex;
+import org.camunda.optimize.upgrade.version25.indexes.Version25ProcessInstanceIndex;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -84,7 +84,7 @@ public class UpgradeCollectionsWithRolesIT extends AbstractUpgradeIT {
     assertThat(roleEntry.getId(), is(IdentityType.USER.name() + ":demo"));
     assertThat(roleEntry.getIdentity().getType(), is(IdentityType.USER));
     assertThat(roleEntry.getIdentity().getId(), is("demo"));
-    assertThat(roleEntry.getRole(), is(CollectionRole.MANAGER));
+    assertThat(roleEntry.getRole(), is(RoleType.MANAGER));
   }
 
 

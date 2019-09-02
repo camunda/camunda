@@ -8,6 +8,7 @@ package org.camunda.optimize.dto.optimize.query.dashboard;
 import com.google.common.collect.ImmutableMap;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.entity.EntityData;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
@@ -26,7 +27,9 @@ public class DashboardDefinitionDto extends BaseDashboardDefinitionDto implement
   public EntityDto toEntityDto() {
     return new EntityDto(
       getId(), getName(), getLastModified(), getCreated(), getOwner(), getLastModifier(), EntityType.DASHBOARD,
-      new EntityData(ImmutableMap.of(EntityType.REPORT, (long) getReports().size()))
+      new EntityData(ImmutableMap.of(EntityType.REPORT, (long) getReports().size())),
+      // TODO will be mapped dynamically with OPT-2627
+      RoleType.EDITOR
     );
   }
 }

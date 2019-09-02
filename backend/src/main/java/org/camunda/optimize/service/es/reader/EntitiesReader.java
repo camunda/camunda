@@ -97,7 +97,8 @@ public class EntitiesReader {
     ).stream().map(CollectionEntity::toEntityDto).collect(Collectors.toList());
   }
 
-  public Map<String, Map<EntityType, Long>> countEntitiesForCollections(final List<SimpleCollectionDefinitionDto> collections) {
+  public Map<String, Map<EntityType, Long>> countEntitiesForCollections(
+    final List<? extends BaseCollectionDefinitionDto> collections) {
     log.debug(
       "Counting all available entities for collection ids [{}]",
       collections.stream().map(BaseCollectionDefinitionDto::getId).collect(Collectors.toList())
@@ -163,12 +164,8 @@ public class EntitiesReader {
     return runEntitiesSearchRequest(searchSourceBuilder);
   }
 
-  public List<CollectionEntity> getAllEntitiesForCollections(final List<SimpleCollectionDefinitionDto> collections) {
+  public List<CollectionEntity> getAllEntitiesForCollections(final List<String> collectionIds) {
     log.debug("Fetching all available entities for collections");
-
-    String[] collectionIds = collections.stream()
-      .map(SimpleCollectionDefinitionDto::getId)
-      .toArray(String[]::new);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(termsQuery(COLLECTION_ID, collectionIds))

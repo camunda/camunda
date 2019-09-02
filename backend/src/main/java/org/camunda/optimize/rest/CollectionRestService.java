@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDt
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.collection.CollectionService;
@@ -62,8 +62,12 @@ public class CollectionRestService {
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<ResolvedCollectionDefinitionDto> getAllResolvedCollections(@Context UriInfo uriInfo) {
-    return collectionService.getAllResolvedCollections(uriInfo.getQueryParameters());
+  public List<AuthorizedResolvedCollectionDefinitionDto> getAllResolvedCollections(
+    @Context ContainerRequestContext requestContext,
+    @Context UriInfo uriInfo) {
+
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return collectionService.getAllResolvedCollections(uriInfo.getQueryParameters(), userId);
   }
 
   /**
@@ -72,8 +76,10 @@ public class CollectionRestService {
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public ResolvedCollectionDefinitionDto getCollection(@PathParam("id") String collectionId) {
-    return collectionService.getResolvedCollection(collectionId);
+  public AuthorizedResolvedCollectionDefinitionDto getCollection(@Context ContainerRequestContext requestContext,
+                                                                 @PathParam("id") String collectionId) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return collectionService.getResolvedCollectionDefinition(collectionId, userId);
   }
 
   /**
@@ -90,7 +96,6 @@ public class CollectionRestService {
   public void updateCollectionPartial(@Context ContainerRequestContext requestContext,
                                       @PathParam("id") String collectionId,
                                       @NotNull PartialCollectionUpdateDto updatedCollection) {
-
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionService.updatePartialCollection(collectionId, userId, updatedCollection);
   }
@@ -101,9 +106,11 @@ public class CollectionRestService {
   @DELETE
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public void deleteCollection(@PathParam("id") String collectionId,
+  public void deleteCollection(@Context ContainerRequestContext requestContext,
+                               @PathParam("id") String collectionId,
                                @QueryParam("force") boolean force) throws OptimizeConflictException {
-    collectionService.deleteCollection(collectionId, force);
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    collectionService.deleteCollection(collectionId, force, userId);
   }
 
   /**
@@ -114,17 +121,22 @@ public class CollectionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public ConflictResponseDto getDeleteConflicts(@Context ContainerRequestContext requestContext,
                                                 @PathParam("id") String collectionId) {
-    return collectionService.getDeleteConflictingItems(collectionId);
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return collectionService.getDeleteConflictingItems(collectionId, userId);
   }
 
   @POST
   @Path("/{id}/scope")
-  public void addScopeEntry(@Context ContainerRequestContext requestContext,
-                             @PathParam("id") String collectionId,
-                             @NotNull CollectionScopeEntryDto entryDto) throws OptimizeConflictException {
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public IdDto addScopeEntry(@Context ContainerRequestContext requestContext,
+                            @PathParam("id") String collectionId,
+                            @NotNull CollectionScopeEntryDto entryDto) throws OptimizeConflictException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-
-    collectionService.addScopeEntryToCollection(collectionId, entryDto, userId);
+    final CollectionScopeEntryDto scopeEntryDto = collectionService.addScopeEntryToCollection(
+      collectionId, entryDto, userId
+    );
+    return new IdDto(scopeEntryDto.getId());
   }
 
   @DELETE
@@ -154,8 +166,12 @@ public class CollectionRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public List<CollectionRoleDto> getRoles(@Context ContainerRequestContext requestContext,
-                                          @PathParam("id") String collectionId){
-    return  collectionService.getCollectionDefinition(collectionId).getData().getRoles();
+                                          @PathParam("id") String collectionId) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return collectionService.getAuthorizedCollectionDefinition(collectionId, userId)
+      .getDefinitionDto()
+      .getData()
+      .getRoles();
   }
 
   @POST

@@ -8,8 +8,8 @@ package org.camunda.optimize.rest;
 import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRole;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
@@ -84,7 +84,7 @@ public class CollectionRestServiceRoleIT {
     // when
     final CollectionRoleDto roleDto = new CollectionRoleDto(
       new IdentityDto("kermit", IdentityType.USER),
-      CollectionRole.EDITOR
+      RoleType.EDITOR
     );
     IdDto idDto = addRoleToCollection(collectionId, roleDto);
 
@@ -104,7 +104,7 @@ public class CollectionRestServiceRoleIT {
     final CollectionRoleDto roleDto = new CollectionRoleDto(
       // there is already an entry for the default user who created the collection
       new IdentityDto(DEFAULT_USERNAME, IdentityType.USER),
-      CollectionRole.EDITOR
+      RoleType.EDITOR
     );
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
@@ -124,16 +124,16 @@ public class CollectionRestServiceRoleIT {
 
     // when
     final IdentityDto identityDto = new IdentityDto("kermit", IdentityType.USER);
-    final CollectionRoleDto roleDto = new CollectionRoleDto(identityDto, CollectionRole.EDITOR);
+    final CollectionRoleDto roleDto = new CollectionRoleDto(identityDto, RoleType.EDITOR);
     addRoleToCollection(collectionId, roleDto);
 
-    final CollectionRoleUpdateDto updatedRoleDto = new CollectionRoleUpdateDto(CollectionRole.VIEWER);
+    final CollectionRoleUpdateDto updatedRoleDto = new CollectionRoleUpdateDto(RoleType.VIEWER);
     updateRoleOnCollection(collectionId, roleDto.getId(), updatedRoleDto);
 
     // then
     final SimpleCollectionDefinitionDto collection = getCollection(collectionId);
     assertThat(collection.getData().getRoles().size(), is(2));
-    assertThat(collection.getData().getRoles(), hasItem(new CollectionRoleDto(identityDto, CollectionRole.VIEWER)));
+    assertThat(collection.getData().getRoles(), hasItem(new CollectionRoleDto(identityDto, RoleType.VIEWER)));
   }
 
   @Test
@@ -144,7 +144,7 @@ public class CollectionRestServiceRoleIT {
     final CollectionRoleDto roleEntryDto = expectedCollection.getData().getRoles().get(0);
 
     // when
-    final CollectionRoleUpdateDto updatedRoleDto = new CollectionRoleUpdateDto(CollectionRole.EDITOR);
+    final CollectionRoleUpdateDto updatedRoleDto = new CollectionRoleUpdateDto(RoleType.EDITOR);
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .buildUpdateRoleToCollectionRequest(collectionId, roleEntryDto.getId(), updatedRoleDto)
@@ -164,7 +164,7 @@ public class CollectionRestServiceRoleIT {
     final String notExistingRoleEntryId = "USER:abc";
 
     // when
-    final CollectionRoleUpdateDto updatedRoleDto = new CollectionRoleUpdateDto(CollectionRole.EDITOR);
+    final CollectionRoleUpdateDto updatedRoleDto = new CollectionRoleUpdateDto(RoleType.EDITOR);
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .buildUpdateRoleToCollectionRequest(collectionId, notExistingRoleEntryId, updatedRoleDto)
@@ -183,7 +183,7 @@ public class CollectionRestServiceRoleIT {
 
     // when
     final IdentityDto identityDto = new IdentityDto("kermit", IdentityType.USER);
-    final CollectionRoleDto roleDto = new CollectionRoleDto(identityDto, CollectionRole.EDITOR);
+    final CollectionRoleDto roleDto = new CollectionRoleDto(identityDto, RoleType.EDITOR);
     addRoleToCollection(collectionId, roleDto);
     deleteRoleFromCollection(collectionId, roleDto.getId());
 

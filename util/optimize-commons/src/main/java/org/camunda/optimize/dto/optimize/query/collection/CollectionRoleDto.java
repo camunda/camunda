@@ -8,25 +8,24 @@ package org.camunda.optimize.dto.optimize.query.collection;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-
-import java.util.Optional;
+import org.camunda.optimize.dto.optimize.RoleType;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @FieldNameConstants(asEnum = true)
 public class CollectionRoleDto {
+  @Setter(value = AccessLevel.PROTECTED)
   private String id;
   private IdentityDto identity;
-  private CollectionRole role;
+  private RoleType role;
 
-  public CollectionRoleDto(final IdentityDto identity, final CollectionRole role) {
+  public CollectionRoleDto(final IdentityDto identity, final RoleType role) {
+    this.id = identity.getType().name() + ":" + identity.getId();
     this.identity = identity;
     this.role = role;
   }
 
-  public String getId() {
-    return Optional.ofNullable(id).orElse(identity.getType().name() + ":" + identity.getId());
-  }
 }

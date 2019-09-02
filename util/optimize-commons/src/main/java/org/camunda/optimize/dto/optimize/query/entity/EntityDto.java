@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.ReportType;
+import org.camunda.optimize.dto.optimize.RoleType;
 
 import java.time.OffsetDateTime;
 
@@ -27,17 +28,30 @@ public class EntityDto {
   private EntityData data;
   private Boolean combined;
   private ReportType reportType;
+  private RoleType currentUserRole;
 
   public EntityDto(final String id, final String name, final OffsetDateTime lastModified,
                    final OffsetDateTime created, final String owner, final String lastModifier,
-                   final EntityType entityType, final EntityData data) {
-    this(id, name, lastModified, created, owner, lastModifier, entityType, data, null, null);
+                   final EntityType entityType, final EntityData data, final RoleType currentUserRole) {
+    this(id, name, lastModified, created, owner, lastModifier, entityType, data, null, null, currentUserRole);
   }
 
   public EntityDto(final String id, final String name, final OffsetDateTime lastModified,
                    final OffsetDateTime created, final String owner, final String lastModifier,
                    final EntityType entityType, final Boolean combined,
-                   final ReportType reportType) {
-    this(id, name, lastModified, created, owner, lastModifier, entityType, new EntityData(), combined, reportType);
+                   final ReportType reportType, final RoleType currentUserRole) {
+    this(
+      id,
+      name,
+      lastModified,
+      created,
+      owner,
+      lastModifier,
+      entityType,
+      new EntityData(),
+      combined,
+      reportType,
+      currentUserRole
+    );
   }
 }

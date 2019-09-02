@@ -6,10 +6,9 @@
 package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedSimpleCollectionDefinitionDto;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.es.reader.EntitiesReader;
 import org.springframework.stereotype.Component;
@@ -28,15 +27,18 @@ public class EntitiesService {
   private EntitiesReader entitiesReader;
 
   public List<EntityDto> getAllEntities(String userId) {
-    final List<SimpleCollectionDefinitionDto> collectionDefinitions = collectionService.getAllCollectionDefinitions();
+    final List<AuthorizedSimpleCollectionDefinitionDto> collectionDefinitions =
+      collectionService.getAllAuthorizedCollectionDefinitions(userId);
     final Map<String, Map<EntityType, Long>> collectionEntityCounts = entitiesReader.countEntitiesForCollections(
-      collectionDefinitions
+      collectionDefinitions.stream()
+        .map(AuthorizedSimpleCollectionDefinitionDto::getDefinitionDto)
+        .collect(Collectors.toList())
     );
     final List<EntityDto> privateEntities = entitiesReader.getAllPrivateEntities(userId);
 
     return Stream.concat(
       collectionDefinitions.stream()
-        .map(BaseCollectionDefinitionDto::toEntityDto)
+        .map(AuthorizedSimpleCollectionDefinitionDto::toEntityDto)
         .peek(entityDto -> entityDto.getData().setSubEntityCounts(collectionEntityCounts.get(entityDto.getId()))),
       privateEntities.stream()
     ).sorted(

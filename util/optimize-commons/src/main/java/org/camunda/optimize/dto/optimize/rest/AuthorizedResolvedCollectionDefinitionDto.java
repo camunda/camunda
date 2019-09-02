@@ -3,19 +3,21 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.query.collection;
+package org.camunda.optimize.dto.optimize.rest;
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.RoleType;
+import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 
-@Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@FieldNameConstants(asEnum = true)
-public class CollectionRoleUpdateDto {
-  private RoleType role;
+@Data
+public class AuthorizedResolvedCollectionDefinitionDto implements AuthorizedEntityDto {
+  private RoleType currentUserRole;
+  @JsonUnwrapped
+  private ResolvedCollectionDefinitionDto definitionDto;
 }

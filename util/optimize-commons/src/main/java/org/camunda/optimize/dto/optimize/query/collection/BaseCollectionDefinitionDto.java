@@ -8,6 +8,7 @@ package org.camunda.optimize.dto.optimize.query.collection;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.entity.EntityData;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
@@ -33,7 +34,7 @@ public class BaseCollectionDefinitionDto<DATA_TYPE extends CollectionDataDto> {
   protected String lastModifier;
   protected DATA_TYPE data;
 
-  public EntityDto toEntityDto() {
+  public EntityDto toEntityDto(final RoleType roleType) {
     return new EntityDto(
       getId(),
       getName(),
@@ -42,7 +43,8 @@ public class BaseCollectionDefinitionDto<DATA_TYPE extends CollectionDataDto> {
       getOwner(),
       getLastModifier(),
       EntityType.COLLECTION,
-      getEntityDtoData()
+      getEntityDtoData(),
+      roleType
     );
   }
 

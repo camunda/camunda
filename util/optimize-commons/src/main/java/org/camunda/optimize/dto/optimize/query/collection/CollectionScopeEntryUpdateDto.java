@@ -5,15 +5,17 @@
  */
 package org.camunda.optimize.dto.optimize.query.collection;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Data
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class CollectionScopeEntryUpdateDto {
   private List<String> tenants = new ArrayList<>();
   private List<String> versions;

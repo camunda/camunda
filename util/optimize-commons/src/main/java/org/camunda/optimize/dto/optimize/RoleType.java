@@ -3,17 +3,12 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.engine;
+package org.camunda.optimize.dto.optimize;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
-@Data
-@EqualsAndHashCode(of = {"id"})
-public class GroupDto {
-
-  private String id;
-  private String name;
-  private String type;
-
+public enum RoleType {
+  // note: the order matters here, the order of roles corresponds to more might
+  VIEWER,
+  EDITOR,
+  MANAGER,
+  ;
 }

@@ -47,7 +47,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   private final CollectionService collectionService;
 
   public IdDto createNewDashboardAndReturnId(final String userId, final String collectionId) {
-    collectionService.validateCollectionExists(collectionId);
+    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
     return dashboardWriter.createNewDashboard(userId, collectionId);
   }
 
@@ -75,7 +75,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final DashboardDefinitionDto currDashboardDef = Optional.ofNullable(getDashboardDefinition(dashboardId))
       .orElseThrow(() -> new NotFoundException("Dashboard to copy was not found!"));
 
-    collectionService.validateCollectionExists(collectionId);
+    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
 
     final List<ReportLocationDto> newDashboardReports = new ArrayList<>(currDashboardDef.getReports());
 
