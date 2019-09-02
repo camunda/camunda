@@ -8,6 +8,7 @@ import React, {Component} from 'react';
 import {Table, Button, Icon} from 'components';
 import {loadCommonOutliersVariables, getInstancesDownloadUrl} from './service';
 import {t} from 'translation';
+import './VariablesTable.scss';
 
 export default class VariablesTable extends Component {
   state = {
@@ -29,7 +30,7 @@ export default class VariablesTable extends Component {
     const {id, higherOutlier} = this.props.selectedNode;
 
     return data.map(row => [
-      <>
+      <div className="outliersCount">
         {row.instanceCount}{' '}
         {t(`analysis.outlier.tooltip.instance.label${row.instanceCount !== 1 ? '-plural' : ''}`)}
         <a
@@ -47,7 +48,7 @@ export default class VariablesTable extends Component {
             Instance ID's CSV
           </Button>
         </a>
-      </>,
+      </div>,
       +(row.outlierToAllInstancesRatio * 100).toFixed(2),
       +(row.outlierRatio * 100).toFixed(2),
       row.variableName + '=' + row.variableTerm
@@ -75,7 +76,7 @@ export default class VariablesTable extends Component {
     }
 
     return (
-      <div className="tableContainer">
+      <div className="VariablesTable">
         <Table {...tableData} foot={[]} disablePagination />
       </div>
     );

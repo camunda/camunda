@@ -38,6 +38,11 @@ export default class OutlierDetailsModal extends Component {
               <p className="description">
                 {t('analysis.outlier.tooltipText', {
                   count: higherOutlier.count,
+                  instance: t(
+                    `analysis.outlier.tooltip.instance.label${
+                      higherOutlier.count === 1 ? '' : '-plural'
+                    }`
+                  ),
                   percentage: Math.round(higherOutlier.relation * 100)
                 })}
               </p>

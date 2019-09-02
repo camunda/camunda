@@ -330,11 +330,15 @@
         "tookDuration": "Took a duration of"
       },
       "info": "Heatmap displays the incidence of higher outliers based on duration. Calculated by z-score.",
-      "tooltipText": "{count} instances took {percentage}% longer than average.",
+      "tooltipText": "{count} {instance} took {percentage}% longer than average.",
       "detailsModal": {
         "title": "Outliers of {name} Flow Node",
         "durationChart": "Duration Distribution chart",
         "variablesTable": "Common Significant Variables Table",
+        "axisLabels": {
+          "duration": "Duration",
+          "instanceCount": "Instance Count"
+        },
         "table": {
           "emptyTableMessage": "No significant variable value occurrences found on outlier instances",
           "outliersNumber": "Number of Outlier Instances",

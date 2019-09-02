@@ -10,6 +10,7 @@ import Chart from 'chart.js';
 import {t} from 'translation';
 
 import {formatters} from 'services';
+import './DurationChart.scss';
 const {createDurationFormattingOptions} = formatters;
 
 export default class DurationChart extends React.Component {
@@ -63,7 +64,7 @@ export default class DurationChart extends React.Component {
               },
               scaleLabel: {
                 display: true,
-                labelString: 'Duration',
+                labelString: t('analysis.outlier.detailsModal.axisLabels.duration'),
                 fontStyle: 'bold'
               }
             }
@@ -72,7 +73,7 @@ export default class DurationChart extends React.Component {
             {
               scaleLabel: {
                 display: true,
-                labelString: 'Instance Count',
+                labelString: t('analysis.outlier.detailsModal.axisLabels.instanceCount'),
                 fontStyle: 'bold'
               }
             }
@@ -100,7 +101,7 @@ export default class DurationChart extends React.Component {
 
   render() {
     return (
-      <div className="diagramContainer">
+      <div className="DurationChart">
         <canvas ref={this.storeContainer} />
       </div>
     );

@@ -105,6 +105,11 @@ export default class OutlierAnalysis extends Component {
         <p className="description">
           {t('analysis.outlier.tooltipText', {
             count: nodeData.higherOutlier.count,
+            instance: t(
+              `analysis.outlier.tooltip.instance.label${
+                nodeData.higherOutlier.count === 1 ? '' : '-plural'
+              }`
+            ),
             percentage: Math.round(nodeData.higherOutlier.relation * 100)
           })}
         </p>
@@ -155,7 +160,7 @@ export default class OutlierAnalysis extends Component {
           <OutlierDetailsModal
             onClose={() => this.setState({selectedNode: null})}
             selectedNode={this.state.selectedNode}
-            config={this.state.config}
+            config={config}
           />
         )}
       </div>
