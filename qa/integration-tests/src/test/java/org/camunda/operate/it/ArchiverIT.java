@@ -265,8 +265,8 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
       .source(new SearchSourceBuilder()
         .query(q)
         .size(100));
-    final List<String> idsFromEls = ElasticsearchUtil.scrollFieldToList(request, idFieldName, esClient);
-    assertThat(idsFromEls).as(mainIndexName).isSubsetOf(CollectionUtil.toSafeListOfStrings(ids));
+    final List<Long> idsFromEls = ElasticsearchUtil.scrollFieldToTypedList(request, idFieldName, esClient);
+    assertThat(idsFromEls).as(mainIndexName).isSubsetOf(ids);
   }
 
   private void finishInstances(int count, Instant currentTime, String taskId) {
