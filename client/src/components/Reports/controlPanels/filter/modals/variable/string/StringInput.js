@@ -95,11 +95,11 @@ export default class StringInput extends React.Component {
     this.loadAvailableValues(true);
   };
 
-  setValueFilter = async evt => {
-    const queryIncluded = this.state.valueFilter.slice(0, -1) === evt.target.value;
+  setValueFilter = async valueFilter => {
+    const queryIncluded = this.state.valueFilter.slice(0, -1) === valueFilter;
     this.setState(
       {
-        valueFilter: evt.target.value,
+        valueFilter,
         valuesLoaded: queryIncluded ? this.props.filter.values.length : 0,
         numberOfUnselectedValuesToDisplay: valuesToLoad
       },

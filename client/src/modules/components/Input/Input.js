@@ -6,23 +6,27 @@
 
 import React from 'react';
 import classnames from 'classnames';
+import {Icon} from 'components';
 
 import './Input.scss';
 
-export default React.forwardRef(function Input(props, ref) {
-  const allowedProps = {...props};
-  delete allowedProps.isInvalid;
-
+export default React.forwardRef(function Input({isInvalid, onClear, ...props}, ref) {
   return (
-    <input
-      type="text"
-      {...allowedProps}
-      className={classnames('Input', props.className, {
-        isInvalid: props.isInvalid
-      })}
-      ref={ref}
-    >
-      {props.children}
-    </input>
+    <>
+      <input
+        required={!!onClear}
+        type="text"
+        {...props}
+        className={classnames('Input', props.className, {isInvalid})}
+        ref={ref}
+      >
+        {props.children}
+      </input>
+      {onClear && (
+        <button className="searchClear" onClick={onClear}>
+          <Icon type="clear" />
+        </button>
+      )}
+    </>
   );
 });

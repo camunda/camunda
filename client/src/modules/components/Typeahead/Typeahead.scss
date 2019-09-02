@@ -5,12 +5,16 @@
   position: relative;
   .Input {
     width: 100%;
-    padding-right: 50px;
+    padding-right: 65px;
 
     &::placeholder {
       font-style: italic;
       color: #bbbbbb;
     }
+  }
+
+  .searchClear {
+    right: 50px;
   }
 
   .optionsButton {

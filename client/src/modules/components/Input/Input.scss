@@ -22,6 +22,39 @@ textarea {
   &.isInvalid {
     border: 1px solid $cam-red;
   }
+
+  &:invalid ~ .searchClear {
+    display: none;
+  }
+
+  // remove x clear button in edge browser
+  &::-ms-clear {
+    display: none;
+  }
+}
+
+.searchClear {
+  position: absolute;
+  right: 10px;
+  top: 0;
+  bottom: 0;
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-radius: 100%;
+  color: #6a727e;
+  height: 16px;
+  padding: 0px;
+  margin: auto;
+
+  &:focus {
+    outline: none;
+    border-radius: 100%;
+  }
+
+  &:hover {
+    color: #2c3139;
+  }
 }
 
 input[type='radio'],

@@ -4,45 +4,53 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-// re-enable the tests once https://github.com/airbnb/enzyme/issues/1604 is fixed
+import React from 'react';
+import {shallow} from 'enzyme';
 
-// import React from 'react';
-// import {mount} from 'enzyme';
+import Input from './Input';
 
-// import Input from './Input';
+it('should render without crashing', () => {
+  shallow(<Input />);
+});
 
-// it('should render without crashing', () => {
-//   mount(<Input />);
-// });
+it('should render a type="text" attribute when no other type prop is provided', () => {
+  const node = shallow(<Input />);
 
-// it('should render a type="text" attribute when no other type prop is provided', () => {
-//   const node = mount(<Input />);
+  expect(node.find('input')).toMatchSelector('input[type="text"]');
+});
 
-//   expect(node.find('input')).toMatchSelector('input[type="text"]');
-// });
+it('should render a type attribute provided as a property', () => {
+  const node = shallow(<Input type="password" />);
 
-// it('should render a type attribute provided as a property', () => {
-//   const node = mount(<Input type="password" />);
+  expect(node.find('input')).toMatchSelector('input[type="password"]');
+});
 
-//   expect(node.find('input')).toMatchSelector('input[type="password"]');
-// });
+it('should render a disabled attribute provided as a property', () => {
+  const node = shallow(<Input disabled="disabled" />);
 
-// it('should render a disabled attribute provided as a property', () => {
-//   const node = mount(<Input disabled="disabled" />);
+  expect(node.find('input')).toMatchSelector('input[disabled="disabled"]');
+});
 
-//   expect(node.find('input')).toMatchSelector('input[disabled="disabled"]');
-// });
+it('should merge and render additonal classNames provided as a property', () => {
+  const node = shallow(<Input className="foo" />);
 
-// it('should merge and render additonal classNames provided as a property', () => {
-//   const node = mount(<Input className="foo" />);
+  expect(node.find('input')).toMatchSelector('.Input.foo');
+});
 
-//   expect(node.find('input')).toMatchSelector('.Input.foo');
-// });
+it('should translate the isInvalid props to is-invalid className', () => {
+  const node = shallow(<Input className="foo" isInvalid />);
 
-// it('should translate the isInvalid props to is-invalid className', () => {
-//   const node = mount(<Input className="foo" isInvalid />);
+  expect(node.find('input')).toHaveClassName('isInvalid');
+});
 
-//   expect(node.find('input')).toHaveClassName('is-invalid');
-// });
+it('should show a clear button when adding onClear and the input is not empty', () => {
+  const node = shallow(<Input value="not empty" onClear={jest.fn()} />);
+  expect(node.find('.searchClear')).toExist();
+});
 
-it('has a test file', () => {});
+it('should invoke onClear when clear button is clicked', () => {
+  const spy = jest.fn();
+  const node = shallow(<Input value="not empty" onClear={spy} />);
+  node.find('.searchClear').simulate('click');
+  expect(spy).toHaveBeenCalled();
+});

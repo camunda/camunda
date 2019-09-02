@@ -87,8 +87,8 @@ export default class Typeahead extends React.Component {
     });
   };
 
-  updateQuery = async evt => {
-    this.setState({query: evt.target.value});
+  updateQuery = async query => {
+    this.setState({query});
     this.showOptions();
     this.updateValues();
   };
@@ -241,7 +241,7 @@ export default class Typeahead extends React.Component {
         <Input
           className={classnames({isInvalid: this.props.isInvalid})}
           value={hasNoValues ? noValuesMessage : query}
-          onChange={this.updateQuery}
+          onChange={({target: {value}}) => this.updateQuery(value)}
           onClick={this.showOptions}
           onFocus={this.showOptions}
           onKeyDown={this.handleKeyPress}
@@ -249,6 +249,7 @@ export default class Typeahead extends React.Component {
           placeholder={this.props.placeholder}
           ref={this.inputRef}
           disabled={this.props.disabled || hasNoValues}
+          onClear={() => this.updateQuery('')}
         />
         <Button
           className="optionsButton"

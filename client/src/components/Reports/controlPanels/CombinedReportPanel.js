@@ -197,7 +197,7 @@ export default class CombinedReportPanel extends React.Component {
         <TypeaheadMultipleSelection
           availableValues={combinableReportList}
           selectedValues={selectedReports}
-          setFilter={evt => this.setState({searchQuery: evt.target.value})}
+          setFilter={searchQuery => this.setState({searchQuery})}
           toggleValue={this.update}
           labels={{
             available: t('report.combined.multiSelect.available'),

@@ -1,87 +1,91 @@
 @import 'shared-styles/shared-styles.scss';
 
-.TypeaheadMultipleSelection__valueList {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  text-align: center;
-  width: 75%;
-  input[type='checkbox'] {
-    margin-right: 0.75em;
-  }
-}
-
-.placeholder {
-  background: #f4f4f4;
-  height: 30px;
-}
-
-.endIndicator {
-  height: 20px;
-  display: block;
-}
-
-.TypeaheadMultipleSelection__values-sublist {
-  min-width: 220px;
-  word-break: break-all;
-}
-
-.TypeaheadMultipleSelection__no-items {
-  margin-right: 20px;
-}
-
-.TypeaheadMultipleSelection__input {
-  margin-bottom: 10px;
-  width: 50%;
-}
-
-.TypeaheadMultipleSelection__labeled-input {
-  display: flex;
-  align-items: baseline;
-  width: 75%;
-  justify-content: flex-end;
-}
-
-.TypeaheadMultipleSelection__labeled-valueList {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
 .TypeaheadMultipleSelection {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
   width: 100%;
 
-  &[disabled] {
-    color: graytext;
+  .TypeaheadMultipleSelection__valueList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    width: 75%;
+    input[type='checkbox'] {
+      margin-right: 0.75em;
+    }
   }
-}
 
-.TypeaheadMultipleSelection__load-more-button {
-  width: 100%;
-}
+  .placeholder {
+    background: #f4f4f4;
+    height: 30px;
+  }
 
-.TypeaheadMultipleSelection__valueListItem {
-  margin-bottom: 8px;
-  display: flex;
-  position: relative;
+  .endIndicator {
+    height: 20px;
+    display: block;
+  }
 
-  &.draggable {
-    padding-left: 20px;
+  .TypeaheadMultipleSelection__values-sublist {
+    min-width: 220px;
+    word-break: break-all;
+  }
 
-    &:before {
-      content: '.';
-      position: absolute;
-      left: 5px;
-      top: 0px;
-      font-size: 20px;
-      line-height: 10px;
-      color: #707070;
-      text-shadow: 0 5px #707070, 0 10px #707070, 5px 0 #707070, 5px 5px #707070, 5px 10px #707070;
+  .TypeaheadMultipleSelection__no-items {
+    margin-right: 20px;
+  }
+
+  .TypeaheadMultipleSelection__input {
+    width: 50%;
+  }
+
+  .TypeaheadMultipleSelection__labeled-input {
+    display: flex;
+    align-items: baseline;
+    width: 75%;
+    justify-content: flex-end;
+    position: relative;
+  }
+
+  .TypeaheadMultipleSelection__labeled-valueList {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .TypeaheadMultipleSelection {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+
+    &[disabled] {
+      color: graytext;
+    }
+  }
+
+  .TypeaheadMultipleSelection__load-more-button {
+    width: 100%;
+  }
+
+  .TypeaheadMultipleSelection__valueListItem {
+    margin-bottom: 8px;
+    display: flex;
+    position: relative;
+
+    &.draggable {
+      padding-left: 20px;
+
+      &:before {
+        content: '.';
+        position: absolute;
+        left: 5px;
+        top: 0px;
+        font-size: 20px;
+        line-height: 10px;
+        color: #707070;
+        text-shadow: 0 5px #707070, 0 10px #707070, 5px 0 #707070, 5px 5px #707070, 5px 10px #707070;
+      }
     }
   }
 }

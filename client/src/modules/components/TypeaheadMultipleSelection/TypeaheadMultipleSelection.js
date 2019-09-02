@@ -145,6 +145,11 @@ export default class TypeaheadMultipleSelection extends React.Component {
   toggleAvailable = ({target: {value, checked}}) =>
     this.props.toggleValue(this.props.availableValues[value], checked);
 
+  setFilter = val => {
+    this.setState({searchQuery: val});
+    this.props.setFilter(val);
+  };
+
   render() {
     const {availableValues, selectedValues, loading} = this.props;
     const input = (
@@ -152,10 +157,9 @@ export default class TypeaheadMultipleSelection extends React.Component {
         <Input
           className="TypeaheadMultipleSelection__input"
           placeholder={this.props.labels.search || t('common.multiSelect.search')}
-          onChange={e => {
-            this.setState({searchQuery: e.target.value});
-            return this.props.setFilter(e);
-          }}
+          value={this.state.searchQuery}
+          onChange={e => this.setFilter(e.target.value)}
+          onClear={() => this.setFilter('')}
           disabled={this.props.disabled}
         />
       </div>

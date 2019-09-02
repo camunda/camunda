@@ -109,7 +109,7 @@ it('should request the values filtered by filter entered in the input', () => {
       toggleValue={() => {}}
     />
   );
-  setFilter.mockImplementation(({target: {value}}) =>
+  setFilter.mockImplementation(value =>
     node.setProps({
       availableValues: allValues.filter(v => v.slice(0, value.length) === value)
     })
