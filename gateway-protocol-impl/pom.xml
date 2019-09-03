@@ -69,7 +69,7 @@
             <goals>
               <goal>unpack-dependencies</goal>
             </goals>
-            <phase>generate-sources</phase>
+            <phase>initialize</phase>
             <configuration>
               <includeArtifactIds>zeebe-gateway-protocol</includeArtifactIds>
               <outputDirectory>${proto.dir}</outputDirectory>
