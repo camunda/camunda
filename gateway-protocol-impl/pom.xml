@@ -80,9 +80,19 @@
       <plugin>
         <groupId>org.xolstice.maven.plugins</groupId>
         <artifactId>protobuf-maven-plugin</artifactId>
-        <configuration>
-          <protoSourceRoot>${proto.dir}</protoSourceRoot>
-        </configuration>
+        <executions>
+          <execution>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+              <goal>compile-custom</goal>
+              <goal>test-compile</goal>
+            </goals>
+            <configuration>
+              <protoSourceRoot>${proto.dir}</protoSourceRoot>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
