@@ -34,7 +34,6 @@
     legend {
       padding: 10px 0;
       font-weight: bold;
-      font-size: 0.875em;
       margin-top: 0;
     }
 
@@ -162,6 +161,8 @@
   }
 
   &.compact {
+    font-size: 0.875em;
+
     .formTitle {
       font-weight: bold;
     }
