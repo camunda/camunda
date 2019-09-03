@@ -32,7 +32,7 @@ spec:
               resource: limits.cpu
         - name: JAVA_TOOL_OPTIONS
           value: |
-            -XX:+UnlockExperimentalVMOptions
+            -XX:+UseContainerSupport
       resources:
         limits:
           cpu: 2
