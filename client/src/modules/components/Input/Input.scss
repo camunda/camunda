@@ -23,7 +23,7 @@ textarea {
     border: 1px solid $cam-red;
   }
 
-  &:invalid ~ .searchClear {
+  &:not(:valid) ~ .searchClear {
     display: none;
   }
 
