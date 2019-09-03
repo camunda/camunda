@@ -70,7 +70,8 @@ public class MultiInstanceActivityTransformer implements ModelElementTransformer
       multiInstanceBody.bindLifecycleState(
           WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.MULTI_INSTANCE_EVENT_OCCURRED);
 
-      // TODO (saig0) - #2855: attach boundary events to the multi-instance body
+      // attach boundary events to the multi-instance body
+      innerActivity.getBoundaryEvents().forEach(multiInstanceBody::attach);
       innerActivity.getEvents().removeAll(innerActivity.getBoundaryEvents());
       innerActivity.getInterruptingElementIds().clear();
 
