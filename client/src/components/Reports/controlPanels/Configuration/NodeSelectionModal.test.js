@@ -15,7 +15,7 @@ const report = {
     data: [{key: 'foo', value: 123}, {key: 'bar', value: 5}]
   },
   data: {
-    configuration: {color: 'testColor', xml: 'fooXml'},
+    configuration: {color: 'testColor', xml: 'fooXml', hiddenNodes: {active: false, keys: []}},
     visualization: 'line',
     groupBy: {
       type: '',
@@ -81,7 +81,7 @@ it('should invoke updateConfiguration when applying the filter', () => {
     .simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
-    hiddenNodes: {$set: [report.result.data[1].key]}
+    hiddenNodes: {keys: {$set: [report.result.data[1].key]}}
   });
 });
 

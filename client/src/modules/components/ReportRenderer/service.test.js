@@ -35,7 +35,7 @@ it('should filter hidden flow nodes', () => {
         data: [{key: 'foo', value: 123}, {key: 'bar', value: 5}]
       },
       data: {
-        configuration: {xml: 'fooXml', hiddenNodes: ['foo']},
+        configuration: {xml: 'fooXml', hiddenNodes: {active: true, keys: ['foo']}},
         visualization: 'line',
         groupBy: {
           type: 'flowNodes',

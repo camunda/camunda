@@ -74,7 +74,10 @@ export default class Configuration extends React.Component {
         xLabel: '',
         yLabel: '',
         color: ColorPicker.dark.steelBlue,
-        hiddenNodes: []
+        hiddenNodes: {
+          active: false,
+          keys: []
+        }
       }),
       true
     );

@@ -191,10 +191,10 @@
         "completed": "Abgeschlossen"
       },
       "visibleNodes": {
-        "legend": "Ausgewählte Knoten, die angezeigt werden sollen",
-        "btn": "Prozessknoten anzeigen....",
+        "legend": "Anzuzeigende Prozessknoten anpassen",
+        "btn": "Prozessknoten auswählen....",
         "modal": {
-          "title": "Prozessknoten anzeigen",
+          "title": "Prozessknoten auswählen",
           "description": "Ausgewählte Knoten erscheinen in der Visualisierung."
         }
       },

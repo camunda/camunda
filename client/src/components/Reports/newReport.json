@@ -7,7 +7,10 @@
         "aggregationType": "avg",
         "flowNodeExecutionState": "all",
         "userTaskDurationTime": "total",
-        "hiddenNodes": [],
+        "hiddenNodes": {
+          "active": false,
+          "keys": []
+        },
         "showInstanceCount": false,
         "pointMarkers": true,
         "precision": null,
@@ -116,7 +119,10 @@
         "aggregationType": "avg",
         "flowNodeExecutionState": "all",
         "userTaskDurationTime": "total",
-        "hiddenNodes": [],
+        "hiddenNodes": {
+          "active": false,
+          "keys": []
+        },
         "showInstanceCount": false,
         "pointMarkers": true,
         "precision": null,

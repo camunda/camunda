@@ -44,7 +44,12 @@ export function processResult({data, result}) {
 
 function filterResult(result, {groupBy: {type}, configuration: {hiddenNodes}}) {
   if (type === 'flowNodes') {
-    return {...result, data: result.data.filter(({key}) => !(hiddenNodes || []).includes(key))};
+    return {
+      ...result,
+      data: result.data.filter(
+        ({key}) => !(hiddenNodes.active ? hiddenNodes.keys : []).includes(key)
+      )
+    };
   }
 
   return result;

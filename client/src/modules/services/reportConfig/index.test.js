@@ -16,7 +16,7 @@ describe('process update', () => {
       {report: {data: {view: {entity: 'flowNode', property: 'duration'}}}}
     );
 
-    expect(changes.configuration.hiddenNodes).toEqual({$set: []});
+    expect(changes.configuration.hiddenNodes).toEqual({$set: {active: false, keys: []}});
   });
   it('should not reset hidden nodes configuration when switching between different flow node views', () => {
     const changes = config.process.update(

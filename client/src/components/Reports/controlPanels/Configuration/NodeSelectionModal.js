@@ -15,7 +15,7 @@ export default class NodeSelectionModal extends Component {
   constructor(props) {
     super(props);
 
-    const hiddenNodes = props.report.data.configuration.hiddenNodes || [];
+    const hiddenNodes = props.report.data.configuration.hiddenNodes.keys || [];
 
     const visibleFlowNodes = getFlowNodesKeys(props.report).filter(
       key => !hiddenNodes.includes(key)
@@ -40,7 +40,7 @@ export default class NodeSelectionModal extends Component {
     const selected = this.state.selectedNodes;
     const hiddenNodes = getFlowNodesKeys(this.props.report).filter(key => !selected.includes(key));
 
-    this.props.onChange({hiddenNodes: {$set: hiddenNodes}});
+    this.props.onChange({hiddenNodes: {keys: {$set: hiddenNodes}}});
     this.props.onClose();
   };
 

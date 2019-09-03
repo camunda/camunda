@@ -191,10 +191,10 @@
         "completed": "Completed"
       },
       "visibleNodes": {
-        "legend": "Selected nodes to display",
-        "btn": "Show Flow Nodes...",
+        "legend": "Customize Node Display",
+        "btn": "Select Flow Nodes...",
         "modal": {
-          "title": "Show Flow Nodes",
+          "title": "Select Flow Nodes",
           "description": "Selected nodes appear in the visualization."
         }
       },

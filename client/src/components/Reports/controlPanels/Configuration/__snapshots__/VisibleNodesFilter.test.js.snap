@@ -6,12 +6,17 @@ exports[`should render component 1`] = `
 >
   <fieldset>
     <legend>
-      Selected nodes to display
+      <Switch
+        checked={false}
+        label="Customize Node Display"
+        onChange={[Function]}
+      />
     </legend>
     <ForwardRef(Button)
+      disabled={true}
       onClick={[Function]}
     >
-      Show Flow Nodes...
+      Select Flow Nodes...
     </ForwardRef(Button)>
   </fieldset>
 </div>

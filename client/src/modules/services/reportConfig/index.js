@@ -31,7 +31,7 @@ config.process.update = (type, data, props) => {
       props.report.data.view &&
       props.report.data.view.entity !== 'userTask'
     ) {
-      changes.configuration.hiddenNodes = {$set: []};
+      changes.configuration.hiddenNodes = {$set: {active: false, keys: []}};
     }
   }
 

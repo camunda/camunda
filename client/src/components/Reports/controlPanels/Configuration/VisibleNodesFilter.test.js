@@ -15,7 +15,7 @@ const report = {
     data: [{key: 'foo', value: 123}, {key: 'bar', value: 5}]
   },
   data: {
-    configuration: {color: 'testColor', xml: 'fooXml'},
+    configuration: {color: 'testColor', xml: 'fooXml', hiddenNodes: {active: false, keys: ['foo']}},
     visualization: 'line',
     groupBy: {
       type: 'flowNodes',
@@ -48,4 +48,15 @@ it('should open NodeSelectionModal on show Flow Nodes button click', () => {
   node.find(Button).simulate('click');
 
   expect(node.find('NodeSelectionModal')).toExist();
+});
+
+it('Should invoke onChange when enabling the activation switch', () => {
+  const spy = jest.fn();
+  const node = shallow(<VisibleNodesFilter report={report} onChange={spy} />);
+
+  expect(node.find(Button).props().disabled).toBe(true);
+
+  node.find('Switch').simulate('change', {target: {checked: true}});
+
+  expect(spy).toHaveBeenCalledWith({hiddenNodes: {active: {$set: true}}});
 });
