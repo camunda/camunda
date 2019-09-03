@@ -15,7 +15,9 @@ export async function login(t) {
 }
 
 export async function createNewReport(t) {
-  await t.click(Selector('a').withText('Create Process Report'));
+  await t.click('.CreateNewButton');
+  await t.click(Selector('.Submenu').withText('New Report'));
+  await t.click(Selector('a').withText('Process Report'));
 }
 
 export async function selectDefinition(t, name, version = 'Specific version') {
@@ -66,7 +68,8 @@ export async function gotoOverview(t) {
 }
 
 export async function createNewDashboard(t) {
-  await t.click(Selector('a').withText('Create Dashboard'));
+  await t.click('.CreateNewButton');
+  await t.click(Selector('a').withText('New Dashboard'));
 }
 
 export async function addReportToDashboard(t, name) {

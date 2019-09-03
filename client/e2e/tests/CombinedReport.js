@@ -104,6 +104,7 @@ test('combine two single table reports', async t => {
 test('reorder table reports', async t => {
   const combinedChartReport = Combined.report('Combined Table Report');
   await t.hover(combinedChartReport);
+  await t.click(Homepage.contextMenu(combinedChartReport));
   await t.click(Combined.editButton(combinedChartReport));
 
   await t.dragToElement(Combined.singleReport('Table Report 1'), Combined.dragEndIndicator);
@@ -154,6 +155,7 @@ test('combine two single chart reports', async t => {
 test('change the color of one of the report in a combined chart report', async t => {
   const combinedChartReport = Combined.report('Combined Chart Report');
   await t.hover(combinedChartReport);
+  await t.click(Homepage.contextMenu(combinedChartReport));
   await t.click(Combined.editButton(combinedChartReport));
 
   await t.click(Combined.reportColorPopover('Chart Report 1'));
@@ -168,6 +170,7 @@ test('change the color of one of the report in a combined chart report', async t
 test('open the configuration popover and add a goal line', async t => {
   const combinedChartReport = Combined.report('Combined Chart Report');
   await t.hover(combinedChartReport);
+  await t.click(Homepage.contextMenu(combinedChartReport));
   await t.click(Combined.editButton(combinedChartReport));
   await t.click(Combined.configurationButton);
   await t.click(Combined.goalSwitch);

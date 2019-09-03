@@ -16,6 +16,11 @@
     text-align: center;
     font-size: 12px;
     color: #9b9b9b;
+
+    .Icon {
+      min-width: 14px;
+      min-height: 14px;
+    }
   }
 
   .DropdownOption:hover {
@@ -46,11 +51,76 @@
   }
 
   .ListItem {
+    position: relative;
+
     &.report .indicator {
       background-color: #00acac;
     }
     &.dashboard .indicator {
       background-color: #0565b2;
+    }
+
+    .contextMenu {
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 100%;
+      width: 50px;
+      text-align: right;
+      visibility: hidden;
+      background-color: white;
+      border-radius: 4px;
+
+      .Dropdown {
+        width: 40px;
+        height: 100%;
+
+        .activateButton {
+          width: 40px;
+          padding: 0 30px 0 10px;
+          height: 100%;
+          background-color: white;
+          border: none;
+        }
+
+        .menu {
+          top: 10px;
+          left: 30px !important; // the calculateMenuStyle method of the Dropdown sets inline styles
+        }
+
+        .DropdownOption {
+          padding-left: 10px;
+
+          .Icon {
+            width: 14px;
+            height: 14px;
+            margin-right: 8px;
+          }
+        }
+
+        &.is-open {
+          visibility: visible;
+
+          .activateButton {
+            visibility: visible;
+          }
+        }
+      }
+
+      .downIcon {
+        display: none;
+      }
+
+      .Icon {
+        width: 24px;
+        height: 24px;
+      }
+    }
+
+    &:hover {
+      .contextMenu {
+        visibility: visible;
+      }
     }
   }
 

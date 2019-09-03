@@ -55,6 +55,35 @@ exports[`should match snapshot 1`] = `
           2 User Groups, 5 Users
         </ListItemSection>
       </Link>
+      <div
+        className="contextMenu"
+      >
+        <Dropdown
+          label={
+            <Icon
+              size="24px"
+              type="overflow-menu-vertical"
+            />
+          }
+        >
+          <ForwardRef(DropdownOption)
+            link="/collection/aCollectionId/edit"
+          >
+            <Icon
+              type="edit"
+            />
+            Edit
+          </ForwardRef(DropdownOption)>
+          <ForwardRef(DropdownOption)
+            onClick={[Function]}
+          >
+            <Icon
+              type="delete"
+            />
+            Delete
+          </ForwardRef(DropdownOption)>
+        </Dropdown>
+      </div>
     </ListItem>
     <ListItem
       className="dashboard"
@@ -96,6 +125,35 @@ exports[`should match snapshot 1`] = `
           className="users"
         />
       </Link>
+      <div
+        className="contextMenu"
+      >
+        <Dropdown
+          label={
+            <Icon
+              size="24px"
+              type="overflow-menu-vertical"
+            />
+          }
+        >
+          <ForwardRef(DropdownOption)
+            link="/dashboard/aDashboardId/edit"
+          >
+            <Icon
+              type="edit"
+            />
+            Edit
+          </ForwardRef(DropdownOption)>
+          <ForwardRef(DropdownOption)
+            onClick={[Function]}
+          >
+            <Icon
+              type="delete"
+            />
+            Delete
+          </ForwardRef(DropdownOption)>
+        </Dropdown>
+      </div>
     </ListItem>
     <ListItem
       className="report"
@@ -135,12 +193,59 @@ exports[`should match snapshot 1`] = `
           className="users"
         />
       </Link>
+      <div
+        className="contextMenu"
+      >
+        <Dropdown
+          label={
+            <Icon
+              size="24px"
+              type="overflow-menu-vertical"
+            />
+          }
+        >
+          <ForwardRef(DropdownOption)
+            link="/report/aReportId/edit"
+          >
+            <Icon
+              type="edit"
+            />
+            Edit
+          </ForwardRef(DropdownOption)>
+          <ForwardRef(DropdownOption)
+            onClick={[Function]}
+          >
+            <Icon
+              type="delete"
+            />
+            Delete
+          </ForwardRef(DropdownOption)>
+        </Dropdown>
+      </div>
     </ListItem>
   </ul>
   <div
     className="data-hint"
   >
+    <Icon
+      size="14"
+      type="hint"
+    />
+     
     Do you miss any data? The last update introduced user permissions. Ask your administrator for access rights.
   </div>
+  <ConfirmationModal
+    conflict={
+      Object {
+        "items": null,
+        "type": "delete",
+      }
+    }
+    entityName={null}
+    loading={true}
+    onClose={[Function]}
+    onConfirm={[Function]}
+    open={null}
+  />
 </div>
 `;

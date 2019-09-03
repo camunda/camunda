@@ -9,6 +9,7 @@ import config from '../config';
 import * as u from '../utils';
 
 import * as e from './ProcessReport.elements.js';
+import * as Homepage from './Homepage.elements.js';
 
 fixture('Process Report')
   .page(config.endpoint)
@@ -31,6 +32,7 @@ test('create and name a report', async t => {
 
 test('version selection', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await u.selectView(t, 'Process Instance', 'Count');
@@ -56,6 +58,7 @@ test('version selection', async t => {
 
 test('sort table columns', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await t.click(e.tableHeader(4));
@@ -81,6 +84,7 @@ test('sort table columns', async t => {
 
 test('exclude raw data columns', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await t.click(e.configurationButton);
@@ -92,6 +96,7 @@ test('exclude raw data columns', async t => {
 
 test('cancel changes', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
   await t.typeText(e.nameEditField, 'Another new Name', {replace: true});
 
@@ -119,6 +124,7 @@ test('sharing', async t => {
 
 test('update definition', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await u.selectDefinition(t, 'Lead Qualification');
@@ -129,6 +135,7 @@ test('update definition', async t => {
 
 test('should only enable valid combinations for process instance count grouped by none', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
   await u.selectView(t, 'Process Instance', 'Count');
 
@@ -155,6 +162,7 @@ test('should only enable valid combinations for process instance count grouped b
 
 test('Limit the precsion in number report', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await u.selectView(t, 'Process Instance', 'Duration');
@@ -168,6 +176,7 @@ test('Limit the precsion in number report', async t => {
 
 test('Disable absolute and relative values for table reports', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await u.selectView(t, 'Process Instance', 'Count');
@@ -185,6 +194,7 @@ test('Disable absolute and relative values for table reports', async t => {
 
 test('select process instance count grouped by end date', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await u.selectDefinition(t, 'Lead Qualification');
@@ -208,6 +218,7 @@ test('select process instance count grouped by end date', async t => {
 
 test('select process instance count grouped by variable', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await u.selectView(t, 'Process Instance', 'Count');
@@ -231,6 +242,7 @@ test('select process instance count grouped by variable', async t => {
 
 test('should only enable valid combinations for Flow Node Count', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await u.selectView(t, 'Flow Node', 'Count');
@@ -250,6 +262,7 @@ test('should only enable valid combinations for Flow Node Count', async t => {
 
 test('select which flow nodes to show from the configuration', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await u.selectDefinition(t, 'Lead Qualification');
@@ -271,6 +284,7 @@ test('select which flow nodes to show from the configuration', async t => {
 
 test('select to show only running or completed nodes', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await t.click(e.configurationButton);
@@ -285,6 +299,7 @@ test('select to show only running or completed nodes', async t => {
 
 test('bar/line chart configuration', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await u.selectVisualization(t, 'Line Chart');
@@ -306,6 +321,7 @@ test('bar/line chart configuration', async t => {
 
 test('different visualizations', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await u.selectDefinition(t, 'Lead Qualification');
@@ -333,6 +349,7 @@ test('different visualizations', async t => {
 
 test('aggregators and reset to default', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await u.selectDefinition(t, 'Lead Qualification');
@@ -361,6 +378,7 @@ test('aggregators and reset to default', async t => {
 
 test('progress bar', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await t.click(e.configurationButton);
@@ -372,6 +390,7 @@ test('progress bar', async t => {
 
 test('heatmap target values', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await u.selectView(t, 'Flow Node', 'Duration');
@@ -400,6 +419,7 @@ test('heatmap target values', async t => {
 
 test('always show tooltips', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await t.expect(e.tooltip.exists).notOk();
@@ -412,6 +432,7 @@ test('always show tooltips', async t => {
 
 test('should only enable valid combinations for user task', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
   await u.selectView(t, 'User Task', 'Count');
 
@@ -447,6 +468,7 @@ test('should only enable valid combinations for user task', async t => {
 
 test('should be able to distribute candidate group by user task', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await u.selectGroupby(t, 'Candidate Group');
@@ -477,6 +499,7 @@ test('should be able to distribute candidate group by user task', async t => {
 
 test('should be able to select how the time of the user task is calculated', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await t.click(e.configurationButton);
@@ -499,6 +522,7 @@ test('should be able to select how the time of the user task is calculated', asy
 
 test('show process instance count', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await t.click(e.configurationButton);
@@ -510,6 +534,7 @@ test('show process instance count', async t => {
 
 test('process parts', async t => {
   await t.hover(e.report);
+  await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
   await u.selectView(t, 'Process Instance', 'Duration');

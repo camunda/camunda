@@ -6,8 +6,8 @@
 
 import {Selector} from 'testcafe';
 
-export const dashboard = Selector('.DashboardItem');
-export const editButton = Selector('a[title="Edit Dashboard"]');
+export const dashboard = Selector('.ListItem.dashboard');
+export const editButton = Selector('.DropdownOption').withText('Edit');
 export const reportDeleteButton = Selector('.DashboardObject .DeleteButton');
 export const report = Selector('.ReportRenderer');
 export const nameEditField = Selector('.EntityNameForm .name-input');

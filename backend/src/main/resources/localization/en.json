@@ -43,7 +43,9 @@
       "decision": "Decision Report",
       "combined": "Combined Report",
       "unknown": "Unknown Entity"
-    }
+    },
+    "data-hint": "Do you miss any data? The last update introduced user permissions. Ask your administrator for access rights.",
+    "empty": "There are no items created yet"
   },
   "report": {
     "label": "Report",

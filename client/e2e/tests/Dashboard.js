@@ -9,6 +9,7 @@ import config from '../config';
 import * as u from '../utils';
 
 import * as e from './Dashboard.elements.js';
+import * as Homepage from './Homepage.elements.js';
 
 fixture('Dashboard')
   .page(config.endpoint)
@@ -32,6 +33,7 @@ test('create a report and add it to the Dashboard', async t => {
 
 test('renaming a dashboard', async t => {
   await t.hover(e.dashboard);
+  await t.click(Homepage.contextMenu(e.dashboard));
   await t.click(e.editButton);
   await t.typeText(e.nameEditField, 'New Name', {replace: true});
 
@@ -42,6 +44,7 @@ test('renaming a dashboard', async t => {
 
 test('cancel changes', async t => {
   await t.hover(e.dashboard);
+  await t.click(Homepage.contextMenu(e.dashboard));
   await t.click(e.editButton);
   await t.typeText(e.nameEditField, 'Another new Name', {replace: true});
 
@@ -82,6 +85,7 @@ test('sharing', async t => {
 
 test('remove a report from a dashboard', async t => {
   await t.hover(e.dashboard);
+  await t.click(Homepage.contextMenu(e.dashboard));
   await t.click(e.editButton);
   await t.click(e.reportDeleteButton);
   await u.save(t);
@@ -91,6 +95,7 @@ test('remove a report from a dashboard', async t => {
 
 test('external datasources', async t => {
   await t.hover(e.dashboard);
+  await t.click(Homepage.contextMenu(e.dashboard));
   await t.click(e.editButton);
 
   await t.click(e.addButton);

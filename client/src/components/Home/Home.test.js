@@ -7,10 +7,22 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {Dropdown} from 'components';
+import {checkDeleteConflict, deleteEntity} from 'services';
+
 import HomeWithErrorHandling from './Home';
 import {loadEntities} from './service';
 
 const Home = HomeWithErrorHandling.WrappedComponent;
+
+jest.mock('services', () => {
+  const rest = jest.requireActual('services');
+  return {
+    ...rest,
+    checkDeleteConflict: jest.fn().mockReturnValue([]),
+    deleteEntity: jest.fn()
+  };
+});
 
 jest.mock('./service', () => ({
   loadEntities: jest.fn().mockReturnValue([
@@ -90,4 +102,40 @@ it('should show an empty message if no entities exist', () => {
   const node = shallow(<Home {...props} />);
 
   expect(node.find('.empty')).toExist();
+});
+
+it('should show a confirm delete modal when clicking delete in context menu', () => {
+  const node = shallow(<Home {...props} />);
+
+  node
+    .find(Dropdown.Option)
+    .last()
+    .simulate('click');
+
+  expect(node.find('ConfirmationModal').prop('open')).toBeTruthy();
+});
+
+it('should check delete conflicts', () => {
+  const node = shallow(<Home {...props} />);
+
+  node
+    .find(Dropdown.Option)
+    .last()
+    .simulate('click');
+
+  expect(checkDeleteConflict).toHaveBeenCalledWith('aReportId', 'report');
+});
+
+it('should perform a delete and hide the modal afterwards', () => {
+  const node = shallow(<Home {...props} />);
+
+  node
+    .find(Dropdown.Option)
+    .last()
+    .simulate('click');
+
+  node.find('ConfirmationModal').prop('onConfirm')();
+
+  expect(deleteEntity).toHaveBeenCalledWith('report', 'aReportId');
+  expect(node.find('ConfirmationModal').prop('open')).toBeFalsy();
 });

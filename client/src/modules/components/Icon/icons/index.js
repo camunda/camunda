@@ -36,6 +36,7 @@ import {ReactComponent as checkLarge} from './check-large.svg';
 import {ReactComponent as collection} from './collection.svg';
 import {ReactComponent as search} from './search.svg';
 import {ReactComponent as clear} from './clear.svg';
+import {ReactComponent as hint} from './hint.svg';
 
 const icons = {
   autorefresh,
@@ -51,6 +52,7 @@ const icons = {
   close,
   stop,
   link,
+  hint,
   embed,
   save,
   'overflow-menu-vertical': overflowMenuVertical,

@@ -10,8 +10,9 @@ import {Link} from 'react-router-dom';
 
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
-import {LoadingIndicator, Icon} from 'components';
+import {LoadingIndicator, Icon, Dropdown, ConfirmationModal} from 'components';
 import {addNotification} from 'notifications';
+import {checkDeleteConflict, deleteEntity} from 'services';
 
 import CreateNewButton from './CreateNewButton';
 import ListItem from './ListItem';
@@ -27,29 +28,68 @@ import './Home.scss';
 export default withErrorHandling(
   class Home extends React.Component {
     state = {
-      entities: null
+      entities: null,
+      deleting: null,
+      conflictedItems: null,
+      deleteInProgress: false
     };
 
     componentDidMount() {
+      this.loadList();
+    }
+
+    loadList = () => {
       this.props.mightFail(
         loadEntities(),
         entities => this.setState({entities}),
-        async error => {
-          let text = error;
-
-          if (typeof error.json === 'function') {
-            text = (await error.json()).errorMessage;
-          } else if (error.message) {
-            text = error.message;
-          }
-
-          addNotification({type: 'error', text});
+        error => {
+          showError(error);
           this.setState({entities: []});
         }
       );
-    }
+    };
+
+    confirmDelete = entity => {
+      const {entityType, id} = entity;
+      this.setState({deleting: entity});
+      if (entityType === 'report') {
+        this.props.mightFail(
+          checkDeleteConflict(id, entityType),
+          ({conflictedItems}) => {
+            this.setState({conflictedItems});
+          },
+          error => {
+            showError(error);
+            this.setState({conflictedItems: []});
+          }
+        );
+      } else {
+        this.setState({conflictedItems: []});
+      }
+    };
+
+    resetDelete = () =>
+      this.setState({deleting: null, conflictedItems: null, deleteInProgress: false});
+
+    deleteEntity = () => {
+      const {entityType, id} = this.state.deleting;
+
+      this.setState({deleteInProgress: true});
+      this.props.mightFail(
+        deleteEntity(entityType, id),
+        () => {
+          this.resetDelete();
+          this.loadList();
+        },
+        error => {
+          showError(error);
+          this.setState({deleteInProgress: false});
+        }
+      );
+    };
 
     render() {
+      const {deleting, conflictedItems, deleteInProgress} = this.state;
       return (
         <div className="Home">
           <div className="header">
@@ -58,9 +98,16 @@ export default withErrorHandling(
           </div>
           <ul>{this.renderList()}</ul>
           <div className="data-hint">
-            Do you miss any data? The last update introduced user permissions. Ask your
-            administrator for access rights.
+            <Icon type="hint" size="14" /> {t('home.data-hint')}
           </div>
+          <ConfirmationModal
+            open={deleting}
+            onClose={this.resetDelete}
+            onConfirm={this.deleteEntity}
+            entityName={deleting && deleting.name}
+            conflict={{type: 'delete', items: conflictedItems}}
+            loading={conflictedItems === null || deleteInProgress}
+          />
         </div>
       );
     }
@@ -71,11 +118,12 @@ export default withErrorHandling(
       }
 
       if (this.state.entities.length === 0) {
-        return <div className="empty">There are no items created yet</div>;
+        return <div className="empty">{t('home.empty')}</div>;
       }
 
-      return this.state.entities.map(
-        ({id, entityType, lastModified, name, data, reportType, combined}) => (
+      return this.state.entities.map(entity => {
+        const {id, entityType, lastModified, name, data, reportType, combined} = entity;
+        return (
           <ListItem key={id} className={entityType}>
             <Link to={formatLink(id, entityType)}>
               <ListItem.Section className="icon">{getEntityIcon(entityType)}</ListItem.Section>
@@ -93,12 +141,36 @@ export default withErrorHandling(
                 {formatUserCount(data.roleCounts)}
               </ListItem.Section>
             </Link>
+            <div className="contextMenu">
+              <Dropdown label={<Icon type="overflow-menu-vertical" size="24px" />}>
+                <Dropdown.Option link={formatLink(id, entityType) + '/edit'}>
+                  <Icon type="edit" />
+                  {t('common.edit')}
+                </Dropdown.Option>
+                <Dropdown.Option onClick={() => this.confirmDelete(entity)}>
+                  <Icon type="delete" />
+                  {t('common.delete')}
+                </Dropdown.Option>
+              </Dropdown>
+            </div>
           </ListItem>
-        )
-      );
+        );
+      });
     }
   }
 );
+
+async function showError(error) {
+  let text = error;
+
+  if (typeof error.json === 'function') {
+    text = (await error.json()).errorMessage;
+  } else if (error.message) {
+    text = error.message;
+  }
+
+  addNotification({type: 'error', text});
+}
 
 function formatLink(id, type) {
   return `/${type}/${id}`;

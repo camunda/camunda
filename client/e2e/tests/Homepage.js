@@ -36,28 +36,12 @@ test('create a report and show it on the Homepage', async t => {
 test('create a dashboard and show it on the homepage', async t => {
   await login(t);
 
-  await t.click(e.createDashboardButton);
+  await t.click(e.createNewMenu).click(e.option('New Dashboard'));
   await save(t);
   await t.click(e.homepageLink);
 
   await t.expect(e.dashboardItem.visible).ok();
   await t.expect(e.dashboardItem.textContent).contains('New Dashboard');
-});
-
-test('only show the first five reports unless show all is clicked', async t => {
-  await login(t);
-
-  for (let i = 0; i < 10; i++) {
-    await t.hover(e.reportItem);
-    await t.click(e.duplicate('Report'));
-  }
-
-  await t.expect(e.reportItem.count).eql(5);
-  await t.expect(e.showAll('Reports').visible).ok();
-
-  await t.click(e.showAll('Reports'));
-
-  await t.expect(e.reportItem.count).eql(11);
 });
 
 test('navigate to report view and edit pages', async t => {
@@ -71,25 +55,10 @@ test('navigate to report view and edit pages', async t => {
   await t.click(e.homepageLink);
 
   await t.hover(e.reportItem);
-  await t.click(e.edit('Report'));
+  await t.click(e.contextMenu(e.reportItem));
+  await t.click(e.edit(e.reportItem));
 
   await t.expect(e.reportControlPanel.visible).ok();
-});
-
-test('only show the first five dashboards unless show all is clicked', async t => {
-  await login(t);
-
-  for (let i = 0; i < 10; i++) {
-    await t.hover(e.dashboardItem);
-    await t.click(e.duplicate('Dashboard'));
-  }
-
-  await t.expect(e.dashboardItem.count).eql(5);
-  await t.expect(e.showAll('Dashboards').visible).ok();
-
-  await t.click(e.showAll('Dashboards'));
-
-  await t.expect(e.dashboardItem.count).eql(11);
 });
 
 test('navigate to dashboard view and edit pages', async t => {
@@ -101,7 +70,8 @@ test('navigate to dashboard view and edit pages', async t => {
   await t.click(e.homepageLink);
 
   await t.hover(e.dashboardItem);
-  await t.click(e.edit('Dashboard'));
+  await t.click(e.contextMenu(e.dashboardItem));
+  await t.click(e.edit(e.dashboardItem));
 
   await t.expect(e.addButton.visible).ok();
 });
