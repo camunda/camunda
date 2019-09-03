@@ -74,6 +74,11 @@ public class BrokerHealthCheckService extends Actor implements Service<Void> {
   }
 
   @Override
+  public String getName() {
+    return "BrokerHealthCheckService";
+  }
+
+  @Override
   public void start(ServiceStartContext startContext) {
     atomix = atomixInjector.getValue();
     initializePartitionInstallStatus();

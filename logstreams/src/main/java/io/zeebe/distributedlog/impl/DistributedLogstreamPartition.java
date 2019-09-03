@@ -96,12 +96,12 @@ public class DistributedLogstreamPartition implements Service<DistributedLogstre
 
   private void onLeadershipClaimed(CompletableActorFuture<Void> startFuture, Throwable error) {
     if (error == null) {
-      LOG.debug("Partition {} for node {} claimed leadership", partitionId, memberId);
+      LOG.debug("Broker {} claimed leadership for partition {}", memberId, partitionId);
       startFuture.complete(null);
     }
     if (error != null) {
       LOG.error(
-          "Partition {} for node {} failed to start, retrying.", partitionId, memberId, error);
+          "Broker {} failed to start partition {}, retrying...", memberId, partitionId, error);
       tryStart(startFuture);
     }
   }

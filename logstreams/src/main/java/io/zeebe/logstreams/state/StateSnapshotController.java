@@ -126,7 +126,7 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
       for (File snapshotChunkFile : files) {
         executor.accept(
             () -> {
-              LOG.debug("Replicate snapshot chunk {}", snapshotChunkFile.toPath());
+              LOG.trace("Replicate snapshot chunk {}", snapshotChunkFile.toPath());
               replicationController.replicate(snapshotPosition, files.length, snapshotChunkFile);
             });
       }

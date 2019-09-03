@@ -114,6 +114,7 @@ public class RestoreControllerTest {
 
     final LogReplicator logReplicator =
         new LogReplicator(
+            1,
             (commitPosition, blockBuffer) ->
                 logStreamRuleClient
                     .getLogStream()
@@ -130,7 +131,13 @@ public class RestoreControllerTest {
             restoreThreadContext,
             log);
     return new RestoreController(
-        restoreClient, nodeProvider, logReplicator, snapshotReplicator, restoreThreadContext, log);
+        1,
+        restoreClient,
+        nodeProvider,
+        logReplicator,
+        snapshotReplicator,
+        restoreThreadContext,
+        log);
   }
 
   @Test

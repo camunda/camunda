@@ -37,7 +37,7 @@ import org.slf4j.Logger;
 public class ExporterManagerService implements Service<ExporterManagerService> {
 
   public static final int EXPORTER_PROCESSOR_ID = 1003;
-  public static final String PROCESSOR_NAME = "exporter";
+  public static final String EXPORTER_NAME = "exporter-%d";
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
   private final List<ExporterCfg> exporterCfgs;
@@ -81,7 +81,7 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
       final ExporterDirectorContext context =
           new ExporterDirectorContext()
               .id(EXPORTER_PROCESSOR_ID)
-              .name(PROCESSOR_NAME)
+              .name(String.format(EXPORTER_NAME, partition.getPartitionId()))
               .logStream(partition.getLogStream())
               .zeebeDb(zeebeDb)
               .maxSnapshots(dataCfg.getMaxSnapshots())
