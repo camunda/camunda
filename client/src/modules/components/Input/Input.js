@@ -11,6 +11,18 @@ import {Icon} from 'components';
 import './Input.scss';
 
 export default React.forwardRef(function Input({isInvalid, onClear, ...props}, ref) {
+  let inputEl;
+  const setRef = el => {
+    inputEl = el;
+    if (!ref) {
+      return;
+    }
+    if (typeof ref === 'function') {
+      return ref(el);
+    }
+    return (ref.current = el);
+  };
+
   return (
     <>
       <input
@@ -18,12 +30,20 @@ export default React.forwardRef(function Input({isInvalid, onClear, ...props}, r
         type="text"
         {...props}
         className={classnames('Input', props.className, {isInvalid})}
-        ref={ref}
+        ref={setRef}
       >
         {props.children}
       </input>
       {onClear && (
-        <button className="searchClear" onClick={onClear}>
+        <button
+          className="searchClear"
+          onClick={evt => {
+            onClear(evt);
+            if (inputEl) {
+              inputEl.focus();
+            }
+          }}
+        >
           <Icon type="clear" />
         </button>
       )}

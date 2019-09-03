@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
+import {shallow, mount} from 'enzyme';
 
 import Input from './Input';
 
@@ -52,5 +52,13 @@ it('should invoke onClear when clear button is clicked', () => {
   const spy = jest.fn();
   const node = shallow(<Input value="not empty" onClear={spy} />);
   node.find('.searchClear').simulate('click');
+  expect(spy).toHaveBeenCalled();
+});
+
+it('should focus on input when clicking the clear button', () => {
+  const spy = jest.fn();
+  const node = mount(<Input onClear={jest.fn()} ref={spy} />);
+  node.find('.searchClear').simulate('click');
+  expect(document.activeElement.getAttribute('class')).toBe('Input');
   expect(spy).toHaveBeenCalled();
 });
