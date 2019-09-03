@@ -1,0 +1,73 @@
+metadata:
+  labels:
+    agent: zeebe-ci-release
+spec:
+  nodeSelector:
+    cloud.google.com/gke-nodepool: slaves-stable
+  tolerations:
+    - key: "slaves-stable"
+      operator: "Exists"
+      effect: "NoSchedule"
+  containers:
+    - name: maven
+      image: maven:3.6.0-jdk-11
+      command: ["cat"]
+      tty: true
+      env:
+        - name: LIMITS_CPU
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        - name: JAVA_TOOL_OPTIONS
+          value: |
+            -XX:+UseContainerSupport
+      resources:
+        limits:
+          cpu: 8
+          memory: 32Gi
+        requests:
+          cpu: 8
+          memory: 32Gi
+    - name: maven-jdk8
+      image: maven:3.6.0-jdk-8
+      command: ["cat"]
+      tty: true
+      env:
+        - name: LIMITS_CPU
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        - name: JAVA_TOOL_OPTIONS
+          value: |
+            -XX:+UseContainerSupport
+      resources:
+        limits:
+          cpu: 2
+          memory: 4Gi
+        requests:
+          cpu: 2
+          memory: 4Gi
+    - name: golang
+      image: golang:1.12.2
+      command: ["cat"]
+      tty: true
+      resources:
+        limits:
+          cpu: 3
+          memory: 1Gi
+        requests:
+          cpu: 3
+          memory: 1Gi
+    - name: docker
+      image: docker:18.09.4-dind
+      args: ["--storage-driver=overlay2"]
+      securityContext:
+        privileged: true
+      tty: true
+      resources:
+        limits:
+          cpu: 1
+          memory: 512Mi
+        requests:
+          cpu: 1
+          memory: 512Mi
