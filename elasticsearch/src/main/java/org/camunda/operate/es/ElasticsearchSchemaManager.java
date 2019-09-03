@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.es;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -31,7 +32,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
-@Component
+@Component("schemaManager")
 @Profile("!test")
 public class ElasticsearchSchemaManager {
 
@@ -49,6 +50,7 @@ public class ElasticsearchSchemaManager {
   @Autowired
   private OperateProperties operateProperties;
 
+  @PostConstruct
   public boolean initializeSchema() {
     if (!schemaAlreadyExists()) {
       logger.info("Elasticsearch schema is empty. Indices will be created.");

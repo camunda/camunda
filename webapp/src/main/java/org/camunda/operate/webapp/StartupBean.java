@@ -16,9 +16,11 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 @Component
+@DependsOn("schemaManager")
 public class StartupBean {
 
   private static final Logger logger = LoggerFactory.getLogger(StartupBean.class);
@@ -43,8 +45,6 @@ public class StartupBean {
 
   @PostConstruct
   public void initApplication() {
-    logger.info("INIT: Initialize Elasticsearch schema...");
-    elasticsearchSchemaManager.initializeSchema();
     logger.info("INIT: Create users in elasticsearch if not exists ...");
     elasticsearchUserDetailsService.initializeUsers();
     logger.debug("INIT: Generate demo data...");

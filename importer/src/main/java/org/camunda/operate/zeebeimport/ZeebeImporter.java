@@ -16,11 +16,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
+@DependsOn("schemaManager")
 public class ZeebeImporter extends Thread implements ImportListener {
 
   private static final Logger logger = LoggerFactory.getLogger(ZeebeImporter.class);

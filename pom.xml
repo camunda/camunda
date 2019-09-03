@@ -33,8 +33,8 @@
     <version.node>v10.14.2</version.node>
     <version.yarn>v1.7.0</version.yarn>
 
-    <maven.compiler.target>1.8</maven.compiler.target>
-    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
+    <maven.compiler.source>11</maven.compiler.source>
 
     <skip.fe.build>false</skip.fe.build>
   </properties>
