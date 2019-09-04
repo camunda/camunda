@@ -65,11 +65,12 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
+            <!-- ensure that it runs before the protobuf plugin -->
+            <phase>initialize</phase>
             <id>unpack proto definition</id>
             <goals>
               <goal>unpack-dependencies</goal>
             </goals>
-            <phase>initialize</phase>
             <configuration>
               <includeArtifactIds>zeebe-gateway-protocol</includeArtifactIds>
               <outputDirectory>${proto.dir}</outputDirectory>
@@ -81,18 +82,9 @@
       <plugin>
         <groupId>org.xolstice.maven.plugins</groupId>
         <artifactId>protobuf-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>compile</goal>
-              <goal>compile-custom</goal>
-            </goals>
-            <configuration>
-              <protoSourceRoot>${proto.dir}</protoSourceRoot>
-            </configuration>
-          </execution>
-        </executions>
+        <configuration>
+          <protoSourceRoot>${proto.dir}</protoSourceRoot>
+        </configuration>
       </plugin>
 
       <plugin>
