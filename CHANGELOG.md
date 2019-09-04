@@ -1,13 +1,6 @@
 <a name="0.21.0-alpha2"></a>
 ## 0.21.0-alpha2 (2019-09-03)
 
-
-#### Bug Fixes
-
-* **broker:**
-  *  avoid NPE on model validation of messages ([bd7d54a7](https://github.com/zeebe-io/zeebe/commit/bd7d54a720cf18c4ece19012ceedad8b3a42414d))
-  *  cancel workflow instance ([7dc8ea46](https://github.com/zeebe-io/zeebe/commit/7dc8ea46dd4db5a3278ade4818b42b3a5db5d3b2))
-
 #### Features
 
 * **broker:**
@@ -15,162 +8,26 @@
   *  deploy larger workflows ([8885fccb](https://github.com/zeebe-io/zeebe/commit/8885fccb8c45e3ae2e9034994bdc4458b09a48bb))
   *  set multi-instance loop counter variable ([49000f38](https://github.com/zeebe-io/zeebe/commit/49000f38594f5c48c67675ca6e558f3db1ada86a))
   *  collect the output of a multi-instance activity ([c7f9ea25](https://github.com/zeebe-io/zeebe/commit/c7f9ea25b1697ef0499871df7e1fd011dd496c6c))
+  *  trigger boundary events on multi-instance activities ([b253a470](https://github.com/zeebe-io/zeebe/commit/b253a470b3f368c75ec7529980d715acedbb3524))
   *  configure long polling timeout per request ([1d54b51f](https://github.com/zeebe-io/zeebe/commit/1d54b51fb095542c388e1ba94e7c844710bafae6))
-* **client/go:**  configure long polling timeout per request ([b51159ce](https://github.com/zeebe-io/zeebe/commit/b51159ce9629f59e95949bc59bb7a3da6eab4ecf))
-* **client/zbctl:**  configure long polling timeout per request ([28a92262](https://github.com/zeebe-io/zeebe/commit/28a922627b4e41fd0665e286b9aa3a886ddf4737))
 * **clients/go:**
   *  add refresh token and retry logic ([ef2af905](https://github.com/zeebe-io/zeebe/commit/ef2af9057c350c057e08a49beeb29cb82f1c6fd2))
   *  add OAuth credentials provider to Go client ([63b378b4](https://github.com/zeebe-io/zeebe/commit/63b378b4de80e03d33ce98a0696a97a33996fcdc))
   *  add credentials support in Go client ([d9e30b8f](https://github.com/zeebe-io/zeebe/commit/d9e30b8f8f1ca093477608ff9d551a05e21283b4))
+  *  configure long polling timeout per request ([b51159ce](https://github.com/zeebe-io/zeebe/commit/b51159ce9629f59e95949bc59bb7a3da6eab4ecf))
 * **clients/java:**
   *  refresh credentials and retry requests ([d90a30b1](https://github.com/zeebe-io/zeebe/commit/d90a30b114b8b15670746ea28fc5f52e8dedecd2))
   *  add OAuth credentials provider ([2cae751e](https://github.com/zeebe-io/zeebe/commit/2cae751e3765ed2ae9e4b1e6f64f200621a2b56d))
 * **clients/zbctl:**
   *  support OAuth credentials in zbctl ([63167d4a](https://github.com/zeebe-io/zeebe/commit/63167d4a8fca1e07a16080d01691d40de82a20c1))
-  *  add credentials support to zbctl ([ee4a9b4a](https://github.com/zeebe-io/zeebe/commit/ee4a9b4a8749cb6842812a91033748fdd31e144d))
-* **engine:**  trigger boundary events on multi-instance activities ([b253a470](https://github.com/zeebe-io/zeebe/commit/b253a470b3f368c75ec7529980d715acedbb3524))
-* **exporter:**  extends exporter metrics to contain valueType info ([8bb9039c](https://github.com/zeebe-io/zeebe/commit/8bb9039ca8208a878b7c2c924b222cbdd56b98ad))
-
-
-
-<a name="0.21.0-alpha2"></a>
-## 0.21.0-alpha2 (2019-09-03)
-
+  *  add credentials support to zbctl ([ee4a9b4a](https://github.com/zeebe-io/zeebe/commit/ee4a9b4a8749cb6842812a91033748fdd31e144d))  
+  *  configure long polling timeout per request ([28a92262](https://github.com/zeebe-io/zeebe/commit/28a922627b4e41fd0665e286b9aa3a886ddf4737))
 
 #### Bug Fixes
 
 * **broker:**
   *  avoid NPE on model validation of messages ([bd7d54a7](https://github.com/zeebe-io/zeebe/commit/bd7d54a720cf18c4ece19012ceedad8b3a42414d))
-  *  cancel workflow instance ([7dc8ea46](https://github.com/zeebe-io/zeebe/commit/7dc8ea46dd4db5a3278ade4818b42b3a5db5d3b2))
-
-#### Features
-
-* **broker:**
-  *  apply variable mappings on multi-instance activity ([68b4c915](https://github.com/zeebe-io/zeebe/commit/68b4c915f2cc115c9e1198f7df11461f252bd49a))
-  *  deploy larger workflows ([8885fccb](https://github.com/zeebe-io/zeebe/commit/8885fccb8c45e3ae2e9034994bdc4458b09a48bb))
-  *  set multi-instance loop counter variable ([49000f38](https://github.com/zeebe-io/zeebe/commit/49000f38594f5c48c67675ca6e558f3db1ada86a))
-  *  collect the output of a multi-instance activity ([c7f9ea25](https://github.com/zeebe-io/zeebe/commit/c7f9ea25b1697ef0499871df7e1fd011dd496c6c))
-  *  configure long polling timeout per request ([1d54b51f](https://github.com/zeebe-io/zeebe/commit/1d54b51fb095542c388e1ba94e7c844710bafae6))
-* **client/go:**  configure long polling timeout per request ([b51159ce](https://github.com/zeebe-io/zeebe/commit/b51159ce9629f59e95949bc59bb7a3da6eab4ecf))
-* **client/zbctl:**  configure long polling timeout per request ([28a92262](https://github.com/zeebe-io/zeebe/commit/28a922627b4e41fd0665e286b9aa3a886ddf4737))
-* **clients/go:**
-  *  add refresh token and retry logic ([ef2af905](https://github.com/zeebe-io/zeebe/commit/ef2af9057c350c057e08a49beeb29cb82f1c6fd2))
-  *  add OAuth credentials provider to Go client ([63b378b4](https://github.com/zeebe-io/zeebe/commit/63b378b4de80e03d33ce98a0696a97a33996fcdc))
-  *  add credentials support in Go client ([d9e30b8f](https://github.com/zeebe-io/zeebe/commit/d9e30b8f8f1ca093477608ff9d551a05e21283b4))
-* **clients/java:**
-  *  refresh credentials and retry requests ([d90a30b1](https://github.com/zeebe-io/zeebe/commit/d90a30b114b8b15670746ea28fc5f52e8dedecd2))
-  *  add OAuth credentials provider ([2cae751e](https://github.com/zeebe-io/zeebe/commit/2cae751e3765ed2ae9e4b1e6f64f200621a2b56d))
-* **clients/zbctl:**
-  *  support OAuth credentials in zbctl ([63167d4a](https://github.com/zeebe-io/zeebe/commit/63167d4a8fca1e07a16080d01691d40de82a20c1))
-  *  add credentials support to zbctl ([ee4a9b4a](https://github.com/zeebe-io/zeebe/commit/ee4a9b4a8749cb6842812a91033748fdd31e144d))
-* **engine:**  trigger boundary events on multi-instance activities ([b253a470](https://github.com/zeebe-io/zeebe/commit/b253a470b3f368c75ec7529980d715acedbb3524))
-* **exporter:**  extends exporter metrics to contain valueType info ([8bb9039c](https://github.com/zeebe-io/zeebe/commit/8bb9039ca8208a878b7c2c924b222cbdd56b98ad))
-
-
-
-<a name="0.21.0-alpha2"></a>
-## 0.21.0-alpha2 (2019-09-03)
-
-
-#### Bug Fixes
-
-* **broker:**
-  *  avoid NPE on model validation of messages ([bd7d54a7](https://github.com/zeebe-io/zeebe/commit/bd7d54a720cf18c4ece19012ceedad8b3a42414d))
-  *  cancel workflow instance ([7dc8ea46](https://github.com/zeebe-io/zeebe/commit/7dc8ea46dd4db5a3278ade4818b42b3a5db5d3b2))
-
-#### Features
-
-* **broker:**
-  *  apply variable mappings on multi-instance activity ([68b4c915](https://github.com/zeebe-io/zeebe/commit/68b4c915f2cc115c9e1198f7df11461f252bd49a))
-  *  deploy larger workflows ([8885fccb](https://github.com/zeebe-io/zeebe/commit/8885fccb8c45e3ae2e9034994bdc4458b09a48bb))
-  *  set multi-instance loop counter variable ([49000f38](https://github.com/zeebe-io/zeebe/commit/49000f38594f5c48c67675ca6e558f3db1ada86a))
-  *  collect the output of a multi-instance activity ([c7f9ea25](https://github.com/zeebe-io/zeebe/commit/c7f9ea25b1697ef0499871df7e1fd011dd496c6c))
-  *  configure long polling timeout per request ([1d54b51f](https://github.com/zeebe-io/zeebe/commit/1d54b51fb095542c388e1ba94e7c844710bafae6))
-* **client/go:**  configure long polling timeout per request ([b51159ce](https://github.com/zeebe-io/zeebe/commit/b51159ce9629f59e95949bc59bb7a3da6eab4ecf))
-* **client/zbctl:**  configure long polling timeout per request ([28a92262](https://github.com/zeebe-io/zeebe/commit/28a922627b4e41fd0665e286b9aa3a886ddf4737))
-* **clients/go:**
-  *  add refresh token and retry logic ([ef2af905](https://github.com/zeebe-io/zeebe/commit/ef2af9057c350c057e08a49beeb29cb82f1c6fd2))
-  *  add OAuth credentials provider to Go client ([63b378b4](https://github.com/zeebe-io/zeebe/commit/63b378b4de80e03d33ce98a0696a97a33996fcdc))
-  *  add credentials support in Go client ([d9e30b8f](https://github.com/zeebe-io/zeebe/commit/d9e30b8f8f1ca093477608ff9d551a05e21283b4))
-* **clients/java:**
-  *  refresh credentials and retry requests ([d90a30b1](https://github.com/zeebe-io/zeebe/commit/d90a30b114b8b15670746ea28fc5f52e8dedecd2))
-  *  add OAuth credentials provider ([2cae751e](https://github.com/zeebe-io/zeebe/commit/2cae751e3765ed2ae9e4b1e6f64f200621a2b56d))
-* **clients/zbctl:**
-  *  support OAuth credentials in zbctl ([63167d4a](https://github.com/zeebe-io/zeebe/commit/63167d4a8fca1e07a16080d01691d40de82a20c1))
-  *  add credentials support to zbctl ([ee4a9b4a](https://github.com/zeebe-io/zeebe/commit/ee4a9b4a8749cb6842812a91033748fdd31e144d))
-* **engine:**  trigger boundary events on multi-instance activities ([b253a470](https://github.com/zeebe-io/zeebe/commit/b253a470b3f368c75ec7529980d715acedbb3524))
-* **exporter:**  extends exporter metrics to contain valueType info ([8bb9039c](https://github.com/zeebe-io/zeebe/commit/8bb9039ca8208a878b7c2c924b222cbdd56b98ad))
-
-
-
-<a name="0.21.0-alpha2"></a>
-## 0.21.0-alpha2 (2019-09-03)
-
-
-#### Features
-
-* **broker:**
-  *  apply variable mappings on multi-instance activity ([68b4c915](https://github.com/zeebe-io/zeebe/commit/68b4c915f2cc115c9e1198f7df11461f252bd49a))
-  *  deploy larger workflows ([8885fccb](https://github.com/zeebe-io/zeebe/commit/8885fccb8c45e3ae2e9034994bdc4458b09a48bb))
-  *  set multi-instance loop counter variable ([49000f38](https://github.com/zeebe-io/zeebe/commit/49000f38594f5c48c67675ca6e558f3db1ada86a))
-  *  collect the output of a multi-instance activity ([c7f9ea25](https://github.com/zeebe-io/zeebe/commit/c7f9ea25b1697ef0499871df7e1fd011dd496c6c))
-  *  configure long polling timeout per request ([1d54b51f](https://github.com/zeebe-io/zeebe/commit/1d54b51fb095542c388e1ba94e7c844710bafae6))
-* **client/go:**  configure long polling timeout per request ([b51159ce](https://github.com/zeebe-io/zeebe/commit/b51159ce9629f59e95949bc59bb7a3da6eab4ecf))
-* **client/zbctl:**  configure long polling timeout per request ([28a92262](https://github.com/zeebe-io/zeebe/commit/28a922627b4e41fd0665e286b9aa3a886ddf4737))
-* **clients/go:**
-  *  add refresh token and retry logic ([ef2af905](https://github.com/zeebe-io/zeebe/commit/ef2af9057c350c057e08a49beeb29cb82f1c6fd2))
-  *  add OAuth credentials provider to Go client ([63b378b4](https://github.com/zeebe-io/zeebe/commit/63b378b4de80e03d33ce98a0696a97a33996fcdc))
-  *  add credentials support in Go client ([d9e30b8f](https://github.com/zeebe-io/zeebe/commit/d9e30b8f8f1ca093477608ff9d551a05e21283b4))
-* **clients/java:**
-  *  refresh credentials and retry requests ([d90a30b1](https://github.com/zeebe-io/zeebe/commit/d90a30b114b8b15670746ea28fc5f52e8dedecd2))
-  *  add OAuth credentials provider ([2cae751e](https://github.com/zeebe-io/zeebe/commit/2cae751e3765ed2ae9e4b1e6f64f200621a2b56d))
-* **clients/zbctl:**
-  *  support OAuth credentials in zbctl ([63167d4a](https://github.com/zeebe-io/zeebe/commit/63167d4a8fca1e07a16080d01691d40de82a20c1))
-  *  add credentials support to zbctl ([ee4a9b4a](https://github.com/zeebe-io/zeebe/commit/ee4a9b4a8749cb6842812a91033748fdd31e144d))
-* **engine:**  trigger boundary events on multi-instance activities ([b253a470](https://github.com/zeebe-io/zeebe/commit/b253a470b3f368c75ec7529980d715acedbb3524))
-* **exporter:**  extends exporter metrics to contain valueType info ([8bb9039c](https://github.com/zeebe-io/zeebe/commit/8bb9039ca8208a878b7c2c924b222cbdd56b98ad))
-
-#### Bug Fixes
-
-* **broker:**
-  *  avoid NPE on model validation of messages ([bd7d54a7](https://github.com/zeebe-io/zeebe/commit/bd7d54a720cf18c4ece19012ceedad8b3a42414d))
-  *  cancel workflow instance ([7dc8ea46](https://github.com/zeebe-io/zeebe/commit/7dc8ea46dd4db5a3278ade4818b42b3a5db5d3b2))
-
-
-
-<a name="0.21.0-alpha2"></a>
-## 0.21.0-alpha2 (2019-09-03)
-
-
-#### Bug Fixes
-
-* **broker:**
-  *  avoid NPE on model validation of messages ([bd7d54a7](https://github.com/zeebe-io/zeebe/commit/bd7d54a720cf18c4ece19012ceedad8b3a42414d))
-  *  cancel workflow instance ([7dc8ea46](https://github.com/zeebe-io/zeebe/commit/7dc8ea46dd4db5a3278ade4818b42b3a5db5d3b2))
-
-#### Features
-
-* **broker:**
-  *  apply variable mappings on multi-instance activity ([68b4c915](https://github.com/zeebe-io/zeebe/commit/68b4c915f2cc115c9e1198f7df11461f252bd49a))
-  *  deploy larger workflows ([8885fccb](https://github.com/zeebe-io/zeebe/commit/8885fccb8c45e3ae2e9034994bdc4458b09a48bb))
-  *  set multi-instance loop counter variable ([49000f38](https://github.com/zeebe-io/zeebe/commit/49000f38594f5c48c67675ca6e558f3db1ada86a))
-  *  collect the output of a multi-instance activity ([c7f9ea25](https://github.com/zeebe-io/zeebe/commit/c7f9ea25b1697ef0499871df7e1fd011dd496c6c))
-  *  configure long polling timeout per request ([1d54b51f](https://github.com/zeebe-io/zeebe/commit/1d54b51fb095542c388e1ba94e7c844710bafae6))
-* **client/go:**  configure long polling timeout per request ([b51159ce](https://github.com/zeebe-io/zeebe/commit/b51159ce9629f59e95949bc59bb7a3da6eab4ecf))
-* **client/zbctl:**  configure long polling timeout per request ([28a92262](https://github.com/zeebe-io/zeebe/commit/28a922627b4e41fd0665e286b9aa3a886ddf4737))
-* **clients/go:**
-  *  add refresh token and retry logic ([ef2af905](https://github.com/zeebe-io/zeebe/commit/ef2af9057c350c057e08a49beeb29cb82f1c6fd2))
-  *  add OAuth credentials provider to Go client ([63b378b4](https://github.com/zeebe-io/zeebe/commit/63b378b4de80e03d33ce98a0696a97a33996fcdc))
-  *  add credentials support in Go client ([d9e30b8f](https://github.com/zeebe-io/zeebe/commit/d9e30b8f8f1ca093477608ff9d551a05e21283b4))
-* **clients/java:**
-  *  refresh credentials and retry requests ([d90a30b1](https://github.com/zeebe-io/zeebe/commit/d90a30b114b8b15670746ea28fc5f52e8dedecd2))
-  *  add OAuth credentials provider ([2cae751e](https://github.com/zeebe-io/zeebe/commit/2cae751e3765ed2ae9e4b1e6f64f200621a2b56d))
-* **clients/zbctl:**
-  *  support OAuth credentials in zbctl ([63167d4a](https://github.com/zeebe-io/zeebe/commit/63167d4a8fca1e07a16080d01691d40de82a20c1))
-  *  add credentials support to zbctl ([ee4a9b4a](https://github.com/zeebe-io/zeebe/commit/ee4a9b4a8749cb6842812a91033748fdd31e144d))
-* **engine:**  trigger boundary events on multi-instance activities ([b253a470](https://github.com/zeebe-io/zeebe/commit/b253a470b3f368c75ec7529980d715acedbb3524))
-* **exporter:**  extends exporter metrics to contain valueType info ([8bb9039c](https://github.com/zeebe-io/zeebe/commit/8bb9039ca8208a878b7c2c924b222cbdd56b98ad))
-
+  *  cancel workflow instance properly ([7dc8ea46](https://github.com/zeebe-io/zeebe/commit/7dc8ea46dd4db5a3278ade4818b42b3a5db5d3b2))
 
 
 <a name="0.21.0-alpha1"></a>
