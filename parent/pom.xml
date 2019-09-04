@@ -577,6 +577,13 @@
             <source>${version.java}</source>
             <quiet>true</quiet>
             <additionalOptions>-Xdoclint:none</additionalOptions>
+            <additionalDependencies>
+              <additionalDependency>
+                <groupId>javax.annotation</groupId>
+                <artifactId>javax.annotation-api</artifactId>
+                <version>1.3.2</version>
+              </additionalDependency>
+            </additionalDependencies>
           </configuration>
           <executions>
             <execution>
