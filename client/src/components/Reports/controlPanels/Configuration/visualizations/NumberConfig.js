@@ -24,11 +24,13 @@ export default function NumberConfig({report, onChange}) {
     <div className="NumberConfig">
       <fieldset>
         <legend>
-          <Switch
-            checked={precisionSet}
-            onChange={evt => onChange({precision: {$set: evt.target.checked ? 1 : null}})}
-          />
-          {t('report.config.limitPrecision.legend')}
+          <label>
+            <Switch
+              checked={precisionSet}
+              onChange={evt => onChange({precision: {$set: evt.target.checked ? 1 : null}})}
+            />
+            {t('report.config.limitPrecision.legend')}
+          </label>
         </legend>
         <LabeledInput
           className="precision"
@@ -46,11 +48,13 @@ export default function NumberConfig({report, onChange}) {
       </fieldset>
       <fieldset>
         <legend>
-          <Switch
-            checked={goalSet}
-            onChange={evt => onChange({targetValue: {active: {$set: evt.target.checked}}})}
-          />
-          {t('report.config.goal.legend')}
+          <label>
+            <Switch
+              checked={goalSet}
+              onChange={evt => onChange({targetValue: {active: {$set: evt.target.checked}}})}
+            />
+            {t('report.config.goal.legend')}
+          </label>
         </legend>
         {countOperation ? (
           <CountTargetInput

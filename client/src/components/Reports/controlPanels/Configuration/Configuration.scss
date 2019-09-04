@@ -1,22 +1,14 @@
 .Configuration {
-  .Popover__dialog {
-    width: inherit;
+  .Form:after {
+    content: '';
+    left: 0;
+    position: absolute;
+    width: 100%;
+    border-bottom: 1px solid #d2d2d2;
+  }
 
-    .content {
-      min-width: 200px;
-
-      &:after {
-        content: '';
-        left: 0;
-        position: absolute;
-        width: 100%;
-        border-bottom: 1px solid #d2d2d2;
-      }
-    }
-
-    .resetButton {
-      margin-top: 15px;
-      float: right;
-    }
+  .resetButton {
+    margin-top: 15px;
+    float: right;
   }
 }

@@ -43,6 +43,14 @@
     }
   }
 
+  .FormGroup > label,
+  fieldset > label,
+  fieldset legend > label,
+  .checkLabel {
+    display: flex;
+    align-items: baseline;
+  }
+
   &:not(.compact) {
     margin-bottom: 20px;
 
@@ -116,13 +124,13 @@
       .FormGroup {
         .Labeled label {
           display: flex;
-          align-items: center;
-          text-align: right;
+          align-items: baseline;
 
           .label.before {
             width: 30%;
             padding-right: 10px;
             margin-bottom: 0;
+            text-align: right;
 
             + * {
               width: 70%;
@@ -185,11 +193,6 @@
         border-top: 1px solid #d3d3d3;
         padding: 14px 0 0 0;
       }
-
-      > label {
-        display: block;
-        white-space: nowrap;
-      }
     }
 
     .FormGroup {
@@ -207,9 +210,6 @@
 
       > label,
       > .LabeledInput {
-        display: block;
-        white-space: nowrap;
-
         &:not(:first-child) {
           margin-top: 10px;
         }

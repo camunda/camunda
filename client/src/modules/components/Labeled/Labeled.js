@@ -12,7 +12,7 @@ import './Labeled.scss';
 export default function Labeled({label, className, appendLabel, children, disabled, ...props}) {
   return (
     <div className={classnames('Labeled', className)} disabled={disabled}>
-      <label onClick={catchClick} {...props}>
+      <label className={classnames({checkLabel: appendLabel})} onClick={catchClick} {...props}>
         {!appendLabel && <span className="label before">{label}</span>}
         {children}
         {appendLabel && <span className="label after">{label}</span>}

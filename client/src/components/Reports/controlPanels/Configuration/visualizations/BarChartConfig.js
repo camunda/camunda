@@ -65,11 +65,13 @@ export default function BarChartConfig({onChange, report}) {
       </fieldset>
       <fieldset>
         <legend>
-          <Switch
-            checked={configuration.targetValue.active}
-            onChange={({target: {checked}}) => onChange({targetValue: {active: {$set: checked}}})}
-          />
-          {t('report.config.goal.legend')}
+          <label>
+            <Switch
+              checked={configuration.targetValue.active}
+              onChange={({target: {checked}}) => onChange({targetValue: {active: {$set: checked}}})}
+            />
+            {t('report.config.goal.legend')}
+          </label>
         </legend>
         <ChartTargetInput {...{onChange, report}} />
       </fieldset>

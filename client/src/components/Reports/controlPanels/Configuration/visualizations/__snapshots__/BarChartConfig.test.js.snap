@@ -43,11 +43,13 @@ exports[`it should display correct configuration for barchart 1`] = `
   </fieldset>
   <fieldset>
     <legend>
-      <Switch
-        checked={false}
-        onChange={[Function]}
-      />
-      Goal
+      <label>
+        <Switch
+          checked={false}
+          onChange={[Function]}
+        />
+        Goal
+      </label>
     </legend>
     <ChartTargetInput
       report={
