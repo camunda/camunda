@@ -41,8 +41,8 @@ public class Metrics {
   private MeterRegistry registry;
 
   /**
-   * Record counts for given name and tags. Tags are further attributes that gives the possibility to categorize the counter.<br/>
-   * They will be given as varargs key value pairs. For example: "type":"incident"<br/>
+   * Record counts for given name and tags. Tags are further attributes that gives the possibility to categorize the counter.
+   * They will be given as varargs key value pairs. For example: "type":"incident".
    * Original documentation for tags: <a href="https://micrometer.io/docs/concepts#_tag_naming">Tags naming</a>
    * 
    * @param name - Name of counter

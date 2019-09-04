@@ -31,8 +31,8 @@ public abstract class ZeebeTestUtil {
 
   /**
    * Deploys the process synchronously.
-   * @param client
-   * @param classpathResources
+   * @param client client
+   * @param classpathResources classpath resources
    * @return workflow id
    */
   public static Long deployWorkflow(ZeebeClient client, String... classpathResources) {
@@ -53,8 +53,9 @@ public abstract class ZeebeTestUtil {
 
   /**
    * Deploys the process synchronously.
-   * @param client
-   * @param workflowModel
+   * @param client client
+   * @param workflowModel workflowModel
+   * @param resourceName resourceName
    * @return workflow id
    */
   public static Long deployWorkflow(ZeebeClient client, BpmnModelInstance workflowModel, String resourceName) {
@@ -70,9 +71,9 @@ public abstract class ZeebeTestUtil {
 
   /**
    *
-   * @param client
-   * @param bpmnProcessId
-   * @param payload
+   * @param client client
+   * @param bpmnProcessId bpmnProcessId
+   * @param payload payload
    * @return workflow instance id
    */
   public static long startWorkflowInstance(ZeebeClient client, String bpmnProcessId, String payload) {
