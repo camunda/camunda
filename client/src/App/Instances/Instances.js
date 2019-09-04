@@ -12,7 +12,6 @@ import {
   DEFAULT_FILTER_CONTROLLED_VALUES
 } from 'modules/constants';
 
-// import Diagram from 'modules/components/Diagram';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import {
   SelectionProvider,
