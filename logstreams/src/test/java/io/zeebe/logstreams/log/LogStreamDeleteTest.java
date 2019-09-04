@@ -9,141 +9,54 @@ package io.zeebe.logstreams.log;
 
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 import static io.zeebe.logstreams.log.LogStreamTest.writeEvent;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
 
-import io.zeebe.distributedlog.DistributedLogstreamService;
-import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
-import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
-import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor;
-import io.zeebe.servicecontainer.testing.ServiceContainerRule;
-import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
-import org.mockito.internal.util.reflection.FieldSetter;
-import org.mockito.stubbing.Answer;
 
 public class LogStreamDeleteTest {
-  public static final int PARTITION_ID = 0;
-
-  @Rule public ExpectedException thrown = ExpectedException.none();
-
-  public TemporaryFolder tempFolder = new TemporaryFolder();
-
-  public AutoCloseableRule closeables = new AutoCloseableRule();
-  public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
-  public ServiceContainerRule serviceContainer = new ServiceContainerRule(actorScheduler);
-
-  @Rule
-  public RuleChain chain =
-      RuleChain.outerRule(tempFolder)
-          .around(actorScheduler)
-          .around(serviceContainer)
-          .around(closeables);
 
   private long firstPosition;
   private long secondPosition;
   private long thirdPosition;
   private long fourthPosition;
 
-  protected LogStream buildLogStream(final Consumer<LogStreamBuilder> streamConfig) {
-    final LogStreamBuilder builder = new LogStreamBuilder(PARTITION_ID);
-    builder
-        .logName("test-log-name")
-        .serviceContainer(serviceContainer.get())
-        .logRootPath(tempFolder.getRoot().getAbsolutePath());
+  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-    streamConfig.accept(builder);
+  private final LogStreamRule logStreamRule =
+      LogStreamRule.createRuleWithoutStarting(temporaryFolder);
 
-    final LogStream logStream = builder.build().join();
-
-    final DistributedLogstreamPartition mockDistLog = mock(DistributedLogstreamPartition.class);
-
-    final DistributedLogstreamService distributedLogImpl = new DefaultDistributedLogstreamService();
-
-    final String nodeId = "0";
-    try {
-      FieldSetter.setField(
-          distributedLogImpl,
-          DefaultDistributedLogstreamService.class.getDeclaredField("logStream"),
-          logStream);
-
-      FieldSetter.setField(
-          distributedLogImpl,
-          DefaultDistributedLogstreamService.class.getDeclaredField("logStorage"),
-          logStream.getLogStorage());
-
-      FieldSetter.setField(
-          distributedLogImpl,
-          DefaultDistributedLogstreamService.class.getDeclaredField("currentLeader"),
-          nodeId);
-
-    } catch (NoSuchFieldException e) {
-      e.printStackTrace();
-    }
-
-    doAnswer(
-            (Answer<CompletableFuture<Long>>)
-                invocation -> {
-                  final Object[] arguments = invocation.getArguments();
-                  if (arguments != null
-                      && arguments.length > 1
-                      && arguments[0] != null
-                      && arguments[1] != null) {
-                    final byte[] bytes = (byte[]) arguments[0];
-                    final long pos = (long) arguments[1];
-                    return CompletableFuture.completedFuture(
-                        distributedLogImpl.append(nodeId, pos, bytes));
-                  }
-                  return null;
-                })
-        .when(mockDistLog)
-        .asyncAppend(any(), anyLong());
-
-    serviceContainer
-        .get()
-        .createService(distributedLogPartitionServiceName("test-log-name"), () -> mockDistLog)
-        .install()
-        .join();
-
-    return logStream;
-  }
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(temporaryFolder).around(logStreamRule);
 
   @Test
   public void shouldDeleteOnClose() {
-    final File logDir = tempFolder.getRoot();
+    final File logDir = temporaryFolder.getRoot();
     final LogStream logStream =
-        buildLogStream(b -> b.logRootPath(logDir.getAbsolutePath()).deleteOnClose(true));
+        logStreamRule.startLogStreamWithConfiguration(
+            b -> b.logRootPath(logDir.getAbsolutePath()).deleteOnClose(true));
 
     // when
     logStream.close();
 
     // then
     final File[] files = logDir.listFiles();
-    assertThat(files).isNotNull();
-    assertThat(files.length).isEqualTo(0);
+    assertThat(files).isNull();
   }
 
   @Test
   public void shouldNotDeleteOnCloseByDefault() {
-    final File logDir = tempFolder.getRoot();
-    final LogStream logStream = buildLogStream(b -> b.logRootPath(logDir.getAbsolutePath()));
+    final File logDir = temporaryFolder.getRoot();
+    final LogStream logStream =
+        logStreamRule.startLogStreamWithConfiguration(b -> b.logRootPath(logDir.getAbsolutePath()));
 
     // when
     logStream.close();
@@ -163,14 +76,13 @@ public class LogStreamDeleteTest {
     logStream.delete(fourthPosition);
 
     // then
-    assertThat(events(logStream).count()).isEqualTo(2);
+    assertThat(events().count()).isEqualTo(2);
 
-    assertThat(events(logStream).anyMatch(e -> e.getPosition() == firstPosition)).isFalse();
-    assertThat(events(logStream).anyMatch(e -> e.getPosition() == secondPosition)).isFalse();
+    assertThat(events().anyMatch(e -> e.getPosition() == firstPosition)).isFalse();
+    assertThat(events().anyMatch(e -> e.getPosition() == secondPosition)).isFalse();
 
-    assertThat(events(logStream).findFirst().get().getPosition()).isEqualTo(thirdPosition);
-    assertThat(events(logStream).filter(e -> e.getPosition() == fourthPosition).findAny())
-        .isNotEmpty();
+    assertThat(events().findFirst().get().getPosition()).isEqualTo(thirdPosition);
+    assertThat(events().filter(e -> e.getPosition() == fourthPosition).findAny()).isNotEmpty();
   }
 
   @Test
@@ -182,16 +94,12 @@ public class LogStreamDeleteTest {
     logStream.delete(-1);
 
     // then - segment 0 and 1 are removed
-    assertThat(events(logStream).count()).isEqualTo(4);
+    assertThat(events().count()).isEqualTo(4);
 
-    assertThat(events(logStream).filter(e -> e.getPosition() == firstPosition).findAny())
-        .isNotEmpty();
-    assertThat(events(logStream).filter(e -> e.getPosition() == secondPosition).findAny())
-        .isNotEmpty();
-    assertThat(events(logStream).filter(e -> e.getPosition() == thirdPosition).findAny())
-        .isNotEmpty();
-    assertThat(events(logStream).filter(e -> e.getPosition() == fourthPosition).findAny())
-        .isNotEmpty();
+    assertThat(events().filter(e -> e.getPosition() == firstPosition).findAny()).isNotEmpty();
+    assertThat(events().filter(e -> e.getPosition() == secondPosition).findAny()).isNotEmpty();
+    assertThat(events().filter(e -> e.getPosition() == thirdPosition).findAny()).isNotEmpty();
+    assertThat(events().filter(e -> e.getPosition() == fourthPosition).findAny()).isNotEmpty();
   }
 
   private LogStream prepareLogstream() {
@@ -201,9 +109,9 @@ public class LogStreamDeleteTest {
             - FsLogSegmentDescriptor.METADATA_LENGTH
             - alignedLength(HEADER_BLOCK_LENGTH + 2 + 8)
             - 1);
-    final LogStream logStream = buildLogStream(c -> c.logSegmentSize(segmentSize));
-    logStream.openAppender().join();
-    closeables.manage(logStream);
+    final LogStream logStream =
+        logStreamRule.startLogStreamWithConfiguration(
+            c -> c.logSegmentSize(segmentSize).maxFragmentSize(segmentSize));
     final byte[] largeEvent = new byte[remainingCapacity];
 
     // log storage always returns on append as address (segment id, segment OFFSET)
@@ -222,15 +130,13 @@ public class LogStreamDeleteTest {
     // written from segment 3 4096 -> 8192, but idx block address segment 2 - 8192
     fourthPosition = writeEvent(logStream, BufferUtil.wrapArray(largeEvent));
 
-    logStream.setCommitPosition(fourthPosition);
+    //    logStream.setCommitPosition(fourthPosition);
 
     return logStream;
   }
 
-  private Stream<LoggedEvent> events(final LogStream stream) {
-    final BufferedLogStreamReader reader = new BufferedLogStreamReader(stream);
-    closeables.manage(reader);
-
+  private Stream<LoggedEvent> events() {
+    final LogStreamReader reader = logStreamRule.getLogStreamReader();
     reader.seekToFirstEvent();
     final Iterable<LoggedEvent> iterable = () -> reader;
     return StreamSupport.stream(iterable.spliterator(), false);

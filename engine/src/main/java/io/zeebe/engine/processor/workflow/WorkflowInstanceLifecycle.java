@@ -21,9 +21,9 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
-public class WorkflowInstanceLifecycle {
+public final class WorkflowInstanceLifecycle {
 
-  public static final EnumSet<WorkflowInstanceIntent> ELEMENT_INSTANCE_STATES =
+  private static final EnumSet<WorkflowInstanceIntent> ELEMENT_INSTANCE_STATES =
       EnumSet.of(
           ELEMENT_ACTIVATING,
           ELEMENT_ACTIVATED,
@@ -32,13 +32,13 @@ public class WorkflowInstanceLifecycle {
           ELEMENT_TERMINATING,
           ELEMENT_TERMINATED);
 
-  public static final EnumSet<WorkflowInstanceIntent> FINAL_ELEMENT_INSTANCE_STATES =
+  private static final EnumSet<WorkflowInstanceIntent> FINAL_ELEMENT_INSTANCE_STATES =
       EnumSet.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
 
-  public static final EnumSet<WorkflowInstanceIntent> TERMINATABLE_STATES =
+  private static final EnumSet<WorkflowInstanceIntent> TERMINATABLE_STATES =
       EnumSet.of(ELEMENT_ACTIVATING, ELEMENT_ACTIVATED, ELEMENT_COMPLETING);
 
-  public static final Map<WorkflowInstanceIntent, Set<WorkflowInstanceIntent>> TRANSITION_RULES =
+  private static final Map<WorkflowInstanceIntent, Set<WorkflowInstanceIntent>> TRANSITION_RULES =
       new EnumMap<>(WorkflowInstanceIntent.class);
 
   static {
@@ -49,6 +49,8 @@ public class WorkflowInstanceLifecycle {
     TRANSITION_RULES.put(ELEMENT_COMPLETED, Collections.emptySet());
     TRANSITION_RULES.put(ELEMENT_TERMINATED, Collections.emptySet());
   }
+
+  private WorkflowInstanceLifecycle() {}
 
   public static boolean canTransition(WorkflowInstanceIntent from, WorkflowInstanceIntent to) {
     return TRANSITION_RULES.get(from).contains(to);

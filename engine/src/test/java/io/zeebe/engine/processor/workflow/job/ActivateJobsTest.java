@@ -14,7 +14,6 @@ import static io.zeebe.test.util.record.RecordingExporter.workflowInstanceRecord
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.engine.processor.workflow.message.command.VarDataEncodingEncoder;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -30,6 +29,7 @@ import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
 import java.util.Arrays;
@@ -378,28 +378,38 @@ public class ActivateJobsTest {
   @Test
   public void shouldLimitJobsInBatch() {
     // given
-    final int variablesSize = VarDataEncodingEncoder.lengthMaxValue() / 3;
-    final String variables = "{'key': '" + RandomString.make(variablesSize) + "'}";
+    final int jobCount = 3;
+    final int expectedJobsInBatch = 2;
+
+    final ByteValue maxMessageSize = ByteValue.ofMegabytes(4);
+    final ByteValue headerSize = ByteValue.ofKilobytes(2);
+    final int maxRecordSize = (int) maxMessageSize.toBytes() - (int) headerSize.toBytes();
+    // the variable size only the half of the record size because two events are written on creation
+    final int maxVariableSize = maxRecordSize / 2;
+
+    final int variablesSize = maxVariableSize / expectedJobsInBatch;
+    final String variables = "{'key': '" + "x".repeat(variablesSize) + "'}";
 
     // when
-    deployAndCreateJobs(taskType, 3, variables);
-    final List<Long> jobKeys = activateJobs(taskType, 3);
+    deployAndCreateJobs(taskType, jobCount, variables);
+    final List<Long> jobKeys = activateJobs(taskType, jobCount);
 
     // then
-    assertThat(jobKeys).hasSize(2);
-    final List<Long> remainingJobKeys = activateJobs(1);
-    assertThat(remainingJobKeys).hasSize(1);
+    assertThat(jobKeys).hasSize(expectedJobsInBatch);
+
+    final List<Long> remainingJobKeys = activateJobs(jobCount);
+    assertThat(remainingJobKeys).hasSize(jobCount - expectedJobsInBatch);
   }
 
-  private Record<JobRecordValue> completeJob(long jobKey) {
+  private Record<JobRecordValue> completeJob(final long jobKey) {
     return ENGINE.job().withKey(jobKey).complete();
   }
 
-  private Long activateJob(String type) {
+  private Long activateJob(final String type) {
     return activateJobs(type, 1).get(0);
   }
 
-  private List<Long> activateJobs(String type, int amount) {
+  private List<Long> activateJobs(final String type, final int amount) {
     return ENGINE
         .jobs()
         .withType(type)
@@ -409,11 +419,11 @@ public class ActivateJobsTest {
         .getJobKeys();
   }
 
-  private List<Long> activateJobs(int amount) {
+  private List<Long> activateJobs(final int amount) {
     return activateJobs(taskType, amount);
   }
 
-  private List<Long> createWorkflowInstances(int amount, String variables) {
+  private List<Long> createWorkflowInstances(final int amount, final String variables) {
     return IntStream.range(0, amount)
         .boxed()
         .map(
@@ -439,7 +449,7 @@ public class ActivateJobsTest {
         .collect(Collectors.toList());
   }
 
-  private List<Long> deployAndCreateJobs(String type, int amount) {
+  private List<Long> deployAndCreateJobs(final String type, final int amount) {
     return deployAndCreateJobs(type, amount, "{'foo':'bar'}");
   }
 

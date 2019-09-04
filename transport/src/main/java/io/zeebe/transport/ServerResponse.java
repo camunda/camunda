@@ -21,10 +21,10 @@ public class ServerResponse implements BufferWriter {
       new TransportHeaderDescriptor();
   protected final ClaimedFragment claimedFragment = new ClaimedFragment();
   protected final DirectBufferWriter writerAdapter = new DirectBufferWriter();
-  private final RequestResponseHeaderDescriptor requestResponseHeaderDescriptor =
-      new RequestResponseHeaderDescriptor();
   protected BufferWriter writer;
   protected int remoteStreamId;
+  private final RequestResponseHeaderDescriptor requestResponseHeaderDescriptor =
+      new RequestResponseHeaderDescriptor();
   private long requestId;
 
   public ServerResponse writer(BufferWriter writer) {

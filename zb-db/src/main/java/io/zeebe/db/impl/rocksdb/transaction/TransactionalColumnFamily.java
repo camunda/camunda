@@ -119,11 +119,6 @@ class TransactionalColumnFamily<
   }
 
   @Override
-  public boolean existsPrefix(DbKey keyPrefix) {
-    return transactionDb.existsPrefix(handle, context, keyPrefix, keyInstance, valueInstance);
-  }
-
-  @Override
   public boolean isEmpty() {
     return isEmpty(context);
   }

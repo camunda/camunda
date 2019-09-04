@@ -33,17 +33,16 @@ public class BlockingMemoryPool implements TransportMemoryPool {
 
   private final ReentrantLock lock = new ReentrantLock(true);
   private final Condition memoryReclaimed = lock.newCondition();
-
+  private final long maxBlockTimeMs;
   private long availableCapacity = 0;
-  private long maxBlockTimeMs;
 
-  public BlockingMemoryPool(ByteValue capacity, long maxBlockTimeMs) {
-    this.availableCapacity = capacity.toBytes();
+  public BlockingMemoryPool(final ByteValue capacity, final long maxBlockTimeMs) {
+    availableCapacity = capacity.toBytes();
     this.maxBlockTimeMs = maxBlockTimeMs;
   }
 
   @Override
-  public ByteBuffer allocate(int requestedCapacity) {
+  public ByteBuffer allocate(final int requestedCapacity) {
     LOG.trace("Attempting to allocate {} bytes", requestedCapacity);
 
     final long deadline = System.currentTimeMillis() + maxBlockTimeMs;
@@ -64,7 +63,7 @@ public class BlockingMemoryPool implements TransportMemoryPool {
         } else {
           try {
             memoryReclaimed.await(1, TimeUnit.MILLISECONDS);
-          } catch (InterruptedException e) {
+          } catch (final InterruptedException e) {
             LOG.debug("Interrupted while waiting for memory to be reclaimed.");
             break;
           }
@@ -85,7 +84,7 @@ public class BlockingMemoryPool implements TransportMemoryPool {
   }
 
   @Override
-  public void reclaim(ByteBuffer buffer) {
+  public void reclaim(final ByteBuffer buffer) {
     final int bytesReclaimed = buffer.capacity();
 
     LOG.trace("Reclaiming {} bytes", bytesReclaimed);
@@ -99,5 +98,10 @@ public class BlockingMemoryPool implements TransportMemoryPool {
     } finally {
       lock.unlock();
     }
+  }
+
+  @Override
+  public long capacity() {
+    return availableCapacity;
   }
 }

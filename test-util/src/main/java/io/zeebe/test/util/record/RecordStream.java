@@ -11,41 +11,45 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-@SuppressWarnings("unchecked")
 public class RecordStream extends ExporterRecordStream<RecordValue, RecordStream> {
-  public RecordStream(Stream<Record<RecordValue>> wrappedStream) {
+  public RecordStream(final Stream<Record<RecordValue>> wrappedStream) {
     super(wrappedStream);
   }
 
   @Override
-  protected RecordStream supply(Stream<Record<RecordValue>> wrappedStream) {
+  protected RecordStream supply(final Stream<Record<RecordValue>> wrappedStream) {
     return new RecordStream(wrappedStream);
   }
 
-  public RecordStream between(long lowerBoundPosition, long upperBoundPosition) {
+  public RecordStream between(final long lowerBoundPosition, final long upperBoundPosition) {
     return between(
         r -> r.getPosition() > lowerBoundPosition, r -> r.getPosition() >= upperBoundPosition);
   }
 
-  public RecordStream between(Record<?> lowerBound, Record<?> upperBound) {
+  public RecordStream between(final Record<?> lowerBound, final Record<?> upperBound) {
     return between(lowerBound::equals, upperBound::equals);
   }
 
-  public RecordStream between(Predicate<Record<?>> lowerBound, Predicate<Record<?>> upperBound) {
+  public RecordStream between(
+      final Predicate<Record<?>> lowerBound, final Predicate<Record<?>> upperBound) {
     return limit(upperBound::test).skipUntil(lowerBound::test);
   }
 
-  public RecordStream limitToWorkflowInstance(long workflowInstanceKey) {
+  public RecordStream limitToWorkflowInstance(final long workflowInstanceKey) {
     return between(
         r ->
-            r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATING
-                && r.getKey() == workflowInstanceKey,
+            r.getKey() == workflowInstanceKey
+                && r.getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         r ->
-            r.getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED
-                && r.getKey() == workflowInstanceKey);
+            r.getKey() == workflowInstanceKey
+                && Set.of(
+                        WorkflowInstanceIntent.ELEMENT_COMPLETED,
+                        WorkflowInstanceIntent.ELEMENT_TERMINATED)
+                    .contains(r.getIntent()));
   }
 
   public WorkflowInstanceRecordStream workflowInstanceRecords() {

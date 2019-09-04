@@ -89,12 +89,15 @@ public class DispatcherTest {
             publisherLimit,
             publisherPosition,
             A_LOG_WINDOW_LENGTH,
+            A_LOG_WINDOW_LENGTH,
             new String[0],
             Dispatcher.MODE_PUB_SUB,
             "test") {
           @Override
           protected Subscription newSubscription(
-              int subscriberId, String subscriberName, ActorCondition onConsumption) {
+              final int subscriberId,
+              final String subscriberName,
+              final ActorCondition onConsumption) {
             subscriptionSpy =
                 spy(
                     new Subscription(

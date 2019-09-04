@@ -28,56 +28,58 @@ import java.net.InetSocketAddress;
 import java.util.Objects;
 
 public class ServerTransportBuilder {
-  public static final int DEFAULT_MAX_MESSAGE_LENGTH = 1024 * 512;
+
   protected FragmentHandler receiveHandler;
   protected RemoteAddressListImpl remoteAddressList;
   protected ServerControlMessageListener controlMessageListener;
-  private int messageMaxLength = DEFAULT_MAX_MESSAGE_LENGTH;
+
   private String name = "server";
   private ServerOutput output;
   private ActorScheduler scheduler;
   private InetSocketAddress bindAddress;
+
+  private int messageMaxLength = (int) ByteValue.ofKilobytes(512).toBytes();
   private TransportMemoryPool messageMemoryPool =
       new NonBlockingMemoryPool(ByteValue.ofMegabytes(4));
 
-  public ServerTransportBuilder name(String name) {
+  public ServerTransportBuilder name(final String name) {
     this.name = name;
     return this;
   }
 
-  public ServerTransportBuilder messageMemoryPool(TransportMemoryPool messageMemoryPool) {
+  public ServerTransportBuilder messageMemoryPool(final TransportMemoryPool messageMemoryPool) {
     this.messageMemoryPool = messageMemoryPool;
     return this;
   }
 
-  public ServerTransportBuilder bindAddress(InetSocketAddress address) {
-    this.bindAddress = address;
+  public ServerTransportBuilder bindAddress(final InetSocketAddress address) {
+    bindAddress = address;
     return this;
   }
 
-  public ServerTransportBuilder scheduler(ActorScheduler scheduler) {
+  public ServerTransportBuilder scheduler(final ActorScheduler scheduler) {
     this.scheduler = scheduler;
     return this;
   }
 
-  public ServerTransportBuilder messageMaxLength(int messageMaxLength) {
-    this.messageMaxLength = messageMaxLength;
+  public ServerTransportBuilder messageMaxLength(final ByteValue messageMaxLength) {
+    this.messageMaxLength = (int) messageMaxLength.toBytes();
     return this;
   }
 
-  protected ServerTransportBuilder receiveHandler(FragmentHandler receiveHandler) {
+  protected ServerTransportBuilder receiveHandler(final FragmentHandler receiveHandler) {
     this.receiveHandler = receiveHandler;
     return this;
   }
 
   public ServerTransportBuilder controlMessageListener(
-      ServerControlMessageListener controlMessageListener) {
+      final ServerControlMessageListener controlMessageListener) {
     this.controlMessageListener = controlMessageListener;
     return this;
   }
 
   public ServerTransport build(
-      ServerMessageHandler messageHandler, ServerRequestHandler requestHandler) {
+      final ServerMessageHandler messageHandler, final ServerRequestHandler requestHandler) {
     remoteAddressList = new RemoteAddressListImpl();
 
     final ServerActorContext actorContext = new ServerActorContext();
@@ -99,7 +101,7 @@ public class ServerTransportBuilder {
     return new ServerTransport(actorContext, context);
   }
 
-  public BufferingServerTransport buildBuffering(Dispatcher receiveBuffer) {
+  public BufferingServerTransport buildBuffering(final Dispatcher receiveBuffer) {
     remoteAddressList = new RemoteAddressListImpl();
     receiveHandler(new ReceiveBufferHandler(receiveBuffer));
 
@@ -137,7 +139,8 @@ public class ServerTransportBuilder {
     return context;
   }
 
-  protected void buildActors(TransportContext context, ServerActorContext actorContext) {
+  protected void buildActors(
+      final TransportContext context, final ServerActorContext actorContext) {
     final ServerConductor conductor = new ServerConductor(actorContext, context);
     final Sender sender = actorContext.getSender();
     final Receiver receiver = new Receiver(actorContext, context);
@@ -151,5 +154,12 @@ public class ServerTransportBuilder {
     Objects.requireNonNull(scheduler, "Scheduler must be provided");
     Objects.requireNonNull(bindAddress, "Bind Address must be provided");
     Objects.requireNonNull(receiveHandler, "Receive Handler must be defined");
+
+    if (messageMaxLength > messageMemoryPool.capacity()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the message memory pool size to be greater than the max message length of %d, but was %d.",
+              messageMaxLength, messageMemoryPool.capacity()));
+    }
   }
 }

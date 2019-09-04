@@ -46,4 +46,12 @@ public final class StringUtil {
     Arrays.fill(chars, 'a');
     return new String(chars);
   }
+
+  public static String limitString(final String message, int maxLength) {
+    if (message.length() > maxLength) {
+      return message.substring(0, maxLength).concat("...");
+    } else {
+      return message;
+    }
+  }
 }

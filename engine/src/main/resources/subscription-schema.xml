@@ -15,7 +15,7 @@
     </composite>
 
     <composite name="varDataEncoding">
-      <type name="length" primitiveType="uint16"/>
+      <type name="length" primitiveType="uint32" maxValue="2147483647"/>
       <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8"/>
     </composite>
 

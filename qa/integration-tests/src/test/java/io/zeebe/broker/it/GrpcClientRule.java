@@ -9,6 +9,7 @@ package io.zeebe.broker.it;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
+import io.zeebe.broker.TestLoggers;
 import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.ZeebeClient;
@@ -22,16 +23,20 @@ import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
+import org.slf4j.Logger;
 
 public class GrpcClientRule extends ExternalResource {
 
-  private final Consumer<ZeebeClientBuilder> configurator;
+  private static final Logger LOG = TestLoggers.TEST_LOGGER;
 
   protected ZeebeClient client;
+  private final Consumer<ZeebeClientBuilder> configurator;
+  private long startTime;
 
   public GrpcClientRule(final EmbeddedBrokerRule brokerRule) {
     this(brokerRule, config -> {});
@@ -60,14 +65,22 @@ public class GrpcClientRule extends ExternalResource {
 
   @Override
   public void before() {
-    final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder();
+    startTime = System.currentTimeMillis();
+    final ZeebeClientBuilder builder =
+        ZeebeClient.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(10));
     configurator.accept(builder);
     client = builder.build();
+    LOG.info("\n====\nClient startup time: {}\n====\n", (System.currentTimeMillis() - startTime));
+    startTime = System.currentTimeMillis();
   }
 
   @Override
   public void after() {
+    LOG.info(
+        "Client Rule assumption: Test execution time: " + (System.currentTimeMillis() - startTime));
+    startTime = System.currentTimeMillis();
     client.close();
+    LOG.info("Client closing time: " + (System.currentTimeMillis() - startTime));
     client = null;
   }
 

@@ -21,6 +21,9 @@ import static java.util.Collections.singletonList;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.EventBasedGateway;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.zeebe.model.bpmn.instance.Message;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
+import java.util.Arrays;
 import org.junit.runners.Parameterized.Parameters;
 
 public class ZeebeEventBasedGatewayValidationTest extends AbstractZeebeValidationTest {
@@ -68,7 +71,21 @@ public class ZeebeEventBasedGatewayValidationTest extends AbstractZeebeValidatio
         singletonList(
             expect(
                 EventBasedGateway.class,
-                "Multiple message catch events with the same name are not allowed."))
+                "Multiple message catch events with the same name 'msg' are not allowed."))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .eventBasedGateway()
+            .intermediateCatchEvent(
+                "catch-1", c -> c.message(m -> m.name(null).zeebeCorrelationKey("$.foo")))
+            .moveToLastGateway()
+            .intermediateCatchEvent(
+                "catch-2", c -> c.message(m -> m.name("msg").zeebeCorrelationKey(null)))
+            .done(),
+        Arrays.asList(
+            expect(Message.class, "Name must be present and not empty"),
+            expect(ZeebeSubscription.class, "zeebe:correlationKey must be present and not empty"))
       },
       {
         Bpmn.createExecutableProcess("process")

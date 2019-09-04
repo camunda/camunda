@@ -142,6 +142,10 @@ public final class LongPollingActivateJobsHandler extends Actor {
   }
 
   private void block(JobTypeAvailabilityState state, LongPollingActivateJobsRequest request) {
+    if (request.isLongPollingDisabled()) {
+      request.complete();
+      return;
+    }
     if (!request.isTimedOut()) {
       LOG.trace(
           "Jobs of type {} not available. Blocking request {}",
@@ -156,9 +160,10 @@ public final class LongPollingActivateJobsHandler extends Actor {
 
   private void addTimeOut(JobTypeAvailabilityState state, LongPollingActivateJobsRequest request) {
     ActorClock.currentTimeMillis();
+    final Duration requestTimeout = request.getLongPollingTimeout(longPollingTimeout);
     final ScheduledTimer timeout =
         actor.runDelayed(
-            longPollingTimeout,
+            requestTimeout,
             () -> {
               state.removeBlockedRequest(request);
               request.timeout();

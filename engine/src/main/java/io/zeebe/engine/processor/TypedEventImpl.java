@@ -17,14 +17,13 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.util.StringUtil;
 
-@SuppressWarnings({"rawtypes"})
 public class TypedEventImpl implements TypedRecord {
   private final int partitionId;
-
-  protected LoggedEvent rawEvent;
-  protected RecordMetadata metadata;
-  protected UnifiedRecordValue value;
+  private LoggedEvent rawEvent;
+  private RecordMetadata metadata;
+  private UnifiedRecordValue value;
 
   public TypedEventImpl(int partitionId) {
     this.partitionId = partitionId;
@@ -36,6 +35,7 @@ public class TypedEventImpl implements TypedRecord {
     this.value = value;
   }
 
+  @Override
   public long getPosition() {
     return rawEvent.getPosition();
   }
@@ -102,9 +102,10 @@ public class TypedEventImpl implements TypedRecord {
     return metadata.getRequestId();
   }
 
+  @Override
   @JsonIgnore
-  public int getMaxValueLength() {
-    return this.rawEvent.getMaxValueLength();
+  public long getLength() {
+    return (long) metadata.getLength() + value.getLength();
   }
 
   @Override
@@ -119,6 +120,11 @@ public class TypedEventImpl implements TypedRecord {
 
   @Override
   public String toString() {
-    return "TypedEventImpl{" + "metadata=" + metadata + ", value=" + value + '}';
+    return "TypedEventImpl{"
+        + "metadata="
+        + metadata
+        + ", value="
+        + StringUtil.limitString(value.toString(), 1024)
+        + '}';
   }
 }

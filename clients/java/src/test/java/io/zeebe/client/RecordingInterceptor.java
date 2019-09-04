@@ -20,25 +20,51 @@ import io.grpc.ServerCall;
 import io.grpc.ServerCall.Listener;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
+import java.util.function.BiConsumer;
 
+/**
+ * Records the headers of the last intercepted call. Additionally, also allows the specification of
+ * an action to be taken (e.g., modify headers, fail call, etc).
+ */
 public class RecordingInterceptor implements ServerInterceptor {
   private Metadata capturedHeaders;
+  private BiConsumer<ServerCall, Metadata> interceptAction;
 
   @Override
   public <ReqT, RespT> Listener<ReqT> interceptCall(
       final ServerCall<ReqT, RespT> call,
       final Metadata headers,
       final ServerCallHandler<ReqT, RespT> next) {
-
     capturedHeaders = headers;
+
+    if (interceptAction != null) {
+      interceptAction.accept(call, headers);
+    }
     return next.startCall(call, headers);
   }
 
-  public Metadata getCapturedHeaders() {
+  /**
+   * Get the headers captured by the last call or null if none exist.
+   *
+   * @return headers
+   */
+  Metadata getCapturedHeaders() {
     return capturedHeaders;
   }
 
-  public void reset() {
-    capturedHeaders = null;
+  /** Resets the captured headers and the action to be taken when a call is intercepted. */
+  void reset() {
+    this.capturedHeaders = null;
+    this.interceptAction = null;
+  }
+
+  /**
+   * Sets an action that will be taken when a call is intercepted. Can be used to modify headers,
+   * reject calls, etc.
+   *
+   * @param interceptAction
+   */
+  void setInterceptAction(BiConsumer<ServerCall, Metadata> interceptAction) {
+    this.interceptAction = interceptAction;
   }
 }

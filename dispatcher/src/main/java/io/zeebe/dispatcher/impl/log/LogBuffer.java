@@ -31,7 +31,10 @@ public class LogBuffer {
 
   protected final int partitionSize;
 
-  public LogBuffer(AllocatedBuffer allocatedBuffer, int partitionSize, int initialPartitionId) {
+  public LogBuffer(
+      final AllocatedBuffer allocatedBuffer,
+      final int partitionSize,
+      final int initialPartitionId) {
     this.partitionSize = partitionSize;
     rawBuffer = allocatedBuffer;
 
@@ -45,7 +48,7 @@ public class LogBuffer {
     metadataBuffer.putIntVolatile(LOG_ACTIVE_PARTITION_ID_OFFSET, initialPartitionId);
   }
 
-  public LogBufferPartition getPartition(int id) {
+  public LogBufferPartition getPartition(final int id) {
     return partitions[id % getPartitionCount()];
   }
 
@@ -65,7 +68,7 @@ public class LogBuffer {
     return metadataBuffer.getInt(LOG_MAX_FRAME_LENGTH_OFFSET);
   }
 
-  public void onActiveParitionFilled(int activePartitionId) {
+  public void onActiveParitionFilled(final int activePartitionId) {
     final int nextPartitionId = 1 + activePartitionId;
     final int nextNextPartitionId = 1 + nextPartitionId;
     final LogBufferPartition nextNextPartition =
@@ -73,6 +76,11 @@ public class LogBuffer {
 
     nextNextPartition.setStatusOrdered(PARTITION_NEEDS_CLEANING);
     metadataBuffer.putIntOrdered(LOG_ACTIVE_PARTITION_ID_OFFSET, nextPartitionId);
+
+    LOG.trace(
+        "Partition {} is filled, mark partition {} as active",
+        (activePartitionId % getPartitionCount()),
+        (nextPartitionId % getPartitionCount()));
   }
 
   public int cleanPartitions() {
@@ -82,6 +90,8 @@ public class LogBuffer {
       final LogBufferPartition partition = partitions[i];
 
       if (partition.getStatusVolatile() == PARTITION_NEEDS_CLEANING) {
+        LOG.trace("Clean partition {}", i);
+
         partition.clean();
         ++workCount;
       }

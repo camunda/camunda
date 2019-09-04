@@ -26,4 +26,12 @@ public interface ZeebeLoopCharacteristics extends BpmnModelElementInstance {
   String getInputElement();
 
   void setInputElement(String inputElement);
+
+  String getOutputCollection();
+
+  void setOutputCollection(String outputCollection);
+
+  String getOutputElement();
+
+  void setOutputElement(String outputElement);
 }

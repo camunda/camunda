@@ -35,7 +35,7 @@ public class LogStorageAppenderTest {
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   private final LogStreamRule logStreamRule =
-      new LogStreamRule(
+      LogStreamRule.startByDefault(
           temporaryFolder,
           b -> {
             b.logStorageStubber(logStorage -> spy(logStorage));

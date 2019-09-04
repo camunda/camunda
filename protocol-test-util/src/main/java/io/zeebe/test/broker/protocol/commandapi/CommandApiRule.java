@@ -64,13 +64,13 @@ public class CommandApiRule extends ExternalResource {
   protected final int nodeId;
   protected final Supplier<AtomixCluster> atomixSupplier;
   protected final int partitionCount;
-  private final Int2ObjectHashMap<PartitionTestClient> testPartitionClients =
-      new Int2ObjectHashMap<>();
-  private final ControlledActorClock controlledActorClock = new ControlledActorClock();
   protected int nextPartitionId = 0;
   protected MsgPackHelper msgPackHelper;
   protected ClientTransport transport;
   protected int defaultPartitionId = -1;
+  private final Int2ObjectHashMap<PartitionTestClient> testPartitionClients =
+      new Int2ObjectHashMap<>();
+  private final ControlledActorClock controlledActorClock = new ControlledActorClock();
   private AtomixCluster atomix;
   private ActorScheduler scheduler;
 

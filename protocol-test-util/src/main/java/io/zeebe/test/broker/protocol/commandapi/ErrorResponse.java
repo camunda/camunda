@@ -16,9 +16,9 @@ import org.agrona.DirectBuffer;
 
 public class ErrorResponse implements BufferReader {
   protected final MsgPackHelper msgPackHelper;
+  protected String errorData;
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
   private final ErrorResponseDecoder bodyDecoder = new ErrorResponseDecoder();
-  protected String errorData;
 
   public ErrorResponse(MsgPackHelper msgPackHelper) {
     this.msgPackHelper = msgPackHelper;

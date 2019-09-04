@@ -42,6 +42,7 @@ type FailJobCommand struct {
 	request        *pb.FailJobRequest
 	gateway        pb.GatewayClient
 	requestTimeout time.Duration
+	retryPredicate func(error) bool
 }
 
 func (cmd *FailJobCommand) JobKey(jobKey int64) FailJobCommandStep2 {
@@ -66,10 +67,11 @@ func (cmd *FailJobCommand) Send() (*pb.FailJobResponse, error) {
 	return cmd.gateway.FailJob(ctx, cmd.request)
 }
 
-func NewFailJobCommand(gateway pb.GatewayClient, requestTimeout time.Duration) FailJobCommandStep1 {
+func NewFailJobCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) FailJobCommandStep1 {
 	return &FailJobCommand{
 		request:        &pb.FailJobRequest{},
 		gateway:        gateway,
 		requestTimeout: requestTimeout,
+		retryPredicate: retryPredicate,
 	}
 }

@@ -15,33 +15,38 @@
  */
 package io.zeebe.client.impl.command;
 
+import io.grpc.stub.StreamObserver;
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.FinalCommandStep;
 import io.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.zeebe.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep2;
 import io.zeebe.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep3;
-import io.zeebe.client.impl.ZeebeClientFutureImpl;
+import io.zeebe.client.impl.RetriableClientFutureImpl;
 import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 public class PublishMessageCommandImpl extends CommandWithVariables<PublishMessageCommandImpl>
     implements PublishMessageCommandStep1, PublishMessageCommandStep2, PublishMessageCommandStep3 {
 
   private final GatewayStub asyncStub;
+  private final Predicate<Throwable> retryPredicate;
   private final PublishMessageRequest.Builder builder;
   private Duration requestTimeout;
 
   public PublishMessageCommandImpl(
       final GatewayStub asyncStub,
       final ZeebeClientConfiguration configuration,
-      ZeebeObjectMapper objectMapper) {
+      ZeebeObjectMapper objectMapper,
+      Predicate<Throwable> retryPredicate) {
     super(objectMapper);
     this.asyncStub = asyncStub;
+    this.retryPredicate = retryPredicate;
     this.builder = PublishMessageRequest.newBuilder();
     this.requestTimeout = configuration.getDefaultRequestTimeout();
     builder.setTimeToLive(configuration.getDefaultMessageTimeToLive().toMillis());
@@ -85,12 +90,19 @@ public class PublishMessageCommandImpl extends CommandWithVariables<PublishMessa
 
   @Override
   public ZeebeFuture<Void> send() {
-    final ZeebeClientFutureImpl<Void, PublishMessageResponse> future =
-        new ZeebeClientFutureImpl<>();
+    final PublishMessageRequest request = builder.build();
+    final RetriableClientFutureImpl<Void, PublishMessageResponse> future =
+        new RetriableClientFutureImpl<>(
+            retryPredicate, streamObserver -> send(request, streamObserver));
 
+    send(request, future);
+    return future;
+  }
+
+  private void send(
+      PublishMessageRequest request, StreamObserver<PublishMessageResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
-        .publishMessage(builder.build(), future);
-    return future;
+        .publishMessage(request, streamObserver);
   }
 }

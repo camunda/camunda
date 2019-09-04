@@ -21,6 +21,7 @@ import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.io.File;
@@ -38,8 +39,7 @@ public class LogStreamBuilder {
   protected String logDirectory;
   protected int initialLogSegmentId = 0;
   protected boolean deleteOnClose;
-  protected int maxAppendBlockSize = 1024 * 1024;
-  protected int writeBufferSize = 1024 * 1024 * 8;
+  protected int maxFragmentSize = 1024 * 1024 * 4;
   protected int logSegmentSize = 1024 * 1024 * 128;
   protected Function<FsLogStorage, FsLogStorage> logStorageStubber = Function.identity();
 
@@ -63,22 +63,12 @@ public class LogStreamBuilder {
   }
 
   public LogStreamBuilder logDirectory(final String logDir) {
-    this.logDirectory = logDir;
-    return this;
-  }
-
-  public LogStreamBuilder writeBufferSize(final int writeBufferSize) {
-    this.writeBufferSize = writeBufferSize;
-    return this;
-  }
-
-  public LogStreamBuilder maxAppendBlockSize(final int maxAppendBlockSize) {
-    this.maxAppendBlockSize = maxAppendBlockSize;
+    logDirectory = logDir;
     return this;
   }
 
   public LogStreamBuilder initialLogSegmentId(final int logFragmentId) {
-    this.initialLogSegmentId = logFragmentId;
+    initialLogSegmentId = logFragmentId;
     return this;
   }
 
@@ -98,6 +88,15 @@ public class LogStreamBuilder {
     return this;
   }
 
+  public LogStreamBuilder maxFragmentSize(final int maxFragmentSize) {
+    this.maxFragmentSize = maxFragmentSize;
+    return this;
+  }
+
+  public int getMaxFragmentSize() {
+    return maxFragmentSize;
+  }
+
   public String getLogName() {
     return logName;
   }
@@ -113,20 +112,12 @@ public class LogStreamBuilder {
     return partitionId;
   }
 
-  public int getMaxAppendBlockSize() {
-    return maxAppendBlockSize;
-  }
-
   public ServiceContainer getServiceContainer() {
     return serviceContainer;
   }
 
   public AtomicLongPosition getCommitPosition() {
     return commitPosition;
-  }
-
-  public int getWriteBufferSize() {
-    return writeBufferSize;
   }
 
   public ActorConditions getOnCommitPositionUpdatedConditions() {
@@ -169,5 +160,12 @@ public class LogStreamBuilder {
   private void validate() {
     Objects.requireNonNull(logName, "logName");
     ensureGreaterThanOrEqual("partitionId", partitionId, 0);
+
+    if (logSegmentSize < maxFragmentSize) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the log segment size greater than the max fragment size of %s, but was %s.",
+              ByteValue.ofBytes(maxFragmentSize), ByteValue.ofBytes(logSegmentSize)));
+    }
   }
 }

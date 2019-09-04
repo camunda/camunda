@@ -17,36 +17,42 @@ package io.zeebe.model.bpmn.validation.zeebe;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 
-public class ZeebeDesignTimeValidators {
+public final class ZeebeDesignTimeValidators {
 
   public static final Collection<ModelElementValidator<?>> VALIDATORS;
 
   static {
-    VALIDATORS = new ArrayList<>();
-    VALIDATORS.add(new ActivityValidator());
-    VALIDATORS.add(new BoundaryEventValidator());
-    VALIDATORS.add(new DefinitionsValidator());
-    VALIDATORS.add(new EndEventValidator());
-    VALIDATORS.add(new EventDefinitionValidator());
-    VALIDATORS.add(new EventBasedGatewayValidator());
-    VALIDATORS.add(new ExclusiveGatewayValidator());
-    VALIDATORS.add(new FlowElementValidator());
-    VALIDATORS.add(new FlowNodeValidator());
-    VALIDATORS.add(new IntermediateCatchEventValidator());
-    VALIDATORS.add(new MessageEventDefinitionValidator());
-    VALIDATORS.add(new MessageValidator());
-    VALIDATORS.add(new MultiInstanceLoopCharacteristicsValidator());
-    VALIDATORS.add(new ProcessValidator());
-    VALIDATORS.add(new SequenceFlowValidator());
-    VALIDATORS.add(new ServiceTaskValidator());
-    VALIDATORS.add(new ReceiveTaskValidator());
-    VALIDATORS.add(new StartEventValidator());
-    VALIDATORS.add(new SubProcessValidator());
-    VALIDATORS.add(new TimerEventDefinitionValidator());
-    VALIDATORS.add(new ZeebeTaskDefinitionValidator());
-    VALIDATORS.add(new ZeebeSubscriptionValidator());
-    VALIDATORS.add(new ZeebeLoopCharacteristicsValidator());
+    final List<ModelElementValidator<?>> validators = new ArrayList<>();
+    validators.add(new ActivityValidator());
+    validators.add(new BoundaryEventValidator());
+    validators.add(new DefinitionsValidator());
+    validators.add(new EndEventValidator());
+    validators.add(new EventDefinitionValidator());
+    validators.add(new EventBasedGatewayValidator());
+    validators.add(new ExclusiveGatewayValidator());
+    validators.add(new FlowElementValidator());
+    validators.add(new FlowNodeValidator());
+    validators.add(new IntermediateCatchEventValidator());
+    validators.add(new MessageEventDefinitionValidator());
+    validators.add(new MessageValidator());
+    validators.add(new MultiInstanceLoopCharacteristicsValidator());
+    validators.add(new ProcessValidator());
+    validators.add(new SequenceFlowValidator());
+    validators.add(new ServiceTaskValidator());
+    validators.add(new ReceiveTaskValidator());
+    validators.add(new StartEventValidator());
+    validators.add(new SubProcessValidator());
+    validators.add(new TimerEventDefinitionValidator());
+    validators.add(new ZeebeTaskDefinitionValidator());
+    validators.add(new ZeebeSubscriptionValidator());
+    validators.add(new ZeebeLoopCharacteristicsValidator());
+
+    VALIDATORS = Collections.unmodifiableList(validators);
   }
+
+  private ZeebeDesignTimeValidators() {}
 }

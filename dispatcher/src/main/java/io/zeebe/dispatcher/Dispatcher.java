@@ -22,55 +22,58 @@ import io.zeebe.util.sched.future.ActorFuture;
 import java.util.Arrays;
 import java.util.function.BiFunction;
 import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
 
 /** Component for sending and receiving messages between different threads. */
 public class Dispatcher extends Actor implements AutoCloseable {
 
   public static final int MODE_PUB_SUB = 1;
   public static final int MODE_PIPELINE = 2;
+
+  private static final Logger LOG = Loggers.DISPATCHER_LOGGER;
+
   private static final String ERROR_MESSAGE_CLAIM_FAILED =
       "Expected to claim segment of size %d, but can't claim more then %d bytes.";
   private static final String ERROR_MESSAGE_SUBSCRIPTION_NOT_FOUND =
       "Expected to find subscription with name '%s', but was not registered.";
-  protected final LogBuffer logBuffer;
-  protected final LogBufferAppender logAppender;
+  private final LogBuffer logBuffer;
+  private final LogBufferAppender logAppender;
 
-  protected final AtomicPosition publisherLimit;
-  protected final AtomicPosition publisherPosition;
-  protected final String[] defaultSubscriptionNames;
-  protected final int maxFrameLength;
-  protected final int partitionSize;
-  protected final String name;
-  protected final int mode;
-  protected Subscription[] subscriptions;
+  private final AtomicPosition publisherLimit;
+  private final AtomicPosition publisherPosition;
+  private final String[] defaultSubscriptionNames;
+  private final int maxFragmentLength;
+  private final String name;
+  private final int mode;
+  private final int logWindowLength;
+  private Subscription[] subscriptions;
   private final Runnable onClaimComplete = this::signalSubsciptions;
-  protected int logWindowLength;
-  protected volatile boolean isClosed = false;
+  private volatile boolean isClosed = false;
   private final Runnable backgroundTask = this::runBackgroundTask;
   private ActorCondition dataConsumed;
 
-  public Dispatcher(
-      LogBuffer logBuffer,
-      LogBufferAppender logAppender,
-      AtomicPosition publisherLimit,
-      AtomicPosition publisherPosition,
-      int logWindowLength,
-      String[] subscriptionNames,
-      int mode,
-      String name) {
+  Dispatcher(
+      final LogBuffer logBuffer,
+      final LogBufferAppender logAppender,
+      final AtomicPosition publisherLimit,
+      final AtomicPosition publisherPosition,
+      final int logWindowLength,
+      final int maxFragmentLength,
+      final String[] subscriptionNames,
+      final int mode,
+      final String name) {
     this.logBuffer = logBuffer;
     this.logAppender = logAppender;
     this.publisherLimit = publisherLimit;
     this.publisherPosition = publisherPosition;
-    this.logWindowLength = logWindowLength;
     this.mode = mode;
     this.name = name;
 
-    this.partitionSize = logBuffer.getPartitionSize();
-    this.maxFrameLength = partitionSize / 16;
+    this.logWindowLength = logWindowLength;
+    this.maxFragmentLength = maxFragmentLength;
 
-    this.subscriptions = new Subscription[0];
-    this.defaultSubscriptionNames = subscriptionNames;
+    subscriptions = new Subscription[0];
+    defaultSubscriptionNames = subscriptionNames;
   }
 
   @Override
@@ -91,7 +94,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
 
     final Subscription[] subscriptionsCopy = Arrays.copyOf(subscriptions, subscriptions.length);
 
-    for (Subscription subscription : subscriptionsCopy) {
+    for (final Subscription subscription : subscriptionsCopy) {
       doCloseSubscription(subscription);
     }
 
@@ -104,7 +107,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
     logBuffer.cleanPartitions();
   }
 
-  protected void openDefaultSubscriptions() {
+  private void openDefaultSubscriptions() {
     final int subscriptionSize =
         defaultSubscriptionNames == null ? 0 : defaultSubscriptionNames.length;
 
@@ -120,7 +123,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
    * @return the new publisher position if the message was written successfully. Otherwise, the
    *     return value is negative.
    */
-  public long offer(DirectBuffer msg) {
+  public long offer(final DirectBuffer msg) {
     return offer(msg, 0, msg.capacity(), 0);
   }
 
@@ -131,7 +134,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
    * @return the new publisher position if the message was written successfully. Otherwise, the
    *     return value is negative.
    */
-  public long offer(DirectBuffer msg, int streamId) {
+  public long offer(final DirectBuffer msg, final int streamId) {
     return offer(msg, 0, msg.capacity(), streamId);
   }
 
@@ -142,7 +145,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
    * @return the new publisher position if the message was written successfully. Otherwise, the
    *     return value is negative.
    */
-  public long offer(DirectBuffer msg, int start, int length) {
+  public long offer(final DirectBuffer msg, final int start, final int length) {
     return offer(msg, start, length, 0);
   }
 
@@ -153,7 +156,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
    * @return the new publisher position if the message was written successfully. Otherwise, the
    *     return value is negative.
    */
-  public long offer(DirectBuffer msg, int start, int length, int streamId) {
+  public long offer(final DirectBuffer msg, final int start, final int length, final int streamId) {
     return offer(
         (partition, activePartitionId) ->
             logAppender.appendFrame(partition, activePartitionId, msg, start, length, streamId),
@@ -176,7 +179,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
    * @return the new publisher position if the fragment was claimed successfully. Otherwise, the
    *     return value is negative.
    */
-  public long claim(ClaimedFragment claim, int length) {
+  public long claim(final ClaimedFragment claim, final int length) {
     return claim(claim, length, 0);
   }
 
@@ -189,7 +192,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
    * @return the new publisher position if the fragment was claimed successfully. Otherwise, the
    *     return value is negative.
    */
-  public long claim(ClaimedFragment claim, int length, int streamId) {
+  public long claim(final ClaimedFragment claim, final int length, final int streamId) {
     return offer(
         (partition, activePartitionId) ->
             logAppender.claim(
@@ -209,7 +212,8 @@ public class Dispatcher extends Actor implements AutoCloseable {
    * @return the new publisher position if the batch was claimed successfully. Otherwise, the return
    *     value is negative.
    */
-  public long claim(ClaimedFragmentBatch batch, int fragmentCount, int batchLength) {
+  public long claim(
+      final ClaimedFragmentBatch batch, final int fragmentCount, final int batchLength) {
     return offer(
         (partition, activePartitionId) ->
             logAppender.claim(
@@ -217,7 +221,8 @@ public class Dispatcher extends Actor implements AutoCloseable {
         batchLength);
   }
 
-  private long offer(BiFunction<LogBufferPartition, Integer, Integer> claimer, int length) {
+  private long offer(
+      final BiFunction<LogBufferPartition, Integer, Integer> claimer, final int length) {
     long newPosition = -1;
 
     if (!isClosed) {
@@ -232,16 +237,18 @@ public class Dispatcher extends Actor implements AutoCloseable {
       if (position < limit) {
         final int newOffset;
 
-        if (length < maxFrameLength) {
+        if (length < maxFragmentLength) {
           newOffset = claimer.apply(partition, activePartitionId);
         } else {
           throw new IllegalArgumentException(
-              String.format(ERROR_MESSAGE_CLAIM_FAILED, length, maxFrameLength));
+              String.format(ERROR_MESSAGE_CLAIM_FAILED, length, maxFragmentLength));
         }
 
         newPosition = updatePublisherPosition(activePartitionId, newOffset);
 
-        publisherPosition.proposeMaxOrdered(newPosition);
+        if (publisherPosition.proposeMaxOrdered(newPosition)) {
+          LOG.trace("Updated publisher position to {}", newPosition);
+        }
         signalSubsciptions();
       }
     }
@@ -249,7 +256,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
     return newPosition;
   }
 
-  protected long updatePublisherPosition(final int activePartitionId, int newOffset) {
+  private long updatePublisherPosition(final int activePartitionId, final int newOffset) {
     long newPosition = -1;
 
     if (newOffset > 0) {
@@ -290,6 +297,8 @@ public class Dispatcher extends Actor implements AutoCloseable {
       final long proposedPublisherLimit = position(partitionId, partitionOffset);
 
       if (publisherLimit.proposeMaxOrdered(proposedPublisherLimit)) {
+        LOG.trace("Updated publisher limit to {}", proposedPublisherLimit);
+
         isUpdated = 1;
       }
     }
@@ -304,7 +313,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
    *     <li>if the dispatcher runs in pipeline-mode,
    *     <li>if a subscription with this name already exists
    */
-  public Subscription openSubscription(String subscriptionName) {
+  public Subscription openSubscription(final String subscriptionName) {
     return FutureUtil.join(openSubscriptionAsync(subscriptionName));
   }
 
@@ -312,7 +321,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
    * Creates a new subscription with the given name asynchronously. The operation fails if the
    * dispatcher runs in pipeline-mode or a subscription with this name already exists.
    */
-  public ActorFuture<Subscription> openSubscriptionAsync(String subscriptionName) {
+  public ActorFuture<Subscription> openSubscriptionAsync(final String subscriptionName) {
     return actor.call(
         () -> {
           if (mode == MODE_PIPELINE) {
@@ -323,16 +332,19 @@ public class Dispatcher extends Actor implements AutoCloseable {
         });
   }
 
-  public ActorFuture<Subscription> getSubscriptionAsync(String subscriptionName) {
+  public ActorFuture<Subscription> getSubscriptionAsync(final String subscriptionName) {
     return actor.call(() -> getSubscriptionByName(subscriptionName));
   }
 
-  public Subscription getSubscription(String subscriptionName) {
+  public Subscription getSubscription(final String subscriptionName) {
     return FutureUtil.join(getSubscriptionAsync(subscriptionName));
   }
 
-  protected Subscription doOpenSubscription(String subscriptionName, ActorCondition onConsumption) {
+  protected Subscription doOpenSubscription(
+      final String subscriptionName, final ActorCondition onConsumption) {
     ensureUniqueSubscriptionName(subscriptionName);
+
+    LOG.trace("Open subscription with name '{}'", subscriptionName);
 
     final Subscription[] newSubscriptions = new Subscription[subscriptions.length + 1];
     System.arraycopy(subscriptions, 0, newSubscriptions, 0, subscriptions.length);
@@ -344,14 +356,14 @@ public class Dispatcher extends Actor implements AutoCloseable {
 
     newSubscriptions[subscriberId] = subscription;
 
-    this.subscriptions = newSubscriptions;
+    subscriptions = newSubscriptions;
 
     onConsumption.signal();
 
     return subscription;
   }
 
-  protected void ensureUniqueSubscriptionName(String subscriptionName) {
+  private void ensureUniqueSubscriptionName(final String subscriptionName) {
     if (findSubscriptionByName(subscriptionName) != null) {
       throw new IllegalStateException(
           "subscription with name '" + subscriptionName + "' already exists");
@@ -359,7 +371,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
   }
 
   protected Subscription newSubscription(
-      final int subscriptionId, final String subscriptionName, ActorCondition onConsumption) {
+      final int subscriptionId, final String subscriptionName, final ActorCondition onConsumption) {
     final AtomicPosition position = new AtomicPosition();
     position.set(position(logBuffer.getActivePartitionIdVolatile(), 0));
     final AtomicPosition limit = determineLimit(subscriptionId);
@@ -368,7 +380,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
         position, limit, subscriptionId, subscriptionName, onConsumption, logBuffer);
   }
 
-  protected AtomicPosition determineLimit(int subscriptionId) {
+  protected AtomicPosition determineLimit(final int subscriptionId) {
     if (mode == MODE_PUB_SUB) {
       return publisherPosition;
     } else {
@@ -387,7 +399,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
    *
    * @throws IllegalStateException if the dispatcher runs in pipeline-mode.
    */
-  public void closeSubscription(Subscription subscriptionToClose) {
+  public void closeSubscription(final Subscription subscriptionToClose) {
     FutureUtil.join(closeSubscriptionAsync(subscriptionToClose));
   }
 
@@ -395,7 +407,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
    * Close the given subscription asynchronously. The operation fails if the dispatcher runs in
    * pipeline-mode.
    */
-  public ActorFuture<Void> closeSubscriptionAsync(Subscription subscriptionToClose) {
+  public ActorFuture<Void> closeSubscriptionAsync(final Subscription subscriptionToClose) {
     return actor.call(
         () -> {
           if (mode == MODE_PIPELINE) {
@@ -406,7 +418,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
         });
   }
 
-  protected void doCloseSubscription(Subscription subscriptionToClose) {
+  private void doCloseSubscription(final Subscription subscriptionToClose) {
     if (isClosed) {
       return; // don't need to adjust the subscriptions when closed
     }
@@ -438,7 +450,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
       System.arraycopy(subscriptions, index + 1, newSubscriptions, index, numMoved);
     }
 
-    this.subscriptions = newSubscriptions;
+    subscriptions = newSubscriptions;
 
     // ensuring that the publisher limit is updated
     dataConsumed.signal();
@@ -450,7 +462,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
    * @return the subscription
    * @throws RuntimeException if no such subscription was opened
    */
-  private Subscription getSubscriptionByName(String subscriptionName) {
+  private Subscription getSubscriptionByName(final String subscriptionName) {
     final Subscription subscription = findSubscriptionByName(subscriptionName);
 
     if (subscription == null) {
@@ -461,7 +473,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
     }
   }
 
-  protected Subscription findSubscriptionByName(String subscriptionName) {
+  private Subscription findSubscriptionByName(final String subscriptionName) {
     Subscription subscription = null;
 
     if (!isClosed) {
@@ -493,8 +505,8 @@ public class Dispatcher extends Actor implements AutoCloseable {
     return logBuffer;
   }
 
-  public int getMaxFrameLength() {
-    return maxFrameLength;
+  public int getMaxFragmentLength() {
+    return maxFragmentLength;
   }
 
   public long getPublisherPosition() {

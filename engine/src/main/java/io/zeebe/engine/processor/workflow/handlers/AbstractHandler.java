@@ -44,7 +44,9 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
       }
     } else {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.debug(
-          "Skipping record {} due to step guard; in-memory element is {}",
+          "Skipping record [key: {}, intent: {}, value: {}] due to step guard; in-memory element is {}",
+          context.getKey(),
+          context.getState(),
           context.getValue(),
           context.getElementInstance());
     }
@@ -93,17 +95,17 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
     this.transitionTo(context, nextState);
   }
 
-  protected void transitionTo(BpmnStepContext<T> context, WorkflowInstanceIntent nextState) {
+  protected void transitionTo(
+      final BpmnStepContext<T> context, final WorkflowInstanceIntent nextState) {
     final ElementInstance elementInstance = context.getElementInstance();
     final WorkflowInstanceIntent state = elementInstance.getState();
 
     assert WorkflowInstanceLifecycle.canTransition(state, nextState)
         : String.format("cannot transition from '%s' to '%s'", state, nextState);
 
-    elementInstance.setState(nextState);
     context.getOutput().appendFollowUpEvent(context.getKey(), nextState, context.getValue());
 
-    // todo: this is an ugly workaround which should be removed once we have a better workflow
+    // TODO: this is an ugly workaround which should be removed once we have a better workflow
     // instance state abstraction: essentially, whenever transitioning to a terminating state, we
     // want to reject any potential event triggers
     // https://github.com/zeebe-io/zeebe/issues/1980
@@ -111,6 +113,5 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
         || nextState == WorkflowInstanceIntent.ELEMENT_TERMINATING) {
       context.getStateDb().getEventScopeInstanceState().shutdownInstance(context.getKey());
     }
-    context.getElementInstanceState().updateInstance(elementInstance);
   }
 }

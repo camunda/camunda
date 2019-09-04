@@ -48,6 +48,7 @@ public class ServerTransportMemoryPoolTest {
   @Before
   public void setUp() {
     messageMemoryPool = mock(TransportMemoryPool.class);
+    when(messageMemoryPool.capacity()).thenReturn(Long.MAX_VALUE);
 
     serverTransport =
         Transports.newServerTransport()

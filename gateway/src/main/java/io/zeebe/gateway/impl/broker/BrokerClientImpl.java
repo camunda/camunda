@@ -40,6 +40,11 @@ import org.slf4j.Logger;
 
 public class BrokerClientImpl implements BrokerClient {
   public static final Logger LOG = Loggers.GATEWAY_LOGGER;
+
+  // max message size * factor = transport buffer size
+  // - note that this factor is randomly chosen, feel free to change it
+  private static final int TRANSPORT_BUFFER_FACTOR = 16;
+
   protected final ActorScheduler actorScheduler;
   protected final ClientTransport transport;
   protected final BrokerTopologyManagerImpl topologyManager;
@@ -47,7 +52,7 @@ public class BrokerClientImpl implements BrokerClient {
   private final boolean ownsActorScheduler;
   private final Dispatcher dataFrameReceiveBuffer;
   private final BrokerRequestManager requestManager;
-  protected boolean isClosed;
+  private boolean isClosed;
   private Subscription jobAvailableSubscription;
 
   public BrokerClientImpl(final GatewayCfg configuration, final AtomixCluster atomixCluster) {
@@ -85,19 +90,20 @@ public class BrokerClientImpl implements BrokerClient {
 
     final ClusterCfg clusterCfg = configuration.getCluster();
 
-    final ByteValue transportBufferSize = clusterCfg.getTransportBuffer();
+    final ByteValue maxMessageSize = clusterCfg.getMaxMessageSize();
+    final ByteValue transportBufferSize =
+        ByteValue.ofBytes(maxMessageSize.toBytes() * TRANSPORT_BUFFER_FACTOR);
 
     dataFrameReceiveBuffer =
         Dispatchers.create("gateway-receive-buffer")
-            .bufferSize(transportBufferSize)
             .modePubSub()
-            .frameMaxLength(1024 * 1024)
+            .maxFragmentLength(maxMessageSize)
             .actorScheduler(actorScheduler)
             .build();
 
     final ClientTransportBuilder transportBuilder =
         Transports.newClientTransport("gateway-broker-client")
-            .messageMaxLength(1024 * 1024)
+            .messageMaxLength((int) maxMessageSize.toBytes())
             .messageReceiveBuffer(dataFrameReceiveBuffer)
             .messageMemoryPool(
                 new UnboundedMemoryPool()) // Client is not sending any heavy messages
@@ -172,15 +178,15 @@ public class BrokerClientImpl implements BrokerClient {
    * @see io.zeebe.gateway.impl.broker.BrokerClient#sendRequest(io.zeebe.gateway.impl.broker.request.BrokerRequest)
    */
   @Override
-  public <T> ActorFuture<BrokerResponse<T>> sendRequest(BrokerRequest<T> request) {
+  public <T> ActorFuture<BrokerResponse<T>> sendRequest(final BrokerRequest<T> request) {
     return requestManager.sendRequest(request);
   }
 
   @Override
   public <T> void sendRequest(
-      BrokerRequest<T> request,
-      BrokerResponseConsumer<T> responseConsumer,
-      Consumer<Throwable> throwableConsumer) {
+      final BrokerRequest<T> request,
+      final BrokerResponseConsumer<T> responseConsumer,
+      final Consumer<Throwable> throwableConsumer) {
     requestManager.sendRequest(request, responseConsumer, throwableConsumer);
   }
 
@@ -190,7 +196,8 @@ public class BrokerClientImpl implements BrokerClient {
   }
 
   @Override
-  public void subscribeJobAvailableNotification(String topic, Consumer<String> handler) {
+  public void subscribeJobAvailableNotification(
+      final String topic, final Consumer<String> handler) {
     jobAvailableSubscription =
         atomixCluster
             .getEventService()

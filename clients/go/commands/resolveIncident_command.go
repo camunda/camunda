@@ -41,6 +41,7 @@ type ResolveIncidentCommand struct {
 	request        *pb.ResolveIncidentRequest
 	gateway        pb.GatewayClient
 	requestTimeout time.Duration
+	retryPredicate func(error) bool
 }
 
 func (cmd *ResolveIncidentCommand) IncidentKey(incidentKey int64) ResolveIncidentCommandStep2 {
@@ -52,14 +53,20 @@ func (cmd *ResolveIncidentCommand) Send() (*pb.ResolveIncidentResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-	return cmd.gateway.ResolveIncident(ctx, cmd.request)
+	response, err := cmd.gateway.ResolveIncident(ctx, cmd.request)
+	if cmd.retryPredicate(err) {
+		return cmd.Send()
+	}
+
+	return response, err
 }
 
-func NewResolveIncidentCommand(gateway pb.GatewayClient, requestTimeout time.Duration) ResolveIncidentCommandStep1 {
+func NewResolveIncidentCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) ResolveIncidentCommandStep1 {
 	return &ResolveIncidentCommand{
 		SerializerMixin: utils.NewJsonStringSerializer(),
 		request:         &pb.ResolveIncidentRequest{},
 		gateway:         gateway,
 		requestTimeout:  requestTimeout,
+		retryPredicate:  retryPredicate,
 	}
 }

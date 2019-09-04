@@ -10,6 +10,8 @@ package io.zeebe.protocol.impl;
 import static io.zeebe.util.buffer.BufferUtil.wrapArray;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.CopiedRecord;
 import io.zeebe.protocol.impl.record.RecordMetadata;
@@ -41,9 +43,9 @@ import io.zeebe.test.util.JsonUtil;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
-import jdk.nashorn.internal.parser.JSONParser;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
@@ -193,9 +195,7 @@ public class JsonSerializableToJsonTest {
               record.setWorkflowInstanceKey(4321);
               return record;
             },
-        "{'exceptionMessage':'test','stacktrace':"
-            + JSONParser.quote(STACK_TRACE)
-            + ",'errorEventPosition':123,'workflowInstanceKey':4321}"
+        errorRecordAsJson(4321, STACK_TRACE)
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////// Empty ErrorRecord /////////////////////////////////////
@@ -208,9 +208,7 @@ public class JsonSerializableToJsonTest {
               record.initErrorRecord(RUNTIME_EXCEPTION, 123);
               return record;
             },
-        "{'exceptionMessage':'test','stacktrace':"
-            + JSONParser.quote(STACK_TRACE)
-            + ",'errorEventPosition':123,'workflowInstanceKey':-1}"
+        errorRecordAsJson(-1, STACK_TRACE)
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// IncidentRecord /////////////////////////////////////////
@@ -675,5 +673,19 @@ public class JsonSerializableToJsonTest {
 
     // then
     JsonUtil.assertEquality(json, expectedJson);
+  }
+
+  private static String errorRecordAsJson(long workflowInstanceKey, String stacktrace) {
+    final Map<String, Object> params = new HashMap<>();
+    params.put("exceptionMessage", "test");
+    params.put("workflowInstanceKey", workflowInstanceKey);
+    params.put("errorEventPosition", 123);
+    params.put("stacktrace", stacktrace);
+
+    try {
+      return new ObjectMapper().writeValueAsString(params);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

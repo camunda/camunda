@@ -75,11 +75,11 @@ public final class EngineRule extends ExternalResource {
   private final boolean explicitStart;
   private Consumer<String> jobsAvailableCallback = type -> {};
 
-  private EngineRule(int partitionCount) {
+  private EngineRule(final int partitionCount) {
     this(partitionCount, false);
   }
 
-  private EngineRule(int partitionCount, boolean explicitStart) {
+  private EngineRule(final int partitionCount, final boolean explicitStart) {
     this.partitionCount = partitionCount;
     this.explicitStart = explicitStart;
     environmentRule =
@@ -91,7 +91,7 @@ public final class EngineRule extends ExternalResource {
     return new EngineRule(1);
   }
 
-  public static EngineRule multiplePartition(int partitionCount) {
+  public static EngineRule multiplePartition(final int partitionCount) {
     return new EngineRule(partitionCount);
   }
 
@@ -100,7 +100,7 @@ public final class EngineRule extends ExternalResource {
   }
 
   @Override
-  public Statement apply(Statement base, Description description) {
+  public Statement apply(final Statement base, final Description description) {
     Statement statement = recordingExporterTestWatcher.apply(base, description);
     statement = super.apply(statement, description);
     return environmentRule.apply(statement, description);
@@ -117,8 +117,12 @@ public final class EngineRule extends ExternalResource {
     startProcessors();
   }
 
-  public EngineRule withJobsAvailableCallback(Consumer<String> callback) {
-    this.jobsAvailableCallback = callback;
+  public void stop() {
+    forEachPartition(environmentRule::closeStreamProcessor);
+  }
+
+  public EngineRule withJobsAvailableCallback(final Consumer<String> callback) {
+    jobsAvailableCallback = callback;
     return this;
   }
 
@@ -149,14 +153,14 @@ public final class EngineRule extends ExternalResource {
         });
   }
 
-  public void forEachPartition(Consumer<Integer> partitionIdConsumer) {
+  public void forEachPartition(final Consumer<Integer> partitionIdConsumer) {
     int partitionId = PARTITION_ID;
     for (int i = 0; i < partitionCount; i++) {
       partitionIdConsumer.accept(partitionId++);
     }
   }
 
-  public void increaseTime(Duration duration) {
+  public void increaseTime(final Duration duration) {
     environmentRule.getClock().addTime(duration);
   }
 
@@ -170,7 +174,7 @@ public final class EngineRule extends ExternalResource {
                     .getStateSnapshotController(partitionId)
                     .getLastValidSnapshotDirectory()
                     .toPath());
-          } catch (Exception e) {
+          } catch (final Exception e) {
             throw new RuntimeException(e);
           }
         });
@@ -240,7 +244,7 @@ public final class EngineRule extends ExternalResource {
         .getFirst();
   }
 
-  public void writeRecords(RecordToWrite... records) {
+  public void writeRecords(final RecordToWrite... records) {
     environmentRule.writeBatch(records);
   }
 
@@ -257,7 +261,7 @@ public final class EngineRule extends ExternalResource {
     private TypedEventImpl typedEvent;
 
     @Override
-    public void onOpen(ReadonlyProcessingContext context) {
+    public void onOpen(final ReadonlyProcessingContext context) {
       final int partitionId = context.getLogStream().getPartitionId();
       typedEvent = new TypedEventImpl(partitionId);
       final ActorControl actor = context.getActor();
@@ -290,7 +294,8 @@ public final class EngineRule extends ExternalResource {
     private final Map<Long, PendingDeploymentDistribution> pendingDeployments = new HashMap<>();
 
     @Override
-    public ActorFuture<Void> pushDeployment(long key, long position, DirectBuffer buffer) {
+    public ActorFuture<Void> pushDeployment(
+        final long key, final long position, final DirectBuffer buffer) {
       final PendingDeploymentDistribution pendingDeployment =
           new PendingDeploymentDistribution(buffer, position, partitionCount);
       pendingDeployments.put(key, pendingDeployment);
@@ -312,7 +317,7 @@ public final class EngineRule extends ExternalResource {
     }
 
     @Override
-    public PendingDeploymentDistribution removePendingDeployment(long key) {
+    public PendingDeploymentDistribution removePendingDeployment(final long key) {
       return pendingDeployments.remove(key);
     }
   }
@@ -323,7 +328,7 @@ public final class EngineRule extends ExternalResource {
         new SubscriptionCommandMessageHandler(Runnable::run, environmentRule::getLogStream);
 
     @Override
-    public boolean sendCommand(int receiverPartitionId, BufferWriter command) {
+    public boolean sendCommand(final int receiverPartitionId, final BufferWriter command) {
 
       final byte[] bytes = new byte[command.getLength()];
       final UnsafeBuffer commandBuffer = new UnsafeBuffer(bytes);

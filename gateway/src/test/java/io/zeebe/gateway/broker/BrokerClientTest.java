@@ -80,6 +80,8 @@ public class BrokerClientTest {
         .setPort(SocketUtil.getNextAddress().port())
         .setContactPoint(broker.getSocketAddress().toString())
         .setRequestTimeout("3s");
+    configuration.init();
+
     clock = new ControlledActorClock();
 
     final AtomixCluster atomixCluster = mock(AtomixCluster.class);
@@ -140,7 +142,7 @@ public class BrokerClientTest {
     final BrokerCreateWorkflowInstanceRequest request =
         new BrokerCreateWorkflowInstanceRequest() {
           @Override
-          protected WorkflowInstanceCreationRecord toResponseDto(DirectBuffer buffer) {
+          protected WorkflowInstanceCreationRecord toResponseDto(final DirectBuffer buffer) {
             throw new RuntimeException("Catch Me");
           }
         };
@@ -340,7 +342,7 @@ public class BrokerClientTest {
       assertThat(e.getStackTrace())
           .anySatisfy(
               frame -> {
-                assertThat(frame.getClassName()).isEqualTo(this.getClass().getName());
+                assertThat(frame.getClassName()).isEqualTo(getClass().getName());
                 assertThat(frame.getMethodName()).isEqualTo(testContext.getMethodName());
               });
     }

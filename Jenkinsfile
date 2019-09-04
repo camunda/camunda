@@ -15,11 +15,11 @@ pipeline {
 
     environment {
       NEXUS = credentials("camunda-nexus")
+      SONARCLOUD_TOKEN = credentials('zeebe-sonarcloud-token')
     }
 
     options {
         buildDiscarder(logRotator(daysToKeepStr: '-1', numToKeepStr: '10'))
-        skipDefaultCheckout()
         timestamps()
         timeout(time: 45, unit: 'MINUTES')
     }
@@ -27,10 +27,13 @@ pipeline {
     stages {
         stage('Prepare') {
             steps {
-                checkout scm
                 container('maven') {
                     sh '.ci/scripts/distribution/prepare.sh'
                 }
+                container('maven-jdk8') {
+                    sh '.ci/scripts/distribution/prepare.sh'
+                }
+
             }
         }
 
@@ -58,10 +61,25 @@ pipeline {
 
         stage('Test (Java)') {
             parallel {
+                stage('Analyse (Java)') {
+                      steps {
+                          container('maven') {
+                              sh '.ci/scripts/distribution/analyse-java.sh'
+                          }
+                      }
+                }
+
                 stage('Unit (Java)') {
                     steps {
                         container('maven') {
                             sh '.ci/scripts/distribution/test-java.sh'
+                        }
+                    }
+                }
+                stage('Unit 8 (Java 8)') {
+                    steps {
+                        container('maven-jdk8') {
+                            sh '.ci/scripts/distribution/test-java8.sh'
                         }
                     }
                 }

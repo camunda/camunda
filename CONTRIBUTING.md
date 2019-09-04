@@ -24,7 +24,7 @@ This is a small overview of the contents of the different modules:
 - `gateway-protocol` is the gRPC definitions for the Zeebe client-to-gateway protocol
 - `zb-db` is our RocksDB wrapper for state management
 - `engine`  is the implementation of the event stream processor
-- `broker-core` contains the Zeebe broker which is the server side of Zeebe
+- `broker` contains the Zeebe broker which is the server side of Zeebe
 - `client-java` contains the Java Zeebe client
 
 ## Building the Documentation
@@ -171,7 +171,7 @@ The commit message should match the following pattern
       `broker`, `clients/java` or `clients/go`.
     - `chore`: For code changes which are not user facing, `scope` should be
       the folder name of the component which contains the main part of the
-      change, e.g. `broker-core` or `exporters`.
+      change, e.g. `broker` or `exporters`.
     - `docs`:  For changes on the documentation. `scope` should be the sub folder
       name in the `docs/src/` directory which contains the main change, e.g.
       `introduction` or `reference`.

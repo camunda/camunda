@@ -37,7 +37,7 @@ func TestFailJobCommand(t *testing.T) {
 
 	client.EXPECT().FailJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewFailJobCommand(client, utils.DefaultTestTimeout)
+	command := NewFailJobCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
 
 	response, err := command.JobKey(123).Retries(12).Send()
 
@@ -67,7 +67,7 @@ func TestFailJobCommand_ErrorMessage(t *testing.T) {
 
 	client.EXPECT().FailJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewFailJobCommand(client, utils.DefaultTestTimeout)
+	command := NewFailJobCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
 
 	response, err := command.JobKey(123).Retries(12).ErrorMessage(errorMessage).Send()
 

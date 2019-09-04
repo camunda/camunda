@@ -21,6 +21,7 @@
   </licenses>
 
   <properties>
+    <version.java>8</version.java>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
   </properties>
 
@@ -119,13 +120,17 @@
       <groupId>io.netty</groupId>
       <artifactId>netty-handler</artifactId>
     </dependency>
+
     <dependency>
-      <groupId>com.fasterxml.jackson.dataformat</groupId>
-      <artifactId>jackson-dataformat-yaml</artifactId>
+      <groupId>com.github.tomakehurst</groupId>
+      <artifactId>wiremock-jre8</artifactId>
+      <scope>test</scope>
     </dependency>
+
     <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-util</artifactId>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

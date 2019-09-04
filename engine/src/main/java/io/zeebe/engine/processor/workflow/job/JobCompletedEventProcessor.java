@@ -44,12 +44,12 @@ public final class JobCompletedEventProcessor implements TypedRecordProcessor<Jo
       if (scopeInstance.isActive()) {
         final WorkflowInstanceRecord value = elementInstance.getValue();
 
-        streamWriter.appendFollowUpEvent(
-            elementInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, value);
         elementInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
         elementInstance.setJobKey(-1);
-        elementInstance.setValue(value);
         workflowState.getElementInstanceState().updateInstance(elementInstance);
+
+        streamWriter.appendFollowUpEvent(
+            elementInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, value);
 
         workflowState.getEventScopeInstanceState().shutdownInstance(elementInstanceKey);
         workflowState

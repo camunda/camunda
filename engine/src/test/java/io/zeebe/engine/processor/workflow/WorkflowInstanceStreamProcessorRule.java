@@ -59,22 +59,21 @@ import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 
-@SuppressWarnings("unchecked")
 public class WorkflowInstanceStreamProcessorRule extends ExternalResource
     implements StreamProcessorLifecycleAware {
 
   public static final int VERSION = 1;
   public static final int WORKFLOW_KEY = 123;
   public static final int DEPLOYMENT_KEY = 1;
-  private final StreamProcessorRule environmentRule;
   @Rule public TemporaryFolder folder = new TemporaryFolder();
+  private final StreamProcessorRule environmentRule;
   private SubscriptionCommandSender mockSubscriptionCommandSender;
 
   private WorkflowState workflowState;
   private ActorControl actor;
 
   public WorkflowInstanceStreamProcessorRule(StreamProcessorRule streamProcessorRule) {
-    this.environmentRule = streamProcessorRule;
+    environmentRule = streamProcessorRule;
   }
 
   public SubscriptionCommandSender getMockSubscriptionCommandSender() {
@@ -108,7 +107,8 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
               new CatchEventBehavior(zeebeState, mockSubscriptionCommandSender, 1),
               new DueDateTimerChecker(workflowState));
 
-          JobEventProcessors.addJobProcessors(typedRecordProcessors, zeebeState, type -> {});
+          JobEventProcessors.addJobProcessors(
+              typedRecordProcessors, zeebeState, type -> {}, Integer.MAX_VALUE);
           typedRecordProcessors.withListener(this);
           return typedRecordProcessors;
         });

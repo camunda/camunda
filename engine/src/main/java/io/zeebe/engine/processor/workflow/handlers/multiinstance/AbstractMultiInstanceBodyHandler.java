@@ -16,17 +16,29 @@ import io.zeebe.engine.processor.workflow.handlers.AbstractHandler;
 import io.zeebe.engine.state.instance.VariablesState;
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.msgpack.spec.MsgPackHelper;
+import io.zeebe.msgpack.spec.MsgPackWriter;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.Collections;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public abstract class AbstractMultiInstanceBodyHandler
     extends AbstractHandler<ExecutableMultiInstanceBody> {
 
+  private static final DirectBuffer NIL_VALUE = new UnsafeBuffer(MsgPackHelper.NIL);
+  private static final DirectBuffer LOOP_COUNTER_VARIABLE = BufferUtil.wrapString("loopCounter");
+
   private final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup;
   private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
+
+  private final MutableDirectBuffer loopCounterVariableBuffer =
+      new UnsafeBuffer(new byte[Long.BYTES + 1]);
+  private final DirectBuffer loopCounterVariableView = new UnsafeBuffer(0, 0);
+  private final MsgPackWriter variableWriter = new MsgPackWriter();
 
   public AbstractMultiInstanceBodyHandler(
       final WorkflowInstanceIntent nextState,
@@ -94,10 +106,11 @@ public abstract class AbstractMultiInstanceBodyHandler
       final long bodyInstanceKey,
       final DirectBuffer item) {
 
-    final ExecutableMultiInstanceBody multiInstanceBody = context.getElement();
+    final var elementInstanceState = context.getElementInstanceState();
+    final var variablesState = elementInstanceState.getVariablesState();
 
-    final WorkflowInstanceRecord innerActivityRecord = context.getValue();
-    innerActivityRecord.setFlowScopeKey(bodyInstanceKey);
+    final var multiInstanceBody = context.getElement();
+    final var innerActivityRecord = context.getValue().setFlowScopeKey(bodyInstanceKey);
 
     final long elementInstanceKey =
         context
@@ -107,18 +120,49 @@ public abstract class AbstractMultiInstanceBodyHandler
                 innerActivityRecord,
                 multiInstanceBody.getInnerActivity());
 
-    // need to spawn token for child instance
-    context.getElementInstanceState().spawnToken(bodyInstanceKey);
+    // update loop counters
+    final var bodyInstance = elementInstanceState.getInstance(bodyInstanceKey);
+    bodyInstance.spawnToken();
+    bodyInstance.incrementMultiInstanceLoopCounter();
+    elementInstanceState.updateInstance(bodyInstance);
 
-    // set instance variable
-    final VariablesState variablesState = context.getElementInstanceState().getVariablesState();
+    final var innerInstance = elementInstanceState.getInstance(elementInstanceKey);
+    innerInstance.setMultiInstanceLoopCounter(bodyInstance.getMultiInstanceLoopCounter());
+    elementInstanceState.updateInstance(innerInstance);
 
-    multiInstanceBody
-        .getLoopCharacteristics()
+    // set instance variables
+    final var workflowKey = innerActivityRecord.getWorkflowKey();
+    final var loopCharacteristics = multiInstanceBody.getLoopCharacteristics();
+
+    loopCharacteristics
         .getInputElement()
         .ifPresent(
-            inputElement ->
+            variableName ->
                 variablesState.setVariableLocal(
-                    elementInstanceKey, innerActivityRecord.getWorkflowKey(), inputElement, item));
+                    elementInstanceKey, workflowKey, variableName, item));
+
+    loopCharacteristics
+        .getOutputElement()
+        .map(JsonPathQuery::getVariableName)
+        .ifPresent(
+            variableName ->
+                variablesState.setVariableLocal(
+                    elementInstanceKey, workflowKey, variableName, NIL_VALUE));
+
+    variablesState.setVariableLocal(
+        elementInstanceKey,
+        workflowKey,
+        LOOP_COUNTER_VARIABLE,
+        wrapLoopCounter(innerInstance.getMultiInstanceLoopCounter()));
+  }
+
+  private DirectBuffer wrapLoopCounter(int loopCounter) {
+    variableWriter.wrap(loopCounterVariableBuffer, 0);
+
+    variableWriter.writeInteger(loopCounter);
+    final var length = variableWriter.getOffset();
+
+    loopCounterVariableView.wrap(loopCounterVariableBuffer, 0, length);
+    return loopCounterVariableView;
   }
 }

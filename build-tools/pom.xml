@@ -6,11 +6,16 @@
   <packaging>jar</packaging>
 
   <parent>
+    <!-- We can't reference zeebe parent as parent otherwise we will have a circle dependency -->
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-bom</artifactId>
     <version>0.21.0-SNAPSHOT</version>
     <relativePath>../bom</relativePath>
   </parent>
+
+  <properties>
+    <version.java>8</version.java>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -22,8 +27,33 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.26</version>
+      <version>1.7.28</version>
     </dependency>
   </dependencies>
 
+  <build>
+    <!-- Since we can't use zeebe parent as parent we have to declare/configure the java doc plugin again -->
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>${plugin.version.javadoc}</version>
+          <configuration>
+            <source>${version.java}</source>
+            <quiet>true</quiet>
+            <additionalOptions>-Xdoclint:none</additionalOptions>
+          </configuration>
+          <executions>
+            <execution>
+              <id>attach-javadocs</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 </project>

@@ -13,13 +13,22 @@ import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.util.Loggers;
+import io.zeebe.util.retry.AbortableRetryStrategy;
+import io.zeebe.util.retry.RetryStrategy;
+import io.zeebe.util.sched.Actor;
 import java.io.IOException;
 import java.util.function.Function;
+import org.slf4j.Logger;
 
-public class FsLogStorageService implements Service<LogStorage> {
+public class FsLogStorageService extends Actor implements Service<LogStorage> {
+  private static final Logger LOG = Loggers.IO_LOGGER;
+
   private final FsLogStorageConfiguration config;
   private final int partitionId;
   private final Function<FsLogStorage, FsLogStorage> logStorageStubber; // for testing only
+
+  private boolean closeRequested;
 
   private FsLogStorage logStorage;
 
@@ -30,18 +39,19 @@ public class FsLogStorageService implements Service<LogStorage> {
     this.config = config;
     this.partitionId = partitionId;
     this.logStorageStubber = logStorageStubber;
+    closeRequested = false;
   }
 
   @Override
   public void start(final ServiceStartContext startContext) {
     logStorage = logStorageStubber.apply(new FsLogStorage(config));
-
-    startContext.run(this::openLogStorage);
+    startContext.async(startContext.getScheduler().submitActor(this));
   }
 
   @Override
   public void stop(final ServiceStopContext stopContext) {
-    stopContext.run(logStorage::close);
+    closeRequested = true;
+    stopContext.async(actor.close());
   }
 
   @Override
@@ -49,12 +59,26 @@ public class FsLogStorageService implements Service<LogStorage> {
     return logStorage;
   }
 
-  public void openLogStorage() {
-    try {
-      logStorage.open();
-    } catch (IOException e) {
-      // retry until success
-      openLogStorage();
-    }
+  @Override
+  protected void onActorStarting() {
+    final RetryStrategy abortableRetryStrategy = new AbortableRetryStrategy(actor);
+
+    abortableRetryStrategy.runWithRetry(
+        () -> {
+          try {
+            logStorage.open();
+            return true;
+          } catch (IOException e) {
+            // retry until success
+            LOG.error("Failed to open logstorage for partition {}, try again.", partitionId, e);
+            return false;
+          }
+        },
+        () -> closeRequested);
+  }
+
+  @Override
+  protected void onActorClosing() {
+    logStorage.close();
   }
 }

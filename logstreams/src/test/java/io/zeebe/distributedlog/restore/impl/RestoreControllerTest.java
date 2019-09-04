@@ -48,12 +48,14 @@ public class RestoreControllerTest {
   private static final DirectBuffer EVENT = wrapString("FOO");
 
   private final TemporaryFolder temporaryFolderClient = new TemporaryFolder();
-  private final LogStreamRule logStreamRuleClient = new LogStreamRule(temporaryFolderClient);
+  private final LogStreamRule logStreamRuleClient =
+      LogStreamRule.startByDefault(temporaryFolderClient);
   private final LogStreamWriterRule writerClient = new LogStreamWriterRule(logStreamRuleClient);
   private final LogStreamReaderRule readerClient = new LogStreamReaderRule(logStreamRuleClient);
 
   private final TemporaryFolder temporaryFolderServer = new TemporaryFolder();
-  private final LogStreamRule logStreamRuleServer = new LogStreamRule(temporaryFolderServer);
+  private final LogStreamRule logStreamRuleServer =
+      LogStreamRule.startByDefault(temporaryFolderServer);
   private final LogStreamWriterRule writerServer = new LogStreamWriterRule(logStreamRuleServer);
   private final LogStreamReaderRule readerServer = new LogStreamReaderRule(logStreamRuleServer);
 
@@ -112,17 +114,10 @@ public class RestoreControllerTest {
 
     final LogReplicator logReplicator =
         new LogReplicator(
-            (commitPosition, blockBuffer) -> {
-              logStreamRuleClient.getLogStream().setCommitPosition(commitPosition);
-              try {
-                return logStreamRuleClient
+            (commitPosition, blockBuffer) ->
+                logStreamRuleClient
                     .getLogStream()
-                    .getLogStorage()
-                    .append(ByteBuffer.wrap(blockBuffer));
-              } catch (IOException e) {
-                throw new RuntimeException(e);
-              }
-            },
+                    .append(commitPosition, ByteBuffer.wrap(blockBuffer)),
             restoreClient,
             restoreThreadContext,
             log);

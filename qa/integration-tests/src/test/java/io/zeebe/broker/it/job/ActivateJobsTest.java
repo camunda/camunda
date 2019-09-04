@@ -28,10 +28,9 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.util.StreamUtil;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.collection.Tuple;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,15 +52,11 @@ public class ActivateJobsTest {
   private static final Map<String, Object> CUSTOM_HEADERS = Collections.singletonMap("foo", "bar");
   private static final Map<String, Object> VARIABLES = Collections.singletonMap("hello", "world");
   private static final int PARTITION_COUNT = 3;
-
+  @Rule public Timeout timeout = Timeout.seconds(120);
   private final EmbeddedBrokerRule embeddedBrokerRule =
       new EmbeddedBrokerRule(setPartitionCount(PARTITION_COUNT));
   public GrpcClientRule clientRule = new GrpcClientRule(embeddedBrokerRule);
-
   @Rule public RuleChain ruleChain = RuleChain.outerRule(embeddedBrokerRule).around(clientRule);
-
-  @Rule public Timeout timeout = Timeout.seconds(120);
-
   private ZeebeClient client;
 
   @Before
@@ -182,12 +177,12 @@ public class ActivateJobsTest {
       throws IOException, InterruptedException {
     // given
     final int numJobs = 15;
-    final byte[] variablesBytes =
-        StreamUtil.read(
-            ActivateJobsTest.class.getResourceAsStream("/variables/large_random_variables.json"));
-    final String variables = new String(variablesBytes, Charset.forName("UTF-8"));
 
-    createJobs(JOB_TYPE, numJobs, variables);
+    final ByteValue maxMessageSize =
+        embeddedBrokerRule.getBrokerCfg().getNetwork().getMaxMessageSize();
+    final var largeVariableValue = "x".repeat((int) maxMessageSize.toBytes() / 4);
+    final String variablesJson = String.format("{\"variablesJson\":\"%s\"}", largeVariableValue);
+    createJobs(JOB_TYPE, numJobs, variablesJson);
 
     // when
     final CountDownLatch latch = new CountDownLatch(numJobs);

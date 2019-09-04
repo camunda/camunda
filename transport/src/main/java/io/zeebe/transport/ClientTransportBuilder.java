@@ -31,18 +31,18 @@ import java.util.Objects;
 
 public class ClientTransportBuilder {
   /** In the same order of magnitude of what apache and nginx use. */
-  protected static final Duration DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD = Duration.ofSeconds(5);
+  private static final Duration DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD = Duration.ofSeconds(5);
 
-  protected static final long DEFAULT_CHANNEL_CONNECT_TIMEOUT = 500;
   private final String name;
-  protected Duration keepAlivePeriod = DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD;
-  protected Dispatcher receiveBuffer;
-  protected List<ClientInputListener> listeners;
-  protected TransportChannelFactory channelFactory;
-  protected Duration defaultRequestRetryTimeout = Duration.ofSeconds(15);
-  protected Duration defaultMessageRetryTimeout = Duration.ofSeconds(1);
-  private int messageMaxLength = 1024 * 512;
+  private Duration keepAlivePeriod = DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD;
+  private Dispatcher receiveBuffer;
+  private List<ClientInputListener> listeners;
+  private TransportChannelFactory channelFactory;
+  private Duration defaultRequestRetryTimeout = Duration.ofSeconds(15);
+  private Duration defaultMessageRetryTimeout = Duration.ofSeconds(1);
   private ActorScheduler scheduler;
+
+  private int messageMaxLength = (int) ByteValue.ofKilobytes(512).toBytes();
   private TransportMemoryPool requestMemoryPool =
       new NonBlockingMemoryPool(ByteValue.ofMegabytes(4));
   private TransportMemoryPool messageMemoryPool =
@@ -52,7 +52,7 @@ public class ClientTransportBuilder {
     this.name = name;
   }
 
-  public ClientTransportBuilder scheduler(ActorScheduler scheduler) {
+  public ClientTransportBuilder scheduler(final ActorScheduler scheduler) {
     this.scheduler = scheduler;
     return this;
   }
@@ -62,36 +62,36 @@ public class ClientTransportBuilder {
    * buffer. {@link ClientTransport#openSubscription(String, ClientMessageHandler)} can be used to
    * consume from this buffer.
    */
-  public ClientTransportBuilder messageReceiveBuffer(Dispatcher receiveBuffer) {
+  public ClientTransportBuilder messageReceiveBuffer(final Dispatcher receiveBuffer) {
     this.receiveBuffer = receiveBuffer;
     return this;
   }
 
-  public ClientTransportBuilder requestMemoryPool(TransportMemoryPool requestMemoryPool) {
+  public ClientTransportBuilder requestMemoryPool(final TransportMemoryPool requestMemoryPool) {
     this.requestMemoryPool = requestMemoryPool;
     return this;
   }
 
-  public ClientTransportBuilder messageMemoryPool(TransportMemoryPool messageMemoryPool) {
+  public ClientTransportBuilder messageMemoryPool(final TransportMemoryPool messageMemoryPool) {
     this.messageMemoryPool = messageMemoryPool;
     return this;
   }
 
-  public ClientTransportBuilder inputListener(ClientInputListener listener) {
+  public ClientTransportBuilder inputListener(final ClientInputListener listener) {
     if (listeners == null) {
       listeners = new ArrayList<>();
     }
-    this.listeners.add(listener);
+    listeners.add(listener);
     return this;
   }
 
-  public ClientTransportBuilder messageMaxLength(int messageMaxLength) {
+  public ClientTransportBuilder messageMaxLength(final int messageMaxLength) {
     this.messageMaxLength = messageMaxLength;
     return this;
   }
 
   /** The period in which a dummy message is sent to keep the underlying TCP connection open. */
-  public ClientTransportBuilder keepAlivePeriod(Duration keepAlivePeriod) {
+  public ClientTransportBuilder keepAlivePeriod(final Duration keepAlivePeriod) {
     if (keepAlivePeriod.getSeconds() < 1) {
       throw new RuntimeException("Min value for keepalive period is 1s.");
     }
@@ -99,18 +99,18 @@ public class ClientTransportBuilder {
     return this;
   }
 
-  public ClientTransportBuilder channelFactory(TransportChannelFactory channelFactory) {
+  public ClientTransportBuilder channelFactory(final TransportChannelFactory channelFactory) {
     this.channelFactory = channelFactory;
     return this;
   }
 
-  public ClientTransportBuilder defaultRequestRetryTimeout(Duration duration) {
-    this.defaultRequestRetryTimeout = duration;
+  public ClientTransportBuilder defaultRequestRetryTimeout(final Duration duration) {
+    defaultRequestRetryTimeout = duration;
     return this;
   }
 
-  public ClientTransportBuilder defaultMessageRetryTimeout(Duration duration) {
-    this.defaultMessageRetryTimeout = duration;
+  public ClientTransportBuilder defaultMessageRetryTimeout(final Duration duration) {
+    defaultMessageRetryTimeout = duration;
     return this;
   }
 
@@ -136,10 +136,10 @@ public class ClientTransportBuilder {
   }
 
   protected TransportContext buildTransportContext(
-      RemoteAddressListImpl addressList,
-      EndpointRegistry endpointRegistry,
-      FragmentHandler receiveHandler,
-      Dispatcher receiveBuffer) {
+      final RemoteAddressListImpl addressList,
+      final EndpointRegistry endpointRegistry,
+      final FragmentHandler receiveHandler,
+      final Dispatcher receiveBuffer) {
     final TransportContext context = new TransportContext();
     context.setName("client");
     context.setReceiveBuffer(receiveBuffer);
@@ -158,7 +158,8 @@ public class ClientTransportBuilder {
     return context;
   }
 
-  protected ClientTransport build(ClientActorContext actorContext, TransportContext context) {
+  protected ClientTransport build(
+      final ClientActorContext actorContext, final TransportContext context) {
     final ClientConductor conductor = new ClientConductor(actorContext, context);
     final Receiver receiver = new Receiver(actorContext, context);
     final Sender sender = actorContext.getSender();
@@ -181,5 +182,19 @@ public class ClientTransportBuilder {
 
   private void validate() {
     Objects.requireNonNull(scheduler, "Scheduler must be provided");
+
+    if (messageMaxLength > messageMemoryPool.capacity()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the message memory pool size to be greater than the max message length of %d, but was %d.",
+              messageMaxLength, messageMemoryPool.capacity()));
+    }
+
+    if (messageMaxLength > requestMemoryPool.capacity()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the request memory pool size to be greater than the max message length of %d, but was %d.",
+              messageMaxLength, requestMemoryPool.capacity()));
+    }
   }
 }

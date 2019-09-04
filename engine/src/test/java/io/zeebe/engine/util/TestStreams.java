@@ -50,7 +50,10 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.util.FileUtil;
+import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -80,14 +83,11 @@ public class TestStreams {
   private final AutoCloseableRule closeables;
   private final ServiceContainer serviceContainer;
 
-  private final Map<String, LogStream> managedLogs = new HashMap<>();
-  private final Map<String, StateSnapshotController> snapshotControllerMap = new HashMap<>();
-
   private final ActorScheduler actorScheduler;
 
   private final CommandResponseWriter mockCommandResponseWriter;
-  private ZeebeDb zeebeDb;
-  private AsyncSnapshotDirector asyncSnapshotDirector;
+  private final Map<String, LogContext> logContextMap = new HashMap<>();
+  private final Map<String, ProcessorContext> streamContextMap = new HashMap<>();
 
   public TestStreams(
       final TemporaryFolder dataDirectory,
@@ -131,7 +131,7 @@ public class TestStreams {
     final LogStream logStream =
         spy(
             LogStreams.createFsLogStream(partitionId)
-                .logRootPath(segments.getAbsolutePath())
+                .logDirectory(segments.getAbsolutePath())
                 .serviceContainer(serviceContainer)
                 .logName(name)
                 .deleteOnClose(true)
@@ -150,11 +150,6 @@ public class TestStreams {
           distributedLogImpl,
           DefaultDistributedLogstreamService.class.getDeclaredField("logStream"),
           logStream);
-
-      FieldSetter.setField(
-          distributedLogImpl,
-          DefaultDistributedLogstreamService.class.getDeclaredField("logStorage"),
-          logStream.getLogStorage());
 
       FieldSetter.setField(
           distributedLogImpl,
@@ -190,18 +185,19 @@ public class TestStreams {
 
     logStream.openAppender().join();
 
-    managedLogs.put(name, logStream);
-    closeables.manage(logStream);
+    final LogContext logContext = LogContext.createLogContext(logStream);
+    logContextMap.put(name, logContext);
+    closeables.manage(logContext);
 
     return logStream;
   }
 
   public LogStream getLogStream(final String name) {
-    return managedLogs.get(name);
+    return logContextMap.get(name).getLogStream();
   }
 
   public Stream<LoggedEvent> events(final String logName) {
-    final LogStream logStream = managedLogs.get(logName);
+    final LogStream logStream = getLogStream(logName);
 
     final LogStreamReader reader = new BufferedLogStreamReader(logStream);
     closeables.manage(reader);
@@ -251,7 +247,18 @@ public class TestStreams {
     final StateStorage stateStorage = getStateStorageFactory(stream).create();
     final StateSnapshotController currentSnapshotController =
         spy(new StateSnapshotController(zeebeDbFactory, stateStorage, maxSnapshot));
-    snapshotControllerMap.put(stream.getLogName(), currentSnapshotController);
+    currentSnapshotController.setDeletionService(
+        (position) -> {
+          if (stateStorage.existSnapshot(position)) {
+            final File snapshotDirectory = stateStorage.getSnapshotDirectoryFor(position);
+            try {
+              FileUtil.deleteFolder(snapshotDirectory.getPath());
+            } catch (IOException e) {
+              Loggers.IO_LOGGER.error("Failed to delete snapshot {}.", snapshotDirectory, e);
+            }
+          }
+        });
+    final String logName = stream.getLogName();
 
     final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
 
@@ -260,7 +267,7 @@ public class TestStreams {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-    zeebeDb = currentSnapshotController.openDb();
+    final var zeebeDb = currentSnapshotController.openDb();
     final StreamProcessor processorService =
         StreamProcessor.builder()
             .logStream(stream)
@@ -284,22 +291,27 @@ public class TestStreams {
             .join();
     openFuture.join();
 
-    asyncSnapshotDirector =
+    final var asyncSnapshotDirector =
         new AsyncSnapshotDirector(
             processorService, currentSnapshotController, stream, snapshotInterval);
     actorScheduler.submitActor(asyncSnapshotDirector);
+
+    final LogContext context = logContextMap.get(logName);
+    final ProcessorContext processorContext =
+        ProcessorContext.createStreamContext(
+            context, serviceContainer, currentSnapshotController, asyncSnapshotDirector, zeebeDb);
+    streamContextMap.put(logName, processorContext);
+    closeables.manage(processorContext);
 
     return processorService;
   }
 
   public StateSnapshotController getStateSnapshotController(String stream) {
-    return snapshotControllerMap.get(stream);
+    return streamContextMap.get(stream).getStateSnapshotController();
   }
 
   public void closeProcessor(String streamName) throws Exception {
-    asyncSnapshotDirector.closeAsync().join();
-    serviceContainer.removeService(streamProcessorService(streamName)).join();
-    zeebeDb.close();
+    streamContextMap.get(streamName).close();
   }
 
   public long writeBatch(String logName, RecordToWrite[] recordToWrites) {
@@ -397,6 +409,85 @@ public class TestStreams {
       writer.valueWriter(value);
 
       return doRepeatedly(() -> writer.tryWrite()).until(p -> p >= 0);
+    }
+  }
+
+  private static final class LogContext implements AutoCloseable {
+    private final LogStream logStream;
+
+    private LogContext(LogStream logStream) {
+      this.logStream = logStream;
+    }
+
+    public static LogContext createLogContext(LogStream logStream) {
+      return new LogContext(logStream);
+    }
+
+    @Override
+    public void close() {
+      logStream.close();
+    }
+
+    public LogStream getLogStream() {
+      return logStream;
+    }
+  }
+
+  private static final class ProcessorContext implements AutoCloseable {
+
+    private final LogContext logContext;
+    private final StateSnapshotController stateSnapshotController;
+    private final AsyncSnapshotDirector asyncSnapshotDirector;
+    private final ZeebeDb zeebeDb;
+    private final ServiceContainer serviceContainer;
+
+    private boolean closed = false;
+
+    private ProcessorContext(
+        LogContext logContext,
+        ServiceContainer serviceContainer,
+        StateSnapshotController stateSnapshotController,
+        AsyncSnapshotDirector asyncSnapshotDirector,
+        ZeebeDb zeebeDb) {
+      this.logContext = logContext;
+      this.serviceContainer = serviceContainer;
+      this.stateSnapshotController = stateSnapshotController;
+      this.asyncSnapshotDirector = asyncSnapshotDirector;
+      this.zeebeDb = zeebeDb;
+    }
+
+    public static ProcessorContext createStreamContext(
+        LogContext logContext,
+        ServiceContainer serviceContainer,
+        StateSnapshotController stateSnapshotController,
+        AsyncSnapshotDirector asyncSnapshotDirector,
+        ZeebeDb zeebeDb) {
+      return new ProcessorContext(
+          logContext, serviceContainer, stateSnapshotController, asyncSnapshotDirector, zeebeDb);
+    }
+
+    public LogStream getLogStream() {
+      return logContext.getLogStream();
+    }
+
+    public StateSnapshotController getStateSnapshotController() {
+      return stateSnapshotController;
+    }
+
+    @Override
+    public void close() throws Exception {
+      if (closed) {
+        return;
+      }
+
+      asyncSnapshotDirector.closeAsync().join();
+      final String streamName = logContext.getLogStream().getLogName();
+      final ServiceName<StreamProcessor> serviceName = streamProcessorService(streamName);
+
+      Loggers.IO_LOGGER.debug("Close stream processor {}", serviceName);
+      serviceContainer.removeService(serviceName).join();
+      zeebeDb.close();
+      closed = true;
     }
   }
 }

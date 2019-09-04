@@ -11,6 +11,7 @@ import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.BpmnStepHandler;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
+import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.ErrorType;
@@ -19,13 +20,18 @@ import java.util.function.Function;
 
 public class MultiInstanceBodyActivatingHandler extends AbstractMultiInstanceBodyHandler {
 
+  private final CatchEventSubscriber catchEventSubscriber;
+
   public MultiInstanceBodyActivatingHandler(
-      Function<BpmnStep, BpmnStepHandler> innerHandlerLookup) {
+      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup,
+      final CatchEventSubscriber catchEventSubscriber) {
     super(WorkflowInstanceIntent.ELEMENT_ACTIVATED, innerHandlerLookup);
+    this.catchEventSubscriber = catchEventSubscriber;
   }
 
   @Override
-  protected boolean handleMultiInstanceBody(BpmnStepContext<ExecutableMultiInstanceBody> context) {
+  protected boolean handleMultiInstanceBody(
+      final BpmnStepContext<ExecutableMultiInstanceBody> context) {
 
     final MsgPackQueryProcessor.QueryResults results = readInputCollectionVariable(context);
 
@@ -46,11 +52,13 @@ public class MultiInstanceBodyActivatingHandler extends AbstractMultiInstanceBod
       return false;
     }
 
+    catchEventSubscriber.subscribeToEvents(context);
+
     return true;
   }
 
   private String getInputCollectionVariableName(
-      BpmnStepContext<ExecutableMultiInstanceBody> context) {
+      final BpmnStepContext<ExecutableMultiInstanceBody> context) {
     return BufferUtil.bufferAsString(
         context.getElement().getLoopCharacteristics().getInputCollection().getVariableName());
   }

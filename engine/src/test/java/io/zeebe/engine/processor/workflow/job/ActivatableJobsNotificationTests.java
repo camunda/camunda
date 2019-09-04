@@ -61,28 +61,19 @@ public class ActivatableJobsNotificationTests {
   }
 
   @Test
-  public void shouldNotifyWhenFirstJobCreated() {
+  public void shouldNotifyWhenJobCreated() {
     // when
-    createWorkflowInstanceAndJobs(1);
+    createWorkflowInstanceAndJobs(3);
 
     // then
-    Mockito.verify(jobAvailableCallback, times(1)).accept(taskType);
-  }
-
-  @Test
-  public void shouldNotNotifyWhenSecondJobCreated() {
-    // when
-    createWorkflowInstanceAndJobs(2);
-
-    // then
-    Mockito.verify(jobAvailableCallback, times(1)).accept(taskType);
+    Mockito.verify(jobAvailableCallback, times(3)).accept(taskType);
   }
 
   @Test
   public void shouldNotifyWhenJobsAvailableAgain() {
     // given
-    createWorkflowInstanceAndJobs(2);
-    final Record<JobBatchRecordValue> jobs = activateJobs(2);
+    createWorkflowInstanceAndJobs(1);
+    final Record<JobBatchRecordValue> jobs = activateJobs(1);
 
     // when
     createWorkflowInstanceAndJobs(1);
@@ -105,20 +96,6 @@ public class ActivatableJobsNotificationTests {
   }
 
   @Test
-  public void shouldNotNotifyWhenActivatedJobCanceled() {
-    // given
-    final List<Long> instanceKeys = createWorkflowInstanceAndJobs(2);
-    activateJobs(1);
-    ENGINE.workflowInstance().withInstanceKey(instanceKeys.get(0)).cancel();
-
-    // when
-    createWorkflowInstanceAndJobs(1);
-
-    // then
-    Mockito.verify(jobAvailableCallback, times(1)).accept(taskType);
-  }
-
-  @Test
   public void shouldNotifyWhenJobsAvailableAfterTimeOut() {
     // given
     createWorkflowInstanceAndJobs(1);
@@ -133,7 +110,7 @@ public class ActivatableJobsNotificationTests {
   }
 
   @Test
-  public void shouldNotifyWhenJobAvailableAfterNotActivatedJobCompleted() {
+  public void shouldNotifyWhenJobCreatedAfterNotActivatedJobCompleted() {
     // given
     createWorkflowInstanceAndJobs(1);
     final long jobKey = activateJobs(1, Duration.ofMillis(10)).getValue().getJobKeys().get(0);

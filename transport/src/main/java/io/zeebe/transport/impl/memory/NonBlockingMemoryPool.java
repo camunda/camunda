@@ -26,16 +26,16 @@ public class NonBlockingMemoryPool implements TransportMemoryPool {
 
   private final AtomicInteger remaining;
 
-  public NonBlockingMemoryPool(int capacity) {
-    this.remaining = new AtomicInteger(capacity);
+  public NonBlockingMemoryPool(final int capacity) {
+    remaining = new AtomicInteger(capacity);
   }
 
-  public NonBlockingMemoryPool(ByteValue byteValue) {
+  public NonBlockingMemoryPool(final ByteValue byteValue) {
     this((int) byteValue.toBytes());
   }
 
   @Override
-  public ByteBuffer allocate(int requestedCapacity) {
+  public ByteBuffer allocate(final int requestedCapacity) {
     LOG.trace("Attempting to allocate {} bytes", requestedCapacity);
 
     boolean canAllocate = true;
@@ -58,9 +58,14 @@ public class NonBlockingMemoryPool implements TransportMemoryPool {
   }
 
   @Override
-  public void reclaim(ByteBuffer buffer) {
+  public void reclaim(final ByteBuffer buffer) {
     final int bytesReclaimed = buffer.capacity();
     LOG.trace("Reclaiming {} bytes", bytesReclaimed);
     remaining.addAndGet(bytesReclaimed);
+  }
+
+  @Override
+  public long capacity() {
+    return remaining.get();
   }
 }

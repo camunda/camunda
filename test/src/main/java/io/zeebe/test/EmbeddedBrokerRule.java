@@ -59,11 +59,10 @@ public class EmbeddedBrokerRule extends ExternalResource {
   protected final ControlledActorClock controlledActorClock = new ControlledActorClock();
   protected final Supplier<InputStream> configSupplier;
   protected final Consumer<BrokerCfg>[] configurators;
-  private final int timeout;
-  private final File newTemporaryFolder;
-
   protected Broker broker;
   protected long startTime;
+  private final int timeout;
+  private final File newTemporaryFolder;
   private List<String> dataDirectories;
 
   @SafeVarargs
@@ -158,7 +157,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
       try {
         FileUtil.deleteFolder(newTemporaryFolder.getAbsolutePath());
       } catch (final IOException e) {
-        e.printStackTrace();
+        LOG.error("Unexpected error on deleting data.", e);
       }
     }
   }

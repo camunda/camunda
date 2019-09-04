@@ -1,0 +1,319 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <name>Zeebe Broker</name>
+  <artifactId>zeebe-broker</artifactId>
+  <packaging>jar</packaging>
+
+  <parent>
+    <groupId>io.zeebe</groupId>
+    <artifactId>zeebe-parent</artifactId>
+    <version>0.21.0-SNAPSHOT</version>
+    <relativePath>../parent</relativePath>
+  </parent>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-logstreams</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-workflow-engine</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-protocol-impl</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-transport</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-service-container</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-gateway</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-exporter-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>uk.co.real-logic</groupId>
+      <artifactId>sbe-tool</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-protocol-test-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-test-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-msgpack-value</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-bpmn-model</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-db</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-dispatcher</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-codec-http</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-buffer</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-codec</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-transport</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>atomix</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>atomix-cluster</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>atomix-primitive</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>atomix-raft</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>atomix-utils</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient_common</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient_hotspot</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-workflow-engine</artifactId>
+      <type>test-jar</type>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources combine.children="append"><!-- merging with parent
+                  config for benchmarks -->
+                <source>${project.build.directory}/generated-sources/sbe</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>java</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <executableDependency>
+            <groupId>uk.co.real-logic</groupId>
+            <artifactId>sbe</artifactId>
+          </executableDependency>
+          <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
+          <arguments>
+            <argument>${project.build.resources[0].directory}/management-schema.xml</argument>
+          </arguments>
+          <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
+          <!-- system properties defined in zeebe-parent -->
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>uk.co.real-logic</groupId>
+            <artifactId>sbe-all</artifactId>
+            <version>${version.sbe}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <usedDependencies>
+            <!-- dependency used but plugin seems to report a false positive here -->
+            <dependency>uk.co.real-logic:sbe-tool</dependency>
+          </usedDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+
+</project>
+

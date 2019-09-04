@@ -56,6 +56,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-dispatcher</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
     </dependency>
@@ -145,14 +150,6 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-test-util</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-logstreams</artifactId>
-      <type>test-jar</type>
-      <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
 

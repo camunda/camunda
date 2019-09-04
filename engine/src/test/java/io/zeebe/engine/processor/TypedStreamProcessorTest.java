@@ -43,10 +43,9 @@ import org.mockito.MockitoAnnotations;
 public class TypedStreamProcessorTest {
   private static final String STREAM_NAME = "foo";
   private static final int STREAM_PROCESSOR_ID = 144144;
-
+  protected LogStream stream;
   private final TemporaryFolder tempFolder = new TemporaryFolder();
   private final AutoCloseableRule closeables = new AutoCloseableRule();
-
   private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
   private final ServiceContainerRule serviceContainerRule =
       new ServiceContainerRule(actorSchedulerRule);
@@ -58,7 +57,6 @@ public class TypedStreamProcessorTest {
           .around(serviceContainerRule)
           .around(closeables);
 
-  protected LogStream stream;
   private TestStreams streams;
   private KeyGenerator keyGenerator;
   private CommandResponseWriter mockCommandResponseWriter;

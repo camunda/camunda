@@ -70,6 +70,7 @@ public class ZeebeClientImpl implements ZeebeClient {
   private final ScheduledExecutorService executorService;
   private final List<Closeable> closeables = new CopyOnWriteArrayList<>();
   private final JobClient jobClient;
+  private final CredentialsProvider credentialsProvider;
 
   public ZeebeClientImpl(final ZeebeClientConfiguration configuration) {
     this(configuration, buildChannel(configuration));
@@ -96,6 +97,12 @@ public class ZeebeClientImpl implements ZeebeClient {
     this.channel = channel;
     this.asyncStub = gatewayStub;
     this.executorService = executorService;
+
+    if (config.getCredentialsProvider() != null) {
+      this.credentialsProvider = config.getCredentialsProvider();
+    } else {
+      this.credentialsProvider = new NoopCredentialsProvider();
+    }
     this.jobClient = newJobClient();
   }
 
@@ -153,7 +160,8 @@ public class ZeebeClientImpl implements ZeebeClient {
 
   public static GatewayStub buildGatewayStub(
       ManagedChannel channel, ZeebeClientConfiguration config) {
-    return GatewayGrpc.newStub(channel).withCallCredentials(buildCallCredentials(config));
+    final CallCredentials credentials = buildCallCredentials(config);
+    return GatewayGrpc.newStub(channel).withCallCredentials(credentials);
   }
 
   private static ScheduledExecutorService buildExecutorService(
@@ -164,7 +172,8 @@ public class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public TopologyRequestStep1 newTopologyRequest() {
-    return new TopologyRequestImpl(asyncStub, config.getDefaultRequestTimeout());
+    return new TopologyRequestImpl(
+        asyncStub, config.getDefaultRequestTimeout(), credentialsProvider::shouldRetryRequest);
   }
 
   @Override
@@ -183,7 +192,7 @@ public class ZeebeClientImpl implements ZeebeClient {
           }
         });
 
-    executorService.shutdown();
+    executorService.shutdownNow();
 
     try {
       if (!executorService.awaitTermination(15, TimeUnit.SECONDS)) {
@@ -195,7 +204,7 @@ public class ZeebeClientImpl implements ZeebeClient {
           "Unexpected interrupted awaiting termination of job worker executor", e);
     }
 
-    channel.shutdown();
+    channel.shutdownNow();
 
     try {
       if (!channel.awaitTermination(15, TimeUnit.SECONDS)) {
@@ -210,57 +219,84 @@ public class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public DeployWorkflowCommandStep1 newDeployCommand() {
-    return new DeployWorkflowCommandImpl(asyncStub, config.getDefaultRequestTimeout());
+    return new DeployWorkflowCommandImpl(
+        asyncStub, config.getDefaultRequestTimeout(), credentialsProvider::shouldRetryRequest);
   }
 
   @Override
   public CreateWorkflowInstanceCommandStep1 newCreateInstanceCommand() {
     return new CreateWorkflowInstanceCommandImpl(
-        asyncStub, objectMapper, config.getDefaultRequestTimeout());
+        asyncStub,
+        objectMapper,
+        config.getDefaultRequestTimeout(),
+        credentialsProvider::shouldRetryRequest);
   }
 
   @Override
   public CancelWorkflowInstanceCommandStep1 newCancelInstanceCommand(
       final long workflowInstanceKey) {
     return new CancelWorkflowInstanceCommandImpl(
-        asyncStub, workflowInstanceKey, config.getDefaultRequestTimeout());
+        asyncStub,
+        workflowInstanceKey,
+        config.getDefaultRequestTimeout(),
+        credentialsProvider::shouldRetryRequest);
   }
 
   @Override
   public SetVariablesCommandStep1 newSetVariablesCommand(final long elementInstanceKey) {
     return new SetVariablesCommandImpl(
-        asyncStub, objectMapper, elementInstanceKey, config.getDefaultRequestTimeout());
+        asyncStub,
+        objectMapper,
+        elementInstanceKey,
+        config.getDefaultRequestTimeout(),
+        credentialsProvider::shouldRetryRequest);
   }
 
   @Override
   public PublishMessageCommandStep1 newPublishMessageCommand() {
-    return new PublishMessageCommandImpl(asyncStub, config, objectMapper);
+    return new PublishMessageCommandImpl(
+        asyncStub, config, objectMapper, credentialsProvider::shouldRetryRequest);
   }
 
   @Override
   public ResolveIncidentCommandStep1 newResolveIncidentCommand(long incidentKey) {
     return new ResolveIncidentCommandImpl(
-        asyncStub, incidentKey, config.getDefaultRequestTimeout());
+        asyncStub,
+        incidentKey,
+        config.getDefaultRequestTimeout(),
+        credentialsProvider::shouldRetryRequest);
   }
 
   @Override
   public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(long jobKey) {
-    return new JobUpdateRetriesCommandImpl(asyncStub, jobKey, config.getDefaultRequestTimeout());
+    return new JobUpdateRetriesCommandImpl(
+        asyncStub,
+        jobKey,
+        config.getDefaultRequestTimeout(),
+        credentialsProvider::shouldRetryRequest);
   }
 
   @Override
   public JobWorkerBuilderStep1 newWorker() {
     return new JobWorkerBuilderImpl(
-        config, asyncStub, jobClient, objectMapper, executorService, closeables);
+        config,
+        asyncStub,
+        jobClient,
+        objectMapper,
+        executorService,
+        closeables,
+        credentialsProvider::shouldRetryRequest);
   }
 
   @Override
   public ActivateJobsCommandStep1 newActivateJobsCommand() {
-    return new ActivateJobsCommandImpl(asyncStub, config, objectMapper);
+    return new ActivateJobsCommandImpl(
+        asyncStub, config, objectMapper, credentialsProvider::shouldRetryRequest);
   }
 
   private JobClient newJobClient() {
-    return new JobClientImpl(asyncStub, config, objectMapper);
+    return new JobClientImpl(
+        asyncStub, config, objectMapper, credentialsProvider::shouldRetryRequest);
   }
 
   @Override

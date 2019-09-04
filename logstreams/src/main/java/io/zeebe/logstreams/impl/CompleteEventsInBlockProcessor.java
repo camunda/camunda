@@ -20,7 +20,7 @@ public class CompleteEventsInBlockProcessor implements ReadResultProcessor {
   private final MutableDirectBuffer directBuffer = new UnsafeBuffer(0, 0);
   private long lastReadEventPosition = -1;
 
-  long getLastReadEventPosition() {
+  public long getLastReadEventPosition() {
     return lastReadEventPosition;
   }
 

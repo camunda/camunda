@@ -15,17 +15,37 @@
  */
 package io.zeebe.model.bpmn.util;
 
+import static java.util.stream.Collectors.counting;
+import static java.util.stream.Collectors.groupingBy;
+
 import io.zeebe.model.bpmn.instance.Activity;
+import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ModelUtil {
-  public static List<MessageEventDefinition> getActivityMessageBoundaryEvents(Activity activity) {
+  public static Stream<MessageEventDefinition> getActivityMessageBoundaryEvents(Activity activity) {
+
     return activity.getBoundaryEvents().stream()
         .flatMap(event -> event.getEventDefinitions().stream())
         .filter(definition -> definition instanceof MessageEventDefinition)
-        .map(MessageEventDefinition.class::cast)
+        .map(MessageEventDefinition.class::cast);
+  }
+
+  public static List<String> getDuplicateMessageNames(
+      Stream<MessageEventDefinition> eventDefinitions) {
+
+    final Stream<Message> messages =
+        eventDefinitions
+            .map(MessageEventDefinition::getMessage)
+            .filter(m -> m.getName() != null && !m.getName().isEmpty());
+
+    return messages.collect(groupingBy(Message::getName, counting())).entrySet().stream()
+        .filter(e -> e.getValue() > 1)
+        .map(Entry::getKey)
         .collect(Collectors.toList());
   }
 }

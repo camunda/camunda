@@ -57,6 +57,7 @@ func TestJobWorkerActivateJobsDefault(t *testing.T) {
 		MaxJobsToActivate: DefaultJobWorkerMaxJobActive,
 		Timeout:           commands.DefaultJobTimeoutInMs,
 		Worker:            commands.DefaultJobWorkerName,
+		RequestTimeout:    int64(utils.DefaultTestTimeout / time.Millisecond),
 	}
 
 	response := &pb.ActivateJobsResponse{
@@ -102,6 +103,7 @@ func TestJobWorkerActivateJobsCustom(t *testing.T) {
 		MaxJobsToActivate: 123,
 		Timeout:           int64(timeout / time.Millisecond),
 		Worker:            "fooWorker",
+		RequestTimeout:    int64(utils.DefaultTestTimeout / time.Millisecond),
 	}
 
 	response := &pb.ActivateJobsResponse{

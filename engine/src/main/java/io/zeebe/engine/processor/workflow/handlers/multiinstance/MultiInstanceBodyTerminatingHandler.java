@@ -22,23 +22,26 @@ public class MultiInstanceBodyTerminatingHandler extends AbstractMultiInstanceBo
   private final CatchEventSubscriber catchEventSubscriber;
 
   public MultiInstanceBodyTerminatingHandler(
-      Function<BpmnStep, BpmnStepHandler> innerHandlerLookup,
-      CatchEventSubscriber catchEventSubscriber) {
+      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup,
+      final CatchEventSubscriber catchEventSubscriber) {
     super(WorkflowInstanceIntent.ELEMENT_TERMINATED, innerHandlerLookup);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   @Override
-  protected boolean shouldHandleState(BpmnStepContext<ExecutableMultiInstanceBody> context) {
+  protected boolean shouldHandleState(final BpmnStepContext<ExecutableMultiInstanceBody> context) {
     return isStateSameAsElementState(context);
   }
 
   @Override
-  protected boolean handleMultiInstanceBody(BpmnStepContext<ExecutableMultiInstanceBody> context) {
+  protected boolean handleMultiInstanceBody(
+      final BpmnStepContext<ExecutableMultiInstanceBody> context) {
     catchEventSubscriber.unsubscribeFromEvents(context);
 
     final List<ElementInstance> children =
         context.getElementInstanceState().getChildren(context.getElementInstance().getKey());
+
+    int terminatedChildInstances = 0;
 
     for (final ElementInstance child : children) {
       if (child.canTerminate()) {
@@ -46,10 +49,18 @@ public class MultiInstanceBodyTerminatingHandler extends AbstractMultiInstanceBo
             .getOutput()
             .appendFollowUpEvent(
                 child.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, child.getValue());
+
+        terminatedChildInstances += 1;
       }
     }
 
-    final boolean transitionToTerminated = children.isEmpty();
-    return transitionToTerminated;
+    // child tokens are not consumed when the flow scope is terminating
+    final int zombies =
+        context.getElementInstance().getNumberOfActiveTokens() - terminatedChildInstances;
+    for (int z = 0; z < zombies; z++) {
+      context.getElementInstanceState().consumeToken(context.getKey());
+    }
+
+    return terminatedChildInstances == 0;
   }
 }

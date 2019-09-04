@@ -39,8 +39,8 @@ public class FsLogStorage implements LogStorage {
       "Expected to append block with smaller block size then %d, but actual block size was %d.";
 
   protected final FsLogStorageConfiguration config;
-  private final ReadResultProcessor defaultReadResultProcessor = (buffer, readResult) -> readResult;
   protected volatile int state = STATE_CREATED;
+  private final ReadResultProcessor defaultReadResultProcessor = (buffer, readResult) -> readResult;
   /** Readable log segments */
   private FsLogSegments logSegments;
 
@@ -208,6 +208,41 @@ public class FsLogStorage implements LogStorage {
     } else {
       return -1;
     }
+  }
+
+  @Override
+  public long readLastBlock(final ByteBuffer readBuffer, final ReadResultProcessor processor) {
+    ensureOpenedStorage();
+
+    final int segmentCount = logSegments.segmentCount;
+    final FsLogSegment lastSegment = logSegments.getSegment(segmentCount - 1);
+
+    if (lastSegment != null && lastSegment.getSizeVolatile() > METADATA_LENGTH) {
+      boolean findLast = true;
+      final int segmentId = lastSegment.getSegmentId();
+      long currentAddress = position(segmentId, METADATA_LENGTH);
+      final int startPosition = readBuffer.position();
+      final int limit = readBuffer.limit();
+      while (findLast) {
+        // re-init
+        readBuffer.position(startPosition);
+        readBuffer.limit(limit);
+
+        final long nextAddress = read(readBuffer, currentAddress, processor);
+
+        if (nextAddress == OP_RESULT_NO_DATA) {
+          findLast = false;
+        } else {
+          if (nextAddress < 0L) {
+            findLast = false;
+          }
+          currentAddress = nextAddress;
+        }
+      }
+
+      return currentAddress;
+    }
+    return OP_RESULT_NO_DATA;
   }
 
   @Override

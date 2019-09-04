@@ -26,6 +26,7 @@ type DeployCommand struct {
 	gateway        pb.GatewayClient
 	requestTimeout time.Duration
 	request        *pb.DeployWorkflowRequest
+	retryPredicate func(error) bool
 }
 
 func (cmd *DeployCommand) AddResourceFile(path string) *DeployCommand {
@@ -45,13 +46,19 @@ func (cmd *DeployCommand) Send() (*pb.DeployWorkflowResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-	return cmd.gateway.DeployWorkflow(ctx, cmd.request)
+    response, err := cmd.gateway.DeployWorkflow(ctx, cmd.request)
+    if cmd.retryPredicate(err) {
+        return cmd.Send()
+    }
+
+    return response, err
 }
 
-func NewDeployCommand(gateway pb.GatewayClient, requestTimeout time.Duration) *DeployCommand {
+func NewDeployCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) *DeployCommand {
 	return &DeployCommand{
 		gateway:        gateway,
 		requestTimeout: requestTimeout,
 		request:        &pb.DeployWorkflowRequest{},
+		retryPredicate: retryPredicate,
 	}
 }

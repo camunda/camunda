@@ -35,6 +35,8 @@ import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
 
@@ -49,8 +51,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   private final ActorConditions onCommitPositionUpdatedConditions;
   private final String logName;
   private final int partitionId;
-  private final ByteValue writeBufferSize;
-  private final int maxAppendBlockSize;
+  private final ByteValue maxFrameLength;
   private final Position commitPosition;
 
   private BufferedLogStreamReader reader;
@@ -62,13 +63,12 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   private LogStorageAppender appender;
 
   public LogStreamService(final LogStreamBuilder builder) {
-    this.logName = builder.getLogName();
-    this.partitionId = builder.getPartitionId();
-    this.serviceContainer = builder.getServiceContainer();
-    this.onCommitPositionUpdatedConditions = builder.getOnCommitPositionUpdatedConditions();
-    this.commitPosition = builder.getCommitPosition();
-    this.writeBufferSize = ByteValue.ofBytes(builder.getWriteBufferSize());
-    this.maxAppendBlockSize = builder.getMaxAppendBlockSize();
+    logName = builder.getLogName();
+    partitionId = builder.getPartitionId();
+    serviceContainer = builder.getServiceContainer();
+    onCommitPositionUpdatedConditions = builder.getOnCommitPositionUpdatedConditions();
+    commitPosition = builder.getCommitPosition();
+    maxFrameLength = ByteValue.ofBytes(builder.getMaxFragmentSize());
   }
 
   @Override
@@ -78,6 +78,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
     serviceContext = startContext;
     logStorage = logStorageInjector.getValue();
     this.reader = new BufferedLogStreamReader(this);
+    setCommitPosition(reader.seekToEnd());
   }
 
   @Override
@@ -115,11 +116,32 @@ public class LogStreamService implements LogStream, Service<LogStream> {
     return commitPosition.get();
   }
 
-  @Override
-  public void setCommitPosition(final long commitPosition) {
+  private void setCommitPosition(final long commitPosition) {
     this.commitPosition.setOrdered(commitPosition);
 
     onCommitPositionUpdatedConditions.signalConsumers();
+  }
+
+  @Override
+  public long append(long commitPosition, ByteBuffer buffer) {
+    long appendResult = -1;
+    boolean notAppended = true;
+    do {
+      try {
+        appendResult = logStorage.append(buffer);
+        notAppended = false;
+      } catch (IOException ioe) {
+        // we want to retry the append
+        // we avoid recursion, otherwise we can get stack overflow exceptions
+        LOG.error(
+            "Expected to append new buffer, but caught IOException. Will retry this operation.",
+            ioe);
+      }
+    } while (notAppended);
+
+    setCommitPosition(commitPosition);
+
+    return appendResult;
   }
 
   @Override
@@ -165,7 +187,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
         logStorageAppenderServiceName(logName);
 
     final DispatcherBuilder writeBufferBuilder =
-        Dispatchers.create(logWriteBufferServiceName.getName()).bufferSize(writeBufferSize);
+        Dispatchers.create(logWriteBufferServiceName.getName()).maxFragmentLength(maxFrameLength);
 
     final CompositeServiceBuilder installOperation =
         serviceContext.createComposite(logStorageAppenderRootService);
@@ -187,7 +209,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
         .install();
 
     final LogStorageAppenderService appenderService =
-        new LogStorageAppenderService(maxAppendBlockSize);
+        new LogStorageAppenderService((int) maxFrameLength.toBytes());
     appenderFuture =
         installOperation
             .createService(logStorageAppenderServiceName, appenderService)

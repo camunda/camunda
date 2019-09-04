@@ -14,20 +14,24 @@ import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.MultiInstanceLoopCharacteristicsBuilder;
+import io.zeebe.model.bpmn.builder.zeebe.MessageBuilder;
+import io.zeebe.model.bpmn.instance.ServiceTask;
+import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.VariableIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.test.util.JsonUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -46,15 +50,28 @@ public class MultiInstanceActivityTest {
   private static final String PROCESS_ID = "process";
   private static final String ELEMENT_ID = "task";
   private static final String JOB_TYPE = "test";
+
   private static final String INPUT_COLLECTION_VARIABLE = "items";
   private static final String INPUT_ELEMENT_VARIABLE = "item";
-  private static final List<Integer> INPUT_COLLECTION = Arrays.asList(10, 20, 30);
+  private static final List<Integer> INPUT_COLLECTION = List.of(10, 20, 30);
+  private static final String OUTPUT_COLLECTION_VARIABLE = "results";
+  private static final String OUTPUT_ELEMENT_VARIABLE = "result";
+  private static final List<Integer> OUTPUT_COLLECTION = List.of(11, 22, 33);
+
+  private static final String MESSAGE_CORRELATION_KEY_VARIABLE = "correlationKey";
+  private static final String MESSAGE_CORRELATION_KEY = "key-123";
+  private static final String MESSAGE_NAME = "message";
 
   private static final Consumer<MultiInstanceLoopCharacteristicsBuilder> INPUT_VARIABLE_BUILDER =
       multiInstance(
           m ->
               m.zeebeInputCollection(INPUT_COLLECTION_VARIABLE)
-                  .zeebeInputElement(INPUT_ELEMENT_VARIABLE));
+                  .zeebeInputElement(INPUT_ELEMENT_VARIABLE)
+                  .zeebeOutputCollection(OUTPUT_COLLECTION_VARIABLE)
+                  .zeebeOutputElement(OUTPUT_ELEMENT_VARIABLE));
+
+  private static final Consumer<MessageBuilder> MESSAGE_BUILDER =
+      m -> m.name(MESSAGE_NAME).zeebeCorrelationKey(MESSAGE_CORRELATION_KEY_VARIABLE);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -317,19 +334,13 @@ public class MultiInstanceActivityTest {
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
 
     // then
-    final Record<WorkflowInstanceRecordValue> completedWorkflowInstance =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .filterRootScope()
-            .getFirst();
-
     assertThat(
-            RecordingExporter.variableRecords()
+            RecordingExporter.records()
+                .limitToWorkflowInstance(workflowInstanceKey)
+                .variableRecords()
                 .withWorkflowInstanceKey(workflowInstanceKey)
-                .withScopeKey(workflowInstanceKey)
-                .limit(r -> r.getPosition() < completedWorkflowInstance.getPosition()))
+                .withScopeKey(workflowInstanceKey))
         .extracting(r -> r.getValue().getName())
-        .contains(INPUT_COLLECTION_VARIABLE)
         .doesNotContain(INPUT_ELEMENT_VARIABLE);
   }
 
@@ -467,7 +478,7 @@ public class MultiInstanceActivityTest {
                 .limit(INPUT_COLLECTION.size()))
         .flatExtracting(r -> r.getValue().getJobs())
         .flatExtracting(j -> j.getVariables().keySet())
-        .containsOnly(INPUT_COLLECTION_VARIABLE);
+        .doesNotContain(INPUT_ELEMENT_VARIABLE);
   }
 
   @Test
@@ -506,6 +517,484 @@ public class MultiInstanceActivityTest {
         .containsExactlyElementsOf(INPUT_COLLECTION);
   }
 
+  @Test
+  public void shouldSetOutputCollectionVariable() {
+    // given
+    ENGINE.deployment().withXmlResource(workflow(miBuilder)).deploy();
+
+    // when
+    final var workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    final var variableRecord =
+        RecordingExporter.variableRecords()
+            .withName(OUTPUT_COLLECTION_VARIABLE)
+            .withScopeKey(workflowInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(variableRecord.getValue()).hasValue(JsonUtil.toJson(OUTPUT_COLLECTION));
+  }
+
+  @Test
+  public void shouldCollectOutputInVariable() {
+    // given
+    ENGINE.deployment().withXmlResource(workflow(miBuilder)).deploy();
+
+    // when
+    final var workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    final var multiInstanceBody =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+            .getFirst();
+
+    assertThat(
+            RecordingExporter.variableRecords()
+                .withName(OUTPUT_COLLECTION_VARIABLE)
+                .withScopeKey(multiInstanceBody.getKey())
+                .limit(INPUT_COLLECTION.size() + 1))
+        .extracting(r -> r.getValue().getValue())
+        .contains("[null,null,null]", "[11,null,null]", "[11,22,null]", "[11,22,33]");
+  }
+
+  @Test
+  public void shouldSetOutputElementVariable() {
+    // given
+    ENGINE.deployment().withXmlResource(workflow(miBuilder)).deploy();
+
+    // when
+    final var workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withName(OUTPUT_ELEMENT_VARIABLE)
+                .limit(INPUT_COLLECTION.size()))
+        .extracting(r -> r.getValue().getValue())
+        .containsOnly("null");
+
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.UPDATED)
+                .withName(OUTPUT_ELEMENT_VARIABLE)
+                .limit(INPUT_COLLECTION.size()))
+        .extracting(r -> r.getValue().getValue())
+        .containsExactlyElementsOf(
+            OUTPUT_COLLECTION.stream().map(JsonUtil::toJson).collect(Collectors.toList()));
+  }
+
+  @Test
+  public void shouldSetEmptyOutputCollectionIfSkip() {
+    // given
+    ENGINE.deployment().withXmlResource(workflow(miBuilder)).deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, List.of())
+            .create();
+
+    // then
+    final var variableRecord =
+        RecordingExporter.variableRecords()
+            .withName(OUTPUT_COLLECTION_VARIABLE)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(variableRecord.getValue()).hasValue("[]");
+  }
+
+  @Test
+  public void shouldIgnoreOutputCollectionVariableIfNotDefined() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            workflow(
+                miBuilder.andThen(m -> m.zeebeOutputCollection(null).zeebeOutputElement(null))))
+        .deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limitToWorkflowInstance(workflowInstanceKey)
+                .variableRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withScopeKey(workflowInstanceKey))
+        .extracting(r -> r.getValue().getName())
+        .doesNotContain(OUTPUT_COLLECTION_VARIABLE);
+  }
+
+  @Test
+  public void shouldNotPropagateOutputElementVariable() {
+    ENGINE.deployment().withXmlResource(workflow(miBuilder)).deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limitToWorkflowInstance(workflowInstanceKey)
+                .variableRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withScopeKey(workflowInstanceKey))
+        .extracting(r -> r.getValue().getName())
+        .doesNotContain(OUTPUT_ELEMENT_VARIABLE);
+  }
+
+  @Test
+  public void shouldSetLoopCounterVariable() {
+    // given
+    ENGINE.deployment().withXmlResource(workflow(miBuilder)).deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    final var elementInstanceKeys =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withElementId(ELEMENT_ID)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .limit(3)
+            .map(Record::getKey)
+            .collect(Collectors.toList());
+
+    assertThat(
+            RecordingExporter.records()
+                .limitToWorkflowInstance(workflowInstanceKey)
+                .variableRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withName("loopCounter"))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getScopeKey(), v.getValue()))
+        .containsExactly(
+            tuple(elementInstanceKeys.get(0), "1"),
+            tuple(elementInstanceKeys.get(1), "2"),
+            tuple(elementInstanceKeys.get(2), "3"));
+  }
+
+  @Test
+  public void shouldApplyInputMapping() {
+    // given
+    final ServiceTask task = workflow(miBuilder).getModelElementById(ELEMENT_ID);
+    final var workflow =
+        task.builder()
+            .zeebeInput(INPUT_ELEMENT_VARIABLE, "x")
+            .zeebeInput("loopCounter", "y")
+            .done();
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    final var elementInstanceKeys =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withElementId(ELEMENT_ID)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .limit(3)
+            .map(Record::getKey)
+            .collect(Collectors.toList());
+
+    assertThat(
+            RecordingExporter.records()
+                .limitToWorkflowInstance(workflowInstanceKey)
+                .variableRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getScopeKey(), v.getName(), v.getValue()))
+        .contains(
+            tuple(elementInstanceKeys.get(0), "x", JsonUtil.toJson(INPUT_COLLECTION.get(0))),
+            tuple(elementInstanceKeys.get(0), "y", "1"),
+            tuple(elementInstanceKeys.get(1), "x", JsonUtil.toJson(INPUT_COLLECTION.get(1))),
+            tuple(elementInstanceKeys.get(1), "y", "2"),
+            tuple(elementInstanceKeys.get(2), "x", JsonUtil.toJson(INPUT_COLLECTION.get(2))),
+            tuple(elementInstanceKeys.get(2), "y", "3"));
+  }
+
+  @Test
+  public void shouldApplyOutputMapping() {
+    // given
+    final ServiceTask task = workflow(miBuilder).getModelElementById(ELEMENT_ID);
+    final var workflow =
+        task.builder()
+            .zeebeOutput("loopCounter", OUTPUT_ELEMENT_VARIABLE) // overrides the variable
+            .zeebeOutput("loopCounter", "global") // propagates to root scope
+            .done();
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.variableRecords()
+                .withScopeKey(workflowInstanceKey)
+                .withName(OUTPUT_COLLECTION_VARIABLE)
+                .getFirst()
+                .getValue())
+        .hasValue("[1,2,3]");
+
+    assertThat(
+            RecordingExporter.records()
+                .limitToWorkflowInstance(workflowInstanceKey)
+                .variableRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withName("global"))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getScopeKey(), v.getValue()))
+        .containsExactly(
+            tuple(workflowInstanceKey, "1"),
+            tuple(workflowInstanceKey, "2"),
+            tuple(workflowInstanceKey, "3"));
+  }
+
+  @Test
+  public void shouldTriggerInterruptingBoundaryEvent() {
+    // given
+    final ServiceTask task = workflow(miBuilder).getModelElementById(ELEMENT_ID);
+    final var workflow =
+        task.builder()
+            .boundaryEvent("boundary-event", b -> b.cancelActivity(true).message(MESSAGE_BUILDER))
+            .sequenceFlowId("to-canceled")
+            .endEvent("canceled")
+            .done();
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(
+                Map.of(
+                    INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION,
+                    MESSAGE_CORRELATION_KEY_VARIABLE, MESSAGE_CORRELATION_KEY))
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size() - 1);
+
+    // when
+    ENGINE
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey(MESSAGE_CORRELATION_KEY)
+        .withTimeToLive(0)
+        .publish();
+
+    // then
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limit(4))
+        .extracting(Record::getIntent)
+        .containsExactly(
+            MessageSubscriptionIntent.OPEN,
+            MessageSubscriptionIntent.OPENED,
+            MessageSubscriptionIntent.CORRELATE,
+            MessageSubscriptionIntent.CORRELATED);
+
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(
+            r ->
+                tuple(
+                    r.getValue().getElementId(), r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(
+                ELEMENT_ID,
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(
+                ELEMENT_ID,
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(
+                ELEMENT_ID,
+                BpmnElementType.SERVICE_TASK,
+                WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(
+                ELEMENT_ID,
+                BpmnElementType.SERVICE_TASK,
+                WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                ELEMENT_ID,
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                "to-canceled",
+                BpmnElementType.SEQUENCE_FLOW,
+                WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("canceled", BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+
+    assertThat(
+            RecordingExporter.records()
+                .limitToWorkflowInstance(workflowInstanceKey)
+                .variableRecords()
+                .withScopeKey(workflowInstanceKey))
+        .extracting(r -> r.getValue().getName())
+        .doesNotContain(OUTPUT_COLLECTION_VARIABLE);
+  }
+
+  @Test
+  public void shouldTriggerNonInterruptingBoundaryEvent() {
+    // given
+    final ServiceTask task = workflow(miBuilder).getModelElementById(ELEMENT_ID);
+    final var workflow =
+        task.builder()
+            .boundaryEvent("boundary-event", b -> b.cancelActivity(false).message(MESSAGE_BUILDER))
+            .sequenceFlowId("to-notified")
+            .endEvent("notified")
+            .done();
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(
+                Map.of(
+                    INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION,
+                    MESSAGE_CORRELATION_KEY_VARIABLE, MESSAGE_CORRELATION_KEY))
+            .create();
+
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size() - 1);
+
+    // when
+    ENGINE
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey(MESSAGE_CORRELATION_KEY)
+        .withTimeToLive(0)
+        .publish();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limit(r -> r.getValue().getBpmnElementType() == BpmnElementType.END_EVENT))
+        .extracting(
+            r ->
+                tuple(
+                    r.getValue().getElementId(), r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(
+                ELEMENT_ID,
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(
+                "to-notified",
+                BpmnElementType.SEQUENCE_FLOW,
+                WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(
+                "notified", BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING));
+
+    // and
+    completeJobs(workflowInstanceKey, 1);
+
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limit(6))
+        .extracting(Record::getIntent)
+        .containsExactly(
+            MessageSubscriptionIntent.OPEN,
+            MessageSubscriptionIntent.OPENED,
+            MessageSubscriptionIntent.CORRELATE,
+            MessageSubscriptionIntent.CORRELATED,
+            MessageSubscriptionIntent.CLOSE,
+            MessageSubscriptionIntent.CLOSED);
+
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(
+            r ->
+                tuple(
+                    r.getValue().getElementId(), r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple("notified", BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                ELEMENT_ID, BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                ELEMENT_ID,
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+  }
+
   private void completeJobs(final long workflowInstanceKey, final int count) {
     IntStream.range(0, count)
         .forEach(
@@ -518,14 +1007,18 @@ public class MultiInstanceActivityTest {
                   .describedAs("Expected job %d/%d to be created", (i + 1), count)
                   .isTrue();
 
-              ENGINE
-                  .jobs()
-                  .withType(JOB_TYPE)
-                  .withMaxJobsToActivate(1)
-                  .activate()
-                  .getValue()
+              final var jobBatch =
+                  ENGINE.jobs().withType(JOB_TYPE).withMaxJobsToActivate(1).activate().getValue();
+
+              jobBatch
                   .getJobKeys()
-                  .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
+                  .forEach(
+                      jobKey ->
+                          ENGINE
+                              .job()
+                              .withKey(jobKey)
+                              .withVariable(OUTPUT_ELEMENT_VARIABLE, OUTPUT_COLLECTION.get(i))
+                              .complete());
             });
   }
 }

@@ -150,7 +150,7 @@ public class BpmnStepHandlers {
 
     stepHandlers.put(
         BpmnStep.MULTI_INSTANCE_ACTIVATING,
-        new MultiInstanceBodyActivatingHandler(stepHandlers::get));
+        new MultiInstanceBodyActivatingHandler(stepHandlers::get, catchEventSubscriber));
     stepHandlers.put(
         BpmnStep.MULTI_INSTANCE_ACTIVATED,
         new MultiInstanceBodyActivatedHandler(stepHandlers::get));
@@ -165,7 +165,7 @@ public class BpmnStepHandlers {
         new MultiInstanceBodyTerminatingHandler(stepHandlers::get, catchEventSubscriber));
     stepHandlers.put(
         BpmnStep.MULTI_INSTANCE_EVENT_OCCURRED,
-        new MultiInstanceBodyEventOccurredHandler(stepHandlers::get, catchEventSubscriber));
+        new MultiInstanceBodyEventOccurredHandler(stepHandlers::get));
   }
 
   public void handle(final BpmnStepContext context) {
