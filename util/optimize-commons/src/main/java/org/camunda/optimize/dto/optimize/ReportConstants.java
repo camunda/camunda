@@ -78,9 +78,6 @@ public class ReportConstants {
   public static final String FIXED_DATE_FILTER = "fixed";
   public static final String RELATIVE_DATE_FILTER = "relative";
 
-  public static final String PROCESS_REPORT_TYPE = "process";
-  public static final String DECISION_REPORT_TYPE = "decision";
-
   public static final String RAW_RESULT_TYPE = "raw";
   public static final String FREQUENCY_MAP_RESULT_TYPE = "frequencyMap";
   public static final String DURATION_MAP_RESULT_TYPE = "durationMap";

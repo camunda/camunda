@@ -5,8 +5,8 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.combined;
 
+import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportType;
 
 public class CombinedReportDefinitionDto extends ReportDefinitionDto<CombinedReportDataDto> {
 

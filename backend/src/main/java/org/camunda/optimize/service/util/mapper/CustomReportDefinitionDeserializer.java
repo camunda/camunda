@@ -11,17 +11,17 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.dto.optimize.query.report.ReportType.DECISION;
-import static org.camunda.optimize.dto.optimize.query.report.ReportType.PROCESS;
-import static org.camunda.optimize.dto.optimize.query.report.ReportType.valueOf;
+import static org.camunda.optimize.dto.optimize.ReportType.DECISION;
+import static org.camunda.optimize.dto.optimize.ReportType.PROCESS;
+import static org.camunda.optimize.dto.optimize.ReportType.valueOf;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COMBINED;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.REPORT_TYPE;
 

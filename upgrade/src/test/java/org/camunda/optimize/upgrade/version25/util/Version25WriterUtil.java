@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.report.ReportType;
+import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;

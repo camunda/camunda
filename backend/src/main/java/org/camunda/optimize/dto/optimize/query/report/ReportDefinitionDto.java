@@ -8,6 +8,7 @@ package org.camunda.optimize.dto.optimize.query.report;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
@@ -42,7 +43,15 @@ public class ReportDefinitionDto<RD extends ReportDataDto> implements Collection
   @Override
   public EntityDto toEntityDto() {
     return new EntityDto(
-      getId(), getName(), getLastModified(), getCreated(), getOwner(), getLastModifier(), EntityType.REPORT
+      getId(),
+      getName(),
+      getLastModified(),
+      getCreated(),
+      getOwner(),
+      getLastModifier(),
+      EntityType.REPORT,
+      this.combined,
+      this.reportType
     );
   }
 }

@@ -7,6 +7,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRole;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
@@ -14,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdat
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
-import org.camunda.optimize.dto.optimize.query.report.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -62,7 +62,6 @@ public class EntitiesRestServiceIT {
     //given
     addSingleReportToOptimize("B Report", ReportType.PROCESS);
     addSingleReportToOptimize("A Report", ReportType.DECISION);
-    addDashboardToOptimize("C Dashboard");
     addCombinedReport("D Combined");
 
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -71,7 +70,15 @@ public class EntitiesRestServiceIT {
     final List<EntityDto> privateEntities = getEntities();
 
     // then
-    assertThat(privateEntities.size(), is(4));
+    assertThat(privateEntities.size(), is(3));
+    assertThat(
+      privateEntities.stream().map(EntityDto::getReportType).collect(Collectors.toList()),
+      containsInAnyOrder(ReportType.PROCESS, ReportType.PROCESS, ReportType.DECISION)
+    );
+    assertThat(
+      privateEntities.stream().map(EntityDto::getCombined).collect(Collectors.toList()),
+      containsInAnyOrder(false, false, true)
+    );
   }
 
   @Test
@@ -81,7 +88,6 @@ public class EntitiesRestServiceIT {
     engineRule.grantUserOptimizeAccess("kermit");
     addSingleReportToOptimize("B Report", ReportType.PROCESS, null, "kermit");
     addSingleReportToOptimize("A Report", ReportType.DECISION);
-    addDashboardToOptimize("C Dashboard", null, "kermit");
     addCombinedReport("D Combined");
 
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -104,10 +110,10 @@ public class EntitiesRestServiceIT {
       .executeAndReturnList(EntityDto.class, 200);
 
     // then
-    assertThat(kermitUserEntities.size(), is(2));
+    assertThat(kermitUserEntities.size(), is(1));
     assertThat(
       kermitUserEntities.stream().map(EntityDto::getName).collect(Collectors.toList()),
-      containsInAnyOrder("B Report", "C Dashboard")
+      containsInAnyOrder("B Report")
     );
   }
 
