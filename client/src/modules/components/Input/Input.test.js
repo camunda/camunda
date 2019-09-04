@@ -51,14 +51,14 @@ it('should show a clear button when adding onClear and the input is not empty', 
 it('should invoke onClear when clear button is clicked', () => {
   const spy = jest.fn();
   const node = shallow(<Input value="not empty" onClear={spy} />);
-  node.find('.searchClear').simulate('click');
+  node.find('.searchClear').simulate('mousedown', {type: '', preventDefault: jest.fn()});
   expect(spy).toHaveBeenCalled();
 });
 
 it('should focus on input when clicking the clear button', () => {
   const spy = jest.fn();
   const node = mount(<Input onClear={jest.fn()} ref={spy} />);
-  node.find('.searchClear').simulate('click');
+  node.find('.searchClear').simulate('mousedown');
   expect(document.activeElement.getAttribute('class')).toBe('Input');
   expect(spy).toHaveBeenCalled();
 });

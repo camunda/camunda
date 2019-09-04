@@ -23,6 +23,17 @@ export default React.forwardRef(function Input({isInvalid, onClear, ...props}, r
     return (ref.current = el);
   };
 
+  const triggerClear = evt => {
+    if (evt.type === 'keydown' && evt.keyCode !== 13) {
+      return;
+    }
+    onClear(evt);
+    if (inputEl) {
+      inputEl.focus();
+    }
+    evt.preventDefault();
+  };
+
   return (
     <>
       <input
@@ -35,15 +46,7 @@ export default React.forwardRef(function Input({isInvalid, onClear, ...props}, r
         {props.children}
       </input>
       {onClear && (
-        <button
-          className="searchClear"
-          onClick={evt => {
-            onClear(evt);
-            if (inputEl) {
-              inputEl.focus();
-            }
-          }}
-        >
+        <button className="searchClear" onKeyDown={triggerClear} onMouseDown={triggerClear}>
           <Icon type="clear" />
         </button>
       )}
