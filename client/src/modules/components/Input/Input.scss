@@ -1,22 +1,38 @@
 @import 'shared-styles/shared-styles.scss';
 
+$text: #333;
+$border: lightgray;
+
+$placeholder-color: #a5a5a5;
+
+$text-disabled: #8e8e8e;
+$border-disabled: #d3d3d3;
+$bg-disabled: #f8f8f8;
+
+$clear-icon: #6a727e;
+$clear-icon-hover: #2c3139;
+
 .Input[type='text'],
 .Input[type='password'],
 .Input[type='number'],
 .Input[type='email'],
 textarea {
-  color: #333;
-  border: 1px solid lightgray;
+  color: $text;
+  border: 1px solid $border;
   font-size: 0.875em;
   padding: 6px 10px;
   border-radius: 3px;
 
+  &::placeholder {
+    color: $placeholder-color;
+  }
+
   &[disabled],
   &[disabled='disabled'] {
     cursor: not-allowed;
-    color: graytext;
-    background-color: #f8f8f8;
-    border-color: #bbb;
+    color: $text-disabled;
+    background-color: $bg-disabled;
+    border-color: $border-disabled;
   }
 
   &.isInvalid {
@@ -42,7 +58,7 @@ textarea {
   border: none;
   background: none;
   border-radius: 100%;
-  color: #6a727e;
+  color: $clear-icon;
   height: 16px;
   padding: 0px;
   margin: auto;
@@ -53,7 +69,7 @@ textarea {
   }
 
   &:hover {
-    color: #2c3139;
+    color: $clear-icon-hover;
   }
 }
 

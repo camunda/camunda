@@ -1,5 +1,12 @@
 @import 'shared-styles/shared-styles.scss';
 
+$border-disabled: #d3d3d3;
+$text-disabled: #8e8e8e;
+
+$bg-active-disabled: #ddd;
+$text-active-disabled: #8e8e8e;
+$border-active-disabled: #d7d7d7;
+
 .ButtonGroup {
   display: flex;
 
@@ -8,12 +15,13 @@
 
     .Button,
     a.Button {
-      color: #ababab;
+      color: $text-disabled;
+      border-color: $border-disabled;
 
       &.isActive {
-        color: #fff;
-        background: #cccccc;
-        border: 1px solid #cccccc;
+        color: $text-active-disabled;
+        background: $bg-active-disabled;
+        border: 1px solid $border-active-disabled;
       }
     }
   }

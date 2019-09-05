@@ -6,11 +6,6 @@
   .Input {
     width: 100%;
     padding-right: 65px;
-
-    &::placeholder {
-      font-style: italic;
-      color: #bbbbbb;
-    }
   }
 
   .searchClear {

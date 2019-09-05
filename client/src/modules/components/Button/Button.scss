@@ -1,29 +1,49 @@
 @import 'shared-styles/shared-styles.scss';
 
+$bg: #f8f8f8;
+$border: #bbb;
+$text: #333;
+
+$bg-hover: #e6e6e6;
+$border-hover: #adadad;
+$text-hover: #333;
+
+$bg-active: darken(#e6e6e6, 12);
+$border-active: 1px solid darken(#adadad, 12);
+$text-active: #111;
+
+$border-disabled: #d3d3d3;
+$text-disabled: #8e8e8e;
+
+$bg-dark: #000;
+$bg-dark-active: #333;
+$border-dark: #333;
+$text-dark: #ddd;
+
 .dark {
   .Button {
-    color: #ddd;
-    background-color: #000;
-    border: 1px solid #333;
+    color: $text-dark;
+    background-color: $bg-dark;
+    border: 1px solid $border-dark;
 
     &:hover,
     &:active,
     &.isActive {
-      color: #ddd;
-      background-color: #333;
-      border: 1px solid #333;
+      color: $text-dark;
+      background-color: $bg-dark-active;
+      border: 1px solid $border-dark;
     }
   }
 }
 
 .Button,
 a.Button {
-  color: #333;
+  color: $text;
   font-size: 0.875em; /* 14px/16px */
   user-select: none;
   padding: 6px 12px;
-  background-color: #f8f8f8;
-  border: 1px solid #bbb;
+  background-color: $bg;
+  border: 1px solid $border;
   border-radius: 3px;
   text-decoration: none;
   display: inline-block;
@@ -50,31 +70,31 @@ a.Button {
   }
 
   &:hover {
-    color: #111;
-    background-color: #e6e6e6;
-    border: 1px solid #adadad;
+    color: $text-hover;
+    background-color: $bg-hover;
+    border: 1px solid $border-hover;
     cursor: pointer;
     transition: background-color 0.3s, border-color 0.3s;
   }
 
   &[disabled]:hover,
   &[disabled='disabled']:hover {
-    color: graytext;
-    background-color: #f8f8f8;
-    border: 1px solid #ccc;
+    color: $text-disabled;
+    border: 1px solid $border-disabled;
   }
 
   &:active,
   &.isActive {
-    color: #111;
-    background-color: darken(#e6e6e6, 12);
-    border: 1px solid darken(#adadad, 12);
+    color: $text-active;
+    background-color: $bg-active;
+    border: 1px solid $border-active;
     transition: none;
   }
 
   &[disabled],
   &[disabled='disabled'] {
-    color: graytext;
+    color: $text-disabled;
+    border-color: $border-disabled;
     cursor: not-allowed;
     opacity: 0.65;
   }
