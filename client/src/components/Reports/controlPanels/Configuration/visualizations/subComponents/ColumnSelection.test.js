@@ -31,8 +31,18 @@ it('should change the switches labels to space case instead of camelCase for non
       }}
     />
   );
-  expect(node.find('.ColumnSelection__entry').at(0)).toIncludeText('Process Definition Key');
-  expect(node.find('.ColumnSelection__entry').at(1)).toIncludeText('Variable: testVariable');
+  expect(
+    node
+      .find('.ColumnSelectionSwitch')
+      .at(0)
+      .dive()
+  ).toIncludeText('Process Definition Key');
+  expect(
+    node
+      .find('.ColumnSelectionSwitch')
+      .at(1)
+      .dive()
+  ).toIncludeText('Variable: testVariable');
 });
 
 it('should call change with an empty array when all columns switch is enabled', () => {

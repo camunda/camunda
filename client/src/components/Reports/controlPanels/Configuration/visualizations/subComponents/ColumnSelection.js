@@ -63,23 +63,26 @@ export default function ColumnSelection({report, onChange}) {
         }
 
         return (
-          <div key={column} className="ColumnSelection__entry">
-            <Switch
-              className="ColumnSelection__Switch"
-              checked={!excludedColumns.includes(column)}
-              onChange={({target: {checked}}) => {
-                if (checked) {
-                  onChange({
-                    excludedColumns: {$set: excludedColumns.filter(entry => column !== entry)}
-                  });
-                } else {
-                  onChange({excludedColumns: {$set: excludedColumns.concat(column)}});
-                }
-              }}
-            />
-            <b>{prefix}</b>
-            {name}
-          </div>
+          <Switch
+            key={column}
+            className="ColumnSelectionSwitch"
+            checked={!excludedColumns.includes(column)}
+            onChange={({target: {checked}}) => {
+              if (checked) {
+                onChange({
+                  excludedColumns: {$set: excludedColumns.filter(entry => column !== entry)}
+                });
+              } else {
+                onChange({excludedColumns: {$set: excludedColumns.concat(column)}});
+              }
+            }}
+            label={
+              <>
+                <b>{prefix}</b>
+                {name}
+              </>
+            }
+          />
         );
       })}
     </fieldset>

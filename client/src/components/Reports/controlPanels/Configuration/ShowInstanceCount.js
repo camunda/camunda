@@ -12,13 +12,11 @@ import {t} from 'translation';
 export default function ShowInstanceCount({configuration, onChange, label}) {
   return (
     <Form.Group noSpacing>
-      <label>
-        <Switch
-          checked={!!configuration.showInstanceCount}
-          onChange={({target: {checked}}) => onChange({showInstanceCount: {$set: checked}})}
-        />
-        {t(`report.config.showCount.${label}`)}
-      </label>
+      <Switch
+        checked={!!configuration.showInstanceCount}
+        onChange={({target: {checked}}) => onChange({showInstanceCount: {$set: checked}})}
+        label={t(`report.config.showCount.${label}`)}
+      />
     </Form.Group>
   );
 }

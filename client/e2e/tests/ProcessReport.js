@@ -89,7 +89,7 @@ test('exclude raw data columns', async t => {
 
   await t.click(e.configurationButton);
 
-  await t.click(e.columnSwitch('Start Date'));
+  await t.click(e.selectSwitchLabel('Start Date'));
 
   await t.expect(e.reportRenderer.textContent).notContains('Start Date');
 });
@@ -184,8 +184,8 @@ test('Disable absolute and relative values for table reports', async t => {
 
   await u.selectVisualization(t, 'Table');
   await t.click(e.configurationButton);
-  await t.click(e.selectLabel('Show Absolute Value'));
-  await t.click(e.selectLabel('Show Relative Value'));
+  await t.click(e.selectSwitchLabel('Show Absolute Value'));
+  await t.click(e.selectSwitchLabel('Show Relative Value'));
 
   await t.expect(e.reportTable.textContent).contains('Start Date of Process Instance: Month');
   await t.expect(e.reportTable.textContent).notContains('Process Instance: Count');
@@ -425,7 +425,7 @@ test('always show tooltips', async t => {
   await t.expect(e.tooltip.exists).notOk();
 
   await t.click(e.configurationButton);
-  await t.click(e.tooltipSwitch);
+  await t.click(e.selectSwitchLabel('Show Absolute Value'));
 
   await t.expect(e.tooltip.visible).ok();
 });

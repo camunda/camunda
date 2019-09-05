@@ -12,21 +12,18 @@ import {t} from 'translation';
 export default function RelativeAbsoluteSelection({hideRelative, absolute, relative, onChange}) {
   return (
     <>
-      <label>
-        <Switch
-          checked={absolute}
-          onChange={({target: {checked}}) => onChange('absolute', checked)}
-        />
-        {t('report.config.tooltips.showAbsolute')}
-      </label>
+      <Switch
+        checked={absolute}
+        onChange={({target: {checked}}) => onChange('absolute', checked)}
+        label={t('report.config.tooltips.showAbsolute')}
+      />
+
       {!hideRelative && (
-        <label>
-          <Switch
-            checked={relative}
-            onChange={({target: {checked}}) => onChange('relative', checked)}
-          />
-          {t('report.config.tooltips.showRelative')}
-        </label>
+        <Switch
+          checked={relative}
+          onChange={({target: {checked}}) => onChange('relative', checked)}
+          label={t('report.config.tooltips.showRelative')}
+        />
       )}
     </>
   );

@@ -4,22 +4,28 @@
 .Switch {
   position: relative;
   display: inline-block;
-  width: 30px;
-  min-width: 30px;
-  height: 14px;
-  vertical-align: middle;
-}
 
-/* Hide default HTML checkbox */
-.Switch input {
-  opacity: 0;
+  &.withLabel {
+    display: flex;
+    align-items: baseline;
+  }
+
+  /* Hide default HTML checkbox */
+  input[type='checkbox'].Switch__Input {
+    opacity: 0;
+    height: 0;
+    margin-right: 20px;
+  }
 }
 
 /* The slider */
 .Switch__Slider--round {
   position: absolute;
+  height: 14px;
+  width: 30px;
+  min-width: 30px;
   cursor: pointer;
-  top: 0;
+  top: 2px;
   left: 0;
   right: 0;
   bottom: 0;

@@ -11,12 +11,10 @@ import {t} from 'translation';
 
 export default function GradientBarsSwitch({configuration, onChange}) {
   return (
-    <label>
-      <Switch
-        checked={!!configuration.showGradientBars}
-        onChange={({target: {checked}}) => onChange({showGradientBars: {$set: checked}})}
-      />
-      {t('report.config.showGradientBars')}
-    </label>
+    <Switch
+      checked={!!configuration.showGradientBars}
+      onChange={({target: {checked}}) => onChange({showGradientBars: {$set: checked}})}
+      label={t('report.config.showGradientBars')}
+    />
   );
 }

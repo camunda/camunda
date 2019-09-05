@@ -11,57 +11,61 @@ exports[`should provde a sane interface for decision tables 1`] = `
     disableAll={[Function]}
     enableAll={[Function]}
   />
-  <div
-    className="ColumnSelection__entry"
+  <Switch
+    checked={true}
+    className="ColumnSelectionSwitch"
     key="decisionDefinitionId"
-  >
-    <Switch
-      checked={true}
-      className="ColumnSelection__Switch"
-      onChange={[Function]}
-    />
-    <b />
-    Decision Definition Id
-  </div>
-  <div
-    className="ColumnSelection__entry"
+    label={
+      <React.Fragment>
+        <b>
+          
+        </b>
+        Decision Definition Id
+      </React.Fragment>
+    }
+    onChange={[Function]}
+  />
+  <Switch
+    checked={true}
+    className="ColumnSelectionSwitch"
     key="decisionDefinitionKey"
-  >
-    <Switch
-      checked={true}
-      className="ColumnSelection__Switch"
-      onChange={[Function]}
-    />
-    <b />
-    Decision Definition Key
-  </div>
-  <div
-    className="ColumnSelection__entry"
+    label={
+      <React.Fragment>
+        <b>
+          
+        </b>
+        Decision Definition Key
+      </React.Fragment>
+    }
+    onChange={[Function]}
+  />
+  <Switch
+    checked={true}
+    className="ColumnSelectionSwitch"
     key="inp__crypticId"
-  >
-    <Switch
-      checked={true}
-      className="ColumnSelection__Switch"
-      onChange={[Function]}
-    />
-    <b>
-      Input Variable: 
-    </b>
-    Cool Name
-  </div>
-  <div
-    className="ColumnSelection__entry"
+    label={
+      <React.Fragment>
+        <b>
+          Input Variable: 
+        </b>
+        Cool Name
+      </React.Fragment>
+    }
+    onChange={[Function]}
+  />
+  <Switch
+    checked={true}
+    className="ColumnSelectionSwitch"
     key="out__clause7"
-  >
-    <Switch
-      checked={true}
-      className="ColumnSelection__Switch"
-      onChange={[Function]}
-    />
-    <b>
-      Output Variable: 
-    </b>
-    Klaus Seven
-  </div>
+    label={
+      <React.Fragment>
+        <b>
+          Output Variable: 
+        </b>
+        Klaus Seven
+      </React.Fragment>
+    }
+    onChange={[Function]}
+  />
 </fieldset>
 `;

@@ -51,20 +51,13 @@ export const processPartButton = Selector('.ReportControlPanel .Button').withTex
   'Process Instance Part'
 );
 export const modalFlowNode = id => Selector(`.Modal [data-element-id="${id}"]`);
-export const columnSwitch = label =>
-  Selector('.ColumnSelection__entry')
-    .withText(label)
-    .find('.Switch');
+export const selectSwitchLabel = label => Selector('.Switch .label').withText(label);
 export const tableHeader = idx => Selector('.rt-thead.-header .rt-th').nth(idx);
 export const tableCell = (row, column) =>
   Selector('.rt-tbody .rt-tr')
     .nth(row)
     .find('.rt-td')
     .nth(column);
-export const tooltipSwitch = Selector('.Configuration legend')
-  .withText('Tooltips')
-  .nextSibling()
-  .find('.Switch');
 export const instanceCountSwitch = Selector('.Configuration .Switch');
 export const filterButton = Selector('.Filter__dropdown .activateButton');
 export const filterOption = text => Selector('.Filter .DropdownOption').withText(text);
@@ -73,10 +66,6 @@ export const createCollectionButton = Selector('.Modal button').withText('Create
 export const collectionOption = text =>
   Selector('.CollectionsDropdown.is-open .DropdownOption').withText(text);
 export const limitPrecisionSwitch = Selector('.NumberConfig .Switch:first-child');
-export const selectLabel = text =>
-  Selector('label')
-    .withText(text)
-    .find('.Switch');
 export const showFlowNodes = Selector('.Button').withText('Show Flow Nodes...');
 export const flowNodeStatusSelect = Selector('.NodeStatus .Select');
 export const nodeTableCell = text => Selector('.rt-tbody .rt-td').withText(text);

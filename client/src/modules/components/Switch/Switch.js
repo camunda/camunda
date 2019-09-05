@@ -12,9 +12,13 @@ import './Switch.scss';
 
 export default function Switch(props) {
   return (
-    <label title={props.title} className={classnames('Switch', props.className)}>
+    <label
+      title={props.title}
+      className={classnames('Switch', {withLabel: props.label}, props.className)}
+    >
       <Input type="checkbox" {...props} className="Switch__Input" />
       <span className={classnames('Switch__Slider--round', {disabled: props.disabled})} />
+      {props.label && <span className="label">{props.label}</span>}
     </label>
   );
 }

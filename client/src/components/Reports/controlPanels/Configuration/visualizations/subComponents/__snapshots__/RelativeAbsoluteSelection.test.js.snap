@@ -2,31 +2,25 @@
 
 exports[`hide the relative selection when hideRelative is true 1`] = `
 <Fragment>
-  <label>
-    <Switch
-      checked={true}
-      onChange={[Function]}
-    />
-    Show Absolute Value
-  </label>
+  <Switch
+    checked={true}
+    label="Show Absolute Value"
+    onChange={[Function]}
+  />
 </Fragment>
 `;
 
 exports[`should match snapshot 1`] = `
 <Fragment>
-  <label>
-    <Switch
-      checked={true}
-      onChange={[Function]}
-    />
-    Show Absolute Value
-  </label>
-  <label>
-    <Switch
-      checked={true}
-      onChange={[Function]}
-    />
-    Show Relative Value
-  </label>
+  <Switch
+    checked={true}
+    label="Show Absolute Value"
+    onChange={[Function]}
+  />
+  <Switch
+    checked={true}
+    label="Show Relative Value"
+    onChange={[Function]}
+  />
 </Fragment>
 `;

@@ -1,12 +1,19 @@
-.Labeled .label {
-  display: inline-block;
-
-  &.before {
-    margin-bottom: 10px;
-    font-size: 0.875em;
+.Labeled {
+  .checkLabel {
+    display: flex;
+    align-items: baseline;
   }
 
-  &[disabled] {
-    color: graytext;
+  .label {
+    display: inline-block;
+
+    &.before {
+      margin-bottom: 10px;
+      font-size: 0.875em;
+    }
+
+    &[disabled] {
+      color: graytext;
+    }
   }
 }

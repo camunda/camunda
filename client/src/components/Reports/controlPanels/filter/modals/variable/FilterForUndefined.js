@@ -13,15 +13,17 @@ export default function FilterForUndefined({filterForUndefined, changeFilterForU
   return (
     <Form>
       <Form.Group>
-        <label>
-          <Switch
-            checked={filterForUndefined}
-            onChange={({target: {checked}}) => changeFilterForUndefined(checked)}
-          />
-          <span
-            dangerouslySetInnerHTML={{__html: t(`common.filter.variableModal.filterForUndefined`)}}
-          />
-        </label>
+        <Switch
+          checked={filterForUndefined}
+          onChange={({target: {checked}}) => changeFilterForUndefined(checked)}
+          label={
+            <span
+              dangerouslySetInnerHTML={{
+                __html: t(`common.filter.variableModal.filterForUndefined`)
+              }}
+            />
+          }
+        />
       </Form.Group>
     </Form>
   );

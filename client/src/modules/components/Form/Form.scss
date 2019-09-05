@@ -43,14 +43,6 @@
     }
   }
 
-  .FormGroup > label,
-  fieldset > label,
-  fieldset legend > label,
-  .checkLabel {
-    display: flex;
-    align-items: baseline;
-  }
-
   &:not(.compact) {
     margin-bottom: 20px;
 
@@ -204,8 +196,8 @@
         }
       }
 
-      &.noSpacing > label:only-child {
-        padding: 5px 0 14px 0;
+      &.noSpacing > .Switch:only-child {
+        margin: 5px 0 14px 0;
       }
 
       > label,
