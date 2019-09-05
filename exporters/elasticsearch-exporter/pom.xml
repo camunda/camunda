@@ -127,8 +127,15 @@
     </dependency>
 
     <dependency>
-      <groupId>pl.allegro.tech</groupId>
-      <artifactId>embedded-elasticsearch</artifactId>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- used for SocketUtil to grab open port -->
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-transport</artifactId>
       <scope>test</scope>
     </dependency>
 

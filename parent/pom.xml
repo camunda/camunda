@@ -45,7 +45,6 @@
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.13</version.commons-codec>
     <version.elasticsearch>6.8.3</version.elasticsearch>
-    <version.embedded-elasticsearch>2.10.0</version.embedded-elasticsearch>
     <version.error-prone>2.3.3</version.error-prone>
     <version.grpc>1.23.0</version.grpc>
     <version.gson>2.8.5</version.gson>
@@ -77,6 +76,7 @@
     <version.javax>1.3.2</version.javax>
     <version.wiremock>2.24.1</version.wiremock>
     <version.asm>7.1</version.asm>
+    <version.testcontainers>1.11.3</version.testcontainers>
 
     <!-- maven plugins -->
     <plugin.version.antrun>1.8</plugin.version.antrun>
@@ -459,12 +459,6 @@
       </dependency>
 
       <dependency>
-        <groupId>pl.allegro.tech</groupId>
-        <artifactId>embedded-elasticsearch</artifactId>
-        <version>${version.embedded-elasticsearch}</version>
-      </dependency>
-
-      <dependency>
         <groupId>io.prometheus</groupId>
         <artifactId>simpleclient</artifactId>
         <version>${version.prometheus}</version>
@@ -517,6 +511,12 @@
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm</artifactId>
         <version>${version.asm}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers</artifactId>
+        <version>${version.testcontainers}</version>
       </dependency>
 
     </dependencies>
