@@ -38,14 +38,16 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
       "/documentation",
       "/webjars/**",
       "/error",
+      "/noPermission",
       ACTUATOR_ENDPOINTS,
       LOGIN_RESOURCE
     };  
-  /**
-   * This is auth0 domain (tenant created when registering with auth0 - account name)
-   */
+  
   @Value(value = "${camunda.operate.auth0.domain:camunda-dev.eu.auth0.com}")
   private String domain; 
+  
+  @Value(value = "${camunda.operate.auth0.backendDomain:camunda-dev.eu.auth0.com}")
+  private String backendDomain; 
 
   /**
    * This is the client id of auth0 application (see Settings page on auth0 dashboard)
@@ -87,7 +89,11 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
   }
 
   public String getDomain() {
-     return domain;
+    return domain;
+  }
+  
+  public String getBackendDomain() {
+    return backendDomain;
   }
 
   public String getClientId() {
