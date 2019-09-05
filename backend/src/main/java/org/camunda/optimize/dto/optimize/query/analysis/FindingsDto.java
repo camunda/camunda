@@ -18,6 +18,7 @@ public class FindingsDto {
   private Double lowerOutlierHeat = 0.0D;
   private Double higherOutlierHeat = 0.0D;
   private Double heat = 0.0D;
+  private Long totalCount;
 
   public Optional<Finding> getLowerOutlier() {
     return Optional.ofNullable(lowerOutlier);

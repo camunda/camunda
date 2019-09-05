@@ -98,8 +98,10 @@ public class OutlierAnalysisIT {
       });
 
     // then
-    // assuming normal distribution, left and right outliers should be of the same percentile
+    final long expectedFlowNodeInstances = 936L;
     final FindingsDto activity1Findings = outlierTest.get(testActivity1);
+    assertThat(activity1Findings.getTotalCount(), is(expectedFlowNodeInstances));
+    // assuming normal distribution, left and right outliers should be of the same percentile
     assertThat(activity1Findings.getHigherOutlier().isPresent(), is(true));
     assertThat(activity1Findings.getHigherOutlier().get().getBoundValue(), is(39486L));
     assertThat(
@@ -120,6 +122,7 @@ public class OutlierAnalysisIT {
     assertThat(activity1Findings.getHeat(), is(greaterThan(0.0D)));
 
     final FindingsDto activity2Findings = outlierTest.get(testActivity2);
+    assertThat(activity2Findings.getTotalCount(), is(expectedFlowNodeInstances));
     // second activity only has higher outliers
     assertThat(activity2Findings.getLowerOutlier().isPresent(), is(false));
     assertThat(activity2Findings.getHigherOutlier().isPresent(), is(true));
@@ -259,8 +262,7 @@ public class OutlierAnalysisIT {
         Collections.singletonList("1"),
         Collections.singletonList(null)
       )
-      .execute(new TypeReference<HashMap<String, FindingsDto>>() {
-      });
+      .execute(new TypeReference<HashMap<String, FindingsDto>>() {});
 
     // then
     assertThat(outlierTest.size(), is(12));

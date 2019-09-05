@@ -558,13 +558,13 @@ public class DurationOutliersReader {
         final String flowNodeId = flowNodeStatsEntry.getKey();
         final ExtendedStats stats = flowNodeStatsEntry.getValue();
         final FindingsDto finding = new FindingsDto();
+        finding.setTotalCount(stats.getCount());
 
         if (stats.getStdDeviation() != 0.0D
           && allFlowNodeFilterAggs.get(getFilteredFlowNodeAggregationName(flowNodeId)) != null) {
-          final Filter flowNodeFilterAgg = (Filter) allFlowNodeFilterAggs.get(getFilteredFlowNodeAggregationName(
-            flowNodeId));
-          final Filter lowerOutlierFilterAgg = (Filter) flowNodeFilterAgg.getAggregations().get(LOWER_DURATION_AGG);
-          final Filter higherOutlierFilterAgg = (Filter) flowNodeFilterAgg.getAggregations().get(HIGHER_DURATION_AGG);
+          final Filter flowNodeFilterAgg = allFlowNodeFilterAggs.get(getFilteredFlowNodeAggregationName(flowNodeId));
+          final Filter lowerOutlierFilterAgg = flowNodeFilterAgg.getAggregations().get(LOWER_DURATION_AGG);
+          final Filter higherOutlierFilterAgg = flowNodeFilterAgg.getAggregations().get(HIGHER_DURATION_AGG);
 
           double avg = stats.getAvg();
           double stdDeviationBoundLower = stats.getStdDeviationBound(ExtendedStats.Bounds.LOWER);

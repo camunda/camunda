@@ -60,7 +60,6 @@ public class AnalysisRestService {
     return branchAnalysisReader.branchAnalysis(userId, branchAnalysisDto);
   }
 
-
   @GET
   @Path("/flowNodeOutliers")
   @Produces(MediaType.APPLICATION_JSON)
@@ -106,6 +105,5 @@ public class AnalysisRestService {
         .header("Content-Disposition", "attachment; filename=" + resultFileName)
         .build();
   }
-
 
 }
