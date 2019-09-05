@@ -1,6 +1,11 @@
 # Operate configuration file
 
 camunda.operate:
+  # Set operate username and password. 
+  # If user with <username> does not exists it will be created.
+  # Default: demo/demo
+  #username:
+  #password:
   # ELS instance to store Operate data
   elasticsearch:
     # Cluster name
