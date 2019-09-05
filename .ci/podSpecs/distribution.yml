@@ -22,6 +22,8 @@ spec:
           value: |
             -XX:+UnlockExperimentalVMOptions
             -XX:+UseCGroupMemoryLimitForHeap
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
       resources:
         limits:
           cpu: 8
@@ -48,8 +50,8 @@ spec:
       tty: true
       resources:
         limits:
-          cpu: 1
-          memory: 512Mi
+          cpu: 4
+          memory: 4Gi
         requests:
           cpu: 1
-          memory: 512Mi
+          memory: 1Gi
