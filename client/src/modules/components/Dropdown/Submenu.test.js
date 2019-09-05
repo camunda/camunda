@@ -84,6 +84,63 @@ it('should close the submenu when left arrow is pressed', () => {
   expect(spy).toHaveBeenCalled();
 });
 
+it('should shift the submenu up when there is no space available', () => {
+  const node = mount(<Submenu />);
+
+  node.instance().containerRef = {
+    current: {
+      // submenu dimensions
+      querySelector: () => ({
+        clientWidth: 40,
+        clientHeight: 60
+      }),
+      //parentMenu.top
+      getBoundingClientRect: () => ({top: 50})
+    }
+  };
+
+  node.instance().footerRef = {
+    getBoundingClientRect: () => ({top: 100})
+  };
+
+  node.instance().headerRef = {
+    getBoundingClientRect: () => ({bottom: 10})
+  };
+
+  node.instance().calculatePlacement();
+  node.update();
+  expect(node.state().styles.top).toBe('-20px');
+});
+
+it('should show a scrollbar when submenu is bigger than the viewport height', () => {
+  const node = mount(<Submenu />);
+
+  node.instance().containerRef = {
+    current: {
+      // submenu dimensions
+      querySelector: () => ({
+        clientHeight: 100
+      }),
+      //parentMenu.top
+      getBoundingClientRect: () => ({top: 50})
+    }
+  };
+
+  node.instance().footerRef = {
+    getBoundingClientRect: () => ({top: 100})
+  };
+
+  node.instance().headerRef = {
+    getBoundingClientRect: () => ({bottom: 10})
+  };
+
+  node.instance().calculatePlacement();
+  node.setProps({open: true});
+  node.update();
+  expect(node.state().styles.top).toBe('-30px');
+  expect(node.find('.childrenContainer')).toHaveClassName('scrollable');
+});
+
 it('should invoke findLetterOption when typing a character', () => {
   const node = mount(<Submenu open={true} />);
 

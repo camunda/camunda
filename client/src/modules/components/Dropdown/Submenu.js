@@ -101,6 +101,17 @@ export default class Submenu extends React.Component {
       childList: true,
       subtree: true
     });
+
+    this.initilizeHeaderAndFooterRefs();
+  }
+
+  initilizeHeaderAndFooterRefs() {
+    if (!this.footerRef) {
+      this.footerRef = document.body.querySelector('.Footer');
+    }
+    if (!this.headerRef) {
+      this.headerRef = document.body.querySelector('.Header');
+    }
   }
 
   calculatePlacement = () => {
@@ -119,8 +130,9 @@ export default class Submenu extends React.Component {
       }
 
       const margin = 10;
-      const footerTop = document.body.querySelector('.Footer').getBoundingClientRect().top;
-      const headerBottom = document.body.querySelector('.Header').getBoundingClientRect().bottom;
+      this.initilizeHeaderAndFooterRefs();
+      const footerTop = this.footerRef.getBoundingClientRect().top;
+      const headerBottom = this.headerRef.getBoundingClientRect().bottom;
 
       const bottomAvailableHeight = footerTop - parentMenu.top - margin;
       if (submenu.clientHeight > bottomAvailableHeight) {
