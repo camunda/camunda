@@ -5,6 +5,7 @@
  */
 
 import {formatters} from 'services';
+import {t} from 'translation';
 
 export function isEmpty(str) {
   return !str || 0 === str.length;
@@ -25,24 +26,38 @@ export function getFormatter(viewProperty) {
 
 export function processResult({data, result}) {
   const filteredResult = filterResult(result, data);
+  const formattedResult = formatResult(filteredResult, data);
   if (data.view.property.toLowerCase().includes('duration')) {
-    if (filteredResult.type === 'durationNumber') {
-      return {...filteredResult, data: filteredResult.data};
+    if (formattedResult.type === 'durationNumber') {
+      return {...formattedResult, data: formattedResult.data};
     }
-    if (filteredResult.type === 'durationMap') {
-      const newData = filteredResult.data.map(entry => {
+    if (formattedResult.type === 'durationMap') {
+      const newData = formattedResult.data.map(entry => {
         return {...entry, value: entry.value};
       });
 
-      return {...filteredResult, data: newData};
+      return {...formattedResult, data: newData};
     }
   }
-  return filteredResult;
+  return formattedResult;
 }
 
 function filterResult(result, {groupBy: {type}, configuration: {hiddenNodes}}) {
   if (type === 'flowNodes') {
     return {...result, data: result.data.filter(({key}) => !(hiddenNodes || []).includes(key))};
+  }
+
+  return result;
+}
+
+function formatResult(result, {groupBy: {type}}) {
+  if (type === 'variable') {
+    return {
+      ...result,
+      data: result.data.map(row =>
+        row.key === 'missing' ? {...row, label: t('report.missingVariableValue')} : row
+      )
+    };
   }
 
   return result;

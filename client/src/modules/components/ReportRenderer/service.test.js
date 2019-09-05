@@ -48,3 +48,23 @@ it('should filter hidden flow nodes', () => {
     data: [{key: 'bar', value: 5}]
   });
 });
+
+it('should add a label to data with variable value key "missing"', () => {
+  expect(
+    processResult({
+      result: {
+        data: [{key: 'missing', value: 5}]
+      },
+      data: {
+        configuration: {xml: 'fooXml', hiddenNodes: ['foo']},
+        groupBy: {
+          type: 'variable',
+          value: ''
+        },
+        view: {property: ''}
+      }
+    })
+  ).toEqual({
+    data: [{key: 'missing', value: 5, label: 'null / undefined'}]
+  });
+});

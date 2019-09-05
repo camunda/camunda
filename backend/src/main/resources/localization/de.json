@@ -232,7 +232,8 @@
       },
       "includeTableColumn": "Zu berücksichtigende Tabellenspalten",
       "showGradientBars": "Verlaufsbalken anzeigen"
-    }
+    },
+    "missingVariableValue": "null / undefiniert"
   },
   "dashboard": {
     "label": "Dashboard",

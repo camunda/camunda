@@ -232,7 +232,8 @@
       },
       "includeTableColumn": "Table columns to include",
       "showGradientBars": "Show Gradient Bars"
-    }
+    },
+    "missingVariableValue": "null / undefined"
   },
   "dashboard": {
     "label": "Dashboard",
