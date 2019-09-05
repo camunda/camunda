@@ -15,6 +15,10 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
+import com.netflix.concurrency.limits.limit.SettableLimit;
+import io.zeebe.broker.transport.backpressure.CommandRateLimiter;
+import io.zeebe.broker.transport.backpressure.NoopRequestLimiter;
+import io.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.zeebe.distributedlog.DistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
@@ -85,6 +89,7 @@ public class CommandApiMessageHandlerTest {
   private LogStream logStream;
   private CommandApiMessageHandler messageHandler;
   private DistributedLogstreamService distributedLogImpl;
+  private RequestLimiter noneLimiter = new NoopRequestLimiter();
 
   @Before
   public void setup() {
@@ -147,7 +152,7 @@ public class CommandApiMessageHandlerTest {
     logStream.openAppender().join();
 
     messageHandler = new CommandApiMessageHandler();
-    messageHandler.addPartition(logStream);
+    messageHandler.addPartition(logStream, noneLimiter);
   }
 
   @After
@@ -298,6 +303,33 @@ public class CommandApiMessageHandlerTest {
     final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
 
     assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.UNSUPPORTED_MESSAGE);
+  }
+
+  @Test
+  public void shouldSendErrorMessageOnRequestLimitReached() {
+    // given
+    final CommandRateLimiter settableLimiter =
+        CommandRateLimiter.builder().limit(new SettableLimit(1)).build();
+    messageHandler = new CommandApiMessageHandler();
+    messageHandler.addPartition(logStream, settableLimiter);
+    settableLimiter.tryAcquire(0, 1, null);
+
+    // when
+    final int writtenLength =
+        writeCommandRequestToBuffer(
+            buffer, LOG_STREAM_PARTITION_ID, null, ValueType.JOB, JobIntent.CREATE);
+    final boolean isHandled =
+        messageHandler.onRequest(
+            serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
+    assertThat(isHandled).isTrue();
+
+    // then
+    final List<DirectBuffer> sentResponses = serverOutput.getSentResponses();
+    assertThat(sentResponses).hasSize(1);
+
+    final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
+
+    assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.RESOURCE_EXHAUSTED);
   }
 
   protected int writeCommandRequestToBuffer(

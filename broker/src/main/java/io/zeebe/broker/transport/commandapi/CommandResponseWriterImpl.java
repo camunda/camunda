@@ -11,6 +11,7 @@ import static io.zeebe.protocol.record.ExecuteCommandResponseEncoder.keyNullValu
 import static io.zeebe.protocol.record.ExecuteCommandResponseEncoder.partitionIdNullValue;
 import static io.zeebe.protocol.record.ExecuteCommandResponseEncoder.valueHeaderLength;
 
+import io.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.zeebe.engine.processor.CommandResponseWriter;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.record.ExecuteCommandResponseEncoder;
@@ -28,11 +29,13 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class CommandResponseWriterImpl implements CommandResponseWriter, BufferWriter {
+
   private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
   private final ExecuteCommandResponseEncoder responseEncoder = new ExecuteCommandResponseEncoder();
   private final ServerResponse response = new ServerResponse();
   private final ServerOutput output;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
+  private final RequestLimiter limiter;
   private int partitionId = partitionIdNullValue();
   private long key = keyNullValue();
   private BufferWriter valueWriter;
@@ -41,8 +44,9 @@ public class CommandResponseWriterImpl implements CommandResponseWriter, BufferW
   private short intent = Intent.NULL_VAL;
   private RejectionType rejectionType = RejectionType.NULL_VAL;
 
-  public CommandResponseWriterImpl(final ServerOutput output) {
+  public CommandResponseWriterImpl(final ServerOutput output, RequestLimiter limiter) {
     this.output = output;
+    this.limiter = limiter;
   }
 
   @Override
@@ -98,6 +102,7 @@ public class CommandResponseWriterImpl implements CommandResponseWriter, BufferW
     Objects.requireNonNull(valueWriter);
 
     try {
+      limiter.onResponse(remoteStreamId, requestId);
       response.reset().remoteStreamId(remoteStreamId).requestId(requestId).writer(this);
 
       return output.sendResponse(response);
