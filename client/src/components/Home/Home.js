@@ -96,9 +96,11 @@ export default withErrorHandling(
             <h1>{t('home.title')}</h1>
             <CreateNewButton />
           </div>
-          <ul>{this.renderList()}</ul>
-          <div className="data-hint">
-            <Icon type="hint" size="14" /> {t('home.data-hint')}
+          <div className="content">
+            <ul>{this.renderList()}</ul>
+            <div className="data-hint">
+              <Icon type="hint" size="14" /> {t('home.data-hint')}
+            </div>
           </div>
           <ConfirmationModal
             open={deleting}

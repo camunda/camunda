@@ -1,6 +1,7 @@
 .Home {
   width: 1000px;
   margin: auto;
+  position: relative;
 
   .empty {
     height: 56px;
@@ -24,8 +25,13 @@
   }
 
   .header {
-    padding-top: 20px;
-    margin-bottom: 20px;
+    margin-top: -36px;
+    padding-top: 58px;
+    padding-bottom: 21px;
+    position: fixed;
+    width: 1000px;
+    z-index: 1;
+    background-color: white;
 
     h1 {
       font-size: 18px;
@@ -38,6 +44,10 @@
     .CreateNewButton {
       float: right;
     }
+  }
+
+  .content {
+    padding-top: 73px;
   }
 
   ul {
