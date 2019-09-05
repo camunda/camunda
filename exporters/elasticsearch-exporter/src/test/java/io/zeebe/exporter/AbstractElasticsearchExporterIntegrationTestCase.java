@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.carrotsearch.hppc.cursors.ObjectCursor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.exporter.util.ElasticsearchForkedJvm;
+import io.zeebe.exporter.util.ElasticsearchContainer;
 import io.zeebe.exporter.util.ElasticsearchNode;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.test.exporter.ExporterIntegrationRule;
@@ -43,13 +43,13 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
 
   protected final ExporterIntegrationRule exporterBrokerRule = new ExporterIntegrationRule();
 
-  protected ElasticsearchNode<ElasticsearchForkedJvm> elastic;
+  protected ElasticsearchNode<ElasticsearchContainer> elastic;
   protected ElasticsearchExporterConfiguration configuration;
   protected ElasticsearchExporterFaultToleranceIT.ElasticsearchTestClient esClient;
 
   @Before
   public void setUp() {
-    elastic = new ElasticsearchForkedJvm(temporaryFolder);
+    elastic = new ElasticsearchContainer();
   }
 
   @After
