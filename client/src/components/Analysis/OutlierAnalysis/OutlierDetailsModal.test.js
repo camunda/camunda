@@ -27,7 +27,7 @@ it('should render a modal with a button group showing duration chart', () => {
   expect(node.find('DurationChart')).toExist();
 });
 
-it('switch to Variable table when clicking the variable button in the button group', () => {
+it('show total instance count and Variables table when clicking the variable button in the button group', () => {
   const node = shallow(<OutlierDetailsModal selectedNode={selectedNode} />);
 
   node
@@ -35,5 +35,6 @@ it('switch to Variable table when clicking the variable button in the button gro
     .at(1)
     .simulate('click');
 
+  expect(node.find('.description')).toExist();
   expect(node.find('VariablesTable')).toExist();
 });

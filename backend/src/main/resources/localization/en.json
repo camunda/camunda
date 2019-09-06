@@ -286,6 +286,7 @@
     "branchAnalysis": "Branch Analysis",
     "outlier": {
       "label": "Outlier Analysis",
+      "totalInstances": "Total Instances",
       "tooltip": {
         "outlier": {
           "label": "Outlier",

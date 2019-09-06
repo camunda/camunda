@@ -55,10 +55,14 @@
     text-align: left;
     overflow: hidden;
 
+    .tooltipTitle {
+      font-weight: normal;
+      white-space: nowrap;
+    }
+
     .description {
       font-weight: normal;
-      width: 280px;
-      white-space: nowrap;
+      width: max-content;
     }
 
     .Button {

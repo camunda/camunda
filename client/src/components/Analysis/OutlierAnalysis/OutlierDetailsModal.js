@@ -20,7 +20,7 @@ export default class OutlierDetailsModal extends Component {
 
   render() {
     const {tableView} = this.state;
-    const {name, higherOutlier, data} = this.props.selectedNode;
+    const {name, higherOutlier, data, totalCount} = this.props.selectedNode;
     return (
       <Modal open size="large" onClose={this.props.onClose} className="OutlierDetailsModal">
         <Modal.Header>{t('analysis.outlier.detailsModal.title', {name})}</Modal.Header>
@@ -50,7 +50,12 @@ export default class OutlierDetailsModal extends Component {
             </>
           )}
           {tableView && (
-            <VariablesTable config={this.props.config} selectedNode={this.props.selectedNode} />
+            <>
+              <p className="description">
+                {t('analysis.outlier.totalInstances')}: {totalCount}
+              </p>
+              <VariablesTable config={this.props.config} selectedNode={this.props.selectedNode} />
+            </>
           )}
         </Modal.Content>
       </Modal>

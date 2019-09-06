@@ -101,7 +101,10 @@ export default class OutlierAnalysis extends Component {
 
     return (
       <>
-        <h3 className="tooltipTitle">{this.state.flowNodeNames[id] || id}</h3>
+        <div className="tooltipTitle">
+          <b>{this.state.flowNodeNames[id] || id} :</b> {t('analysis.outlier.totalInstances')}{' '}
+          {nodeData.totalCount}
+        </div>
         <p className="description">
           {t('analysis.outlier.tooltipText', {
             count: nodeData.higherOutlier.count,

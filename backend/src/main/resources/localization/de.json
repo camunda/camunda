@@ -286,6 +286,7 @@
     "branchAnalysis": "Verlaufsanalyse",
     "outlier": {
       "label": "Ausreißeranalyse",
+      "totalInstances": "Instanzen insgesamt",
       "tooltip": {
         "outlier": {
           "label": "Ausreißer",
