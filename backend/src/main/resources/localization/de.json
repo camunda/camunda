@@ -518,7 +518,6 @@
         }
       },
       "durationModal": {
-        "onlyCompletedWarning": "Berichte mit einem aktiven Zeitraumfilter zeigen nur abgeschlossene Instanzen an.",
         "includeInstance": "Berücksichtigen Sie nur Prozessinstanzen, die gelaufen sind für ...",
         "moreThan": "mehr als",
         "lessThan": "weniger als",

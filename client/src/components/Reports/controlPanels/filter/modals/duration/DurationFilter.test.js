@@ -46,8 +46,3 @@ it('should have a create filter button', () => {
 
   expect(spy).toHaveBeenCalled();
 });
-
-it('should show a hint that only completed instances will be shown', () => {
-  const node = shallow(<DurationFilter />);
-  expect(node.find('Message')).toExist();
-});

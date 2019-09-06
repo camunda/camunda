@@ -518,7 +518,6 @@
         }
       },
       "durationModal": {
-        "onlyCompletedWarning": "Reports with an active Duration Filter will only show completed instances.",
         "includeInstance": "Only include process instances that ran for...",
         "moreThan": "more than",
         "lessThan": "less than",

@@ -49,7 +49,6 @@ export default class DurationFilter extends React.Component {
           })}
         </Modal.Header>
         <Modal.Content>
-          <Message type="warning">{t('common.filter.durationModal.onlyCompletedWarning')}</Message>
           <p className="description">{t('common.filter.durationModal.includeInstance')} </p>
           <Form horizontal>
             <Form.Group noSpacing>
