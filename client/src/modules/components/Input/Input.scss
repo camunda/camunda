@@ -1,16 +1,5 @@
 @import 'shared-styles/shared-styles.scss';
-
-$text: #333;
-$border: lightgray;
-
-$placeholder-color: #a5a5a5;
-
-$text-disabled: #8e8e8e;
-$border-disabled: #d3d3d3;
-$bg-disabled: #f8f8f8;
-
-$clear-icon: #6a727e;
-$clear-icon-hover: #2c3139;
+@import './Input.colors.scss';
 
 .Input[type='text'],
 .Input[type='password'],
