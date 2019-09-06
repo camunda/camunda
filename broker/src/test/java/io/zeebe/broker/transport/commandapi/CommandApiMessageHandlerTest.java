@@ -332,6 +332,29 @@ public class CommandApiMessageHandlerTest {
     assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.RESOURCE_EXHAUSTED);
   }
 
+  @Test
+  public void shouldNotSendErrorMessageOnRequestLimitReachedIfJobComplete() {
+    // given
+    final CommandRateLimiter settableLimiter =
+        CommandRateLimiter.builder().limit(new SettableLimit(1)).build();
+    messageHandler = new CommandApiMessageHandler();
+    messageHandler.addPartition(logStream, settableLimiter);
+    settableLimiter.tryAcquire(0, 1, null);
+
+    // when
+    final int writtenLength =
+        writeCommandRequestToBuffer(
+            buffer, LOG_STREAM_PARTITION_ID, null, ValueType.JOB, JobIntent.COMPLETE);
+    final boolean isHandled =
+        messageHandler.onRequest(
+            serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
+    assertThat(isHandled).isTrue();
+
+    // then
+    final List<DirectBuffer> sentResponses = serverOutput.getSentResponses();
+    assertThat(sentResponses).hasSize(0);
+  }
+
   protected int writeCommandRequestToBuffer(
       final UnsafeBuffer buffer,
       final int partitionId,

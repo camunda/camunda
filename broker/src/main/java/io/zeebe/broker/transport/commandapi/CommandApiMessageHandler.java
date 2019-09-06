@@ -51,7 +51,7 @@ public class CommandApiMessageHandler implements ServerMessageHandler, ServerReq
   protected final Consumer<Runnable> cmdConsumer = Runnable::run;
 
   protected final Int2ObjectHashMap<LogStream> leadingStreams = new Int2ObjectHashMap<>();
-  protected final Int2ObjectHashMap<RequestLimiter<Void>> partitionLimiters =
+  protected final Int2ObjectHashMap<RequestLimiter<Intent>> partitionLimiters =
       new Int2ObjectHashMap<>();
   protected final RecordMetadata eventMetadata = new RecordMetadata();
   protected final LogStreamRecordWriter logStreamWriter = new LogStreamWriterImpl();
@@ -130,12 +130,13 @@ public class CommandApiMessageHandler implements ServerMessageHandler, ServerReq
     }
 
     eventMetadata.recordType(RecordType.COMMAND);
-    eventMetadata.intent(Intent.fromProtocolValue(eventType, intent));
+    final Intent eventIntent = Intent.fromProtocolValue(eventType, intent);
+    eventMetadata.intent(eventIntent);
     eventMetadata.valueType(eventType);
 
     metrics.receivedRequest(partitionId);
-    final RequestLimiter<Void> limiter = partitionLimiters.get(partitionId);
-    if (!limiter.tryAcquire(requestAddress.getStreamId(), requestId, null)) {
+    final RequestLimiter<Intent> limiter = partitionLimiters.get(partitionId);
+    if (!limiter.tryAcquire(requestAddress.getStreamId(), requestId, eventIntent)) {
       metrics.dropped(partitionId);
       LOG.trace(
           "Partition-{} receiving too many requests. Current limit {} inflight {}, dropping request {} from gateway {}",
@@ -149,6 +150,24 @@ public class CommandApiMessageHandler implements ServerMessageHandler, ServerReq
           .tryWriteResponse(output, requestAddress.getStreamId(), requestId);
     }
 
+    boolean written = false;
+    try {
+      written = writeCommand(eventMetadata, buffer, key, logStream, eventOffset, eventLength);
+    } finally {
+      if (!written) {
+        limiter.onIgnore(requestAddress.getStreamId(), requestId);
+      }
+    }
+    return written;
+  }
+
+  private boolean writeCommand(
+      RecordMetadata eventMetadata,
+      DirectBuffer buffer,
+      long key,
+      LogStream logStream,
+      int eventOffset,
+      int eventLength) {
     logStreamWriter.wrap(logStream);
 
     if (key != ExecuteCommandRequestDecoder.keyNullValue()) {
@@ -157,24 +176,16 @@ public class CommandApiMessageHandler implements ServerMessageHandler, ServerReq
       logStreamWriter.keyNull();
     }
 
-    long eventPosition = -1;
+    final long eventPosition =
+        logStreamWriter
+            .metadataWriter(eventMetadata)
+            .value(buffer, eventOffset, eventLength)
+            .tryWrite();
 
-    try {
-      eventPosition =
-          logStreamWriter
-              .metadataWriter(eventMetadata)
-              .value(buffer, eventOffset, eventLength)
-              .tryWrite();
-
-    } finally {
-      if (eventPosition < 0) {
-        limiter.onIgnore(requestAddress.getStreamId(), requestId);
-      }
-    }
     return eventPosition >= 0;
   }
 
-  public void addPartition(LogStream logStream, RequestLimiter<Void> limiter) {
+  public void addPartition(LogStream logStream, RequestLimiter<Intent> limiter) {
     cmdQueue.add(
         () -> {
           leadingStreams.put(logStream.getPartitionId(), logStream);
