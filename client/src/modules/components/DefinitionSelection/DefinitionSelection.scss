@@ -19,7 +19,7 @@
         .dropdowns .tenant.entry {
           display: inline-block;
         }
-        .InfoMessage {
+        .info {
           width: 100%;
         }
       }
@@ -38,11 +38,13 @@
     .selectionPanel {
       margin-bottom: 40px;
 
-      .InfoMessage {
-        font-size: 12px;
+      .info {
         margin-top: 10px;
         margin-bottom: -25px;
         width: 400px;
+        .InfoMessage {
+          font-size: 12px;
+        }
       }
 
       .dropdowns {

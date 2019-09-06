@@ -210,11 +210,12 @@ export default class DefinitionSelection extends React.Component {
                 />
               </div>
             </div>
-            {displayVersionWarning ? (
-              <InfoMessage>{t('common.definitionSelection.versionWarning')}</InfoMessage>
-            ) : (
-              ''
-            )}
+            <div className="info">
+              {displayVersionWarning && (
+                <InfoMessage>{t('common.definitionSelection.versionWarning')}</InfoMessage>
+              )}
+              {this.props.infoMessage && <InfoMessage>{this.props.infoMessage}</InfoMessage>}
+            </div>
           </div>
           {this.canRenderDiagram() && (
             <div className="diagram">

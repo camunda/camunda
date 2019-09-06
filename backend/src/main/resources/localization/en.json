@@ -297,6 +297,7 @@
         },
         "tookDuration": "Took a duration of"
       },
+      "onlyCompletedHint": "Note: The outlier analysis is only performed on completed flow nodes only",
       "info": "Heatmap displays the incidence of higher outliers based on duration. Calculated by z-score.",
       "tooltipText": "{count} {instance} took {percentage}% longer than average.",
       "detailsModal": {

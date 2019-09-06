@@ -17,6 +17,7 @@ export default function OutlierControlPanel(props) {
         <li className="item">
           <DefinitionSelection
             type="process"
+            infoMessage={t('analysis.outlier.onlyCompletedHint')}
             definitionKey={props.processDefinitionKey}
             versions={props.processDefinitionVersions}
             tenants={props.tenantIds}

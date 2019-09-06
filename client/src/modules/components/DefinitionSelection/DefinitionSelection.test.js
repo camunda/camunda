@@ -238,6 +238,14 @@ it('should show a note if more than one version is selected', async () => {
   expect(node.find('InfoMessage')).not.toExist();
 });
 
+it('should show an info message if specified by props', async () => {
+  const node = await shallow(
+    <DefinitionSelection {...props} definitionKey="foo" infoMessage="test message" />
+  );
+
+  expect(node.find('InfoMessage').props().children).toBe('test message');
+});
+
 it('should pass an id for every entry to the typeahead', async () => {
   loadDefinitions.mockReturnValueOnce([
     {

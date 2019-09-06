@@ -297,6 +297,7 @@
         },
         "tookDuration": "Benötigte eine Dauer von"
       },
+      "onlyCompletedHint": "Hinweis: Die Ausreißeranalyse wird nur für abgeschlossene knoten durchgeführt",
       "info": "Die Heatmap zeigt die Häufigkeit nach oben abweichender Ausreißer basierend auf der Dauer an. Berechnet mit dem Z-Score.",
       "tooltipText": "{count} {instance} haben {percentage}% länger gedauert als der Durchschnitt.",
       "detailsModal": {
