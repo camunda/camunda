@@ -85,7 +85,7 @@
     "jest-junit": "^7.0.0",
     "js-yaml": "^3.13.1",
     "license-checker": "^25.0.1",
-    "lint-staged": "^8.1.7",
+    "lint-staged": "^9.2.5",
     "mock-socket": "^9.0.0",
     "node-fetch": "^2.6.0",
     "node-sass": "^4.12.0",
