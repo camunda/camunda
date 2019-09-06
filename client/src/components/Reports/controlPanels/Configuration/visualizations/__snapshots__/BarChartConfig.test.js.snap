@@ -56,6 +56,7 @@ exports[`it should display correct configuration for barchart 1`] = `
           "data": Object {
             "configuration": Object {
               "color": "#1991c8",
+              "distributedBy": "none",
               "hideAbsoluteValue": false,
               "hideRelativeValue": false,
               "showInstanceCount": false,

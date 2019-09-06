@@ -15,7 +15,8 @@ const configuration = {
   hideAbsoluteValue: false,
   xLabel: '',
   yLabel: '',
-  targetValue: {active: false}
+  targetValue: {active: false},
+  distributedBy: 'none'
 };
 
 const barReport = {

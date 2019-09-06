@@ -24,7 +24,7 @@ export default function BarChartConfig({onChange, report}) {
 
   return (
     <div className="BarChartConfig">
-      {!combined && (
+      {!combined && configuration.distributedBy === 'none' && (
         <fieldset className="colorSection">
           <legend>{t('report.config.colorPicker.legend')}</legend>
           <ColorPicker
