@@ -1,5 +1,4 @@
 @import 'shared-styles/shared-styles.scss';
-@import './ButtonGroup.colors.scss';
 
 .ButtonGroup {
   display: flex;
@@ -13,9 +12,9 @@
       border-color: $border-disabled;
 
       &.isActive {
-        color: $text-active-disabled;
-        background: $bg-active-disabled;
-        border: 1px solid $border-active-disabled;
+        color: $text-disabled;
+        background: #ddd;
+        border: 1px solid #d7d7d7;
       }
     }
   }
