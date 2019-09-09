@@ -99,7 +99,7 @@
     "testcafe-browser-provider-browserstack": "^1.8.0",
     "tree-kill": "^1.2.1",
     "ws": "^7.1.1",
-    "xml2js": "^0.4.19"
+    "xml2js": "^0.4.22"
   },
   "browserslist": [
     ">0.2%",
