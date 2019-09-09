@@ -8,20 +8,52 @@
 package io.zeebe.broker.transport.backpressure;
 
 import com.netflix.concurrency.limits.Limit;
+import com.netflix.concurrency.limits.limit.Gradient2Limit;
+import com.netflix.concurrency.limits.limit.GradientLimit;
+import com.netflix.concurrency.limits.limit.VegasLimit;
+import com.netflix.concurrency.limits.limit.WindowedLimit;
+import io.zeebe.broker.system.configuration.BackpressureCfg.LimitAlgorithm;
 import io.zeebe.protocol.record.intent.Intent;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /** A request limiter that manages the limits for each partition independently. */
 public class PartitionAwareRequestLimiter {
 
-  final Map<Integer, RequestLimiter<Intent>> partitionLimiters = new ConcurrentHashMap<>();
+  private final Map<Integer, RequestLimiter<Intent>> partitionLimiters = new ConcurrentHashMap<>();
 
-  final Supplier<Limit> limitSupplier;
+  private final Function<Integer, RequestLimiter<Intent>> limiterSupplier;
 
-  public PartitionAwareRequestLimiter(Supplier<Limit> limiterSupplier) {
-    this.limitSupplier = limiterSupplier;
+  private PartitionAwareRequestLimiter() {
+    this.limiterSupplier = i -> new NoopRequestLimiter<>();
+  }
+
+  public PartitionAwareRequestLimiter(final Supplier<Limit> limitSupplier) {
+    this.limiterSupplier = i -> CommandRateLimiter.builder().limit(limitSupplier.get()).build(i);
+  }
+
+  public static PartitionAwareRequestLimiter newNoopLimiter() {
+    return new PartitionAwareRequestLimiter();
+  }
+
+  public static PartitionAwareRequestLimiter newLimiter(
+      LimitAlgorithm algorithm, boolean useWindowed) {
+    final Supplier<Limit> limit;
+    if (algorithm == LimitAlgorithm.GRADIENT) {
+      limit = GradientLimit::newDefault;
+    } else if (algorithm == LimitAlgorithm.GRADIENT2) {
+      limit = Gradient2Limit::newDefault;
+    } else {
+      limit = VegasLimit::newDefault;
+    }
+
+    if (useWindowed) {
+      return new PartitionAwareRequestLimiter(() -> WindowedLimit.newBuilder().build(limit.get()));
+    } else {
+      return new PartitionAwareRequestLimiter(limit);
+    }
   }
 
   public boolean tryAcquire(int partitionId, int streamId, long requestId, Intent context) {
@@ -49,7 +81,6 @@ public class PartitionAwareRequestLimiter {
   }
 
   private RequestLimiter<Intent> getOrCreateLimiter(int partitionId) {
-    return partitionLimiters.computeIfAbsent(
-        partitionId, k -> CommandRateLimiter.builder().limit(limitSupplier.get()).build());
+    return partitionLimiters.computeIfAbsent(partitionId, limiterSupplier::apply);
   }
 }
