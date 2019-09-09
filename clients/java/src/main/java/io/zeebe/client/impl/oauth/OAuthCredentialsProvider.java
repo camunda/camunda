@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl;
+package io.zeebe.client.impl.oauth;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,72 +24,103 @@ import io.grpc.Metadata.Key;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.zeebe.client.CredentialsProvider;
+import io.zeebe.client.impl.ZeebeClientCredentials;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class OAuthCredentialsProvider implements CredentialsProvider {
-  private static final ObjectMapper MAPPER = new ObjectMapper();
-  private static final ObjectReader JSON_READER = MAPPER.readerFor(ZeebeClientCredentials.class);
+  private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+  private static final ObjectReader CREDENTIALS_READER =
+      JSON_MAPPER.readerFor(ZeebeClientCredentials.class);
   private static final Logger LOG = LoggerFactory.getLogger(OAuthCredentialsProvider.class);
   private static final Key<String> HEADER_AUTH_KEY =
       Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
 
   private final URL authorizationServerUrl;
   private final String jsonPayload;
+  private final String endpoint;
+  private final OAuthCredentialsCache credentialsCache;
 
   private ZeebeClientCredentials credentials;
 
-  OAuthCredentialsProvider(OAuthCredentialsProviderBuilder builder) {
+  OAuthCredentialsProvider(final OAuthCredentialsProviderBuilder builder) {
     authorizationServerUrl = builder.getAuthorizationServer();
+    endpoint = builder.getAudience();
     jsonPayload = createJsonPayload(builder);
+    credentialsCache = new OAuthCredentialsCache(builder.getCredentialsCache());
   }
 
   /** Adds an access token to the Authorization header of a gRPC call. */
   @Override
-  public void applyCredentials(Metadata headers) {
+  public void applyCredentials(final Metadata headers) {
     try {
       if (credentials == null) {
-        refreshCredentials();
+        loadCredentials();
       }
 
       headers.put(
           HEADER_AUTH_KEY,
-          String.format(
-              "%s %s", credentials.getTokenType().trim(), credentials.getAccessToken().trim()));
-    } catch (IOException e) {
+          String.format("%s %s", credentials.getTokenType(), credentials.getAccessToken()));
+    } catch (final IOException e) {
       LOG.warn("Failed while fetching credentials, will not add credentials to rpc: ", e);
     }
   }
 
+  /**
+   * @return true if the Throwable was caused by an UNAUTHENTICATED response and a new access token
+   *     could be fetched; otherwise returns false.
+   */
   @Override
-  public boolean shouldRetryRequest(Throwable throwable) {
+  public boolean shouldRetryRequest(final Throwable throwable) {
     try {
       return throwable instanceof StatusRuntimeException
           && ((StatusRuntimeException) throwable).getStatus() == Status.UNAUTHENTICATED
           && refreshCredentials();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOG.error("Failed while fetching credentials: ", e);
       return false;
     }
   }
 
+  /** Attempt to load credentials from cache and, if unsuccessful, fetch new credentials. */
+  private void loadCredentials() throws IOException {
+    Optional<ZeebeClientCredentials> cachedCredentials;
+
+    try {
+      cachedCredentials = credentialsCache.readCache().get(endpoint);
+    } catch (final IOException e) {
+      LOG.debug("Failed to read credentials cache", e);
+      cachedCredentials = Optional.empty();
+    }
+
+    if (cachedCredentials.isPresent()) {
+      credentials = cachedCredentials.get();
+    } else {
+      refreshCredentials();
+    }
+  }
+
   /**
-   * Fetch and store new credentials.
+   * Fetch new credentials from authorization server and store them in cache.
    *
-   * @return true if the newly fetched credentials are different from the previously stored ones,
-   *     false otherwise.
+   * @return true if the fetched credentials are different from the previously stored ones,
+   *     otherwise returns false.
    */
   private boolean refreshCredentials() throws IOException {
     final ZeebeClientCredentials fetchedCredentials = fetchCredentials();
+    credentialsCache.put(endpoint, fetchedCredentials).writeCache();
+
     if (fetchedCredentials.equals(credentials)) {
       return false;
     }
@@ -99,7 +130,7 @@ public class OAuthCredentialsProvider implements CredentialsProvider {
     return true;
   }
 
-  private static String createJsonPayload(OAuthCredentialsProviderBuilder builder) {
+  private static String createJsonPayload(final OAuthCredentialsProviderBuilder builder) {
     try {
       final Map<String, String> payload = new HashMap<>();
       payload.put("client_id", builder.getClientId());
@@ -107,9 +138,9 @@ public class OAuthCredentialsProvider implements CredentialsProvider {
       payload.put("audience", builder.getAudience());
       payload.put("grant_type", "client_credentials");
 
-      return MAPPER.writeValueAsString(payload);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
+      return JSON_MAPPER.writeValueAsString(payload);
+    } catch (final JsonProcessingException e) {
+      throw new UncheckedIOException(e);
     }
   }
 
@@ -135,11 +166,12 @@ public class OAuthCredentialsProvider implements CredentialsProvider {
 
     try (InputStream in = connection.getInputStream();
         InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-      final String responseContent = CharStreams.toString(reader);
-      final ZeebeClientCredentials fetchedCredentials = JSON_READER.readValue(responseContent);
+
+      final ZeebeClientCredentials fetchedCredentials =
+          CREDENTIALS_READER.readValue(CharStreams.toString(reader));
 
       if (fetchedCredentials == null) {
-        throw new IOException("Expected valid fetchedCredentials but got null instead.");
+        throw new IOException("Expected valid credentials but got null instead.");
       }
 
       return fetchedCredentials;
