@@ -21,7 +21,7 @@ const configuration = {
 
 const barReport = {
   combined: false,
-  data: {visualization: 'bar', view: {property: 'frequency'}, configuration}
+  data: {visualization: 'bar', view: {property: 'frequency'}, groupBy: {}, configuration}
 };
 
 it('it should display correct configuration for barchart', () => {
@@ -41,5 +41,22 @@ it('should not display show instance count and color picker for combined reports
   );
 
   expect(node.find('ShowInstanceCount')).not.toExist();
+  expect(node.find('ColorPicker')).not.toExist();
+});
+
+it('should not display color picker for hyper reports (distributed by user task)', () => {
+  const node = shallow(
+    <BarChartConfig
+      report={{
+        ...barReport,
+        data: {
+          ...barReport.data,
+          groupBy: {type: 'assignee'},
+          configuration: {...configuration, distributedBy: 'userTask'}
+        }
+      }}
+    />
+  );
+
   expect(node.find('ColorPicker')).not.toExist();
 });

@@ -15,7 +15,7 @@ import {t} from 'translation';
 export default function BarChartConfig({onChange, report}) {
   const {
     combined,
-    data: {visualization, configuration},
+    data: {visualization, configuration, groupBy},
     result
   } = report;
 
@@ -24,15 +24,17 @@ export default function BarChartConfig({onChange, report}) {
 
   return (
     <div className="BarChartConfig">
-      {!combined && configuration.distributedBy === 'none' && (
-        <fieldset className="colorSection">
-          <legend>{t('report.config.colorPicker.legend')}</legend>
-          <ColorPicker
-            selectedColor={configuration.color}
-            onChange={color => onChange({color: {$set: color}})}
-          />
-        </fieldset>
-      )}
+      {!combined &&
+        (configuration.distributedBy === 'none' ||
+          !['assignee', 'candidateGroup'].includes(groupBy.type)) && (
+          <fieldset className="colorSection">
+            <legend>{t('report.config.colorPicker.legend')}</legend>
+            <ColorPicker
+              selectedColor={configuration.color}
+              onChange={color => onChange({color: {$set: color}})}
+            />
+          </fieldset>
+        )}
       <fieldset>
         <legend>{t('report.config.tooltips.legend')}</legend>
         <RelativeAbsoluteSelection

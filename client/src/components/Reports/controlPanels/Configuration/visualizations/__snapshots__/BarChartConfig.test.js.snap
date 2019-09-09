@@ -66,6 +66,7 @@ exports[`it should display correct configuration for barchart 1`] = `
               "xLabel": "",
               "yLabel": "",
             },
+            "groupBy": Object {},
             "view": Object {
               "property": "frequency",
             },
