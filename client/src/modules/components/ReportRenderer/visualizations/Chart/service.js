@@ -17,6 +17,10 @@ export function formatTooltip(
   hideRelative,
   type
 ) {
+  if (datasets[datasetIndex].isTarget) {
+    return;
+  }
+
   let processInstanceCount = processInstanceCountData[datasetIndex];
   // in the case of the line with target value we have 2 datasets for each report
   // we have to divide by 2 to get the right index

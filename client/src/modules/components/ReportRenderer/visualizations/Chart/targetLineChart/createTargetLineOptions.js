@@ -24,14 +24,16 @@ export function getTargetLineOptions(color, isBelowTarget, isCombined, isDark) {
       backgroundColor: 'transparent',
       legendColor: color,
       borderWidth: 2,
-      renderArea: isBelowTarget ? 'bottom' : 'top'
+      renderArea: isBelowTarget ? 'bottom' : 'top',
+      isTarget: true
     },
     normalLineOptions: {
       borderColor: color,
       backgroundColor: 'transparent',
       legendColor: color,
       borderWidth: 2,
-      renderArea: isBelowTarget ? 'top' : 'bottom'
+      renderArea: isBelowTarget ? 'top' : 'bottom',
+      isTarget: false
     }
   };
 }

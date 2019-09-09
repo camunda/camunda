@@ -21,6 +21,21 @@ it('should include the relative value in tooltips', () => {
   expect(response).toBe('2.5\u00A0(50%)');
 });
 
+it('should return undefined tooltip for target line dataset', () => {
+  const response = formatTooltip(
+    {index: 0, datasetIndex: 0},
+    {datasets: [{data: [2.5], isTarget: true}]},
+    false,
+    {},
+    v => v,
+    [5],
+    false,
+    'bar'
+  );
+
+  expect(response).toBe(undefined);
+});
+
 it('should generate correct colors in label tooltips for pie charts ', () => {
   const response = getTooltipLabelColor(
     {index: 0, datasetIndex: 0},
