@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/zeebe-io/zeebe/clients/go/commands"
@@ -134,6 +135,34 @@ func NewZBClient(config *ZBClientConfig) (ZBClient, error) {
 		connection:          conn,
 		credentialsProvider: provider,
 	}, nil
+}
+
+// NewOAuthZBClient is a convenience function that builds a client with an OAuth credentials provider using the provided
+// credentials. The gateway address is used as the OAuth token's audience and a default value is used in place of the
+// authorization server URL. This function is meant to simplify client configuration for Camunda Cloud.
+func NewOAuthZBClient(gatewayAddress, clientID, clientSecret string) (ZBClient, error) {
+	return newOAuthZBClientWithAuthzURL(&ZBClientConfig{GatewayAddress: gatewayAddress}, clientID, clientSecret, "")
+}
+
+func newOAuthZBClientWithAuthzURL(config *ZBClientConfig, clientID, clientSecret, authzServer string) (ZBClient, error) {
+	var err error
+	var audience string
+	index := strings.LastIndex(config.GatewayAddress, ":")
+	if index > 0 {
+		audience = config.GatewayAddress[0:index]
+	}
+
+	config.CredentialsProvider, err = NewOAuthCredentialsProvider(&OAuthProviderConfig{
+		ClientID:               clientID,
+		ClientSecret:           clientSecret,
+		Audience:               audience,
+		AuthorizationServerURL: authzServer,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return NewZBClient(config)
 }
 
 func configureCredentialsProvider(config *ZBClientConfig, opts *[]grpc.DialOption) CredentialsProvider {

@@ -180,15 +180,6 @@ var configErrorTests = []struct {
 	err        ZBError
 	errMessage string
 }{
-	{"missing authorization server URL",
-		&OAuthProviderConfig{
-			ClientID:     clientID,
-			ClientSecret: clientSecret,
-			Audience:     audience,
-		},
-		InvalidArgumentError,
-		invalidArgumentError("authorization server URL", "cannot be blank").Error(),
-	},
 	{
 		"malformed authorization server URL",
 		&OAuthProviderConfig{
@@ -307,6 +298,10 @@ func TestOAuthProviderWithEnvVars(t *testing.T) {
 }
 
 func mockAuthorizationServer(t *testing.T, token *mutableToken) *httptest.Server {
+	return mockAuthorizationServerWithAudience(t, token, audience)
+}
+
+func mockAuthorizationServerWithAudience(t *testing.T, token *mutableToken, audience string) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		bytes, err := ioutil.ReadAll(request.Body)
 		if err != nil {
