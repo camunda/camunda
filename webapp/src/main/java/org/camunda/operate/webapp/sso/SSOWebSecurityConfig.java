@@ -15,12 +15,14 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.stereotype.Component;
 
 import com.auth0.AuthenticationController;
 
 @Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
 @Configuration
 @EnableWebSecurity
+@Component("webSecurityConfig")
 public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
   
   private static final String ROOT = "/";

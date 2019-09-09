@@ -32,11 +32,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Profile("auth")
 @EnableWebSecurity
 @Configuration
+@Component("webSecurityConfig")
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
   private static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";
