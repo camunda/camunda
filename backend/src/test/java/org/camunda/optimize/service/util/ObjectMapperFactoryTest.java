@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
@@ -44,8 +45,11 @@ public class ObjectMapperFactoryTest {
   private OptimizeDateTimeFormatterFactory optimizeDateTimeFormatterFactory;
 
   @Before
-  public void init() throws Exception {
-    ConfigurationService configurationService = new ConfigurationService(new String[]{"service-config.yaml"});
+  public void init() {
+    ConfigurationService configurationService = ConfigurationServiceBuilder
+      .createConfiguration()
+      .loadConfigurationFrom("service-config.yaml")
+      .build();
     OptimizeDateTimeFormatterFactory optimizeDateTimeFormatterFactory = new OptimizeDateTimeFormatterFactory();
     ObjectMapperFactory objectMapperFactory = new ObjectMapperFactory(
       optimizeDateTimeFormatterFactory.getObject(), configurationService

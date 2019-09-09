@@ -10,6 +10,7 @@ import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedIm
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.configuration.EngineConstantsUtil;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,7 +35,7 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class DecisionInstanceFetcherTest {
 
-  private ConfigurationService configurationService = new ConfigurationService();
+  private ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
 
   @Mock
   private EngineContext engineContext;
@@ -50,7 +51,7 @@ public class DecisionInstanceFetcherTest {
   private DecisionInstanceFetcher underTest;
 
   @Before
-  public void before() throws Exception {
+  public void before() {
     underTest = new DecisionInstanceFetcher(engineContext);
     underTest.setBackoffCalculator(backoffCalculator);
     underTest.setConfigurationService(configurationService);

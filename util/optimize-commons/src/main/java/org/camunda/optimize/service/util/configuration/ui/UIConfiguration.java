@@ -3,14 +3,13 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.util.configuration;
+package org.camunda.optimize.service.util.configuration.ui;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 
-public enum CleanupMode {
-  @JsonProperty("all")
-  ALL,
-  @JsonProperty("variables")
-  VARIABLES,
-  ;
+
+@Data
+public class UIConfiguration {
+
+  private HeaderCustomization header;
 }

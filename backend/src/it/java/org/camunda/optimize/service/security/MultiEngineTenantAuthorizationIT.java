@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithT
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.TenantService;
-import org.camunda.optimize.service.util.configuration.DefaultTenant;
+import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.Assert;
 import org.junit.Test;

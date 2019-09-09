@@ -7,7 +7,8 @@ package org.camunda.optimize.service.cleanup;
 
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.OptimizeCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,7 +30,7 @@ public class OptimizeCleanupSchedulerTest {
 
   @Before
   public void init() {
-    configurationService = new ConfigurationService();
+    configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
   }
 
   @Test

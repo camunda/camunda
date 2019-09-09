@@ -96,4 +96,6 @@ public interface ConfigurationServiceConstants {
 
   String AVAILABLE_LOCALES = "$.locales.availableLocales";
   String FALLBACK_LOCALE = "$.locales.fallbackLocale";
+
+  String UI_CONFIGURATION = "$.ui";
 }

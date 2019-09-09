@@ -20,6 +20,7 @@ import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
 import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -38,7 +39,7 @@ public class ReimportPreparation {
 
   private static Logger logger = LoggerFactory.getLogger(ReimportPreparation.class);
 
-  private static ConfigurationService configurationService = new ConfigurationService();
+  private static ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
 
   private static final List<IndexMappingCreator> TYPES_TO_CLEAR = Lists.newArrayList(
     new ImportIndexIndex(), new TimestampBasedImportIndex(),

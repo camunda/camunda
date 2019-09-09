@@ -7,7 +7,6 @@ package org.camunda.optimize.upgrade.service;
 
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,21 +17,14 @@ import java.io.InputStream;
 import static org.camunda.optimize.service.util.ESVersionChecker.checkESVersionSupport;
 
 
-public class ValidationService {
+public class UpgradeValidationService {
   private static final String ENVIRONMENT_CONFIG_FILE = "environment-config.yaml";
-  private static final Logger logger = LoggerFactory.getLogger(ValidationService.class);
+  private static final Logger logger = LoggerFactory.getLogger(UpgradeValidationService.class);
 
   private ElasticsearchMetadataService metadataService;
-  private ConfigurationService configurationService;
 
-  public ValidationService(final ConfigurationService configurationService,
-                           final ElasticsearchMetadataService metadataService) {
-    this.configurationService = configurationService;
+  public UpgradeValidationService(final ElasticsearchMetadataService metadataService) {
     this.metadataService = metadataService;
-  }
-
-  public void validateConfiguration() {
-    configurationService.validateNoDeprecatedConfigKeysUsed();
   }
 
   public void validateSchemaVersions(final OptimizeElasticsearchClient restClient,
@@ -68,7 +60,7 @@ public class ValidationService {
   public void validateEnvironmentConfigInClasspath() {
     boolean configAvailable = false;
     try (InputStream resourceAsStream =
-           ValidationService.class.getResourceAsStream("/" + ENVIRONMENT_CONFIG_FILE)) {
+           UpgradeValidationService.class.getResourceAsStream("/" + ENVIRONMENT_CONFIG_FILE)) {
       if (resourceAsStream != null) {
         configAvailable = true;
       }

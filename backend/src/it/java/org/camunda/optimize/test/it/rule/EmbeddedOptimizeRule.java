@@ -33,7 +33,7 @@ import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.EngineConfiguration;
+import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.test.util.SynchronizationElasticsearchImportJob;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;

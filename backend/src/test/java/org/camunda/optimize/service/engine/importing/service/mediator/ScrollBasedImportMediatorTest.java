@@ -13,6 +13,7 @@ import org.camunda.optimize.service.engine.importing.index.handler.impl.Decision
 import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImportPage;
 import org.camunda.optimize.service.engine.importing.service.ImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,7 +55,7 @@ public class ScrollBasedImportMediatorTest {
   @Mock
   private DecisionDefinitionXmlImportIndexHandler importIndexHandler;
 
-  private ConfigurationService configurationService = new ConfigurationService();
+  private ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
 
   @Mock
   private ImportService<DecisionDefinitionXmlEngineDto> importService;

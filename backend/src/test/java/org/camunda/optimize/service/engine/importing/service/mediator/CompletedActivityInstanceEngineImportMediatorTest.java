@@ -10,6 +10,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.CompletedActivityInstanceFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,7 +42,7 @@ public class CompletedActivityInstanceEngineImportMediatorTest extends Timestamp
   @Mock
   private CompletedActivityInstanceFetcher engineEntityFetcher;
 
-  private ConfigurationService configurationService = new ConfigurationService();
+  private ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
 
   @Before
   public void init() {

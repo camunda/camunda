@@ -19,7 +19,7 @@ import org.camunda.optimize.service.engine.importing.service.mediator.CompletedU
 import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.IdentityLinkLogEngineImportMediator;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -84,11 +84,11 @@ public class UserTaskMediatorPermutationsImportIT {
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
 
   @Before
-  public void setUp() throws Exception {
+  public void setUp() {
     if (objectMapper == null) {
       objectMapper = new ObjectMapperFactory(
         new OptimizeDateTimeFormatterFactory().getObject(),
-        new ConfigurationService()
+        ConfigurationServiceBuilder.createDefaultConfiguration()
       ).createOptimizeMapper();
     }
   }

@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.test.performance;
 
-import org.camunda.optimize.service.util.configuration.CleanupMode;
+import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;

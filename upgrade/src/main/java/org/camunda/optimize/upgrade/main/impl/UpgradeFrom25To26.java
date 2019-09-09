@@ -22,6 +22,7 @@ import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportI
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
@@ -71,7 +72,7 @@ public class UpgradeFrom25To26 implements Upgrade {
   private Logger logger = LoggerFactory.getLogger(getClass());
 
 
-  private ConfigurationService configurationService = new ConfigurationService();
+  private ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
   private OptimizeIndexNameService indexNameService = new OptimizeIndexNameService(configurationService);
   private OptimizeElasticsearchClient client = new OptimizeElasticsearchClient(
     ElasticsearchHighLevelRestClientBuilder.build(configurationService),
@@ -79,7 +80,7 @@ public class UpgradeFrom25To26 implements Upgrade {
   );
   private final ObjectMapper objectMapper = new ObjectMapperFactory(
     new OptimizeDateTimeFormatterFactory().getObject(),
-    new ConfigurationService()
+    ConfigurationServiceBuilder.createDefaultConfiguration()
   ).createOptimizeMapper();
 
   private static final String DEFINITION_ID_TO_VAR_NAMES_PARAMETER_NAME = "definitionIdToVarNames";

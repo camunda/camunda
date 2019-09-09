@@ -16,9 +16,10 @@ import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
-import org.camunda.optimize.upgrade.service.ValidationService;
+import org.camunda.optimize.upgrade.service.UpgradeValidationService;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,11 +37,10 @@ public class UpgradeExecutionPlan implements UpgradePlan {
 
   private Logger logger = LoggerFactory.getLogger(getClass());
 
-  private final OptimizeIndexNameService indexNameService;
   private final OptimizeElasticsearchClient prefixAwareClient;
 
   private final List<UpgradeStep> upgradeSteps = new ArrayList<>();
-  private ValidationService validationService;
+  private UpgradeValidationService upgradeValidationService;
   private ElasticsearchMetadataService metadataService;
   private ElasticSearchSchemaManager schemaManager;
   private String toVersion;
@@ -48,14 +48,13 @@ public class UpgradeExecutionPlan implements UpgradePlan {
   private ESIndexAdjuster esIndexAdjuster;
 
   public UpgradeExecutionPlan() {
-    final ConfigurationService configurationService = new ConfigurationService();
+    final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
     final ObjectMapper objectMapper = new ObjectMapper();
     metadataService = new ElasticsearchMetadataService(objectMapper);
 
-    validationService = new ValidationService(configurationService, metadataService);
-    validationService.validateConfiguration();
+    upgradeValidationService = new UpgradeValidationService(metadataService);
 
-    indexNameService = new OptimizeIndexNameService(configurationService);
+    final OptimizeIndexNameService indexNameService = new OptimizeIndexNameService(configurationService);
 
     prefixAwareClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
@@ -107,7 +106,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     final Set<BeanDefinition> indexMapping =
       provider.findCandidateComponents(MetadataIndex.class.getPackage().getName());
 
-    final List<IndexMappingCreator> indexMappings = indexMapping.stream()
+    return indexMapping.stream()
       .map(beanDefinition -> {
         try {
           return (IndexMappingCreator) Class.forName(beanDefinition.getBeanClassName()).getConstructor().newInstance();
@@ -116,8 +115,6 @@ public class UpgradeExecutionPlan implements UpgradePlan {
         }
       })
       .collect(Collectors.toList());
-
-    return indexMappings;
   }
 
   public void addUpgradeStep(UpgradeStep upgradeStep) {
@@ -132,8 +129,8 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     this.schemaManager = schemaManager;
   }
 
-  public void setValidationService(final ValidationService validationService) {
-    this.validationService = validationService;
+  public void setUpgradeValidationService(final UpgradeValidationService upgradeValidationService) {
+    this.upgradeValidationService = upgradeValidationService;
   }
 
   public void setMetadataService(final ElasticsearchMetadataService metadataService) {
@@ -149,8 +146,8 @@ public class UpgradeExecutionPlan implements UpgradePlan {
   }
 
   private void validateVersions() {
-    validationService.validateSchemaVersions(prefixAwareClient, fromVersion, toVersion);
-    validationService.validateESVersion(prefixAwareClient, toVersion);
+    upgradeValidationService.validateSchemaVersions(prefixAwareClient, fromVersion, toVersion);
+    upgradeValidationService.validateESVersion(prefixAwareClient, toVersion);
   }
 
   private void updateOptimizeVersion() {

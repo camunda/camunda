@@ -8,7 +8,6 @@ package org.camunda.optimize.upgrade.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.junit.Before;
@@ -20,19 +19,18 @@ import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvC
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
 import static org.junit.Assert.fail;
 
-public class ValidationServiceIT extends AbstractUpgradeIT {
+public class UpgradeValidationServiceIT extends AbstractUpgradeIT {
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
-  private ValidationService underTest;
+  private UpgradeValidationService underTest;
 
   @Before
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    underTest = new ValidationService(
-      new ConfigurationService(),
+    underTest = new UpgradeValidationService(
       new ElasticsearchMetadataService(new ObjectMapper())
     );
     initSchema(Lists.newArrayList(METADATA_INDEX));

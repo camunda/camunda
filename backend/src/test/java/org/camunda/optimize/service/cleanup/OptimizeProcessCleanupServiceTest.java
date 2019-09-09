@@ -11,10 +11,11 @@ import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import org.camunda.optimize.service.util.configuration.CleanupMode;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.OptimizeCleanupConfiguration;
-import org.camunda.optimize.service.util.configuration.ProcessDefinitionCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.Before;
@@ -59,7 +60,7 @@ public class OptimizeProcessCleanupServiceTest {
 
   @Before
   public void init() {
-    configurationService = new ConfigurationService();
+    configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
     mockProcessDefinitions(new ArrayList<>());
   }
 

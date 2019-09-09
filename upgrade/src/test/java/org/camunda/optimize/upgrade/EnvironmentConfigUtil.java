@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.upgrade;
 
-import org.camunda.optimize.upgrade.service.ValidationService;
+import org.camunda.optimize.upgrade.service.UpgradeValidationService;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -47,7 +47,7 @@ public class EnvironmentConfigUtil {
   }
 
   public static File getClasspathFolder() throws URISyntaxException {
-    String executionFolderPath = ValidationService.class.
+    String executionFolderPath = UpgradeValidationService.class.
       getProtectionDomain()
       .getCodeSource()
       .getLocation()

@@ -12,8 +12,8 @@ import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.OptimizeCleanupConfiguration;
-import org.camunda.optimize.service.util.configuration.ProcessDefinitionCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;

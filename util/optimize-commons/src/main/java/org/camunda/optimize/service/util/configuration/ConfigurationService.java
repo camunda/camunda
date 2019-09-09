@@ -5,82 +5,50 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.jayway.jsonpath.Configuration;
-import com.jayway.jsonpath.DocumentContext;
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ReadContext;
 import com.jayway.jsonpath.TypeRef;
-import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
-import com.jayway.jsonpath.spi.json.JsonProvider;
-import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
-import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import lombok.Setter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import org.camunda.optimize.service.metadata.Version;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
+import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
+import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
+import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 import org.springframework.util.StringUtils;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toMap;
+import static org.camunda.optimize.service.util.configuration.ConfigurationParser.parseConfigFromLocations;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.AVAILABLE_LOCALES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.cutTrailingSlash;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
+import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.getLocationsAsInputStream;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePathAsAbsoluteUrl;
 
 @Setter
 public class ConfigurationService {
-  public static final String DOC_URL = MessageFormat.format(
-    "https://docs.camunda.org/optimize/{0}.{1}",
-    Version.VERSION_MAJOR,
-    Version.VERSION_MINOR
-  );
-  private static final Logger logger = LoggerFactory.getLogger(ConfigurationService.class);
-  private static final String ENGINES_FIELD = "engines";
   private static final String ENGINE_REST_PATH = "/engine/";
-  private static final String[] DEFAULT_CONFIG_LOCATIONS = {"service-config.yaml", "environment-config.yaml"};
-  private static final String[] DEFAULT_DEPRECATED_CONFIG_LOCATIONS = {"deprecated-config.yaml"};
   private static final String ERROR_NO_ENGINE_WITH_ALIAS = "No Engine configured with alias ";
-  private static final Pattern VARIABLE_PLACEHOLDER_PATTERN = Pattern.compile(
-    "\\$\\{([a-zA-Z_]+[a-zA-Z0-9_]*)(:(.*))?\\}"
-  );
+
   // @formatter:off
   private static final TypeRef<HashMap<String, EngineConfiguration>> ENGINES_MAP_TYPEREF =
     new TypeRef<HashMap<String, EngineConfiguration>>() {};
-  public static final TypeRef<List<String>> LIST_OF_STRINGS_TYPE_REF = new TypeRef<List<String>>() {};
+  private static final TypeRef<List<String>> LIST_OF_STRINGS_TYPE_REF = new TypeRef<List<String>>() {};
   // @formatter:on
 
   private ReadContext configJsonContext;
-  private Map<String, String> deprecatedConfigKeys;
 
   private Map<String, EngineConfiguration> configuredEngines;
   private Integer tokenLifeTime;
@@ -190,216 +158,29 @@ public class ConfigurationService {
   private List<String> availableLocales;
   private String fallbackLocale;
 
-  public ConfigurationService() {
-    this((String[]) null, null);
+  // ui customization
+  private UIConfiguration uiConfiguration;
+
+  /**
+   * This method is needed so jackson can deserialize/serialize
+   * the service configuration.
+   * See TestEmbeddedCamundaOptimize for where it's being used.
+   */
+  @JsonCreator
+  static ConfigurationService createDefault() {
+    return ConfigurationServiceBuilder.createDefaultConfiguration();
   }
 
-  public ConfigurationService(String[] sources) {
-    this(sources, null);
-  }
-
-  public ConfigurationService(List<InputStream> sources, List<InputStream> deprecatedConfigLocations) {
-    initConfigurationContexts(sources, deprecatedConfigLocations);
-  }
-
-  public ConfigurationService(String[] configLocations, String[] deprecatedConfigLocations) {
-    this(
-      getLocationsAsInputStream(configLocations == null ? DEFAULT_CONFIG_LOCATIONS : configLocations),
-      getLocationsAsInputStream(deprecatedConfigLocations == null ? DEFAULT_DEPRECATED_CONFIG_LOCATIONS :
-                                  deprecatedConfigLocations)
-    );
-  }
-
-  private static List<InputStream> getLocationsAsInputStream(String[] locationsToUse) {
-    List<InputStream> sources = new ArrayList<>();
-    for (String location : locationsToUse) {
-      InputStream inputStream = wrapInputStream(location);
-      if (inputStream != null) {
-        sources.add(inputStream);
-      }
-    }
-    return sources;
-  }
-
-  private static InputStream wrapInputStream(String location) {
-    return ConfigurationService.class.getClassLoader().getResourceAsStream(location);
-  }
-
-  public void validateNoDeprecatedConfigKeysUsed() {
-    final Configuration conf = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
-    final DocumentContext failsafeConfigurationJsonContext = JsonPath.using(conf)
-      .parse((Object) configJsonContext.json());
-
-    final Map<String, String> usedDeprecationKeysWithNewDocumentationPath = deprecatedConfigKeys.entrySet().stream()
-      .filter(entry -> Optional.ofNullable(failsafeConfigurationJsonContext.read("$." + entry.getKey()))
-        // in case of array structures we always a list as result, thus we need to check if it contains actual results
-        .flatMap(object -> object instanceof Collection && ((Collection) object).size() == 0
-          ? Optional.empty()
-          : Optional.of(object)
-        )
-        .isPresent()
-      ).map(keyAndPath -> {
-        keyAndPath.setValue(DOC_URL + keyAndPath.getValue());
-        return keyAndPath;
-      })
-      .peek(keyAndUrl -> logger.error(
-        "Deprecated setting used with key {}, please checkout the updated documentation {}",
-        keyAndUrl.getKey(), keyAndUrl.getValue()
-      ))
-      .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-    if (!usedDeprecationKeysWithNewDocumentationPath.isEmpty()) {
-      throw new OptimizeConfigurationException(
-        "Configuration contains deprecated entries", usedDeprecationKeysWithNewDocumentationPath
-      );
-    }
-  }
-
-  private void initConfigurationContexts(List<InputStream> configLocationsToUse,
-                                         List<InputStream> deprecatedConfigLocationsToUse) {
-    this.configJsonContext = parseConfigFromLocations(configLocationsToUse, configureConfigMapper())
+  ConfigurationService(String[] configLocations, ConfigurationValidator configurationValidator) {
+    List<InputStream> configStreams = getLocationsAsInputStream(configLocations);
+    this.configJsonContext = parseConfigFromLocations(configStreams)
       .orElseThrow(() -> new OptimizeConfigurationException("No single configuration source could be read"));
-    this.deprecatedConfigKeys = (Map<String, String>)
-      parseConfigFromLocations(
-        deprecatedConfigLocationsToUse,
-        configureConfigMapper()
-      ).map(ReadContext::json).orElse(Collections.emptyMap());
+    Optional.ofNullable(configurationValidator)
+      .ifPresent(validator -> validator.validate(this));
   }
 
-  private static void merge(JsonNode mainNode, JsonNode updateNode) {
-    if (updateNode == null) {
-      return;
-    }
-
-    Iterator<String> fieldNames = updateNode.fieldNames();
-    while (fieldNames.hasNext()) {
-
-      String fieldName = fieldNames.next();
-      JsonNode jsonNode = mainNode.get(fieldName);
-      // if field exists and is an embedded object
-      if (jsonNode != null && jsonNode.isObject() && !ENGINES_FIELD.equals(fieldName)) {
-        merge(jsonNode, updateNode.get(fieldName));
-      } else if (jsonNode != null && jsonNode.isObject() && ENGINES_FIELD.equals(fieldName)) {
-        // Overwrite field
-        overwriteField((ObjectNode) mainNode, updateNode, fieldName);
-      } else if (mainNode instanceof ObjectNode) {
-        // Overwrite field
-        overwriteField((ObjectNode) mainNode, updateNode, fieldName);
-      }
-
-    }
-  }
-
-  private static void overwriteField(ObjectNode mainNode, JsonNode updateNode, String fieldName) {
-    JsonNode value = updateNode.get(fieldName);
-    mainNode.set(fieldName, value);
-  }
-
-  private Optional<DocumentContext> parseConfigFromLocations(List<InputStream> sources, YAMLMapper yamlMapper) {
-    try {
-      if (sources.isEmpty()) {
-        return Optional.empty();
-      }
-      //read default values from the first location
-      JsonNode resultNode = yamlMapper.readTree(sources.remove(0));
-      //read with overriding default values all locations
-      for (InputStream inputStream : sources) {
-        merge(resultNode, yamlMapper.readTree(inputStream));
-      }
-
-      // resolve environment placeholders
-      final Map configMap = resolveVariablePlaceholders(
-        yamlMapper.convertValue(resultNode, HashMap.class)
-      );
-
-      //prepare to work with JSON Path
-      return Optional.of(JsonPath.parse(configMap));
-    } catch (IOException e) {
-      logger.error("error reading configuration", e);
-      return Optional.empty();
-    }
-  }
-
-  private Map<String, Object> resolveVariablePlaceholders(final Map<String, Object> configMap) {
-    return configMap.entrySet().stream()
-      .map(entry -> {
-        final Object newValue = resolveVariablePlaceholders(entry.getValue());
-        entry.setValue(newValue);
-        return entry;
-      })
-      .collect(LinkedHashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
-  }
-
-  private Object resolveVariablePlaceholders(final Object value) {
-    Object newValue = value;
-    if (value instanceof Map) {
-      newValue = resolveVariablePlaceholders((Map<String, Object>) value);
-    } else if (value instanceof List) {
-      final List<Object> values = ((List<Object>) value);
-      if (values.size() > 0) {
-        newValue = values.stream().map(this::resolveVariablePlaceholders)
-          .collect(Collectors.toList());
-      }
-    } else if (value instanceof String) {
-      newValue = resolveVariablePlaceholders((String) value);
-    }
-    return newValue;
-  }
-
-  private String resolveVariablePlaceholders(final String value) {
-    String resolvedValue = value;
-    final Matcher matcher = VARIABLE_PLACEHOLDER_PATTERN.matcher(value);
-    while (matcher.find()) {
-      final String envVariableName = matcher.group(1);
-      String envVariableValue = Optional.ofNullable(System.getProperty(envVariableName, null))
-        .orElseGet(() -> System.getenv(envVariableName));
-      if (envVariableValue == null) {
-        final String envVariableDefaultValue = matcher.group(3);
-        if (envVariableDefaultValue == null) {
-          throw new OptimizeConfigurationException(String.format(
-            "Could not resolve system/environment variable [%s] used in configuration and no default value supplied",
-            envVariableName
-          ));
-        }
-        envVariableValue = envVariableDefaultValue;
-      }
-      resolvedValue = value.replace(matcher.group(), envVariableValue);
-    }
-    return resolvedValue;
-  }
-
-  private YAMLMapper configureConfigMapper() {
-    final YAMLMapper yamlMapper = new YAMLMapper();
-    yamlMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
-    // to parse dates
-    yamlMapper.registerModule(new JavaTimeModule());
-    //configure Jackson as provider in order to be able to use TypeRef objects
-    //during serialization process
-    Configuration.setDefaults(new Configuration.Defaults() {
-      private final ObjectMapper objectMapper =
-        new ObjectMapper()
-          .registerModule(new JavaTimeModule())
-          .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
-
-      private final JsonProvider jsonProvider = new JacksonJsonProvider(objectMapper);
-      private final MappingProvider mappingProvider = new JacksonMappingProvider(objectMapper);
-
-      @Override
-      public JsonProvider jsonProvider() {
-        return jsonProvider;
-      }
-
-      @Override
-      public MappingProvider mappingProvider() {
-        return mappingProvider;
-      }
-
-      @Override
-      public Set<Option> options() {
-        return EnumSet.noneOf(Option.class);
-      }
-    });
-    return yamlMapper;
+  ReadContext getConfigJsonContext() {
+    return configJsonContext;
   }
 
   public Map<String, EngineConfiguration> getConfiguredEngines() {
@@ -652,7 +433,7 @@ public class ConfigurationService {
     return engineImportProcessDefinitionXmlMaxPageSize;
   }
 
-  public String getProcessDefinitionXmlEndpoint() {
+  private String getProcessDefinitionXmlEndpoint() {
     if (processDefinitionXmlEndpoint == null) {
       processDefinitionXmlEndpoint = cutTrailingSlash(
         configJsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_XML_ENDPOINT)
@@ -668,7 +449,7 @@ public class ConfigurationService {
     return sharingEnabled;
   }
 
-  public String getDecisionDefinitionXmlEndpoint() {
+  private String getDecisionDefinitionXmlEndpoint() {
     if (decisionDefinitionXmlEndpoint == null) {
       decisionDefinitionXmlEndpoint = cutTrailingSlash(
         configJsonContext.read(ConfigurationServiceConstants.DECISION_DEFINITION_XML_ENDPOINT)
@@ -775,6 +556,7 @@ public class ConfigurationService {
     return containerKeystorePassword;
   }
 
+  @SuppressWarnings("OptionalAssignedToNull")
   public Optional<String> getContainerAccessUrl() {
     if (containerAccessUrl == null) {
       containerAccessUrl =
@@ -1070,6 +852,13 @@ public class ConfigurationService {
       }
     }
     return fallbackLocale;
+  }
+
+  public UIConfiguration getUiConfiguration() {
+    if ( uiConfiguration == null) {
+      uiConfiguration = configJsonContext.read(UI_CONFIGURATION, UIConfiguration.class);
+    }
+    return uiConfiguration;
   }
 
 }

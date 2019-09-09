@@ -7,6 +7,7 @@ package org.camunda.optimize.test.it.rule;
 
 import lombok.experimental.UtilityClass;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.test.util.PropertyUtil;
 
 import java.util.Properties;
@@ -53,7 +54,9 @@ public class IntegrationTestConfigurationUtil {
   }
 
   public static ConfigurationService createItConfigurationService() {
-    return new ConfigurationService(new String[]{"service-config.yaml", "it/it-config.yaml"});
+    return ConfigurationServiceBuilder.createConfiguration()
+      .loadConfigurationFrom("service-config.yaml", "it/it-config.yaml")
+      .build();
   }
 
   public static int getSmtpPort() {

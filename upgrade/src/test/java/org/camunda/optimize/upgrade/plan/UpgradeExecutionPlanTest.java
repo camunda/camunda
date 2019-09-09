@@ -9,7 +9,7 @@ import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
-import org.camunda.optimize.upgrade.service.ValidationService;
+import org.camunda.optimize.upgrade.service.UpgradeValidationService;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -39,7 +39,7 @@ public class UpgradeExecutionPlanTest {
     final ElasticSearchSchemaManager schemaManager = Mockito.mock(ElasticSearchSchemaManager.class);
     underTest.setEsIndexAdjuster(Mockito.mock(ESIndexAdjuster.class));
     underTest.setSchemaManager(schemaManager);
-    underTest.setValidationService(Mockito.mock(ValidationService.class));
+    underTest.setUpgradeValidationService(Mockito.mock(UpgradeValidationService.class));
     underTest.setMetadataService(Mockito.mock(ElasticsearchMetadataService.class));
 
     underTest.execute();

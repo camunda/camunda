@@ -11,8 +11,8 @@ import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto
 import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.DecisionDefinitionCleanupConfiguration;
-import org.camunda.optimize.service.util.configuration.OptimizeCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.DecisionDefinitionCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;

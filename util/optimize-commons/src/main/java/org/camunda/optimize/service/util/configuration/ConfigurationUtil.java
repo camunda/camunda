@@ -5,15 +5,23 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
+import lombok.experimental.UtilityClass;
+import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
+@UtilityClass
 public class ConfigurationUtil {
   private static final Logger logger = LoggerFactory.getLogger(ConfigurationUtil.class);
 
@@ -43,14 +51,31 @@ public class ConfigurationUtil {
     }
 
     String errorMessage = String.format("Could not find or do not have permissions to read file [%s]!", pathToFile);
-    throw new OptimizeRuntimeException(errorMessage);
+    throw new OptimizeConfigurationException(errorMessage);
   }
 
-  private static boolean fileExistsAndHavePermissionsToRead(File file) {
-    if (file.exists() && !file.isDirectory()) {
-      return file.canRead();
+  /**
+   * Checks if the given path to file is a relative to the class path
+   * or an absolute and then tries to resolve the corresponding file
+   * behind the path to a stream.
+   * <p>
+   * Note: Make sure to close the stream after it has been used.
+   */
+  public static InputStream resolvePathToStream(String pathToFile) {
+    final File file = new File(pathToFile);
+
+    if (fileExistsAndHavePermissionsToRead(file)) {
+      try {
+        return new FileInputStream(file);
+      } catch (FileNotFoundException e) {
+        logger.error("Failed creating URL for file {}", pathToFile, e);
+      }
+    } else if (existsInClasspath(pathToFile)) {
+      return getStreamOfClasspathFile(pathToFile);
     }
-    return false;
+
+    String errorMessage = String.format("Could not find or do not have permissions to read file [%s]!", pathToFile);
+    throw new OptimizeConfigurationException(errorMessage);
   }
 
   public static void ensureGreaterThanZero(int value) {
@@ -65,11 +90,37 @@ public class ConfigurationUtil {
     }
   }
 
+  public static List<InputStream> getLocationsAsInputStream(String[] locationsToUse) {
+    List<InputStream> sources = new ArrayList<>();
+    for (String location : locationsToUse) {
+      InputStream inputStream = wrapInputStream(location);
+      if (inputStream != null) {
+        sources.add(inputStream);
+      }
+    }
+    return sources;
+  }
+
+  private static boolean fileExistsAndHavePermissionsToRead(File file) {
+    if (file.exists() && !file.isDirectory()) {
+      return file.canRead();
+    }
+    return false;
+  }
+
   private static boolean existsInClasspath(String classpathToFile) {
     return ConfigurationUtil.class.getClassLoader().getResource(classpathToFile) != null;
   }
 
   private static URL getAbsolutePathOfClasspathFile(String classpathToFile) {
     return Objects.requireNonNull(ConfigurationUtil.class.getClassLoader().getResource(classpathToFile));
+  }
+
+  private static InputStream getStreamOfClasspathFile(String classpathToFile) {
+    return Objects.requireNonNull(wrapInputStream(classpathToFile));
+  }
+
+  private static InputStream wrapInputStream(String location) {
+    return ConfigurationUtil.class.getClassLoader().getResourceAsStream(location);
   }
 }

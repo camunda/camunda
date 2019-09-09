@@ -8,7 +8,7 @@ package org.camunda.optimize.service;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
-import org.camunda.optimize.service.util.configuration.DefaultTenant;
+import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;

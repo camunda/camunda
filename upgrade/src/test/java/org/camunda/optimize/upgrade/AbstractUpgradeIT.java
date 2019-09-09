@@ -14,8 +14,8 @@ import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -32,6 +32,7 @@ import org.junit.Before;
 import java.io.IOException;
 import java.util.List;
 
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
 
@@ -48,7 +49,7 @@ public abstract class AbstractUpgradeIT {
 
   @Before
   protected void setUp() throws Exception {
-    configurationService = new ConfigurationService();
+    configurationService = createDefaultConfiguration();
     if (objectMapper == null) {
       objectMapper = new ObjectMapperFactory(
         new OptimizeDateTimeFormatterFactory().getObject(),
@@ -77,7 +78,7 @@ public abstract class AbstractUpgradeIT {
 
   protected void initSchema(List<IndexMappingCreator> mappingCreators) {
     final ElasticSearchSchemaManager elasticSearchSchemaManager = new ElasticSearchSchemaManager(
-      metadataService, new ConfigurationService(), indexNameService, mappingCreators, objectMapper
+      metadataService, createDefaultConfiguration(), indexNameService, mappingCreators, objectMapper
     );
     elasticSearchSchemaManager.initializeSchema(prefixAwareClient);
   }

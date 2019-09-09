@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
+import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
+import org.camunda.optimize.service.util.configuration.cleanup.DecisionDefinitionCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import org.junit.Test;
 
 import java.time.Period;

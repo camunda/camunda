@@ -23,6 +23,10 @@
       <directory>${project.basedir}/../backend/src/main/resources/localization/</directory>
       <outputDirectory>environment/localization</outputDirectory>
     </fileSet>
+    <fileSet>
+      <directory>${project.basedir}/../backend/src/main/resources/logo/</directory>
+      <outputDirectory>environment/logo</outputDirectory>
+    </fileSet>
 
     <fileSet>
       <!--create empty plugin directory-->

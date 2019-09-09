@@ -8,7 +8,7 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.WebappsEndpointDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.EngineConfiguration;
+import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.GET;

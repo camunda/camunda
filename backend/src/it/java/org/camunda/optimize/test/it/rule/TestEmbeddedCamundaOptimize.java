@@ -18,6 +18,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.glassfish.jersey.client.ClientProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,7 +131,8 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     logger.info("resetting config, parsing defaultconfig and copying properties");
     // copy all properties from the default configuration to the embedded optimize
     BeanUtils.copyProperties(
-      configObjectMapper.readValue(serializedDefaultConfiguration, ConfigurationService.class),
+      configObjectMapper
+        .readValue(serializedDefaultConfiguration, ConfigurationService.class),
       testOptimizeInstance.getConfigurationService()
     );
     logger.info("done resetting config");

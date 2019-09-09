@@ -11,8 +11,9 @@ import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.DecisionDefinitionCleanupConfiguration;
-import org.camunda.optimize.service.util.configuration.OptimizeCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import org.camunda.optimize.service.util.configuration.cleanup.DecisionDefinitionCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.Before;
@@ -54,7 +55,7 @@ public class OptimizeDecisionCleanupServiceTest {
 
   @Before
   public void init() {
-    configurationService = new ConfigurationService();
+    configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
     mockDecisionDefinitions(new ArrayList<>());
   }
 

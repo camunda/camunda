@@ -19,7 +19,9 @@
 
   <context:component-scan base-package="#{configurationService.getVariableImportPluginBasePackages()}"/>
 
-  <bean id="configurationService" class="org.camunda.optimize.service.util.configuration.ConfigurationService">
+  <bean id="configurationService"
+        class="org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder"
+        factory-method="createConfigurationFromLocations">
     <constructor-arg>
       <list>
         <value>service-config.yaml</value>

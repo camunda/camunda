@@ -10,6 +10,7 @@ import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.GreenMailUtil;
 import com.icegreen.greenmail.util.ServerSetup;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,8 +33,10 @@ public class EmailNotificationServiceTest {
   private GreenMail greenMail;
 
   @Before
-  public void init() throws Exception {
-    configurationService = new ConfigurationService(new String[]{"service-config.yaml"});
+  public void init() {
+    configurationService = ConfigurationServiceBuilder.createConfiguration()
+      .loadConfigurationFrom("service-config.yaml")
+      .build();
     configurationService.setEmailEnabled(true);
     this.notificationService = new EmailNotificationService(configurationService);
   }

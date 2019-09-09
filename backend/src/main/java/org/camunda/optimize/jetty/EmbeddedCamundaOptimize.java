@@ -11,6 +11,7 @@ import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
 import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.websocket.StatusWebSocket;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
@@ -79,7 +80,6 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     loggingConfigurationReader.defineLogbackLoggingConfiguration();
 
     ConfigurationService configurationService = constructConfigurationService();
-    configurationService.validateNoDeprecatedConfigKeysUsed();
 
     Server jettyServer = initServer(configurationService);
 
@@ -106,7 +106,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   }
 
   protected ConfigurationService constructConfigurationService() {
-    return new ConfigurationService();
+    return ConfigurationServiceBuilder.createDefaultConfiguration();
   }
 
   private Server initServer(ConfigurationService configurationService) {

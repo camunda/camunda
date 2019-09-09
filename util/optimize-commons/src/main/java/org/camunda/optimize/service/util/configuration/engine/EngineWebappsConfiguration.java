@@ -3,9 +3,10 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.util.configuration;
+package org.camunda.optimize.service.util.configuration.engine;
 
 import lombok.Data;
+import org.camunda.optimize.service.util.configuration.ConfigurationUtil;
 
 @Data
 public class EngineWebappsConfiguration {

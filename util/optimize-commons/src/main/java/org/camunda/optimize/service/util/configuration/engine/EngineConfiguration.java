@@ -3,10 +3,11 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.util.configuration;
+package org.camunda.optimize.service.util.configuration.engine;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
+import org.camunda.optimize.service.util.configuration.ConfigurationUtil;
 
 import java.util.Optional;
 
