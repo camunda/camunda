@@ -35,7 +35,6 @@ import com.auth0.jwt.JWT;
 @Controller
 @Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
 public class SSOController implements ErrorController{
-
   
   private static final String ERROR_PATH = "/error";
 
@@ -57,10 +56,9 @@ public class SSOController implements ErrorController{
   @RequestMapping(value = SSOWebSecurityConfig.LOGIN_RESOURCE, method = {RequestMethod.GET,RequestMethod.POST})
   protected String login(final HttpServletRequest req) {
       logger.debug("Performing login");
-      authenticator = AuthenticationController.newBuilder(config.getDomain(), config.getClientId(), config.getClientSecret()).build();
       String authorizeUrl = authenticator.buildAuthorizeUrl(req, getRedirectURI(req,SSOWebSecurityConfig.CALLBACK_URI ))
-              .withAudience(String.format("https://%s/userinfo", config.getBackendDomain())) 
-              .withScope("openid profile email")
+              .withAudience(String.format("https://%s/userinfo", config.getBackendDomain())) // get user profile
+              .withScope("openid profile email") // which info we request
               .build();
       return redirect(authorizeUrl);
   }
@@ -78,7 +76,7 @@ public class SSOController implements ErrorController{
   }
   
   // Is called when authentication was successful, but there is no permission to use this application
-  @RequestMapping(value = "/noPermission")
+  @RequestMapping(value = SSOWebSecurityConfig.NO_PERMISSION)
   @ResponseBody
   protected String noPermissions() {
     return "No Permission for Operate - Please check your organization id in operate configuration or cloud configuration.";
@@ -90,7 +88,7 @@ public class SSOController implements ErrorController{
       Tokens tokens = authenticator.handle(req);
       TokenAuthentication tokenAuth = new TokenAuthentication(JWT.decode(tokens.getIdToken()), config);
       SecurityContextHolder.getContext().setAuthentication(tokenAuth);
-      res.sendRedirect("/#/");
+      res.sendRedirect(SSOWebSecurityConfig.ROOT);
     } catch (InsufficientAuthenticationException iae) {
       logoutAndRedirectToNoPermissionPage(req, res);
     } catch (AuthenticationException | IdentityVerificationException e) {
@@ -98,7 +96,7 @@ public class SSOController implements ErrorController{
     }
   }
 
-  private void clearContextAndRedirectToLogin(HttpServletResponse res, Exception e) throws IOException {
+  protected void clearContextAndRedirectToLogin(HttpServletResponse res, Exception e) throws IOException {
     logger.error("Error in authentication callback", e);
     SecurityContextHolder.clearContext();
     res.sendRedirect(SSOWebSecurityConfig.LOGIN_RESOURCE);
@@ -110,16 +108,10 @@ public class SSOController implements ErrorController{
       req.getSession().invalidate();
     }
     SecurityContextHolder.clearContext();
-    String returnTo = req.getScheme() + "://" + req.getServerName();
-    if ((req.getScheme().equals("http") && req.getServerPort() != 80) || (req.getScheme().equals("https") && req.getServerPort() != 443)) {
-        returnTo += ":" + req.getServerPort();
-    }
-    returnTo += "/noPermission";
-    
-    logout(res, returnTo);
+    logoutFromAuth0(res, getRedirectURI(req, "/noPermission"));
   }
 
-  protected void logout(HttpServletResponse res, String returnTo) throws IOException {
+  protected void logoutFromAuth0(HttpServletResponse res, String returnTo) throws IOException {
     String logoutUrl = String.format(
             "https://%s/v2/logout?client_id=%s&returnTo=%s",
             config.getDomain(),
