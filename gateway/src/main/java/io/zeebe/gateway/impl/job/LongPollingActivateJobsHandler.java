@@ -101,7 +101,7 @@ public final class LongPollingActivateJobsHandler extends Actor {
     if (remainingAmount == request.getMaxJobsToActivate()) {
       actor.submit(() -> jobsNotAvailable(request));
     } else {
-      actor.submit(() -> request.complete());
+      actor.submit(request::complete);
     }
   }
 
@@ -133,11 +133,13 @@ public final class LongPollingActivateJobsHandler extends Actor {
     if (requests == null) {
       return;
     }
-    requests.forEach(
-        request -> {
-          LOG.trace("Unblocking ActivateJobsRequest {}", request.getRequest());
-          activateJobs(request);
-        });
+    requests.stream()
+        .filter((r) -> !r.isCanceled())
+        .forEach(
+            request -> {
+              LOG.trace("Unblocking ActivateJobsRequest {}", request.getRequest());
+              activateJobs(request);
+            });
     state.clearBlockedRequests();
   }
 
@@ -147,7 +149,7 @@ public final class LongPollingActivateJobsHandler extends Actor {
       return;
     }
     if (!request.isTimedOut()) {
-      LOG.trace(
+      LOG.debug(
           "Jobs of type {} not available. Blocking request {}",
           request.getType(),
           request.getRequest());
@@ -165,6 +167,11 @@ public final class LongPollingActivateJobsHandler extends Actor {
         actor.runDelayed(
             requestTimeout,
             () -> {
+              LOG.debug(
+                  "Remove blocking request {} for job type {} after timeout of {}",
+                  request.getRequest(),
+                  request.getType(),
+                  requestTimeout);
               state.removeBlockedRequest(request);
               request.timeout();
             });
@@ -176,6 +183,8 @@ public final class LongPollingActivateJobsHandler extends Actor {
     jobTypeState.forEach(
         (type, state) -> {
           if (state.getLastUpdatedTime() < (now - probeTimeoutMillis)) {
+            state.removeCanceledRequests();
+
             final LongPollingActivateJobsRequest probeRequest = state.pollBlockedRequests();
             if (probeRequest != null) {
               activateJobsUnchecked(probeRequest);
