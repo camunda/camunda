@@ -24,6 +24,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 	"net"
+	"os"
 	"strings"
 	"testing"
 )
@@ -39,7 +40,7 @@ func TestNewZBClientWithTls(t *testing.T) {
 	}()
 
 	parts := strings.Split(lis.Addr().String(), ":")
-	client, err := NewZBClient(&ZBClientConfig{
+	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		CaCertificatePath: "../resources/ca.cert.pem",
 	})
@@ -70,7 +71,7 @@ func TestNewZBClientWithoutTls(t *testing.T) {
 	}()
 
 	parts := strings.Split(lis.Addr().String(), ":")
-	client, err := NewZBClient(&ZBClientConfig{
+	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CaCertificatePath:      "../resources/ca.cert.pem",
@@ -99,7 +100,7 @@ func TestNewZBClientWithDefaultRootCa(t *testing.T) {
 	}()
 
 	parts := strings.Split(lis.Addr().String(), ":")
-	client, err := NewZBClient(&ZBClientConfig{
+	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress: fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 	})
 
@@ -130,7 +131,7 @@ func TestNewZBClientWithPathToNonExistingFile(t *testing.T) {
 	wrongPath := "../resources/non.existing"
 
 	//when
-	_, err := NewZBClient(&ZBClientConfig{
+	_, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		CaCertificatePath: wrongPath,
 	})
@@ -139,17 +140,7 @@ func TestNewZBClientWithPathToNonExistingFile(t *testing.T) {
 	require.EqualValues(t, FileNotFoundError, errors.Cause(err))
 }
 
-func createSecureServer() (net.Listener, *grpc.Server) {
-	listener, _ := net.Listen("tcp", "0.0.0.0:0")
-	creds, _ := credentials.NewServerTLSFromFile("../resources/chain.cert.pem", "../resources/private.key.pem")
-
-	grpcServer := grpc.NewServer(grpc.Creds(creds))
-	pb.RegisterGatewayServer(grpcServer, &pb.UnimplementedGatewayServer{})
-
-	return listener, grpcServer
-}
-
-func TestNewOAuthZbClient(t *testing.T) {
+func TestNewZBClientWithDefaultCredentialsProvider(t *testing.T) {
 	// given
 	lis, _ := net.Listen("tcp", "0.0.0.0:0")
 
@@ -165,12 +156,17 @@ func TestNewOAuthZbClient(t *testing.T) {
 	authzServer := mockAuthorizationServerWithAudience(t, &mutableToken{value: accessToken}, "0.0.0.0")
 	defer authzServer.Close()
 
+	os.Setenv(OAuthClientSecretEnvVar, clientSecret)
+	os.Setenv(OAuthClientIdEnvVar, clientID)
+	os.Setenv(OAuthAuthorizationUrlEnvVar, authzServer.URL)
+	defer os.Clearenv()
+
 	parts := strings.Split(lis.Addr().String(), ":")
 	config := &ZBClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 	}
-	client, err := newOAuthZBClientWithAuthzURL(config, clientID, clientSecret, authzServer.URL)
+	client, err := NewZBClientWithConfig(config)
 
 	require.NoError(t, err)
 
@@ -182,4 +178,14 @@ func TestNewOAuthZbClient(t *testing.T) {
 	if status, ok := status.FromError(err); ok {
 		require.Equal(t, codes.Unimplemented, status.Code())
 	}
+}
+
+func createSecureServer() (net.Listener, *grpc.Server) {
+	listener, _ := net.Listen("tcp", "0.0.0.0:0")
+	creds, _ := credentials.NewServerTLSFromFile("../resources/chain.cert.pem", "../resources/private.key.pem")
+
+	grpcServer := grpc.NewServer(grpc.Creds(creds))
+	pb.RegisterGatewayServer(grpcServer, &pb.UnimplementedGatewayServer{})
+
+	return listener, grpcServer
 }

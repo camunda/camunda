@@ -29,6 +29,11 @@ import (
 	"os"
 )
 
+const OAuthClientIdEnvVar = "ZEEBE_CLIENT_ID"
+const OAuthClientSecretEnvVar = "ZEEBE_CLIENT_SECRET"
+const OAuthTokenAudienceEnvVar = "ZEEBE_TOKEN_AUDIENCE"
+const OAuthAuthorizationUrlEnvVar = "ZEEBE_AUTHORIZATION_SERVER_URL"
+
 // OAuthDefaultAuthzURL points to the expected default URL for this credentials provider, the Camunda Cloud endpoint.
 const OAuthDefaultAuthzURL = "https://login.cloud.camunda.io/oauth/token/"
 
@@ -127,16 +132,16 @@ func NewOAuthCredentialsProvider(config *OAuthProviderConfig) (*OAuthCredentials
 }
 
 func applyEnvironmentOverrides(config *OAuthProviderConfig) {
-	if envClientID := os.Getenv("ZEEBE_CLIENT_ID"); envClientID != "" {
+	if envClientID := os.Getenv(OAuthClientIdEnvVar); envClientID != "" {
 		config.ClientID = envClientID
 	}
-	if envClientSecret := os.Getenv("ZEEBE_CLIENT_SECRET"); envClientSecret != "" {
+	if envClientSecret := os.Getenv(OAuthClientSecretEnvVar); envClientSecret != "" {
 		config.ClientSecret = envClientSecret
 	}
-	if envAudience := os.Getenv("ZEEBE_TOKEN_AUDIENCE"); envAudience != "" {
+	if envAudience := os.Getenv(OAuthTokenAudienceEnvVar); envAudience != "" {
 		config.Audience = envAudience
 	}
-	if envAuthzServerURL := os.Getenv("ZEEBE_AUTHORIZATION_SERVER_URL"); envAuthzServerURL != "" {
+	if envAuthzServerURL := os.Getenv(OAuthAuthorizationUrlEnvVar); envAuthzServerURL != "" {
 		config.AuthorizationServerURL = envAuthzServerURL
 	}
 }
