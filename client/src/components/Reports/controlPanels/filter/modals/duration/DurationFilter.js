@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {Modal, Button, Input, Select, ErrorMessage, Message, Form} from 'components';
+import {Modal, Button, Input, Select, ErrorMessage, Form} from 'components';
 import {numberParser} from 'services';
 
 import './DurationFilter.scss';
