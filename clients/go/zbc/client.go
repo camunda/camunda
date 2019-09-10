@@ -115,14 +115,20 @@ func (client *ZBClientImpl) Close() error {
 	return client.connection.Close()
 }
 
-func NewZBClient(config *ZBClientConfig) (ZBClient, error) {
+func NewZBClient(gatewayAddress string) (ZBClient, error) {
+	return NewZBClientWithConfig(&ZBClientConfig{GatewayAddress: gatewayAddress})
+}
+
+func NewZBClientWithConfig(config *ZBClientConfig) (ZBClient, error) {
 	var opts []grpc.DialOption
 
 	if err := configureConnectionSecurity(config, &opts); err != nil {
 		return nil, err
 	}
 
-	provider := configureCredentialsProvider(config, &opts)
+	if err := configureCredentialsProvider(config, &opts); err != nil {
+		return nil, err
+	}
 
 	conn, err := grpc.Dial(config.GatewayAddress, opts...)
 	if err != nil {
@@ -133,39 +139,17 @@ func NewZBClient(config *ZBClientConfig) (ZBClient, error) {
 		gateway:             pb.NewGatewayClient(conn),
 		requestTimeout:      DefaultRequestTimeout,
 		connection:          conn,
-		credentialsProvider: provider,
+		credentialsProvider: config.CredentialsProvider,
 	}, nil
 }
 
-// NewOAuthZBClient is a convenience function that builds a client with an OAuth credentials provider using the provided
-// credentials. The gateway address is used as the OAuth token's audience and a default value is used in place of the
-// authorization server URL. This function is meant to simplify client configuration for Camunda Cloud.
-func NewOAuthZBClient(gatewayAddress, clientID, clientSecret string) (ZBClient, error) {
-	return newOAuthZBClientWithAuthzURL(&ZBClientConfig{GatewayAddress: gatewayAddress}, clientID, clientSecret, "")
-}
-
-func newOAuthZBClientWithAuthzURL(config *ZBClientConfig, clientID, clientSecret, authzServer string) (ZBClient, error) {
-	var err error
-	var audience string
-	index := strings.LastIndex(config.GatewayAddress, ":")
-	if index > 0 {
-		audience = config.GatewayAddress[0:index]
+func configureCredentialsProvider(config *ZBClientConfig, opts *[]grpc.DialOption) error {
+	if config.CredentialsProvider == nil && shouldUseDefaultCredentialsProvider() {
+		if err := setDefaultCredentialsProvider(config); err != nil {
+			return err
+		}
 	}
 
-	config.CredentialsProvider, err = NewOAuthCredentialsProvider(&OAuthProviderConfig{
-		ClientID:               clientID,
-		ClientSecret:           clientSecret,
-		Audience:               audience,
-		AuthorizationServerURL: authzServer,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return NewZBClient(config)
-}
-
-func configureCredentialsProvider(config *ZBClientConfig, opts *[]grpc.DialOption) CredentialsProvider {
 	if config.CredentialsProvider != nil {
 		if config.UsePlaintextConnection {
 			log.Println("Warning: The configured security level does not guarantee that the credentials will be confidential. If this unintentional, please enable transport security.")
@@ -173,11 +157,31 @@ func configureCredentialsProvider(config *ZBClientConfig, opts *[]grpc.DialOptio
 
 		callCredentials := &zeebeCallCredentials{credentialsProvider: config.CredentialsProvider}
 		*opts = append(*opts, grpc.WithPerRPCCredentials(callCredentials))
-
-		return config.CredentialsProvider
+	} else {
+		config.CredentialsProvider = &NoopCredentialsProvider{}
 	}
 
-	return &NoopCredentialsProvider{}
+	return nil
+}
+
+func shouldUseDefaultCredentialsProvider() bool {
+	return os.Getenv(OAuthClientSecretEnvVar) != "" || os.Getenv(OAuthClientIdEnvVar) != ""
+}
+
+func setDefaultCredentialsProvider(config *ZBClientConfig) error {
+	var audience string
+	index := strings.LastIndex(config.GatewayAddress, ":")
+	if index > 0 {
+		audience = config.GatewayAddress[0:index]
+	}
+
+	provider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{Audience: audience})
+	if err != nil {
+		return err
+	}
+
+	config.CredentialsProvider = provider
+	return nil
 }
 
 func configureConnectionSecurity(config *ZBClientConfig, opts *[]grpc.DialOption) error {

@@ -70,7 +70,7 @@ func TestCustomCredentialsProvider(t *testing.T) {
 
 	parts := strings.Split(lis.Addr().String(), ":")
 
-	client, err := NewZBClient(&ZBClientConfig{
+	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    credsProvider,
@@ -112,7 +112,7 @@ func TestRetryMoreThanOnce(t *testing.T) {
 	}
 
 	parts := strings.Split(lis.Addr().String(), ":")
-	client, err := NewZBClient(&ZBClientConfig{
+	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    provider,
@@ -145,7 +145,7 @@ func TestNoRetryWithoutProvider(t *testing.T) {
 	}()
 
 	parts := strings.Split(lis.Addr().String(), ":")
-	client, err := NewZBClient(&ZBClientConfig{
+	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    nil,

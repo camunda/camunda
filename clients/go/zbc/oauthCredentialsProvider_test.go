@@ -58,7 +58,7 @@ func TestOAuthCredentialsProvider(t *testing.T) {
 
 	require.NoError(t, err)
 	parts := strings.Split(gatewayLis.Addr().String(), ":")
-	client, err := NewZBClient(&ZBClientConfig{
+	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    credsProvider,
@@ -110,7 +110,7 @@ func TestOAuthProviderRetry(t *testing.T) {
 
 	require.NoError(t, err)
 	parts := strings.Split(gatewayLis.Addr().String(), ":")
-	client, err := NewZBClient(&ZBClientConfig{
+	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    credsProvider,
@@ -156,7 +156,7 @@ func TestNotRetryWithSameCredentials(t *testing.T) {
 
 	require.NoError(t, err)
 	parts := strings.Split(gatewayLis.Addr().String(), ":")
-	client, err := NewZBClient(&ZBClientConfig{
+	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    credsProvider,
