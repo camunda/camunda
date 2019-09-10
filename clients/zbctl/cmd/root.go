@@ -39,6 +39,7 @@ var clientSecretFlag string
 var audienceFlag string
 var authzURLFlag string
 var insecureFlag bool
+var clientCacheFlag string
 
 var rootCmd = &cobra.Command{
 	Use:   "zbctl",
@@ -67,9 +68,9 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&clientSecretFlag, "clientSecret", "", "Specify a client secret to request an access token. Can be overridden by the environment variable '"+zbc.OAuthClientSecretEnvVar+"'")
 	rootCmd.PersistentFlags().StringVar(&audienceFlag, "audience", "", "Specify the resource that the access token should be valid for. Can be overridden by the environment variable '"+zbc.OAuthTokenAudienceEnvVar+"'."+
 		" If unspecified, the address will be used as default and the authzUrl parameter will be ignored")
-	rootCmd.PersistentFlags().StringVar(&authzURLFlag, "authzUrl", "", "Specify an authorization server URL from which to request an access token. Can be overridden by the environment variable '"+zbc.OAuthAuthorizationUrlEnvVar+"'."+
-		" If unspecified, "+zbc.OAuthDefaultAuthzURL+" will be used.")
+	rootCmd.PersistentFlags().StringVar(&authzURLFlag, "authzUrl", zbc.OAuthDefaultAuthzURL, "Specify an authorization server URL from which to request an access token. Can be overridden by the environment variable '"+zbc.OAuthAuthorizationUrlEnvVar+"'")
 	rootCmd.PersistentFlags().BoolVar(&insecureFlag, "insecure", false, "Specify if zbctl should use an unsecured connection")
+	rootCmd.PersistentFlags().StringVar(&clientCacheFlag, "clientCache", zbc.DefaultOauthYamlCachePath, "Specify the path to use for the OAuth credentials cache. Can be overriden by the environment variable '" + zbc.OAuthCachePathEnvVar + "'")
 }
 
 // initClient will create a client with in the following precedence: address flag, environment variable, default address
@@ -85,13 +86,22 @@ var initClient = func(cmd *cobra.Command, args []string) error {
             audience = address
 		}
 
+        providerConfig := zbc.OAuthProviderConfig{
+            ClientID:               clientIDFlag,
+            ClientSecret:           clientSecretFlag,
+            Audience:               audience,
+            AuthorizationServerURL: authzURLFlag,
+        }
+
+        if clientCacheFlag != "" {
+            providerConfig.Cache, err = zbc.NewOAuthYamlCredentialsCache(clientCacheFlag)
+            if err != nil {
+                return err
+            }
+        }
+
 		// create a credentials provider with the specified parameters
-		credsProvider, err = zbc.NewOAuthCredentialsProvider(&zbc.OAuthProviderConfig{
-			ClientID:               clientIDFlag,
-			ClientSecret:           clientSecretFlag,
-			Audience:               audience,
-			AuthorizationServerURL: authzURLFlag,
-		})
+		credsProvider, err = zbc.NewOAuthCredentialsProvider(&providerConfig)
 
 		if err != nil {
 			return err

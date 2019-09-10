@@ -22,8 +22,10 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -37,6 +39,7 @@ type mutableToken struct {
 
 func TestOAuthCredentialsProvider(t *testing.T) {
 	// given
+	truncateDefaultOAuthYamlCacheFile()
 	interceptor := newRecordingInterceptor(nil)
 	gatewayLis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
 
@@ -78,6 +81,7 @@ func TestOAuthCredentialsProvider(t *testing.T) {
 
 func TestOAuthProviderRetry(t *testing.T) {
 	// given
+	truncateDefaultOAuthYamlCacheFile()
 	token := &mutableToken{value: "firstToken"}
 	first := true
 	interceptor := newRecordingInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
@@ -130,6 +134,7 @@ func TestOAuthProviderRetry(t *testing.T) {
 
 func TestNotRetryWithSameCredentials(t *testing.T) {
 	// given
+	truncateDefaultOAuthYamlCacheFile()
 	token := &mutableToken{value: accessToken}
 
 	interceptor := newRecordingInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
@@ -227,6 +232,9 @@ var configErrorTests = []struct {
 func TestInvalidOAuthProviderConfigurations(t *testing.T) {
 	for _, test := range configErrorTests {
 		t.Run(test.name, func(t *testing.T) {
+			// given
+			truncateDefaultOAuthYamlCacheFile()
+
 			// when
 			_, err := NewOAuthCredentialsProvider(test.config)
 
@@ -247,25 +255,25 @@ var envVarTests = []struct {
 }{
 	{
 		"environment variable client id",
-		"ZEEBE_CLIENT_ID",
+		OAuthClientIdEnvVar,
 		"envClient",
 		func(c *OAuthProviderConfig) string { return c.ClientID },
 	},
 	{
 		"environment variable client secret",
-		"ZEEBE_CLIENT_SECRET",
+		OAuthClientSecretEnvVar,
 		"envSecret",
 		func(c *OAuthProviderConfig) string { return c.ClientSecret },
 	},
 	{
 		"environment variable audience",
-		"ZEEBE_TOKEN_AUDIENCE",
+		OAuthTokenAudienceEnvVar,
 		"envAudience",
 		func(c *OAuthProviderConfig) string { return c.Audience },
 	},
 	{
 		"environment variable authorization server URL",
-		"ZEEBE_AUTHORIZATION_SERVER_URL",
+		OAuthAuthorizationUrlEnvVar,
 		"https://envAuthzUrl",
 		func(c *OAuthProviderConfig) string { return c.AuthorizationServerURL },
 	},
@@ -274,6 +282,9 @@ var envVarTests = []struct {
 func TestOAuthProviderWithEnvVars(t *testing.T) {
 	for _, test := range envVarTests {
 		t.Run(test.name, func(t *testing.T) {
+			// given
+			truncateDefaultOAuthYamlCacheFile()
+
 			if err := os.Setenv(test.envVar, test.value); err != nil {
 				panic(err)
 			}
@@ -294,6 +305,100 @@ func TestOAuthProviderWithEnvVars(t *testing.T) {
 		if err := os.Unsetenv(test.envVar); err != nil {
 			panic(err)
 		}
+	}
+}
+
+func TestOAuthCredentialsProviderCachesCredentials(t *testing.T) {
+	// create fake gRPC server which returns UNAUTHENTICATED always except if we use the token `accessToken`
+	truncateDefaultOAuthYamlCacheFile()
+	gatewayLis, grpcServer := createAuthenticatedGrpcServer(accessToken)
+	go grpcServer.Serve(gatewayLis)
+	defer func() {
+		grpcServer.Stop()
+		_ = gatewayLis.Close()
+	}()
+
+	// setup authorization server to return valid token
+	token := mutableToken{accessToken}
+	authzServer := mockAuthorizationServer(t, &token)
+	defer authzServer.Close()
+
+	// use a fake authorization server which would fail if we actually used it
+	credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
+		ClientID:               clientID,
+		ClientSecret:           clientSecret,
+		Audience:               audience,
+		AuthorizationServerURL: authzServer.URL,
+	})
+
+	require.NoError(t, err)
+	parts := strings.Split(gatewayLis.Addr().String(), ":")
+	client, err := NewZBClientWithConfig(&ZBClientConfig{
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		UsePlaintextConnection: true,
+		CredentialsProvider:    credsProvider,
+	})
+	require.NoError(t, err)
+
+	// when
+	_, err = client.NewTopologyCommand().Send()
+
+	// then
+	require.NoError(t, err)
+	if errorStatus, ok := status.FromError(err); ok {
+		require.Equal(t, codes.OK, errorStatus.Code())
+	}
+	cache, err := NewOAuthYamlCredentialsCache("")
+	require.NoError(t, err)
+	require.NoError(t, cache.Refresh())
+	require.Equal(t, accessToken, cache.Get(audience).AccessToken)
+}
+
+func TestOAuthCredentialsProviderUsesCachedCredentials(t *testing.T) {
+	// create fake gRPC server which returns UNAUTHENTICATED always except if we use the token `accessToken`
+	gatewayLis, grpcServer := createAuthenticatedGrpcServer(accessToken)
+	go grpcServer.Serve(gatewayLis)
+	defer func() {
+		grpcServer.Stop()
+		_ = gatewayLis.Close()
+	}()
+
+	// setup cache with correct token
+	truncateDefaultOAuthYamlCacheFile()
+	cache, err := NewOAuthYamlCredentialsCache(DefaultOauthYamlCachePath)
+	require.NoError(t, err)
+	err = cache.Update(audience, &OAuthCredentials{
+		AccessToken: accessToken,
+		ExpiresIn:   3600,
+		TokenType:   "Bearer",
+		Scope:       "grpc",
+	})
+	require.NoError(t, err)
+
+	// use a fake authorization server which would fail if we actually used it
+	credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
+		ClientID:               clientID,
+		ClientSecret:           clientSecret,
+		Audience:               audience,
+		AuthorizationServerURL: "http://foo.bar",
+	})
+
+	require.NoError(t, err)
+	parts := strings.Split(gatewayLis.Addr().String(), ":")
+	client, err := NewZBClientWithConfig(&ZBClientConfig{
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		UsePlaintextConnection: true,
+		CredentialsProvider:    credsProvider,
+	})
+	require.NoError(t, err)
+
+	// when
+	_, err = client.NewTopologyCommand().Send()
+
+	// then
+	require.NoError(t, err)
+	if errorStatus, ok := status.FromError(err); ok {
+		require.Equal(t, codes.OK, errorStatus.Code())
 	}
 }
 
@@ -334,4 +439,20 @@ func mockAuthorizationServerWithAudience(t *testing.T, token *mutableToken, audi
 	}))
 
 	return server
+}
+
+func createAuthenticatedGrpcServer(validToken string) (net.Listener, *grpc.Server) {
+	interceptor := newRecordingInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		if meta, ok := metadata.FromIncomingContext(ctx); ok {
+			token := meta["authorization"]
+			expected := "Bearer " + validToken
+			if token[0] == expected {
+				return nil, nil
+			}
+		}
+
+		return nil, status.Error(codes.Unauthenticated, "UNAUTHENTICATED")
+	})
+
+	return createServerWithInterceptor(interceptor.unaryClientInterceptor)
 }
