@@ -169,39 +169,33 @@ public class ElasticsearchTestRule extends TestWatcher {
       logTimeout();
     }
   }
-
-  /* TODO this part must be reworked */
-  public void processAllEvents(int expectedMinEventsCount, ImportValueType importValueType) {
+  
+  public int processImportTypeAndWait(ImportValueType importValueType,Predicate<Object[]> waitTill, Object... arguments) {
+    int imported = 0;
+    
+    int  duration = 0;
+    long maxDuration = 200/*ms*/ * 5 * 30 /* = 30 s*/; 
     try {
-      int entitiesCount;
-      int totalCount = 0;
-      int emptyAttempts = 0;
+      boolean found = false;
       do {
-        Thread.sleep(1000L);
-        entitiesCount = importOneType(importValueType);
-        totalCount += entitiesCount;
-        if (entitiesCount > 0) {
-          emptyAttempts = 0;
-        } else {
-          emptyAttempts++;
-        }
-      } while(totalCount < expectedMinEventsCount && emptyAttempts < 5);
-      if (totalCount < expectedMinEventsCount && emptyAttempts == 5) {
-        logTimeout();
-      } else {
-        //wait till queues are empty
-        waitForQueuesEmptiness(getRecordsReaders(importValueType));
-      }
-    } catch (Exception e) {
-      logger.error(e.getMessage(), e);
+        Thread.sleep(200/*ms*/);
+        imported += importOneType(importValueType);
+        refreshIndexesInElasticsearch();
+        found = waitTill.test(arguments);
+        duration++; 
+      } while(!found && duration < maxDuration);    
+      waitForQueuesEmptiness(getRecordsReaders(importValueType));
+    } catch (Throwable t) {
+      logger.error(t.getMessage(), t);
     }
+    return imported;
   }
 
-  public void waitForQueuesEmptiness(Collection<RecordsReader> recordsReaders) throws InterruptedException {
+  private void waitForQueuesEmptiness(Collection<RecordsReader> recordsReaders) throws InterruptedException {
     int queueCheckAttempts = 0;
     boolean queuesAreEmpty = true;
     do {
-      Thread.sleep(300L);
+      Thread.sleep(100L);
       for (RecordsReader reader : recordsReaders) {
         queuesAreEmpty = queuesAreEmpty && reader.getImportJobs().size() == 0;
       }
@@ -209,9 +203,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     } while (!queuesAreEmpty && queueCheckAttempts < 5);
     if (!queuesAreEmpty && queueCheckAttempts == 5) {
       logTimeout();
-    } else {
-      Thread.sleep(300L);
-    }
+    } 
   }
 
   public int importOneType(ImportValueType importValueType) throws IOException {
@@ -227,7 +219,6 @@ public class ElasticsearchTestRule extends TestWatcher {
     return recordsReaderHolder.getAllRecordsReaders().stream()
         .filter(rr -> rr.getImportValueType().equals(importValueType)).collect(Collectors.toList());
   }
-  /* END - TODO this part must be reworked */
 
   private void logTimeout() {
     StringWriter sw = new StringWriter();
