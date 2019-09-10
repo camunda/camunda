@@ -49,7 +49,7 @@ spec:
           cpu: 500m
           memory: 512Mi
     - name: elasticsearch
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.2
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.3
       env:
         - name: ES_JAVA_OPTS
           value: '-Xms512m -Xmx512m'
