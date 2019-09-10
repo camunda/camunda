@@ -34,7 +34,6 @@ var client zbc.ZBClient
 
 var addressFlag string
 var caCertPathFlag string
-var useOAuthFlag bool
 var clientIDFlag string
 var clientSecretFlag string
 var audienceFlag string
@@ -64,13 +63,12 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().StringVar(&addressFlag, "address", "", "Specify a contact point address")
 	rootCmd.PersistentFlags().StringVar(&caCertPathFlag, "certPath", "", "Specify a path to a certificate with which to validate gateway requests")
-	rootCmd.PersistentFlags().BoolVar(&useOAuthFlag, "useOAuth", false, "Specify if OAuth credentials should be used. Automatically enabled if either the clientId or clientSecret are provided")
-	rootCmd.PersistentFlags().StringVar(&clientIDFlag, "clientId", "", "Specify a client identifier to request an access token. Can be overridden by the environment variable 'ZEEBE_CLIENT_ID'")
-	rootCmd.PersistentFlags().StringVar(&clientSecretFlag, "clientSecret", "", "Specify a client secret to request an access token. Can be overridden by the environment variable 'ZEEBE_CLIENT_SECRET'")
-	rootCmd.PersistentFlags().StringVar(&audienceFlag, "audience", "", "Specify the resource that the access token should be valid for. Can be overridden by the environment variable 'ZEEBE_TOKEN_AUDIENCE'."+
+	rootCmd.PersistentFlags().StringVar(&clientIDFlag, "clientId", "", "Specify a client identifier to request an access token. Can be overridden by the environment variable '"+zbc.OAuthClientIdEnvVar+"'")
+	rootCmd.PersistentFlags().StringVar(&clientSecretFlag, "clientSecret", "", "Specify a client secret to request an access token. Can be overridden by the environment variable '"+zbc.OAuthClientSecretEnvVar+"'")
+	rootCmd.PersistentFlags().StringVar(&audienceFlag, "audience", "", "Specify the resource that the access token should be valid for. Can be overridden by the environment variable '"+zbc.OAuthTokenAudienceEnvVar+"'."+
 		" If unspecified, the address will be used as default and the authzUrl parameter will be ignored")
-	rootCmd.PersistentFlags().StringVar(&authzURLFlag, "authzUrl", "", "Specify an authorization server URL from which to request an access token. Can be overridden by the environment variable 'ZEEBE_AUTHORIZATION_SERVER_URL'."+
-		" If unspecified, " + zbc.OAuthDefaultAuthzURL + " will be used.")
+	rootCmd.PersistentFlags().StringVar(&authzURLFlag, "authzUrl", "", "Specify an authorization server URL from which to request an access token. Can be overridden by the environment variable '"+zbc.OAuthAuthorizationUrlEnvVar+"'."+
+		" If unspecified, "+zbc.OAuthDefaultAuthzURL+" will be used.")
 	rootCmd.PersistentFlags().BoolVar(&insecureFlag, "insecure", false, "Specify if zbctl should use an unsecured connection")
 }
 
@@ -81,18 +79,17 @@ var initClient = func(cmd *cobra.Command, args []string) error {
 
 	address := parseAddress()
 
-	if useOAuthFlag || clientIDFlag != "" || clientSecretFlag != "" {
-		if audienceFlag == "" {
-			// make client with OAuth provider, use address as OAuth token audience and default authzServer
-			client, err = zbc.NewOAuthZBClient(address, clientIDFlag, clientSecretFlag)
-			return err
+	if clientIDFlag != "" || clientSecretFlag != "" {
+	    audience := audienceFlag
+		if audience == "" {
+            audience = address
 		}
 
 		// create a credentials provider with the specified parameters
 		credsProvider, err = zbc.NewOAuthCredentialsProvider(&zbc.OAuthProviderConfig{
 			ClientID:               clientIDFlag,
 			ClientSecret:           clientSecretFlag,
-			Audience:               audienceFlag,
+			Audience:               audience,
 			AuthorizationServerURL: authzURLFlag,
 		})
 
@@ -101,8 +98,8 @@ var initClient = func(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	client, err = zbc.NewZBClient(&zbc.ZBClientConfig{
-		GatewayAddress:         address,
+	client, err = zbc.NewZBClientWithConfig(&zbc.ZBClientConfig{
+		GatewayAddress:         appendPort(address),
 		UsePlaintextConnection: insecureFlag,
 		CaCertificatePath:      caCertPathFlag,
 		CredentialsProvider:    credsProvider,
@@ -121,7 +118,6 @@ func parseAddress() string {
 	if len(addressFlag) > 0 {
 		address = addressFlag
 	}
-	address = appendPort(address)
 
 	return address
 }
