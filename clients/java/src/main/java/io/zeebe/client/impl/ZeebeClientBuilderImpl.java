@@ -26,6 +26,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.zeebe.client.util.Environment;
 import java.time.Duration;
 import java.util.Properties;
 
@@ -41,9 +42,6 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   private boolean usePlaintextConnection = false;
   private String certificatePath;
   private CredentialsProvider credentialsProvider;
-  private String clientId;
-  private String clientSecret;
-  private String authzServerUrl;
 
   @Override
   public String getBrokerContactPoint() {
@@ -213,42 +211,10 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder oAuthCredentialsProvider(
-      final String clientId, final String clientSecret) {
-    this.clientId = clientId;
-    this.clientSecret = clientSecret;
-    return this;
-  }
-
-  @Override
-  public ZeebeClientBuilder oAuthCredentialsProvider(
-      final String clientId, final String clientSecret, final String authzServerUrl) {
-    this.authzServerUrl = authzServerUrl;
-    return oAuthCredentialsProvider(clientId, clientSecret);
-  }
-
-  @Override
   public ZeebeClient build() {
     applyDefaults();
 
     return new ZeebeClientImpl(this);
-  }
-
-  private void applyDefaults() {
-    if (clientId != null && clientSecret != null) {
-      final int separatorIndex = brokerContactPoint.lastIndexOf(':');
-      if (separatorIndex > 0) {
-        final String audience = brokerContactPoint.substring(0, separatorIndex);
-
-        this.credentialsProvider =
-            new OAuthCredentialsProviderBuilder()
-                .clientId(clientId)
-                .clientSecret(clientSecret)
-                .audience(audience)
-                .authorizationServerUrl(authzServerUrl)
-                .build();
-      }
-    }
   }
 
   @Override
@@ -265,6 +231,30 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     appendProperty(sb, "defaultRequestTimeout", defaultRequestTimeout);
 
     return sb.toString();
+  }
+
+  private void applyDefaults() {
+    if (shouldUseDefaultCredentialsProvider()) {
+      credentialsProvider = createDefaultCredentialsProvider();
+    }
+  }
+
+  private boolean shouldUseDefaultCredentialsProvider() {
+    return credentialsProvider == null
+        && Environment.system().get(OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_ID) != null
+        && Environment.system().get(OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_SECRET)
+            != null;
+  }
+
+  private CredentialsProvider createDefaultCredentialsProvider() {
+    final OAuthCredentialsProviderBuilder builder =
+        CredentialsProvider.newCredentialsProviderBuilder();
+    final int separatorIndex = brokerContactPoint.lastIndexOf(':');
+    if (separatorIndex > 0) {
+      builder.audience(brokerContactPoint.substring(0, separatorIndex));
+    }
+
+    return builder.build();
   }
 
   private static void appendProperty(

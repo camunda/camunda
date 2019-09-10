@@ -16,7 +16,6 @@
 package io.zeebe.client;
 
 import io.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
-import io.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import java.time.Duration;
 import java.util.Properties;
 
@@ -83,16 +82,6 @@ public interface ZeebeClientBuilder {
    * requests.
    */
   ZeebeClientBuilder credentialsProvider(CredentialsProvider credentialsProvider);
-
-  /** Creates an {@link OAuthCredentialsProvider} with the specified client credentials. */
-  ZeebeClientBuilder oAuthCredentialsProvider(String clientId, String clientSecret);
-
-  /**
-   * Creates an {@link OAuthCredentialsProvider} with the specified client credentials and
-   * authorization server URL.
-   */
-  ZeebeClientBuilder oAuthCredentialsProvider(
-      String clientId, String clientSecret, String authzServerUrl);
 
   /** @return a new {@link ZeebeClient} with the provided configuration options. */
   ZeebeClient build();

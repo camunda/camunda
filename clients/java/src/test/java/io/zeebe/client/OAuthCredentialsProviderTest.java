@@ -20,6 +20,9 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static io.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder.OAUTH_ENV_AUTHORIZATION_SERVER;
+import static io.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_ID;
+import static io.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_SECRET;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,6 +43,8 @@ import io.zeebe.client.impl.ZeebeClientCredentials;
 import io.zeebe.client.impl.ZeebeClientImpl;
 import io.zeebe.client.impl.oauth.OAuthCredentialsCache;
 import io.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.zeebe.client.util.Environment;
+import io.zeebe.client.util.EnvironmentRule;
 import io.zeebe.client.util.RecordingGatewayService;
 import java.io.File;
 import java.io.IOException;
@@ -68,6 +73,7 @@ public class OAuthCredentialsProviderTest {
   private static final String CLIENT_ID = "client";
   @Rule public final GrpcServerRule serverRule = new GrpcServerRule();
   @Rule public final TemporaryFolder tempFolder = new TemporaryFolder();
+  @Rule public final EnvironmentRule environmentRule = new EnvironmentRule();
 
   @Rule
   public final WireMockRule wireMockRule =
@@ -209,15 +215,16 @@ public class OAuthCredentialsProviderTest {
   public void shouldUseClientContactPointAsDefaultAudience() {
     // given
     final String contactPointHost = "some.domain";
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    final String authorizationServerUrl =
+        "http://localhost:" + wireMockRule.port() + "/oauth/token";
+
+    Environment.system().put(OAUTH_ENV_CLIENT_ID, CLIENT_ID);
+    Environment.system().put(OAUTH_ENV_CLIENT_SECRET, SECRET);
+    Environment.system().put(OAUTH_ENV_AUTHORIZATION_SERVER, authorizationServerUrl);
     mockCredentials(ACCESS_TOKEN, contactPointHost);
 
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    builder
-        .usePlaintext()
-        .brokerContactPoint(contactPointHost + ":26500")
-        .oAuthCredentialsProvider(
-            CLIENT_ID, SECRET, "http://localhost:" + wireMockRule.port() + "/oauth/token")
-        .build();
+    builder.usePlaintext().brokerContactPoint(contactPointHost + ":26500").build();
 
     // when
     client = new ZeebeClientImpl(builder, serverRule.getChannel());

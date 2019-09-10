@@ -15,13 +15,20 @@
  */
 package io.zeebe.client.impl.oauth;
 
+import io.zeebe.client.util.Environment;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.Objects;
 
 public class OAuthCredentialsProviderBuilder {
   public static final String INVALID_ARGUMENT_MSG = "Expected valid %s but none was provided.";
+  public static final String OAUTH_ENV_CLIENT_ID = "ZEEBE_CLIENT_ID";
+  public static final String OAUTH_ENV_CLIENT_SECRET = "ZEEBE_CLIENT_SECRET";
+  public static final String OAUTH_ENV_TOKEN_AUDIENCE = "ZEEBE_TOKEN_AUDIENCE";
+  public static final String OAUTH_ENV_AUTHORIZATION_SERVER = "ZEEBE_AUTHORIZATION_SERVER_URL";
+  public static final String OAUTH_ENV_CACHE_PATH = "ZEEBE_CLIENT_CONFIG_PATH";
   private static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
 
   private String clientId;
@@ -101,27 +108,39 @@ public class OAuthCredentialsProviderBuilder {
   }
 
   private void checkEnvironmentOverrides() {
-    if (System.getenv("ZEEBE_CLIENT_ID") != null) {
-      this.clientId = System.getenv("ZEEBE_CLIENT_ID");
+    final String envClientId = Environment.system().get(OAUTH_ENV_CLIENT_ID);
+    final String envClientSecret = Environment.system().get(OAUTH_ENV_CLIENT_SECRET);
+    final String envAudience = Environment.system().get(OAUTH_ENV_TOKEN_AUDIENCE);
+    final String envAuthorizationUrl = Environment.system().get(OAUTH_ENV_AUTHORIZATION_SERVER);
+    final String envCachePath = Environment.system().get(OAUTH_ENV_CACHE_PATH);
+
+    if (envClientId != null) {
+      clientId = envClientId;
     }
-    if (System.getenv("ZEEBE_CLIENT_SECRET") != null) {
-      this.clientSecret = System.getenv("ZEEBE_CLIENT_SECRET");
+
+    if (envClientSecret != null) {
+      clientSecret = envClientSecret;
     }
-    if (System.getenv("ZEEBE_TOKEN_AUDIENCE") != null) {
-      this.audience = System.getenv("ZEEBE_TOKEN_AUDIENCE");
+
+    if (envAudience != null) {
+      audience = envAudience;
     }
-    if (System.getenv("ZEEBE_AUTHORIZATION_SERVER_URL") != null) {
-      this.authorizationServerUrl = System.getenv("ZEEBE_AUTHORIZATION_SERVER_URL");
+
+    if (envAuthorizationUrl != null) {
+      authorizationServerUrl = envAuthorizationUrl;
     }
-    if (System.getenv("ZEEBE_CLIENT_CONFIG_PATH") != null) {
-      this.credentialsCachePath = System.getenv("ZEEBE_CLIENT_CONFIG_PATH");
+
+    if (envCachePath != null) {
+      credentialsCachePath = envCachePath;
     }
   }
 
   private void applyDefaults() {
     if (credentialsCachePath == null) {
-      this.credentialsCachePath =
-          System.getProperty("user.home") + File.separator + ".camunda/credentials";
+      credentialsCachePath =
+          Paths.get(System.getProperty("user.home"), ".camunda", "credentials")
+              .toAbsolutePath()
+              .toString();
     }
 
     if (authorizationServerUrl == null) {
