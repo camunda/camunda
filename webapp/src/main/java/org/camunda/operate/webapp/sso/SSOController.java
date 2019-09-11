@@ -1,17 +1,14 @@
-package org.camunda.operate.webapp.sso;
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-
-
-import java.io.IOException;
+package org.camunda.operate.webapp.sso;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,15 +23,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
 import com.auth0.AuthenticationController;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
-import com.auth0.jwt.JWT;
 
 @Controller
 @Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
-public class SSOController implements ErrorController{
+public class SSOController implements ErrorController {
   
   private static final String ERROR_PATH = "/error";
 
@@ -86,8 +81,8 @@ public class SSOController implements ErrorController{
   protected void handle(HttpServletRequest req, HttpServletResponse res) throws IOException {
     try {
       Tokens tokens = authenticator.handle(req);
-      TokenAuthentication tokenAuth = new TokenAuthentication(JWT.decode(tokens.getIdToken()), config);
-      SecurityContextHolder.getContext().setAuthentication(tokenAuth);
+      TokenAuthentication tokenAuth = new TokenAuthentication(tokens, config);
+      tokenAuth.authenticate();
       res.sendRedirect(SSOWebSecurityConfig.ROOT);
     } catch (InsufficientAuthenticationException iae) {
       logoutAndRedirectToNoPermissionPage(req, res);
@@ -129,7 +124,7 @@ public class SSOController implements ErrorController{
   }
   
   protected String redirect(String toURL) {
-    return "redirect:"+toURL;
+    return "redirect:" + toURL;
   }
  
   @Override

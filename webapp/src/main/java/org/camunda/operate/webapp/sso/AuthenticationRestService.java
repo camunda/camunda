@@ -1,12 +1,9 @@
-package org.camunda.operate.webapp.sso;
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-
-
-import static org.camunda.operate.webapp.rest.AuthenticationRestService.AUTHENTICATION_URL;
+package org.camunda.operate.webapp.sso;
 
 import java.util.Map;
 
@@ -20,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.auth0.jwt.interfaces.Claim;
+import static org.camunda.operate.webapp.sso.AuthenticationRestService.AUTHENTICATION_URL;
 
 @Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
 @RestController
