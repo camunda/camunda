@@ -15,9 +15,9 @@ metadata:
     agent: zeebe-ci-build
 spec:
   nodeSelector:
-    cloud.google.com/gke-nodepool: slaves
+    cloud.google.com/gke-nodepool: slaves-stable
   tolerations:
-    - key: "slaves"
+    - key: "slaves-stable"
       operator: "Exists"
       effect: "NoSchedule"
   containers:
