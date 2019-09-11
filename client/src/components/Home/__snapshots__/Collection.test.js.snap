@@ -1,0 +1,129 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should delete collection 1`] = `
+<Redirect
+  to="/"
+/>
+`;
+
+exports[`should match snapshot 1`] = `
+<div
+  className="Collection"
+>
+  <div
+    className="header"
+  >
+    <div
+      className="indicator"
+    />
+    <div
+      className="icon"
+    >
+      <ForwardRef(SvgCollection) />
+    </div>
+    <div
+      className="text"
+    >
+      <div
+        className="type"
+      >
+        Collection
+      </div>
+      <div
+        className="name"
+      >
+        aCollectionName
+        <Dropdown
+          label={
+            <Icon
+              size="24px"
+              type="overflow-menu-vertical"
+            />
+          }
+        >
+          <ForwardRef(DropdownOption)
+            onClick={[Function]}
+          >
+            <Icon
+              type="edit"
+            />
+            Edit
+          </ForwardRef(DropdownOption)>
+          <ForwardRef(DropdownOption)
+            onClick={[Function]}
+          >
+            <Icon
+              type="delete"
+            />
+            Delete
+          </ForwardRef(DropdownOption)>
+        </Dropdown>
+      </div>
+    </div>
+    <ul
+      className="navigation"
+    >
+      <li
+        className="active"
+      >
+        Dashboard & Reports
+      </li>
+      <li>
+        Users
+      </li>
+    </ul>
+  </div>
+  <div
+    className="content"
+  >
+    <EntityListErrorHandler
+      collection="aCollectionId"
+      data={
+        Array [
+          Object {
+            "created": "2017-11-11T11:11:11.1111+0200",
+            "currentUserRole": "editor",
+            "data": Object {
+              "subEntityCounts": Object {
+                "report": 8,
+              },
+            },
+            "entityType": "dashboard",
+            "id": "aDashboardId",
+            "lastModified": "2017-11-11T11:11:11.1111+0200",
+            "lastModifier": "user_id",
+            "name": "aDashboard",
+            "owner": "user_id",
+          },
+          Object {
+            "combined": false,
+            "created": "2017-11-11T11:11:11.1111+0200",
+            "currentUserRole": "editor",
+            "entityType": "report",
+            "id": "aReportId",
+            "lastModified": "2017-11-11T11:11:11.1111+0200",
+            "lastModifier": "user_id",
+            "name": "aReport",
+            "owner": "user_id",
+            "reportType": "process",
+          },
+        ]
+      }
+      onChange={[Function]}
+    />
+  </div>
+  <ConfirmationModal
+    conflict={
+      Object {
+        "items": Array [],
+        "type": "delete",
+      }
+    }
+    entityName="aCollectionName"
+    loading={false}
+    onClose={[Function]}
+    onConfirm={[Function]}
+    open={false}
+  />
+</div>
+`;

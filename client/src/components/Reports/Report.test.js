@@ -8,6 +8,9 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import Report from './Report';
+import ReportEdit from './ReportEdit';
+import ReportView from './ReportView';
+
 import {loadEntity, evaluateReport} from 'services';
 
 jest.mock('services', () => {
@@ -77,7 +80,7 @@ it('should render ReportEdit component if viewMode is edit', async () => {
   const node = await shallow(<Report {...props} />).dive();
   node.setState({loaded: true, report});
 
-  expect(node.find('ReportEditErrorHandler')).toExist();
+  expect(node.find(ReportEdit)).toExist();
 });
 
 it('should render ReportView component if viewMode is view', async () => {
@@ -86,5 +89,5 @@ it('should render ReportView component if viewMode is view', async () => {
   const node = await shallow(<Report {...props} />).dive();
   node.setState({loaded: true, report});
 
-  expect(node.find('ReportView')).toExist();
+  expect(node.find(ReportView)).toExist();
 });

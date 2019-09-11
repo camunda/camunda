@@ -75,6 +75,20 @@ it('should create a new dashboard when saving a new one', async () => {
   expect(createEntity).toHaveBeenCalledWith('dashboard');
 });
 
+it('should create a new dashboard in a collection', async () => {
+  const node = await shallow(
+    <Dashboard
+      {...props}
+      location={{pathname: '/collection/123/dashboard/new/edit'}}
+      match={{params: {id: 'new'}}}
+    />
+  );
+
+  node.instance().saveChanges();
+
+  expect(createEntity).toHaveBeenCalledWith('dashboard?collectionId=123');
+});
+
 it('should remove a dashboard on dashboard deletion', () => {
   const node = shallow(<Dashboard {...props} />);
 

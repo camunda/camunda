@@ -169,23 +169,3 @@ it('should enable share button if authorized', () => {
 
   expect(node.find('.share-button')).not.toBeDisabled();
 });
-
-it('should open editCollectionModal when calling openEditCollectionModal', () => {
-  const node = shallow(<DashboardView />);
-
-  node.instance().openEditCollectionModal();
-
-  expect(node.find('EditCollectionModal')).toExist();
-});
-
-it('should load Collections on mount', () => {
-  shallow(<DashboardView />);
-
-  expect(loadEntities).toHaveBeenCalledWith('collection', 'created');
-});
-
-it('should render collections dropdown', async () => {
-  const node = shallow(<DashboardView />);
-
-  expect(node.find('CollectionsDropdown')).toExist();
-});

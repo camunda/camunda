@@ -58,3 +58,15 @@ export function addNotification(config) {
   }
   notificationsInstance.addNotification({...config, id: getRandomId()});
 }
+
+export async function showError(error) {
+  let text = error;
+
+  if (typeof error.json === 'function') {
+    text = (await error.json()).errorMessage;
+  } else if (error.message) {
+    text = error.message;
+  }
+
+  addNotification({type: 'error', text});
+}

@@ -13,6 +13,7 @@ import {
   Header,
   Footer,
   Home,
+  Collection,
   Alerts,
   Report,
   Dashboard,
@@ -40,7 +41,7 @@ class App extends React.Component {
     const components = {
       report: Report,
       dashboard: Dashboard,
-      collection: () => <h1>Oops!</h1>
+      collection: Collection
     };
     const entities = ['report', 'dashboard', 'collection'];
     let Component, newProps;

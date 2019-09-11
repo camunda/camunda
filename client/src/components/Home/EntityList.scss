@@ -1,5 +1,6 @@
-.Home {
+.EntityList {
   width: 1000px;
+  height: 100%;
   margin: auto;
   position: relative;
 
@@ -63,6 +64,9 @@
     }
     &.dashboard .indicator {
       background-color: #0565b2;
+    }
+    &.collection .indicator {
+      background-color: #5b2e96;
     }
 
     > ul {

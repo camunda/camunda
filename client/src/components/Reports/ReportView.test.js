@@ -145,26 +145,3 @@ it('should set conflict state when conflict happens on delete button click', asy
   expect(node.state().conflict.type).toEqual('delete');
   expect(node.state().conflict.items).toEqual(conflictedItems);
 });
-
-it('should render collections dropdown', async () => {
-  const node = shallow(<ReportView report={report} />);
-
-  expect(node.find('CollectionsDropdown')).toExist();
-});
-
-it('should open editCollectionModal when calling openEditCollectionModal', async () => {
-  const node = shallow(<ReportView report={report} />);
-
-  node.instance().openEditCollectionModal();
-
-  expect(node.find('EditCollectionModal')).toExist();
-});
-
-it('should invoke loadCollections on mount', async () => {
-  const node = shallow(<ReportView report={report} />);
-
-  node.instance().loadCollections = jest.fn();
-  await node.instance().componentDidMount();
-
-  expect(node.instance().loadCollections).toHaveBeenCalled();
-});

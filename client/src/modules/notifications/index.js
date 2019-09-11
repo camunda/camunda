@@ -4,4 +4,4 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default as Notifications, addNotification} from './Notifications';
+export {default as Notifications, addNotification, showError} from './Notifications';

@@ -9,14 +9,7 @@ import moment from 'moment';
 import classnames from 'classnames';
 import Fullscreen from 'react-full-screen';
 import {Link} from 'react-router-dom';
-import {
-  checkDeleteConflict,
-  toggleEntityCollection,
-  createEntity,
-  evaluateReport,
-  getEntitiesCollections,
-  loadEntities
-} from 'services';
+import {checkDeleteConflict, evaluateReport} from 'services';
 
 import {
   Button,
@@ -25,9 +18,7 @@ import {
   Icon,
   Dropdown,
   Popover,
-  ConfirmationModal,
-  CollectionsDropdown,
-  EditCollectionModal
+  ConfirmationModal
 } from 'components';
 
 import {themed} from 'theme';
@@ -45,16 +36,10 @@ export default themed(
     state = {
       fullScreenActive: false,
       autoRefreshInterval: null,
-      creatingCollection: false,
       confirmModalVisible: false,
       conflicts: [],
-      collections: [],
       deleteLoading: false
     };
-
-    componentDidMount() {
-      this.loadCollections();
-    }
 
     componentWillUnmount = () => {
       if (this.props.theme === 'dark') {
@@ -109,24 +94,10 @@ export default themed(
       );
     };
 
-    openEditCollectionModal = () => {
-      this.setState({creatingCollection: true});
-    };
-
-    loadCollections = async () => {
-      this.setState({collections: await loadEntities('collection', 'created')});
-    };
-
     closeConfirmModal = () => {
       this.setState({
         confirmModalVisible: false
       });
-    };
-
-    createCollection = async name => {
-      await createEntity('collection', {name, data: {entities: [this.props.id]}});
-      await this.loadCollections();
-      this.setState({creatingCollection: false});
     };
 
     render() {
@@ -141,16 +112,12 @@ export default themed(
       } = this.props;
 
       const {
-        collections,
         fullScreenActive,
         autoRefreshInterval,
         confirmModalVisible,
         conflicts,
-        deleteLoading,
-        creatingCollection
+        deleteLoading
       } = this.state;
-
-      const dashboardCollections = getEntitiesCollections(collections)[id];
 
       return (
         <Fullscreen enabled={fullScreenActive} onChange={this.changeFullScreen}>
@@ -251,13 +218,6 @@ export default themed(
                   {t('common.entity.modified')} {moment(lastModified).format('lll')}{' '}
                   {t('common.entity.by')} {lastModifier}
                 </div>
-                <CollectionsDropdown
-                  entity={{id}}
-                  collections={collections}
-                  toggleEntityCollection={toggleEntityCollection(this.loadCollections)}
-                  entityCollections={dashboardCollections}
-                  setCollectionToUpdate={this.openEditCollectionModal}
-                />
               </div>
             </div>
             <ConfirmationModal
@@ -280,12 +240,6 @@ export default themed(
               <DimensionSetter reports={reports} />
             </DashboardRenderer>
           </div>
-          {creatingCollection && (
-            <EditCollectionModal
-              onClose={() => this.setState({creatingCollection: false})}
-              onConfirm={this.createCollection}
-            />
-          )}
         </Fullscreen>
       );
     }

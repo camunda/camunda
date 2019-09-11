@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {default as Notifications, addNotification} from './Notifications';
+import {default as Notifications, addNotification, showError} from './Notifications';
 
 it('should render Notifications', () => {
   const node = shallow(<Notifications />);
@@ -26,4 +26,13 @@ it('should expose a global addNotifications method', () => {
 
   expect(node.find('Notification')).toExist();
   expect(node.find('Notification').prop('config').text).toBe('Sample Notification');
+});
+
+it('should process and show an error notification', async () => {
+  const node = shallow(<Notifications />);
+
+  await showError({json: async () => ({errorMessage: 'Error content'})});
+
+  expect(node.find('Notification')).toExist();
+  expect(node.find('Notification').prop('config').text).toBe('Error content');
 });

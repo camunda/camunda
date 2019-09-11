@@ -395,17 +395,13 @@
     "collection": {
       "label": "Sammlung",
       "label-plural": "Sammlungen",
-      "dropdown": {
-        "default": "Zur Sammlung hinzufügen",
-        "in": "In {collectionsCount} {collection}",
-        "add": "Zu neuer Sammlung hinzufügen ..."
-      },
       "modal": {
         "title": {
           "new": "Neue Sammlung erstellen",
           "edit": "Sammlungs-Name bearbeiten"
         },
         "createBtn": "Sammlung erstellen",
+        "editBtn": "Sammlung bearbeiten",
         "inputLabel": "Name hinzufügen",
         "defaultName": "Neue Sammlung"
       }

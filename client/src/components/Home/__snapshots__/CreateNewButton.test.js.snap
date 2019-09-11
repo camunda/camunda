@@ -9,7 +9,7 @@ exports[`should match snapshot 1`] = `
     New Collection
   </ForwardRef(DropdownOption)>
   <ForwardRef(DropdownOption)
-    link="/dashboard/new/edit"
+    link="dashboard/new/edit"
   >
     New Dashboard
   </ForwardRef(DropdownOption)>
@@ -17,17 +17,49 @@ exports[`should match snapshot 1`] = `
     label="New Report"
   >
     <ForwardRef(DropdownOption)
-      link="/report/new/edit"
+      link="report/new/edit"
     >
       Process Report
     </ForwardRef(DropdownOption)>
     <ForwardRef(DropdownOption)
-      link="/report/new-combined/edit"
+      link="report/new-combined/edit"
     >
       Combined Process Report
     </ForwardRef(DropdownOption)>
     <ForwardRef(DropdownOption)
-      link="/report/new-decision/edit"
+      link="report/new-decision/edit"
+    >
+      Decision Report
+    </ForwardRef(DropdownOption)>
+  </Submenu>
+</Dropdown>
+`;
+
+exports[`should not show the collection option if it is in a collection 1`] = `
+<Dropdown
+  className="CreateNewButton"
+  label="Create New"
+>
+  <ForwardRef(DropdownOption)
+    link="dashboard/new/edit"
+  >
+    New Dashboard
+  </ForwardRef(DropdownOption)>
+  <Submenu
+    label="New Report"
+  >
+    <ForwardRef(DropdownOption)
+      link="report/new/edit"
+    >
+      Process Report
+    </ForwardRef(DropdownOption)>
+    <ForwardRef(DropdownOption)
+      link="report/new-combined/edit"
+    >
+      Combined Process Report
+    </ForwardRef(DropdownOption)>
+    <ForwardRef(DropdownOption)
+      link="report/new-decision/edit"
     >
       Decision Report
     </ForwardRef(DropdownOption)>

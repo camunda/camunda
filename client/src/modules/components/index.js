@@ -37,8 +37,6 @@ export {LoadingIndicator} from './LoadingIndicator';
 export {ConfirmationModal} from './ConfirmationModal';
 export {ColorPicker} from './ColorPicker';
 export {EntityNameForm} from './EntityNameForm';
-export {CollectionsDropdown} from './CollectionsDropdown';
-export {EditCollectionModal} from './EditCollectionModal';
 export {Form} from './Form';
 export {Badge} from './Badge';
 export {SubNav, NavItem} from './navigation';

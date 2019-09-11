@@ -117,9 +117,12 @@ export default withErrorHandling(
     };
 
     saveChanges = (name, reports) => {
+      const collectionMatch = /\/collection\/([^/]+)/g.exec(this.props.location.pathname);
+      const collection = collectionMatch && collectionMatch[1];
+
       if (this.isNew()) {
         this.props.mightFail(
-          createEntity('dashboard'),
+          createEntity(collection ? 'dashboard?collectionId=' + collection : 'dashboard'),
           id => this.updateDashboard(id, name, reports),
           () => {
             addNotification({text: t('dashboard.cannotSave', {name}), type: 'error'});
