@@ -22,6 +22,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sync"
 )
 
 const OAuthCachePathEnvVar = "ZEEBE_CLIENT_CONFIG_PATH"
@@ -46,6 +47,7 @@ type OAuthCredentialsCache interface {
 type oauthYamlCredentialsCache struct {
 	path      string
 	audiences map[string]*oauthCachedCredentials
+	writeLock sync.Mutex
 }
 
 type oauthCachedCredentials struct {
@@ -101,6 +103,8 @@ func (cache *oauthYamlCredentialsCache) Update(audience string, credentials *OAu
 }
 
 func (cache *oauthYamlCredentialsCache) put(audience string, credentials *OAuthCredentials) {
+	cache.writeLock.Lock()
+	defer cache.writeLock.Unlock()
 	cache.audiences[audience] = &oauthCachedCredentials{
 		Auth: struct{ Credentials *OAuthCredentials }{Credentials: credentials},
 	}
