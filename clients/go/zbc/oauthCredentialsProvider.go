@@ -41,9 +41,11 @@ const OAuthDefaultAuthzURL = "https://login.cloud.camunda.io/oauth/token/"
 // authorization server, including a token prefix and an access token. Using these values it sets the 'Authorization'
 // header of each gRPC call.
 type OAuthCredentialsProvider struct {
-	Credentials    *OAuthCredentials
 	RequestPayload *oauthRequestPayload
 	AuthzServerURL string
+	Cache          OAuthCredentialsCache
+
+	credentials *OAuthCredentials
 }
 
 // OAuthProviderConfig configures an OAuthCredentialsProvider, containing the required data to request an access token
@@ -58,15 +60,18 @@ type OAuthProviderConfig struct {
 	// The URL for the authorization server from which the access token will be requested. Can be overridden with
 	// the environment variable 'ZEEBE_AUTHORIZATION_SERVER_URL'.
 	AuthorizationServerURL string
+	// Cache to read/write credentials from; if none given, defaults to an oauthYamlCredentialsCache instance with the
+	// path '$HOME/.camunda/credentials' as default (can be overriden by 'ZEEBE_CLIENT_CONFIG_PATH')
+	Cache OAuthCredentialsCache
 }
 
 // OAuthCredentials contains the data returned by the OAuth authorization server. These credentials are used to modify
 // the gRPC call headers.
 type OAuthCredentials struct {
-	AccessToken string `json:"access_token"`
-	ExpiresIn   uint64 `json:"expires_in"`
-	TokenType   string `json:"token_type"`
-	Scope       string `json:"scope"`
+	AccessToken string `json:"access_token" yaml:"access_token"`
+	ExpiresIn   uint64 `json:"expires_in" yaml:"expires_in"`
+	TokenType   string `json:"token_type" yaml:"token_type"`
+	Scope       string `json:"scope" yaml:"scope"`
 }
 
 type oauthRequestPayload struct {
@@ -79,23 +84,17 @@ type oauthRequestPayload struct {
 // ApplyCredentials takes a map of headers as input and adds an access token prefixed by a token type to the 'Authorization'
 // header of a gRPC call.
 func (provider *OAuthCredentialsProvider) ApplyCredentials(headers map[string]string) {
-	headers["Authorization"] = fmt.Sprintf("%s %s", provider.Credentials.TokenType, provider.Credentials.AccessToken)
+	credentials := provider.getCredentials()
+	if credentials != nil {
+		headers["Authorization"] = fmt.Sprintf("%s %s", credentials.TokenType, credentials.AccessToken)
+	}
 }
 
 // ShouldRetryRequest checks if the error is UNAUTHENTICATED and, if so, attempts to refresh the access token. If the
 // new credentials are different from the stored ones, returns true. If the credentials are the same, returns false.
 func (provider *OAuthCredentialsProvider) ShouldRetryRequest(err error) bool {
 	if status.Code(err) == codes.Unauthenticated {
-		credentials, err := fetchAccessToken(provider.AuthzServerURL, provider.RequestPayload)
-
-		if err != nil {
-			log.Printf("failed while attempting to refresh credentials: %s", err.Error())
-			return false
-		}
-
-		shouldRetry := *(provider.Credentials) != *credentials
-		provider.Credentials = credentials
-		return shouldRetry
+		return provider.updateCredentials()
 	}
 
 	return false
@@ -114,6 +113,8 @@ func NewOAuthCredentialsProvider(config *OAuthProviderConfig) (*OAuthCredentials
 		return nil, invalidArgumentError("client secret", err.Error())
 	} else if err := validation.Validate(config.Audience, validation.Required); err != nil {
 		return nil, invalidArgumentError("audience", err.Error())
+	} else if err := validation.Validate(config.Cache, validation.Required); err != nil {
+		return nil, invalidArgumentError("cache", err.Error())
 	}
 
 	payload := &oauthRequestPayload{
@@ -123,12 +124,53 @@ func NewOAuthCredentialsProvider(config *OAuthProviderConfig) (*OAuthCredentials
 		GrantType:    "client_credentials",
 	}
 
-	credentials, err := fetchAccessToken(config.AuthorizationServerURL, payload)
-	if err != nil {
-		return nil, err
+	provider := OAuthCredentialsProvider{RequestPayload: payload, AuthzServerURL: config.AuthorizationServerURL, Cache: config.Cache}
+	return &provider, nil
+}
+
+func (provider *OAuthCredentialsProvider) getCredentials() *OAuthCredentials {
+	if provider.credentials == nil {
+		credentials := provider.getCachedCredentials()
+		if credentials != nil {
+			provider.credentials = credentials
+			return credentials
+		}
 	}
 
-	return &OAuthCredentialsProvider{Credentials: credentials, RequestPayload: payload, AuthzServerURL: config.AuthorizationServerURL}, nil
+	provider.updateCredentials()
+	return provider.credentials
+}
+
+func (provider *OAuthCredentialsProvider) updateCredentials() (updated bool) {
+	credentials, err := fetchAccessToken(provider.AuthzServerURL, provider.RequestPayload)
+
+	if err != nil {
+		log.Printf("Failed while attempting to refresh credentials: %s", err.Error())
+	} else if provider.credentials == nil || *(provider.credentials) != *credentials {
+		provider.credentials = credentials
+		provider.updateCache(credentials)
+		return true
+	}
+
+	return false
+}
+
+func (provider *OAuthCredentialsProvider) updateCache(credentials *OAuthCredentials) {
+	audience := provider.RequestPayload.Audience
+	err := provider.Cache.Update(audience, credentials)
+	if err != nil {
+		log.Printf("Failed to persist credentials for %s to cache: %s", audience, err)
+	}
+}
+
+func (provider *OAuthCredentialsProvider) getCachedCredentials() *OAuthCredentials {
+	audience := provider.RequestPayload.Audience
+	err := provider.Cache.Refresh()
+	if err != nil {
+		log.Printf("Failed to refresh the OAuth credentials cache, %s", err.Error())
+		return nil
+	}
+	return provider.Cache.Get(audience)
 }
 
 func applyEnvironmentOverrides(config *OAuthProviderConfig) {
@@ -149,6 +191,15 @@ func applyEnvironmentOverrides(config *OAuthProviderConfig) {
 func applyDefaults(config *OAuthProviderConfig) {
 	if config.AuthorizationServerURL == "" {
 		config.AuthorizationServerURL = OAuthDefaultAuthzURL
+	}
+
+	if config.Cache == nil {
+		cache, err := NewOAuthYamlCredentialsCache("")
+		if err != nil {
+			log.Printf("Failed to create OAuth YAML credentials cache with default path: %s", err.Error())
+		} else {
+			config.Cache = cache
+		}
 	}
 }
 
@@ -181,4 +232,8 @@ func fetchAccessToken(authorizationServerURL string, payload *oauthRequestPayloa
 	}
 
 	return responsePayload, nil
+}
+
+func (config *OAuthProviderConfig) createDefaultCache() (OAuthCredentialsCache, error) {
+	return NewOAuthYamlCredentialsCache("")
 }
