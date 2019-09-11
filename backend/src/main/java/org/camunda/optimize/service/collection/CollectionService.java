@@ -7,6 +7,7 @@ package org.camunda.optimize.service.collection;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
@@ -35,11 +36,14 @@ import org.camunda.optimize.service.es.reader.EntitiesReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.relations.CollectionRelationService;
 import org.camunda.optimize.service.security.CollectionAuthorizationService;
+import org.camunda.optimize.service.security.IdentityService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.MultivaluedMap;
@@ -70,6 +74,7 @@ public class CollectionService {
   private final EntitiesReader entitiesReader;
   private final CollectionRelationService collectionRelationService;
   private final CollectionAuthorizationService collectionAuthorizationService;
+  private final IdentityService identityService;
 
   public IdDto createNewCollectionAndReturnId(final String userId) {
     return collectionWriter.createNewCollectionAndReturnId(userId);
@@ -236,7 +241,27 @@ public class CollectionService {
                                                final CollectionRoleDto roleDto,
                                                final String userId) throws OptimizeConflictException {
     getCollectionAndVerifyUserAuthorizedToManageOrFail(collectionId, userId);
+    verifyIdentityExists(roleDto.getIdentity());
     return collectionWriter.addRoleToCollection(collectionId, roleDto, userId);
+  }
+
+  private void verifyIdentityExists(final IdentityDto identity) {
+    final Optional<IdentityDto> foundIdentity;
+    switch (identity.getType()) {
+      case USER:
+        foundIdentity = identityService.getOptimizeUserById(identity.getId());
+        break;
+      case GROUP:
+        foundIdentity = identityService.getGroupById(identity.getId());
+        break;
+      default:
+        throw new OptimizeRuntimeException("Unsupported identity type: " + identity.getType());
+    }
+    if (!foundIdentity.isPresent()) {
+      throw new BadRequestException(
+        String.format("%s with id %s does not exist in Optimize", identity.getType(), identity.getId())
+      );
+    }
   }
 
   public void updateRoleOfCollection(final String collectionId,

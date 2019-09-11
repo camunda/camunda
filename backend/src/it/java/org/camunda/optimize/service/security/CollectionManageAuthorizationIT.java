@@ -23,7 +23,6 @@ import org.junit.runner.RunWith;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -99,8 +98,10 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
-    // when
     final CollectionRoleDto collectionRoleDto = createJohnEditorRoleDto();
+    authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
+
+    // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
       .buildAddRoleToCollectionRequest(collectionId, collectionRoleDto)
       .execute();
@@ -119,8 +120,10 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
-    // when
     final CollectionRoleDto collectionRoleDto = createJohnEditorRoleDto();
+    authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
+
+    // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
       .buildAddRoleToCollectionRequest(collectionId, collectionRoleDto)
       .execute();
@@ -134,6 +137,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   public void managerIdentityCanUpdateRoleByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = createNewCollectionAsDefaultUser();
+    authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
     final String roleId = addRoleToCollectionAsDefaultUser(collectionId, createJohnEditorRoleDto());
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -154,7 +158,9 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   public void nonManagerIdentityRejectedToUpdateRoleByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = createNewCollectionAsDefaultUser();
-    final String roleId = addRoleToCollectionAsDefaultUser(collectionId, createJohnEditorRoleDto());
+    authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
+    final CollectionRoleDto johnEditorRoleDto = createJohnEditorRoleDto();
+    final String roleId = addRoleToCollectionAsDefaultUser(collectionId, johnEditorRoleDto);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -173,6 +179,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   public void managerIdentityCanDeleteRoleByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = createNewCollectionAsDefaultUser();
+    authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
     final String roleId = addRoleToCollectionAsDefaultUser(collectionId, createJohnEditorRoleDto());
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -193,6 +200,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   public void nonManagerIdentityRejectedToDeleteRoleByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = createNewCollectionAsDefaultUser();
+    authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
     final String roleId = addRoleToCollectionAsDefaultUser(collectionId, createJohnEditorRoleDto());
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -211,7 +219,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @Test
   @Parameters(method = MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanCreateScopeByCollectionRole(final IdentityAndRole identityAndRole) {
-  //given
+    //given
     final String collectionId = createNewCollectionAsDefaultUser();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -346,9 +354,4 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     return new CollectionRoleDto(new IdentityDto(USER_ID_JOHN, IdentityType.USER), RoleType.EDITOR);
   }
 
-  private void addKermitUserRoleToCollectionAsDefaultUser(final RoleType roleType, final String collectionId) {
-    addRoleToCollectionAsDefaultUser(
-      collectionId, new CollectionRoleDto(new IdentityDto(KERMIT_USER, IdentityType.USER), roleType)
-    );
-  }
 }

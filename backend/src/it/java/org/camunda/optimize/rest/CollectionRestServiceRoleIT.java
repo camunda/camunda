@@ -32,6 +32,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class CollectionRestServiceRoleIT {
 
+  private static final String USER_KERMIT = "kermit";
+  private static final String TEST_GROUP = "testGroup";
+  
   public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -77,13 +80,15 @@ public class CollectionRestServiceRoleIT {
   }
 
   @Test
-  public void roleCanBeAdded() {
+  public void addUserRole() {
     // given
     final String collectionId = createNewCollection();
+    engineIntegrationRule.addUser(USER_KERMIT, USER_KERMIT);
+    engineIntegrationRule.grantUserOptimizeAccess(USER_KERMIT);
 
     // when
     final CollectionRoleDto roleDto = new CollectionRoleDto(
-      new IdentityDto("kermit", IdentityType.USER),
+      new IdentityDto(USER_KERMIT, IdentityType.USER),
       RoleType.EDITOR
     );
     IdDto idDto = addRoleToCollection(collectionId, roleDto);
@@ -92,6 +97,83 @@ public class CollectionRestServiceRoleIT {
     assertThat(idDto.getId(), is(roleDto.getId()));
     final SimpleCollectionDefinitionDto collection = getCollection(collectionId);
     assertThat(collection.getData().getRoles(), hasItem(roleDto));
+  }
+
+  @Test
+  public void addUserRoleFailsNotAuthorizedUser() {
+    // given
+    final String collectionId = createNewCollection();
+    engineIntegrationRule.addUser(USER_KERMIT, USER_KERMIT);
+
+    // when
+    final CollectionRoleDto roleDto = new CollectionRoleDto(
+      new IdentityDto(USER_KERMIT, IdentityType.USER),
+      RoleType.EDITOR
+    );
+    final Response addRoleResponse = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildAddRoleToCollectionRequest(collectionId, roleDto)
+      .execute();
+
+    // then
+    assertThat(addRoleResponse.getStatus(), is(400));
+  }
+
+  @Test
+  public void addUserRoleFailsNotExistingUser() {
+    // given
+    final String collectionId = createNewCollection();
+
+    // when
+    final CollectionRoleDto roleDto = new CollectionRoleDto(
+      new IdentityDto(USER_KERMIT, IdentityType.USER),
+      RoleType.EDITOR
+    );
+    final Response addRoleResponse = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildAddRoleToCollectionRequest(collectionId, roleDto)
+      .execute();
+
+    // then
+    assertThat(addRoleResponse.getStatus(), is(400));
+  }
+
+  @Test
+  public void addGroupRole() {
+    // given
+    final String collectionId = createNewCollection();
+    engineIntegrationRule.createGroup(TEST_GROUP);
+
+    // when
+    final CollectionRoleDto roleDto = new CollectionRoleDto(
+      new IdentityDto(TEST_GROUP, IdentityType.GROUP),
+      RoleType.EDITOR
+    );
+    IdDto idDto = addRoleToCollection(collectionId, roleDto);
+
+    // then
+    assertThat(idDto.getId(), is(roleDto.getId()));
+    final SimpleCollectionDefinitionDto collection = getCollection(collectionId);
+    assertThat(collection.getData().getRoles(), hasItem(roleDto));
+  }
+
+  @Test
+  public void addGroupRoleFailsNotExistingGroup() {
+    // given
+    final String collectionId = createNewCollection();
+
+    // when
+    final CollectionRoleDto roleDto = new CollectionRoleDto(
+      new IdentityDto(TEST_GROUP, IdentityType.GROUP),
+      RoleType.EDITOR
+    );
+    final Response addRoleResponse = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildAddRoleToCollectionRequest(collectionId, roleDto)
+      .execute();
+
+    // then
+    assertThat(addRoleResponse.getStatus(), is(400));
   }
 
   @Test
@@ -121,9 +203,11 @@ public class CollectionRestServiceRoleIT {
   public void roleCanGetUpdated() {
     // given
     final String collectionId = createNewCollection();
+    engineIntegrationRule.addUser(USER_KERMIT, USER_KERMIT);
+    engineIntegrationRule.grantUserOptimizeAccess(USER_KERMIT);
 
     // when
-    final IdentityDto identityDto = new IdentityDto("kermit", IdentityType.USER);
+    final IdentityDto identityDto = new IdentityDto(USER_KERMIT, IdentityType.USER);
     final CollectionRoleDto roleDto = new CollectionRoleDto(identityDto, RoleType.EDITOR);
     addRoleToCollection(collectionId, roleDto);
 
@@ -180,9 +264,11 @@ public class CollectionRestServiceRoleIT {
   public void roleCanGetDeleted() {
     // given
     final String collectionId = createNewCollection();
+    engineIntegrationRule.addUser(USER_KERMIT, USER_KERMIT);
+    engineIntegrationRule.grantUserOptimizeAccess(USER_KERMIT);
 
     // when
-    final IdentityDto identityDto = new IdentityDto("kermit", IdentityType.USER);
+    final IdentityDto identityDto = new IdentityDto(USER_KERMIT, IdentityType.USER);
     final CollectionRoleDto roleDto = new CollectionRoleDto(identityDto, RoleType.EDITOR);
     addRoleToCollection(collectionId, roleDto);
     deleteRoleFromCollection(collectionId, roleDto.getId());

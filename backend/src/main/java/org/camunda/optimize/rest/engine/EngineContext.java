@@ -7,7 +7,10 @@ package org.camunda.optimize.rest.engine;
 
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.GroupDto;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.EngineConstantsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +73,25 @@ public class EngineContext {
       logger.error("Could not fetch groups for user [{}]", userId, e);
     }
     return new ArrayList<>();
+  }
+
+  public Optional<IdentityDto> getGroupById(final String groupId) {
+    GroupDto groupDto = null;
+    try {
+      Response response = getEngineClient()
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .path(EngineConstantsUtil.GROUP_BY_ID_ENDPOINT_TEMPLATE)
+        .resolveTemplate("id", groupId)
+        .request(MediaType.APPLICATION_JSON)
+        .get();
+      if (response.getStatus() == 200) {
+        groupDto = response.readEntity(GroupDto.class);
+      }
+    } catch (Exception e) {
+      logger.error("Could not fetch group with id [{}]", groupId, e);
+    }
+    return Optional.ofNullable(groupDto)
+      .map(user -> new IdentityDto(user.getId(), IdentityType.GROUP));
   }
 
   public List<AuthorizationDto> getAllApplicationAuthorizations() {

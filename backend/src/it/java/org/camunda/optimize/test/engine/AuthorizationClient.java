@@ -30,8 +30,12 @@ public class AuthorizationClient {
   private final EngineIntegrationRule engineRule;
 
   public void addKermitUserAndGrantAccessToOptimize() {
-    engineRule.addUser(KERMIT_USER, KERMIT_USER);
-    engineRule.grantUserOptimizeAccess(KERMIT_USER);
+    addUserAndGrantOptimizeAccess(KERMIT_USER);
+  }
+
+  public void addUserAndGrantOptimizeAccess(final String userId) {
+    engineRule.addUser(userId, userId);
+    engineRule.grantUserOptimizeAccess(userId);
   }
 
   public void createKermitGroupAndAddKermitToThatGroup() {

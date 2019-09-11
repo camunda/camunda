@@ -38,6 +38,7 @@ public class EngineConstantsUtil {
 
   public static final String AUTHORIZATION_ENDPOINT = "/authorization";
   public static final String GROUP_ENDPOINT = "/group";
+  public static final String GROUP_BY_ID_ENDPOINT_TEMPLATE = "/group/{id}";
 
   public static final String ALL_PERMISSION = "ALL";
   public static final String ACCESS_PERMISSION = "ACCESS";

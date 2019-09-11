@@ -8,6 +8,8 @@ package org.camunda.optimize.service.security;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import org.camunda.optimize.dto.engine.GroupDto;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -42,6 +45,24 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
 
   public List<GroupDto> getAllGroupsOfUser(final String userId) {
     return userGroupsCache.get(userId);
+  }
+
+  public Optional<IdentityDto> getOptimizeUserById(final String userId) {
+    IdentityDto identityDto = null;
+
+    if (applicationAuthorizationService.isAuthorizedToAccessOptimize(userId)) {
+      identityDto = new IdentityDto(userId, IdentityType.USER);
+    }
+
+    return Optional.ofNullable(identityDto);
+  }
+
+  public Optional<IdentityDto> getGroupById(final String groupId) {
+    return engineContextFactory.getConfiguredEngines().stream()
+      .map(engineContext -> engineContext.getGroupById(groupId))
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      .findFirst();
   }
 
   @Override

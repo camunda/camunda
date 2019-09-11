@@ -304,10 +304,19 @@ public class EntitiesRestServiceIT {
   public void getEntitiesIncludesCollectionRoleCounts() {
     // given
     final String collectionId = addEmptyCollectionToOptimize();
-    addRoleToCollection(collectionId, "user1", IdentityType.USER);
-    addRoleToCollection(collectionId, "groupA", IdentityType.GROUP);
-    addRoleToCollection(collectionId, "groupB", IdentityType.GROUP);
-    addRoleToCollection(collectionId, "groupC", IdentityType.GROUP);
+    final String user1 = "user1";
+    engineRule.addUser(user1, user1);
+    engineRule.grantUserOptimizeAccess(user1);
+    addRoleToCollection(collectionId, user1, IdentityType.USER);
+    final String groupA = "groupA";
+    engineRule.createGroup(groupA);
+    addRoleToCollection(collectionId, groupA, IdentityType.GROUP);
+    final String groupB = "groupB";
+    engineRule.createGroup(groupB);
+    addRoleToCollection(collectionId, groupB, IdentityType.GROUP);
+    final String groupC = "groupC";
+    engineRule.createGroup(groupC);
+    addRoleToCollection(collectionId, groupC, IdentityType.GROUP);
 
     elasticSearchRule.refreshAllOptimizeIndices();
 
