@@ -46,3 +46,22 @@ it('should show an error message when it is not possible to initilize the transl
 
   expect(node).toMatchSnapshot();
 });
+
+it('should render the last component in the url', async () => {
+  const node = shallow(<App {...props} />);
+  await node.update();
+  const routes = shallow(
+    node.find('Route').prop('render')({
+      location: {pathname: '/collection/cid/dashboard/did/report/rid'}
+    })
+  );
+
+  const renderedEntity = shallow(
+    routes.find({path: '/(report|dashboard|collection)/*'}).prop('render')({
+      location: {pathname: '/collection/cid/dashboard/did/report/rid'}
+    })
+  );
+
+  expect(renderedEntity.name()).toBe('Report');
+  expect(renderedEntity.props().match.params.id).toBe('rid');
+});

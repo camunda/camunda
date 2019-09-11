@@ -151,7 +151,7 @@ export default class ReportView extends Component {
                 <h1 className="name">{name}</h1>
               </div>
               <div className="tools">
-                <Link className="tool-button edit-button" to={`/report/${id}/edit`}>
+                <Link className="tool-button edit-button" to="edit">
                   <Button>
                     <Icon type="edit" />
                     {t('common.edit')}

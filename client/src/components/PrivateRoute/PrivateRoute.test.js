@@ -27,6 +27,12 @@ it('should render the component if the user is logged in', () => {
   expect(node).toIncludeText('TestComponent');
 });
 
+it('should use render method to render a component when specified', () => {
+  const node = shallow(<PrivateRoute render={() => <h1>someText</h1>} />).renderProp('render')({});
+
+  expect(node).toIncludeText('someText');
+});
+
 it('should render the login component', () => {
   const node = shallow(<PrivateRoute component={TestComponent} />);
 

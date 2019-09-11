@@ -21,7 +21,7 @@ exports[`should match snapshot 1`] = `
         key="aCollectionId"
       >
         <Link
-          to="/collection/aCollectionId"
+          to="/collection/aCollectionId/"
         >
           <ListItemSection
             className="icon"
@@ -93,7 +93,7 @@ exports[`should match snapshot 1`] = `
         key="aDashboardId"
       >
         <Link
-          to="/dashboard/aDashboardId"
+          to="/dashboard/aDashboardId/"
         >
           <ListItemSection
             className="icon"
@@ -163,7 +163,7 @@ exports[`should match snapshot 1`] = `
         key="aReportId"
       >
         <Link
-          to="/report/aReportId"
+          to="/report/aReportId/"
         >
           <ListItemSection
             className="icon"

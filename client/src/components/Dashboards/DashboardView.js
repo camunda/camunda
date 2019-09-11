@@ -169,7 +169,7 @@ export default themed(
                     <React.Fragment>
                       <Link
                         className="tool-button edit-button"
-                        to={`/dashboard/${id}/edit`}
+                        to="edit"
                         onClick={() => this.setAutorefresh(null)}
                       >
                         <Button>

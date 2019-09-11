@@ -1,6 +1,6 @@
 {
   "navigation": {
-    "homepage": "Dashboards & Reports",
+    "homepage": "Home",
     "analysis": "Analysis",
     "logout": "Logout",
     "logoutFailed": "Logout failed."

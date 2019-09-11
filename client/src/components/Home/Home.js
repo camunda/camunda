@@ -145,7 +145,7 @@ export default withErrorHandling(
             </Link>
             <div className="contextMenu">
               <Dropdown label={<Icon type="overflow-menu-vertical" size="24px" />}>
-                <Dropdown.Option link={formatLink(id, entityType) + '/edit'}>
+                <Dropdown.Option link={formatLink(id, entityType) + 'edit'}>
                   <Icon type="edit" />
                   {t('common.edit')}
                 </Dropdown.Option>
@@ -175,7 +175,7 @@ async function showError(error) {
 }
 
 function formatLink(id, type) {
-  return `/${type}/${id}`;
+  return `/${type}/${id}/`;
 }
 
 function getEntityIcon(type) {

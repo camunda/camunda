@@ -54,7 +54,7 @@ export default class PrivateRoute extends React.Component {
           return (
             <>
               <div className={classnames('PrivateRoute', {showLogin: this.state.showLogin})}>
-                <Component {...props} />
+                {this.props.render ? this.props.render(props) : <Component {...props} />}
               </div>
               {this.state.showLogin && <Login {...props} onLogin={this.handleLoginSuccess} />}
             </>

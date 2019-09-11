@@ -1,19 +1,20 @@
 .LogoutButton {
-  flex-shrink: 0;
-}
+  display: flex;
 
-.LogoutButton.hidden {
-  display: none;
-}
+  &.hidden {
+    display: none;
+  }
 
-.LogoutButton .Button {
-  display: block;
-  padding: 0;
-  border: none;
-  font-size: inherit;
-  color: #666;
-  text-decoration: none;
-  background: transparent;
-  cursor: pointer;
-  font-family: inherit;
+  .Button {
+    display: block;
+    padding: 0;
+    border: none;
+    font-size: inherit;
+    font-weight: inherit;
+    color: #666;
+    text-decoration: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+  }
 }

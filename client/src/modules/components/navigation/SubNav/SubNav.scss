@@ -1,11 +1,24 @@
+@import 'shared-styles/shared-styles.scss';
+
 .SubNav {
   position: fixed;
-  top: 66px;
+  top: 40px;
   left: 0;
   margin: 0;
   width: 100%;
-  height: 30px;
+  padding: 8px 0px;
+  font-weight: 500;
   border-bottom: 1px solid #ddd;
+  font-size: 15px;
+  display: flex;
+
+  li {
+    list-style: none;
+  }
+
+  .NavItem:first-child {
+    border-left: none;
+  }
 
   a {
     text-decoration: none;

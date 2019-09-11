@@ -25,10 +25,18 @@ exports[`matches the snapshot 1`] = `
           "/",
           "/report/*",
           "/dashboard/*",
+          "/collection/*",
+        ]
+      }
+      breadcrumbsEntities={
+        Array [
+          "collection",
+          "dashboard",
+          "report",
         ]
       }
       linksTo="/"
-      name="Dashboards & Reports"
+      name="Home"
     />
     <NavItem
       active={

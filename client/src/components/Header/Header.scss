@@ -1,15 +1,11 @@
 @import 'shared-styles/shared-styles.scss';
 
 .Header {
-  border-top: 3px solid $cam-red;
-  box-shadow: 0 2px 10px -4px #555555;
+  border-bottom: 1px solid #ddd;
   color: #777777;
-  font-size: 21px;
-  padding-left: 20px;
-  padding-right: 20px;
-  padding-top: 10px;
-  padding: 10px 20px 0 20px;
-  height: 51px;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 8px 13px;
   display: flex;
   flex-shrink: 0;
   z-index: 2;
@@ -21,9 +17,11 @@
 
 .Header__link {
   color: #333;
-  float: left;
   height: 100%;
-  margin-right: 42px;
+  display: flex;
+  align-items: center;
+  margin-right: 20px;
+  white-space: nowrap;
 }
 
 .Header__link:visited {
@@ -31,10 +29,7 @@
 }
 
 .Header__logo {
-  margin-right: 0.3em;
-  width: 19px;
-  height: 19px;
-  vertical-align: baseline;
-  position: relative;
-  top: 2px;
+  margin-right: 10px;
+  width: 15px;
+  height: 15px;
 }

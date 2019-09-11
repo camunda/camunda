@@ -25,7 +25,8 @@ function Header({name, location}) {
         <HeaderNav.Item
           name={t('navigation.homepage')}
           linksTo="/"
-          active={['/', '/report/*', '/dashboard/*']}
+          active={['/', '/report/*', '/dashboard/*', '/collection/*']}
+          breadcrumbsEntities={['collection', 'dashboard', 'report']}
         />
         <HeaderNav.Item
           name={t('navigation.analysis')}

@@ -1,0 +1,36 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should render a breadcrumbs links when specified 1`] = `
+<li
+  className="NavItem active"
+>
+  <Link
+    replace={true}
+    title="testName"
+  >
+    testName
+  </Link>
+  <Link
+    className="breadcrumb"
+    key="did"
+    title="dashboard"
+    to="/dashboard/did/"
+  >
+    <span>
+      ›
+    </span>
+    dashboard
+  </Link>
+  <Link
+    className="breadcrumb"
+    key="rid"
+    title="report"
+    to="/dashboard/did/report/rid/"
+  >
+    <span>
+      ›
+    </span>
+    report
+  </Link>
+</li>
+`;

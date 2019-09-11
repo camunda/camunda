@@ -1,23 +1,33 @@
-@import 'shared-styles/shared-styles.scss';
-
 .NavItem {
-  display: inline-block;
-  margin-right: 0.75em;
-  height: 100%;
+  padding: 0 20px;
+  border-left: 1px solid rgba($color: #000, $alpha: 0.1);
+  height: 24px;
+  display: flex;
+  align-items: center;
+
+  &:first-child {
+    min-width: 80px;
+  }
 
   &:last-child {
     margin-right: 0;
   }
 
-  a {
-    color: #666;
+  .breadcrumb {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
-  &.active {
-    border-bottom: 3px solid $cam-red;
+  a {
+    color: #949494;
+  }
 
-    a {
-      color: #333;
+  &.active a {
+    color: #333;
+
+    span {
+      padding: 0 10px;
     }
   }
 }

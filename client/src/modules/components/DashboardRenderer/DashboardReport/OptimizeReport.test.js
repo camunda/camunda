@@ -19,8 +19,20 @@ const props = {
     id: 'a'
   },
   loadReport,
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  location: {
+    pathname: '/dashboard/did/'
+  }
 };
+
+jest.mock('react-router-dom', () => {
+  return {
+    Link: ({children, to}) => {
+      return <a href={to}>{children}</a>;
+    },
+    withRouter: fn => fn
+  };
+});
 
 it('should load the report provided by id', () => {
   shallow(<OptimizeReport {...props} />);
@@ -55,7 +67,7 @@ it('should provide a link to the report', async () => {
   node.update();
 
   expect(node.find('Link').children()).toIncludeText('Report Name');
-  expect(node.find('Link')).toHaveProp('to', '/report/a');
+  expect(node.find('Link')).toHaveProp('to', '/dashboard/did/report/a/');
 });
 
 it('should not provide a link to the report when link is disabled', async () => {

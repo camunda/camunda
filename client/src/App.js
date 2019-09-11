@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {HashRouter as Router, Route, Switch} from 'react-router-dom';
+import {HashRouter as Router, Route, Switch, matchPath} from 'react-router-dom';
 import {init} from 'translation';
 
 import {
@@ -35,6 +35,29 @@ class App extends React.Component {
   async componentDidMount() {
     this.props.mightFail(init(), () => this.setState({translationLoaded: true}));
   }
+
+  renderEntity = props => {
+    const components = {
+      report: Report,
+      dashboard: Dashboard,
+      collection: () => <h1>Oops!</h1>
+    };
+    const entities = ['report', 'dashboard', 'collection'];
+    let Component, newProps;
+    for (let entity of entities) {
+      const splitResult = props.location.pathname.split('/' + entity)[1];
+      if (splitResult) {
+        const match = matchPath(splitResult, {path: '/:id/:viewMode?'});
+        newProps = {
+          ...props,
+          match
+        };
+        Component = components[entity];
+        break;
+      }
+    }
+    return <Component {...newProps} />;
+  };
 
   render() {
     if (this.props.error) {
@@ -72,8 +95,10 @@ class App extends React.Component {
                         <PrivateRoute path="/analysis" component={Analysis} />
                         <PrivateRoute exact path="/alerts" component={Alerts} />
                         <Route exact path="/share/:type/:id" component={Sharing} />
-                        <PrivateRoute path="/report/:id/:viewMode?" component={Report} />
-                        <PrivateRoute path="/dashboard/:id/:viewMode?" component={Dashboard} />
+                        <PrivateRoute
+                          path="/(report|dashboard|collection)/*"
+                          render={this.renderEntity}
+                        />
                         <PrivateRoute path="*" component={ErrorPage} />
                       </Switch>
                     </ErrorBoundary>

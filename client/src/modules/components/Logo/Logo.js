@@ -11,7 +11,7 @@ import './Logo.scss';
 
 export default function Logo(props) {
   const svgProps = {};
-  svgProps.fill = props.fill || '#b5152b';
+  svgProps.fill = props.fill || '#606060';
   const filteredProps = {...props};
   delete filteredProps.fill;
   return (

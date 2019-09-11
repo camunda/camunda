@@ -8,17 +8,74 @@ import React from 'react';
 import classnames from 'classnames';
 import {Link, withRouter} from 'react-router-dom';
 import {matchPath} from 'react-router';
+import {loadEntity} from 'services';
 
 import './NavItem.scss';
 
-export default withRouter(function NavItem({name, linksTo, active, location}) {
-  const isActive = matchPath(location.pathname, {path: active, exact: true}) !== null;
+export default withRouter(
+  class NavItem extends React.Component {
+    state = {
+      breadcrumbs: []
+    };
 
-  return (
-    <li className={classnames('NavItem', {active: isActive})}>
-      <Link to={linksTo} title={name} replace={isActive}>
-        {name}
-      </Link>
-    </li>
-  );
-});
+    async componentDidMount() {
+      if (this.props.breadcrumbsEntities) {
+        await this.constructBreadcrumbs();
+      }
+    }
+
+    async componentDidUpdate(prevProps) {
+      if (
+        prevProps.location.pathname !== this.props.location.pathname &&
+        this.props.breadcrumbsEntities
+      ) {
+        await this.constructBreadcrumbs();
+      }
+    }
+
+    constructBreadcrumbs = async () => {
+      const {
+        location: {pathname},
+        breadcrumbsEntities
+      } = this.props;
+
+      let breadcrumbs = [];
+      for (let entity of breadcrumbsEntities) {
+        const splittedUrl = pathname.split(`/${entity}/`);
+        if (splittedUrl[1]) {
+          const id = splittedUrl[1].split('/')[0];
+          const entityData = await loadEntity(entity, id);
+          breadcrumbs.push({
+            name: entityData.name,
+            id,
+            url: splittedUrl[0] + `/${entity}/${id}/`
+          });
+        }
+      }
+
+      this.setState({breadcrumbs});
+    };
+
+    isActive = () =>
+      matchPath(this.props.location.pathname, {path: this.props.active, exact: true}) !== null;
+
+    render() {
+      const {name, activeBorder, linksTo} = this.props;
+
+      return (
+        <li className={classnames('NavItem', {active: this.isActive(), activeBorder})}>
+          <Link to={linksTo} title={name} replace={this.isActive()}>
+            {name}
+          </Link>
+          {this.isActive() &&
+            this.state.breadcrumbs.map(({id, name, url}) => (
+              <Link title={name} className="breadcrumb" key={id} to={url}>
+                <span>›</span>
+                {name}
+              </Link>
+            ))}
+        </li>
+      );
+    }
+  }
+);

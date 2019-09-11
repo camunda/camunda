@@ -9,6 +9,12 @@ import {shallow, mount} from 'enzyme';
 
 import NavItem from './NavItem';
 
+import {loadEntity} from 'services';
+
+jest.mock('services', () => ({
+  loadEntity: jest.fn()
+}));
+
 jest.mock('react-router-dom', () => {
   return {
     Link: ({children, to}) => {
@@ -38,4 +44,25 @@ it('should set the active class if the location pathname matches headerItem path
   const node = mount(<NavItem active="/dashboards/*" location={{pathname: '/dashboards/1'}} />);
 
   expect(node.find('.NavItem')).toHaveClassName('active');
+});
+
+it('should render a breadcrumbs links when specified', async () => {
+  loadEntity.mockReturnValueOnce({name: 'dashboard'});
+  loadEntity.mockReturnValueOnce({name: 'report'});
+
+  const node = shallow(
+    <NavItem
+      name="testName"
+      active={['/report/*', '/dashboard/*']}
+      location={{pathname: '/dashboard/did/report/rid'}}
+      breadcrumbsEntities={['dashboard', 'report']}
+    />
+  );
+
+  await node.update();
+  expect(loadEntity).toHaveBeenCalledWith('dashboard', 'did');
+  expect(loadEntity).toHaveBeenCalledWith('report', 'rid');
+  await node.update();
+
+  expect(node).toMatchSnapshot();
 });
