@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.rest.mapper;
 
+import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.EvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
-import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.es.report.result.process.CombinedProcessReportResult;
 
 import java.util.LinkedHashMap;

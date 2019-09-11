@@ -12,4 +12,16 @@ package org.camunda.optimize.dto.optimize.query.report;
 public interface Combinable {
 
   boolean isCombinable(Object o);
+
+  static <O extends Combinable> boolean isCombinable(O o1, O o2) {
+    if (o1 == null && o2 == null) {
+      return true;
+    } else if (o1 == null) {
+      return false;
+    } else if (o2 == null) {
+      return false;
+    } else {
+      return o1.isCombinable(o2);
+    }
+  }
 }

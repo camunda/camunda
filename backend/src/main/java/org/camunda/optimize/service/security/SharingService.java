@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
@@ -19,7 +20,6 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.SharingReader;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
-import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.es.writer.SharingWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
@@ -122,16 +122,16 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     result = existing
       .map(DashboardShareDto::getId)
       .orElseGet(() -> {
-        this.addReportInformation(createSharingDto);
+        this.addReportInformation(createSharingDto, userId);
         return sharingWriter.saveDashboardShare(createSharingDto).getId();
       });
 
     return new IdDto(result);
   }
 
-  private void addReportInformation(DashboardShareDto createSharingDto) {
+  private void addReportInformation(DashboardShareDto createSharingDto, String userId) {
     DashboardDefinitionDto dashboardDefinition =
-      dashboardService.getDashboardDefinition(createSharingDto.getDashboardId());
+      dashboardService.getDashboardDefinition(createSharingDto.getDashboardId(), userId).getDefinitionDto();
     createSharingDto.setReportShares(dashboardDefinition.getReports());
   }
 
@@ -139,12 +139,12 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     ValidationHelper.ensureNotEmpty("dashboardId", dashboardId);
     try {
       DashboardDefinitionDto dashboardDefinition =
-        dashboardService.getDashboardDefinition(dashboardId);
+        dashboardService.getDashboardDefinition(dashboardId, userId).getDefinitionDto();
 
       List<String> authorizedReportIds = reportService
         .findAndFilterReports(userId)
         .stream()
-        .map(ReportDefinitionDto::getId)
+        .map(authorizedReportDefinitionDto -> authorizedReportDefinitionDto.getDefinitionDto().getId())
         .collect(Collectors.toList());
 
       for (ReportLocationDto reportLocationDto : dashboardDefinition.getReports()) {
@@ -170,7 +170,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
   private void validateAndCheckAuthorization(ReportShareDto reportShare, String userId) {
     ValidationHelper.ensureNotEmpty("reportId", reportShare.getReportId());
     try {
-      reportService.getReportWithAuthorizationCheck(reportShare.getReportId(), userId);
+      reportService.getReportDefinition(reportShare.getReportId(), userId);
     } catch (OptimizeRuntimeException | NotFoundException e) {
       String errorMessage = "Could not retrieve report [" +
         reportShare.getReportId() + "]. Probably it does not exist.";
@@ -239,7 +239,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
   }
 
   private Optional<DashboardDefinitionDto> constructDashboard(DashboardShareDto share) {
-    DashboardDefinitionDto result = dashboardService.getDashboardDefinition(share.getDashboardId());
+    DashboardDefinitionDto result = dashboardService.getDashboardDefinitionAsService(share.getDashboardId());
     return Optional.of(result);
   }
 

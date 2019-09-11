@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.service.es.report.result.decision;
 
+import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportNumberResultDto;
 import org.camunda.optimize.service.es.report.result.NumberResult;
-import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 
 import javax.validation.constraints.NotNull;
 import java.util.LinkedList;

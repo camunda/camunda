@@ -5,9 +5,7 @@
  */
 package org.camunda.optimize.rest.queryparam.adjustment;
 
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefinitionDto;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OffsetResultListDecorator;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OrderByQueryParamResultListDecorator;
@@ -24,7 +22,6 @@ import java.util.Map;
 
 public class QueryParamAdjustmentUtil {
 
-
   private static final String ORDER_BY = "orderBy";
   private static final Map<String, Comparator> reportComparators = new HashMap<>();
   private static final Map<String, Comparator> collectionComparators = new HashMap<>();
@@ -35,10 +32,12 @@ public class QueryParamAdjustmentUtil {
 
   static {
     reportComparators.put(
-      LAST_MODIFIED, Comparator.comparing(ReportDefinitionDto<ReportDataDto>::getLastModified).reversed()
+      LAST_MODIFIED,
+      Comparator.comparing(o -> ((AuthorizedReportDefinitionDto) o).getDefinitionDto().getLastModified()).reversed()
     );
     reportComparators.put(
-      NAME, Comparator.comparing(ReportDefinitionDto<ReportDataDto>::getName)
+      NAME,
+      Comparator.comparing(o -> ((AuthorizedReportDefinitionDto) o).getDefinitionDto().getName())
     );
 
     collectionComparators.put(
@@ -54,8 +53,8 @@ public class QueryParamAdjustmentUtil {
     );
   }
 
-  public static List<ReportDefinitionDto> adjustReportResultsToQueryParameters(
-    List<ReportDefinitionDto> resultList,
+  public static List<AuthorizedReportDefinitionDto> adjustReportResultsToQueryParameters(
+    List<AuthorizedReportDefinitionDto> resultList,
     MultivaluedMap<String, String> queryParameters
   ) {
     Comparator sorting;
@@ -68,14 +67,15 @@ public class QueryParamAdjustmentUtil {
     return adjustResultListAccordingToQueryParameters(resultList, queryParameters, sorting, queryParam);
   }
 
-  public static List<DashboardDefinitionDto> adjustDashboardResultsToQueryParameters(
-    List<DashboardDefinitionDto> resultList,
+  public static List<AuthorizedResolvedCollectionDefinitionDto> adjustCollectionResultsToQueryParameters(
+    List<AuthorizedResolvedCollectionDefinitionDto> resultList,
     MultivaluedMap<String, String> queryParameters
   ) {
-    Comparator<DashboardDefinitionDto> sorting =
-      Comparator.comparing(DashboardDefinitionDto::getLastModified).reversed();
+    List<String> key = queryParameters.get(ORDER_BY);
+    String queryParam = (key == null || key.isEmpty()) ? CREATED : key.get(0);
+    Comparator comparator = collectionComparators.get(queryParam);
 
-    return adjustResultListAccordingToQueryParameters(resultList, queryParameters, sorting, "lastModified");
+    return adjustResultListAccordingToQueryParameters(resultList, queryParameters, comparator, queryParam);
   }
 
   @SuppressWarnings("unchecked")
@@ -100,17 +100,6 @@ public class QueryParamAdjustmentUtil {
     resultList = adjustedResultList.adjustList();
 
     return resultList;
-  }
-
-  public static List<AuthorizedResolvedCollectionDefinitionDto> adjustCollectionResultsToQueryParameters(
-    List<AuthorizedResolvedCollectionDefinitionDto> resultList,
-    MultivaluedMap<String, String> queryParameters
-  ) {
-    List<String> key = queryParameters.get(ORDER_BY);
-    String queryParam = (key == null || key.isEmpty()) ? CREATED : key.get(0);
-    Comparator comparator = collectionComparators.get(queryParam);
-
-    return adjustResultListAccordingToQueryParameters(resultList, queryParameters, comparator, queryParam);
   }
 
 }

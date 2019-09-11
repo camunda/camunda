@@ -7,9 +7,9 @@ package org.camunda.optimize.dto.optimize.query.report.single.result;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
-import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,7 +17,7 @@ import java.util.Optional;
 public class HyperMapResultEntryDto<T extends Comparable> {
 
   // @formatter:off
-  @NotNull @Getter @Setter private String key;
+  @NonNull @Getter @Setter private String key;
   @Getter @Setter private List<MapResultEntryDto<T>> value;
   @Setter private String label;
   // @formatter:on
@@ -29,12 +29,12 @@ public class HyperMapResultEntryDto<T extends Comparable> {
     return value.stream().filter(entry -> key.equals(entry.getKey())).findFirst();
   }
 
-  public HyperMapResultEntryDto(@NotNull final String key, final List<MapResultEntryDto<T>> value) {
+  public HyperMapResultEntryDto(@NonNull final String key, final List<MapResultEntryDto<T>> value) {
     this.key = key;
     this.value = value;
   }
 
-  public HyperMapResultEntryDto(@NotNull final String key, final List<MapResultEntryDto<T>> value, String label) {
+  public HyperMapResultEntryDto(@NonNull final String key, final List<MapResultEntryDto<T>> value, String label) {
     this.key = key;
     this.value = value;
     this.label = label;

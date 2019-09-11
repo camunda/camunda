@@ -10,11 +10,9 @@ import lombok.Data;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -23,7 +21,6 @@ import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
 import java.util.Arrays;
-import java.util.stream.Stream;
 
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
@@ -131,22 +128,6 @@ public abstract class AbstractCollectionRoleIT {
       .toArray(IdentityAndRole[]::new);
   }
 
-  protected static final String EDIT_IDENITY_ROLES_AND_RESOURCE_SCENARIOS = "editIdentityRolesAndResourceScenarios";
-
-  protected static IdentityRoleAndResource[] editIdentityRolesAndResourceScenarios() {
-    return Arrays.stream(editIdentityRoles())
-      .flatMap(AbstractCollectionRoleIT::createResourceScenariosForRoleType)
-      .toArray(IdentityRoleAndResource[]::new);
-  }
-
-  protected static final String EDIT_USER_ROLES_AND_RESOURCE_SCENARIOS = "editUserRolesAndResourceScenarios";
-
-  protected static IdentityRoleAndResource[] editUserRolesAndResourceScenarios() {
-    return Arrays.stream(editUserRoles())
-      .flatMap(AbstractCollectionRoleIT::createResourceScenariosForRoleType)
-      .toArray(IdentityRoleAndResource[]::new);
-  }
-
   protected static final String MANAGER_IDENTITY_ROLES = "managerIdentityRoles";
 
   protected static IdentityAndRole[] managerIdentityRoles() {
@@ -173,36 +154,12 @@ public abstract class AbstractCollectionRoleIT {
       .toArray(IdentityAndRole[]::new);
   }
 
-  protected static final String ACCESS_ONLY_IDENTITY_ROLES_AND_RESOURCE_SCENARIOS =
-    "accessOnlyIdentityRolesAndResourceScenarios";
-
-  protected static IdentityRoleAndResource[] accessOnlyIdentityRolesAndResourceScenarios() {
-    return Arrays.stream(accessOnlyIdentityRoles())
-      .flatMap(AbstractCollectionRoleIT::createResourceScenariosForRoleType)
-      .toArray(IdentityRoleAndResource[]::new);
-  }
-
-  protected static final String ACCESS_ONLY_USER_ROLES_AND_RESOURCE_SCENARIOS =
-    "accessOnlyUserRolesAndResourceScenarios";
-
-  protected static IdentityRoleAndResource[] accessOnlyUserRolesAndResourceScenarios() {
-    return Arrays.stream(accessOnlyUserRoles())
-      .flatMap(AbstractCollectionRoleIT::createResourceScenariosForRoleType)
-      .toArray(IdentityRoleAndResource[]::new);
-  }
-
-  protected static Stream<IdentityRoleAndResource> createResourceScenariosForRoleType(
-    final IdentityAndRole identityRolePair) {
-    return Stream.of(
-      new IdentityRoleAndResource(identityRolePair, EntityType.REPORT, ReportType.PROCESS, false),
-      new IdentityRoleAndResource(identityRolePair, EntityType.REPORT, ReportType.PROCESS, true),
-      new IdentityRoleAndResource(identityRolePair, EntityType.REPORT, ReportType.DECISION, false),
-      new IdentityRoleAndResource(identityRolePair, EntityType.DASHBOARD, null, false)
-    );
-  }
-
   protected static String getDefaultIdentityIdForType(final IdentityType identityType) {
     return identityType.equals(IdentityType.USER) ? KERMIT_USER : GROUP_ID;
+  }
+
+  protected RoleType getExpectedResourceRoleForCollectionRole(final IdentityAndRole identityAndRole) {
+    return identityAndRole.roleType == RoleType.MANAGER ? RoleType.EDITOR : identityAndRole.roleType;
   }
 
   protected OptimizeRequestExecutor getOptimizeRequestExecutorWithKermitAuthentication() {
@@ -237,15 +194,6 @@ public abstract class AbstractCollectionRoleIT {
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
       .getId();
-  }
-
-  @Data
-  @AllArgsConstructor
-  protected static class IdentityRoleAndResource {
-    IdentityAndRole identityAndRole;
-    EntityType entityType;
-    ReportType reportType;
-    boolean combined;
   }
 
   @Data

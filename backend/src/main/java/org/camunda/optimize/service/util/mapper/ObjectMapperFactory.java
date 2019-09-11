@@ -15,6 +15,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -74,6 +75,9 @@ public class ObjectMapperFactory {
 
     SimpleModule module = new SimpleModule();
     module.addDeserializer(ReportDefinitionDto.class, new CustomReportDefinitionDeserializer(mapper));
+    module.addDeserializer(
+      AuthorizedReportDefinitionDto.class, new CustomAuthorizedReportDefinitionDeserializer(mapper)
+    );
     module.addDeserializer(CollectionEntity.class, new CustomCollectionEntityDeserializer(mapper));
     mapper.registerModule(module);
 

@@ -35,11 +35,6 @@
       <artifactId>optimize-commons</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.camunda.optimize</groupId>
-      <artifactId>plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
 
     <!-- Camunda dependencies -->
     <dependency>
@@ -212,11 +207,6 @@
     </dependency>
 
     <!-- Utilities -->
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>${guava.version}</version>
-    </dependency>
     <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
       <artifactId>caffeine</artifactId>

@@ -28,7 +28,7 @@ public class DashboardDefinitionDto extends BaseDashboardDefinitionDto implement
     return new EntityDto(
       getId(), getName(), getLastModified(), getCreated(), getOwner(), getLastModifier(), EntityType.DASHBOARD,
       new EntityData(ImmutableMap.of(EntityType.REPORT, (long) getReports().size())),
-      // TODO will be mapped dynamically with OPT-2627
+      // defaults to EDITOR, any authorization specific values have to be applied in responsible service layer
       RoleType.EDITOR
     );
   }

@@ -15,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessParametersDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
-import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -83,8 +82,8 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
       return false;
     }
     ProcessReportDataDto that = (ProcessReportDataDto) o;
-    return ReportUtil.isCombinable(view, that.view) &&
-      ReportUtil.isCombinable(groupBy, that.groupBy) &&
+    return Combinable.isCombinable(view, that.view) &&
+      Combinable.isCombinable(groupBy, that.groupBy) &&
       Objects.equals(visualization, that.visualization);
   }
 

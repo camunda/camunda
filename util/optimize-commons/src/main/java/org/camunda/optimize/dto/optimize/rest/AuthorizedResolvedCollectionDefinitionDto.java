@@ -7,17 +7,20 @@ package org.camunda.optimize.dto.optimize.rest;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 @Data
-public class AuthorizedResolvedCollectionDefinitionDto implements AuthorizedEntityDto {
-  private RoleType currentUserRole;
+public class AuthorizedResolvedCollectionDefinitionDto extends AuthorizedEntityDto {
   @JsonUnwrapped
   private ResolvedCollectionDefinitionDto definitionDto;
+
+  public AuthorizedResolvedCollectionDefinitionDto(final RoleType currentUserRole,
+                                                   final ResolvedCollectionDefinitionDto definitionDto) {
+    super(currentUserRole);
+    this.definitionDto = definitionDto;
+  }
 }

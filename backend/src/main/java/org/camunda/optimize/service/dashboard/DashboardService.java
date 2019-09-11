@@ -7,31 +7,29 @@ package org.camunda.optimize.service.dashboard;
 
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.es.reader.DashboardReader;
 import org.camunda.optimize.service.es.writer.DashboardWriter;
-import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.relations.CollectionReferencingService;
-import org.camunda.optimize.service.relations.DashboardRelationService;
 import org.camunda.optimize.service.relations.ReportReferencingService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotFoundException;
+import javax.ws.rs.ForbiddenException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -41,114 +39,9 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   private final DashboardWriter dashboardWriter;
   private final DashboardReader dashboardReader;
-  private final DashboardRelationService dashboardRelationService;
 
   private final ReportService reportService;
   private final CollectionService collectionService;
-
-  public IdDto createNewDashboardAndReturnId(final String userId, final String collectionId) {
-    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
-    return dashboardWriter.createNewDashboard(userId, collectionId);
-  }
-
-  public void updateDashboard(DashboardDefinitionDto updatedDashboard, String userId) {
-    DashboardDefinitionUpdateDto updateDto = convertToUpdateDto(updatedDashboard, userId);
-    dashboardWriter.updateDashboard(updateDto, updatedDashboard.getId());
-    dashboardRelationService.handleUpdated(updatedDashboard.getId(), updatedDashboard);
-  }
-
-  public IdDto copyDashboard(String dashboardId, String userId, String name) {
-    final DashboardDefinitionDto currDashboardDef = Optional.ofNullable(getDashboardDefinition(dashboardId))
-      .orElseThrow(() -> new NotFoundException("Dashboard to copy was not found!"));
-
-    String newDashboardName = name != null ? name : currDashboardDef.getName() + " – Copy";
-    return dashboardWriter.createNewDashboard(
-      userId,
-      currDashboardDef.getCollectionId(),
-      newDashboardName,
-      currDashboardDef.getReports()
-    );
-  }
-
-
-  public IdDto copyAndMoveDashboard(String dashboardId, String userId, String collectionId, String name) {
-    final DashboardDefinitionDto currDashboardDef = Optional.ofNullable(getDashboardDefinition(dashboardId))
-      .orElseThrow(() -> new NotFoundException("Dashboard to copy was not found!"));
-
-    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
-
-    final List<ReportLocationDto> newDashboardReports = new ArrayList<>(currDashboardDef.getReports());
-
-    if (!isSameCollection(collectionId, currDashboardDef.getCollectionId())) {
-      newDashboardReports.clear();
-      currDashboardDef.getReports().forEach(reportLocationDto -> {
-        final IdDto idDto = reportService.copyAndMoveReport(reportLocationDto.getId(), userId, collectionId);
-        newDashboardReports.add(reportLocationDto.toBuilder().id(idDto.getId()).build());
-      });
-    }
-
-    String newDashboardName = name != null ? name : currDashboardDef.getName() + " – Copy";
-    return dashboardWriter.createNewDashboard(
-      userId,
-      collectionId,
-      newDashboardName,
-      newDashboardReports
-    );
-  }
-
-  private boolean isSameCollection(final String newCollectionId, final String oldCollectionId) {
-    return StringUtils.equals(newCollectionId, oldCollectionId);
-  }
-
-
-  public List<DashboardDefinitionDto> getDashboardDefinitions() {
-    return dashboardReader.getAllDashboards();
-  }
-
-  public DashboardDefinitionDto getDashboardDefinition(String dashboardId) {
-    return dashboardReader.getDashboard(dashboardId);
-  }
-
-  public List<DashboardDefinitionDto> findFirstDashboardsForReport(String reportId) {
-    return dashboardReader.findFirstDashboardsForReport(reportId);
-  }
-
-  public void removeReportFromDashboards(String reportId) {
-    dashboardWriter.removeReportFromDashboards(reportId);
-  }
-
-  public void deleteDashboard(String dashboardId, boolean force) throws OptimizeConflictException {
-    if (!force) {
-      final Set<ConflictedItemDto> conflictedItems = getConflictedItemsForDeleteDashboard(dashboardId);
-
-      if (!conflictedItems.isEmpty()) {
-        throw new OptimizeConflictException(conflictedItems);
-      }
-    }
-    final DashboardDefinitionDto dashboardDefinition = getDashboardDefinition(dashboardId);
-    dashboardWriter.deleteDashboard(dashboardId);
-    dashboardRelationService.handleDeleted(dashboardDefinition);
-  }
-
-  public ConflictResponseDto getDashboardDeleteConflictingItems(String dashboardId) {
-    return new ConflictResponseDto(getConflictedItemsForDeleteDashboard(dashboardId));
-  }
-
-  private Set<ConflictedItemDto> getConflictedItemsForDeleteDashboard(String dashboardId) {
-    return dashboardRelationService.getConflictedItemsForDelete(getDashboardDefinition(dashboardId));
-  }
-
-  private DashboardDefinitionUpdateDto convertToUpdateDto(final DashboardDefinitionDto updatedDashboard,
-                                                          final String userId) {
-    DashboardDefinitionUpdateDto updateDto = new DashboardDefinitionUpdateDto();
-    updateDto.setOwner(updatedDashboard.getOwner());
-    updateDto.setName(updatedDashboard.getName());
-    updateDto.setReports(updatedDashboard.getReports());
-    updateDto.setLastModifier(userId);
-    updateDto.setLastModified(LocalDateUtil.getCurrentDateTime());
-    return updateDto;
-  }
-
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForReportDelete(final ReportDefinitionDto reportDefinition) {
@@ -189,4 +82,121 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   public void handleCollectionDeleted(final SimpleCollectionDefinitionDto definition) {
     dashboardWriter.deleteDashboardsOfCollection(definition.getId());
   }
+
+  public IdDto createNewDashboardAndReturnId(final String userId, final String collectionId) {
+    collectionService.verifyUserAuthorizedToEditCollectionResources(collectionId, userId);
+    return dashboardWriter.createNewDashboard(userId, collectionId);
+  }
+
+  public IdDto copyDashboard(final String dashboardId, final String userId, final String name) {
+    final AuthorizedDashboardDefinitionDto authorizedDashboard = getDashboardDefinition(dashboardId, userId);
+    final DashboardDefinitionDto dashboardDefinition = authorizedDashboard.getDefinitionDto();
+
+    String newDashboardName = name != null ? name : dashboardDefinition.getName() + " – Copy";
+    return dashboardWriter.createNewDashboard(
+      userId,
+      dashboardDefinition.getCollectionId(),
+      newDashboardName,
+      dashboardDefinition.getReports()
+    );
+  }
+
+  public IdDto copyAndMoveDashboard(final String dashboardId,
+                                    final String userId,
+                                    final String collectionId,
+                                    final String name) {
+    final AuthorizedDashboardDefinitionDto authorizedDashboard = getDashboardDefinition(dashboardId, userId);
+    final DashboardDefinitionDto dashboardDefinition = authorizedDashboard.getDefinitionDto();
+
+    collectionService.verifyUserAuthorizedToEditCollectionResources(collectionId, userId);
+
+    final List<ReportLocationDto> newDashboardReports = new ArrayList<>(dashboardDefinition.getReports());
+
+    if (!isSameCollection(collectionId, dashboardDefinition.getCollectionId())) {
+      newDashboardReports.clear();
+      dashboardDefinition.getReports().forEach(reportLocationDto -> {
+        final IdDto idDto = reportService.copyAndMoveReport(reportLocationDto.getId(), userId, collectionId);
+        newDashboardReports.add(reportLocationDto.toBuilder().id(idDto.getId()).build());
+      });
+    }
+
+    String newDashboardName = name != null ? name : dashboardDefinition.getName() + " – Copy";
+    return dashboardWriter.createNewDashboard(
+      userId,
+      collectionId,
+      newDashboardName,
+      newDashboardReports
+    );
+  }
+
+  public AuthorizedDashboardDefinitionDto getDashboardDefinition(final String dashboardId,
+                                                                 final String userId) {
+    final DashboardDefinitionDto dashboard = getDashboardDefinitionAsService(dashboardId);
+    RoleType currentUserRole = null;
+    if (dashboard.getCollectionId() != null) {
+      currentUserRole = collectionService.getUsersCollectionResourceRole(dashboard.getCollectionId(), userId)
+        .orElse(null);
+    } else if (dashboard.getOwner().equals(userId)) {
+      currentUserRole = RoleType.EDITOR;
+    }
+
+    if (currentUserRole == null) {
+      throw new ForbiddenException(String.format(
+        "User [%s] is not authorized to access dashboard [%s].", userId, dashboardId
+      ));
+    }
+
+    return new AuthorizedDashboardDefinitionDto(currentUserRole, dashboard);
+  }
+
+  public DashboardDefinitionDto getDashboardDefinitionAsService(final String dashboardId) {
+    return dashboardReader.getDashboard(dashboardId);
+  }
+
+  public void updateDashboard(final DashboardDefinitionDto updatedDashboard, final String userId) {
+    final String dashboardId = updatedDashboard.getId();
+    verifyEditAuthorization(dashboardId, userId);
+
+    final DashboardDefinitionUpdateDto updateDto = convertToUpdateDto(updatedDashboard, userId);
+    dashboardWriter.updateDashboard(updateDto, dashboardId);
+  }
+
+  public void deleteDashboard(final String dashboardId, final String userId) {
+    verifyEditAuthorization(dashboardId, userId);
+
+    dashboardWriter.deleteDashboard(dashboardId);
+  }
+
+  private void verifyEditAuthorization(final String dashboardId, final String userId) {
+    final AuthorizedDashboardDefinitionDto authorizedDashboardDefinition =
+      getDashboardDefinition(dashboardId, userId);
+    if (authorizedDashboardDefinition.getCurrentUserRole().ordinal() < RoleType.EDITOR.ordinal()) {
+      throw new ForbiddenException(String.format(
+        "User [%s] is not authorized to edit dashboard [%s].", userId, dashboardId
+      ));
+    }
+  }
+
+  private void removeReportFromDashboards(final String reportId) {
+    dashboardWriter.removeReportFromDashboards(reportId);
+  }
+
+  private List<DashboardDefinitionDto> findFirstDashboardsForReport(final String reportId) {
+    return dashboardReader.findFirstDashboardsForReport(reportId);
+  }
+
+  private boolean isSameCollection(final String newCollectionId, final String oldCollectionId) {
+    return StringUtils.equals(newCollectionId, oldCollectionId);
+  }
+
+  private DashboardDefinitionUpdateDto convertToUpdateDto(final DashboardDefinitionDto updatedDashboard,
+                                                          final String userId) {
+    final DashboardDefinitionUpdateDto updateDto = new DashboardDefinitionUpdateDto();
+    updateDto.setName(updatedDashboard.getName());
+    updateDto.setReports(updatedDashboard.getReports());
+    updateDto.setLastModifier(userId);
+    updateDto.setLastModified(LocalDateUtil.getCurrentDateTime());
+    return updateDto;
+  }
+
 }

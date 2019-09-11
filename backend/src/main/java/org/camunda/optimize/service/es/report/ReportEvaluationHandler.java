@@ -7,19 +7,16 @@ package org.camunda.optimize.service.es.report;
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
 import org.camunda.optimize.service.es.reader.ReportReader;
-import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.es.report.result.process.CombinedProcessReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
@@ -40,7 +37,6 @@ import java.util.stream.Collectors;
 @Component
 public abstract class ReportEvaluationHandler {
 
-
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final ReportReader reportReader;
@@ -59,34 +55,25 @@ public abstract class ReportEvaluationHandler {
     return evaluateReport(userId, reportDefinition, customRecordLimit);
   }
 
-  protected ReportEvaluationResult evaluateReport(final String userId,
-                                                  final ReportDefinitionDto reportDefinition) {
+  public ReportEvaluationResult evaluateReport(final String userId,
+                                               final ReportDefinitionDto reportDefinition) {
     return evaluateReport(userId, reportDefinition, null);
   }
 
-  protected ReportEvaluationResult evaluateReport(final String userId,
-                                                  final ReportDefinitionDto reportDefinition,
-                                                  final Integer customRecordLimit) {
+  public ReportEvaluationResult evaluateReport(final String userId,
+                                               final ReportDefinitionDto reportDefinition,
+                                               final Integer customRecordLimit) {
+    if (!isAuthorizedToAccessReport(userId, reportDefinition)) {
+      throw new ForbiddenException(
+        "User [" + userId + "] is not authorized to evaluate report [" + reportDefinition.getName() + "]."
+      );
+    }
+
     final ReportEvaluationResult result;
     if (!reportDefinition.getCombined()) {
-      switch (reportDefinition.getReportType()) {
-        case PROCESS:
-          SingleProcessReportDefinitionDto processDefinition =
-            (SingleProcessReportDefinitionDto) reportDefinition;
-          result = evaluateSingleProcessReport(userId, processDefinition, customRecordLimit);
-          break;
-        case DECISION:
-          SingleDecisionReportDefinitionDto decisionDefinition =
-            (SingleDecisionReportDefinitionDto) reportDefinition;
-          result = evaluateSingleDecisionReport(userId, decisionDefinition, customRecordLimit);
-          break;
-        default:
-          throw new IllegalStateException("Unsupported reportType: " + reportDefinition.getReportType());
-      }
+      result = evaluateSingleReportWithErrorCheck(reportDefinition, customRecordLimit);
     } else {
-      CombinedReportDefinitionDto combinedReportDefinition =
-        (CombinedReportDefinitionDto) reportDefinition;
-      result = evaluateCombinedReport(userId, combinedReportDefinition);
+      result = evaluateCombinedReport(userId, (CombinedReportDefinitionDto) reportDefinition);
     }
     return result;
   }
@@ -133,11 +120,12 @@ public abstract class ReportEvaluationHandler {
       resultAsDto instanceof ProcessDurationReportMapResultDto;
   }
 
-  private List<ReportEvaluationResult> evaluateListOfReportIds(final String userId, List<String> singleReportIds) {
+  private List<ReportEvaluationResult> evaluateListOfReportIds(final String userId,
+                                                               final List<String> singleReportIds) {
     List<SingleProcessReportDefinitionDto> singleReportDefinitions =
       reportReader.getAllSingleProcessReportsForIdsOmitXml(singleReportIds)
         .stream()
-        .filter(r -> isAuthorizedToSeeReport(userId, r))
+        .filter(r -> isAuthorizedToAccessReport(userId, r))
         .collect(Collectors.toList());
     return combinedReportEvaluator.evaluate(singleReportDefinitions);
   }
@@ -145,42 +133,7 @@ public abstract class ReportEvaluationHandler {
   /**
    * Checks if the user is allowed to see the given report.
    */
-  protected abstract boolean isAuthorizedToSeeReport(String userId, ReportDefinitionDto report);
-
-  private ReportEvaluationResult evaluateSingleProcessReport(final String userId,
-                                                             final SingleProcessReportDefinitionDto reportDefinition,
-                                                             final Integer customRecordLimit) {
-
-    if (!isAuthorizedToSeeReport(userId, reportDefinition)) {
-      ProcessReportDataDto reportData = reportDefinition.getData();
-      throw new ForbiddenException(
-        "User [" + userId + "] is not authorized to evaluate report [" + reportDefinition.getName() + "] " +
-          "with process definition [" + reportData.getProcessDefinitionKey() + "] " +
-          "and tenant ids [" + reportData.getTenantIds() + "]."
-      );
-    }
-
-    ReportEvaluationResult result = evaluateSingleReportWithErrorCheck(reportDefinition, customRecordLimit);
-
-    return result;
-  }
-
-  private ReportEvaluationResult evaluateSingleDecisionReport(final String userId,
-                                                              final SingleDecisionReportDefinitionDto reportDefinition,
-                                                              final Integer customRecordLimit) {
-
-    if (!isAuthorizedToSeeReport(userId, reportDefinition)) {
-      DecisionReportDataDto reportData = reportDefinition.getData();
-      throw new ForbiddenException(
-        "User [" + userId + "] is not authorized to evaluate report [" + reportDefinition.getName() + "] " +
-          "with decision definition [" + reportData.getDecisionDefinitionKey() + "] " +
-          "and tenant ids [" + reportData.getTenantIds() + "]."
-      );
-    }
-
-    ReportEvaluationResult result = evaluateSingleReportWithErrorCheck(reportDefinition, customRecordLimit);
-    return result;
-  }
+  protected abstract boolean isAuthorizedToAccessReport(String userId, ReportDefinitionDto report);
 
   private ReportEvaluationResult evaluateSingleReportWithErrorCheck(final ReportDefinitionDto reportDefinition,
                                                                     final Integer customRecordLimit) {

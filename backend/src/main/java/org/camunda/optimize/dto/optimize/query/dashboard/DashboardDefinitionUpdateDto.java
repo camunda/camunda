@@ -17,7 +17,6 @@ public class DashboardDefinitionUpdateDto {
 
   protected String name;
   protected OffsetDateTime lastModified;
-  protected String owner;
   protected String lastModifier;
   protected List<ReportLocationDto> reports;
   protected String collectionId;

@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.report;
 
 import com.google.common.collect.Sets;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
@@ -24,10 +25,10 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.util.Optional;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -71,10 +72,10 @@ public class ReportServiceConflictTest {
     SingleProcessReportDefinitionDto updateDto = new SingleProcessReportDefinitionDto();
     updateDto.setId("test1");
     when(reportReader.getSingleProcessReport("test1")).thenReturn(updateDto);
-    when(authorizationService.isAuthorizedToSeeProcessReport(any(), any(), anyList())).thenReturn(true);
+    when(authorizationService.isAuthorizedToAccessReportByRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
 
     // when
-    underTest.updateSingleProcessReportWithAuthorizationCheck("test1", updateDto, "user1", false);
+    underTest.updateSingleProcessReport("test1", updateDto, "user1", false);
 
     // then
     verify(reportWriter).updateSingleProcessReport(any());
@@ -88,7 +89,7 @@ public class ReportServiceConflictTest {
     SingleProcessReportDefinitionDto updateDto = new SingleProcessReportDefinitionDto();
     updateDto.setId("test1");
     when(reportReader.getSingleProcessReport("test1")).thenReturn(updateDto);
-    when(authorizationService.isAuthorizedToSeeProcessReport(any(), any(), anyList())).thenReturn(true);
+    when(authorizationService.isAuthorizedToAccessReportByRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
 
     Set<ConflictedItemDto> conflicts = Sets.newHashSet(
       new ConflictedItemDto("conflict1", ConflictedItemType.ALERT, "name"),
@@ -97,7 +98,7 @@ public class ReportServiceConflictTest {
     when(reportRelationService.getConflictedItemsForUpdatedReport(any(), any())).thenReturn(conflicts);
 
     // when
-    underTest.updateSingleProcessReportWithAuthorizationCheck("test1", updateDto, "user1", false);
+    underTest.updateSingleProcessReport("test1", updateDto, "user1", false);
   }
 
   @Test
@@ -106,9 +107,9 @@ public class ReportServiceConflictTest {
     SingleDecisionReportDefinitionDto updateDto = new SingleDecisionReportDefinitionDto();
     updateDto.setId("test1");
     when(reportReader.getSingleDecisionReport("test1")).thenReturn(updateDto);
-    when(authorizationService.isAuthorizedToSeeDecisionReport(any(), any(), anyList())).thenReturn(true);
+    when(authorizationService.isAuthorizedToAccessReportByRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
     // when
-    underTest.updateSingleDecisionReportWithAuthorizationCheck("test1", updateDto, "user1", false);
+    underTest.updateSingleDecisionReport("test1", updateDto, "user1", false);
 
     // then
     verify(reportWriter).updateSingleDecisionReport(any());
@@ -116,14 +117,13 @@ public class ReportServiceConflictTest {
     verify(reportRelationService).handleUpdated("test1", updateDto);
   }
 
-
   @Test(expected = OptimizeConflictException.class)
   public void testUpdateSingleDecisionReportWithConflicts() throws OptimizeException {
     // given
     SingleDecisionReportDefinitionDto updateDto = new SingleDecisionReportDefinitionDto();
     updateDto.setId("test1");
     when(reportReader.getSingleDecisionReport("test1")).thenReturn(updateDto);
-    when(authorizationService.isAuthorizedToSeeDecisionReport(any(), any(), anyList())).thenReturn(true);
+    when(authorizationService.isAuthorizedToAccessReportByRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
 
     Set<ConflictedItemDto> conflicts = Sets.newHashSet(
       new ConflictedItemDto("conflict1", ConflictedItemType.ALERT, "name"),
@@ -132,7 +132,7 @@ public class ReportServiceConflictTest {
     when(reportRelationService.getConflictedItemsForUpdatedReport(any(), any())).thenReturn(conflicts);
 
     // when
-    underTest.updateSingleDecisionReportWithAuthorizationCheck("test1", updateDto, "user1", false);
+    underTest.updateSingleDecisionReport("test1", updateDto, "user1", false);
   }
 
   @Test
@@ -140,10 +140,10 @@ public class ReportServiceConflictTest {
     // given
     final SingleProcessReportDefinitionDto testDefinition = new SingleProcessReportDefinitionDto();
     when(reportReader.getReport("test1")).thenReturn(testDefinition);
-    when(authorizationService.isAuthorizedToSeeProcessReport(any(), any(), anyList())).thenReturn(true);
+    when(authorizationService.isAuthorizedToAccessReportByRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
 
     // when
-    underTest.deleteReportWithAuthorizationCheck("user1", "test1", false);
+    underTest.deleteReport("user1", "test1", false);
 
     // then
     verify(reportWriter).removeSingleReportFromCombinedReports("test1");
@@ -155,7 +155,7 @@ public class ReportServiceConflictTest {
   public void testDeleteReportWithConflicts() throws OptimizeException {
     // given
     when(reportReader.getReport("test1")).thenReturn(new SingleProcessReportDefinitionDto());
-    when(authorizationService.isAuthorizedToSeeProcessReport(any(), any(), anyList())).thenReturn(true);
+    when(authorizationService.isAuthorizedToAccessReportByRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
 
     Set<ConflictedItemDto> conflicts = Sets.newHashSet(
       new ConflictedItemDto("conflict1", ConflictedItemType.ALERT, "name"),
@@ -164,6 +164,6 @@ public class ReportServiceConflictTest {
     when(reportRelationService.getConflictedItemsForDeleteReport(any())).thenReturn(conflicts);
 
     // when
-    underTest.deleteReportWithAuthorizationCheck("user1", "test1", false);
+    underTest.deleteReport("user1", "test1", false);
   }
 }

@@ -203,13 +203,7 @@ public class ExportRestServiceIT {
 
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
-    report.setId("something");
-    report.setLastModifier("something");
     report.setName("something");
-    OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
-    report.setCreated(someDate);
-    report.setLastModified(someDate);
-    report.setOwner("something");
     updateSingleProcessReport(id, report);
     return id;
   }

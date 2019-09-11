@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.command;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

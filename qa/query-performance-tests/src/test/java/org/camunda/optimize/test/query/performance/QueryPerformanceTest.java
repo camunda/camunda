@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static java.time.temporal.ChronoUnit.YEARS;
-import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;

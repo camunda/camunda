@@ -8,14 +8,15 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.EvaluationResultDto;
 import org.camunda.optimize.rest.mapper.ReportEvaluationResultMapper;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.SessionService;
@@ -114,69 +115,12 @@ public class ReportRestService {
   }
 
   /**
-   * Updates the given fields of a single process report to the given id.
-   */
-  @PUT
-  @Path("/process/single/{id}")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public void updateSingleProcessReport(@Context ContainerRequestContext requestContext,
-                                        @PathParam("id") String reportId,
-                                        @QueryParam("force") boolean force,
-                                        @NotNull SingleProcessReportDefinitionDto updatedReport) throws
-                                                                                                 OptimizeException {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    updatedReport.setId(reportId);
-    updatedReport.setLastModifier(userId);
-    updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
-    reportService.updateSingleProcessReportWithAuthorizationCheck(reportId, updatedReport, userId, force);
-  }
-
-  /**
-   * Updates the given fields of a single decision report to the given id.
-   */
-  @PUT
-  @Path("/decision/single/{id}")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public void updateSingleDecisionReport(@Context ContainerRequestContext requestContext,
-                                         @PathParam("id") String reportId,
-                                         @QueryParam("force") boolean force,
-                                         @NotNull SingleDecisionReportDefinitionDto updatedReport) throws
-                                                                                                   OptimizeException {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    updatedReport.setId(reportId);
-    updatedReport.setLastModifier(userId);
-    updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
-    reportService.updateSingleDecisionReportWithAuthorizationCheck(reportId, updatedReport, userId, force);
-  }
-
-  /**
-   * Updates the given fields of a combined process report to the given id.
-   */
-  @PUT
-  @Path("/process/combined/{id}")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public void updateCombinedProcessReport(@Context ContainerRequestContext requestContext,
-                                          @PathParam("id") String reportId,
-                                          @QueryParam("force") boolean force,
-                                          @NotNull CombinedReportDefinitionDto updatedReport) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    updatedReport.setId(reportId);
-    updatedReport.setLastModifier(userId);
-    updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
-    reportService.updateCombinedProcessReportWithAuthorizationCheck(reportId, updatedReport);
-  }
-
-
-  /**
    * Get a list of all available reports.
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<ReportDefinitionDto> getPrivateReports(@Context UriInfo uriInfo,
-                                                     @Context ContainerRequestContext requestContext) {
+  public List<AuthorizedReportDefinitionDto> getAuthorizedReports(@Context UriInfo uriInfo,
+                                                                  @Context ContainerRequestContext requestContext) {
     MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
 
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
@@ -189,35 +133,10 @@ public class ReportRestService {
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public ReportDefinitionDto getReport(@Context ContainerRequestContext requestContext,
-                                       @PathParam("id") String reportId) {
+  public AuthorizedReportDefinitionDto getReport(@Context ContainerRequestContext requestContext,
+                                                 @PathParam("id") String reportId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return reportService.getReportWithAuthorizationCheck(reportId, userId);
-  }
-
-  /**
-   * Retrieve the conflicting items that would occur on performing a delete.
-   */
-  @GET
-  @Path("/{id}/delete-conflicts")
-  @Produces(MediaType.APPLICATION_JSON)
-  public ConflictResponseDto getDeleteConflicts(@Context ContainerRequestContext requestContext,
-                                                @PathParam("id") String reportId) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return reportService.getReportDeleteConflictingItemsWithAuthorizationCheck(userId, reportId);
-  }
-
-  /**
-   * Delete the report to the specified id.
-   */
-  @DELETE
-  @Path("/{id}")
-  @Produces(MediaType.APPLICATION_JSON)
-  public void deleteReport(@Context ContainerRequestContext requestContext,
-                           @PathParam("id") String reportId,
-                           @QueryParam("force") boolean force) throws OptimizeException {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    reportService.deleteReportWithAuthorizationCheck(userId, reportId, force);
+    return reportService.getReportDefinition(reportId, userId);
   }
 
   /**
@@ -256,6 +175,87 @@ public class ReportRestService {
       reportDefinitionDto
     );
     return ReportEvaluationResultMapper.mapToEvaluationResultDto(reportEvaluationResult);
+  }
+
+  /**
+   * Updates the given fields of a single process report to the given id.
+   */
+  @PUT
+  @Path("/process/single/{id}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void updateSingleProcessReport(@Context ContainerRequestContext requestContext,
+                                        @PathParam("id") String reportId,
+                                        @QueryParam("force") boolean force,
+                                        @NotNull SingleProcessReportDefinitionDto updatedReport) throws
+                                                                                                 OptimizeException {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    updatedReport.setId(reportId);
+    updatedReport.setLastModifier(userId);
+    updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
+    reportService.updateSingleProcessReport(reportId, updatedReport, userId, force);
+  }
+
+  /**
+   * Updates the given fields of a single decision report to the given id.
+   */
+  @PUT
+  @Path("/decision/single/{id}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void updateSingleDecisionReport(@Context ContainerRequestContext requestContext,
+                                         @PathParam("id") String reportId,
+                                         @QueryParam("force") boolean force,
+                                         @NotNull SingleDecisionReportDefinitionDto updatedReport) throws
+                                                                                                   OptimizeException {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    updatedReport.setId(reportId);
+    updatedReport.setLastModifier(userId);
+    updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
+    reportService.updateSingleDecisionReport(reportId, updatedReport, userId, force);
+  }
+
+  /**
+   * Updates the given fields of a combined process report to the given id.
+   */
+  @PUT
+  @Path("/process/combined/{id}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void updateCombinedProcessReport(@Context ContainerRequestContext requestContext,
+                                          @PathParam("id") String reportId,
+                                          @QueryParam("force") boolean force,
+                                          @NotNull CombinedReportDefinitionDto updatedReport) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    updatedReport.setId(reportId);
+    updatedReport.setLastModifier(userId);
+    updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
+    reportService.updateCombinedProcessReport(userId, reportId, updatedReport);
+  }
+
+  /**
+   * Retrieve the conflicting items that would occur on performing a delete.
+   */
+  @GET
+  @Path("/{id}/delete-conflicts")
+  @Produces(MediaType.APPLICATION_JSON)
+  public ConflictResponseDto getDeleteConflicts(@Context ContainerRequestContext requestContext,
+                                                @PathParam("id") String reportId) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return reportService.getReportDeleteConflictingItems(userId, reportId);
+  }
+
+  /**
+   * Delete the report to the specified id.
+   */
+  @DELETE
+  @Path("/{id}")
+  @Produces(MediaType.APPLICATION_JSON)
+  public void deleteReport(@Context ContainerRequestContext requestContext,
+                           @PathParam("id") String reportId,
+                           @QueryParam("force") boolean force) throws OptimizeException {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    reportService.deleteReport(userId, reportId, force);
   }
 
 

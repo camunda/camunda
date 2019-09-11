@@ -30,10 +30,10 @@ import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
-import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -48,14 +48,16 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
+import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 
 @RunWith(JUnitParamsRunner.class)
-public class ReportAuthorizationIT {
+public class ReportDefinitionAuthorizationIT {
 
   private static final String PROCESS_KEY = "aprocess";
   private static final String DECISION_KEY = "aDecision";
@@ -160,9 +162,8 @@ public class ReportAuthorizationIT {
     authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId2, RESOURCE_TYPE_TENANT);
     deployStartAndImportDefinition(definitionResourceType);
 
-    String reportId = createReportForDefinition(
-      definitionResourceType,
-      ImmutableList.of(tenantId1, tenantId2)
+    String reportId = createReportForDefinitionAsUser(
+      definitionResourceType, ImmutableList.of(tenantId1, tenantId2), KERMIT_USER, KERMIT_USER
     );
 
     // when
@@ -281,7 +282,7 @@ public class ReportAuthorizationIT {
 
   @Test
   @Parameters(method = "definitionType")
-  public void newReportCanBeAccessedByEveryone(int definitionResourceType) {
+  public void newPrivateReportsCanOnlyBeAccessedByOwner(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployStartAndImportDefinition(definitionResourceType);
@@ -298,14 +299,14 @@ public class ReportAuthorizationIT {
     assertThat(response.getStatus(), is(200));
 
     // when
-    List<ReportDefinitionDto> reports = embeddedOptimizeRule
+    Response otherUserResponse = embeddedOptimizeRule
       .getRequestExecutor()
       .buildGetReportRequest(reportId)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .executeAndReturnList(ReportDefinitionDto.class, 200);
+      .execute();
 
     // then
-    assertThat(reports.size(), is(1));
+    assertThat(otherUserResponse.getStatus(), is(403));
   }
 
   @Test
@@ -315,13 +316,20 @@ public class ReportAuthorizationIT {
     final String notAuthorizedProcessDefinitionKey = "notAuthorizedProcess";
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     deployAndStartSimpleProcessDefinition(authorizedProcessDefinitionKey);
-    authorizationClient.grantSingleResourceAuthorizationForKermit(authorizedProcessDefinitionKey, RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationClient.grantSingleResourceAuthorizationForKermit(
+      authorizedProcessDefinitionKey,
+      RESOURCE_TYPE_PROCESS_DEFINITION
+    );
     deployAndStartSimpleProcessDefinition(notAuthorizedProcessDefinitionKey);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
-    String authorizedReportId = createNewSingleMapReport(authorizedProcessDefinitionKey);
-    String notAuthorizedReportId = createNewSingleMapReport(notAuthorizedProcessDefinitionKey);
+    String authorizedReportId = createNewSingleMapReportAsUser(
+      authorizedProcessDefinitionKey, KERMIT_USER, KERMIT_USER
+    );
+    String notAuthorizedReportId = createNewSingleMapReportAsUser(
+      notAuthorizedProcessDefinitionKey, KERMIT_USER, KERMIT_USER
+    );
 
     // when
     CombinedReportDataDto combinedReport = createCombinedReport(authorizedReportId, notAuthorizedReportId);
@@ -346,17 +354,19 @@ public class ReportAuthorizationIT {
     return definitionResourceType == RESOURCE_TYPE_PROCESS_DEFINITION ? PROCESS_KEY : DECISION_KEY;
   }
 
-  private String createNewSingleMapReport(String processDefinitionKey) {
-    String singleReportId = createNewReport(RESOURCE_TYPE_PROCESS_DEFINITION);
+  private String createNewSingleMapReportAsUser(final String processDefinitionKey,
+                                                final String user,
+                                                final String password) {
+    String singleReportId = createNewReportAsUser(RESOURCE_TYPE_PROCESS_DEFINITION, user, password);
     ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = ProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(processDefinitionKey)
-          .setProcessDefinitionVersion("1")
-          .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
-          .build();
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion("1")
+      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .build();
     SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
     definitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
-    updateReport(singleReportId, definitionDto);
+    updateReportAsUser(singleReportId, definitionDto, user, password);
     return singleReportId;
   }
 
@@ -413,29 +423,42 @@ public class ReportAuthorizationIT {
     }
   }
 
-  private String createReportForDefinition(int resourceType) {
+  private String createReportForDefinition(final int resourceType) {
     return createReportForDefinition(resourceType, Collections.emptyList());
   }
 
-  private String createReportForDefinition(int resourceType, List<String> tenantIds) {
-    String id = createNewReport(resourceType);
+  private String createReportForDefinition(final int resourceType, final List<String> tenantIds) {
+    return createReportForDefinitionAsUser(resourceType, tenantIds, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
+
+  private String createReportForDefinitionAsUser(final int resourceType,
+                                                 final List<String> tenantIds,
+                                                 final String user,
+                                                 final String password) {
+    String id = createNewReportAsUser(resourceType, user, password);
     ReportDefinitionDto definition = constructReportWithDefinition(resourceType, tenantIds);
-    updateReport(id, definition);
+    updateReportAsUser(id, definition, user, password);
     return id;
   }
 
   private String createNewReport(int resourceType) {
+    return createNewReportAsUser(resourceType, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
+
+  private String createNewReportAsUser(int resourceType, final String user, final String password) {
     switch (resourceType) {
       default:
       case RESOURCE_TYPE_PROCESS_DEFINITION:
         return embeddedOptimizeRule
           .getRequestExecutor()
+          .withUserAuthentication(user, password)
           .buildCreateSingleProcessReportRequest()
           .execute(IdDto.class, 200)
           .getId();
       case RESOURCE_TYPE_DECISION_DEFINITION:
         return embeddedOptimizeRule
           .getRequestExecutor()
+          .withUserAuthentication(user, password)
           .buildCreateSingleDecisionReportRequest()
           .execute(IdDto.class, 200)
           .getId();
@@ -443,7 +466,12 @@ public class ReportAuthorizationIT {
   }
 
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    Response response = getUpdateReportResponse(id, updatedReport);
+    updateReportAsUser(id, updatedReport, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
+
+  private void updateReportAsUser(String id, ReportDefinitionDto updatedReport, final String user,
+                                  final String password) {
+    Response response = getUpdateReportResponse(id, updatedReport, user, password);
     assertThat(response.getStatus(), is(204));
   }
 
@@ -478,17 +506,22 @@ public class ReportAuthorizationIT {
     }
   }
 
-  private Response getUpdateReportResponse(String id, ReportDefinitionDto updatedReport) {
+  private Response getUpdateReportResponse(final String id,
+                                           final ReportDefinitionDto updatedReport,
+                                           final String user,
+                                           final String password) {
     switch (updatedReport.getReportType()) {
       default:
       case PROCESS:
         return embeddedOptimizeRule
           .getRequestExecutor()
+          .withUserAuthentication(user, password)
           .buildUpdateSingleProcessReportRequest(id, (SingleProcessReportDefinitionDto) updatedReport)
           .execute();
       case DECISION:
         return embeddedOptimizeRule
           .getRequestExecutor()
+          .withUserAuthentication(user, password)
           .buildUpdateSingleDecisionReportRequest(id, (SingleDecisionReportDefinitionDto) updatedReport)
           .execute();
     }

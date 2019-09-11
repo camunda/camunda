@@ -18,10 +18,10 @@ import java.time.temporal.TemporalUnit;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN;
-import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN_EQUALS;
-import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
-import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN_EQUALS;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN_EQUALS;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN_EQUALS;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 

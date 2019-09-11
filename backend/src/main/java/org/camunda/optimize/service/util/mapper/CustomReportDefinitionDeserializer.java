@@ -39,16 +39,20 @@ public class CustomReportDefinitionDeserializer extends StdDeserializer<ReportDe
   }
 
   @Override
-  public ReportDefinitionDto deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
-    JsonNode node = jp.getCodec().readTree(jp);
-    ensureCombinedReportFieldIsProvided(jp, node);
-    ensureReportTypeFieldIsProvided(jp, node);
+  public ReportDefinitionDto deserialize(final JsonParser jp, final DeserializationContext ctxt) throws IOException {
+    JsonNode node = jp.readValueAsTree();
+    return deserialize(jp, node);
+  }
 
-    boolean isCombined = node.get(COMBINED).booleanValue();
-    String reportTypeAsString = node.get(REPORT_TYPE).asText();
+  public ReportDefinitionDto deserialize(final JsonParser jp, final JsonNode readJsonTree) throws IOException {
+    ensureCombinedReportFieldIsProvided(jp, readJsonTree);
+    ensureReportTypeFieldIsProvided(jp, readJsonTree);
+
+    boolean isCombined = readJsonTree.get(COMBINED).booleanValue();
+    String reportTypeAsString = readJsonTree.get(REPORT_TYPE).asText();
     ReportType reportType = valueOf(reportTypeAsString.toUpperCase());
 
-    String json = node.toString();
+    String json = readJsonTree.toString();
     if (isCombined) {
       return objectMapper.readValue(json, CombinedReportDefinitionDto.class);
     } else {

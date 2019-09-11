@@ -75,7 +75,22 @@ public class CollectionService {
     return collectionWriter.createNewCollectionAndReturnId(userId);
   }
 
-  public void verifyUserAuthorizedToEditCollectionResources(final String userId, final String collectionId)
+  public Optional<RoleType> getUsersCollectionResourceRole(final String collectionId, final String userId)
+    throws NotFoundException, ForbiddenException {
+    return getAuthorizedSimpleCollectionDefinitionDto(collectionId, userId)
+      .map(authorizedDto -> {
+        switch (authorizedDto.getCurrentUserRole()) {
+          case EDITOR:
+          case MANAGER:
+            return RoleType.EDITOR;
+          case VIEWER:
+          default:
+            return RoleType.VIEWER;
+        }
+      });
+  }
+
+  public void verifyUserAuthorizedToEditCollectionResources(final String collectionId, final String userId)
     throws NotFoundException, ForbiddenException {
     if (collectionId != null) {
       final AuthorizedSimpleCollectionDefinitionDto authorizedCollection =
@@ -253,9 +268,14 @@ public class CollectionService {
 
   private AuthorizedSimpleCollectionDefinitionDto getAuthorizedSimpleCollectionDefinitionDtoOrFail(
     final String collectionId, final String userId) {
-    final SimpleCollectionDefinitionDto collection = collectionReader.getCollection(collectionId);
-    return collectionAuthorizationService.resolveToAuthorizedSimpleCollection(collection, userId)
+    return getAuthorizedSimpleCollectionDefinitionDto(collectionId, userId)
       .orElseThrow(() -> new ForbiddenException(String.format(VIEW_NOT_AUTHORIZED_MESSAGE, userId, collectionId)));
+  }
+
+  private Optional<AuthorizedSimpleCollectionDefinitionDto> getAuthorizedSimpleCollectionDefinitionDto(
+    final String collectionId, final String userId) {
+    final SimpleCollectionDefinitionDto collection = collectionReader.getCollection(collectionId);
+    return collectionAuthorizationService.resolveToAuthorizedSimpleCollection(collection, userId);
   }
 
   private ConflictedItemDto reportToConflictedItem(CollectionEntity collectionEntity) {

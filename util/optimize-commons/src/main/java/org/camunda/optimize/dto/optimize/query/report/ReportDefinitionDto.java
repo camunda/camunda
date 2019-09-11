@@ -53,7 +53,7 @@ public class ReportDefinitionDto<RD extends ReportDataDto> implements Collection
       EntityType.REPORT,
       this.combined,
       this.reportType,
-      // TODO will be mapped dynamically with OPT-2627
+      // defaults to EDITOR, any authorization specific values have to be applied in responsible service layer
       RoleType.EDITOR
     );
   }

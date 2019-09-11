@@ -51,6 +51,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LICENSE_IND
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 
@@ -73,10 +74,11 @@ public class ForceReimportIT {
     AlertCreationDto alert = setupBasicAlert(reportId);
     embeddedOptimizeRule
       .getRequestExecutor().buildCreateAlertRequest(alert).execute();
-    embeddedOptimizeRule
+    final String dashboardId = embeddedOptimizeRule
       .getRequestExecutor()
       .buildCreateDashboardRequest()
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, 200)
+      .getId();
     addLicense();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -84,13 +86,13 @@ public class ForceReimportIT {
 
     // when
     List<ReportDefinitionDto> reports = getAllReports();
-    List<DashboardDefinitionDto> dashboards = getAllDashboards();
+    DashboardDefinitionDto dashboard = getDashboardById(dashboardId);
     List<AlertDefinitionDto> alerts = getAllAlerts();
 
     // then
     assertThat(licenseExists(), is(true));
     assertThat(reports.size(), is(1));
-    assertThat(dashboards.size(), is(1));
+    assertThat(dashboard, is(notNullValue()));
     assertThat(alerts.size(), is(1));
     assertThat(hasEngineData(), is(true));
 
@@ -98,13 +100,13 @@ public class ForceReimportIT {
     forceReimportOfEngineData();
 
     reports = getAllReports();
-    dashboards = getAllDashboards();
+    dashboard = getDashboardById(dashboardId);
     alerts = getAllAlerts();
 
     // then
     assertThat(licenseExists(), is(true));
     assertThat(reports.size(), is(1));
-    assertThat(dashboards.size(), is(1));
+    assertThat(dashboard, is(notNullValue()));
     assertThat(alerts.size(), is(1));
     assertThat(hasEngineData(), is(false));
   }
@@ -237,21 +239,14 @@ public class ForceReimportIT {
     return alertCreationDto;
   }
 
-  private List<DashboardDefinitionDto> getAllDashboards() {
-    return getAllDashboardsWithQueryParam(new HashMap<>());
-  }
-
-  private List<DashboardDefinitionDto> getAllDashboardsWithQueryParam(Map<String, Object> queryParams) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .addQueryParams(queryParams)
-      .buildGetAllDashboardsRequest()
-      .executeAndReturnList(DashboardDefinitionDto.class, 200);
-  }
-
-
   private void forceReimportOfEngineData() {
     ReimportPreparation.main(new String[]{});
+  }
+
+  private DashboardDefinitionDto getDashboardById(final String dashboardId) {
+    return embeddedOptimizeRule.getRequestExecutor()
+      .buildGetDashboardRequest(dashboardId)
+      .execute(DashboardDefinitionDto.class, 200);
   }
 
   private List<ReportDefinitionDto> getAllReports() {

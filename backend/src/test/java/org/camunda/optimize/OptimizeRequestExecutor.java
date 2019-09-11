@@ -266,19 +266,19 @@ public class OptimizeRequestExecutor {
     switch (entity.getReportType()) {
       default:
       case PROCESS:
-        return buildUpdateSingleProcessReportRequest(id, (SingleProcessReportDefinitionDto) entity, null);
+        return buildUpdateSingleProcessReportRequest(id, entity, null);
       case DECISION:
-        return buildUpdateSingleDecisionReportRequest(id, (SingleDecisionReportDefinitionDto) entity, null);
+        return buildUpdateSingleDecisionReportRequest(id, entity, null);
     }
   }
 
   public OptimizeRequestExecutor buildUpdateSingleProcessReportRequest(String id,
-                                                                       SingleProcessReportDefinitionDto entity) {
+                                                                       ReportDefinitionDto entity) {
     return buildUpdateSingleProcessReportRequest(id, entity, null);
   }
 
   public OptimizeRequestExecutor buildUpdateSingleProcessReportRequest(String id,
-                                                                       SingleProcessReportDefinitionDto entity,
+                                                                       ReportDefinitionDto entity,
                                                                        Boolean force) {
     this.path = "report/process/single/" + id;
     this.body = getBody(entity);
@@ -288,12 +288,12 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildUpdateSingleDecisionReportRequest(String id,
-                                                                        SingleDecisionReportDefinitionDto entity) {
+                                                                        ReportDefinitionDto entity) {
     return buildUpdateSingleDecisionReportRequest(id, entity, null);
   }
 
   public OptimizeRequestExecutor buildUpdateSingleDecisionReportRequest(String id,
-                                                                        SingleDecisionReportDefinitionDto entity,
+                                                                        ReportDefinitionDto entity,
                                                                         Boolean force) {
     this.path = "report/decision/single/" + id;
     this.body = getBody(entity);
@@ -303,12 +303,12 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildUpdateCombinedProcessReportRequest(String id,
-                                                                         CombinedReportDefinitionDto entity) {
+                                                                         ReportDefinitionDto entity) {
     return buildUpdateCombinedProcessReportRequest(id, entity, null);
   }
 
   public OptimizeRequestExecutor buildUpdateCombinedProcessReportRequest(String id,
-                                                                         CombinedReportDefinitionDto entity,
+                                                                         ReportDefinitionDto entity,
                                                                          Boolean force) {
     this.path = "report/process/combined/" + id;
     this.body = getBody(entity);
@@ -492,12 +492,6 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildGetCollectionDeleteConflictsRequest(String id) {
     this.path = "collection/" + id + "/delete-conflicts";
-    this.requestType = GET;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildGetAllDashboardsRequest() {
-    this.path = "dashboard/";
     this.requestType = GET;
     return this;
   }

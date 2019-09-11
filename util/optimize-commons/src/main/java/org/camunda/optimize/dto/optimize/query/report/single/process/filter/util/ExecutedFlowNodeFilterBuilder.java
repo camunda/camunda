@@ -12,8 +12,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
-import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
+import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
 
 public class ExecutedFlowNodeFilterBuilder {
 

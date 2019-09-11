@@ -27,10 +27,11 @@ import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResu
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
-import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -65,12 +66,16 @@ public class SingleReportHandlingIT {
 
   private static final String FOO_PROCESS_DEFINITION_KEY = "fooProcessDefinitionKey";
   private static final String FOO_PROCESS_DEFINITION_VERSION = "1";
+
+  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+    .outerRule(engineRule)
+    .around(elasticSearchRule)
+    .around(embeddedOptimizeRule);
 
   @After
   public void cleanUp() {
@@ -152,6 +157,7 @@ public class SingleReportHandlingIT {
   @Test
   public void testUpdateProcessReport() {
     // given
+    final String shouldNotBeUpdatedString = "shouldNotBeUpdated";
     String id = createNewReport();
     ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setProcessDefinitionKey("procdef");
@@ -166,13 +172,13 @@ public class SingleReportHandlingIT {
     reportData.getParameters().setProcessPart(processPartDto);
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
-    report.setId("shouldNotBeUpdated");
+    report.setId(shouldNotBeUpdatedString);
     report.setLastModifier("shouldNotBeUpdatedManually");
     report.setName("MyReport");
     OffsetDateTime shouldBeIgnoredDate = OffsetDateTime.now().plusHours(1);
     report.setCreated(shouldBeIgnoredDate);
     report.setLastModified(shouldBeIgnoredDate);
-    report.setOwner("NewOwner");
+    report.setOwner(shouldNotBeUpdatedString);
 
     // when
     updateSingleProcessReport(id, report);
@@ -190,7 +196,7 @@ public class SingleReportHandlingIT {
     assertThat(newReport.getCreated(), is(not(shouldBeIgnoredDate)));
     assertThat(newReport.getLastModified(), is(not(shouldBeIgnoredDate)));
     assertThat(newReport.getName(), is("MyReport"));
-    assertThat(newReport.getOwner(), is("NewOwner"));
+    assertThat(newReport.getOwner(), is(DEFAULT_USERNAME));
   }
 
   @Test
@@ -391,7 +397,6 @@ public class SingleReportHandlingIT {
     report.setData(reportData);
     report.setName("name");
     OffsetDateTime now = OffsetDateTime.now();
-    report.setOwner("owner");
     updateSingleProcessReport(reportId, report);
 
     // when
@@ -401,7 +406,7 @@ public class SingleReportHandlingIT {
     final SingleProcessReportDefinitionDto reportDefinition = result.getReportDefinition();
     assertThat(reportDefinition.getId(), is(reportId));
     assertThat(reportDefinition.getName(), is("name"));
-    assertThat(reportDefinition.getOwner(), is("owner"));
+    assertThat(reportDefinition.getOwner(), is(DEFAULT_USERNAME));
     assertThat(reportDefinition.getCreated().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
     assertThat(reportDefinition.getLastModifier(), is(DEFAULT_USERNAME));
     assertThat(reportDefinition.getLastModified().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));

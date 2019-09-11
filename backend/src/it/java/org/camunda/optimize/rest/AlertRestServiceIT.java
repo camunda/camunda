@@ -17,6 +17,9 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -186,19 +189,19 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void getAuthorizedAlertsOnly() {
     //given
-    engineRule.addUser("kermit", "kermit");
-    engineRule.grantUserOptimizeAccess("kermit");
-    AlertCreationDto alert1 = setupBasicProcessAlert("processDefinition1");
-    AlertCreationDto alert2 = setupBasicProcessAlert("processDefinition2");
-    addAlertToOptimize(alert1);
-    addAlertToOptimize(alert2);
-    grantSingleDefinitionAuthorizationsForUser("kermit", "processDefinition1");
+    engineRule.addUser(KERMIT_USER, KERMIT_USER);
+    engineRule.grantUserOptimizeAccess(KERMIT_USER);
+    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, "processDefinition1");
+
+    AlertCreationDto alert1 = setupBasicProcessAlertAsUser("processDefinition1", KERMIT_USER, KERMIT_USER);
+    AlertCreationDto alert2 = setupBasicProcessAlertAsUser("processDefinition2", DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    addAlertToOptimizeAsUser(alert1, KERMIT_USER, KERMIT_USER);
+    addAlertToOptimizeAsUser(alert2, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // when
-
     List<AlertDefinitionDto> allAlerts = embeddedOptimizeRule
       .getRequestExecutor()
-      .withUserAuthentication("kermit", "kermit")
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetAllAlertsRequest()
       .executeAndReturnList(AlertDefinitionDto.class, 200);
 
@@ -275,8 +278,15 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   }
 
   private String addAlertToOptimize(AlertCreationDto creationDto) {
+    return addAlertToOptimizeAsUser(creationDto, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
+
+  private String addAlertToOptimizeAsUser(final AlertCreationDto creationDto,
+                                          final String user,
+                                          final String password) {
     return embeddedOptimizeRule
       .getRequestExecutor()
+      .withUserAuthentication(user, password)
       .buildCreateAlertRequest(creationDto)
       .execute(IdDto.class, 200)
       .getId();

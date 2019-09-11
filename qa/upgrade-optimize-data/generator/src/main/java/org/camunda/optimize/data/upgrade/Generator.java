@@ -57,6 +57,7 @@ import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_A
 import static org.camunda.optimize.service.security.AuthCookieService.createOptimizeAuthCookieValue;
 
 public class Generator {
+  public static final String DEFAULT_USERNAME = "demo";
   private static Client client;
   private static String authCookie;
   private static String processDefinitionKey;
@@ -191,8 +192,8 @@ public class Generator {
 
   private static void authenticateDemo() {
     CredentialsDto credentials = new CredentialsDto();
-    credentials.setUsername("demo");
-    credentials.setPassword("demo");
+    credentials.setUsername(DEFAULT_USERNAME);
+    credentials.setPassword(DEFAULT_USERNAME);
 
     Response response = client.target("http://localhost:8090/api/authentication")
       .request().post(Entity.json(credentials));
@@ -254,14 +255,9 @@ public class Generator {
 
   private static SingleProcessReportDefinitionDto prepareReportUpdate(ProcessReportDataDto reportData, String id) {
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-
     report.setData(reportData);
     report.setId(id);
-    report.setLastModifier("something");
     report.setName(reportData.createCommandKey());
-    report.setCreated(OffsetDateTime.now());
-    report.setLastModified(OffsetDateTime.now());
-    report.setOwner("something");
     return report;
   }
 

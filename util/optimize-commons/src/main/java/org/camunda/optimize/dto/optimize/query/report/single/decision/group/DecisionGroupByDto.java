@@ -13,7 +13,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByValueDto;
-import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 
 import java.util.Objects;
 
@@ -54,7 +53,7 @@ public abstract class DecisionGroupByDto<VALUE extends DecisionGroupByValueDto> 
       return false;
     }
     DecisionGroupByDto<?> that = (DecisionGroupByDto<?>) o;
-    return Objects.equals(type, that.type) && ReportUtil.isCombinable(value, that.value);
+    return Objects.equals(type, that.type) && Combinable.isCombinable(value, that.value);
   }
 
   @JsonIgnore

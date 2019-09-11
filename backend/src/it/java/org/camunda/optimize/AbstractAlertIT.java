@@ -46,6 +46,8 @@ import java.util.Map;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -184,13 +186,19 @@ public abstract class AbstractAlertIT {
   }
 
   protected AlertCreationDto setupBasicProcessAlert(String definitionKey) {
+    return setupBasicProcessAlertAsUser(definitionKey, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
+
+  protected AlertCreationDto setupBasicProcessAlertAsUser(final String definitionKey,
+                                                          final String user,
+                                                          final String password) {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess(definitionKey);
     engineRule.startProcessInstance(processDefinition.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
-    String reportId = createAndStoreNumberReport(processDefinition);
+    String reportId = createAndStoreNumberReportAsUser(processDefinition, user, password);
     return createSimpleAlert(reportId);
   }
 
@@ -214,9 +222,10 @@ public abstract class AbstractAlertIT {
     return alertCreationDto;
   }
 
-  private String createNewProcessReport() {
+  private String createNewProcessReportAsUser(final String user, final String password) {
     return embeddedOptimizeRule
       .getRequestExecutor()
+      .withUserAuthentication(user, password)
       .buildCreateSingleProcessReportRequest()
       .execute(IdDto.class, 200)
       .getId();
@@ -230,14 +239,19 @@ public abstract class AbstractAlertIT {
       .getId();
   }
 
-
   protected String createAndStoreNumberReport(ProcessDefinitionEngineDto processDefinition) {
-    String id = createNewProcessReport();
+    return createAndStoreNumberReportAsUser(processDefinition, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
+
+  protected String createAndStoreNumberReportAsUser(final ProcessDefinitionEngineDto processDefinition,
+                                                    final String user,
+                                                    final String password) {
+    String id = createNewProcessReportAsUser(user, password);
     SingleProcessReportDefinitionDto report = getReportDefinitionDto(
       processDefinition.getKey(),
       String.valueOf(processDefinition.getVersion())
     );
-    updateSingleProcessReport(id, report);
+    updateSingleProcessReportAsUser(id, report, user, password);
     return id;
   }
 
@@ -256,13 +270,7 @@ public abstract class AbstractAlertIT {
       .build();
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
-    report.setId("something");
-    report.setLastModifier("something");
     report.setName("something");
-    OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
-    report.setCreated(someDate);
-    report.setLastModified(someDate);
-    report.setOwner("something");
     return report;
   }
 
@@ -275,8 +283,16 @@ public abstract class AbstractAlertIT {
   }
 
   protected void updateSingleProcessReport(String id, SingleProcessReportDefinitionDto updatedReport) {
+    updateSingleProcessReportAsUser(id, updatedReport, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
+
+  protected void updateSingleProcessReportAsUser(String id,
+                                                 SingleProcessReportDefinitionDto updatedReport,
+                                                 final String user,
+                                                 final String password) {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
+      .withUserAuthentication(user, password)
       .buildUpdateSingleProcessReportRequest(id, updatedReport, true)
       .execute();
     assertThat(response.getStatus(), is(204));
@@ -305,7 +321,16 @@ public abstract class AbstractAlertIT {
   }
 
   private String createAndStoreDurationNumberReport(String processDefinitionKey, String processDefinitionVersion) {
-    String id = createNewProcessReport();
+    return createAndStoreDurationNumberReportAsUser(
+      processDefinitionKey, processDefinitionVersion, DEFAULT_USERNAME, DEFAULT_PASSWORD
+    );
+  }
+
+  private String createAndStoreDurationNumberReportAsUser(final String processDefinitionKey,
+                                                          final String processDefinitionVersion,
+                                                          final String user,
+                                                          final String password) {
+    String id = createNewProcessReportAsUser(user, password);
     SingleProcessReportDefinitionDto report =
       getDurationReportDefinitionDto(processDefinitionKey, processDefinitionVersion);
     updateSingleProcessReport(id, report);
@@ -322,13 +347,7 @@ public abstract class AbstractAlertIT {
       .build();
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
-    report.setId("something");
-    report.setLastModifier("something");
     report.setName("something");
-    OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
-    report.setCreated(someDate);
-    report.setLastModified(someDate);
-    report.setOwner("something");
     return report;
   }
 

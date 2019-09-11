@@ -5,8 +5,16 @@
  */
 package org.camunda.optimize.dto.optimize.rest;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.RoleType;
 
-public interface AuthorizedEntityDto {
-  RoleType getCurrentUserRole();
+@Data
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+// supposed to be called from entity specific subclasses only
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
+public class AuthorizedEntityDto {
+  private RoleType currentUserRole;
 }

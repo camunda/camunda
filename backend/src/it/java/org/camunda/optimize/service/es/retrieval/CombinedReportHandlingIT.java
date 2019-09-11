@@ -133,18 +133,19 @@ public class CombinedReportHandlingIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
+    final String shouldNotBeUpdatedString = "shouldNotBeUpdated";
     String id = createNewCombinedReport();
     String singleReportId = createNewSingleNumberReport(engineDto);
     CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
     report.setData(createCombinedReport(singleReportId));
     report.getData().getConfiguration().setXLabel("FooXLabel");
-    report.setId("shouldNotBeUpdated");
+    report.setId(shouldNotBeUpdatedString);
     report.setLastModifier("shouldNotBeUpdatedManually");
     report.setName("MyReport");
     OffsetDateTime shouldBeIgnoredDate = OffsetDateTime.now().plusHours(1);
     report.setCreated(shouldBeIgnoredDate);
     report.setLastModified(shouldBeIgnoredDate);
-    report.setOwner("NewOwner");
+    report.setOwner(shouldNotBeUpdatedString);
 
     // when
     updateReport(id, report);
@@ -162,7 +163,7 @@ public class CombinedReportHandlingIT {
     assertThat(newReport.getCreated(), is(not(shouldBeIgnoredDate)));
     assertThat(newReport.getLastModified(), is(not(shouldBeIgnoredDate)));
     assertThat(newReport.getName(), is("MyReport"));
-    assertThat(newReport.getOwner(), is("NewOwner"));
+    assertThat(newReport.getOwner(), is(DEFAULT_USERNAME));
   }
 
   @Test
@@ -194,7 +195,6 @@ public class CombinedReportHandlingIT {
     report.setData(createCombinedReport(singleReportId));
     report.setName("name");
     OffsetDateTime now = OffsetDateTime.now();
-    report.setOwner("owner");
     updateReport(reportId, report);
 
     // when
@@ -203,7 +203,7 @@ public class CombinedReportHandlingIT {
     // then
     assertThat(result.getReportDefinition().getId(), is(reportId));
     assertThat(result.getReportDefinition().getName(), is("name"));
-    assertThat(result.getReportDefinition().getOwner(), is("owner"));
+    assertThat(result.getReportDefinition().getOwner(), is(DEFAULT_USERNAME));
     assertThat(
       result.getReportDefinition().getCreated().truncatedTo(ChronoUnit.DAYS),
       is(now.truncatedTo(ChronoUnit.DAYS))
@@ -226,12 +226,6 @@ public class CombinedReportHandlingIT {
   public void deleteCombinedReport() {
     // given
     String reportId = createNewCombinedReport();
-    CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
-    report.setData(createCombinedReport());
-    report.setName("name");
-    OffsetDateTime now = OffsetDateTime.now();
-    report.setOwner("owner");
-    updateReport(reportId, report);
 
     // when
     deleteReport(reportId);

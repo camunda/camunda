@@ -8,21 +8,25 @@ package org.camunda.optimize.service.report;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
@@ -30,7 +34,6 @@ import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
-import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -46,12 +49,12 @@ import javax.ws.rs.core.MultivaluedMap;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.extractProcessDefinitionName;
 import static org.camunda.optimize.service.engine.importing.DmnModelUtility.extractDecisionDefinitionName;
-import static org.camunda.optimize.service.es.report.command.util.ReportUtil.copyDefinitionMetaDataToUpdate;
 
 @RequiredArgsConstructor
 @Component
@@ -61,7 +64,7 @@ public class ReportService implements CollectionReferencingService {
   private final ReportWriter reportWriter;
   private final ReportReader reportReader;
   private final AuthorizationCheckReportEvaluationHandler reportEvaluator;
-  private final ReportAuthorizationService authorizationService;
+  private final ReportAuthorizationService reportAuthorizationService;
   private final ReportRelationService reportRelationService;
 
   private final CollectionService collectionService;
@@ -80,71 +83,91 @@ public class ReportService implements CollectionReferencingService {
     reportWriter.deleteAllReportsOfCollection(definition.getId());
   }
 
+  public IdDto createNewSingleDecisionReport(final String userId, final String collectionId) {
+    collectionService.verifyUserAuthorizedToEditCollectionResources(collectionId, userId);
+    return reportWriter.createNewSingleDecisionReport(userId, collectionId);
+  }
+
+  public IdDto createNewSingleProcessReport(final String userId, final String collectionId) {
+    collectionService.verifyUserAuthorizedToEditCollectionResources(collectionId, userId);
+    return reportWriter.createNewSingleProcessReport(userId, collectionId);
+  }
+
+  public IdDto createNewCombinedProcessReport(final String userId, final String collectionId) {
+    collectionService.verifyUserAuthorizedToEditCollectionResources(collectionId, userId);
+    return reportWriter.createNewCombinedReport(userId, collectionId);
+  }
+
+  public ConflictResponseDto getReportDeleteConflictingItems(String userId, String reportId) {
+    ReportDefinitionDto currentReportVersion = getReportDefinition(reportId, userId).getDefinitionDto();
+    return new ConflictResponseDto(getConflictedItemsForDeleteReport(currentReportVersion));
+  }
+
+  public IdDto copyReport(String reportId, String userId, String newReportName) {
+    final AuthorizedReportDefinitionDto authorizedReportDefinition = getReportDefinition(reportId, userId);
+    final ReportDefinitionDto oldReportDefinition = authorizedReportDefinition.getDefinitionDto();
+
+    return copyAndMoveReport(reportId, userId, oldReportDefinition.getCollectionId(), newReportName);
+  }
+
   public IdDto copyAndMoveReport(String reportId, String userId, String collectionId) {
     return copyAndMoveReport(reportId, userId, collectionId, null);
   }
 
   public IdDto copyAndMoveReport(String reportId, String userId, String collectionId, String newReportName) {
-    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
-    return copyReport(reportId, userId, collectionId, false, newReportName);
+    final AuthorizedReportDefinitionDto authorizedReportDefinition = getReportDefinition(reportId, userId);
+    final ReportDefinitionDto originalReportDefinition = authorizedReportDefinition.getDefinitionDto();
+    collectionService.verifyUserAuthorizedToEditCollectionResources(collectionId, userId);
+
+    final String oldCollectionId = originalReportDefinition.getCollectionId();
+    final String newCollectionId = Objects.equals(oldCollectionId, collectionId) ? oldCollectionId : collectionId;
+
+    return copyAndMoveReport(originalReportDefinition, userId, newReportName, newCollectionId);
   }
 
-  public IdDto copyReport(String reportId, String userId, String newReportName) {
-    return copyReport(reportId, userId, null, true, newReportName);
+  public AuthorizedReportDefinitionDto getReportDefinition(final String reportId, final String userId) {
+    final ReportDefinitionDto report = reportReader.getReport(reportId);
+    final RoleType currentUserRole = reportAuthorizationService.isAuthorizedToAccessReportByRole(userId, report)
+      .orElseThrow(() -> new ForbiddenException(String.format(
+        "User [%s] is not authorized to access report [%s].", userId, reportId
+      )));
+    return new AuthorizedReportDefinitionDto(report, currentUserRole);
   }
 
-  public ConflictResponseDto getReportDeleteConflictingItemsWithAuthorizationCheck(String userId, String reportId) {
-    ReportDefinitionDto currentReportVersion = getReportWithAuthorizationCheck(reportId, userId);
-    return new ConflictResponseDto(getConflictedItemsForDeleteReport(currentReportVersion));
+  public List<AuthorizedReportDefinitionDto> findAndFilterReports(String userId,
+                                                                  MultivaluedMap<String, String> queryParameters) {
+    List<AuthorizedReportDefinitionDto> reports = findAndFilterReports(userId);
+    reports = QueryParamAdjustmentUtil.adjustReportResultsToQueryParameters(reports, queryParameters);
+    return reports;
   }
 
-  public void deleteReportWithAuthorizationCheck(String userId, String reportId, boolean force)
-    throws OptimizeException {
-    final ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
-    if (!isAuthorizedToSeeReport(userId, reportDefinition)) {
-      throw new ForbiddenException(
-        "User [" + userId + "] is not authorized to delete report [" + reportDefinition.getName() + "]."
-      );
-    }
-
-    if (!force) {
-      final Set<ConflictedItemDto> conflictedItems = getConflictedItemsForDeleteReport(reportDefinition);
-
-      if (!conflictedItems.isEmpty()) {
-        throw new OptimizeConflictException(conflictedItems);
-      }
-    }
-
-    if (!reportDefinition.getCombined()) {
-      reportWriter.removeSingleReportFromCombinedReports(reportId);
-      reportWriter.deleteSingleReport(reportId);
-    } else {
-      reportWriter.deleteCombinedReport(reportId);
-    }
-
-    reportRelationService.handleDeleted(reportDefinition);
+  public List<AuthorizedReportDefinitionDto> findAndFilterReports(String userId) {
+    List<ReportDefinitionDto> reports = reportReader.getAllReportsOmitXml(userId);
+    List<AuthorizedReportDefinitionDto> authorizedReports = filterAuthorizedReports(userId, reports);
+    return authorizedReports;
   }
 
-  public IdDto createNewSingleDecisionReport(final String userId, final String collectionId) {
-    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
-    return reportWriter.createNewSingleDecisionReport(userId, collectionId);
+  public ReportEvaluationResult evaluateSavedReport(String userId, String reportId) {
+    // auth is handled in evaluator as it also handles single reports of a combined report
+    return reportEvaluator.evaluateSavedReport(userId, reportId);
   }
 
-  public IdDto createNewSingleProcessReport(final String userId, final String collectionId) {
-    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
-    return reportWriter.createNewSingleProcessReport(userId, collectionId);
+  public ReportEvaluationResult evaluateReport(String userId, ReportDefinitionDto reportDefinition) {
+    // auth is handled in evaluator as it also handles single reports of a combined report
+    return reportEvaluator.evaluateReport(userId, reportDefinition);
   }
 
-  public IdDto createNewCombinedProcessReport(final String userId, final String collectionId) {
-    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
-    return reportWriter.createNewCombinedReport(userId, collectionId);
-  }
-
-  public void updateCombinedProcessReportWithAuthorizationCheck(String reportId,
-                                                                CombinedReportDefinitionDto updatedReport) {
+  public void updateCombinedProcessReport(String userId,
+                                          String reportId,
+                                          CombinedReportDefinitionDto updatedReport) {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
 
-    final CombinedProcessReportDefinitionUpdateDto reportUpdate = convertToCombinedProcessReportUpdate(updatedReport);
+    final ReportDefinitionDto currentReportVersion = getReportDefinition(reportId, userId).getDefinitionDto();
+    verifyUserAuthorizedToEditReport(userId, currentReportVersion);
+
+    final CombinedProcessReportDefinitionUpdateDto reportUpdate = convertToCombinedProcessReportUpdate(
+      updatedReport, userId
+    );
     final CombinedReportDataDto data = reportUpdate.getData();
     if (data.getReportIds() != null && !data.getReportIds().isEmpty()) {
       final List<SingleProcessReportDefinitionDto> reportsOfCombinedReport = reportReader
@@ -172,16 +195,20 @@ public class ReportService implements CollectionReferencingService {
     reportWriter.updateCombinedReport(reportUpdate);
   }
 
-  public void updateSingleProcessReportWithAuthorizationCheck(String reportId,
-                                                              SingleProcessReportDefinitionDto updatedReport,
-                                                              String userId,
-                                                              boolean force) throws OptimizeException {
+  public void updateSingleProcessReport(String reportId,
+                                        SingleProcessReportDefinitionDto updatedReport,
+                                        String userId,
+                                        boolean force) throws OptimizeException {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
 
-    final SingleProcessReportDefinitionDto currentReportVersion = getSingleProcessReportWithAuthorizationCheck(
+    final SingleProcessReportDefinitionDto currentReportVersion = getSingleProcessReportDefinition(
       reportId, userId
     );
-    final SingleProcessReportDefinitionUpdateDto reportUpdate = convertToSingleProcessReportUpdate(updatedReport);
+    verifyUserAuthorizedToEditReport(userId, currentReportVersion);
+
+    final SingleProcessReportDefinitionUpdateDto reportUpdate = convertToSingleProcessReportUpdate(
+      updatedReport, userId
+    );
 
     if (!force) {
       checkForUpdateConflictsOnSingleProcessDefinition(currentReportVersion, updatedReport);
@@ -195,15 +222,18 @@ public class ReportService implements CollectionReferencingService {
     }
   }
 
-  public void updateSingleDecisionReportWithAuthorizationCheck(String reportId,
-                                                               SingleDecisionReportDefinitionDto updatedReport,
-                                                               String userId,
-                                                               boolean force) throws OptimizeConflictException {
+  public void updateSingleDecisionReport(String reportId,
+                                         SingleDecisionReportDefinitionDto updatedReport,
+                                         String userId,
+                                         boolean force) throws OptimizeConflictException {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
-    SingleDecisionReportDefinitionDto currentReportVersion =
-      getSingleDecisionReportWithAuthorizationCheck(reportId, userId);
-    SingleDecisionReportDefinitionUpdateDto reportUpdate =
-      convertToSingleDecisionReportUpdate(updatedReport);
+    final SingleDecisionReportDefinitionDto currentReportVersion =
+      getSingleDecisionReportDefinition(reportId, userId);
+    verifyUserAuthorizedToEditReport(userId, currentReportVersion);
+
+    final SingleDecisionReportDefinitionUpdateDto reportUpdate = convertToSingleDecisionReportUpdate(
+      updatedReport, userId
+    );
 
     if (!force) {
       checkForUpdateConflictsOnSingleDecisionDefinition(currentReportVersion, updatedReport);
@@ -213,12 +243,38 @@ public class ReportService implements CollectionReferencingService {
     reportRelationService.handleUpdated(reportId, updatedReport);
   }
 
-  public ReportEvaluationResult evaluateSavedReport(String userId, String reportId) {
-    return reportEvaluator.evaluateSavedReport(userId, reportId);
+  public void deleteReport(String userId, String reportId, boolean force)
+    throws OptimizeException {
+
+    final ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
+    verifyUserAuthorizedToEditReport(userId, reportDefinition);
+
+    if (!force) {
+      final Set<ConflictedItemDto> conflictedItems = getConflictedItemsForDeleteReport(reportDefinition);
+
+      if (!conflictedItems.isEmpty()) {
+        throw new OptimizeConflictException(conflictedItems);
+      }
+    }
+
+    if (!reportDefinition.getCombined()) {
+      reportWriter.removeSingleReportFromCombinedReports(reportId);
+      reportWriter.deleteSingleReport(reportId);
+    } else {
+      reportWriter.deleteCombinedReport(reportId);
+    }
+
+    reportRelationService.handleDeleted(reportDefinition);
   }
 
-  public ReportEvaluationResult evaluateReport(String userId, ReportDefinitionDto reportDefinition) {
-    return reportEvaluator.evaluateReport(userId, reportDefinition);
+  private void verifyUserAuthorizedToEditReport(final String userId, final ReportDefinitionDto reportDefinition) {
+    if (!reportAuthorizationService.isAuthorizedToAccessReportByRole(userId, reportDefinition)
+      .map(roleType -> roleType.ordinal() >= RoleType.EDITOR.ordinal())
+      .orElse(false)) {
+      throw new ForbiddenException(
+        "User [" + userId + "] is not authorized to delete report [" + reportDefinition.getName() + "]."
+      );
+    }
   }
 
   private Set<ConflictedItemDto> mapCombinedReportsToConflictingItems(List<CombinedReportDefinitionDto> combinedReportDtos) {
@@ -229,41 +285,32 @@ public class ReportService implements CollectionReferencingService {
       .collect(Collectors.toSet());
   }
 
-  private IdDto copyReport(final String reportId,
-                           final String userId,
-                           final String collectionId,
-                           final boolean sameCollection,
-                           final String newReportName) {
-    ReportDefinitionDto oldReportDefinition = reportReader.getReport(reportId);
-    final String newName = newReportName != null ? newReportName : oldReportDefinition.getName() + " – Copy";
-    final String newCollectionId = sameCollection ? oldReportDefinition.getCollectionId() : collectionId;
+  private IdDto copyAndMoveReport(final ReportDefinitionDto originalReportDefinition,
+                                  final String userId,
+                                  final String newReportName,
+                                  final String newCollectionId) {
+    final String newName = newReportName != null ? newReportName : originalReportDefinition.getName() + " – Copy";
+    final String oldCollectionId = originalReportDefinition.getCollectionId();
 
-    if (!oldReportDefinition.getCombined()) {
-      switch (oldReportDefinition.getReportType()) {
+    if (!originalReportDefinition.getCombined()) {
+      switch (originalReportDefinition.getReportType()) {
         case PROCESS:
           SingleProcessReportDefinitionDto singleProcessReportDefinitionDto =
-            (SingleProcessReportDefinitionDto) oldReportDefinition;
+            (SingleProcessReportDefinitionDto) originalReportDefinition;
           return reportWriter.createNewSingleProcessReport(
-            userId,
-            singleProcessReportDefinitionDto.getData(),
-            newName,
-            newCollectionId
+            userId, singleProcessReportDefinitionDto.getData(), newName, newCollectionId
           );
         case DECISION:
           SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto =
-            (SingleDecisionReportDefinitionDto) oldReportDefinition;
+            (SingleDecisionReportDefinitionDto) originalReportDefinition;
           return reportWriter.createNewSingleDecisionReport(
-            userId,
-            singleDecisionReportDefinitionDto.getData(),
-            newName,
-            newCollectionId
+            userId, singleDecisionReportDefinitionDto.getData(), newName, newCollectionId
           );
         default:
-          throw new IllegalStateException("Unsupported reportType: " + oldReportDefinition.getReportType());
+          throw new IllegalStateException("Unsupported reportType: " + originalReportDefinition.getReportType());
       }
     } else {
-      final String oldCollectionId = oldReportDefinition.getCollectionId();
-      CombinedReportDefinitionDto combinedReportDefinition = (CombinedReportDefinitionDto) oldReportDefinition;
+      CombinedReportDefinitionDto combinedReportDefinition = (CombinedReportDefinitionDto) originalReportDefinition;
       return copyCombinedReport(userId, newName, newCollectionId, oldCollectionId, combinedReportDefinition.getData());
     }
   }
@@ -292,7 +339,6 @@ public class ReportService implements CollectionReferencingService {
       newCollectionId
     );
   }
-
 
   private Set<ConflictedItemDto> getConflictedItemsForDeleteReport(ReportDefinitionDto reportDefinition) {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
@@ -351,9 +397,11 @@ public class ReportService implements CollectionReferencingService {
     return result;
   }
 
-  private SingleProcessReportDefinitionUpdateDto convertToSingleProcessReportUpdate(SingleProcessReportDefinitionDto updatedReport) {
+  private SingleProcessReportDefinitionUpdateDto convertToSingleProcessReportUpdate(
+    final SingleProcessReportDefinitionDto updatedReport,
+    final String userId) {
     SingleProcessReportDefinitionUpdateDto reportUpdate = new SingleProcessReportDefinitionUpdateDto();
-    copyDefinitionMetaDataToUpdate(updatedReport, reportUpdate);
+    copyDefinitionMetaDataToUpdate(updatedReport, reportUpdate, userId);
     reportUpdate.setData(updatedReport.getData());
     final String xml = reportUpdate.getData().getConfiguration().getXml();
     if (xml != null) {
@@ -365,9 +413,12 @@ public class ReportService implements CollectionReferencingService {
     return reportUpdate;
   }
 
-  private SingleDecisionReportDefinitionUpdateDto convertToSingleDecisionReportUpdate(SingleDecisionReportDefinitionDto updatedReport) {
+  private SingleDecisionReportDefinitionUpdateDto convertToSingleDecisionReportUpdate(
+    final SingleDecisionReportDefinitionDto updatedReport,
+    final String userId) {
+
     SingleDecisionReportDefinitionUpdateDto reportUpdate = new SingleDecisionReportDefinitionUpdateDto();
-    copyDefinitionMetaDataToUpdate(updatedReport, reportUpdate);
+    copyDefinitionMetaDataToUpdate(updatedReport, reportUpdate, userId);
     reportUpdate.setData(updatedReport.getData());
     final String xml = reportUpdate.getData().getConfiguration().getXml();
     if (xml != null) {
@@ -379,104 +430,51 @@ public class ReportService implements CollectionReferencingService {
     return reportUpdate;
   }
 
-  private CombinedProcessReportDefinitionUpdateDto convertToCombinedProcessReportUpdate(CombinedReportDefinitionDto updatedReport) {
+  private CombinedProcessReportDefinitionUpdateDto convertToCombinedProcessReportUpdate(
+    final CombinedReportDefinitionDto updatedReport,
+    final String userId) {
     CombinedProcessReportDefinitionUpdateDto reportUpdate = new CombinedProcessReportDefinitionUpdateDto();
-    copyDefinitionMetaDataToUpdate(updatedReport, reportUpdate);
+    copyDefinitionMetaDataToUpdate(updatedReport, reportUpdate, userId);
     reportUpdate.setData(updatedReport.getData());
     return reportUpdate;
   }
 
-  public List<ReportDefinitionDto> findAndFilterReports(String userId,
-                                                        MultivaluedMap<String, String> queryParameters) {
-    List<ReportDefinitionDto> reports = findAndFilterReports(userId);
-    reports = QueryParamAdjustmentUtil.adjustReportResultsToQueryParameters(reports, queryParameters);
-    return reports;
-  }
-
-  public List<ReportDefinitionDto> findAndFilterReports(String userId) {
-    List<ReportDefinitionDto> reports = reportReader.getAllReportsOmitXml(userId);
-    reports = filterAuthorizedReports(userId, reports);
-    return reports;
-  }
-
-  private SingleProcessReportDefinitionDto getSingleProcessReportWithAuthorizationCheck(String reportId,
-                                                                                        String userId) {
+  private SingleProcessReportDefinitionDto getSingleProcessReportDefinition(String reportId,
+                                                                            String userId) {
     SingleProcessReportDefinitionDto report = reportReader.getSingleProcessReport(reportId);
-    if (!isAuthorizedToSeeSingleProcessReport(userId, report)) {
+    if (!reportAuthorizationService.isAuthorizedToAccessReportByRole(userId, report).isPresent()) {
       throw new ForbiddenException("User [" + userId + "] is not authorized to access or edit report [" +
                                      report.getName() + "].");
     }
     return report;
   }
 
-  private SingleDecisionReportDefinitionDto getSingleDecisionReportWithAuthorizationCheck(String reportId,
-                                                                                          String userId) {
+  private SingleDecisionReportDefinitionDto getSingleDecisionReportDefinition(String reportId,
+                                                                              String userId) {
     SingleDecisionReportDefinitionDto report = reportReader.getSingleDecisionReport(reportId);
-    if (!isAuthorizedToSeeSingleDecisionReport(userId, report)) {
+    if (!reportAuthorizationService.isAuthorizedToAccessReportByRole(userId, report).isPresent()) {
       throw new ForbiddenException("User [" + userId + "] is not authorized to access or edit report [" +
                                      report.getName() + "].");
     }
     return report;
   }
 
-  public ReportDefinitionDto getReportWithAuthorizationCheck(String reportId, String userId) {
-    ReportDefinitionDto report = reportReader.getReport(reportId);
-    if (!isAuthorizedToSeeReport(userId, report)) {
-      throw new ForbiddenException("User [" + userId + "] is not authorized to access or edit report [" +
-                                     report.getName() + "].");
-    }
-    return report;
-  }
-
-  private List<ReportDefinitionDto> filterAuthorizedReports(String userId, List<ReportDefinitionDto> reports) {
-    reports = reports
-      .stream()
-      .filter(report -> isAuthorizedToSeeReport(userId, report))
+  private List<AuthorizedReportDefinitionDto> filterAuthorizedReports(String userId,
+                                                                      List<ReportDefinitionDto> reports) {
+    return reports.stream()
+      .map(report -> Pair.of(report, reportAuthorizationService.isAuthorizedToAccessReportByRole(userId, report)))
+      .filter(reportAndRole -> reportAndRole.getValue().isPresent())
+      .map(reportAndRole -> new AuthorizedReportDefinitionDto(reportAndRole.getKey(), reportAndRole.getValue().get()))
       .collect(Collectors.toList());
-    return reports;
   }
 
-  private boolean isAuthorizedToSeeSingleProcessReport(String userId,
-                                                       SingleProcessReportDefinitionDto reportDefinition) {
-    final ProcessReportDataDto reportData = reportDefinition.getData();
-    if (reportData != null) {
-      return authorizationService.isAuthorizedToSeeProcessReport(
-        userId, reportData.getProcessDefinitionKey(), reportData.getTenantIds()
-      );
-    }
-    return true;
-  }
-
-  private boolean isAuthorizedToSeeSingleDecisionReport(String userId,
-                                                        SingleDecisionReportDefinitionDto reportDefinition) {
-    final DecisionReportDataDto reportData = reportDefinition.getData();
-    if (reportData != null) {
-      return authorizationService.isAuthorizedToSeeDecisionReport(
-        userId, reportData.getDecisionDefinitionKey(), reportData.getTenantIds()
-      );
-    }
-    return true;
-  }
-
-  private boolean isAuthorizedToSeeReport(String userId, ReportDefinitionDto reportDefinition) {
-    if (reportDefinition instanceof SingleProcessReportDefinitionDto) {
-      SingleProcessReportDefinitionDto processDefinition = (SingleProcessReportDefinitionDto) reportDefinition;
-      final ProcessReportDataDto reportData = processDefinition.getData();
-      if (reportData != null) {
-        return authorizationService.isAuthorizedToSeeProcessReport(
-          userId, reportData.getProcessDefinitionKey(), reportData.getTenantIds()
-        );
-      }
-    } else if (reportDefinition instanceof SingleDecisionReportDefinitionDto) {
-      SingleDecisionReportDefinitionDto decisionReport = (SingleDecisionReportDefinitionDto) reportDefinition;
-      DecisionReportDataDto reportData = decisionReport.getData();
-      if (reportData != null) {
-        return authorizationService.isAuthorizedToSeeDecisionReport(
-          userId, reportData.getDecisionDefinitionKey(), reportData.getTenantIds()
-        );
-      }
-    }
-    return true;
+  private static void copyDefinitionMetaDataToUpdate(ReportDefinitionDto from,
+                                                     ReportDefinitionUpdateDto to,
+                                                     String userId) {
+    to.setId(from.getId());
+    to.setName(from.getName());
+    to.setLastModifier(userId);
+    to.setLastModified(from.getLastModified());
   }
 
 }

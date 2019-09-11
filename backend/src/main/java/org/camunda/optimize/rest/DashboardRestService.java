@@ -8,11 +8,9 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionDto;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.dashboard.DashboardService;
-import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
@@ -28,9 +26,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
-import java.util.List;
 
 import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
 
@@ -57,26 +53,6 @@ public class DashboardRestService {
     return dashboardService.createNewDashboardAndReturnId(userId, collectionId);
   }
 
-  /**
-   * Updates the given fields of a dashboard to the given id.
-   *
-   * @param dashboardId      the id of the dashboard
-   * @param updatedDashboard dashboard that needs to be updated. Only the fields that are defined here are actually
-   *                         updated.
-   */
-  @PUT
-  @Path("/{id}")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public void updateDashboard(@Context ContainerRequestContext requestContext,
-                              @PathParam("id") String dashboardId,
-                              DashboardDefinitionDto updatedDashboard) {
-    updatedDashboard.setId(dashboardId);
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    dashboardService.updateDashboard(updatedDashboard, userId);
-  }
-
-
   @POST
   @Path("/{id}/copy")
   @Produces(MediaType.APPLICATION_JSON)
@@ -96,28 +72,35 @@ public class DashboardRestService {
     }
   }
 
-
-  /**
-   * Get a list of all available dashboards.
-   */
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
-  public List<DashboardDefinitionDto> getStoredDashboards(@Context UriInfo uriInfo) {
-    List<DashboardDefinitionDto> dashboards = dashboardService.getDashboardDefinitions();
-    MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
-    dashboards = QueryParamAdjustmentUtil.adjustDashboardResultsToQueryParameters(dashboards, queryParameters);
-    return dashboards;
-  }
-
-
   /**
    * Retrieve the dashboard to the specified id.
    */
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public DashboardDefinitionDto getDashboards(@PathParam("id") String dashboardId) {
-    return dashboardService.getDashboardDefinition(dashboardId);
+  public AuthorizedDashboardDefinitionDto getDashboard(@Context ContainerRequestContext requestContext,
+                                                       @PathParam("id") String dashboardId) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return dashboardService.getDashboardDefinition(dashboardId, userId);
+  }
+
+  /**
+   * Updates the given fields of a dashboard to the given id.
+   *
+   * @param dashboardId      the id of the dashboard
+   * @param updatedDashboard dashboard that needs to be updated. Only the fields that are defined here are actually
+   *                         updated.
+   */
+  @PUT
+  @Path("/{id}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void updateDashboard(@Context ContainerRequestContext requestContext,
+                              @PathParam("id") String dashboardId,
+                              DashboardDefinitionDto updatedDashboard) {
+    updatedDashboard.setId(dashboardId);
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    dashboardService.updateDashboard(updatedDashboard, userId);
   }
 
   /**
@@ -126,21 +109,11 @@ public class DashboardRestService {
   @DELETE
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public void deleteDashboard(@PathParam("id") String dashboardId,
-                              @QueryParam("force") boolean force) throws OptimizeConflictException {
-    dashboardService.deleteDashboard(dashboardId, force);
+  public void deleteDashboard(@Context ContainerRequestContext requestContext,
+                              @PathParam("id") String dashboardId) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    dashboardService.deleteDashboard(dashboardId, userId);
   }
-
-  /**
-   * Retrieve the conflicting items that would occur on performing a delete.
-   */
-  @GET
-  @Path("/{id}/delete-conflicts")
-  @Produces(MediaType.APPLICATION_JSON)
-  public ConflictResponseDto getDeleteConflicts(@PathParam("id") String dashboardId) {
-    return dashboardService.getDashboardDeleteConflictingItems(dashboardId);
-  }
-
 
 }
 

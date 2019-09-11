@@ -17,13 +17,18 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Data
-public class AuthorizedSimpleCollectionDefinitionDto implements AuthorizedEntityDto {
-  private RoleType currentUserRole;
+public class AuthorizedSimpleCollectionDefinitionDto extends AuthorizedEntityDto {
   @JsonUnwrapped
   private SimpleCollectionDefinitionDto definitionDto;
 
+  public AuthorizedSimpleCollectionDefinitionDto(final RoleType currentUserRole,
+                                                 final SimpleCollectionDefinitionDto definitionDto) {
+    super(currentUserRole);
+    this.definitionDto = definitionDto;
+  }
+
   public EntityDto toEntityDto() {
-    return definitionDto.toEntityDto(currentUserRole);
+    return definitionDto.toEntityDto(getCurrentUserRole());
   }
 
 }

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.command.decision;
 
+import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
@@ -12,7 +13,6 @@ import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
-import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 

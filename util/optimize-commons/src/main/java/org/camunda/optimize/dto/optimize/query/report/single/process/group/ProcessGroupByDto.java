@@ -13,7 +13,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.ProcessGroupByValueDto;
-import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 
 import java.util.Objects;
 
@@ -64,7 +63,7 @@ public abstract class ProcessGroupByDto<VALUE extends ProcessGroupByValueDto> im
     }
     ProcessGroupByDto<?> that = (ProcessGroupByDto<?>) o;
     return isTypeCombinable(that) &&
-      ReportUtil.isCombinable(value, that.value);
+      Combinable.isCombinable(value, that.value);
   }
 
   protected boolean isTypeCombinable(final ProcessGroupByDto<?> that) {

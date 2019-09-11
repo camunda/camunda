@@ -45,6 +45,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
@@ -239,23 +240,22 @@ public class ReportConflictIT {
   }
 
 
-  private void checkDashboardsStillContainReport(String[] expectedConflictedItemIds, String reportId) {
-    List<DashboardDefinitionDto> dashboards = getAllDashboards();
+  private void checkDashboardsStillContainReport(String[] dashboardIds, String reportId) {
+    Arrays.stream(dashboardIds)
+      .forEach(dashboardId -> {
+        final DashboardDefinitionDto dashboard = embeddedOptimizeRule.getRequestExecutor()
+          .buildGetDashboardRequest(dashboardId)
+          .execute(DashboardDefinitionDto.class, 200);
 
-    assertThat(dashboards.size(), is(expectedConflictedItemIds.length));
-    assertThat(
-      dashboards.stream().map(DashboardDefinitionDto::getId).collect(Collectors.toSet()),
-      containsInAnyOrder(expectedConflictedItemIds)
-    );
-    dashboards.forEach(dashboardDefinitionDto -> {
-      assertThat(dashboardDefinitionDto.getReports().size(), is(1));
-      assertThat(
-        dashboardDefinitionDto.getReports().stream().anyMatch(
-          reportLocationDto -> reportLocationDto.getId().equals(reportId)
-        ),
-        is(true)
-      );
-    });
+        assertThat(dashboard, is(notNullValue()));
+        assertThat(dashboard.getReports().size(), is(1));
+        assertThat(
+          dashboard.getReports().stream().anyMatch(
+            reportLocationDto -> reportLocationDto.getId().equals(reportId)
+          ),
+          is(true)
+        );
+      });
   }
 
   private void checkCombinedReportContainsSingleReports(String combinedReportId, String... singleReportIds) {
@@ -353,13 +353,6 @@ public class ReportConflictIT {
     }
 
     return collectionId;
-  }
-
-  private List<DashboardDefinitionDto> getAllDashboards() {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildGetAllDashboardsRequest()
-      .executeAndReturnList(DashboardDefinitionDto.class, 200);
   }
 
   private String createNewAlertForReport(String reportId) {

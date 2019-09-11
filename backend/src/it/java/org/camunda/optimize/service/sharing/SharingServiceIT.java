@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -304,6 +305,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   @Test
   public void updatingDashboardUpdatesRespectiveShare() {
     // given
+    final String shouldBeIgnoredString = "shouldNotBeUpdated";
     String dashboardId = addEmptyDashboardToOptimize();
     String dashboardShareId = addShareForDashboard(dashboardId);
 
@@ -312,13 +314,13 @@ public class SharingServiceIT extends AbstractSharingIT {
     reportLocationDto.setConfiguration("testConfiguration");
     DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
     dashboard.setReports(Collections.singletonList(reportLocationDto));
-    dashboard.setId("shouldNotBeUpdated");
+    dashboard.setId(shouldBeIgnoredString);
     dashboard.setLastModifier("shouldNotBeUpdatedManually");
     dashboard.setName("MyDashboard");
     OffsetDateTime shouldBeIgnoredDate = OffsetDateTime.now().plusHours(1);
     dashboard.setCreated(shouldBeIgnoredDate);
     dashboard.setLastModified(shouldBeIgnoredDate);
-    dashboard.setOwner("NewOwner");
+    dashboard.setOwner(shouldBeIgnoredString);
 
     // when
     updateDashboard(dashboardId, dashboard);
@@ -336,7 +338,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     assertThat(dashboardShareDto.getCreated(), is(not(shouldBeIgnoredDate)));
     assertThat(dashboardShareDto.getLastModified(), is(not(shouldBeIgnoredDate)));
     assertThat(dashboardShareDto.getName(), is("MyDashboard"));
-    assertThat(dashboardShareDto.getOwner(), is("NewOwner"));
+    assertThat(dashboardShareDto.getOwner(), is(DEFAULT_USERNAME));
   }
 
   @Test

@@ -6,8 +6,8 @@
 package org.camunda.optimize.service.es.report;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.service.es.reader.ReportReader;
-import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -28,7 +28,7 @@ public class PlainReportEvaluationHandler extends ReportEvaluationHandler {
   }
 
   @Override
-  protected boolean isAuthorizedToSeeReport(String userId, ReportDefinitionDto report) {
+  protected boolean isAuthorizedToAccessReport(String userId, ReportDefinitionDto report) {
     return true;
   }
 }

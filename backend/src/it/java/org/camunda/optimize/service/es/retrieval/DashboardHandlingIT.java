@@ -23,16 +23,16 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.stream.Collectors;
 
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 
@@ -53,7 +53,7 @@ public class DashboardHandlingIT {
   @Test
   public void dashboardIsWrittenToElasticsearch() throws IOException {
     // given
-    String id = createNewDashboard();
+    String id = addEmptyPrivateDashboard();
 
     // when
     GetRequest getRequest = new GetRequest(DASHBOARD_INDEX_NAME, DASHBOARD_INDEX_NAME, id);
@@ -66,227 +66,190 @@ public class DashboardHandlingIT {
   @Test
   public void writeAndThenReadGivesTheSameResult() {
     // given
-    String id = createNewDashboard();
+    String id = addEmptyPrivateDashboard();
 
     // when
-    List<DashboardDefinitionDto> dashboards = getAllDashboards();
+    DashboardDefinitionDto dashboard = getDashboardById(id);
 
     // then
-    assertThat(dashboards, is(notNullValue()));
-    assertThat(dashboards.size(), is(1));
-    assertThat(dashboards.get(0).getId(), is(id));
+    assertThat(dashboard, is(notNullValue()));
+    assertThat(dashboard.getId(), is(id));
   }
 
   @Test
   public void createAndGetSeveralDashboards() {
     // given
-    String id = createNewDashboard();
-    String id2 = createNewDashboard();
-    Set<String> ids = new HashSet<>();
-    ids.add(id);
-    ids.add(id2);
+    String id1 = addEmptyPrivateDashboard();
+    String id2 = addEmptyPrivateDashboard();
 
     // when
-    List<DashboardDefinitionDto> dashboards = getAllDashboards();
+    DashboardDefinitionDto dashboard1 = getDashboardById(id1);
+    DashboardDefinitionDto dashboard2 = getDashboardById(id2);
 
     // then
-    assertThat(dashboards, is(notNullValue()));
-    assertThat(dashboards.size(), is(2));
-    String dashboardId1 = dashboards.get(0).getId();
-    String dashboardId2 = dashboards.get(1).getId();
-    assertThat(ids.contains(dashboardId1), is(true));
-    ids.remove(dashboardId1);
-    assertThat(ids.contains(dashboardId2), is(true));
+    assertThat(dashboard1, is(notNullValue()));
+    assertThat(dashboard1.getId(), is(id1));
+    assertThat(dashboard2, is(notNullValue()));
+    assertThat(dashboard2.getId(), is(id2));
   }
 
   @Test
-  public void noDashboardAvailableReturnsEmptyList() {
+  public void copyPrivateDashboardAndMoveToCollection() {
+    // given
+    String dashboardId = addEmptyPrivateDashboard();
+    addEmptyReportToDashboard(dashboardId);
+
+    final String collectionId = addEmptyCollectionToOptimize();
 
     // when
-    List<DashboardDefinitionDto> dashboards = getAllDashboards();
+    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
+      .buildCopyDashboardRequest(dashboardId, collectionId)
+      .execute(IdDto.class, 200);
 
     // then
-    assertThat(dashboards, is(notNullValue()));
-    assertThat(dashboards.isEmpty(), is(true));
+    DashboardDefinitionDto oldDashboard = getDashboardById(dashboardId);
+    DashboardDefinitionDto dashboard = getDashboardById(copyId.getId());
+    assertThat(dashboard.getName(), is(oldDashboard.getName() + " – Copy"));
+    assertThat(dashboard.getCollectionId(), is(collectionId));
+    assertThat(oldDashboard.getCollectionId(), is(nullValue()));
+
+    final List<String> newReportIds = dashboard.getReports()
+      .stream()
+      .map(ReportLocationDto::getId)
+      .collect(Collectors.toList());
+
+    assertThat(newReportIds.isEmpty(), is(false));
+    assertThat(
+      newReportIds,
+      not(containsInAnyOrder(oldDashboard.getReports().stream().map(ReportLocationDto::getId).toArray()))
+    );
+  }
+
+  @Test
+  public void copyDashboardFromCollectionToPrivateEntities() {
+    // given
+    final String collectionId = addEmptyCollectionToOptimize();
+    String dashboardId = addEmptyDashboardToCollectionAsDefaultUser(collectionId);
+    addEmptyReportToDashboard(dashboardId);
+
+    // when
+    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
+      .buildCopyDashboardRequest(dashboardId)
+      .addSingleQueryParam("collectionId", "null")
+      .execute(IdDto.class, 200);
+
+    // then
+    DashboardDefinitionDto oldDashboard = getDashboardById(dashboardId);
+    DashboardDefinitionDto dashboard = getDashboardById(copyId.getId());
+    assertThat(dashboard.getName(), is(oldDashboard.getName() + " – Copy"));
+    assertThat(dashboard.getCollectionId(), is(nullValue()));
+    assertThat(oldDashboard.getCollectionId(), is(collectionId));
+
+    final List<String> newReportIds = dashboard.getReports()
+      .stream()
+      .map(ReportLocationDto::getId)
+      .collect(Collectors.toList());
+
+    assertThat(newReportIds.isEmpty(), is(false));
+    assertThat(
+      newReportIds,
+      not(containsInAnyOrder(oldDashboard.getReports().stream().map(ReportLocationDto::getId).toArray()))
+    );
+  }
+
+  @Test
+  public void copyDashboardFromCollectionToDifferentCollection() {
+    // given
+    final String oldCollectionId = addEmptyCollectionToOptimize();
+    String dashboardId = addEmptyDashboardToCollectionAsDefaultUser(oldCollectionId);
+    addEmptyReportToDashboard(dashboardId);
+
+    final String newCollectionId = addEmptyCollectionToOptimize();
+
+    // when
+    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
+      .buildCopyDashboardRequest(dashboardId)
+      .addSingleQueryParam("collectionId", newCollectionId)
+      .execute(IdDto.class, 200);
+
+    // then
+    DashboardDefinitionDto oldDashboard = getDashboardById(dashboardId);
+    DashboardDefinitionDto newDashboard = getDashboardById(copyId.getId());
+    assertThat(newDashboard.getName(), is(oldDashboard.getName() + " – Copy"));
+    assertThat(newDashboard.getCollectionId(), is(newCollectionId));
+    assertThat(oldDashboard.getCollectionId(), is(oldCollectionId));
+
+    final List<String> newReportIds = newDashboard.getReports()
+      .stream()
+      .map(ReportLocationDto::getId)
+      .collect(Collectors.toList());
+
+    assertThat(newReportIds.isEmpty(), is(false));
+    assertThat(
+      newReportIds,
+      not(containsInAnyOrder(oldDashboard.getReports().stream().map(ReportLocationDto::getId).toArray()))
+    );
   }
 
   @Test
   public void updateDashboard() {
     // given
-    String id = createNewDashboard();
-    ReportLocationDto reportLocationDto = new ReportLocationDto();
+    final String shouldBeIgnoredString = "shouldNotBeUpdated";
+    final OffsetDateTime shouldBeIgnoredDate = OffsetDateTime.now().plusHours(1);
+    final String id = addEmptyPrivateDashboard();
+    final ReportLocationDto reportLocationDto = new ReportLocationDto();
     reportLocationDto.setId("report-123");
     reportLocationDto.setConfiguration("testConfiguration");
-    DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
+
+    final DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
     dashboard.setReports(Collections.singletonList(reportLocationDto));
-    dashboard.setId("shouldNotBeUpdated");
+    dashboard.setId(shouldBeIgnoredString);
     dashboard.setLastModifier("shouldNotBeUpdatedManually");
     dashboard.setName("MyDashboard");
-    OffsetDateTime shouldBeIgnoredDate = OffsetDateTime.now().plusHours(1);
     dashboard.setCreated(shouldBeIgnoredDate);
     dashboard.setLastModified(shouldBeIgnoredDate);
-    dashboard.setOwner("NewOwner");
+    dashboard.setOwner(shouldBeIgnoredString);
 
     // when
     updateDashboard(id, dashboard);
-    List<DashboardDefinitionDto> dashboards = getAllDashboards();
+    DashboardDefinitionDto updatedDashboard = getDashboardById(id);
 
     // then
-    assertThat(dashboards.size(), is(1));
-    DashboardDefinitionDto newDashboard = dashboards.get(0);
-    assertThat(newDashboard.getReports().size(), is(1));
-    ReportLocationDto retrievedLocation = newDashboard.getReports().get(0);
+    assertThat(updatedDashboard.getReports().size(), is(1));
+    ReportLocationDto retrievedLocation = updatedDashboard.getReports().get(0);
     assertThat(retrievedLocation.getId(), is("report-123"));
     assertThat(retrievedLocation.getConfiguration(), is("testConfiguration"));
-    assertThat(newDashboard.getId(), is(id));
-    assertThat(newDashboard.getCreated(), is(not(shouldBeIgnoredDate)));
-    assertThat(newDashboard.getLastModified(), is(not(shouldBeIgnoredDate)));
-    assertThat(newDashboard.getName(), is("MyDashboard"));
-    assertThat(newDashboard.getOwner(), is("NewOwner"));
+    assertThat(updatedDashboard.getId(), is(id));
+    assertThat(updatedDashboard.getCreated(), is(not(shouldBeIgnoredDate)));
+    assertThat(updatedDashboard.getLastModifier(), is(DEFAULT_USERNAME));
+    assertThat(updatedDashboard.getLastModified(), is(not(shouldBeIgnoredDate)));
+    assertThat(updatedDashboard.getName(), is("MyDashboard"));
+    assertThat(updatedDashboard.getOwner(), is(DEFAULT_USERNAME));
   }
 
   @Test
   public void doNotUpdateNullFieldsInDashboard() {
     // given
-    String id = createNewDashboard();
+    String id = addEmptyPrivateDashboard();
     DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
 
     // when
     updateDashboard(id, dashboard);
-    List<DashboardDefinitionDto> dashboards = getAllDashboards();
+    DashboardDefinitionDto updatedDashboard = getDashboardById(id);
 
     // then
-    assertThat(dashboards.size(), is(1));
-    DashboardDefinitionDto newDashboard = dashboards.get(0);
-    assertThat(newDashboard.getId(), is(id));
-    assertThat(newDashboard.getCreated(), is(notNullValue()));
-    assertThat(newDashboard.getLastModified(), is(notNullValue()));
-    assertThat(newDashboard.getLastModifier(), is(notNullValue()));
-    assertThat(newDashboard.getName(), is(notNullValue()));
-    assertThat(newDashboard.getOwner(), is(notNullValue()));
-  }
-
-  @Test
-  public void resultListIsSortedByLastModified() {
-    // given
-    String id1 = createNewDashboard();
-    shiftTimeByOneSecond();
-    String id2 = createNewDashboard();
-    shiftTimeByOneSecond();
-    String id3 = createNewDashboard();
-    shiftTimeByOneSecond();
-    updateDashboard(id1, new DashboardDefinitionDto());
-
-    // when
-    Map<String, Object> queryParam = new HashMap<>();
-    queryParam.put("orderBy", "lastModified");
-    List<DashboardDefinitionDto> dashboards = getAllDashboardsWithQueryParam(queryParam);
-
-    // then
-    assertThat(dashboards.size(), is(3));
-    assertThat(dashboards.get(0).getId(), is(id1));
-    assertThat(dashboards.get(1).getId(), is(id3));
-    assertThat(dashboards.get(2).getId(), is(id2));
-  }
-
-  @Test
-  public void resultListIsReversed() {
-    // given
-    String id1 = createNewDashboard();
-    shiftTimeByOneSecond();
-    String id2 = createNewDashboard();
-    shiftTimeByOneSecond();
-    String id3 = createNewDashboard();
-    shiftTimeByOneSecond();
-    updateDashboard(id1, new DashboardDefinitionDto());
-
-    // when
-    Map<String, Object> queryParam = new HashMap<>();
-    queryParam.put("orderBy", "lastModified");
-    queryParam.put("sortOrder", "desc");
-    List<DashboardDefinitionDto> dashboards = getAllDashboardsWithQueryParam(queryParam);
-
-    // then
-    assertThat(dashboards.size(), is(3));
-    assertThat(dashboards.get(2).getId(), is(id1));
-    assertThat(dashboards.get(1).getId(), is(id3));
-    assertThat(dashboards.get(0).getId(), is(id2));
-  }
-
-  @Test
-  public void resultListIsCutByAnOffset() {
-    // given
-    String id1 = createNewDashboard();
-    shiftTimeByOneSecond();
-    String id2 = createNewDashboard();
-    shiftTimeByOneSecond();
-    String id3 = createNewDashboard();
-    shiftTimeByOneSecond();
-    updateDashboard(id1, new DashboardDefinitionDto());
-
-    // when
-    Map<String, Object> queryParam = new HashMap<>();
-    queryParam.put("resultOffset", 1);
-    queryParam.put("orderBy", "lastModified");
-    List<DashboardDefinitionDto> dashboards = getAllDashboardsWithQueryParam(queryParam);
-
-    // then
-    assertThat(dashboards.size(), is(2));
-    assertThat(dashboards.get(0).getId(), is(id3));
-    assertThat(dashboards.get(1).getId(), is(id2));
-  }
-
-  @Test
-  public void resultListIsCutByMaxResults() {
-    // given
-    String id1 = createNewDashboard();
-    shiftTimeByOneSecond();
-    createNewDashboard();
-    shiftTimeByOneSecond();
-    String id3 = createNewDashboard();
-    shiftTimeByOneSecond();
-    updateDashboard(id1, new DashboardDefinitionDto());
-
-    // when
-    Map<String, Object> queryParam = new HashMap<>();
-    queryParam.put("numResults", 2);
-    queryParam.put("orderBy", "lastModified");
-    List<DashboardDefinitionDto> dashboards = getAllDashboardsWithQueryParam(queryParam);
-
-    // then
-    assertThat(dashboards.size(), is(2));
-    assertThat(dashboards.get(0).getId(), is(id1));
-    assertThat(dashboards.get(1).getId(), is(id3));
-  }
-
-  @Test
-  public void combineAllResultListQueryParameterRestrictions() {
-    // given
-    String id1 = createNewDashboard();
-    shiftTimeByOneSecond();
-    createNewDashboard();
-    shiftTimeByOneSecond();
-    String id3 = createNewDashboard();
-    shiftTimeByOneSecond();
-    updateDashboard(id1, new DashboardDefinitionDto());
-
-    // when
-    Map<String, Object> queryParam = new HashMap<>();
-    queryParam.put("numResults", 1);
-    queryParam.put("orderBy", "lastModified");
-    queryParam.put("reverseOrder", true);
-    queryParam.put("resultOffset", 1);
-    List<DashboardDefinitionDto> dashboards = getAllDashboardsWithQueryParam(queryParam);
-
-    // then
-    assertThat(dashboards.size(), is(1));
-    assertThat(dashboards.get(0).getId(), is(id3));
+    assertThat(updatedDashboard.getId(), is(id));
+    assertThat(updatedDashboard.getCreated(), is(notNullValue()));
+    assertThat(updatedDashboard.getLastModified(), is(notNullValue()));
+    assertThat(updatedDashboard.getLastModifier(), is(notNullValue()));
+    assertThat(updatedDashboard.getName(), is(notNullValue()));
+    assertThat(updatedDashboard.getOwner(), is(notNullValue()));
   }
 
   @Test
   public void deletedSingleReportIsRemovedFromDashboardWhenForced() {
     // given
-    String dashboardId = createNewDashboard();
+    String dashboardId = addEmptyPrivateDashboard();
     String reportIdToDelete = createNewSingleReport();
 
     ReportLocationDto reportToBeDeletedReportLocationDto = new ReportLocationDto();
@@ -300,18 +263,10 @@ public class DashboardHandlingIT {
     deleteReport(reportIdToDelete, true);
 
     // then
-    getAllDashboards()
-      .forEach(dashboardDefinitionDto -> dashboardDefinitionDto.getReports()
-        .forEach(reportLocationDto -> assertThat(reportLocationDto.getId(), is(not(reportIdToDelete))))
-      );
-  }
-
-  private String createNewSingleReport() {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
-      .execute(IdDto.class, 200)
-      .getId();
+    DashboardDefinitionDto updatedDashboard = getDashboardById(dashboardId);
+    updatedDashboard.getReports().forEach(
+      reportLocationDto -> assertThat(reportLocationDto.getId(), is(not(reportIdToDelete)))
+    );
   }
 
   private void deleteReport(String reportId, Boolean force) {
@@ -324,16 +279,22 @@ public class DashboardHandlingIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  private void shiftTimeByOneSecond() {
-    LocalDateUtil.setCurrentTime(LocalDateUtil.getCurrentDateTime().plusSeconds(1L));
+  private String addEmptyPrivateDashboard() {
+    return addEmptyDashboardToCollectionAsDefaultUser(null);
   }
 
-  private String createNewDashboard() {
+  private String addEmptyDashboardToCollectionAsDefaultUser(final String collectionId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateDashboardRequest()
+      .buildCreateDashboardRequest(collectionId)
       .execute(IdDto.class, 200)
       .getId();
+  }
+
+  private DashboardDefinitionDto getDashboardById(final String dashboardId) {
+    return embeddedOptimizeRule.getRequestExecutor()
+      .buildGetDashboardRequest(dashboardId)
+      .execute(DashboardDefinitionDto.class, 200);
   }
 
   private void updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
@@ -344,16 +305,49 @@ public class DashboardHandlingIT {
     assertThat(response.getStatus(), is(204));
   }
 
+  private void updateDashboard(final String dashboardId, final List<ReportLocationDto> reports) {
+    final DashboardDefinitionDto dashboard = embeddedOptimizeRule.getRequestExecutor()
+      .buildGetDashboardRequest(dashboardId).execute(DashboardDefinitionDto.class, 200);
 
-  private List<DashboardDefinitionDto> getAllDashboards() {
-    return getAllDashboardsWithQueryParam(new HashMap<>());
+    if (reports != null) {
+      dashboard.setReports(reports);
+    }
+
+    updateDashboard(dashboardId, dashboard);
   }
 
-  private List<DashboardDefinitionDto> getAllDashboardsWithQueryParam(Map<String, Object> queryParams) {
+  private String createNewSingleReport() {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildGetAllDashboardsRequest()
-      .addQueryParams(queryParams)
-      .executeAndReturnList(DashboardDefinitionDto.class, 200);
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
+  private void addEmptyReportToDashboard(final String dashboardId) {
+    final String reportId = addEmptySingleProcessReport();
+    final ReportLocationDto reportLocationDto = new ReportLocationDto();
+    reportLocationDto.setId(reportId);
+    updateDashboard(dashboardId, Collections.singletonList(reportLocationDto));
+  }
+
+  private String addEmptySingleProcessReport() {
+    return addEmptySingleProcessReportToCollection(null);
+  }
+
+  private String addEmptySingleProcessReportToCollection(final String collectionId) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest(collectionId)
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
+  private String addEmptyCollectionToOptimize() {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateCollectionRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 }

@@ -7,15 +7,14 @@ package org.camunda.optimize.dto.optimize.query.report.single.result;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
-
-import javax.validation.constraints.NotNull;
 
 @EqualsAndHashCode
 public class MapResultEntryDto<T extends Comparable> {
 
   // @formatter:off
-  @NotNull @Getter @Setter private String key;
+  @NonNull @Getter @Setter private String key;
   @Getter @Setter private T value;
   @Setter private String label;
   // @formatter:on
@@ -23,12 +22,12 @@ public class MapResultEntryDto<T extends Comparable> {
   protected MapResultEntryDto() {
   }
 
-  public MapResultEntryDto(@NotNull final String key, final T value) {
+  public MapResultEntryDto(@NonNull final String key, final T value) {
     this.key = key;
     this.value = value;
   }
 
-  public MapResultEntryDto(@NotNull final String key, final T value, String label) {
+  public MapResultEntryDto(@NonNull final String key, final T value, String label) {
     this.key = key;
     this.value = value;
     this.label = label;

@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -66,7 +67,6 @@ import org.camunda.optimize.service.es.report.command.process.user_task.frequenc
 import org.camunda.optimize.service.es.report.command.process.user_task.frequency.groupby.candidate_group.UserTaskFrequencyByCandidateGroupCommand;
 import org.camunda.optimize.service.es.report.command.process.user_task.frequency.groupby.usertask.UserTaskFrequencyByUserTaskCommand;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
-import org.camunda.optimize.service.es.report.result.ReportEvaluationResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ValidationHelper;

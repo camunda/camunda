@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
@@ -22,16 +21,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
 
 public class DashboardRestServiceIT {
 
-  public static final String USER_JOHN = "john";
   public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -65,6 +61,97 @@ public class DashboardRestServiceIT {
   }
 
   @Test
+  public void copyPrivateDashboard() {
+    // given
+    String dashboardId = createEmptyPrivateDashboard();
+    createEmptyReportToDashboard(dashboardId);
+
+    // when
+    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
+      .buildCopyDashboardRequest(dashboardId)
+      .execute(IdDto.class, 200);
+
+    // then
+    DashboardDefinitionDto oldDashboard = getDashboard(dashboardId);
+    DashboardDefinitionDto dashboard = getDashboard(copyId.getId());
+    assertThat(dashboard.toString(), is(oldDashboard.toString()));
+    assertThat(dashboard.getName(), is(oldDashboard.getName() + " – Copy"));
+
+    final List<String> newReportIds = dashboard.getReports()
+      .stream()
+      .map(ReportLocationDto::getId)
+      .collect(Collectors.toList());
+
+    assertThat(newReportIds.isEmpty(), is(false));
+    assertThat(
+      newReportIds,
+      containsInAnyOrder(oldDashboard.getReports().stream().map(ReportLocationDto::getId).toArray())
+    );
+  }
+
+  @Test
+  public void copyPrivateDashboardWithNameParameter() {
+    // given
+    final String dashboardId = createEmptyPrivateDashboard();
+    createEmptyReportToDashboard(dashboardId);
+
+    final String testDashboardCopyName = "This is my new report copy! ;-)";
+
+    // when
+    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
+      .buildCopyDashboardRequest(dashboardId)
+      .addSingleQueryParam("name", testDashboardCopyName)
+      .execute(IdDto.class, 200);
+
+    // then
+    DashboardDefinitionDto oldDashboard = getDashboard(dashboardId);
+    DashboardDefinitionDto dashboard = getDashboard(copyId.getId());
+    assertThat(dashboard.toString(), is(oldDashboard.toString()));
+    assertThat(dashboard.getName(), is(testDashboardCopyName));
+  }
+
+  @Test
+  public void getDashboardWithoutAuthentication() {
+    // when
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .withoutAuthentication()
+      .buildGetDashboardRequest("asdf")
+      .execute();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void getDashboard() {
+    //given
+    String id = createEmptyPrivateDashboard();
+
+    // when
+    DashboardDefinitionDto dashboard = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildGetDashboardRequest(id)
+      .execute(DashboardDefinitionDto.class, 200);
+
+    // then
+    assertThat(dashboard, is(notNullValue()));
+    assertThat(dashboard.getId(), is(id));
+  }
+
+  @Test
+  public void getDashboardForNonExistingIdThrowsError() {
+    // when
+    String response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildGetDashboardRequest("fooid")
+      .execute(String.class, 404);
+
+    // then the status code is okay
+    assertThat(response.contains("Dashboard does not exist!"), is(true));
+  }
+
+  @Test
   public void updateDashboardWithoutAuthentication() {
     // when
     Response response = embeddedOptimizeRule
@@ -92,7 +179,7 @@ public class DashboardRestServiceIT {
   @Test
   public void updateDashboard() {
     //given
-    String id = addEmptyDashboard();
+    String id = createEmptyPrivateDashboard();
 
     // when
     Response response = embeddedOptimizeRule
@@ -107,8 +194,8 @@ public class DashboardRestServiceIT {
   @Test
   public void updateDashboardDoesNotChangeCollectionId() {
     //given
-    final String collectionId = addEmptyCollectionToOptimize();
-    String id = addEmptyDashboardToCollection(collectionId);
+    final String collectionId = createEmptyCollectionToOptimize();
+    String id = createEmptyDashboardToCollectionAsDefaultUser(collectionId);
 
     // when
     embeddedOptimizeRule
@@ -119,240 +206,6 @@ public class DashboardRestServiceIT {
     // then
     final DashboardDefinitionDto dashboard = getDashboard(id);
     assertThat(dashboard.getCollectionId(), is(collectionId));
-  }
-
-  @Test
-  public void copyDashboard() {
-    // given
-    String dashboardId = addEmptyDashboard();
-    addEmptyReportToDashboard(dashboardId);
-
-    engineIntegrationRule.addUser(USER_JOHN, USER_JOHN);
-    engineIntegrationRule.grantAllAuthorizations(USER_JOHN);
-
-    // when
-    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
-      .buildCopyDashboardRequest(dashboardId)
-      .withUserAuthentication(USER_JOHN, USER_JOHN)
-      .execute(IdDto.class, 200);
-
-    // then
-    DashboardDefinitionDto oldDashboard = getDashboard(dashboardId);
-    DashboardDefinitionDto dashboard = getDashboard(copyId.getId());
-    assertThat(dashboard.toString(), is(oldDashboard.toString()));
-    assertThat(dashboard.getName(), is(oldDashboard.getName() + " – Copy"));
-    assertThat(dashboard.getLastModifier(), is(USER_JOHN));
-
-    final List<String> newReportIds = dashboard.getReports()
-      .stream()
-      .map(ReportLocationDto::getId)
-      .collect(Collectors.toList());
-
-    assertThat(newReportIds.isEmpty(), is(false));
-    assertThat(newReportIds, containsInAnyOrder(oldDashboard.getReports().stream()
-                                                  .map(ReportLocationDto::getId).toArray()));
-  }
-
-  @Test
-  public void copyDashboardWithNameParameter() {
-    // given
-    final String dashboardId = addEmptyDashboard();
-    addEmptyReportToDashboard(dashboardId);
-
-    final String testDashboardCopyName = "This is my new report copy! ;-)";
-
-    // when
-    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
-      .buildCopyDashboardRequest(dashboardId)
-      .addSingleQueryParam("name", testDashboardCopyName)
-      .execute(IdDto.class, 200);
-
-    // then
-    DashboardDefinitionDto oldDashboard = getDashboard(dashboardId);
-    DashboardDefinitionDto dashboard = getDashboard(copyId.getId());
-    assertThat(dashboard.toString(), is(oldDashboard.toString()));
-    assertThat(dashboard.getName(), is(testDashboardCopyName));
-  }
-
-  @Test
-  public void copyPrivateDashboardAndMoveToCollection() {
-    // given
-    String dashboardId = addEmptyDashboard();
-    addEmptyReportToDashboard(dashboardId);
-
-    engineIntegrationRule.addUser(USER_JOHN, USER_JOHN);
-    engineIntegrationRule.grantAllAuthorizations(USER_JOHN);
-    final String collectionId = addEmptyCollectionToOptimizeAsUser(USER_JOHN, USER_JOHN);
-
-    // when
-    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
-      .buildCopyDashboardRequest(dashboardId, collectionId)
-      .withUserAuthentication(USER_JOHN, USER_JOHN)
-      .execute(IdDto.class, 200);
-
-    // then
-    DashboardDefinitionDto oldDashboard = getDashboard(dashboardId);
-    DashboardDefinitionDto dashboard = getDashboard(copyId.getId());
-    assertThat(dashboard.getName(), is(oldDashboard.getName() + " – Copy"));
-    assertThat(dashboard.getLastModifier(), is(USER_JOHN));
-    assertThat(dashboard.getCollectionId(), is(collectionId));
-    assertThat(oldDashboard.getCollectionId(), is(nullValue()));
-
-    final List<String> newReportIds = dashboard.getReports()
-      .stream()
-      .map(ReportLocationDto::getId)
-      .collect(Collectors.toList());
-
-    assertThat(newReportIds.isEmpty(), is(false));
-    assertThat(newReportIds, not(containsInAnyOrder(oldDashboard.getReports().stream()
-                                                      .map(ReportLocationDto::getId).toArray())));
-  }
-
-
-  @Test
-  public void copyDashboardFromCollectionToPrivateEntities() {
-    // given
-    final String collectionId = addEmptyCollectionToOptimize();
-    String dashboardId = addEmptyDashboardToCollection(collectionId);
-    addEmptyReportToDashboard(dashboardId, collectionId);
-
-    engineIntegrationRule.addUser(USER_JOHN, USER_JOHN);
-    engineIntegrationRule.grantAllAuthorizations(USER_JOHN);
-
-
-    // when
-    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
-      .buildCopyDashboardRequest(dashboardId)
-      .addSingleQueryParam("collectionId", "null")
-      .withUserAuthentication(USER_JOHN, USER_JOHN)
-      .execute(IdDto.class, 200);
-
-    // then
-    DashboardDefinitionDto oldDashboard = getDashboard(dashboardId);
-    DashboardDefinitionDto dashboard = getDashboard(copyId.getId());
-    assertThat(dashboard.getName(), is(oldDashboard.getName() + " – Copy"));
-    assertThat(dashboard.getLastModifier(), is(USER_JOHN));
-    assertThat(dashboard.getCollectionId(), is(nullValue()));
-    assertThat(oldDashboard.getCollectionId(), is(collectionId));
-
-    final List<String> newReportIds = dashboard.getReports()
-      .stream()
-      .map(ReportLocationDto::getId)
-      .collect(Collectors.toList());
-
-    assertThat(newReportIds.isEmpty(), is(false));
-    assertThat(newReportIds, not(containsInAnyOrder(oldDashboard.getReports().stream()
-                                                      .map(ReportLocationDto::getId).toArray())));
-  }
-
-  @Test
-  public void copyDashboardFromCollectionToDifferentCollection() {
-    // given
-    final String oldCollectionId = addEmptyCollectionToOptimize();
-    String dashboardId = addEmptyDashboardToCollection(oldCollectionId);
-    addEmptyReportToDashboard(dashboardId, oldCollectionId);
-
-    engineIntegrationRule.addUser(USER_JOHN, USER_JOHN);
-    engineIntegrationRule.grantAllAuthorizations(USER_JOHN);
-
-    final String newCollectionId = addEmptyCollectionToOptimizeAsUser(USER_JOHN, USER_JOHN);
-
-    // when
-    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
-      .buildCopyDashboardRequest(dashboardId)
-      .addSingleQueryParam("collectionId", newCollectionId)
-      .withUserAuthentication(USER_JOHN, USER_JOHN)
-      .execute(IdDto.class, 200);
-
-    // then
-    DashboardDefinitionDto oldDashboard = getDashboard(dashboardId);
-    DashboardDefinitionDto newDashboard = getDashboard(copyId.getId());
-    assertThat(newDashboard.getName(), is(oldDashboard.getName() + " – Copy"));
-    assertThat(newDashboard.getLastModifier(), is(USER_JOHN));
-    assertThat(newDashboard.getCollectionId(), is(newCollectionId));
-    assertThat(oldDashboard.getCollectionId(), is(oldCollectionId));
-
-    final List<String> newReportIds = newDashboard.getReports()
-      .stream()
-      .map(ReportLocationDto::getId)
-      .collect(Collectors.toList());
-
-    assertThat(newReportIds.isEmpty(), is(false));
-    assertThat(newReportIds, not(containsInAnyOrder(oldDashboard.getReports().stream()
-                                                      .map(ReportLocationDto::getId).toArray())));
-  }
-
-  @Test
-  public void getStoredDashboardsWithoutAuthentication() {
-    // when
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildGetAllDashboardsRequest()
-      .execute();
-
-    // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
-  }
-
-  @Test
-  public void getStoredDashboards() {
-    OptimizeRequestExecutor requestExecutor = embeddedOptimizeRule
-      .getRequestExecutor();
-
-    //given
-    String id = requestExecutor
-      .buildCreateDashboardRequest()
-      .execute(IdDto.class, 200)
-      .getId();
-
-    // when
-    List<DashboardDefinitionDto> dashboards = getAllDashboards();
-
-    // then
-    assertThat(dashboards.size(), is(1));
-    assertThat(dashboards.get(0).getId(), is(id));
-  }
-
-  @Test
-  public void getDashboardWithoutAuthentication() {
-    // when
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildGetDashboardRequest("asdf")
-      .execute();
-
-    // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
-  }
-
-  @Test
-  public void getDashboard() {
-    //given
-    String id = addEmptyDashboard();
-
-    // when
-    DashboardDefinitionDto dashboard = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildGetDashboardRequest(id)
-      .execute(DashboardDefinitionDto.class, 200);
-
-    // then
-    assertThat(dashboard, is(notNullValue()));
-    assertThat(dashboard.getId(), is(id));
-  }
-
-  @Test
-  public void getDashboardForNonExistingIdThrowsError() {
-    // when
-    String response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildGetDashboardRequest("fooid")
-      .execute(String.class, 404);
-
-    // then the status code is okay
-    assertThat(response.contains("Dashboard does not exist!"), is(true));
   }
 
   @Test
@@ -371,7 +224,7 @@ public class DashboardRestServiceIT {
   @Test
   public void deleteNewDashboard() {
     //given
-    String id = addEmptyDashboard();
+    String id = createEmptyPrivateDashboard();
 
     // when
     Response response = embeddedOptimizeRule
@@ -381,7 +234,6 @@ public class DashboardRestServiceIT {
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
-    assertThat(getAllDashboards().size(), is(0));
   }
 
   @Test
@@ -396,35 +248,16 @@ public class DashboardRestServiceIT {
     assertThat(response.getStatus(), is(404));
   }
 
-  private String addEmptyDashboard() {
-    return addEmptyDashboardToCollection(null);
+  private String createEmptyPrivateDashboard() {
+    return createEmptyDashboardToCollectionAsDefaultUser(null);
   }
 
-  private String addEmptyDashboardToCollection(final String collectionId) {
+  private String createEmptyDashboardToCollectionAsDefaultUser(final String collectionId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildCreateDashboardRequest(collectionId)
       .execute(IdDto.class, 200)
       .getId();
-  }
-
-  private String addEmptySingleProcessReport() {
-    return addEmptySingleProcessReportToCollection(null);
-  }
-
-  private String addEmptySingleProcessReportToCollection(final String collectionId) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(collectionId)
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
-  private List<DashboardDefinitionDto> getAllDashboards() {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildGetAllDashboardsRequest()
-      .executeAndReturnList(DashboardDefinitionDto.class, 200);
   }
 
   private DashboardDefinitionDto getDashboard(String dashboardId) {
@@ -434,7 +267,7 @@ public class DashboardRestServiceIT {
       .execute(DashboardDefinitionDto.class, 200);
   }
 
-  private String addEmptyCollectionToOptimize() {
+  private String createEmptyCollectionToOptimize() {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildCreateCollectionRequest()
@@ -442,19 +275,7 @@ public class DashboardRestServiceIT {
       .getId();
   }
 
-  private String addEmptyCollectionToOptimizeAsUser(final String user, final String password) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .withUserAuthentication(user, password)
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
-  private void updateDashboardRequest(final String dashboardId,
-                                      final List<ReportLocationDto> reports) {
-
-
+  private void updateDashboardRequest(final String dashboardId, final List<ReportLocationDto> reports) {
     final DashboardDefinitionDto dashboard = embeddedOptimizeRule.getRequestExecutor()
       .buildGetDashboardRequest(dashboardId).execute(DashboardDefinitionDto.class, 200);
 
@@ -468,14 +289,23 @@ public class DashboardRestServiceIT {
 
   }
 
-  private void addEmptyReportToDashboard(final String dashboardId, String collectionId) {
-    final String reportId = addEmptySingleProcessReport();
+  private void createEmptyReportToDashboard(final String dashboardId) {
+    final String reportId = createEmptySingleProcessReport();
     final ReportLocationDto reportLocationDto = new ReportLocationDto();
     reportLocationDto.setId(reportId);
     updateDashboardRequest(dashboardId, Collections.singletonList(reportLocationDto));
   }
 
-  private void addEmptyReportToDashboard(final String dashboardId) {
-    addEmptyReportToDashboard(dashboardId, null);
+  private String createEmptySingleProcessReport() {
+    return createEmptySingleProcessReportToCollection(null);
   }
+
+  private String createEmptySingleProcessReportToCollection(final String collectionId) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest(collectionId)
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
 }

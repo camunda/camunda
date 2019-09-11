@@ -194,7 +194,7 @@ public class AlertService implements ReportReferencingService {
     List<String> authorizedReportIds = reportService
       .findAndFilterReports(userId)
       .stream()
-      .map(ReportDefinitionDto::getId)
+      .map(authorizedReportDefinitionDto -> authorizedReportDefinitionDto.getDefinitionDto().getId())
       .collect(Collectors.toList());
 
     return alerts
@@ -216,7 +216,7 @@ public class AlertService implements ReportReferencingService {
   private void validateAlert(AlertCreationDto toCreate, String userId) {
     ReportDefinitionDto report;
     try {
-      report = reportService.getReportWithAuthorizationCheck(toCreate.getReportId(), userId);
+      report = reportService.getReportDefinition(toCreate.getReportId(), userId).getDefinitionDto();
     } catch (Exception e) {
       String errorMessage = "Could not create alert [" + toCreate.getName() + "]. Report id [" +
         toCreate.getReportId() + "] does not exist.";

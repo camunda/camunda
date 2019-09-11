@@ -3,12 +3,10 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.result;
+package org.camunda.optimize.dto.optimize.query.report;
 
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
+import lombok.NonNull;
 
-import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -19,7 +17,7 @@ public abstract class ReportEvaluationResult<Result extends ReportResultDto,
   protected final Result reportResult;
   protected final ReportDefinition reportDefinition;
 
-  public ReportEvaluationResult(@NotNull Result reportResult, @NotNull ReportDefinition reportDefinition) {
+  public ReportEvaluationResult(@NonNull Result reportResult, @NonNull ReportDefinition reportDefinition) {
     Objects.requireNonNull(reportResult, "The report result dto is not allowed to be null!");
     Objects.requireNonNull(reportDefinition, "The report data dto is not allowed to be null!");
     this.reportResult = reportResult;
