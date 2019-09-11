@@ -41,6 +41,10 @@ public class JobTypeAvailabilityState {
     blockedRequests.clear();
   }
 
+  public void removeCanceledRequests() {
+    blockedRequests.removeIf(LongPollingActivateJobsRequest::isCanceled);
+  }
+
   public void removeBlockedRequest(LongPollingActivateJobsRequest request) {
     blockedRequests.remove(request);
   }
