@@ -55,6 +55,16 @@
       background-color: #0565b2;
     }
 
+    > ul {
+      margin-left: -25px;
+
+      > a {
+        height: 100%;
+        display: inline-block;
+        padding-left: 25px;
+      }
+    }
+
     .contextMenu {
       position: absolute;
       right: 0;
