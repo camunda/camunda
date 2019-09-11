@@ -1,3 +1,17 @@
+<a name="0.21.0-alpha3"></a>
+## 0.21.0-alpha3 (2019-09-11)
+
+
+#### Features
+
+* **clients/java:**  cache client credentials ([168546bc](https://github.com/zeebe-io/zeebe/commit/168546bc4dbea569249700f3aa7529e8d2f06305))
+
+#### Bug Fixes
+
+* **gateway:**  fix long polling activation ([74a11a1d](https://github.com/zeebe-io/zeebe/commit/74a11a1dea2d1ec87947043e78083bc051fc00aa))
+
+
+
 <a name="0.21.0-alpha2"></a>
 ## 0.21.0-alpha2 (2019-09-03)
 
