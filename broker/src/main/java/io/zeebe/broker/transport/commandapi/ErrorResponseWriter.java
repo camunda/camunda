@@ -40,6 +40,7 @@ public class ErrorResponseWriter implements BufferWriter {
       "Expected to deploy workflows to partition '%d', but was attempted on partition '%d'";
   private static final String WORKFLOW_NOT_FOUND_FORMAT =
       "Expected to get workflow with %s, but no such workflow found";
+  private static final String RESOURCE_EXHAUSTED = "Reached maximum capacity of requests handled";
 
   protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
   protected final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
@@ -74,6 +75,10 @@ public class ErrorResponseWriter implements BufferWriter {
 
   public ErrorResponseWriter internalError(String message, Object... args) {
     return errorCode(ErrorCode.INTERNAL_ERROR).errorMessage(String.format(message, args));
+  }
+
+  public ErrorResponseWriter resourceExhausted() {
+    return errorCode(ErrorCode.RESOURCE_EXHAUSTED).errorMessage(RESOURCE_EXHAUSTED);
   }
 
   public ErrorResponseWriter malformedRequest(Throwable e) {

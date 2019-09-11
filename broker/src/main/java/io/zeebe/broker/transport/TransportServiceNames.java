@@ -7,14 +7,13 @@
  */
 package io.zeebe.broker.transport;
 
-import io.zeebe.broker.transport.commandapi.CommandApiMessageHandler;
+import io.zeebe.broker.transport.commandapi.CommandApiService;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.transport.ServerTransport;
 
 public class TransportServiceNames {
-  public static final ServiceName<CommandApiMessageHandler> COMMAND_API_MESSAGE_HANDLER =
-      ServiceName.newServiceName(
-          "transport.commandApi.messageHandler", CommandApiMessageHandler.class);
+  public static final ServiceName<CommandApiService> COMMAND_API_SERVICE_NAME =
+      ServiceName.newServiceName("transport.commandApi.messageHandler", CommandApiService.class);
 
   public static final String COMMAND_API_SERVER_NAME = "commandApi.server";
 

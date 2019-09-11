@@ -21,6 +21,7 @@ public class BrokerCfg {
   private DataCfg data = new DataCfg();
   private List<ExporterCfg> exporters = new ArrayList<>();
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
+  private BackpressureCfg backpressure = new BackpressureCfg();
 
   public void init(final String brokerBase) {
     init(brokerBase, new Environment());
@@ -34,6 +35,7 @@ public class BrokerCfg {
     data.init(this, brokerBase, environment);
     exporters.forEach(e -> e.init(this, brokerBase, environment));
     gateway.init(this, brokerBase, environment);
+    backpressure.init(this, brokerBase, environment);
   }
 
   private void applyEnvironment(final Environment environment) {
@@ -90,6 +92,15 @@ public class BrokerCfg {
 
   public BrokerCfg setGateway(EmbeddedGatewayCfg gateway) {
     this.gateway = gateway;
+    return this;
+  }
+
+  public BackpressureCfg getBackpressure() {
+    return backpressure;
+  }
+
+  public BrokerCfg setBackpressure(BackpressureCfg backpressure) {
+    this.backpressure = backpressure;
     return this;
   }
 

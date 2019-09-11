@@ -289,7 +289,13 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
     }
 
     final StatusRuntimeException convertedThrowable = status.withCause(cause).asRuntimeException();
-    Loggers.GATEWAY_LOGGER.error("Error handling gRPC request", convertedThrowable);
+
+    // When there is back pressure, there will be a lot of `RESOURCE_EXHAUSTED` errors and the log
+    // can get flooded. Until we find a way to limit the number of log messages,
+    // let's do not log them.
+    if (status.getCode() != Status.RESOURCE_EXHAUSTED.getCode()) {
+      Loggers.GATEWAY_LOGGER.error("Error handling gRPC request", convertedThrowable);
+    }
 
     return convertedThrowable;
   }
@@ -298,6 +304,8 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
     switch (error.getCode()) {
       case WORKFLOW_NOT_FOUND:
         return Status.NOT_FOUND.augmentDescription(error.getMessage());
+      case RESOURCE_EXHAUSTED:
+        return Status.RESOURCE_EXHAUSTED.augmentDescription(error.getMessage());
       default:
         return Status.INTERNAL.augmentDescription(
             String.format(

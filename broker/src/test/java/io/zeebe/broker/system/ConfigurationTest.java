@@ -32,6 +32,8 @@ import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
+import io.zeebe.broker.system.configuration.BackpressureCfg;
+import io.zeebe.broker.system.configuration.BackpressureCfg.LimitAlgorithm;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
@@ -430,6 +432,18 @@ public class ConfigurationTest {
     environment.put(ENV_EMBED_GATEWAY, "true");
     // then
     assertEmbeddedGatewayEnabled("disabled-gateway", true);
+  }
+
+  @Test
+  public void shouldSetBackpressureConfig() {
+    // when
+    final BrokerCfg cfg = readConfig("backpressure-cfg");
+    final BackpressureCfg backpressure = cfg.getBackpressure();
+
+    // then
+    assertThat(backpressure.isEnabled()).isTrue();
+    assertThat(backpressure.useWindowed()).isFalse();
+    assertThat(backpressure.getAlgorithm()).isEqualTo(LimitAlgorithm.GRADIENT);
   }
 
   private BrokerCfg readConfig(final String name) {

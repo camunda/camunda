@@ -7,13 +7,11 @@
  */
 package io.zeebe.broker.transport;
 
-import io.zeebe.servicecontainer.Injector;
+import io.zeebe.broker.transport.commandapi.CommandApiMessageHandler;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.Loggers;
-import io.zeebe.transport.ServerMessageHandler;
-import io.zeebe.transport.ServerRequestHandler;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.Transports;
 import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
@@ -30,30 +28,27 @@ public class ServerTransportService implements Service<ServerTransport> {
   // - note that this factor is randomly chosen, feel free to change it
   private static final int TRANSPORT_BUFFER_FACTOR = 16;
 
-  private final Injector<ServerRequestHandler> requestHandlerInjector = new Injector<>();
-  private final Injector<ServerMessageHandler> messageHandlerInjector = new Injector<>();
-
   private final String readableName;
   private final InetSocketAddress bindAddress;
 
   private final ByteValue maxMessageSize;
-
+  private CommandApiMessageHandler commandApiMessageHandler;
   private ServerTransport serverTransport;
 
   public ServerTransportService(
       final String readableName,
       final InetSocketAddress bindAddress,
-      final ByteValue maxMessageSize) {
+      final ByteValue maxMessageSize,
+      final CommandApiMessageHandler commandApiMessageHandler) {
     this.readableName = readableName;
     this.bindAddress = bindAddress;
     this.maxMessageSize = maxMessageSize;
+    this.commandApiMessageHandler = commandApiMessageHandler;
   }
 
   @Override
   public void start(final ServiceStartContext serviceContext) {
     final ActorScheduler scheduler = serviceContext.getScheduler();
-    final ServerRequestHandler requestHandler = requestHandlerInjector.getValue();
-    final ServerMessageHandler messageHandler = messageHandlerInjector.getValue();
 
     final ByteValue transportBufferSize =
         ByteValue.ofBytes(maxMessageSize.toBytes() * TRANSPORT_BUFFER_FACTOR);
@@ -65,7 +60,7 @@ public class ServerTransportService implements Service<ServerTransport> {
             .scheduler(scheduler)
             .messageMemoryPool(new NonBlockingMemoryPool(transportBufferSize))
             .messageMaxLength(maxMessageSize)
-            .build(messageHandler, requestHandler);
+            .build(commandApiMessageHandler, commandApiMessageHandler);
 
     LOG.info("Bound {} to {}", readableName, bindAddress);
   }
@@ -86,13 +81,5 @@ public class ServerTransportService implements Service<ServerTransport> {
         serverTransport.releaseResources();
       }
     };
-  }
-
-  public Injector<ServerRequestHandler> getRequestHandlerInjector() {
-    return requestHandlerInjector;
-  }
-
-  public Injector<ServerMessageHandler> getMessageHandlerInjector() {
-    return messageHandlerInjector;
   }
 }

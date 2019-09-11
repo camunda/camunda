@@ -87,20 +87,6 @@
         </configuration>
       </plugin>
 
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <additionalDependencies>
-            <additionalDependency>
-              <groupId>javax.annotation</groupId>
-              <artifactId>javax.annotation-api</artifactId>
-              <version>1.3.2</version>
-            </additionalDependency>
-          </additionalDependencies>
-        </configuration>
-      </plugin>
-
     </plugins>
   </build>
 

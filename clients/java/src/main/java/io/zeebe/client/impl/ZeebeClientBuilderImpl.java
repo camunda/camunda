@@ -25,11 +25,12 @@ import io.zeebe.client.CredentialsProvider;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.ZeebeClientConfiguration;
+import io.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.zeebe.client.util.Environment;
 import java.time.Duration;
 import java.util.Properties;
 
 public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
-
   private String brokerContactPoint = "0.0.0.0:26500";
   private int jobWorkerMaxJobsActive = 32;
   private int numJobWorkerExecutionThreads = 1;
@@ -174,7 +175,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder defaultJobPollInterval(Duration pollInterval) {
+  public ZeebeClientBuilder defaultJobPollInterval(final Duration pollInterval) {
     defaultJobPollInterval = pollInterval;
     return this;
   }
@@ -186,7 +187,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder defaultRequestTimeout(Duration requestTimeout) {
+  public ZeebeClientBuilder defaultRequestTimeout(final Duration requestTimeout) {
     this.defaultRequestTimeout = requestTimeout;
     return this;
   }
@@ -204,13 +205,15 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder credentialsProvider(CredentialsProvider credentialsProvider) {
+  public ZeebeClientBuilder credentialsProvider(final CredentialsProvider credentialsProvider) {
     this.credentialsProvider = credentialsProvider;
     return this;
   }
 
   @Override
   public ZeebeClient build() {
+    applyDefaults();
+
     return new ZeebeClientImpl(this);
   }
 
@@ -228,6 +231,30 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     appendProperty(sb, "defaultRequestTimeout", defaultRequestTimeout);
 
     return sb.toString();
+  }
+
+  private void applyDefaults() {
+    if (shouldUseDefaultCredentialsProvider()) {
+      credentialsProvider = createDefaultCredentialsProvider();
+    }
+  }
+
+  private boolean shouldUseDefaultCredentialsProvider() {
+    return credentialsProvider == null
+        && Environment.system().get(OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_ID) != null
+        && Environment.system().get(OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_SECRET)
+            != null;
+  }
+
+  private CredentialsProvider createDefaultCredentialsProvider() {
+    final OAuthCredentialsProviderBuilder builder =
+        CredentialsProvider.newCredentialsProviderBuilder();
+    final int separatorIndex = brokerContactPoint.lastIndexOf(':');
+    if (separatorIndex > 0) {
+      builder.audience(brokerContactPoint.substring(0, separatorIndex));
+    }
+
+    return builder.build();
   }
 
   private static void appendProperty(

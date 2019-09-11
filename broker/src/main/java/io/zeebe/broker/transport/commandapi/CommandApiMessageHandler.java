@@ -8,6 +8,8 @@
 package io.zeebe.broker.transport.commandapi;
 
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.transport.backpressure.BackpressureMetrics;
+import io.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
@@ -49,14 +51,18 @@ public class CommandApiMessageHandler implements ServerMessageHandler, ServerReq
   protected final Consumer<Runnable> cmdConsumer = Runnable::run;
 
   protected final Int2ObjectHashMap<LogStream> leadingStreams = new Int2ObjectHashMap<>();
+  protected final Int2ObjectHashMap<RequestLimiter<Intent>> partitionLimiters =
+      new Int2ObjectHashMap<>();
   protected final RecordMetadata eventMetadata = new RecordMetadata();
   protected final LogStreamRecordWriter logStreamWriter = new LogStreamWriterImpl();
 
   protected final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter();
 
   protected final EnumMap<ValueType, UnpackedObject> recordsByType = new EnumMap<>(ValueType.class);
+  private final BackpressureMetrics metrics;
 
   public CommandApiMessageHandler() {
+    this.metrics = new BackpressureMetrics();
     initEventTypeMap();
   }
 
@@ -124,9 +130,44 @@ public class CommandApiMessageHandler implements ServerMessageHandler, ServerReq
     }
 
     eventMetadata.recordType(RecordType.COMMAND);
-    eventMetadata.intent(Intent.fromProtocolValue(eventType, intent));
+    final Intent eventIntent = Intent.fromProtocolValue(eventType, intent);
+    eventMetadata.intent(eventIntent);
     eventMetadata.valueType(eventType);
 
+    metrics.receivedRequest(partitionId);
+    final RequestLimiter<Intent> limiter = partitionLimiters.get(partitionId);
+    if (!limiter.tryAcquire(requestAddress.getStreamId(), requestId, eventIntent)) {
+      metrics.dropped(partitionId);
+      LOG.trace(
+          "Partition-{} receiving too many requests. Current limit {} inflight {}, dropping request {} from gateway {}",
+          partitionId,
+          limiter.getLimit(),
+          limiter.getInflightCount(),
+          requestId,
+          requestAddress.getAddress());
+      return errorResponseWriter
+          .resourceExhausted()
+          .tryWriteResponse(output, requestAddress.getStreamId(), requestId);
+    }
+
+    boolean written = false;
+    try {
+      written = writeCommand(eventMetadata, buffer, key, logStream, eventOffset, eventLength);
+    } finally {
+      if (!written) {
+        limiter.onIgnore(requestAddress.getStreamId(), requestId);
+      }
+    }
+    return written;
+  }
+
+  private boolean writeCommand(
+      RecordMetadata eventMetadata,
+      DirectBuffer buffer,
+      long key,
+      LogStream logStream,
+      int eventOffset,
+      int eventLength) {
     logStreamWriter.wrap(logStream);
 
     if (key != ExecuteCommandRequestDecoder.keyNullValue()) {
@@ -144,12 +185,20 @@ public class CommandApiMessageHandler implements ServerMessageHandler, ServerReq
     return eventPosition >= 0;
   }
 
-  public void addPartition(LogStream logStream) {
-    cmdQueue.add(() -> leadingStreams.put(logStream.getPartitionId(), logStream));
+  public void addPartition(LogStream logStream, RequestLimiter<Intent> limiter) {
+    cmdQueue.add(
+        () -> {
+          leadingStreams.put(logStream.getPartitionId(), logStream);
+          partitionLimiters.put(logStream.getPartitionId(), limiter);
+        });
   }
 
   public void removePartition(LogStream logStream) {
-    cmdQueue.add(() -> leadingStreams.remove(logStream.getPartitionId()));
+    cmdQueue.add(
+        () -> {
+          leadingStreams.remove(logStream.getPartitionId());
+          partitionLimiters.remove(logStream.getPartitionId());
+        });
   }
 
   @Override

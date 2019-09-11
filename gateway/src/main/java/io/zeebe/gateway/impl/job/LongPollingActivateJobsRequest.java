@@ -7,6 +7,7 @@
  */
 package io.zeebe.gateway.impl.job;
 
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.gateway.Loggers;
 import io.zeebe.gateway.RequestMapper;
@@ -15,6 +16,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.zeebe.util.sched.ScheduledTimer;
 import java.time.Duration;
+import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 
 public class LongPollingActivateJobsRequest {
@@ -29,6 +31,7 @@ public class LongPollingActivateJobsRequest {
   private ScheduledTimer scheduledTimer;
   private boolean isTimedOut;
   private boolean isCompleted;
+  private BooleanSupplier cancelCheck = () -> false;
 
   public LongPollingActivateJobsRequest(
       ActivateJobsRequest request, StreamObserver<ActivateJobsResponse> responseObserver) {
@@ -48,6 +51,10 @@ public class LongPollingActivateJobsRequest {
       long longPollingTimeout) {
     this.request = request;
     this.responseObserver = responseObserver;
+
+    if (responseObserver instanceof ServerCallStreamObserver) {
+      cancelCheck = () -> ((ServerCallStreamObserver) responseObserver).isCancelled();
+    }
     this.jobType = jobType;
     this.maxJobsToActivate = maxJobstoActivate;
     this.longPollingTimeout =
@@ -78,7 +85,7 @@ public class LongPollingActivateJobsRequest {
       try {
         responseObserver.onNext(grpcResponse);
       } catch (Exception e) {
-        LOG.warn("Failed to send response {}", e);
+        LOG.warn("Failed to send response {}", grpcResponse, e);
       }
     }
   }
@@ -86,6 +93,10 @@ public class LongPollingActivateJobsRequest {
   public void timeout() {
     complete();
     this.isTimedOut = true;
+  }
+
+  public boolean isCanceled() {
+    return cancelCheck.getAsBoolean();
   }
 
   public BrokerActivateJobsRequest getRequest() {

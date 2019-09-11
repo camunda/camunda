@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/zeebe-io/zeebe/clients/go/commands"
@@ -114,14 +115,20 @@ func (client *ZBClientImpl) Close() error {
 	return client.connection.Close()
 }
 
-func NewZBClient(config *ZBClientConfig) (ZBClient, error) {
+func NewZBClient(gatewayAddress string) (ZBClient, error) {
+	return NewZBClientWithConfig(&ZBClientConfig{GatewayAddress: gatewayAddress})
+}
+
+func NewZBClientWithConfig(config *ZBClientConfig) (ZBClient, error) {
 	var opts []grpc.DialOption
 
 	if err := configureConnectionSecurity(config, &opts); err != nil {
 		return nil, err
 	}
 
-	provider := configureCredentialsProvider(config, &opts)
+	if err := configureCredentialsProvider(config, &opts); err != nil {
+		return nil, err
+	}
 
 	conn, err := grpc.Dial(config.GatewayAddress, opts...)
 	if err != nil {
@@ -132,11 +139,17 @@ func NewZBClient(config *ZBClientConfig) (ZBClient, error) {
 		gateway:             pb.NewGatewayClient(conn),
 		requestTimeout:      DefaultRequestTimeout,
 		connection:          conn,
-		credentialsProvider: provider,
+		credentialsProvider: config.CredentialsProvider,
 	}, nil
 }
 
-func configureCredentialsProvider(config *ZBClientConfig, opts *[]grpc.DialOption) CredentialsProvider {
+func configureCredentialsProvider(config *ZBClientConfig, opts *[]grpc.DialOption) error {
+	if config.CredentialsProvider == nil && shouldUseDefaultCredentialsProvider() {
+		if err := setDefaultCredentialsProvider(config); err != nil {
+			return err
+		}
+	}
+
 	if config.CredentialsProvider != nil {
 		if config.UsePlaintextConnection {
 			log.Println("Warning: The configured security level does not guarantee that the credentials will be confidential. If this unintentional, please enable transport security.")
@@ -144,11 +157,31 @@ func configureCredentialsProvider(config *ZBClientConfig, opts *[]grpc.DialOptio
 
 		callCredentials := &zeebeCallCredentials{credentialsProvider: config.CredentialsProvider}
 		*opts = append(*opts, grpc.WithPerRPCCredentials(callCredentials))
-
-		return config.CredentialsProvider
+	} else {
+		config.CredentialsProvider = &NoopCredentialsProvider{}
 	}
 
-	return &NoopCredentialsProvider{}
+	return nil
+}
+
+func shouldUseDefaultCredentialsProvider() bool {
+	return os.Getenv(OAuthClientSecretEnvVar) != "" || os.Getenv(OAuthClientIdEnvVar) != ""
+}
+
+func setDefaultCredentialsProvider(config *ZBClientConfig) error {
+	var audience string
+	index := strings.LastIndex(config.GatewayAddress, ":")
+	if index > 0 {
+		audience = config.GatewayAddress[0:index]
+	}
+
+	provider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{Audience: audience})
+	if err != nil {
+		return err
+	}
+
+	config.CredentialsProvider = provider
+	return nil
 }
 
 func configureConnectionSecurity(config *ZBClientConfig, opts *[]grpc.DialOption) error {

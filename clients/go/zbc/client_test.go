@@ -24,6 +24,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 	"net"
+	"os"
 	"strings"
 	"testing"
 )
@@ -39,15 +40,15 @@ func TestNewZBClientWithTls(t *testing.T) {
 	}()
 
 	parts := strings.Split(lis.Addr().String(), ":")
-	client, e := NewZBClient(&ZBClientConfig{
+	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		CaCertificatePath: "../resources/ca.cert.pem",
 	})
 
-	require.NoError(t, e)
+	require.NoError(t, err)
 
 	// when
-	_, err := client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send()
 
 	// then
 	require.Error(t, err)
@@ -70,23 +71,22 @@ func TestNewZBClientWithoutTls(t *testing.T) {
 	}()
 
 	parts := strings.Split(lis.Addr().String(), ":")
-	client, e := NewZBClient(&ZBClientConfig{
+	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CaCertificatePath:      "../resources/ca.cert.pem",
 	})
 
-	require.NoError(t, e)
+	require.NoError(t, err)
 
 	// when
-	_, err := client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send()
 
 	// then
 	require.Error(t, err)
 	if status, ok := status.FromError(err); ok {
 		require.Equal(t, codes.Unimplemented, status.Code())
 	}
-
 }
 
 func TestNewZBClientWithDefaultRootCa(t *testing.T) {
@@ -100,14 +100,14 @@ func TestNewZBClientWithDefaultRootCa(t *testing.T) {
 	}()
 
 	parts := strings.Split(lis.Addr().String(), ":")
-	client, e := NewZBClient(&ZBClientConfig{
+	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress: fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 	})
 
-	require.NoError(t, e)
+	require.NoError(t, err)
 
 	// then
-	_, err := client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send()
 
 	// when
 	require.Error(t, err)
@@ -131,13 +131,53 @@ func TestNewZBClientWithPathToNonExistingFile(t *testing.T) {
 	wrongPath := "../resources/non.existing"
 
 	//when
-	_, err := NewZBClient(&ZBClientConfig{
+	_, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		CaCertificatePath: wrongPath,
 	})
 
 	// then
 	require.EqualValues(t, FileNotFoundError, errors.Cause(err))
+}
+
+func TestNewZBClientWithDefaultCredentialsProvider(t *testing.T) {
+	// given
+	lis, _ := net.Listen("tcp", "0.0.0.0:0")
+
+	grpcServer := grpc.NewServer()
+	pb.RegisterGatewayServer(grpcServer, &pb.UnimplementedGatewayServer{})
+
+	go grpcServer.Serve(lis)
+	defer func() {
+		grpcServer.Stop()
+		_ = lis.Close()
+	}()
+
+	authzServer := mockAuthorizationServerWithAudience(t, &mutableToken{value: accessToken}, "0.0.0.0")
+	defer authzServer.Close()
+
+	os.Setenv(OAuthClientSecretEnvVar, clientSecret)
+	os.Setenv(OAuthClientIdEnvVar, clientID)
+	os.Setenv(OAuthAuthorizationUrlEnvVar, authzServer.URL)
+	defer os.Clearenv()
+
+	parts := strings.Split(lis.Addr().String(), ":")
+	config := &ZBClientConfig{
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		UsePlaintextConnection: true,
+	}
+	client, err := NewZBClientWithConfig(config)
+
+	require.NoError(t, err)
+
+	// when
+	_, err = client.NewTopologyCommand().Send()
+
+	// then
+	require.Error(t, err)
+	if status, ok := status.FromError(err); ok {
+		require.Equal(t, codes.Unimplemented, status.Code())
+	}
 }
 
 func createSecureServer() (net.Listener, *grpc.Server) {
