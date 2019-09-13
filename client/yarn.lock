@@ -1467,10 +1467,10 @@ acorn-globals@^4.3.0:
     acorn "^6.0.1"
     acorn-walk "^6.0.1"
 
-acorn-hammerhead@^0.2.0:
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/acorn-hammerhead/-/acorn-hammerhead-0.2.0.tgz#46b3baf430bfb3c62436d663e4f33a9e1dad7794"
-  integrity sha512-kbX1s/0ZikW0WEBY6IrooFgX3AP2D9ycTg0OhxRYLF0Tew/bDK2+8lTxFR4cDdoCZm6Ax8eVf8EV6gbTtr8EYQ==
+acorn-hammerhead@^0.3.0:
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/acorn-hammerhead/-/acorn-hammerhead-0.3.0.tgz#2f83730f15e8450169c3dfd88af3ea9405ea973d"
+  integrity sha512-Izrr9mXONhWc7q8fqUe6ijQy+KjmyQlgdWARgaCVjds+nPpoSS298FY8uSVN/to8nKVTtkJpafNUlACWxwZS5w==
   dependencies:
     "@types/estree" "^0.0.39"
 
@@ -1745,6 +1745,19 @@ arrify@^1.0.1:
 asap@^2.0.0, asap@~2.0.6:
   version "2.0.6"
   resolved "https://registry.yarnpkg.com/asap/-/asap-2.0.6.tgz#e50347611d7e690943208bbdafebcbc2fb866d46"
+
+asar@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/asar/-/asar-2.0.1.tgz#8518a1c62c238109c15a5f742213e83a09b9fd38"
+  integrity sha512-Vo9yTuUtyFahkVMFaI6uMuX6N7k5DWa6a/8+7ov0/f8Lq9TVR0tUjzSzxQSxT1Y+RJIZgnP7BVb6Uhi+9cjxqA==
+  dependencies:
+    chromium-pickle-js "^0.2.0"
+    commander "^2.20.0"
+    cuint "^0.2.2"
+    glob "^7.1.3"
+    minimatch "^3.0.4"
+    mkdirp "^0.5.1"
+    tmp-promise "^1.0.5"
 
 asn1.js@^4.0.0:
   version "4.9.1"
@@ -3235,6 +3248,11 @@ chrome-trace-event@^1.0.0:
   dependencies:
     tslib "^1.9.0"
 
+chromium-pickle-js@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/chromium-pickle-js/-/chromium-pickle-js-0.2.0.tgz#04a106672c18b085ab774d983dfa3ea138f22205"
+  integrity sha1-BKEGZywYsIWrd02YPfo+oTjyIgU=
+
 ci-info@^1.5.0:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/ci-info/-/ci-info-1.6.0.tgz#2ca20dbb9ceb32d4524a683303313f0304b1e497"
@@ -3892,6 +3910,11 @@ cssstyle@^1.1.1:
 csstype@^2.2.0:
   version "2.6.4"
   resolved "https://registry.yarnpkg.com/csstype/-/csstype-2.6.4.tgz#d585a6062096e324e7187f80e04f92bd0f00e37f"
+
+cuint@^0.2.2:
+  version "0.2.2"
+  resolved "https://registry.yarnpkg.com/cuint/-/cuint-0.2.2.tgz#408086d409550c2631155619e9fa7bcadc3b991b"
+  integrity sha1-QICG1AlVDCYxFVYZ6fp7ytw7mRs=
 
 currently-unhandled@^0.4.1:
   version "0.4.1"
@@ -4887,10 +4910,10 @@ eslint@^5.16.0:
     table "^5.2.3"
     text-table "^0.2.0"
 
-esotope-hammerhead@0.3.0:
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/esotope-hammerhead/-/esotope-hammerhead-0.3.0.tgz#17f918ccec2454773a4a7ac940ded9fc4bd46dea"
-  integrity sha512-qI6ZlQaf4yBPZhHETT24vk93INsNj++mRKBHOpOtkx7F/N7UvuTD8neeTbcbRQUntGksvs8/v63uGfDCdgt5YQ==
+esotope-hammerhead@^0.4.0:
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/esotope-hammerhead/-/esotope-hammerhead-0.4.0.tgz#11e1760543ba2e197300d45d21985e85fb4aa490"
+  integrity sha512-TAmc7OhAiWeovbzE9GGenU2vwuB9tzKHlW0hTH4rZsLmCNEKo8wIZ9qbEnw8nyXeNTjCmBYOYXUyaN+eZht7Tg==
   dependencies:
     "@types/estree" "^0.0.39"
 
@@ -5717,12 +5740,7 @@ globule@^1.0.0:
     lodash "~4.17.10"
     minimatch "~3.0.2"
 
-graceful-fs@^4.1.11, graceful-fs@^4.1.15, graceful-fs@^4.1.2, graceful-fs@^4.1.6:
-  version "4.2.0"
-  resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.2.0.tgz#8d8fdc73977cb04104721cb53666c1ca64cd328b"
-  integrity sha512-jpSvDPV4Cq/bgtpndIWbI5hmYxhQGHPC4d4cqBPb4DLniCfhJokdXhwhaDuLBGLQdvvRum/UiX6ECVIPvDXqdg==
-
-graceful-fs@^4.2.2:
+graceful-fs@^4.1.11, graceful-fs@^4.1.15, graceful-fs@^4.1.2, graceful-fs@^4.1.6, graceful-fs@^4.2.2:
   version "4.2.2"
   resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.2.2.tgz#6f0952605d0140c1cfdb138ed005775b92d67b02"
   integrity sha512-IItsdsea19BoLC7ELy13q1iJFNmd7ofZH5+X/pJr90/nRoPEX0DJo1dHDbgtYWOhJhcCgMDTOw84RZ72q6lB+Q==
@@ -6587,13 +6605,7 @@ is-glob@^3.1.0:
   dependencies:
     is-extglob "^2.1.0"
 
-is-glob@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/is-glob/-/is-glob-4.0.0.tgz#9521c76845cc2610a85203ddf080a958c2ffabc0"
-  dependencies:
-    is-extglob "^2.1.1"
-
-is-glob@^4.0.1:
+is-glob@^4.0.0, is-glob@^4.0.1:
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/is-glob/-/is-glob-4.0.1.tgz#7567dbe9f2f5e2467bc77ab83c4a29482407a5dc"
   integrity sha512-5G0tKtBTFImOqDnLB2hG6Bp2qcKEFduo4tZu9MT/H6NQv/ghhy30o55ufafxJ/LdH79LLs2Kfrn85TLKyA7BUg==
@@ -10870,6 +10882,13 @@ rimraf@2, rimraf@2.6.3, rimraf@^2.2.8, rimraf@^2.5.4, rimraf@^2.6.1, rimraf@^2.6
   dependencies:
     glob "^7.1.3"
 
+rimraf@^2.6.3:
+  version "2.7.1"
+  resolved "https://registry.yarnpkg.com/rimraf/-/rimraf-2.7.1.tgz#35797f13a7fdadc566142c29d4f07ccad483e3ec"
+  integrity sha512-uWjbaKIK3T1OSVptzX7Nl6PvQ3qAGtKEtVRjRuazjfL3Bx5eI409VZSqgND+4UNnmzLVdPj9FqFJNPqBZFve4w==
+  dependencies:
+    glob "^7.1.3"
+
 rimraf@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/rimraf/-/rimraf-3.0.0.tgz#614176d4b3010b75e5c390eb0ee96f6dc0cebb9b"
@@ -11893,17 +11912,18 @@ testcafe-browser-tools@1.6.8:
     read-file-relative "^1.2.0"
     which-promise "^1.0.0"
 
-testcafe-hammerhead@14.6.13:
-  version "14.6.13"
-  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-14.6.13.tgz#d9c72d53d38ea0f857775f7a988db2ede353024c"
-  integrity sha512-uwIZ3sSQh2LdgbLjCM2z7jmVfR/EZ63WIId0C34FxaOd5E00+V1NdVWHofYYJvr8MBec9X8iRRGtir4nYU9H2g==
+testcafe-hammerhead@14.9.2:
+  version "14.9.2"
+  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-14.9.2.tgz#5ab3f32a08d994f189885f4bf648d9bbe90f9be2"
+  integrity sha512-0rO9NTTueDXPqeWASThKEHX5AGF0FDhiPVRdkkWnKUOAtfPJz/qovZnIEpoC7q0DdmgbYYvK3if9Si8SdFNk0A==
   dependencies:
-    acorn-hammerhead "^0.2.0"
+    acorn-hammerhead "^0.3.0"
+    asar "^2.0.1"
     bowser "1.6.0"
     brotli "^1.3.1"
     crypto-md5 "^1.0.0"
     css "2.2.3"
-    esotope-hammerhead "0.3.0"
+    esotope-hammerhead "^0.4.0"
     iconv-lite "0.4.11"
     lodash "^4.17.13"
     lru-cache "2.6.3"
@@ -11914,7 +11934,6 @@ testcafe-hammerhead@14.6.13:
     nanoid "^0.2.2"
     os-family "^1.0.0"
     parse5 "2.2.3"
-    pify "^2.3.0"
     pinkie "1.0.0"
     read-file-relative "^1.2.0"
     semver "5.5.0"
@@ -11966,10 +11985,10 @@ testcafe-reporter-xunit@^2.1.0:
   resolved "https://registry.yarnpkg.com/testcafe-reporter-xunit/-/testcafe-reporter-xunit-2.1.0.tgz#e6d66c572ce15af266706af0fd610b2a841dd443"
   integrity sha1-5tZsVyzhWvJmcGrw/WELKoQd1EM=
 
-testcafe@^1.3.3:
-  version "1.3.3"
-  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.3.3.tgz#04585dd44970bb12e03872f01fead27b87ca8e31"
-  integrity sha512-UdFPD3+IW8SgCM97VAOasIFBqpsy70cDp+Sw+Cq2QAk9IeeJPGct4A7Eealdyhota7EmLTqXnlwXIZd0Jk+xbw==
+testcafe@^1.5.0:
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.5.0.tgz#536b606207b358edc408c735cd18a4ccf8441721"
+  integrity sha512-qtSUH8csayEW/zVLFNmhglBmQIM38rV0dtWzz5khC1BXyIk1xW+Os5vcrepkS8hIXblpJRG0ugi/2FMzBHhH/A==
   dependencies:
     "@types/node" "^10.12.19"
     async-exit-hook "^1.1.2"
@@ -12031,7 +12050,7 @@ testcafe@^1.3.3:
     source-map-support "^0.5.5"
     strip-bom "^2.0.0"
     testcafe-browser-tools "1.6.8"
-    testcafe-hammerhead "14.6.13"
+    testcafe-hammerhead "14.9.2"
     testcafe-legacy-api "3.1.11"
     testcafe-reporter-json "^2.1.0"
     testcafe-reporter-list "^2.1.0"
@@ -12104,6 +12123,14 @@ tinycolor2@^1.1.2:
   resolved "https://registry.yarnpkg.com/tinycolor2/-/tinycolor2-1.4.1.tgz#f4fad333447bc0b07d4dc8e9209d8f39a8ac77e8"
   integrity sha1-9PrTM0R7wLB9TcjpIJ2POaisd+g=
 
+tmp-promise@^1.0.5:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/tmp-promise/-/tmp-promise-1.1.0.tgz#bb924d239029157b9bc1d506a6aa341f8b13e64c"
+  integrity sha512-8+Ah9aB1IRXCnIOxXZ0uFozV1nMU5xiu7hhFVUSxZ3bYu+psD4TzagCzVbexUCgNNGJnsmNDQlS4nG3mTyoNkw==
+  dependencies:
+    bluebird "^3.5.0"
+    tmp "0.1.0"
+
 tmp@0.0.28:
   version "0.0.28"
   resolved "https://registry.yarnpkg.com/tmp/-/tmp-0.0.28.tgz#172735b7f614ea7af39664fa84cf0de4e515d120"
@@ -12116,6 +12143,13 @@ tmp@0.0.x, tmp@^0.0.33:
   resolved "https://registry.yarnpkg.com/tmp/-/tmp-0.0.33.tgz#6d34335889768d21b2bcda0aa277ced3b1bfadf9"
   dependencies:
     os-tmpdir "~1.0.2"
+
+tmp@0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/tmp/-/tmp-0.1.0.tgz#ee434a4e22543082e294ba6201dcc6eafefa2877"
+  integrity sha512-J7Z2K08jbGcdA1kkQpJSqLF6T0tdQqpR2pnSUXsIchbPdTI9v3e85cLW0d6WDhwuAleOV71j2xWs8qMPfK7nKw==
+  dependencies:
+    rimraf "^2.6.3"
 
 tmpl@1.0.x:
   version "1.0.4"
