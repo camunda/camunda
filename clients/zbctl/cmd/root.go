@@ -27,7 +27,7 @@ import (
 
 const (
 	DefaultAddressHost = "127.0.0.1"
-	DefaultAddressPort = 26500
+	DefaultAddressPort = "26500"
 )
 
 var client zbc.ZBClient
@@ -78,12 +78,12 @@ var initClient = func(cmd *cobra.Command, args []string) error {
 	var err error
 	var credsProvider zbc.CredentialsProvider
 
-	address := parseAddress()
+	host, port := parseAddress()
 
 	if clientIDFlag != "" || clientSecretFlag != "" {
 	    audience := audienceFlag
 		if audience == "" {
-            audience = address
+            audience = host
 		}
 
         providerConfig := zbc.OAuthProviderConfig{
@@ -109,7 +109,7 @@ var initClient = func(cmd *cobra.Command, args []string) error {
 	}
 
 	client, err = zbc.NewZBClientWithConfig(&zbc.ZBClientConfig{
-		GatewayAddress:         appendPort(address),
+		GatewayAddress:         fmt.Sprintf("%s:%s", host, port),
 		UsePlaintextConnection: insecureFlag,
 		CaCertificatePath:      caCertPathFlag,
 		CredentialsProvider:    credsProvider,
@@ -117,19 +117,24 @@ var initClient = func(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func parseAddress() string {
-	address := DefaultAddressHost
+func parseAddress() (address string, port string) {
+	address = DefaultAddressHost
+	port = DefaultAddressPort
 
 	addressEnv := os.Getenv("ZEEBE_ADDRESS")
 	if len(addressEnv) > 0 {
 		address = addressEnv
-	}
+	} else if len(addressFlag) > 0 {
+	    address = addressFlag
+    }
 
-	if len(addressFlag) > 0 {
-		address = addressFlag
-	}
+    if strings.Contains(address, ":") {
+        parts := strings.Split(address, ":")
+        address = parts[0]
+        port = parts[1]
+    }
 
-	return address
+	return
 }
 
 func keyArg(key *int64) cobra.PositionalArgs {
@@ -155,12 +160,4 @@ func printJson(value interface{}) error {
 		fmt.Println(string(valueJson))
 	}
 	return err
-}
-
-func appendPort(address string) string {
-	if strings.Contains(address, ":") {
-		return address
-	} else {
-		return fmt.Sprintf("%s:%d", address, DefaultAddressPort)
-	}
 }
