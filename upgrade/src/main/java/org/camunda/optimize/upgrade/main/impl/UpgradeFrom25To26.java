@@ -115,6 +115,8 @@ public class UpgradeFrom25To26 implements Upgrade {
       .addUpgradeStep(new UpdateMappingIndexStep(new SingleDecisionReportIndex()))
       .addUpgradeStep(createMultipleDefinitionVersionsForProcessReports())
       .addUpgradeStep(createMultipleDefinitionVersionsForDecisionReports())
+      .addUpgradeStep(addActivePropertyToHiddenNodesConfigurationField(SINGLE_PROCESS_REPORT_INDEX_NAME))
+      .addUpgradeStep(addActivePropertyToHiddenNodesConfigurationField(SINGLE_DECISION_REPORT_INDEX_NAME))
       .addUpgradeStep(new UpdateMappingIndexStep(new DecisionDefinitionIndex()))
       .addUpgradeStep(createDecisionDefinitionInputVariableNames())
       .addUpgradeStep(createDecisionDefinitionOutputVariableNames())
@@ -297,5 +299,24 @@ public class UpgradeFrom25To26 implements Upgrade {
       "});" +
     "}";
     // @formatter:on
+  }
+
+  private UpdateDataStep addActivePropertyToHiddenNodesConfigurationField(String esIndex) {
+    String script =
+      // @formatter:off
+      "def reportData = ctx._source.data;\n" +
+      "if (reportData.configuration != null) {\n" +
+      "  def keys = reportData.configuration.hiddenNodes;\n" +
+      "  keys = keys == null? new ArrayList() : keys;\n" +
+      "  reportData.configuration.hiddenNodes = new HashMap();\n" +
+      "  reportData.configuration.hiddenNodes.active = keys != null && !keys.isEmpty(); \n" +
+      "  reportData.configuration.hiddenNodes.keys = keys; \n" +
+      "}\n";
+      // @formatter:on
+    return new UpdateDataStep(
+      esIndex,
+      QueryBuilders.matchAllQuery(),
+      script
+    );
   }
 }

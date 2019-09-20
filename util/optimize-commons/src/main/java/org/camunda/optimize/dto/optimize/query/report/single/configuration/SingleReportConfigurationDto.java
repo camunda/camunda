@@ -29,7 +29,7 @@ public class SingleReportConfigurationDto {
   private AggregationType aggregationType = AggregationType.AVERAGE;
   private FlowNodeExecutionState flowNodeExecutionState = FlowNodeExecutionState.ALL;
   private UserTaskDurationTime userTaskDurationTime = UserTaskDurationTime.TOTAL;
-  private List<String> hiddenNodes = new ArrayList<>();
+  private HiddenNodesDto hiddenNodes = new HiddenNodesDto();
   private Boolean showInstanceCount = false;
   private Boolean pointMarkers = true;
   private Integer precision = null;

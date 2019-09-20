@@ -8,6 +8,7 @@ package org.camunda.optimize.upgrade.version25;
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
@@ -29,14 +30,14 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertThat;
 
-public class UpgradeReportDefinitionVersionIT extends AbstractUpgradeIT {
+public class UpgradeReportConfigIT extends AbstractUpgradeIT {
   private static final String FROM_VERSION = "2.5.0";
 
   private static final DecisionDefinitionIndex DECISION_DEFINITION_INDEX_OBJECT = new DecisionDefinitionIndex();
@@ -70,7 +71,7 @@ public class UpgradeReportDefinitionVersionIT extends AbstractUpgradeIT {
   }
 
   @Test
-  public void processReportsHaveExpectedVersions() {
+  public void processReportsHaveNewHiddenNodesConfigurationFieldStructure() {
     //given
     final UpgradePlan upgradePlan = new UpgradeFrom25To26().buildUpgradePlan();
 
@@ -81,11 +82,34 @@ public class UpgradeReportDefinitionVersionIT extends AbstractUpgradeIT {
     List<SingleProcessReportDefinitionDto> allProcessReports =
       getAllReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
     assertThat(allProcessReports.size(), is(2));
-    allProcessReports.forEach(report -> assertThat(report.getData().getDefinitionVersions(), contains("2")));
+    // report with hidden nodes
+    SingleReportConfigurationDto configuration = allProcessReports.stream()
+      .filter(this::isReportWithHiddenNodes)
+      .findFirst()
+      .get()
+      .getData()
+      .getConfiguration();
+    assertThat(configuration.getHiddenNodes().isActive(), is(true));
+    assertThat(
+      configuration.getHiddenNodes().getKeys(),
+      is(Lists.newArrayList("prepareBankTransfer", "reviewInvoice"))
+    );
+    // report without hidden nodes
+    configuration = allProcessReports.stream()
+      .filter(r -> !isReportWithHiddenNodes(r))
+      .findFirst()
+      .get()
+      .getData()
+      .getConfiguration();
+    assertThat(configuration.getHiddenNodes().isActive(), is(false));
+    assertThat(
+      configuration.getHiddenNodes().getKeys(),
+      is(Collections.emptyList())
+    );
   }
 
   @Test
-  public void decisionReportsHaveExpectedVersions() {
+  public void decisionReportsHaveNewHiddenNodesConfigurationFieldStructure() {
     //given
     final UpgradePlan upgradePlan = new UpgradeFrom25To26().buildUpgradePlan();
 
@@ -93,10 +117,22 @@ public class UpgradeReportDefinitionVersionIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    List<SingleDecisionReportDefinitionDto> allDecisionReports =
+    List<SingleDecisionReportDefinitionDto> allProcessReports =
       getAllReports(SINGLE_DECISION_REPORT_INDEX.getIndexName(), SingleDecisionReportDefinitionDto.class);
-    assertThat(allDecisionReports.size(), is(1));
-    assertThat(allDecisionReports.get(0).getData().getDefinitionVersions(), contains("2"));
+    assertThat(allProcessReports.size(), is(1));
+    // report with hidden nodes
+    SingleReportConfigurationDto configuration = allProcessReports.get(0)
+      .getData()
+      .getConfiguration();
+    assertThat(configuration.getHiddenNodes().isActive(), is(false));
+    assertThat(
+      configuration.getHiddenNodes().getKeys(),
+      is(Collections.emptyList())
+    );
+  }
+
+  private boolean isReportWithHiddenNodes(final SingleProcessReportDefinitionDto reportDefinitionDto) {
+    return !reportDefinitionDto.getData().getConfiguration().getHiddenNodes().getKeys().isEmpty();
   }
 
   @SneakyThrows
