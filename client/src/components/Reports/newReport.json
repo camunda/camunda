@@ -1,7 +1,6 @@
 {
   "new": {
     "id": "new",
-    "owner": "You",
     "data": {
       "configuration": {
         "color": "#1991c8",
@@ -81,7 +80,6 @@
       "type": null
     },
     "id": "new-combined",
-    "owner": "You",
     "data": {
       "configuration": {
         "pointMarkers": true,
@@ -112,7 +110,6 @@
   },
   "new-decision": {
     "id": "new-decision",
-    "owner": "You",
     "data": {
       "configuration": {
         "color": "#1991c8",
