@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.query.collection;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,5 +15,5 @@ import java.util.List;
 @Data()
 @EqualsAndHashCode(callSuper = true)
 public class ResolvedCollectionDataDto extends CollectionDataDto {
-  protected List<CollectionEntity> entities = new ArrayList<>();
+  protected List<EntityDto> entities = new ArrayList<>();
 }

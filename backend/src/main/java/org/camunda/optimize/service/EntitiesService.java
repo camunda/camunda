@@ -28,7 +28,7 @@ public class EntitiesService {
 
   public List<EntityDto> getAllEntities(String userId) {
     final List<AuthorizedSimpleCollectionDefinitionDto> collectionDefinitions =
-      collectionService.getAllAuthorizedCollectionDefinitions(userId);
+      collectionService.getAllSimpleCollectionDefinitions(userId);
     final Map<String, Map<EntityType, Long>> collectionEntityCounts = entitiesReader.countEntitiesForCollections(
       collectionDefinitions.stream()
         .map(AuthorizedSimpleCollectionDefinitionDto::getDefinitionDto)

@@ -6,7 +6,6 @@
 package org.camunda.optimize.rest.queryparam.adjustment;
 
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefinitionDto;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OffsetResultListDecorator;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OrderByQueryParamResultListDecorator;
 import org.camunda.optimize.rest.queryparam.adjustment.decorator.OriginalResultList;
@@ -24,11 +23,9 @@ public class QueryParamAdjustmentUtil {
 
   private static final String ORDER_BY = "orderBy";
   private static final Map<String, Comparator> reportComparators = new HashMap<>();
-  private static final Map<String, Comparator> collectionComparators = new HashMap<>();
 
   private static final String LAST_MODIFIED = "lastModified";
   private static final String NAME = "name";
-  private static final String CREATED = "created";
 
   static {
     reportComparators.put(
@@ -38,18 +35,6 @@ public class QueryParamAdjustmentUtil {
     reportComparators.put(
       NAME,
       Comparator.comparing(o -> ((AuthorizedReportDefinitionDto) o).getDefinitionDto().getName())
-    );
-
-    collectionComparators.put(
-      CREATED,
-      Comparator
-        .comparing(o -> ((AuthorizedResolvedCollectionDefinitionDto) o).getDefinitionDto().getCreated())
-        .reversed()
-    );
-    collectionComparators.put(
-      NAME,
-      Comparator
-        .comparing(o -> ((AuthorizedResolvedCollectionDefinitionDto) o).getDefinitionDto().getName().toLowerCase())
     );
   }
 
@@ -65,17 +50,6 @@ public class QueryParamAdjustmentUtil {
     sorting = reportComparators.get(queryParam);
 
     return adjustResultListAccordingToQueryParameters(resultList, queryParameters, sorting, queryParam);
-  }
-
-  public static List<AuthorizedResolvedCollectionDefinitionDto> adjustCollectionResultsToQueryParameters(
-    List<AuthorizedResolvedCollectionDefinitionDto> resultList,
-    MultivaluedMap<String, String> queryParameters
-  ) {
-    List<String> key = queryParameters.get(ORDER_BY);
-    String queryParam = (key == null || key.isEmpty()) ? CREATED : key.get(0);
-    Comparator comparator = collectionComparators.get(queryParam);
-
-    return adjustResultListAccordingToQueryParameters(resultList, queryParameters, comparator, queryParam);
   }
 
   @SuppressWarnings("unchecked")

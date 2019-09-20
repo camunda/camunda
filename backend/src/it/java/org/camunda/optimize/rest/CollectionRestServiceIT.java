@@ -6,10 +6,8 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
@@ -17,14 +15,10 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
-import java.util.HashMap;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class CollectionRestServiceIT {
 
@@ -101,60 +95,6 @@ public class CollectionRestServiceIT {
   }
 
   @Test
-  public void getAllCollectionsWithoutAuthentication() {
-    // when
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildGetAllCollectionsRequest()
-      .execute();
-
-    // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
-  }
-
-  @Test
-  public void getAllCollections() {
-    // when
-    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
-
-    // then 
-    assertThat(collections.size(), is(0));
-  }
-
-  @Test
-  public void getAllResolvedCollectionsWithEntities() {
-    //given
-    final String testCollectionId = addCollectionToOptimize("TestCollection");
-
-    final String testReport1 = createReportAndAddToCollection(testCollectionId, "TestReport1");
-    final String testReport2 = createReportAndAddToCollection(testCollectionId, "TestReport2");
-
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    List<ResolvedCollectionDefinitionDto> collections = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildGetAllCollectionsRequest()
-      .executeAndReturnList(ResolvedCollectionDefinitionDto.class, 200);
-
-    // then
-    assertThat(collections.size(), is(1));
-    final ResolvedCollectionDefinitionDto resolvedCollection = collections.get(0);
-    assertThat(resolvedCollection.getName(), is("TestCollection"));
-    assertThat(resolvedCollection.getData(), is(notNullValue()));
-    assertThat(resolvedCollection.getData().getEntities().size(), is(2));
-    final List<String> result = resolvedCollection.getData()
-      .getEntities()
-      .stream()
-      .map(CollectionEntity::getId)
-      .collect(Collectors.toList());
-
-    assertThat(result, containsInAnyOrder(testReport1, testReport2));
-  }
-
-
-  @Test
   public void getCollectionWithoutAuthentication() {
     // when
     Response response = embeddedOptimizeRule
@@ -173,94 +113,13 @@ public class CollectionRestServiceIT {
     String id = addEmptyCollectionToOptimize();
 
     // when
-    ResolvedCollectionDefinitionDto collection = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildGetCollectionRequest(id)
-      .execute(ResolvedCollectionDefinitionDto.class, 200);
+    ResolvedCollectionDefinitionDto collection = getCollectionById(id);
 
     // then
     assertThat(collection, is(notNullValue()));
     assertThat(collection.getId(), is(id));
     assertThat(collection.getData().getEntities().size(), is(0));
   }
-
-  @Test
-  public void getAllCollectionsOrderedByName() {
-    //given
-    addCollectionToOptimize("B Collection");
-    addCollectionToOptimize("A Collection");
-    addCollectionToOptimize("C Collection");
-
-    // when
-    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
-
-    // then
-    assertThat(collections.size(), is(3));
-    assertThat(collections.get(0).getName(), is("A Collection"));
-    assertThat(collections.get(1).getName(), is("B Collection"));
-    assertThat(collections.get(2).getName(), is("C Collection"));
-  }
-
-  @Test
-  public void getAllCollectionsOrderedByCreated() {
-    //given
-    addCollectionToOptimize("B Collection");
-    addCollectionToOptimize("A Collection");
-    addCollectionToOptimize("C Collection");
-
-    // when
-    List<ResolvedCollectionDefinitionDto> collections = embeddedOptimizeRule
-      .getRequestExecutor()
-      .addSingleQueryParam("orderBy", "created")
-      .buildGetAllCollectionsRequest()
-      .executeAndReturnList(ResolvedCollectionDefinitionDto.class, 200);
-
-    // then
-    assertThat(collections.size(), is(3));
-    assertThat(collections.get(0).getName(), is("C Collection"));
-    assertThat(collections.get(1).getName(), is("A Collection"));
-    assertThat(collections.get(2).getName(), is("B Collection"));
-  }
-
-  @Test
-  public void getAllCollectionsOrderedByCreatedAndSortOrder() {
-    //given
-    addCollectionToOptimize("B Collection");
-    addCollectionToOptimize("A Collection");
-    addCollectionToOptimize("C Collection");
-
-    // when
-    HashMap<String, Object> queryParams = new HashMap<>();
-    queryParams.put("orderBy", "created");
-    queryParams.put("sortOrder", "desc");
-    List<ResolvedCollectionDefinitionDto> collections = embeddedOptimizeRule
-      .getRequestExecutor()
-      .addQueryParams(queryParams)
-      .buildGetAllCollectionsRequest()
-      .executeAndReturnList(ResolvedCollectionDefinitionDto.class, 200);
-
-    // then
-    assertThat(collections.size(), is(3));
-    assertThat(collections.get(0).getName(), is("B Collection"));
-    assertThat(collections.get(1).getName(), is("A Collection"));
-    assertThat(collections.get(2).getName(), is("C Collection"));
-
-
-    // when
-    queryParams.put("sortOrder", "asc");
-    collections = embeddedOptimizeRule
-      .getRequestExecutor()
-      .addQueryParams(queryParams)
-      .buildGetAllCollectionsRequest()
-      .executeAndReturnList(ResolvedCollectionDefinitionDto.class, 200);
-
-    // then
-    assertThat(collections.size(), is(3));
-    assertThat(collections.get(0).getName(), is("C Collection"));
-    assertThat(collections.get(1).getName(), is("A Collection"));
-    assertThat(collections.get(2).getName(), is("B Collection"));
-  }
-
 
   @Test
   public void getCollectionForNonExistingIdThrowsError() {
@@ -300,7 +159,12 @@ public class CollectionRestServiceIT {
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
-    assertThat(getAllResolvedCollections().size(), is(0));
+
+    final Response getByIdResponse = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildGetCollectionRequest(id)
+      .execute();
+    assertThat(getByIdResponse.getStatus(), is(404));
   }
 
   @Test
@@ -315,41 +179,6 @@ public class CollectionRestServiceIT {
     assertThat(response.getStatus(), is(404));
   }
 
-
-  private String addCollectionToOptimize(String name) {
-    String id = addEmptyCollectionToOptimize();
-
-    final PartialCollectionUpdateDto collection = new PartialCollectionUpdateDto();
-    collection.setName(name);
-
-    embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdatePartialCollectionRequest(id, collection)
-      .execute();
-
-    return id;
-  }
-
-  private String createReportAndAddToCollection(String collectionId, String reportName) {
-
-    final String reportId = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(collectionId)
-      .execute(IdDto.class, 200)
-      .getId();
-
-    SingleProcessReportDefinitionDto newReport = new SingleProcessReportDefinitionDto();
-    newReport.setName(reportName);
-
-    final Response response = embeddedOptimizeRule.getRequestExecutor()
-      .buildUpdateSingleProcessReportRequest(reportId, newReport).execute();
-
-    assertThat(response.getStatus(), is(204));
-
-    return reportId;
-  }
-
-
   private String addEmptyCollectionToOptimize() {
     return embeddedOptimizeRule
       .getRequestExecutor()
@@ -358,10 +187,10 @@ public class CollectionRestServiceIT {
       .getId();
   }
 
-  private List<ResolvedCollectionDefinitionDto> getAllResolvedCollections() {
+  private ResolvedCollectionDefinitionDto getCollectionById(final String collectionId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildGetAllCollectionsRequest()
-      .executeAndReturnList(ResolvedCollectionDefinitionDto.class, 200);
+      .buildGetCollectionRequest(collectionId)
+      .execute(ResolvedCollectionDefinitionDto.class, 200);
   }
 }

@@ -461,6 +461,8 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     assertThat(authorizedReports.size(), is(0));
   }
 
+
+
   @Test
   @Parameters(method = REPORT_SCENARIOS)
   public void updateOtherPrivateReportFails(final ReportScenario reportScenario) {

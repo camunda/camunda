@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
@@ -23,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdat
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefinitionDto;
@@ -30,7 +30,6 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedSimpleCollectionDefiniti
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
-import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.camunda.optimize.service.es.reader.EntitiesReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
@@ -46,12 +45,9 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.MultivaluedMap;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -83,16 +79,7 @@ public class CollectionService {
   public Optional<RoleType> getUsersCollectionResourceRole(final String collectionId, final String userId)
     throws NotFoundException, ForbiddenException {
     return getAuthorizedSimpleCollectionDefinitionDto(collectionId, userId)
-      .map(authorizedDto -> {
-        switch (authorizedDto.getCurrentUserRole()) {
-          case EDITOR:
-          case MANAGER:
-            return RoleType.EDITOR;
-          case VIEWER:
-          default:
-            return RoleType.VIEWER;
-        }
-      });
+      .map(this::getCollectionResourceRoleForCollection);
   }
 
   public void verifyUserAuthorizedToEditCollectionResources(final String collectionId, final String userId)
@@ -106,12 +93,12 @@ public class CollectionService {
     }
   }
 
-  public AuthorizedSimpleCollectionDefinitionDto getAuthorizedCollectionDefinition(final String collectionId,
-                                                                                   final String userId) {
+  public AuthorizedSimpleCollectionDefinitionDto getSimpleCollectionDefinition(final String collectionId,
+                                                                               final String userId) {
     return getAuthorizedSimpleCollectionDefinitionDtoOrFail(collectionId, userId);
   }
 
-  public List<AuthorizedSimpleCollectionDefinitionDto> getAllAuthorizedCollectionDefinitions(final String userId) {
+  public List<AuthorizedSimpleCollectionDefinitionDto> getAllSimpleCollectionDefinitions(final String userId) {
     return collectionReader.getAllCollections().stream()
       .map(definitionDto -> collectionAuthorizationService.resolveToAuthorizedSimpleCollection(definitionDto, userId))
       .filter(Optional::isPresent)
@@ -130,34 +117,6 @@ public class CollectionService {
       entitiesReader.getAllEntitiesForCollection(simpleCollectionDefinitionDto.getDefinitionDto());
 
     return mapToResolvedCollection(simpleCollectionDefinitionDto, collectionEntities);
-  }
-
-  public List<AuthorizedResolvedCollectionDefinitionDto> getAllResolvedCollections(
-    final MultivaluedMap<String, String> queryParameters,
-    final String userId) {
-    final List<AuthorizedSimpleCollectionDefinitionDto> allCollections = getAllAuthorizedCollectionDefinitions(userId);
-
-    final List<String> collectionIds = allCollections.stream()
-      .map(AuthorizedSimpleCollectionDefinitionDto::getDefinitionDto)
-      .map(BaseCollectionDefinitionDto::getId)
-      .collect(Collectors.toList());
-    final Map<String, List<CollectionEntity>> collectionEntitiesByCollectionId = entitiesReader
-      .getAllEntitiesForCollections(collectionIds)
-      .stream()
-      .collect(Collectors.groupingBy(CollectionEntity::getCollectionId));
-
-    log.debug("Mapping all available entity collections to resolved entity collections.");
-    List<AuthorizedResolvedCollectionDefinitionDto> resolvedConnections = allCollections.stream()
-      .map(c -> mapToResolvedCollection(
-        c, collectionEntitiesByCollectionId.getOrDefault(c.getDefinitionDto().getId(), Collections.emptyList()))
-      )
-      .collect(Collectors.toList());
-    resolvedConnections = QueryParamAdjustmentUtil.adjustCollectionResultsToQueryParameters(
-      resolvedConnections,
-      queryParameters
-    );
-
-    return resolvedConnections;
   }
 
   public void updatePartialCollection(final String collectionId,
@@ -282,7 +241,7 @@ public class CollectionService {
     final String collectionId,
     final String userId) {
 
-    final AuthorizedSimpleCollectionDefinitionDto collectionDefinition = getAuthorizedCollectionDefinition(
+    final AuthorizedSimpleCollectionDefinitionDto collectionDefinition = getSimpleCollectionDefinition(
       collectionId, userId
     );
     if (collectionDefinition.getCurrentUserRole().ordinal() < RoleType.MANAGER.ordinal()) {
@@ -333,11 +292,17 @@ public class CollectionService {
       resolvedCollectionData.setScope(collectionData.getScope());
     }
 
+    final RoleType currentUserResourceRole = getCollectionResourceRoleForCollection(authorizedCollectionDto);
     resolvedCollectionData.setEntities(
       collectionEntities
         .stream()
         .filter(Objects::nonNull)
-        .sorted(Comparator.comparing(CollectionEntity::getLastModified).reversed())
+        .map(collectionEntity -> {
+          final EntityDto entityDto = collectionEntity.toEntityDto();
+          entityDto.setCurrentUserRole(currentUserResourceRole);
+          return entityDto;
+        })
+        .sorted(Comparator.comparing(EntityDto::getLastModified).reversed())
         .collect(Collectors.toList())
     );
 
@@ -347,9 +312,20 @@ public class CollectionService {
     );
   }
 
+  private RoleType getCollectionResourceRoleForCollection(final AuthorizedSimpleCollectionDefinitionDto authorizedDto) {
+    switch (authorizedDto.getCurrentUserRole()) {
+      case EDITOR:
+      case MANAGER:
+        return RoleType.EDITOR;
+      case VIEWER:
+      default:
+        return RoleType.VIEWER;
+    }
+  }
+
   private Set<ConflictedItemDto> getConflictedItemsForDelete(String collectionId, String userId) {
     return collectionRelationService.getConflictedItemsForDelete(
-      getAuthorizedCollectionDefinition(collectionId, userId).getDefinitionDto()
+      getSimpleCollectionDefinition(collectionId, userId).getDefinitionDto()
     );
   }
 }

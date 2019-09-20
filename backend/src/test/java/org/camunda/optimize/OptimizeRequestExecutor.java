@@ -496,12 +496,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetAllCollectionsRequest() {
-    this.path = "collection/";
-    this.requestType = GET;
-    return this;
-  }
-
   public OptimizeRequestExecutor buildGetAllEntitiesRequest() {
     this.path = "entities/";
     this.requestType = GET;

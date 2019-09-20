@@ -34,7 +34,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.UriInfo;
 import java.util.List;
 
 @AllArgsConstructor
@@ -54,20 +53,6 @@ public class CollectionRestService {
   public IdDto createNewCollection(@Context ContainerRequestContext requestContext) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return collectionService.createNewCollectionAndReturnId(userId);
-  }
-
-  /**
-   * Get a list of all available entity collections with their entities being resolved
-   * instead of just containing the ids of the report.
-   */
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
-  public List<AuthorizedResolvedCollectionDefinitionDto> getAllResolvedCollections(
-    @Context ContainerRequestContext requestContext,
-    @Context UriInfo uriInfo) {
-
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionService.getAllResolvedCollections(uriInfo.getQueryParameters(), userId);
   }
 
   /**
@@ -168,7 +153,7 @@ public class CollectionRestService {
   public List<CollectionRoleDto> getRoles(@Context ContainerRequestContext requestContext,
                                           @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionService.getAuthorizedCollectionDefinition(collectionId, userId)
+    return collectionService.getSimpleCollectionDefinition(collectionId, userId)
       .getDefinitionDto()
       .getData()
       .getRoles();

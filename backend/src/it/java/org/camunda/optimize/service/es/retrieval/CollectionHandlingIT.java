@@ -6,17 +6,16 @@
 package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -34,7 +33,6 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -43,6 +41,7 @@ import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFA
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
@@ -76,12 +75,9 @@ public class CollectionHandlingIT {
     String id = createNewCollection();
 
     // when
-    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+    ResolvedCollectionDefinitionDto collection = getCollectionById(id);
 
     // then
-    assertThat(collections, is(notNullValue()));
-    assertThat(collections.size(), is(1));
-    ResolvedCollectionDefinitionDto collection = collections.get(0);
     assertThat(collection.getId(), is(id));
     assertThat(collection.getName(), is(DEFAULT_COLLECTION_NAME));
     assertThat(collection.getData().getEntities(), notNullValue());
@@ -99,19 +95,6 @@ public class CollectionHandlingIT {
   }
 
   @Test
-  public void returnEmptyListWhenNoCollectionIsDefined() {
-    // given
-    createNewSingleProcessReportInCollection(null);
-
-    // when
-    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
-
-    // then
-    assertThat(collections, is(notNullValue()));
-    assertThat(collections.size(), is(0));
-  }
-
-  @Test
   public void getResolvedCollection() {
     //given
     final String collectionId = createNewCollection();
@@ -121,17 +104,14 @@ public class CollectionHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    ResolvedCollectionDefinitionDto collection = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildGetCollectionRequest(collectionId)
-      .execute(ResolvedCollectionDefinitionDto.class, 200);
+    ResolvedCollectionDefinitionDto collection = getCollectionById(collectionId);
 
     // then
     assertThat(collection, is(notNullValue()));
     assertThat(collection.getId(), is(collectionId));
     assertThat(collection.getData().getEntities().size(), is(2));
     assertThat(
-      collection.getData().getEntities().stream().map(CollectionEntity::getId).collect(Collectors.toList()),
+      collection.getData().getEntities().stream().map(EntityDto::getId).collect(Collectors.toList()),
       containsInAnyOrder(dashboardId, reportId)
     );
   }
@@ -153,16 +133,14 @@ public class CollectionHandlingIT {
 
     // when
     updateCollectionRequest(id, collectionUpdate);
-    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+    ResolvedCollectionDefinitionDto collection = getCollectionById(id);
 
     // then
-    assertThat(collections.size(), is(1));
-    ResolvedCollectionDefinitionDto storedCollection = collections.get(0);
-    assertThat(storedCollection.getId(), is(id));
-    assertThat(storedCollection.getName(), is("MyCollection"));
-    assertThat(storedCollection.getLastModifier(), is("demo"));
-    assertThat(storedCollection.getLastModified(), is(now));
-    final ResolvedCollectionDataDto resultCollectionData = storedCollection.getData();
+    assertThat(collection.getId(), is(id));
+    assertThat(collection.getName(), is("MyCollection"));
+    assertThat(collection.getLastModifier(), is("demo"));
+    assertThat(collection.getLastModified(), is(now));
+    final ResolvedCollectionDataDto resultCollectionData = collection.getData();
     assertEquals(resultCollectionData.getConfiguration(), configuration);
     assertThat(resultCollectionData.getEntities().size(), is(0));
   }
@@ -179,15 +157,13 @@ public class CollectionHandlingIT {
     collectionUpdate.setName("MyCollection");
 
     updateCollectionRequest(id, collectionUpdate);
-    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+    ResolvedCollectionDefinitionDto collection = getCollectionById(id);
 
     // then
-    assertThat(collections.size(), is(1));
-    ResolvedCollectionDefinitionDto storedCollection = collections.get(0);
-    assertThat(storedCollection.getId(), is(id));
-    assertThat(storedCollection.getName(), is("MyCollection"));
-    assertThat(storedCollection.getLastModifier(), is("demo"));
-    assertThat(storedCollection.getLastModified(), is(now));
+    assertThat(collection.getId(), is(id));
+    assertThat(collection.getName(), is("MyCollection"));
+    assertThat(collection.getLastModifier(), is("demo"));
+    assertThat(collection.getLastModified(), is(now));
 
     // when (update only configuration)
     collectionUpdate = new PartialCollectionUpdateDto();
@@ -197,16 +173,14 @@ public class CollectionHandlingIT {
     collectionUpdate.setData(data);
 
     updateCollectionRequest(id, collectionUpdate);
-    collections = getAllResolvedCollections();
+    collection = getCollectionById(id);
 
     // then
-    assertThat(collections.size(), is(1));
-    storedCollection = collections.get(0);
-    assertThat(storedCollection.getId(), is(id));
-    assertThat(storedCollection.getName(), is("MyCollection"));
-    assertThat(storedCollection.getLastModifier(), is("demo"));
-    assertThat(storedCollection.getLastModified(), is(now));
-    ResolvedCollectionDataDto resultCollectionData = storedCollection.getData();
+    assertThat(collection.getId(), is(id));
+    assertThat(collection.getName(), is("MyCollection"));
+    assertThat(collection.getLastModifier(), is("demo"));
+    assertThat(collection.getLastModified(), is(now));
+    ResolvedCollectionDataDto resultCollectionData = collection.getData();
     assertEquals(resultCollectionData.getConfiguration(), configuration);
 
 
@@ -215,16 +189,14 @@ public class CollectionHandlingIT {
     collectionUpdate.setName("TestNewCollection");
 
     updateCollectionRequest(id, collectionUpdate);
-    collections = getAllResolvedCollections();
+    collection = getCollectionById(id);
 
     // then
-    assertThat(collections.size(), is(1));
-    storedCollection = collections.get(0);
-    assertThat(storedCollection.getId(), is(id));
-    assertThat(storedCollection.getName(), is("TestNewCollection"));
-    assertThat(storedCollection.getLastModifier(), is("demo"));
-    assertThat(storedCollection.getLastModified(), is(now));
-    resultCollectionData = storedCollection.getData();
+    assertThat(collection.getId(), is(id));
+    assertThat(collection.getName(), is("TestNewCollection"));
+    assertThat(collection.getLastModifier(), is("demo"));
+    assertThat(collection.getLastModified(), is(now));
+    resultCollectionData = collection.getData();
     assertEquals(resultCollectionData.getConfiguration(), configuration);
   }
 
@@ -235,15 +207,14 @@ public class CollectionHandlingIT {
     String reportId = createNewSingleProcessReportInCollection(collectionId);
 
     // when
-    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+    ResolvedCollectionDefinitionDto collection = getCollectionById(collectionId);
 
     // then
-    assertThat(collections.size(), is(1));
-    ResolvedCollectionDefinitionDto collection1 = collections.get(0);
-    SingleProcessReportDefinitionDto report = (SingleProcessReportDefinitionDto) collection1.getData()
-      .getEntities()
-      .get(0);
+    EntityDto report = collection.getData().getEntities().get(0);
     assertThat(report.getId(), is(reportId));
+    assertThat(report.getEntityType(), is(EntityType.REPORT));
+    assertThat(report.getReportType(), is(ReportType.PROCESS));
+    assertThat(report.getCombined(), is(false));
   }
 
   @Test
@@ -253,15 +224,14 @@ public class CollectionHandlingIT {
     String reportId = createNewSingleDecisionReportInCollection(collectionId);
 
     // when
-    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+    ResolvedCollectionDefinitionDto collection = getCollectionById(collectionId);
 
     // then
-    assertThat(collections.size(), is(1));
-    ResolvedCollectionDefinitionDto collection1 = collections.get(0);
-    SingleDecisionReportDefinitionDto report = (SingleDecisionReportDefinitionDto) collection1.getData()
-      .getEntities()
-      .get(0);
+    EntityDto report = collection.getData().getEntities().get(0);
     assertThat(report.getId(), is(reportId));
+    assertThat(report.getEntityType(), is(EntityType.REPORT));
+    assertThat(report.getReportType(), is(ReportType.DECISION));
+    assertThat(report.getCombined(), is(false));
   }
 
   @Test
@@ -271,13 +241,14 @@ public class CollectionHandlingIT {
     String reportId = createNewCombinedReportInCollection(collectionId);
 
     // when
-    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+    ResolvedCollectionDefinitionDto collection = getCollectionById(collectionId);
 
     // then
-    assertThat(collections.size(), is(1));
-    ResolvedCollectionDefinitionDto collection1 = collections.get(0);
-    CombinedReportDefinitionDto report = (CombinedReportDefinitionDto) collection1.getData().getEntities().get(0);
+    EntityDto report = collection.getData().getEntities().get(0);
     assertThat(report.getId(), is(reportId));
+    assertThat(report.getEntityType(), is(EntityType.REPORT));
+    assertThat(report.getReportType(), is(ReportType.PROCESS));
+    assertThat(report.getCombined(), is(true));
   }
 
   @Test
@@ -287,13 +258,14 @@ public class CollectionHandlingIT {
     String dashboardId = createNewDashboardInCollection(collectionId);
 
     // when
-    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+    ResolvedCollectionDefinitionDto collection = getCollectionById(collectionId);
 
     // then
-    assertThat(collections.size(), is(1));
-    ResolvedCollectionDefinitionDto collection1 = collections.get(0);
-    DashboardDefinitionDto dashboard = (DashboardDefinitionDto) collection1.getData().getEntities().get(0);
+    EntityDto dashboard = collection.getData().getEntities().get(0);
     assertThat(dashboard.getId(), is(dashboardId));
+    assertThat(dashboard.getEntityType(), is(EntityType.DASHBOARD));
+    assertThat(dashboard.getReportType(), is(nullValue()));
+    assertThat(dashboard.getCombined(), is(nullValue()));
   }
 
   @Test
@@ -369,11 +341,9 @@ public class CollectionHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+    ResolvedCollectionDefinitionDto collection = getCollectionById(collectionId);
 
     // then
-    assertThat(collections.size(), is(1));
-    ResolvedCollectionDefinitionDto collection = collections.get(0);
     assertThat(collection.getData().getEntities().get(0).getId(), is(reportId1));
     assertThat(collection.getData().getEntities().get(1).getId(), is(dashboardId));
     assertThat(collection.getData().getEntities().get(2).getId(), is(reportId2));
@@ -387,38 +357,15 @@ public class CollectionHandlingIT {
 
     // when
     updateCollectionRequest(id, collection);
-    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+    ResolvedCollectionDefinitionDto storedCollection = getCollectionById(id);
 
     // then
-    assertThat(collections.size(), is(1));
-    ResolvedCollectionDefinitionDto storedCollection = collections.get(0);
     assertThat(storedCollection.getId(), is(id));
     assertThat(storedCollection.getCreated(), is(notNullValue()));
     assertThat(storedCollection.getLastModified(), is(notNullValue()));
     assertThat(storedCollection.getLastModifier(), is(notNullValue()));
     assertThat(storedCollection.getName(), is(notNullValue()));
     assertThat(storedCollection.getOwner(), is(notNullValue()));
-  }
-
-  @Test
-  public void resultListIsSortedByName() {
-    // given
-    String id1 = createNewCollection();
-    String id2 = createNewCollection();
-
-    PartialCollectionUpdateDto collection = new PartialCollectionUpdateDto();
-    collection.setName("B_collection");
-    updateCollectionRequest(id1, collection);
-    collection.setName("A_collection");
-    updateCollectionRequest(id2, collection);
-
-    // when
-    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
-
-    // then
-    assertThat(collections.size(), is(2));
-    assertThat(collections.get(0).getId(), is(id2));
-    assertThat(collections.get(1).getId(), is(id1));
   }
 
   @Test
@@ -435,9 +382,8 @@ public class CollectionHandlingIT {
     deleteReport(combinedReportIdToDelete);
 
     // then
-    List<ResolvedCollectionDefinitionDto> allResolvedCollections = getAllResolvedCollections();
-    assertThat(allResolvedCollections.size(), is(1));
-    assertThat(allResolvedCollections.get(0).getData().getEntities().size(), is(0));
+    ResolvedCollectionDefinitionDto collection = getCollectionById(collectionId);
+    assertThat(collection.getData().getEntities().size(), is(0));
   }
 
   @Test
@@ -452,9 +398,8 @@ public class CollectionHandlingIT {
     deleteDashboard(dashboardIdToDelete);
 
     // then
-    List<ResolvedCollectionDefinitionDto> allResolvedCollections = getAllResolvedCollections();
-    assertThat(allResolvedCollections.size(), is(1));
-    assertThat(allResolvedCollections.get(0).getData().getEntities().size(), is(0));
+    ResolvedCollectionDefinitionDto collection = getCollectionById(collectionId);
+    assertThat(collection.getData().getEntities().size(), is(0));
   }
 
   @Test
@@ -471,8 +416,11 @@ public class CollectionHandlingIT {
     deleteCollection(collectionId);
 
     // then
-    List<ResolvedCollectionDefinitionDto> allResolvedCollections = getAllResolvedCollections();
-    assertThat(allResolvedCollections.size(), is(0));
+    final Response getCollectionByIdResponse = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildGetCollectionRequest(collectionId)
+      .execute();
+    assertThat(getCollectionByIdResponse.getStatus(), is(404));
 
     assertDashboardIsDeleted(dashboardId);
     assertReportIsDeleted(singleReportId);
@@ -579,12 +527,11 @@ public class CollectionHandlingIT {
       .execute();
   }
 
-  private List<ResolvedCollectionDefinitionDto> getAllResolvedCollections() {
+  private ResolvedCollectionDefinitionDto getCollectionById(final String collectionId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildGetAllCollectionsRequest()
-      .executeAndReturnList(ResolvedCollectionDefinitionDto.class, 200);
+      .buildGetCollectionRequest(collectionId)
+      .execute(ResolvedCollectionDefinitionDto.class, 200);
   }
-
 
 }
