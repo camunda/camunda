@@ -51,11 +51,8 @@ a.Button {
   }
 
   &:hover {
-    cursor: pointer;
-  }
-
-  &:not(:disabled):not(.isActive):hover {
     color: $text;
+    cursor: pointer;
     background-color: $bg-hover;
     border: 1px solid $border-hover;
     transition: background-color 0.3s, border-color 0.3s;
@@ -63,6 +60,8 @@ a.Button {
 
   &[disabled]:hover,
   &[disabled='disabled']:hover {
+    background-color: $bg;
+    border: 1px solid $border;
     color: $text-disabled;
     border: 1px solid $border-disabled;
   }
