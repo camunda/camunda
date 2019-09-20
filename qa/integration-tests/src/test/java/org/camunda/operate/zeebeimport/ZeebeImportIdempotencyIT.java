@@ -5,8 +5,6 @@
  */
 package org.camunda.operate.zeebeimport;
 
-import java.util.function.Predicate;
-
 import org.camunda.operate.TestApplication;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.apps.idempotency.ZeebeImportIdempotencyTestConfig;
@@ -23,13 +21,12 @@ public class ZeebeImportIdempotencyIT extends ZeebeImportIT {
 
   @Autowired
   private ZeebeImportIdempotencyTestConfig.CustomElasticsearchBulkProcessor elasticsearchBulkProcessor;
-  
+
   @Override
-  protected int processImportTypeAndWait(ImportValueType importValueType, Predicate<Object[]> waitTill, Object... arguments) {
-    int processed = elasticsearchTestRule.processImportTypeAndWait(importValueType, waitTill, arguments);
-    processed += elasticsearchTestRule.processImportTypeAndWait(importValueType, waitTill, arguments);
+  protected void processAllEvents(int expectedMinEventsCount, ImportValueType workflowInstance) {
+    elasticsearchTestRule.processAllEvents(expectedMinEventsCount, workflowInstance);
+    elasticsearchTestRule.processAllEvents(expectedMinEventsCount, workflowInstance);
     elasticsearchBulkProcessor.cancelAttempts();
-    return processed;
   }
 
 }
