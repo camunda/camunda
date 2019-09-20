@@ -14,7 +14,7 @@ beforeAll(async () => {
   languageGetter.mockReturnValue(['de']);
   jest.spyOn(request, 'get').mockReturnValue({
     json: () => ({
-      homepage: 'Dashboards & Reports',
+      homepage: 'Home',
       entity: {
         create: 'Create a new {label}'
       }
@@ -24,7 +24,7 @@ beforeAll(async () => {
 });
 
 it('should resolve the translation using a key ', async () => {
-  expect(t('homepage')).toBe('Dashboards & Reports');
+  expect(t('homepage')).toBe('Home');
 });
 
 it('should inject data into translations that contain variables', async () => {

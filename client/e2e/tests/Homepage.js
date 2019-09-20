@@ -6,7 +6,7 @@
 
 import setup from '../setup';
 import config from '../config';
-import {login, save} from '../utils';
+import {login, save, addReportToDashboard} from '../utils';
 
 import * as e from './Homepage.elements.js';
 
@@ -74,4 +74,20 @@ test('navigate to dashboard view and edit pages', async t => {
   await t.click(e.edit(e.dashboardItem));
 
   await t.expect(e.addButton.visible).ok();
+});
+
+test('use breadcrumbs to navigate back from a report to the parent dashboard', async t => {
+  await login(t);
+
+  await t.hover(e.dashboardItem);
+  await t.click(e.contextMenu(e.dashboardItem));
+  await t.click(e.edit(e.dashboardItem));
+
+  await addReportToDashboard(t, 'New Report');
+  await save(t);
+
+  await t.click(e.dashboardReportLink);
+  await t.click(e.dashboardBreadcrumb);
+
+  await t.expect(e.dashboardView.visible).ok();
 });

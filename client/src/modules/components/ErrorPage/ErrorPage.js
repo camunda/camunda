@@ -13,7 +13,7 @@ export default function ErrorPage({children, noLink, text = 'This link is not va
   return (
     <div className="ErrorPage">
       <h1>{text}</h1>
-      {!noLink && <Link to="/">Go to Dashboards & Reports…</Link>}
+      {!noLink && <Link to="/">Go to Home…</Link>}
       {children}
     </div>
   );

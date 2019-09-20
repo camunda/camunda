@@ -64,7 +64,7 @@ export async function selectAggregation(t, type) {
 }
 
 export async function gotoOverview(t) {
-  await t.click(Selector('a').withText('Dashboards & Reports'));
+  await t.click(Selector('a').withText('Home'));
 }
 
 export async function createNewDashboard(t) {

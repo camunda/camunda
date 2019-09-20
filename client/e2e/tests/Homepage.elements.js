@@ -12,7 +12,7 @@ export const option = text => Selector('.DropdownOption').withText(text);
 export const collectionOption = text =>
   Selector('.CollectionsDropdown.is-open .DropdownOption').withText(text);
 export const submenuOption = text => Selector('.Submenu .DropdownOption').withText(text);
-export const homepageLink = Selector('.NavItem').withText('Dashboards & Reports');
+export const homepageLink = Selector('.NavItem a').withText('Home');
 export const reportItem = Selector('.ListItem.report');
 export const dashboardItem = Selector('.ListItem.dashboard');
 export const collectionItem = Selector('.ListItem.collection');
@@ -23,3 +23,6 @@ export const editButton = Selector('.edit-button');
 export const addButton = Selector('.AddButton');
 export const reportLabel = Selector('.ListItemSection.name .type');
 export const contextMenu = entity => entity.find('.contextMenu .Dropdown');
+export const dashboardReportLink = Selector('.OptimizeReport__heading');
+export const dashboardBreadcrumb = Selector('.HeaderNav a').withText('New Dashboard');
+export const dashboardView = Selector('.DashboardView');

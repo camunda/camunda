@@ -44,12 +44,14 @@ export default withRouter(
         const splittedUrl = pathname.split(`/${entity}/`);
         if (splittedUrl[1]) {
           const id = splittedUrl[1].split('/')[0];
-          const entityData = await loadEntity(entity, id);
-          breadcrumbs.push({
-            name: entityData.name,
-            id,
-            url: splittedUrl[0] + `/${entity}/${id}/`
-          });
+          if (!id.includes('new')) {
+            const entityData = await loadEntity(entity, id);
+            breadcrumbs.push({
+              name: entityData.name,
+              id,
+              url: splittedUrl[0] + `/${entity}/${id}/`
+            });
+          }
         }
       }
 
