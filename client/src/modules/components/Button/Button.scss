@@ -50,11 +50,14 @@ a.Button {
     }
   }
 
-  &:not(:disabled):hover {
+  &:hover {
+    cursor: pointer;
+  }
+
+  &:not(:disabled):not(.isActive):hover {
     color: $text;
     background-color: $bg-hover;
     border: 1px solid $border-hover;
-    cursor: pointer;
     transition: background-color 0.3s, border-color 0.3s;
   }
 
