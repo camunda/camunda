@@ -199,13 +199,12 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
             .setElementId(startEventId)
             .setBpmnElementType(BpmnElementType.START_EVENT);
 
-    final long eventKey = keyGenerator.nextKey();
     final boolean wasTriggered =
         scopeEventInstanceState.triggerEvent(
-            workflowKey, eventKey, startEventId, command.getValue().getVariablesBuffer());
+            workflowKey, messageKey, startEventId, command.getValue().getVariablesBuffer());
 
     if (wasTriggered) {
-      streamWriter.appendNewEvent(eventKey, WorkflowInstanceIntent.EVENT_OCCURRED, record);
+      streamWriter.appendNewEvent(messageKey, WorkflowInstanceIntent.EVENT_OCCURRED, record);
     } else {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
           String.format(ERROR_START_EVENT_NOT_TRIGGERED_MESSAGE, workflowKey));

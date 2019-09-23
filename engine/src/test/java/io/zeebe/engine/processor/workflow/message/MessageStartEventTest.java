@@ -20,11 +20,13 @@ import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
+import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -274,6 +276,63 @@ public class MessageStartEventTest {
             WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     assertThat(records).allMatch(r -> r.getValue().getWorkflowKey() == workflowKey2);
+  }
+
+  @Test
+  public void shouldNotCorrelateToStartedInstance() {
+    // given
+    // create a workflow with an event based gateway waiting for two messages:
+    //  1. the same message that started the workflow, which should NOT be correlated
+    //  2. another message which can be properly correlated
+    // this slightly heavier example is used to avoid having to wait to ensure the message "msg" is
+    // not correlated twice
+    final var workflow =
+        Bpmn.createExecutableProcess("shouldNotCorrelateToStartedInstance")
+            .startEvent("start")
+            .message(m -> m.name("msg").zeebeCorrelationKey("key"))
+            .eventBasedGateway("gate")
+            .intermediateCatchEvent("catch1")
+            .message(m -> m.name("msg").zeebeCorrelationKey("key"))
+            .endEvent("end1")
+            .moveToLastGateway()
+            .intermediateCatchEvent("catch2")
+            .message(m -> m.name("other").zeebeCorrelationKey("key"))
+            .endEvent("end2")
+            .done();
+
+    // when
+    final var workflowKey =
+        getFirstDeployedWorkflowKey(engine.deployment().withXmlResource(workflow).deploy());
+    engine
+        .message()
+        .withName("msg")
+        .withCorrelationKey("key")
+        .withVariables(Map.of("key", "key"))
+        .publish();
+
+    // then
+    final var gateway =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withWorkflowKey(workflowKey)
+            .withElementId("gate")
+            .findFirst()
+            .get();
+
+    // wait until both subscriptions are opened for the gateway
+    assertThat(
+            RecordingExporter.workflowInstanceSubscriptionRecords(
+                    WorkflowInstanceSubscriptionIntent.OPENED)
+                .withWorkflowInstanceKey(gateway.getValue().getWorkflowInstanceKey())
+                .limit(2))
+        .hasSize(2);
+
+    engine.message().withName("other").withCorrelationKey("key").publish();
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                .limitToWorkflowInstanceCompleted()
+                .withElementId("end2")
+                .withWorkflowInstanceKey(gateway.getValue().getWorkflowInstanceKey()))
+        .hasSize(1);
   }
 
   private static BpmnModelInstance createWorkflowWithOneMessageStartEvent() {
