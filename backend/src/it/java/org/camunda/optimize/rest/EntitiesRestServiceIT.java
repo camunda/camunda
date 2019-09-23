@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -330,6 +331,33 @@ public class EntitiesRestServiceIT {
     assertThat(collectionEntityDto.getData().getRoleCounts().size(), is(2));
     assertThat(collectionEntityDto.getData().getRoleCounts().get(IdentityType.USER), is(2L));
     assertThat(collectionEntityDto.getData().getRoleCounts().get(IdentityType.GROUP), is(3L));
+  }
+
+  @Test
+  public void getEntities_IncludesPrivateCombinedReportSubEntityCounts() {
+    // given
+    final String reportId1 = addSingleReportToOptimize("A Report", ReportType.PROCESS);
+    final String reportId2 = addSingleReportToOptimize("B Report", ReportType.PROCESS);
+    final String combinedReportId = addCombinedReport("D Combined");
+
+    final CombinedReportDefinitionDto combinedReportUpdate = new CombinedReportDefinitionDto();
+    combinedReportUpdate.setData(createCombinedReport(reportId1, reportId2));
+    embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportUpdate)
+      .execute();
+
+    // when
+    final List<EntityDto> defaultUserEntities = getEntities();
+
+    // then
+    assertThat(defaultUserEntities.size(), is(3));
+    final EntityDto combinedReportEntityDto = defaultUserEntities.stream()
+      .filter(EntityDto::getCombined)
+      .findFirst()
+      .get();
+    assertThat(combinedReportEntityDto.getData().getSubEntityCounts().size(), is(1));
+    assertThat(combinedReportEntityDto.getData().getSubEntityCounts().get(EntityType.REPORT), is(2L));
   }
 
   @Test

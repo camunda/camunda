@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionData
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -38,6 +39,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -114,6 +116,37 @@ public class CollectionHandlingIT {
       collection.getData().getEntities().stream().map(EntityDto::getId).collect(Collectors.toList()),
       containsInAnyOrder(dashboardId, reportId)
     );
+  }
+
+  @Test
+  public void getResolvedCollectionContainsCombinedReportSubEntityCounts() {
+    //given
+    final String collectionId = createNewCollection();
+    final String reportId1 = createNewSingleProcessReportInCollection(collectionId);
+    final String reportId2 = createNewSingleProcessReportInCollection(collectionId);
+    final String combinedReportId = createNewCombinedReportInCollection(collectionId);
+
+
+    final CombinedReportDefinitionDto combinedReportUpdate = new CombinedReportDefinitionDto();
+    combinedReportUpdate.setData(createCombinedReport(reportId1, reportId2));
+    embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportUpdate)
+      .execute();
+
+    // when
+    ResolvedCollectionDefinitionDto collection = getCollectionById(collectionId);
+
+    // then
+    assertThat(collection, is(notNullValue()));
+    assertThat(collection.getId(), is(collectionId));
+    assertThat(collection.getData().getEntities().size(), is(3));
+    final EntityDto combinedReportEntityDto = collection.getData().getEntities().stream()
+      .filter(EntityDto::getCombined)
+      .findFirst()
+      .get();
+    assertThat(combinedReportEntityDto.getData().getSubEntityCounts().size(), is(1));
+    assertThat(combinedReportEntityDto.getData().getSubEntityCounts().get(EntityType.REPORT), is(2L));
   }
 
   @Test

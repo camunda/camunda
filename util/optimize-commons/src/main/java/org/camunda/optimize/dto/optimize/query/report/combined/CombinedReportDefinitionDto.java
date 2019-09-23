@@ -5,7 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.combined;
 
+import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.optimize.ReportType;
+import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 
 public class CombinedReportDefinitionDto extends ReportDefinitionDto<CombinedReportDataDto> {
@@ -18,4 +21,10 @@ public class CombinedReportDefinitionDto extends ReportDefinitionDto<CombinedRep
     super(data, true, ReportType.PROCESS);
   }
 
+  @Override
+  public EntityDto toEntityDto() {
+    final EntityDto entityDto = super.toEntityDto();
+    entityDto.getData().setSubEntityCounts(ImmutableMap.of(EntityType.REPORT, (long) getData().getReports().size()));
+    return entityDto;
+  }
 }
