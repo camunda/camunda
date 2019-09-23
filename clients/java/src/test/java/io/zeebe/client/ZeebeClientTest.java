@@ -15,18 +15,25 @@
  */
 package io.zeebe.client;
 
+import static io.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
+import static io.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
+import static io.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.util.ClientTest;
+import io.zeebe.client.util.Environment;
+import io.zeebe.client.util.EnvironmentRule;
 import java.io.FileNotFoundException;
 import java.time.Duration;
+import java.util.Properties;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 public class ZeebeClientTest extends ClientTest {
+  @Rule public final EnvironmentRule environmentRule = new EnvironmentRule();
   @Rule public ExpectedException thrown = ExpectedException.none();
 
   @Test
@@ -70,5 +77,48 @@ public class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldHaveTlsEnabledByDefault() {
     assertThat(new ZeebeClientBuilderImpl().isPlaintextConnectionEnabled()).isFalse();
+  }
+
+  @Test
+  public void shouldUseInsecureWithEnvVar() {
+    // given
+    Environment.system().put(PLAINTEXT_CONNECTION_VAR, "true");
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.isPlaintextConnectionEnabled()).isTrue();
+  }
+
+  @Test
+  public void shouldOverridePropertyWithEnvVariable() {
+    // given
+    Environment.system().put(PLAINTEXT_CONNECTION_VAR, "false");
+    final Properties properties = new Properties();
+    properties.putIfAbsent(USE_PLAINTEXT_CONNECTION, "");
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.isPlaintextConnectionEnabled()).isFalse();
+  }
+
+  @Test
+  public void shouldCaCertificateWithEnvVar() {
+    // given
+    final String certPath = this.getClass().getClassLoader().getResource("ca.cert.pem").getPath();
+    Environment.system().put(CA_CERTIFICATE_VAR, certPath);
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getCaCertificatePath()).isEqualTo(certPath);
   }
 }
