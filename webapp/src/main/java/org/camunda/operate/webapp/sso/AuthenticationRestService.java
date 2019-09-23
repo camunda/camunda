@@ -23,9 +23,9 @@ import static org.camunda.operate.webapp.sso.AuthenticationRestService.AUTHENTIC
 @RestController
 @RequestMapping(value = AUTHENTICATION_URL)
 public class AuthenticationRestService {
-  
+
   public static final String AUTHENTICATION_URL = "/api/authentications";
-  
+
   @Autowired
   SSOWebSecurityConfig configuration;
 
@@ -33,13 +33,13 @@ public class AuthenticationRestService {
   public UserDto getCurrentAuthentication() {
     SecurityContext context = SecurityContextHolder.getContext();
     TokenAuthentication tokenAuth = (TokenAuthentication) context.getAuthentication();
-    return buildUserDtoFrom(tokenAuth); 
+    return buildUserDtoFrom(tokenAuth);
   }
 
   private UserDto buildUserDtoFrom(TokenAuthentication tokenAuth) {
     Map<String, Claim> claims = tokenAuth.getClaims();
     String name = "No name";
-    if(claims.containsKey(configuration.getNameKey())) {
+    if (claims.containsKey(configuration.getNameKey())) {
       name = claims.get(configuration.getNameKey()).asString();
     }
     try {

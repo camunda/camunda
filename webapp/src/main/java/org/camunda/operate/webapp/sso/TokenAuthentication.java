@@ -8,8 +8,6 @@ package org.camunda.operate.webapp.sso;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,8 +17,6 @@ import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
 public class TokenAuthentication extends AbstractAuthenticationToken {
-
-  private static final Logger logger = LoggerFactory.getLogger(TokenAuthentication.class);
 
   private final DecodedJWT jwt;
   private boolean authenticated = false;
@@ -33,15 +29,16 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   }
 
   protected void authenticate() throws InsufficientAuthenticationException {
-      Claim claim = jwt.getClaim(config.getClaimName());
-      List<String> claims = claim.asList(String.class);
-      //null-check
+    Claim claim = jwt.getClaim(config.getClaimName());
+    List<String> claims = claim.asList(String.class);
+    if (claims != null) {
       authenticated = claims.contains(config.getOrganization());
-      if(authenticated) {
-        SecurityContextHolder.getContext().setAuthentication(this);
-      } else {
-        throw new InsufficientAuthenticationException("No permission for operate - check your organization id");
-      }
+    }
+    if (authenticated) {
+      SecurityContextHolder.getContext().setAuthentication(this);
+    } else {
+      throw new InsufficientAuthenticationException("No permission for operate - check your organization id");
+    }
   }
 
   private boolean hasExpired() {
@@ -76,7 +73,8 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
    * For an ID token, claims represent user profile information such as the
    * user's name, profile, picture, etc. <br>
    * 
-   * @see <a href="https://auth0.com/docs/tokens/id-token">ID Token Documentation</a>
+   * @see <a href="https://auth0.com/docs/tokens/id-token">ID Token
+   *      Documentation</a>
    * @return a Map containing the claims of the token.
    */
   public Map<String, Claim> getClaims() {
