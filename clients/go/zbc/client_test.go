@@ -57,6 +57,58 @@ func TestNewZBClientWithTls(t *testing.T) {
 	}
 }
 
+func TestInsecureEnvVar(t *testing.T) {
+	// given
+	lis, grpcServer := createSecureServer()
+
+	go grpcServer.Serve(lis)
+	defer func() {
+		grpcServer.Stop()
+		_ = lis.Close()
+	}()
+	parts := strings.Split(lis.Addr().String(), ":")
+
+	// when
+	config := &ZBClientConfig{
+		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		CaCertificatePath: "../resources/ca.cert.pem",
+	}
+	os.Setenv(ZbInsecureEnvVar, "true")
+	defer os.Clearenv()
+
+	_, err := NewZBClientWithConfig(config)
+
+	// then
+	require.NoError(t, err)
+	require.EqualValues(t, true, config.UsePlaintextConnection)
+}
+
+func TestCaCertificateEnvVar(t *testing.T) {
+	// given
+	lis, grpcServer := createSecureServer()
+
+	go grpcServer.Serve(lis)
+	defer func() {
+		grpcServer.Stop()
+		_ = lis.Close()
+	}()
+	parts := strings.Split(lis.Addr().String(), ":")
+
+	// when
+	config := &ZBClientConfig{
+		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		CaCertificatePath: "../resources/wrong.cert",
+	}
+	os.Setenv(ZbCaCertificatePath, "../resources/ca.cert.pem")
+	defer os.Clearenv()
+
+	_, err := NewZBClientWithConfig(config)
+
+	// then
+	require.NoError(t, err)
+	require.EqualValues(t, "../resources/ca.cert.pem", config.CaCertificatePath)
+}
+
 func TestNewZBClientWithoutTls(t *testing.T) {
 	// given
 	lis, _ := net.Listen("tcp", "0.0.0.0:0")
