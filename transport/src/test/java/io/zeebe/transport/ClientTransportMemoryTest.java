@@ -26,8 +26,8 @@ import static org.mockito.Mockito.when;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
-import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.transport.util.EchoRequestResponseHandler;
 import io.zeebe.transport.util.RecordingMessageHandler;
 import io.zeebe.util.ByteValue;
@@ -48,7 +48,8 @@ public class ClientTransportMemoryTest {
   public static final DirectBuffer BUF1 = BufferUtil.wrapBytes(1, 2, 3, 4);
   public static final BufferWriter WRITER1 = writerFor(BUF1);
   public static final int NODE_ID1 = 1;
-  public static final SocketAddress SERVER_ADDRESS1 = SocketUtil.getNextAddress();
+  public static final SocketAddress SERVER_ADDRESS1 =
+      new SocketAddress(SocketUtil.getNextAddress());
   public AutoCloseableRule closeables = new AutoCloseableRule();
   public ControlledActorClock clock = new ControlledActorClock();
   public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);

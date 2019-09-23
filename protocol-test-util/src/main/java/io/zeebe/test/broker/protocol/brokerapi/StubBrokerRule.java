@@ -14,10 +14,10 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
+import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
-import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.util.List;
@@ -47,7 +47,7 @@ public class StubBrokerRule extends ExternalResource {
 
   private StubBrokerRule(final int nodeId, final int partitionCount) {
     this.nodeId = nodeId;
-    this.socketAddress = SocketUtil.getNextAddress();
+    this.socketAddress = new SocketAddress(SocketUtil.getNextAddress());
     this.partitionCount = partitionCount;
   }
 

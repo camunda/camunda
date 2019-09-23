@@ -10,7 +10,7 @@ package io.zeebe.exporter;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.transport.impl.util.SocketUtil;
+import io.zeebe.test.util.socket.SocketUtil;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.junit.Test;
 
@@ -20,7 +20,7 @@ public class ElasticsearchExporterFaultToleranceIT
   @Test
   public void shouldExportEvenIfElasticNotInitiallyReachable() {
     // given
-    elastic.withPort(SocketUtil.getNextAddress().port());
+    elastic.withPort(SocketUtil.getNextAddress().getPort());
     configuration = getDefaultConfiguration();
     configuration.index.prefix = "zeebe";
     esClient = createElasticsearchClient(configuration);

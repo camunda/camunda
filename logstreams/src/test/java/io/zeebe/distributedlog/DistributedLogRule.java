@@ -23,8 +23,8 @@ import io.zeebe.distributedlog.impl.LogstreamConfig;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
+import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -76,7 +76,7 @@ public class DistributedLogRule extends ExternalResource {
     this.nodeId = nodeId;
     this.numPartitions = numPartitions;
     this.replicationFactor = replicationFactor;
-    socketAddress = SocketUtil.getNextAddress();
+    socketAddress = new SocketAddress(SocketUtil.getNextAddress());
     this.members = members;
     this.otherNodes = otherNodes;
     try {

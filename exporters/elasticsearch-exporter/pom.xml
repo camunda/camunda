@@ -132,13 +132,6 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- used for SocketUtil to grab open port -->
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-transport</artifactId>
-      <scope>test</scope>
-    </dependency>
-
   </dependencies>
 
   <build>
