@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
 import org.camunda.optimize.dto.optimize.rest.SharingEnabledDto;
-import org.camunda.optimize.dto.optimize.rest.report.EvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.rest.mapper.ReportEvaluationResultMapper;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.exceptions.SharingNotAllowedException;
@@ -117,7 +117,7 @@ public class SharingRestService {
   @GET
   @Path("/report/{shareId}/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
-  public EvaluationResultDto evaluateReport(@PathParam("shareId") String reportShareId) {
+  public AuthorizedEvaluationResultDto evaluateReport(@PathParam("shareId") String reportShareId) {
     return ReportEvaluationResultMapper.mapToEvaluationResultDto(
       sharingService.evaluateReportShare(reportShareId)
     );
@@ -126,7 +126,7 @@ public class SharingRestService {
   @GET
   @Path("/dashboard/{shareId}/report/{reportId}/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
-  public EvaluationResultDto evaluateReport(
+  public AuthorizedEvaluationResultDto evaluateReport(
     @PathParam("shareId") String dashboardShareId,
     @PathParam("reportId") String reportId
   ) {

@@ -20,6 +20,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedEntityDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
@@ -386,6 +387,8 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
     // then
     assertThat(response.getStatus(), is(200));
+    final AuthorizedEntityDto evaluationResultDto = response.readEntity(AuthorizedEntityDto.class);
+    assertThat(evaluationResultDto.getCurrentUserRole(), is(getExpectedResourceRoleForCollectionRole(identityAndRole)));
   }
 
   @Test
@@ -460,7 +463,6 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // then
     assertThat(authorizedReports.size(), is(0));
   }
-
 
 
   @Test

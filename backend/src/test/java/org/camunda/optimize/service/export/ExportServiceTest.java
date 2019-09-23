@@ -5,10 +5,12 @@
  */
 package org.camunda.optimize.service.export;
 
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionRawDataReportResult;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessRawDataReportResult;
@@ -56,7 +58,7 @@ public class ExportServiceTest {
     rawDataProcessReportResultDto.setData(RawDataHelper.getRawDataProcessInstanceDtos());
     SingleProcessRawDataReportResult rawDataReportResult =
       new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, new SingleProcessReportDefinitionDto());
-    when(reportService.evaluateSavedReport(any(), any(), any())).thenReturn(rawDataReportResult);
+    when(reportService.evaluateSavedReport(any(), any(), any())).thenReturn(new AuthorizedReportEvaluationResult(rawDataReportResult, RoleType.VIEWER));
 
     // when
     Optional<byte[]> csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "", Collections.emptySet());
@@ -74,7 +76,7 @@ public class ExportServiceTest {
     rawDataDecisionReportResultDto.setData(RawDataHelper.getRawDataDecisionInstanceDtos());
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDataDecisionReportResultDto, new SingleDecisionReportDefinitionDto());
-    when(reportService.evaluateSavedReport(any(), any(), any())).thenReturn(rawDataReportResult);
+    when(reportService.evaluateSavedReport(any(), any(), any())).thenReturn(new AuthorizedReportEvaluationResult(rawDataReportResult, RoleType.VIEWER));
 
     // when
     Optional<byte[]> csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "", Collections.emptySet());

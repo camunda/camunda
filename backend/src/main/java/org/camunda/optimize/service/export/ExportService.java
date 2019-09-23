@@ -7,7 +7,7 @@ package org.camunda.optimize.service.export;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
@@ -31,10 +31,11 @@ public class ExportService {
     final Integer exportCsvLimit = configurationService.getExportCsvLimit();
 
     try {
-      final ReportEvaluationResult<?, ?> reportResult = reportService.evaluateSavedReport(
+      final AuthorizedReportEvaluationResult reportResult = reportService.evaluateSavedReport(
         userId, reportId, exportCsvLimit
       );
-      final List<String[]> resultAsCsv = reportResult.getResultAsCsv(exportCsvLimit, 0, excludedColumns);
+      final List<String[]> resultAsCsv = reportResult.getEvaluationResult()
+        .getResultAsCsv(exportCsvLimit, 0, excludedColumns);
       return Optional.of(CSVUtils.mapCsvLinesToCsvBytes(resultAsCsv));
     } catch (Exception e) {
       log.debug("Could not evaluate report to export the result to csv!", e);
@@ -42,7 +43,6 @@ public class ExportService {
     }
 
   }
-
 
 
 }

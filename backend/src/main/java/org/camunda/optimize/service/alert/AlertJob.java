@@ -55,7 +55,7 @@ public class AlertJob implements Job {
 
     try {
       ReportDefinitionDto reportDefinition = reportReader.getReport(alert.getReportId());
-      NumberResult reportResult = (NumberResult) reportEvaluator.evaluateReport(reportDefinition);
+      NumberResult reportResult = (NumberResult) reportEvaluator.evaluateReport(reportDefinition).getEvaluationResult();
 
       AlertJobResult alertJobResult = null;
       if (thresholdExceeded(alert, reportResult)) {

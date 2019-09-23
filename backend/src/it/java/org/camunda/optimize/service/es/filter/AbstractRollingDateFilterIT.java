@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -70,7 +70,7 @@ public abstract class AbstractRollingDateFilterIT {
 
   protected void assertResults(
     ProcessInstanceEngineDto processInstance,
-    ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult,
+    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult,
     int expectedPiCount) {
 
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
@@ -87,7 +87,7 @@ public abstract class AbstractRollingDateFilterIT {
     }
   }
 
-  protected ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> createAndEvaluateReportWithRollingStartDateFilter(
+  protected AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> createAndEvaluateReportWithRollingStartDateFilter(
     String processDefinitionKey,
     String processDefinitionVersion,
     RelativeDateFilterUnit unit,
@@ -110,7 +110,7 @@ public abstract class AbstractRollingDateFilterIT {
     return evaluateReport(reportData, newToken);
   }
 
-  protected ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> createAndEvaluateReportWithRollingEndDateFilter(
+  protected AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> createAndEvaluateReportWithRollingEndDateFilter(
     String processDefinitionKey,
     String processDefinitionVersion,
     RelativeDateFilterUnit unit,
@@ -133,7 +133,7 @@ public abstract class AbstractRollingDateFilterIT {
     return evaluateReport(reportData, newToken);
   }
 
-  protected ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReport(ProcessReportDataDto reportData, boolean newToken) {
+  protected AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReport(ProcessReportDataDto reportData, boolean newToken) {
     if (newToken) {
       return evaluateReportWithNewToken(reportData);
     } else {
@@ -141,22 +141,22 @@ public abstract class AbstractRollingDateFilterIT {
     }
   }
 
-  protected ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReport(ProcessReportDataDto reportData) {
+  protected AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReport(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
       // @formatter:on
   }
 
-  private ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReportWithNewToken(ProcessReportDataDto reportData) {
+  private AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReportWithNewToken(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .withGivenAuthToken(embeddedOptimizeRule.getNewAuthenticationToken())
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
       // @formatter:on
   }
 

@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
-import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
@@ -64,7 +64,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
     // when
     ProcessReportDataDto reportData = createReport(latestProcess.getProcessDefinitionKey(), ALL_VERSIONS);
-    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(
       reportData);
 
     //then
@@ -90,7 +90,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
       latestProcess.getProcessDefinitionKey(),
       ImmutableList.of(firstProcess.getProcessDefinitionVersion(), latestProcess.getProcessDefinitionVersion())
     );
-    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse =
       evaluateCountMapReport(reportData);
 
     //then
@@ -112,7 +112,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
     // when
     ProcessReportDataDto reportData = createReport(latestProcess.getProcessDefinitionKey(), ALL_VERSIONS);
-    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(
       reportData);
 
     //then
@@ -139,7 +139,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
         latestProcess.getProcessDefinitionKey(),
         ImmutableList.of(firstProcess.getProcessDefinitionVersion(), latestProcess.getProcessDefinitionVersion())
       );
-    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(
       reportData);
 
     //then
@@ -160,7 +160,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     // when
     ProcessReportDataDto reportData = createReport(engineDto.getProcessDefinitionKey(), ALL_VERSIONS);
     reportData.setTenantIds(Collections.singletonList(null));
-    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(
       reportData);
 
     //then
@@ -203,7 +203,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
       processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion()
     );
-    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(
       reportData);
 
     // then
@@ -232,7 +232,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
       processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion()
     );
-    ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(
       reportData);
 
     // then
@@ -376,11 +376,11 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     // when
     ProcessReportDataDto reportData =
       createReport(instanceDto.getProcessDefinitionKey(), instanceDto.getProcessDefinitionVersion());
-    final ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse1 = evaluateCountMapReport(
+    final AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse1 = evaluateCountMapReport(
       reportData);
     reportData.setProcessDefinitionKey(instanceDto2.getProcessDefinitionKey());
     reportData.setProcessDefinitionVersion(instanceDto2.getProcessDefinitionVersion());
-    final ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse2 = evaluateCountMapReport(
+    final AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse2 = evaluateCountMapReport(
       reportData);
 
     // then

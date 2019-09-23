@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report;
 
 import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
@@ -16,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.result.process.CombinedProcessReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -30,6 +32,7 @@ import javax.ws.rs.ForbiddenException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -43,43 +46,43 @@ public abstract class ReportEvaluationHandler {
   private final SingleReportEvaluator singleReportEvaluator;
   private final CombinedReportEvaluator combinedReportEvaluator;
 
-  public ReportEvaluationResult evaluateSavedReport(final String userId,
-                                                    final String reportId) {
+  public AuthorizedReportEvaluationResult evaluateSavedReport(final String userId,
+                                                              final String reportId) {
     return evaluateSavedReport(userId, reportId, null);
   }
 
-  public ReportEvaluationResult evaluateSavedReport(final String userId,
-                                                    final String reportId,
-                                                    final Integer customRecordLimit) {
+  public AuthorizedReportEvaluationResult evaluateSavedReport(final String userId,
+                                                              final String reportId,
+                                                              final Integer customRecordLimit) {
     ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
     return evaluateReport(userId, reportDefinition, customRecordLimit);
   }
 
-  public ReportEvaluationResult evaluateReport(final String userId,
-                                               final ReportDefinitionDto reportDefinition) {
+  public AuthorizedReportEvaluationResult evaluateReport(final String userId,
+                                                         final ReportDefinitionDto reportDefinition) {
     return evaluateReport(userId, reportDefinition, null);
   }
 
-  public ReportEvaluationResult evaluateReport(final String userId,
-                                               final ReportDefinitionDto reportDefinition,
-                                               final Integer customRecordLimit) {
-    if (!isAuthorizedToAccessReport(userId, reportDefinition)) {
-      throw new ForbiddenException(
-        "User [" + userId + "] is not authorized to evaluate report [" + reportDefinition.getName() + "]."
-      );
-    }
+  public AuthorizedReportEvaluationResult evaluateReport(final String userId,
+                                                         final ReportDefinitionDto report,
+                                                         final Integer customRecordLimit) {
+    final RoleType currentUserRole = getAuthorizedRole(userId, report)
+      .orElseThrow(() -> new ForbiddenException(String.format(
+        "User [%s] is not authorized to evaluate report [%s].", userId, report.getName()
+      )));
 
     final ReportEvaluationResult result;
-    if (!reportDefinition.getCombined()) {
-      result = evaluateSingleReportWithErrorCheck(reportDefinition, customRecordLimit);
+    if (!report.getCombined()) {
+      result = evaluateSingleReportWithErrorCheck(report, customRecordLimit);
     } else {
-      result = evaluateCombinedReport(userId, (CombinedReportDefinitionDto) reportDefinition);
+      result = evaluateCombinedReport(userId, (CombinedReportDefinitionDto) report);
     }
-    return result;
+    return new AuthorizedReportEvaluationResult(result, currentUserRole);
   }
 
-  private CombinedProcessReportResult evaluateCombinedReport(String userId,
-                                                             CombinedReportDefinitionDto combinedReportDefinition) {
+  private CombinedProcessReportResult evaluateCombinedReport(
+    final String userId,
+    final CombinedReportDefinitionDto combinedReportDefinition) {
 
     ValidationHelper.validateCombinedReportDefinition(combinedReportDefinition);
     List<ReportEvaluationResult> resultList = evaluateListOfReportIds(
@@ -125,7 +128,7 @@ public abstract class ReportEvaluationHandler {
     List<SingleProcessReportDefinitionDto> singleReportDefinitions =
       reportReader.getAllSingleProcessReportsForIdsOmitXml(singleReportIds)
         .stream()
-        .filter(r -> isAuthorizedToAccessReport(userId, r))
+        .filter(r -> getAuthorizedRole(userId, r).isPresent())
         .collect(Collectors.toList());
     return combinedReportEvaluator.evaluate(singleReportDefinitions);
   }
@@ -133,7 +136,7 @@ public abstract class ReportEvaluationHandler {
   /**
    * Checks if the user is allowed to see the given report.
    */
-  protected abstract boolean isAuthorizedToAccessReport(String userId, ReportDefinitionDto report);
+  protected abstract Optional<RoleType> getAuthorizedRole(String userId, ReportDefinitionDto report);
 
   private ReportEvaluationResult evaluateSingleReportWithErrorCheck(final ReportDefinitionDto reportDefinition,
                                                                     final Integer customRecordLimit) {

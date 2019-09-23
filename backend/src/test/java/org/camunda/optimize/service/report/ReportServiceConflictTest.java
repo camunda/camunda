@@ -72,7 +72,7 @@ public class ReportServiceConflictTest {
     SingleProcessReportDefinitionDto updateDto = new SingleProcessReportDefinitionDto();
     updateDto.setId("test1");
     when(reportReader.getSingleProcessReport("test1")).thenReturn(updateDto);
-    when(authorizationService.isAuthorizedToAccessReportByRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
+    when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
 
     // when
     underTest.updateSingleProcessReport("test1", updateDto, "user1", false);
@@ -89,7 +89,7 @@ public class ReportServiceConflictTest {
     SingleProcessReportDefinitionDto updateDto = new SingleProcessReportDefinitionDto();
     updateDto.setId("test1");
     when(reportReader.getSingleProcessReport("test1")).thenReturn(updateDto);
-    when(authorizationService.isAuthorizedToAccessReportByRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
+    when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
 
     Set<ConflictedItemDto> conflicts = Sets.newHashSet(
       new ConflictedItemDto("conflict1", ConflictedItemType.ALERT, "name"),
@@ -107,7 +107,7 @@ public class ReportServiceConflictTest {
     SingleDecisionReportDefinitionDto updateDto = new SingleDecisionReportDefinitionDto();
     updateDto.setId("test1");
     when(reportReader.getSingleDecisionReport("test1")).thenReturn(updateDto);
-    when(authorizationService.isAuthorizedToAccessReportByRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
+    when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
     // when
     underTest.updateSingleDecisionReport("test1", updateDto, "user1", false);
 
@@ -123,7 +123,7 @@ public class ReportServiceConflictTest {
     SingleDecisionReportDefinitionDto updateDto = new SingleDecisionReportDefinitionDto();
     updateDto.setId("test1");
     when(reportReader.getSingleDecisionReport("test1")).thenReturn(updateDto);
-    when(authorizationService.isAuthorizedToAccessReportByRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
+    when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
 
     Set<ConflictedItemDto> conflicts = Sets.newHashSet(
       new ConflictedItemDto("conflict1", ConflictedItemType.ALERT, "name"),
@@ -140,7 +140,7 @@ public class ReportServiceConflictTest {
     // given
     final SingleProcessReportDefinitionDto testDefinition = new SingleProcessReportDefinitionDto();
     when(reportReader.getReport("test1")).thenReturn(testDefinition);
-    when(authorizationService.isAuthorizedToAccessReportByRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
+    when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
 
     // when
     underTest.deleteReport("user1", "test1", false);
@@ -155,7 +155,7 @@ public class ReportServiceConflictTest {
   public void testDeleteReportWithConflicts() throws OptimizeException {
     // given
     when(reportReader.getReport("test1")).thenReturn(new SingleProcessReportDefinitionDto());
-    when(authorizationService.isAuthorizedToAccessReportByRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
+    when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
 
     Set<ConflictedItemDto> conflicts = Sets.newHashSet(
       new ConflictedItemDto("conflict1", ConflictedItemType.ALERT, "name"),

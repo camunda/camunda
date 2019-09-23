@@ -26,7 +26,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
-import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
@@ -75,7 +75,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
     // when
-    final ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse =
       evaluateCountMapReport(reportData);
 
     // then
@@ -627,7 +627,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setAggregationType(AggregationType.MAX);
     reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-    final ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse =
       evaluateCountMapReport(reportData);
 
     // then

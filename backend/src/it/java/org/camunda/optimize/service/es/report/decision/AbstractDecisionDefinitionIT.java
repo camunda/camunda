@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.Dec
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.DecisionReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -181,30 +181,30 @@ public abstract class AbstractDecisionDefinitionIT {
     );
   }
 
-  protected DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateMapReport(DecisionReportDataDto reportData) {
+  protected AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateMapReport(DecisionReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<DecisionReportEvaluationResultDto<DecisionReportMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto>>() {});
       // @formatter:on
   }
 
-  protected DecisionReportEvaluationResultDto<DecisionReportNumberResultDto> evaluateNumberReport(DecisionReportDataDto reportData) {
+  protected AuthorizedDecisionReportEvaluationResultDto<DecisionReportNumberResultDto> evaluateNumberReport(DecisionReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<DecisionReportEvaluationResultDto<DecisionReportNumberResultDto>>() {});
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<DecisionReportNumberResultDto>>() {});
       // @formatter:on
   }
 
-  protected DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateRawReport(DecisionReportDataDto reportData) {
+  protected AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateRawReport(DecisionReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {});
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {});
       // @formatter:on
   }
 

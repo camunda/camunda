@@ -5,10 +5,13 @@
  */
 package org.camunda.optimize.service.es.report;
 
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.security.ReportAuthorizationService;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 
 @Component
 public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationHandler {
@@ -23,7 +26,8 @@ public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationH
     this.authorizationService = authorizationService;
   }
 
-  protected boolean isAuthorizedToAccessReport(String userId, ReportDefinitionDto report) {
-    return authorizationService.isAuthorizedToAccessReportByRole(userId, report).isPresent();
+  @Override
+  protected Optional<RoleType> getAuthorizedRole(String userId, ReportDefinitionDto report) {
+    return authorizationService.getAuthorizedRole(userId, report);
   }
 }

@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEnt
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.DecisionReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -504,7 +504,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     }};
   }
 
-  private DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByMatchedRule(
+  private AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByMatchedRule(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion) {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()

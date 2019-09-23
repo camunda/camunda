@@ -14,7 +14,6 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -27,6 +26,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisu
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
@@ -127,7 +127,7 @@ public class ReportService implements CollectionReferencingService {
 
   public AuthorizedReportDefinitionDto getReportDefinition(final String reportId, final String userId) {
     final ReportDefinitionDto report = reportReader.getReport(reportId);
-    final RoleType currentUserRole = reportAuthorizationService.isAuthorizedToAccessReportByRole(userId, report)
+    final RoleType currentUserRole = reportAuthorizationService.getAuthorizedRole(userId, report)
       .orElseThrow(() -> new ForbiddenException(String.format(
         "User [%s] is not authorized to access report [%s].", userId, reportId
       )));
@@ -147,12 +147,12 @@ public class ReportService implements CollectionReferencingService {
     return authorizedReports;
   }
 
-  public ReportEvaluationResult evaluateSavedReport(String userId, String reportId) {
+  public AuthorizedReportEvaluationResult evaluateSavedReport(String userId, String reportId) {
     // auth is handled in evaluator as it also handles single reports of a combined report
     return reportEvaluator.evaluateSavedReport(userId, reportId);
   }
 
-  public ReportEvaluationResult evaluateReport(String userId, ReportDefinitionDto reportDefinition) {
+  public AuthorizedReportEvaluationResult evaluateReport(String userId, ReportDefinitionDto reportDefinition) {
     // auth is handled in evaluator as it also handles single reports of a combined report
     return reportEvaluator.evaluateReport(userId, reportDefinition);
   }
@@ -268,7 +268,7 @@ public class ReportService implements CollectionReferencingService {
   }
 
   private void verifyUserAuthorizedToEditReport(final String userId, final ReportDefinitionDto reportDefinition) {
-    if (!reportAuthorizationService.isAuthorizedToAccessReportByRole(userId, reportDefinition)
+    if (!reportAuthorizationService.getAuthorizedRole(userId, reportDefinition)
       .map(roleType -> roleType.ordinal() >= RoleType.EDITOR.ordinal())
       .orElse(false)) {
       throw new ForbiddenException(
@@ -442,7 +442,7 @@ public class ReportService implements CollectionReferencingService {
   private SingleProcessReportDefinitionDto getSingleProcessReportDefinition(String reportId,
                                                                             String userId) {
     SingleProcessReportDefinitionDto report = reportReader.getSingleProcessReport(reportId);
-    if (!reportAuthorizationService.isAuthorizedToAccessReportByRole(userId, report).isPresent()) {
+    if (!reportAuthorizationService.getAuthorizedRole(userId, report).isPresent()) {
       throw new ForbiddenException("User [" + userId + "] is not authorized to access or edit report [" +
                                      report.getName() + "].");
     }
@@ -452,7 +452,7 @@ public class ReportService implements CollectionReferencingService {
   private SingleDecisionReportDefinitionDto getSingleDecisionReportDefinition(String reportId,
                                                                               String userId) {
     SingleDecisionReportDefinitionDto report = reportReader.getSingleDecisionReport(reportId);
-    if (!reportAuthorizationService.isAuthorizedToAccessReportByRole(userId, report).isPresent()) {
+    if (!reportAuthorizationService.getAuthorizedRole(userId, report).isPresent()) {
       throw new ForbiddenException("User [" + userId + "] is not authorized to access or edit report [" +
                                      report.getName() + "].");
     }
@@ -462,7 +462,7 @@ public class ReportService implements CollectionReferencingService {
   private List<AuthorizedReportDefinitionDto> filterAuthorizedReports(String userId,
                                                                       List<ReportDefinitionDto> reports) {
     return reports.stream()
-      .map(report -> Pair.of(report, reportAuthorizationService.isAuthorizedToAccessReportByRole(userId, report)))
+      .map(report -> Pair.of(report, reportAuthorizationService.getAuthorizedRole(userId, report)))
       .filter(reportAndRole -> reportAndRole.getValue().isPresent())
       .map(reportAndRole -> new AuthorizedReportDefinitionDto(reportAndRole.getKey(), reportAndRole.getValue().get()))
       .collect(Collectors.toList());

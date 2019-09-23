@@ -27,7 +27,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResu
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
-import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
@@ -99,7 +99,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
     // when
-    final ProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
       evaluateHyperMapReport(reportData);
 
     // then
@@ -184,7 +184,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
       evaluateHyperMapReport(reportData);
 
     // then
@@ -268,7 +268,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
       evaluateHyperMapReport(reportData);
 
     // then
@@ -357,7 +357,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
       evaluateHyperMapReport(reportData);
 
     // then
@@ -539,7 +539,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     //when
     final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
-    final ProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
       evaluateHyperMapReport(reportData);
 
     // then
@@ -582,7 +582,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
         latestDefinition.getKey(),
         ImmutableList.of(firstDefinition.getVersionAsString(), latestDefinition.getVersionAsString())
       );
-    final ProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
       evaluateHyperMapReport(reportData);
 
     // then
@@ -620,7 +620,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     //when
     final ProcessReportDataDto reportData = createReport(latestDefinition.getKey(), ReportConstants.ALL_VERSIONS);
-    final ProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
       evaluateHyperMapReport(reportData);
 
     // then
@@ -661,7 +661,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
         latestDefinition.getKey(),
         ImmutableList.of(firstDefinition.getVersionAsString(), latestDefinition.getVersionAsString())
       );
-    final ProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
       evaluateHyperMapReport(reportData);
 
     // then
@@ -914,7 +914,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
       evaluateHyperMapReport(reportData);
 
     // then
@@ -945,7 +945,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
       evaluateHyperMapReport(reportData);
 
     // then
@@ -978,7 +978,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     // when
     ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.setFilter(createStartDateFilter(null, processStartTime.minusSeconds(1L)));
-    final ProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
       evaluateHyperMapReport(reportData);
 
     // then

@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.EvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -73,7 +73,7 @@ public class ProcessDefinitionVersionSelectionIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      EvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(report);
+      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(report);
 
       // then
       assertThat(result.getResult().getProcessInstanceCount(), is(3L));
@@ -96,7 +96,7 @@ public class ProcessDefinitionVersionSelectionIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      EvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(report);
+      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(report);
 
       // then
       assertThat(result.getResult().getProcessInstanceCount(), is(5L));
@@ -118,7 +118,7 @@ public class ProcessDefinitionVersionSelectionIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      EvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(report);
+      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(report);
 
       // then
       assertThat(result.getResult().getProcessInstanceCount(), is(1L));
@@ -132,7 +132,7 @@ public class ProcessDefinitionVersionSelectionIT {
 
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      EvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(report);
+      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(report);
 
       // then
       assertThat(result.getResult().getProcessInstanceCount(), is(4L));
@@ -180,11 +180,11 @@ public class ProcessDefinitionVersionSelectionIT {
     return reports;
   }
 
-  private EvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> evaluateReport(ProcessReportDataDto reportData) {
+  private AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> evaluateReport(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute(new TypeReference<EvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto>>() {
+      .execute(new TypeReference<AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto>>() {
       });
   }
 

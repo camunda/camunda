@@ -20,7 +20,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEnt
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.DecisionReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -521,7 +521,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> result =
+    final AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> result =
       evaluateDecisionInstanceFrequencyByInputVariable(
         decisionDefinitionDto1, decisionDefinitionVersion1, INPUT_AMOUNT_ID, "amount"
       );
@@ -720,7 +720,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     return engineRule.deployDecisionDefinition(dmnModelInstance);
   }
 
-  private DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
+  private AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId) {
@@ -732,7 +732,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
   }
 
-  private DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
+  private AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId,
@@ -746,7 +746,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
   }
 
-  private DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
+  private AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId,

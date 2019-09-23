@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.rest.mapper;
 
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
-import org.camunda.optimize.dto.optimize.rest.report.CombinedReportEvaluationResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.EvaluationResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.result.process.CombinedProcessReportResult;
 
 import java.util.LinkedHashMap;
@@ -23,27 +23,30 @@ public class ReportEvaluationResultMapper {
   }
 
   @SuppressWarnings("unchecked")
-  public static EvaluationResultDto<?, ?> mapToEvaluationResultDto(final ReportEvaluationResult reportEvaluationResult) {
-    if (reportEvaluationResult instanceof CombinedProcessReportResult) {
-      final CombinedProcessReportResult combinedReportResult = (CombinedProcessReportResult) reportEvaluationResult;
+  public static AuthorizedEvaluationResultDto<?, ?> mapToEvaluationResultDto(final AuthorizedReportEvaluationResult reportEvaluationResult) {
+    if (reportEvaluationResult.getEvaluationResult() instanceof CombinedProcessReportResult) {
+      final CombinedProcessReportResult combinedReportResult =
+        (CombinedProcessReportResult) reportEvaluationResult.getEvaluationResult();
       final CombinedProcessReportResultDto<?> resultAsDto = combinedReportResult.getResultAsDto();
 
-      final Map<String, EvaluationResultDto> results = resultAsDto.getData()
+      final Map<String, AuthorizedEvaluationResultDto> results = resultAsDto.getData()
         .entrySet().stream()
         .collect(Collectors.toMap(
           Map.Entry::getKey,
-          entry -> new ProcessReportEvaluationResultDto(
-            entry.getValue().getResultAsDto(), entry.getValue().getReportDefinition()
+          entry -> new AuthorizedProcessReportEvaluationResultDto(
+            entry.getValue().getResultAsDto(),
+            entry.getValue().getReportDefinition()
           ),
           (x, y) -> y,
           LinkedHashMap::new
         ));
-      return new CombinedReportEvaluationResultDto(
+      return new AuthorizedCombinedReportEvaluationResultDto(
+        reportEvaluationResult.getCurrentUserRole(),
         new CombinedProcessReportResultDataDto(results),
         combinedReportResult.getReportDefinition()
       );
     } else {
-      return EvaluationResultDto.from(reportEvaluationResult);
+      return AuthorizedEvaluationResultDto.from(reportEvaluationResult);
     }
   }
 }

@@ -25,7 +25,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
-import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
@@ -94,7 +94,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
     // when
-    final ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
       evaluateDurationMapReport(reportData);
 
     // then
@@ -142,7 +142,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
     // when
-    final ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
       evaluateDurationMapReport(reportData);
 
     // then

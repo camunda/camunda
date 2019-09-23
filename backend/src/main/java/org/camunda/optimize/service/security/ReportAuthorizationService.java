@@ -26,14 +26,14 @@ public class ReportAuthorizationService {
   private final DefinitionAuthorizationService definitionAuthorizationService;
   private final CollectionService collectionService;
 
-  public Optional<RoleType> isAuthorizedToAccessReportByRole(final String userId, final ReportDefinitionDto report) {
-    final Optional<RoleType> authorizedByRole = isAuthorizedByRole(userId, report);
+  public Optional<RoleType> getAuthorizedRole(final String userId, final ReportDefinitionDto report) {
+    final Optional<RoleType> authorizedByRole = getAuthorizedReportRole(userId, report);
     return authorizedByRole.isPresent() && isAuthorizedToAccessDefinition(userId, report)
       ? authorizedByRole
       : Optional.empty();
   }
 
-  private Optional<RoleType> isAuthorizedByRole(final String userId, final ReportDefinitionDto report) {
+  private Optional<RoleType> getAuthorizedReportRole(final String userId, final ReportDefinitionDto report) {
     RoleType role = null;
     if (report.getCollectionId() != null) {
       role = collectionService.getUsersCollectionResourceRole(report.getCollectionId(), userId).orElse(null);

@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
-import org.camunda.optimize.dto.optimize.rest.report.EvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -67,7 +67,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     );
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      EvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(report);
+      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(report);
 
       // then
       assertThat(result.getResult().getDecisionInstanceCount(), is(3L));
@@ -90,7 +90,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     );
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      EvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(report);
+      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(report);
 
       // then
       assertThat(result.getResult().getDecisionInstanceCount(), is(5L));
@@ -110,7 +110,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
       createAllPossibleDecisionReports(decisionDefinitionDto1.getKey(), ImmutableList.of(LATEST_VERSION));
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      EvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(report);
+      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(report);
 
       // then
       assertThat(result.getResult().getDecisionInstanceCount(), is(1L));
@@ -123,7 +123,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
 
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      EvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(report);
+      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(report);
 
       // then
       assertThat(result.getResult().getDecisionInstanceCount(), is(4L));
@@ -159,11 +159,11 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     return definition;
   }
 
-  private EvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> evaluateReport(DecisionReportDataDto reportData) {
+  private AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> evaluateReport(DecisionReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute(new TypeReference<EvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto>>() {
+      .execute(new TypeReference<AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto>>() {
       });
   }
 

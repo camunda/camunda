@@ -8,13 +8,13 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
-import org.camunda.optimize.dto.optimize.rest.report.EvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.rest.mapper.ReportEvaluationResultMapper;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -150,10 +150,10 @@ public class ReportRestService {
   @Path("/{id}/evaluate")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public EvaluationResultDto evaluateReportById(@Context ContainerRequestContext requestContext,
-                                                @PathParam("id") String reportId) {
+  public AuthorizedEvaluationResultDto evaluateReportById(@Context ContainerRequestContext requestContext,
+                                                          @PathParam("id") String reportId) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final ReportEvaluationResult reportEvaluationResult = reportService.evaluateSavedReport(userId, reportId);
+    final AuthorizedReportEvaluationResult reportEvaluationResult = reportService.evaluateSavedReport(userId, reportId);
     return ReportEvaluationResultMapper.mapToEvaluationResultDto(reportEvaluationResult);
   }
 
@@ -166,11 +166,11 @@ public class ReportRestService {
   @Path("/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public EvaluationResultDto evaluateProvidedReport(@Context ContainerRequestContext requestContext,
-                                                    @NotNull ReportDefinitionDto reportDefinitionDto) {
+  public AuthorizedEvaluationResultDto evaluateProvidedReport(@Context ContainerRequestContext requestContext,
+                                                              @NotNull ReportDefinitionDto reportDefinitionDto) {
 
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final ReportEvaluationResult reportEvaluationResult = reportService.evaluateReport(
+    final AuthorizedReportEvaluationResult reportEvaluationResult = reportService.evaluateReport(
       userId,
       reportDefinitionDto
     );

@@ -23,7 +23,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Vari
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -400,7 +400,7 @@ public class SingleReportHandlingIT {
     updateSingleProcessReport(reportId, report);
 
     // when
-    ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result = evaluateRawDataReportById(reportId);
+    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result = evaluateRawDataReportById(reportId);
 
     // then
     final SingleProcessReportDefinitionDto reportDefinition = result.getReportDefinition();
@@ -642,12 +642,12 @@ public class SingleReportHandlingIT {
       .execute();
   }
 
-  private ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawDataReportById(String reportId) {
+  private AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawDataReportById(String reportId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(reportId)
       // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
     // @formatter:on
   }
 

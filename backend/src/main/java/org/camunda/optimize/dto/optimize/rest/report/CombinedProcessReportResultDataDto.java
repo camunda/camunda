@@ -16,12 +16,12 @@ import java.util.Map;
 @Getter
 @Setter
 public class CombinedProcessReportResultDataDto<RESULT extends ProcessReportResultDto> implements ReportResultDto {
-  protected Map<String, ProcessReportEvaluationResultDto<RESULT>> data;
+  protected Map<String, AuthorizedProcessReportEvaluationResultDto<RESULT>> data;
 
   protected CombinedProcessReportResultDataDto() {
   }
 
-  public CombinedProcessReportResultDataDto(final Map<String, ProcessReportEvaluationResultDto<RESULT>> data) {
+  public CombinedProcessReportResultDataDto(final Map<String, AuthorizedProcessReportEvaluationResultDto<RESULT>> data) {
     this.data = data;
   }
 

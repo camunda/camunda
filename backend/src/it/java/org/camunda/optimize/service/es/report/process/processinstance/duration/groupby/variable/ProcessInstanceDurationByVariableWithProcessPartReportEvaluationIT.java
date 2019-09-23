@@ -21,7 +21,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEnt
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
@@ -87,7 +87,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setEndFlowNodeId(END_EVENT)
       .build();
 
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
       evaluateDurationMapReport(reportData);
 
     // then
@@ -136,7 +136,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     String reportId = createAndStoreDefaultReportDefinition(reportData);
 
     // when
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
       evaluateDurationMapReportById(reportId);
 
     // then
@@ -329,7 +329,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .build();
     reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
 
-    final Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>> results =
+    final Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>> results =
       evaluateDurationMapReportForAllAggTypes(reportData);
 
 
@@ -371,7 +371,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setEndFlowNodeId(END_EVENT)
       .build();
 
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
       reportData);
 
     // then
@@ -637,7 +637,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setEndFlowNodeId(END_EVENT)
       .build();
 
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
       reportData);
 
     // then
@@ -682,7 +682,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .build();
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
       reportData);
 
     // then
@@ -871,13 +871,13 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   }
 
 
-  private Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>> evaluateDurationMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
+  private Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>> evaluateDurationMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
 
-    Map<AggregationType, ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>> resultsMap =
+    Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>> resultsMap =
       new HashMap<>();
     aggregationTypes.forEach((AggregationType aggType) -> {
       reportData.getConfiguration().setAggregationType(aggType);
-      ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
+      AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
         evaluateDurationMapReport(reportData);
       resultsMap.put(aggType, evaluationResponse);
     });

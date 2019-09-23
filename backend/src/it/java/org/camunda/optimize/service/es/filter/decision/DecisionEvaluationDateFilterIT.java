@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.rest.report.DecisionReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -213,7 +213,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
       .setDateInterval(GroupByDateUnit.DAY)
       .setFilter(createRollingEvaluationDateFilter(3L, RelativeDateFilterUnit.DAYS))
       .build();
-    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
+    final AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
 
     // then
     final DecisionReportMapResultDto result = evaluationResult.getResult();
@@ -272,7 +272,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
       .setDateInterval(GroupByDateUnit.DAY)
       .setFilter(createFixedEvaluationDateFilter(beforeStart.minusDays(3L), beforeStart))
       .build();
-    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
+    final AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
 
     // then
     final DecisionReportMapResultDto result = evaluationResult.getResult();
@@ -281,13 +281,13 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     assertThat(resultData.size(), is(1));
   }
 
-  private DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateReportWithNewAuthToken(final DecisionReportDataDto reportData) {
+  private AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateReportWithNewAuthToken(final DecisionReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .withGivenAuthToken(embeddedOptimizeRule.getNewAuthenticationToken())
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<DecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {});
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {});
       // @formatter:on
   }
 

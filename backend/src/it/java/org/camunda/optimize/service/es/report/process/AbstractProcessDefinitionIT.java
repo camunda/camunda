@@ -20,7 +20,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.dura
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -163,93 +163,93 @@ public class AbstractProcessDefinitionIT {
     return processKey;
   }
 
-  protected ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluateCountMapReportById(String id) {
+  protected AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluateCountMapReportById(String id) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
       // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>>() {});
       // @formatter:on
   }
 
-  protected ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateDurationMapReportById(String reportId) {
+  protected AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateDurationMapReportById(String reportId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(reportId)
       // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
       // @formatter:on
   }
 
-  protected ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluateDurationNumberReportById(String id) {
+  protected AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluateDurationNumberReportById(String id) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
       // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>>() {});
       // @formatter:on
   }
 
-  protected ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawReportById(final String reportId) {
+  protected AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawReportById(final String reportId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(reportId)
       // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
       // @formatter:on
   }
 
-  protected ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluateCountMapReport(ProcessReportDataDto reportData) {
+  protected AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluateCountMapReport(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>>() {});
       // @formatter:on
   }
 
-  protected ProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluateHyperMapReport(ProcessReportDataDto reportData) {
+  protected AuthorizedProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluateHyperMapReport(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessReportHyperMapResult>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessReportHyperMapResult>>() {});
       // @formatter:on
   }
 
-  protected ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateDurationMapReport(ProcessReportDataDto reportData) {
+  protected AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateDurationMapReport(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
       // @formatter:on
   }
 
-  protected ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluateDurationNumberReport(ProcessReportDataDto reportData) {
+  protected AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluateDurationNumberReport(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>>() {});
       // @formatter:on
   }
 
-  protected ProcessReportEvaluationResultDto<ProcessReportNumberResultDto> evaluateNumberReport(ProcessReportDataDto reportData) {
+  protected AuthorizedProcessReportEvaluationResultDto<ProcessReportNumberResultDto> evaluateNumberReport(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessReportNumberResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessReportNumberResultDto>>() {});
       // @formatter:on
   }
 
-  protected ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawReport(ProcessReportDataDto reportData) {
+  protected AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawReport(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
       // @formatter:on
   }
 

@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
-import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
@@ -52,7 +52,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
       processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion()
     );
-    ProcessReportEvaluationResultDto<ProcessReportNumberResultDto> evaluationResponse = evaluateNumberReport(reportData);
+    AuthorizedProcessReportEvaluationResultDto<ProcessReportNumberResultDto> evaluationResponse = evaluateNumberReport(reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -230,7 +230,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
                                                    processInstanceDto.getProcessDefinitionVersion());
     reportData.getConfiguration().setAggregationType(AggregationType.MAX);
     reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-    ProcessReportEvaluationResultDto<ProcessReportNumberResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResultDto<ProcessReportNumberResultDto> evaluationResponse =
       evaluateNumberReport(reportData);
 
     // then

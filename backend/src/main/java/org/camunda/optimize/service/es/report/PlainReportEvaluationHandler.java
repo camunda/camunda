@@ -5,10 +5,13 @@
  */
 package org.camunda.optimize.service.es.report;
 
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 
 @Component
 public class PlainReportEvaluationHandler extends ReportEvaluationHandler {
@@ -19,16 +22,16 @@ public class PlainReportEvaluationHandler extends ReportEvaluationHandler {
     super(reportReader, singleReportEvaluator, combinedReportEvaluator);
   }
 
-  public ReportEvaluationResult evaluateSavedReport(String reportId) {
+  public AuthorizedReportEvaluationResult evaluateSavedReport(String reportId) {
     return this.evaluateSavedReport(null, reportId);
   }
 
-  public ReportEvaluationResult evaluateReport(ReportDefinitionDto reportDefinition) {
+  public AuthorizedReportEvaluationResult evaluateReport(ReportDefinitionDto reportDefinition) {
     return this.evaluateReport(null, reportDefinition);
   }
 
   @Override
-  protected boolean isAuthorizedToAccessReport(String userId, ReportDefinitionDto report) {
-    return true;
+  protected Optional<RoleType> getAuthorizedRole(String userId, ReportDefinitionDto report) {
+    return Optional.of(RoleType.VIEWER);
   }
 }

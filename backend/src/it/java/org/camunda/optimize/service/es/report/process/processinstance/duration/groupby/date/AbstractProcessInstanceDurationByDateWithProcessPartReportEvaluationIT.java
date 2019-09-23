@@ -22,7 +22,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
-import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
@@ -93,7 +93,7 @@ public abstract class AbstractProcessInstanceDurationByDateWithProcessPartReport
       .setReportDataType(getTestReportDataType())
       .build();
 
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
       reportData);
 
     // then
@@ -141,7 +141,7 @@ public abstract class AbstractProcessInstanceDurationByDateWithProcessPartReport
     String reportId = createAndStoreDefaultReportDefinition(reportDataDto);
 
     // when
-    ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
+    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
       evaluateDurationMapReportById(reportId);
 
     // then

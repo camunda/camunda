@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.rest.report.ProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -51,7 +51,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
 
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
-    ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
+    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
       createAndEvaluateReportWithRollingStartDateFilter(
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion(),
@@ -91,7 +91,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     LocalDateUtil.setCurrentTime(processInstanceEndTime);
 
     //token has to be refreshed, as the old one expired already after moving the date
-    ProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
+    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
       createAndEvaluateReportWithRollingEndDateFilter(
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion(),
@@ -254,13 +254,13 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     }
   }
 
-  private ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateProcessDurationMapReport(
+  private AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateProcessDurationMapReport(
     final ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<ProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
       // @formatter:on
   }
 

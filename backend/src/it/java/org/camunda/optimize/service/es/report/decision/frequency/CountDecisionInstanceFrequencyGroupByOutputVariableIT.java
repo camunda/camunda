@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEnt
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.DecisionReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -471,7 +471,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportEvaluationResultDto<DecisionReportMapResultDto> result =
+    final AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> result =
       evaluateDecisionInstanceFrequencyByOutputVariable(
         decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_AUDIT_ID, "audit"
       );
@@ -657,7 +657,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     assertThat(response.getStatus(), is(400));
   }
 
-  private DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
+  private AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId) {
@@ -666,7 +666,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     );
   }
 
-  private DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
+  private AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId,
@@ -676,7 +676,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     );
   }
 
-  private DecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
+  private AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId,
