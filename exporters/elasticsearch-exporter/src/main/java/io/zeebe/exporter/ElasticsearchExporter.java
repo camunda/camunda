@@ -90,10 +90,14 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   private void flush() {
-    if (client.flush()) {
-      controller.updateLastExportedRecordPosition(lastPosition);
-    } else {
-      log.warn("Failed to flush bulk completely");
+    try {
+      if (client.flush()) {
+        controller.updateLastExportedRecordPosition(lastPosition);
+      } else {
+        log.warn("Failed to flush bulk completely");
+      }
+    } catch (Exception e) {
+      log.error("Failed to flush bulk", e);
     }
   }
 
