@@ -31,6 +31,8 @@ import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.junit.Rule;
+import org.junit.rules.RuleChain;
 import org.quartz.JobKey;
 import org.quartz.SchedulerException;
 
@@ -59,6 +61,12 @@ public abstract class AbstractAlertIT {
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
   public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule(engineRule.getEngineName());
+
+  @Rule
+  public RuleChain chain = RuleChain
+    .outerRule(elasticSearchRule)
+    .around(engineRule)
+    .around(embeddedOptimizeRule);
 
   protected String createAlert(AlertCreationDto simpleAlert) {
     return embeddedOptimizeRule
@@ -247,7 +255,7 @@ public abstract class AbstractAlertIT {
                                                     final String user,
                                                     final String password) {
     String id = createNewProcessReportAsUser(user, password);
-    SingleProcessReportDefinitionDto report = getReportDefinitionDto(
+    SingleProcessReportDefinitionDto report = getNumberReportDefinitionDto(
       processDefinition.getKey(),
       String.valueOf(processDefinition.getVersion())
     );
@@ -255,13 +263,13 @@ public abstract class AbstractAlertIT {
     return id;
   }
 
-  protected SingleProcessReportDefinitionDto getReportDefinitionDto(ProcessDefinitionEngineDto processDefinition) {
-    return getReportDefinitionDto(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+  protected SingleProcessReportDefinitionDto getNumberReportDefinitionDto(ProcessDefinitionEngineDto processDefinition) {
+    return getNumberReportDefinitionDto(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
   }
 
 
-  protected SingleProcessReportDefinitionDto getReportDefinitionDto(String processDefinitionKey,
-                                                                    String processDefinitionVersion) {
+  protected SingleProcessReportDefinitionDto getNumberReportDefinitionDto(String processDefinitionKey,
+                                                                          String processDefinitionVersion) {
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
@@ -302,7 +310,7 @@ public abstract class AbstractAlertIT {
     return deploySimpleServiceTaskProcess("aProcess");
   }
 
-  private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(String definitionKey) {
+  protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(String definitionKey) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess(definitionKey)
       .name("aProcessName")
       .startEvent()

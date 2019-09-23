@@ -54,6 +54,7 @@ public class ConfigurationService {
   private Integer tokenLifeTime;
   private String tokenSecret;
   private Boolean sameSiteCookieFlagEnabled;
+  private List<String> superUserIds;
 
   private String userValidationEndpoint;
   private String processDefinitionEndpoint;
@@ -211,6 +212,13 @@ public class ConfigurationService {
         configJsonContext.read(ConfigurationServiceConstants.SAME_SITE_COOKIE_FLAG_ENABLED, Boolean.class);
     }
     return sameSiteCookieFlagEnabled;
+  }
+
+  public List<String> getSuperUserIds() {
+    if (superUserIds == null) {
+      superUserIds = configJsonContext.read(ConfigurationServiceConstants.SUPER_USER_IDS, LIST_OF_STRINGS_TYPE_REF);
+    }
+    return superUserIds;
   }
 
   public List<ElasticsearchConnectionNodeConfiguration> getElasticsearchConnectionNodes() {
@@ -513,7 +521,6 @@ public class ConfigurationService {
     }
     return pluginDirectory;
   }
-
 
   public List<String> getVariableImportPluginBasePackages() {
     if (variableImportPluginBasePackages == null) {
@@ -855,7 +862,7 @@ public class ConfigurationService {
   }
 
   public UIConfiguration getUiConfiguration() {
-    if ( uiConfiguration == null) {
+    if (uiConfiguration == null) {
       uiConfiguration = configJsonContext.read(UI_CONFIGURATION, UIConfiguration.class);
     }
     return uiConfiguration;

@@ -43,6 +43,10 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
     initCache();
   }
 
+  public boolean isSuperUserIdentity(final String userId) {
+    return configurationService.getSuperUserIds().contains(userId);
+  }
+
   public List<GroupDto> getAllGroupsOfUser(final String userId) {
     return userGroupsCache.get(userId);
   }

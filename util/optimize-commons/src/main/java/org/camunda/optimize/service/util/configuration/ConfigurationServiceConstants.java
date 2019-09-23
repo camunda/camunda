@@ -13,6 +13,7 @@ public interface ConfigurationServiceConstants {
   String TOKEN_LIFE_TIME = "$.auth.token.lifeMin";
   String TOKEN_SECRET = "$.auth.token.secret";
   String SAME_SITE_COOKIE_FLAG_ENABLED = "$.auth.cookie.same-site.enabled";
+  String SUPER_USER_IDS = "$.auth.superUserIds";
 
   String CONFIGURED_ENGINES = "$.engines";
 

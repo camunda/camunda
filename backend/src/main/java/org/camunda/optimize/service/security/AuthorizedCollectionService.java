@@ -90,28 +90,35 @@ public class AuthorizedCollectionService {
   private Optional<AuthorizedSimpleCollectionDefinitionDto> resolveToAuthorizedSimpleCollection(
     final String userId,
     final SimpleCollectionDefinitionDto collectionDefinition) {
+    final boolean isSuperUser = identityService.isSuperUserIdentity(userId);
 
-    final List<CollectionRoleDto> collectionRoles = collectionDefinition.getData().getRoles();
-    final Set<String> userGroupIds = identityService.getAllGroupsOfUser(userId).stream()
-      .map(GroupDto::getId)
-      .collect(Collectors.toSet());
+    final Optional<RoleType> userRole;
+    if (isSuperUser) {
+      userRole = Optional.of(RoleType.MANAGER);
+    } else {
+      final List<CollectionRoleDto> collectionRoles = collectionDefinition.getData().getRoles();
+      final Set<String> userGroupIds = identityService.getAllGroupsOfUser(userId).stream()
+        .map(GroupDto::getId)
+        .collect(Collectors.toSet());
 
-    final Optional<CollectionRoleDto> highestGrantedAuthorizationFromUsersGroups = collectionRoles.stream()
-      .filter(roleDto -> roleDto.getIdentity().getType().equals(IdentityType.GROUP))
-      .filter(roleDto -> userGroupIds.contains(roleDto.getIdentity().getId()))
-      .reduce(BinaryOperator.maxBy(Comparator.comparing(CollectionRoleDto::getRole)));
+      final Optional<CollectionRoleDto> highestGrantedAuthorizationFromUsersGroups = collectionRoles.stream()
+        .filter(roleDto -> roleDto.getIdentity().getType().equals(IdentityType.GROUP))
+        .filter(roleDto -> userGroupIds.contains(roleDto.getIdentity().getId()))
+        .reduce(BinaryOperator.maxBy(Comparator.comparing(CollectionRoleDto::getRole)));
 
-    final Optional<CollectionRoleDto> highestGrantedAuthorizationByUserId = collectionRoles.stream()
-      .filter(roleDto -> roleDto.getIdentity().getType().equals(IdentityType.USER))
-      .filter(roleDto -> userId.equals(roleDto.getIdentity().getId()))
-      .reduce(BinaryOperator.maxBy(Comparator.comparing(CollectionRoleDto::getRole)));
+      final Optional<CollectionRoleDto> highestGrantedAuthorizationByUserId = collectionRoles.stream()
+        .filter(roleDto -> roleDto.getIdentity().getType().equals(IdentityType.USER))
+        .filter(roleDto -> userId.equals(roleDto.getIdentity().getId()))
+        .reduce(BinaryOperator.maxBy(Comparator.comparing(CollectionRoleDto::getRole)));
 
-    // the stream order reflects the priority here, user assigned roles have priority over group roles
-    return Stream.of(highestGrantedAuthorizationByUserId, highestGrantedAuthorizationFromUsersGroups)
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      .findFirst()
-      .map(roleDto -> new AuthorizedSimpleCollectionDefinitionDto(roleDto.getRole(), collectionDefinition));
+      // the stream order reflects the priority here, user assigned roles have priority over group roles
+      userRole = Stream.of(highestGrantedAuthorizationByUserId, highestGrantedAuthorizationFromUsersGroups)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .findFirst()
+        .map(CollectionRoleDto::getRole);
+    }
+    return userRole.map(roleType -> new AuthorizedSimpleCollectionDefinitionDto(roleType, collectionDefinition));
   }
 
 }

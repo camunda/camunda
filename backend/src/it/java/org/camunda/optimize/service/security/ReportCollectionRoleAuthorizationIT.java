@@ -33,6 +33,7 @@ import org.junit.runner.RunWith;
 import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
@@ -41,6 +42,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
 
 @RunWith(JUnitParamsRunner.class)
@@ -184,6 +186,23 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
   @Test
   @Parameters(method = REPORT_SCENARIOS)
+  public void superUserIdentityIsGrantedAddReport(final ReportScenario reportScenario) {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+
+    final String collectionId = createNewCollectionAsDefaultUser();
+
+    // when
+    final Response response = createReportInCollectionAsKermit(reportScenario, collectionId);
+
+    // then
+    assertThat(response.getStatus(), is(200));
+  }
+
+  @Test
+  @Parameters(method = REPORT_SCENARIOS)
   public void noRoleIdentityIsRejectedToAddReportToCollection(final ReportScenario reportScenario) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -237,6 +256,27 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
     // then
     assertThat(response.getStatus(), is(403));
+  }
+
+  @Test
+  @Parameters(method = REPORT_SCENARIOS)
+  public void superUserIdentityIsGrantedCopyPrivateReportToCollection(final ReportScenario reportScenario) {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+
+    final String collectionId = createNewCollectionAsDefaultUser();
+
+    // when
+    final String reportId = createPrivateReportAsKermit(reportScenario);
+    final Response response = copyReportToCollectionAsKermit(reportId, collectionId);
+
+    // then
+    assertThat(response.getStatus(), is(200));
+    final String copyId = response.readEntity(IdDto.class).getId();
+    final AuthorizedReportDefinitionDto reportCopy = getReportByIdAsKermit(copyId);
+    assertThat(reportCopy.getDefinitionDto().getOwner(), is(KERMIT_USER));
   }
 
   @Test
@@ -297,7 +337,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
   @Test
   @Parameters(method = REPORT_SCENARIOS)
-  public void readAccessRejectedToPrivateReportOfOtherUser(final ReportScenario reportScenario) {
+  public void readAccessRejectedToCopyPrivateReportOfOtherUser(final ReportScenario reportScenario) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -312,8 +352,29 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
   }
 
   @Test
+  @Parameters(method = REPORT_SCENARIOS)
+  public void superUserIdentityIsGrantedToCopyPrivateReportOfOtherUser(final ReportScenario reportScenario) {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+
+    final String collectionId = createNewCollectionAsDefaultUser();
+    final String reportId = createPrivateReportAsDefaultUser(reportScenario);
+
+    // when
+    final Response response = copyReportToCollectionAsKermit(reportId, collectionId);
+
+    // then
+    assertThat(response.getStatus(), is(200));
+    final String copyId = response.readEntity(IdDto.class).getId();
+    final AuthorizedReportDefinitionDto reportCopy = getReportByIdAsKermit(copyId);
+    assertThat(reportCopy.getDefinitionDto().getOwner(), is(KERMIT_USER));
+  }
+
+  @Test
   @Parameters(method = ACCESS_IDENTITY_ROLES_AND_REPORT_TYPES)
-  public void readAccessGrantedToCollectionReportByCollectionRole(final IdentityRoleAndReportScenario identityAndReport) {
+  public void readAccessGrantedToCopyCollectionReportByCollectionRole(final IdentityRoleAndReportScenario identityAndReport) {
     // given
     final IdentityAndRole identityAndRole = identityAndReport.identityAndRole;
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -349,6 +410,24 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
   @Test
   @Parameters(method = REPORT_SCENARIOS)
+  public void superUserIdentityIsGrantedAccessToCollectionReport(final ReportScenario reportScenario) {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+
+    final String collectionId = createNewCollectionAsDefaultUser();
+    final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
+
+    // when
+    final Response response = readReportByIdAsKermit(reportId);
+
+    // then
+    assertThat(response.getStatus(), is(200));
+  }
+
+  @Test
+  @Parameters(method = REPORT_SCENARIOS)
   public void evaluateAccessRejectedToPrivateReportOfOtherUser(final ReportScenario reportScenario) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -361,6 +440,33 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
     // then
     assertThat(response.getStatus(), is(403));
+  }
+
+  @Test
+  @Parameters(method = REPORT_SCENARIOS)
+  public void superUserIdentityIsGrantedEvaluateAccessToPrivateReportOfOtherUser(final ReportScenario reportScenario) {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantAllDefinitionAuthorizationsForUserWithReadHistoryPermission(
+      KERMIT_USER, getEngineResourceTypeForReportType(reportScenario)
+    );
+    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+
+    final String collectionId = createNewCollectionAsDefaultUser();
+    final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
+    if (!reportScenario.combined) {
+      // for non combined reports a definition needs to be set for them to be evaluable
+      updateReportAsDefaultUser(
+        reportId, constructReportWithDefinition(getEngineResourceTypeForReportType(reportScenario))
+      );
+    }
+
+    // when
+    final Response response = evaluateReportByIdAsKermit(reportId);
+
+    // then
+    assertThat(response.getStatus(), is(200));
   }
 
   @Test
@@ -464,6 +570,32 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     assertThat(authorizedReports.size(), is(0));
   }
 
+  @Test
+  @Parameters(method = REPORT_SCENARIOS)
+  public void superUserListReportsContainsOtherUsersPrivateReportsAsWellAsCollectionReports(
+    final ReportScenario reportScenario) {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+
+    final String privateReportId = createPrivateReportAsDefaultUser(reportScenario);
+    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionReportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
+
+    // when
+    final List<AuthorizedReportDefinitionDto> authorizedReports = listReportsAsKermit();
+
+    // then
+    assertThat(authorizedReports.size(), is(2));
+    assertThat(
+      authorizedReports.stream()
+        .map(AuthorizedReportDefinitionDto::getDefinitionDto)
+        .map(ReportDefinitionDto::getId)
+        .collect(Collectors.toList()),
+      containsInAnyOrder(privateReportId, collectionReportId)
+    );
+  }
 
   @Test
   @Parameters(method = REPORT_SCENARIOS)
@@ -479,6 +611,23 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
     // then
     assertThat(response.getStatus(), is(403));
+  }
+
+  @Test
+  @Parameters(method = REPORT_SCENARIOS)
+  public void superUserCanUpdateOtherPrivateReport(final ReportScenario reportScenario) {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+
+    final String reportId = createPrivateReportAsDefaultUser(reportScenario);
+
+    // when
+    final Response response = updateReportAsKermit(reportId, reportScenario);
+
+    // then
+    assertThat(response.getStatus(), is(204));
   }
 
   @Test
@@ -521,6 +670,24 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
   @Test
   @Parameters(method = REPORT_SCENARIOS)
+  public void superUserIdentityIsGrantedUpdateReport(final ReportScenario reportScenario) {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+
+    final String collectionId = createNewCollectionAsDefaultUser();
+    final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
+
+    // when
+    final Response response = updateReportAsKermit(reportId, reportScenario);
+
+    // then
+    assertThat(response.getStatus(), is(204));
+  }
+
+  @Test
+  @Parameters(method = REPORT_SCENARIOS)
   public void noRoleIdentityIsRejectedToUpdateReportToCollection(final ReportScenario reportScenario) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -550,6 +717,23 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
     // then
     assertThat(response.getStatus(), is(403));
+  }
+
+  @Test
+  @Parameters(method = REPORT_SCENARIOS)
+  public void superUserCanDeleteOtherPrivateReport(final ReportScenario reportScenario) {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+
+    final String reportId = createPrivateReportAsDefaultUser(reportScenario);
+
+    // when
+    final Response response = deleteReportAsKermit(reportId);
+
+    // then
+    assertThat(response.getStatus(), is(204));
   }
 
   @Test
@@ -592,6 +776,24 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
   @Test
   @Parameters(method = REPORT_SCENARIOS)
+  public void superUserIdentityIsGrantedDeleteReport(final ReportScenario reportScenario) {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+
+    final String collectionId = createNewCollectionAsDefaultUser();
+    final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
+
+    // when
+    final Response response = deleteReportAsKermit(reportId);
+
+    // then
+    assertThat(response.getStatus(), is(204));
+  }
+
+  @Test
+  @Parameters(method = REPORT_SCENARIOS)
   public void noRoleIdentityIsRejectedToDeleteReportToCollection(final ReportScenario reportScenario) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -612,7 +814,12 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
   }
 
   private int getEngineResourceTypeForReportType(final IdentityRoleAndReportScenario identityAndReport) {
-    return identityAndReport.reportScenario.reportType.equals(ReportType.PROCESS) ? RESOURCE_TYPE_PROCESS_DEFINITION
+    return getEngineResourceTypeForReportType(identityAndReport.reportScenario);
+  }
+
+  private int getEngineResourceTypeForReportType(final ReportScenario reportScenario) {
+    return reportScenario.reportType.equals(ReportType.PROCESS)
+      ? RESOURCE_TYPE_PROCESS_DEFINITION
       : RESOURCE_TYPE_DECISION_DEFINITION;
   }
 

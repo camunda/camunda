@@ -7,7 +7,6 @@ package org.camunda.optimize.service.collection;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -24,7 +23,6 @@ import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionData
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefinitionDto;
@@ -32,15 +30,14 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedSimpleCollectionDefiniti
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
-import org.camunda.optimize.service.es.reader.EntitiesReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.relations.CollectionRelationService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
+import org.camunda.optimize.service.security.AuthorizedEntitiesService;
 import org.camunda.optimize.service.security.IdentityService;
-import org.camunda.optimize.service.security.ReportAuthorizationService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.springframework.stereotype.Component;
 
@@ -59,13 +56,12 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CollectionService {
 
+  private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionWriter collectionWriter;
   private final ReportReader reportReader;
-  private final EntitiesReader entitiesReader;
   private final CollectionRelationService collectionRelationService;
-  private final AuthorizedCollectionService authorizedCollectionService;
+  private final AuthorizedEntitiesService entitiesService;
   private final IdentityService identityService;
-  private final ReportAuthorizationService reportAuthorizationService;
 
   public IdDto createNewCollectionAndReturnId(final String userId) {
     return collectionWriter.createNewCollectionAndReturnId(userId);
@@ -87,25 +83,11 @@ public class CollectionService {
     final AuthorizedSimpleCollectionDefinitionDto simpleCollectionDefinitionDto = authorizedCollectionService
       .getAuthorizedSimpleCollectionDefinitionOrFail(userId, collectionId);
 
-    final List<EntityDto> collectionEntities = entitiesReader
-      .getAllEntitiesForCollection(simpleCollectionDefinitionDto.getDefinitionDto())
-      .stream()
-      .map(collectionEntity -> Pair.of(collectionEntity, collectionEntity.toEntityDto()))
-      .filter(collectionEntityAndEntityDto -> {
-        final EntityDto entityDto = collectionEntityAndEntityDto.getValue();
-        if (entityDto.getEntityType().equals(EntityType.REPORT)) {
-          return reportAuthorizationService.isAuthorizedToAccessReportDefinition(
-            userId, (ReportDefinitionDto) collectionEntityAndEntityDto.getKey()
-          );
-        } else {
-          return true;
-        }
-      })
-      .map(Pair::getValue)
-      .collect(Collectors.toList());
+    final List<EntityDto> collectionEntities = entitiesService.getAuthorizedCollectionEntities(userId, collectionId);
 
     return mapToResolvedCollection(simpleCollectionDefinitionDto, collectionEntities);
   }
+
 
   public void updatePartialCollection(final String userId,
                                       final String collectionId,
@@ -148,7 +130,8 @@ public class CollectionService {
 
   public CollectionScopeEntryDto addScopeEntryToCollection(String userId,
                                                            String collectionId,
-                                                           CollectionScopeEntryDto entryDto) throws OptimizeConflictException {
+                                                           CollectionScopeEntryDto entryDto) throws
+                                                                                             OptimizeConflictException {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
     return collectionWriter.addScopeEntryToCollection(collectionId, entryDto, userId);
   }
@@ -274,7 +257,7 @@ public class CollectionService {
     );
   }
 
-  private Set<ConflictedItemDto> getConflictedItemsForDelete( String userId, String collectionId) {
+  private Set<ConflictedItemDto> getConflictedItemsForDelete(String userId, String collectionId) {
     return collectionRelationService.getConflictedItemsForDelete(
       getSimpleCollectionDefinition(userId, collectionId).getDefinitionDto()
     );

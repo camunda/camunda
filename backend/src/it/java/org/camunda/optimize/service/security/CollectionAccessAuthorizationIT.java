@@ -77,6 +77,26 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
   }
 
   @Test
+  public void userIsGrantedAccessAsSuperUser() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+
+    final String collectionId = createNewCollectionAsDefaultUser();
+
+    // when
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildGetCollectionRequest(collectionId)
+      .execute();
+
+    // then
+    assertThat(response.getStatus(), is(200));
+  }
+
+  @Test
   public void userIsNotGrantedAccessDueMissingRole() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();

@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedSimpleCollectionDefinitionDto;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.es.reader.EntitiesReader;
+import org.camunda.optimize.service.security.AuthorizedEntitiesService;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
@@ -26,9 +27,10 @@ import java.util.stream.Stream;
 public class EntitiesService {
 
   private CollectionService collectionService;
+  private AuthorizedEntitiesService authorizedEntitiesService;
   private EntitiesReader entitiesReader;
 
-  public List<EntityDto> getAllEntities(String userId) {
+  public List<EntityDto> getAllEntities(final String userId) {
     final List<AuthorizedSimpleCollectionDefinitionDto> collectionDefinitions =
       collectionService.getAllSimpleCollectionDefinitions(userId);
     final Map<String, Map<EntityType, Long>> collectionEntityCounts = entitiesReader.countEntitiesForCollections(
@@ -36,7 +38,7 @@ public class EntitiesService {
         .map(AuthorizedSimpleCollectionDefinitionDto::getDefinitionDto)
         .collect(Collectors.toList())
     );
-    final List<EntityDto> privateEntities = entitiesReader.getAllPrivateEntities(userId);
+    final List<EntityDto> privateEntities = authorizedEntitiesService.getAuthorizedPrivateEntities(userId);
 
     return Stream.concat(
       collectionDefinitions.stream()

@@ -133,7 +133,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     );
 
     //when
-    SingleProcessReportDefinitionDto report = getReportDefinitionDto(
+    SingleProcessReportDefinitionDto report = getNumberReportDefinitionDto(
       processDefinition.getKey(), String.valueOf(processDefinition.getVersion())
     );
     report.getData().setGroupBy(new FlowNodesGroupByDto());

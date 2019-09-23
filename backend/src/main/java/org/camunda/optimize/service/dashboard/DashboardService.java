@@ -23,6 +23,7 @@ import org.camunda.optimize.service.relations.CollectionReferencingService;
 import org.camunda.optimize.service.relations.ReportReferencingService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
+import org.camunda.optimize.service.security.IdentityService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.springframework.stereotype.Component;
 
@@ -42,6 +43,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   private final ReportService reportService;
   private final AuthorizedCollectionService collectionService;
+  private final IdentityService identityService;
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForReportDelete(final ReportDefinitionDto reportDefinition) {
@@ -137,6 +139,8 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       currentUserRole = collectionService.getUsersCollectionResourceRole(userId, dashboard.getCollectionId())
         .orElse(null);
     } else if (dashboard.getOwner().equals(userId)) {
+      currentUserRole = RoleType.EDITOR;
+    } else if (identityService.isSuperUserIdentity(userId)) {
       currentUserRole = RoleType.EDITOR;
     }
 

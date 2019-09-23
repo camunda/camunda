@@ -22,14 +22,16 @@ import java.util.Optional;
 @Component
 public class ReportAuthorizationService {
 
+  private final IdentityService identityService;
   private final DefinitionAuthorizationService definitionAuthorizationService;
   private final AuthorizedCollectionService collectionAuthorizationService;
 
   public Optional<RoleType> getAuthorizedRole(final String userId, final ReportDefinitionDto report) {
-    final Optional<RoleType> authorizedByRole = getAuthorizedReportRole(userId, report);
-    return authorizedByRole.isPresent() && isAuthorizedToAccessReportDefinition(userId, report)
-      ? authorizedByRole
-      : Optional.empty();
+    final boolean isSuperUser = identityService.isSuperUserIdentity(userId);
+    final Optional<RoleType> authorizedRole = isSuperUser
+      ? Optional.of(RoleType.EDITOR)
+      : getAuthorizedReportRole(userId, report);
+    return authorizedRole.filter(role -> isAuthorizedToAccessReportDefinition(userId, report));
   }
 
   private Optional<RoleType> getAuthorizedReportRole(final String userId, final ReportDefinitionDto report) {

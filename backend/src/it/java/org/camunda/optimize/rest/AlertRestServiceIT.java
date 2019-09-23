@@ -10,14 +10,11 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
 
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
@@ -28,12 +25,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class AlertRestServiceIT extends AbstractAlertIT {
 
   private static final String TEST = "test";
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule)
-    .around(engineRule)
-    .around(embeddedOptimizeRule);
 
   @Test
   public void createNewAlertWithoutAuthentication() {
@@ -184,29 +175,6 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     // then
     assertThat(allAlerts.size(), is(1));
     assertThat(allAlerts.get(0).getId(), is(id));
-  }
-
-  @Test
-  public void getAuthorizedAlertsOnly() {
-    //given
-    engineRule.addUser(KERMIT_USER, KERMIT_USER);
-    engineRule.grantUserOptimizeAccess(KERMIT_USER);
-    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, "processDefinition1");
-
-    AlertCreationDto alert1 = setupBasicProcessAlertAsUser("processDefinition1", KERMIT_USER, KERMIT_USER);
-    AlertCreationDto alert2 = setupBasicProcessAlertAsUser("processDefinition2", DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    addAlertToOptimizeAsUser(alert1, KERMIT_USER, KERMIT_USER);
-    addAlertToOptimizeAsUser(alert2, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-
-    // when
-    List<AlertDefinitionDto> allAlerts = embeddedOptimizeRule
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetAllAlertsRequest()
-      .executeAndReturnList(AlertDefinitionDto.class, 200);
-
-    // then
-    assertThat(allAlerts.size(), is(1));
   }
 
   @Test

@@ -11,8 +11,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
@@ -27,7 +25,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
@@ -74,11 +72,18 @@ public class EntitiesReader {
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
-  public List<EntityDto> getAllPrivateEntities(final String userId) {
+  public List<CollectionEntity> getAllPrivateEntities() {
+    return getAllPrivateEntities(null);
+  }
+
+  public List<CollectionEntity> getAllPrivateEntities(final String userId) {
     log.debug("Fetching all available entities for user [{}]", userId);
 
-    final QueryBuilder query = boolQuery().must(termQuery(OWNER, userId))
-      .mustNot(existsQuery(COLLECTION_ID));
+    final BoolQueryBuilder query = boolQuery().mustNot(existsQuery(COLLECTION_ID));
+
+    if (userId != null) {
+      query.must(termQuery(OWNER, userId));
+    }
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
@@ -103,7 +108,7 @@ public class EntitiesReader {
       objectMapper,
       esClient,
       configurationService.getElasticsearchScrollTimeout()
-    ).stream().map(CollectionEntity::toEntityDto).collect(Collectors.toList());
+    );
   }
 
   public Map<String, Map<EntityType, Long>> countEntitiesForCollections(
@@ -147,10 +152,10 @@ public class EntitiesReader {
     }
   }
 
-  public List<CollectionEntity> getAllEntitiesForCollection(final SimpleCollectionDefinitionDto collection) {
-    log.debug("Fetching all available entities for collection [{}]", collection.getId());
+  public List<CollectionEntity> getAllEntitiesForCollection(final String collectionId) {
+    log.debug("Fetching all available entities for collection [{}]", collectionId);
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(termQuery(COLLECTION_ID, collection.getId()))
+      .query(termQuery(COLLECTION_ID, collectionId))
       .size(LIST_FETCH_LIMIT);
     return runEntitiesSearchRequest(searchSourceBuilder);
   }

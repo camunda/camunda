@@ -80,7 +80,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     assertThat(response.getStatus(), is(200));
 
     // when
-    SingleProcessReportDefinitionDto report = getReportDefinitionDto(processDefinition);
+    SingleProcessReportDefinitionDto report = getNumberReportDefinitionDto(processDefinition);
     report.getData().setGroupBy(new FlowNodesGroupByDto());
     report.getData().setVisualization(ProcessVisualization.HEAT);
     updateSingleProcessReport(simpleAlert.getReportId(), report);
