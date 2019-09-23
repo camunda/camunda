@@ -7,6 +7,8 @@ package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityNameDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedSimpleCollectionDefinitionDto;
 import org.camunda.optimize.service.collection.CollectionService;
@@ -45,6 +47,10 @@ public class EntitiesService {
       Comparator.comparing(EntityDto::getEntityType)
         .thenComparing(EntityDto::getLastModified, Comparator.reverseOrder())
     ).collect(Collectors.toList());
+  }
+
+  public EntityNameDto getEntityNames(final EntityNameRequestDto requestDto) {
+    return entitiesReader.getEntityNames(requestDto);
   }
 
 }

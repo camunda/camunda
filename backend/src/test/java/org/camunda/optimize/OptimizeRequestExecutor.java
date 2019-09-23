@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDt
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -499,6 +500,15 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildGetAllEntitiesRequest() {
     this.path = "entities/";
     this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetEntityNamesRequest(EntityNameRequestDto requestDto) {
+    this.path = "entities/names";
+    this.requestType = GET;
+    this.addSingleQueryParam(EntityNameRequestDto.Fields.collectionId.name(), requestDto.getCollectionId());
+    this.addSingleQueryParam(EntityNameRequestDto.Fields.dashboardId.name(), requestDto.getDashboardId());
+    this.addSingleQueryParam(EntityNameRequestDto.Fields.reportId.name(), requestDto.getReportId());
     return this;
   }
 

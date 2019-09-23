@@ -13,10 +13,16 @@ import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefiniti
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityNameDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.get.MultiGetItemResponse;
+import org.elasticsearch.action.get.MultiGetRequest;
+import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -30,6 +36,8 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.HashMap;
@@ -38,9 +46,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.atLeastOneResponseExistsForMultiGet;
 import static org.camunda.optimize.service.es.reader.ReportReader.REPORT_DATA_XML_PROPERTY;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.OWNER;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
@@ -58,9 +68,8 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 @Slf4j
 public class EntitiesReader {
 
+  private static final String AGG_BY_TYPE_COUNT = "byTypeCount";
   private static final String[] ENTITY_LIST_EXCLUDES = {REPORT_DATA_XML_PROPERTY};
-  public static final String AGG_BY_TYPE_COUNT = "byTypeCount";
-
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
@@ -138,6 +147,40 @@ public class EntitiesReader {
     }
   }
 
+  public List<CollectionEntity> getAllEntitiesForCollection(final SimpleCollectionDefinitionDto collection) {
+    log.debug("Fetching all available entities for collection [{}]", collection.getId());
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(termQuery(COLLECTION_ID, collection.getId()))
+      .size(LIST_FETCH_LIMIT);
+    return runEntitiesSearchRequest(searchSourceBuilder);
+  }
+
+  public EntityNameDto getEntityNames(final EntityNameRequestDto requestDto) {
+    log.debug(String.format("Performing get entity names search request %s", requestDto.toString()));
+    MultiGetResponse multiGetItemResponse = runGetEntityNamesRequest(requestDto);
+    if (!atLeastOneResponseExistsForMultiGet(multiGetItemResponse)) {
+      String reason = String.format("Could not get entity names search request %s", requestDto.toString());
+      throw new NotFoundException(reason);
+    }
+
+    EntityNameDto result = new EntityNameDto();
+    for (MultiGetItemResponse itemResponse : multiGetItemResponse) {
+      GetResponse response = itemResponse.getResponse();
+      if (response.isExists()) {
+        String entityId = response.getId();
+        CollectionEntity entity = readCollectionEntity(response, entityId);
+        if (entityId.equals(requestDto.getCollectionId())) {
+          result.setCollectionName(entity.getName());
+        } else if (entityId.equals(requestDto.getDashboardId())) {
+          result.setDashboardName(entity.getName());
+        } else if (entityId.equals(requestDto.getReportId())) {
+          result.setReportName(entity.getName());
+        }
+      }
+    }
+    return result;
+  }
+
   private Map<EntityType, Long> extractEntityTypeCounts(final Filter collectionFilterAggregation) {
     final Terms byTypeTerms = collectionFilterAggregation.getAggregations().get(AGG_BY_TYPE_COUNT);
     final long singleProcessReportCount = getDocCountForIndex(byTypeTerms, SINGLE_PROCESS_REPORT_INDEX_NAME);
@@ -156,21 +199,48 @@ public class EntitiesReader {
       .orElse(0L);
   }
 
-  public List<CollectionEntity> getAllEntitiesForCollection(final SimpleCollectionDefinitionDto collection) {
-    log.debug("Fetching all available entities for collection [{}]", collection.getId());
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(termQuery(COLLECTION_ID, collection.getId()))
-      .size(LIST_FETCH_LIMIT);
-    return runEntitiesSearchRequest(searchSourceBuilder);
+  private CollectionEntity readCollectionEntity(final GetResponse response, final String entityId) {
+    CollectionEntity entity;
+    try {
+      entity = objectMapper.readValue(response.getSourceAsString(), CollectionEntity.class);
+    } catch (IOException e) {
+      String reason = String.format("Can't read collection entity with id [%s].", entityId);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+    return entity;
   }
 
-  public List<CollectionEntity> getAllEntitiesForCollections(final List<String> collectionIds) {
-    log.debug("Fetching all available entities for collections");
+  private MultiGetResponse runGetEntityNamesRequest(EntityNameRequestDto requestDto) {
+    MultiGetRequest request = new MultiGetRequest();
+    addGetEntityToRequest(request, requestDto.getReportId(), SINGLE_PROCESS_REPORT_INDEX_NAME);
+    addGetEntityToRequest(request, requestDto.getReportId(), SINGLE_DECISION_REPORT_INDEX_NAME);
+    addGetEntityToRequest(request, requestDto.getReportId(), COMBINED_REPORT_INDEX_NAME);
+    addGetEntityToRequest(request, requestDto.getDashboardId(), DASHBOARD_INDEX_NAME);
+    addGetEntityToRequest(request, requestDto.getCollectionId(), COLLECTION_INDEX_NAME);
+    if (request.getItems().isEmpty()) {
+      throw new BadRequestException("No ids for entity name request provided");
+    }
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(termsQuery(COLLECTION_ID, collectionIds))
-      .size(LIST_FETCH_LIMIT);
-    return runEntitiesSearchRequest(searchSourceBuilder);
+    MultiGetResponse multiGetItemResponses;
+    try {
+      multiGetItemResponses = esClient.mget(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Could not get entity names search request %s", requestDto.toString());
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+    return multiGetItemResponses;
+  }
+
+  private void addGetEntityToRequest(final MultiGetRequest request, final String entityId,
+                                     final String entityIndexName) {
+    if (entityId != null) {
+      request.add(new MultiGetRequest.Item(
+        entityIndexName,
+        entityIndexName,
+        entityId
+      ));
+    }
   }
 
   private List<CollectionEntity> runEntitiesSearchRequest(final SearchSourceBuilder searchSourceBuilder) {

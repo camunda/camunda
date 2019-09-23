@@ -10,6 +10,7 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchResponse;
@@ -21,6 +22,7 @@ import org.elasticsearch.search.SearchHits;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Slf4j
@@ -128,5 +130,10 @@ public class ElasticsearchHelper {
       }
     }
     return results;
+  }
+
+  public static boolean atLeastOneResponseExistsForMultiGet(MultiGetResponse multiGetResponse) {
+    return Arrays.stream(multiGetResponse.getResponses())
+      .anyMatch(multiGetItemResponse -> multiGetItemResponse.getResponse().isExists());
   }
 }
