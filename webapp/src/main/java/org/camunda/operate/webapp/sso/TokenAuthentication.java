@@ -8,24 +8,43 @@ package org.camunda.operate.webapp.sso;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+
+import com.auth0.AuthenticationController;
+import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
+@Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
+@Component
 public class TokenAuthentication extends AbstractAuthenticationToken {
 
-  private final DecodedJWT jwt;
+  public TokenAuthentication() {
+    super(null);
+  }
+
+  private DecodedJWT jwt;
   private boolean authenticated = false;
+
+  @Autowired
   private SSOWebSecurityConfig config;
 
-  public TokenAuthentication(Tokens tokens, SSOWebSecurityConfig config) {
-    super(null);
+  @Autowired
+  private AuthenticationController authenticator;
+
+  public TokenAuthentication setTokens(Tokens tokens) {
     this.jwt = JWT.decode(tokens.getIdToken());
-    this.config = config;
+    return this;
   }
 
   protected void authenticate() throws InsufficientAuthenticationException {
@@ -39,6 +58,14 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     } else {
       throw new InsufficientAuthenticationException("No permission for operate - check your organization id");
     }
+  }
+  
+  public String getAuthorizeUrl(final HttpServletRequest req,String redirectUri) {
+    String authorizeUrl = authenticator.buildAuthorizeUrl(req, redirectUri)
+        .withAudience(String.format("https://%s/userinfo", config.getBackendDomain())) // get user profile
+        .withScope("openid profile email") // which info we request
+        .build();
+    return authorizeUrl;
   }
 
   private boolean hasExpired() {
@@ -66,6 +93,11 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   @Override
   public boolean isAuthenticated() {
     return authenticated && !hasExpired();
+  }
+  
+  public void authenticate(final HttpServletRequest req) throws IdentityVerificationException {
+    setTokens(authenticator.handle(req));
+    authenticate();
   }
 
   /**

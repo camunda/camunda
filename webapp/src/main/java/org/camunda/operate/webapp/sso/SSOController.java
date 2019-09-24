@@ -20,18 +20,18 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
-import com.auth0.AuthenticationController;
-import com.auth0.Tokens;
 
 @Controller
 @Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
 public class SSOController {
 
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
-  @Autowired
-  protected AuthenticationController authenticator;
+  
   @Autowired
   protected SSOWebSecurityConfig config;
+  
+  @Autowired
+  protected TokenAuthentication tokenAuthentication; 
 
   /**
    * login the user - the user authentication will be delegated to auth0
@@ -40,10 +40,7 @@ public class SSOController {
    */
   @RequestMapping(value = SSOWebSecurityConfig.LOGIN_RESOURCE, method = { RequestMethod.GET, RequestMethod.POST })
   public String login(final HttpServletRequest req) {
-    String authorizeUrl = authenticator.buildAuthorizeUrl(req, getRedirectURI(req, SSOWebSecurityConfig.CALLBACK_URI))
-        .withAudience(String.format("https://%s/userinfo", config.getBackendDomain())) // get user profile
-        .withScope("openid profile email") // which info we request
-        .build();
+    String authorizeUrl = tokenAuthentication.getAuthorizeUrl(req, getRedirectURI(req, SSOWebSecurityConfig.CALLBACK_URI));
     logger.debug("Redirect Login to {}", authorizeUrl);
     return "redirect:" + authorizeUrl;
   }
@@ -60,9 +57,7 @@ public class SSOController {
   public void loggedInCallback(final HttpServletRequest req, final HttpServletResponse res) throws ServletException, IOException {
     logger.debug("Called back by auth0.");
     try {
-      Tokens tokens = authenticator.handle(req);
-      TokenAuthentication tokenAuth = new TokenAuthentication(tokens, config);
-      tokenAuth.authenticate();
+      tokenAuthentication.authenticate(req);        
       res.sendRedirect(SSOWebSecurityConfig.ROOT);
     } catch (InsufficientAuthenticationException iae) {
       logoutAndRedirectToNoPermissionPage(req, res);
@@ -111,10 +106,13 @@ public class SSOController {
     SecurityContextHolder.clearContext();
     logoutFromAuth0(res, getRedirectURI(req, SSOWebSecurityConfig.NO_PERMISSION));
   }
+  
+  public String getLogoutUrlFor(String returnTo) {
+    return String.format("https://%s/v2/logout?client_id=%s&returnTo=%s", config.getDomain(), config.getClientId(), returnTo);
+  }
 
   protected void logoutFromAuth0(HttpServletResponse res, String returnTo) throws IOException {
-    String logoutUrl = String.format("https://%s/v2/logout?client_id=%s&returnTo=%s", config.getDomain(), config.getClientId(), returnTo);
-    res.sendRedirect(logoutUrl);
+    res.sendRedirect(getLogoutUrlFor(returnTo));
   }
 
   protected String getRedirectURI(final HttpServletRequest req, final String redirectTo) {
