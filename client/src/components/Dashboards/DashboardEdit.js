@@ -74,7 +74,6 @@ export default class DashboardEdit extends React.Component {
       <div className="DashboardEdit">
         <div className="header">
           <EntityNameForm
-            id={id}
             initialName={name}
             lastModified={lastModified}
             lastModifier={lastModifier}

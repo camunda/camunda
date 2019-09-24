@@ -35,7 +35,7 @@ export default class EntityNameForm extends Component {
   };
 
   render() {
-    const {id, entity, isNew} = this.props;
+    const {entity, isNew} = this.props;
     const {name} = this.state;
     return (
       <div className="EntityNameForm head">
@@ -63,7 +63,7 @@ export default class EntityNameForm extends Component {
           <Link
             disabled={this.props.disabledButtons}
             className="Button tool-button cancel-button"
-            to={isNew ? '/' : `/${entity.toLowerCase()}/${id}`}
+            to={isNew ? '/' : './'}
             onClick={this.props.onCancel}
           >
             <Icon type="stop" />

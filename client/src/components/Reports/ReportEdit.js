@@ -183,7 +183,6 @@ export default withErrorHandling(
           <div className="Report">
             <div className="Report__header">
               <EntityNameForm
-                id={id}
                 initialName={name}
                 entity="Report"
                 isNew={this.props.isNew}
