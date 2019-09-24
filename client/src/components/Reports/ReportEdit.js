@@ -171,7 +171,7 @@ export default withRouter(
           redirect,
           saveLoading
         } = this.state;
-        const {id, name, lastModifier, lastModified, data, combined, reportType} = report;
+        const {name, lastModifier, lastModified, data, combined, reportType} = report;
 
         if (redirect) {
           return <Redirect to={redirect} />;

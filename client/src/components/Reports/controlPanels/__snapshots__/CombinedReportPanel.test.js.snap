@@ -1,0 +1,27 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should only include combinable reports in the same collection 1`] = `
+Array [
+  Object {
+    "collectionId": null,
+    "combined": false,
+    "data": Object {
+      "configuration": Object {},
+      "groupBy": Object {
+        "type": "flowNodes",
+        "value": null,
+      },
+      "processDefinitionKey": "leadQualification",
+      "processDefinitionVersion": "1",
+      "view": Object {
+        "entity": "flowNode",
+        "property": "duration",
+      },
+      "visualization": "bar",
+    },
+    "id": "anotherSingleReport",
+    "name": "Another Single Report",
+    "reportType": "process",
+  },
+]
+`;

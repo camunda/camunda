@@ -66,7 +66,7 @@ export default class DashboardEdit extends React.Component {
   };
 
   render() {
-    const {name, lastModifier, lastModified, id, isNew} = this.props;
+    const {name, lastModifier, lastModified, isNew} = this.props;
 
     const {reports} = this.state;
 

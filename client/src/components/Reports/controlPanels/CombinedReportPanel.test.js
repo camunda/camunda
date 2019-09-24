@@ -9,6 +9,14 @@ import {shallow} from 'enzyme';
 import {loadEntities} from 'services';
 import CombinedReportPanel from './CombinedReportPanel';
 
+jest.mock('react-router-dom', () => {
+  const rest = jest.requireActual('react-router-dom');
+  return {
+    ...rest,
+    withRouter: a => a
+  };
+});
+
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
 
@@ -32,6 +40,7 @@ const singleReportData = {
     type: 'flowNodes',
     value: null
   },
+  configuration: {},
   visualization: 'bar'
 };
 
@@ -40,6 +49,8 @@ const reportsList = [
     id: 'singleReport',
     name: 'Single Report',
     combined: false,
+    collectionId: null,
+    reportType: 'process',
     data: singleReportData
   },
   {
@@ -59,6 +70,22 @@ const reportsList = [
         }
       }
     }
+  },
+  {
+    id: 'anotherSingleReport',
+    name: 'Another Single Report',
+    combined: false,
+    collectionId: null,
+    reportType: 'process',
+    data: singleReportData
+  },
+  {
+    id: 'reportInAnotherCollection',
+    name: 'Report in Another Collection',
+    combined: false,
+    collectionId: '123',
+    reportType: 'process',
+    data: singleReportData
   },
   {
     id: 'flow-node-report',
@@ -82,28 +109,29 @@ const reportsList = [
 
 loadEntities.mockReturnValue(reportsList);
 
+const props = {
+  updateReport: jest.fn(),
+  configuration: {},
+  report: reportsList[1],
+  location: '/report/1'
+};
+
 it('should invoke loadEntities to load all reports when it is mounted', async () => {
-  const node = await shallow(
-    <CombinedReportPanel updateReport={() => {}} configuration={{}} report={reportsList[1]} />
-  );
+  const node = await shallow(<CombinedReportPanel {...props} />);
   await node.update();
 
   expect(loadEntities).toHaveBeenCalled();
 });
 
-it('should not include heatmap report', async () => {
-  const node = await shallow(
-    <CombinedReportPanel updateReport={() => {}} configuration={{}} report={reportsList[1]} />
-  );
+it('should only include combinable reports in the same collection', async () => {
+  const node = await shallow(<CombinedReportPanel {...props} />);
   await node.update();
 
-  expect(node).not.toIncludeText('heatmap');
+  expect(node.find('TypeaheadMultipleSelection').prop('availableValues')).toMatchSnapshot();
 });
 
 it('should have input checkbox for only single report items in the list', async () => {
-  const node = await shallow(
-    <CombinedReportPanel updateReport={() => {}} report={reportsList[1]} />
-  );
+  const node = await shallow(<CombinedReportPanel {...props} />);
   await node.update();
   expect(JSON.stringify(node.find('TypeaheadMultipleSelection').props())).toMatch('singleReport');
   expect(JSON.stringify(node.find('TypeaheadMultipleSelection').props())).not.toMatch(
@@ -114,9 +142,7 @@ it('should have input checkbox for only single report items in the list', async 
 describe('isCompatible', () => {
   let node = {};
   beforeEach(async () => {
-    node = await shallow(
-      <CombinedReportPanel updateReport={() => {}} configuration={{}} report={reportsList[1]} />
-    );
+    node = await shallow(<CombinedReportPanel {...props} />);
     await node.update();
   });
 
@@ -227,6 +253,7 @@ describe('isCompatible', () => {
     };
     const node = shallow(
       <CombinedReportPanel
+        {...props}
         report={{
           id: 'combinedReport',
           name: 'Combined Report',
@@ -252,6 +279,7 @@ it('should update the color of a single report inside a combined report', async 
   const spy = jest.fn();
   const node = await shallow(
     <CombinedReportPanel
+      {...props}
       report={{
         ...reportsList[1],
         data: {
@@ -273,7 +301,7 @@ it('should update the color of a single report inside a combined report', async 
 });
 
 it('should generate new colors or preserve existing ones when selected/deselecting or reordering reports', async () => {
-  const reportData = {data: {visualization: ''}};
+  const reportData = {data: {visualization: '', groupBy: {}}};
   const report = {
     id: 'combinedReport',
     name: 'Combined Report',
@@ -306,6 +334,7 @@ it('should generate new colors or preserve existing ones when selected/deselecti
 
   const node = await shallow(
     <CombinedReportPanel
+      {...props}
       report={{
         ...report,
         result
