@@ -156,11 +156,11 @@ public class ConfigurationValidatorTest {
   }
 
   @Test
-  public void canResolveRelativeLogoPath() {
+  public void canResolveRelativeSVGLogoPath() {
     // given
     ConfigurationService configurationService = createConfiguration();
     ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
-    String relativePathToLogo = "logo/camunda_icon.svg";
+    String relativePathToLogo = "logo/another_camunda_icon.svg";
     UIConfiguration uiConfiguration = createUIConfiguration(relativePathToLogo);
     configurationService.setUiConfiguration(uiConfiguration);
 
@@ -175,7 +175,7 @@ public class ConfigurationValidatorTest {
     // given
     ConfigurationService configurationService = createConfiguration();
     ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
-    String relativePathToLogo = "logo/camunda_icon.svg";
+    String relativePathToLogo = "logo/another_camunda_icon.svg";
     String pathToLogoIcon = createAbsolutePath(relativePathToLogo);
     UIConfiguration uiConfiguration = createUIConfiguration(pathToLogoIcon);
     configurationService.setUiConfiguration(uiConfiguration);
@@ -184,6 +184,51 @@ public class ConfigurationValidatorTest {
     underTest.validate(configurationService);
 
     // then no exception is thrown
+  }
+
+  @Test
+  public void logoSupportsJPEGFormat() {
+    // given
+    ConfigurationService configurationService = createConfiguration();
+    ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
+    String relativePathToLogo = "logo/camunda_icon.jpg";
+    UIConfiguration uiConfiguration = createUIConfiguration(relativePathToLogo);
+    configurationService.setUiConfiguration(uiConfiguration);
+
+    // when
+    underTest.validate(configurationService);
+
+    // then no exception is thrown
+  }
+
+  @Test
+  public void logoSupportsPNGFormat() {
+    // given
+    ConfigurationService configurationService = createConfiguration();
+    ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
+    String relativePathToLogo = "logo/camunda_icon.png";
+    UIConfiguration uiConfiguration = createUIConfiguration(relativePathToLogo);
+    configurationService.setUiConfiguration(uiConfiguration);
+
+    // when
+    underTest.validate(configurationService);
+
+    // then no exception is thrown
+  }
+
+  @Test(expected = OptimizeConfigurationException.class)
+  public void unsupportedMimeTypeOfLogoThrowsError() {
+    // given
+    ConfigurationService configurationService = createConfiguration();
+    ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
+    String relativePathToLogo = "logo/camunda_icon.invalid";
+    UIConfiguration uiConfiguration = createUIConfiguration(relativePathToLogo);
+    configurationService.setUiConfiguration(uiConfiguration);
+
+    // when
+    underTest.validate(configurationService);
+
+    // then an exception is thrown
   }
 
   private String createAbsolutePath(final String relativePathToLogo) {
