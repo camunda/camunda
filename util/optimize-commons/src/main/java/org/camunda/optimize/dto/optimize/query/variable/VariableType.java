@@ -15,13 +15,13 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.BOOLEAN_TYPE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.DATE_TYPE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.DOUBLE_TYPE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.INTEGER_TYPE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.LONG_TYPE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.SHORT_TYPE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.STRING_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.BOOLEAN_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DOUBLE_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.INTEGER_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LONG_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.SHORT_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.STRING_TYPE;
 
 public enum VariableType {
   STRING(STRING_TYPE),

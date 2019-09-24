@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.dto.optimize;
 
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+
 public class ReportConstants {
 
   // report data structure constants
@@ -86,4 +88,23 @@ public class ReportConstants {
   public static final String DURATION_NUMBER_RESULT_TYPE = "durationNumber";
 
   public static final String MISSING_VARIABLE_KEY = "missing";
+
+  // variable type constants
+  // first letter uppercase is used by VariableFilterDataDto json type info
+  public static final String STRING_TYPE = "String";
+  public static final String STRING_TYPE_LOWERCASE = "string";
+  public static final String INTEGER_TYPE = "Integer";
+  public static final String INTEGER_TYPE_LOWERCASE = "integer";
+  public static final String SHORT_TYPE = "Short";
+  public static final String SHORT_TYPE_LOWERCASE = "short";
+  public static final String LONG_TYPE = "Long";
+  public static final String LONG_TYPE_LOWERCASE = "long";
+  public static final String DOUBLE_TYPE = "Double";
+  public static final String DOUBLE_TYPE_LOWERCASE = "double";
+  public static final String BOOLEAN_TYPE = "Boolean";
+  public static final String BOOLEAN_TYPE_LOWERCASE = "boolean";
+  public static final String DATE_TYPE = "Date";
+  public static final String DATE_TYPE_LOWERCASE = "date";
+
+  public static final VariableType[] ALL_SUPPORTED_VARIABLE_TYPES = VariableType.values();
 }

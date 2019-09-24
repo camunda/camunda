@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.util;
 
+import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.util.Arrays;
@@ -21,24 +22,6 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 
 public class ProcessVariableHelper {
 
-  // first letter uppercase is used by VariableFilterDataDto json type info
-  public static final String STRING_TYPE = "String";
-  public static final String STRING_TYPE_LOWERCASE = "string";
-  public static final String INTEGER_TYPE = "Integer";
-  public static final String INTEGER_TYPE_LOWERCASE = "integer";
-  public static final String SHORT_TYPE = "Short";
-  public static final String SHORT_TYPE_LOWERCASE = "short";
-  public static final String LONG_TYPE = "Long";
-  public static final String LONG_TYPE_LOWERCASE = "long";
-  public static final String DOUBLE_TYPE = "Double";
-  public static final String DOUBLE_TYPE_LOWERCASE = "double";
-  public static final String BOOLEAN_TYPE = "Boolean";
-  public static final String BOOLEAN_TYPE_LOWERCASE = "boolean";
-  public static final String DATE_TYPE = "Date";
-  public static final String DATE_TYPE_LOWERCASE = "date";
-
-  public static final VariableType[] ALL_SUPPORTED_VARIABLE_TYPES = VariableType.values();
-
   private ProcessVariableHelper() {
   }
 
@@ -47,7 +30,7 @@ public class ProcessVariableHelper {
   }
 
   public static boolean isVariableTypeSupported(VariableType variableType) {
-    return Arrays.asList(ALL_SUPPORTED_VARIABLE_TYPES).contains(variableType);
+    return Arrays.asList(ReportConstants.ALL_SUPPORTED_VARIABLE_TYPES).contains(variableType);
   }
 
   public static String getNestedVariableNameField() {

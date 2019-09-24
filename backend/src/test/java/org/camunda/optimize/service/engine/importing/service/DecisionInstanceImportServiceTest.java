@@ -8,6 +8,7 @@ package org.camunda.optimize.service.engine.importing.service;
 import org.camunda.optimize.dto.engine.HistoricDecisionInputInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionOutputInstanceDto;
+import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.plugin.DecisionInputImportAdapterProvider;
@@ -16,7 +17,6 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
-import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -243,7 +243,7 @@ public class DecisionInstanceImportServiceTest {
   }
 
   private void addAllSupportedInputVariables(final HistoricDecisionInstanceDto historicDecisionInstanceDto) {
-    for (VariableType type : ProcessVariableHelper.ALL_SUPPORTED_VARIABLE_TYPES) {
+    for (VariableType type : ReportConstants.ALL_SUPPORTED_VARIABLE_TYPES) {
       HistoricDecisionInputInstanceDto input = new HistoricDecisionInputInstanceDto();
       input.setId(UUID.randomUUID().toString());
       input.setClauseId(UUID.randomUUID().toString());
@@ -255,7 +255,7 @@ public class DecisionInstanceImportServiceTest {
   }
 
   private void addAllSupportedOutputVairables(final HistoricDecisionInstanceDto historicDecisionInstanceDto) {
-    for (VariableType type : ProcessVariableHelper.ALL_SUPPORTED_VARIABLE_TYPES) {
+    for (VariableType type : ReportConstants.ALL_SUPPORTED_VARIABLE_TYPES) {
       HistoricDecisionOutputInstanceDto output = new HistoricDecisionOutputInstanceDto();
       output.setId(UUID.randomUUID().toString());
       output.setClauseId(UUID.randomUUID().toString());

@@ -13,20 +13,20 @@ import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
-import static org.camunda.optimize.service.util.ProcessVariableHelper.BOOLEAN_TYPE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.BOOLEAN_TYPE_LOWERCASE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.DATE_TYPE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.DATE_TYPE_LOWERCASE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.DOUBLE_TYPE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.DOUBLE_TYPE_LOWERCASE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.INTEGER_TYPE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.INTEGER_TYPE_LOWERCASE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.LONG_TYPE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.LONG_TYPE_LOWERCASE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.SHORT_TYPE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.SHORT_TYPE_LOWERCASE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.STRING_TYPE;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.STRING_TYPE_LOWERCASE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.BOOLEAN_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.BOOLEAN_TYPE_LOWERCASE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_TYPE_LOWERCASE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DOUBLE_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DOUBLE_TYPE_LOWERCASE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.INTEGER_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.INTEGER_TYPE_LOWERCASE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LONG_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LONG_TYPE_LOWERCASE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.SHORT_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.SHORT_TYPE_LOWERCASE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.STRING_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.STRING_TYPE_LOWERCASE;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
