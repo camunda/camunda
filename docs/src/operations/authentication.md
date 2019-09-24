@@ -37,28 +37,28 @@ Without any configuration, the client will look in system's certificate store fo
 
 ```java
 public class SecureClient {
+    public static void main(final String[] args) {
+        final ZeebeClient client = ZeebeClient.newClientBuilder().caCertificatePath("path/to/certificate").build();
 
-  public static void main(final String[] args) {
-    final ZeebeClient client = ZeebeClient.newClientBuilder().caCertificatePath("path/to/certificate").build();
-
-    // continue...  
-  }
+        // continue...  
+    }
 }
 ```
-
+Alternatively, you can use the `ZEEBE_CA_CERTIFICATE_PATH` environment variable to override the code configuration.
 
 In order to disable TLS in a Java client, you can use the `.usePlaintext()` option:
 
 ```java
 public class InsecureClient {
+    public static void main(final String[] args) {
+        final ZeebeClient client = ZeebeClient.newClientBuilder().usePlaintext().build();
 
-  public static void main(final String[] args) {
-    final ZeebeClient client = ZeebeClient.newClientBuilder().usePlaintext().build();
-
-    // continue...
-  }
+        // continue...  
+    }
 }
 ```
+
+Alternatively, you can use the `ZEEBE_INSECURE_CONNECTION` environment variable to override the code configuration. To enable an insecure connection, just set it to "true", setting it to any other value is equivalent to setting it to false.
 
 ### Go
 
@@ -73,7 +73,7 @@ import (
 
 
 func main(){
-	client, err := zbc.NewZBClient(&zbc.ZBClientConfig{
+	client, err := zbc.NewZBClientWithConfig(&zbc.ZBClientConfig{
       CaCertificatePath: "path/to/certificate"})
 
   // continue...
@@ -90,12 +90,13 @@ import (
 
 
 func main(){
-	client, err := zbc.NewZBClient(&zbc.ZBClientConfig{UsePlaintextConnection: true})		  
+	client, err := zbc.NewZBClientWithConfig(&zbc.ZBClientConfig{UsePlaintextConnection: true})		  
 
   // continue...
 }
 ```
 
+As in the Java client, you can use the `ZEEBE_INSECURE_CONNECTION` and `ZEEBE_CA_CERTIFICATE_PATH` to override these configurations.
 
 ### zbctl
 
@@ -110,6 +111,8 @@ To configure zbctl to disable TLS:
 ```
 ./zbctl --insecure <command> [arguments]
 ```
+
+Since zbctl is based on the Go client, setting the appropriate environment variables will override these parameters.
 
 ## Troubleshooting authentication issues
 
