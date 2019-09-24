@@ -296,6 +296,22 @@ public class ElasticsearchExporterTest {
     assertThat(testHarness.getController().getPosition()).isEqualTo(exported.get(3).getPosition());
   }
 
+  @Test
+  public void shouldHandleExceptionOnFlush() {
+    // given
+    when(esClient.shouldFlush()).thenReturn(true);
+    when(esClient.flush()).thenThrow(new ElasticsearchExporterException("expected"));
+
+    createAndOpenExporter();
+
+    // when
+    testHarness.export();
+    testHarness.export();
+
+    // then
+    verify(esClient, times(2)).flush();
+  }
+
   private ElasticsearchExporter createExporter() {
     return createExporter(esClient);
   }
