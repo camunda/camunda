@@ -1,0 +1,35 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should load reports from a collection 1`] = `
+Array [
+  Object {
+    "combined": false,
+    "created": "2017-11-11T11:11:11.1111+0200",
+    "currentUserRole": "editor",
+    "entityType": "report",
+    "id": "aReportId",
+    "lastModified": "2017-11-11T11:11:11.1111+0200",
+    "lastModifier": "user_id",
+    "name": "aReport",
+    "owner": "user_id",
+    "reportType": "process",
+  },
+]
+`;
+
+exports[`should only return reports, not dashboards 1`] = `
+Array [
+  Object {
+    "combined": false,
+    "created": "2017-11-11T11:11:11.1111+0200",
+    "currentUserRole": "editor",
+    "entityType": "report",
+    "id": "aReportId",
+    "lastModified": "2017-11-11T11:11:11.1111+0200",
+    "lastModifier": "user_id",
+    "name": "aReport",
+    "owner": "user_id",
+    "reportType": "process",
+  },
+]
+`;

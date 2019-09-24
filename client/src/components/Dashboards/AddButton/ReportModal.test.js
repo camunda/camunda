@@ -8,25 +8,40 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import ReportModal from './ReportModal';
-import {loadEntities} from 'services';
+import {loadReports, loadReportsInCollection} from './service';
 import {Button} from 'components';
 
-jest.mock('services', () => {
-  const rest = jest.requireActual('services');
+jest.mock('react-router-dom', () => {
+  const rest = jest.requireActual('react-router-dom');
   return {
     ...rest,
-    loadEntities: jest.fn().mockReturnValue([])
+    withRouter: a => a
   };
 });
 
-it('should load the available reports', () => {
-  shallow(<ReportModal />);
+jest.mock('./service', () => ({
+  loadReports: jest.fn().mockReturnValue([]),
+  loadReportsInCollection: jest.fn().mockReturnValue([])
+}));
 
-  expect(loadEntities).toHaveBeenCalled();
+const props = {
+  location: {pathname: '/dashboard/1'}
+};
+
+it('should load the available reports', () => {
+  shallow(<ReportModal {...props} />);
+
+  expect(loadReports).toHaveBeenCalled();
+});
+
+it('should load only reports in the same collection', () => {
+  shallow(<ReportModal location={{pathname: '/collection/123/dashboard/1'}} />);
+
+  expect(loadReportsInCollection).toHaveBeenCalledWith('123');
 });
 
 it('should render a Typeahead element with the available reports as options', () => {
-  const node = shallow(<ReportModal />);
+  const node = shallow(<ReportModal {...props} />);
 
   node.setState({
     availableReports: [
@@ -41,17 +56,17 @@ it('should render a Typeahead element with the available reports as options', ()
     ]
   });
 
-  const props = node.find('Typeahead').props();
+  const typeaheadProps = node.find('Typeahead').props();
 
   expect(node.find('Typeahead')).toExist();
-  expect(props.placeholder).toBe('Select a Report');
-  expect(props.values[0].name).toBe('Report A');
-  expect(props.values[1].name).toBe('Report B');
+  expect(typeaheadProps.placeholder).toBe('Select a Report');
+  expect(typeaheadProps.values[0].name).toBe('Report A');
+  expect(typeaheadProps.values[1].name).toBe('Report B');
 });
 
 it('should call the callback when adding a report', () => {
   const spy = jest.fn();
-  const node = shallow(<ReportModal confirm={spy} />);
+  const node = shallow(<ReportModal {...props} confirm={spy} />);
 
   node.setState({
     availableReports: [
@@ -75,19 +90,19 @@ it('should call the callback when adding a report', () => {
 });
 
 it('should disable typeahead if no reports created yet', async () => {
-  const node = await shallow(<ReportModal />);
+  const node = await shallow(<ReportModal {...props} />);
 
   expect(node.find('Typeahead')).toBeDisabled();
 });
 
 it('should show a loading message while loading available reports', () => {
-  const node = shallow(<ReportModal />);
+  const node = shallow(<ReportModal {...props} />);
 
   expect(node.find('LoadingIndicator')).toExist();
 });
 
 it("should truncate report name if it's longer than 90 signs", () => {
-  const node = shallow(<ReportModal />);
+  const node = shallow(<ReportModal {...props} />);
 
   const report = {
     id: 'a',
@@ -108,13 +123,13 @@ it("should truncate report name if it's longer than 90 signs", () => {
 });
 
 it('should contain an Add External Source field', () => {
-  const node = shallow(<ReportModal />);
+  const node = shallow(<ReportModal {...props} />);
 
   expect(node.find(Button).at(1)).toIncludeText('Add External Source');
 });
 
 it('should hide the typeahead when external mode is enabled', () => {
-  const node = shallow(<ReportModal />);
+  const node = shallow(<ReportModal {...props} />);
 
   node.setState({external: true});
 
@@ -122,7 +137,7 @@ it('should hide the typeahead when external mode is enabled', () => {
 });
 
 it('should contain a text input field if in external source mode', () => {
-  const node = shallow(<ReportModal />);
+  const node = shallow(<ReportModal {...props} />);
 
   node.setState({external: true});
 
@@ -130,7 +145,7 @@ it('should contain a text input field if in external source mode', () => {
 });
 
 it('should  disable the submit button if the url does not start with http in external mode', () => {
-  const node = shallow(<ReportModal />);
+  const node = shallow(<ReportModal {...props} />);
 
   node.setState({external: true, externalUrl: 'Dear computer, please show me a report. Thanks.'});
 
