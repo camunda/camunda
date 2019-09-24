@@ -3,7 +3,8 @@
     "homepage": "Home",
     "analysis": "Analysis",
     "logout": "Logout",
-    "logoutFailed": "Logout failed."
+    "logoutFailed": "Logout failed.",
+    "configLoadingError": "An error occured while loading the UI configurations"
   },
   "login": {
     "username": "Username",

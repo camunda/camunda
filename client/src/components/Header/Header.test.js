@@ -7,7 +7,10 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import Header from './Header';
+import HeaderWithErrorHandling from './Header';
+
+const Header = HeaderWithErrorHandling.WrappedComponent;
+
 jest.mock('react-router-dom', () => {
   return {
     Link: ({children, to}) => {
@@ -17,8 +20,18 @@ jest.mock('react-router-dom', () => {
   };
 });
 
-it('matches the snapshot', () => {
-  const node = shallow(<Header name="Awesome App" location={{pathname: '/'}} />);
+const props = {
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
+};
 
+jest.mock('./service', () => ({
+  getUiConfig: jest.fn().mockReturnValue({
+    header: {textColor: 'light', backgroundColor: '#000', logo: 'url'}
+  })
+}));
+
+it('matches the snapshot', async () => {
+  const node = shallow(<Header name="Awesome App" location={{pathname: '/'}} {...props} />);
+  await node.update();
   expect(node).toMatchSnapshot();
 });

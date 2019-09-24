@@ -3,7 +3,8 @@
     "homepage": "Home",
     "analysis": "Analyse",
     "logout": "Abmelden",
-    "logoutFailed": "Abmeldung fehlgeschlagen"
+    "logoutFailed": "Abmeldung fehlgeschlagen",
+    "configLoadingError": "Beim Laden der UI-Konfigurationen ist ein Fehler aufgetreten"
   },
   "login": {
     "username": "Nutzername",

@@ -8,6 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import AppWithErrorHandling from './App';
+import {Header} from './components';
 
 jest.mock('notifications', () => ({addNotification: jest.fn(), Notifications: () => <span />}));
 
@@ -26,7 +27,7 @@ it('should include a header for the Alert page', async () => {
   await node.update();
   const content = shallow(node.find('Route').prop('render')({location: {pathname: '/'}}));
 
-  expect(content.find('withRouter(Header)')).toExist();
+  expect(content.find(Header)).toExist();
   expect(content.find('Footer')).toExist();
 });
 

@@ -2,8 +2,13 @@
 
 exports[`matches the snapshot 1`] = `
 <header
-  className="Header"
+  className="Header text-light"
   role="banner"
+  style={
+    Object {
+      "backgroundColor": "#000",
+    }
+  }
 >
   <Link
     className="Header__link"
@@ -13,6 +18,7 @@ exports[`matches the snapshot 1`] = `
   >
     <Logo
       className="Header__logo"
+      src="url"
     />
     <span>
       Awesome App

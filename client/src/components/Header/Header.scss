@@ -1,35 +1,61 @@
 @import 'shared-styles/shared-styles.scss';
+@import './Header.colors.scss';
 
 .Header {
   border-bottom: 1px solid #ddd;
-  color: #777777;
   font-size: 15px;
   font-weight: 500;
-  padding: 8px 13px;
+  padding: 8px 20px;
   display: flex;
   flex-shrink: 0;
   z-index: 2;
-}
 
-.Header a {
-  text-decoration: none;
-}
+  &.text-light {
+    .NavItem {
+      border-left: 1px solid $border-light;
 
-.Header__link {
-  color: #333;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  margin-right: 20px;
-  white-space: nowrap;
-}
+      a {
+        color: $text-light;
+      }
 
-.Header__link:visited {
-  color: #333;
-}
+      &.active a {
+        color: $text-light-active;
+      }
+    }
 
-.Header__logo {
-  margin-right: 10px;
-  width: 15px;
-  height: 15px;
+    .Header__link {
+      color: $text-light-active;
+
+      &:visited {
+        color: $text-light-active;
+      }
+    }
+
+    .LogoutButton .Button {
+      color: $text-light;
+    }
+  }
+
+  a {
+    text-decoration: none;
+  }
+
+  .Header__link {
+    color: $text;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    margin-right: 20px;
+    white-space: nowrap;
+  }
+
+  .Header__link:visited {
+    color: $text;
+  }
+
+  .Header__logo {
+    width: auto;
+    margin-right: 20px;
+    height: 16px;
+  }
 }
