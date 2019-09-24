@@ -5,12 +5,22 @@
  */
 
 import styled from 'styled-components';
-
+import {Colors} from 'modules/theme';
 import BasicTextInput from 'modules/components/Input';
+import {ReactComponent as Warning} from 'modules/components/Icon/warning-message-icon.svg';
 
 export const VariableFilterInput = styled.div`
+  position: relative;
   display: flex;
   justify-content: space-between;
+
+  ${props =>
+    props.hasError &&
+    `
+    input {
+      border-color: ${Colors.incidentsAndErrors};
+    }
+  `}
 `;
 
 export const TextInput = styled(BasicTextInput)`
@@ -29,4 +39,12 @@ export const TextInput = styled(BasicTextInput)`
   :focus {
     z-index: 2;
   }
+`;
+
+export const WarningIcon = styled(Warning)`
+  position: absolute;
+  width: 16px;
+  fill: ${Colors.incidentsAndErrors};
+  top: 3px;
+  right: -21px;
 `;

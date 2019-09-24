@@ -52,20 +52,41 @@ export function getLastVersionOfWorkflow(workflow = {}) {
   return version;
 }
 
-export function isDateComplete(date) {
+export function checkIsDateComplete(date) {
   if (date === '') {
     return true;
   }
   return !!date.match(/^\d{4}-\d{2}-\d{2}(\W\d{2}:\d{2}(:\d{2})?)?$/);
 }
 
+export function checkIsVariableComplete(variable) {
+  return !((variable.value === '') ^ (variable.name === ''));
+}
+
+export function checkIsVariableValueValid(variable) {
+  try {
+    JSON.parse(variable.value);
+  } catch (e) {
+    return variable.value === '';
+  }
+  return true;
+}
+
 function sanitizeVariable(variable) {
   if (!variable) return;
-  return variable.name === '' && variable.value === '' ? '' : variable;
+  if (
+    variable.name !== '' &&
+    checkIsVariableComplete(variable) &&
+    checkIsVariableValueValid(variable)
+  ) {
+    return variable;
+  } else {
+    return '';
+  }
 }
 
 function sanitizeDate(date) {
-  return isDateComplete(date) || date === '' ? date : '';
+  return checkIsDateComplete(date) || date === '' ? date : '';
 }
 
 export function sanitizeFilter(filter) {

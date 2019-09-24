@@ -14,5 +14,6 @@ export default function Input(props) {
 }
 
 Input.propTypes = {
-  placeholder: PropTypes.string
+  placeholder: PropTypes.string,
+  hasError: PropTypes.bool
 };

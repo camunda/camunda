@@ -6,6 +6,7 @@
 
 import React from 'react';
 import {shallow, mount} from 'enzyme';
+import {act} from 'react-dom/test-utils';
 
 import {
   FILTER_TYPES,
@@ -13,7 +14,7 @@ import {
   DEFAULT_FILTER_CONTROLLED_VALUES
 } from 'modules/constants';
 import Button from 'modules/components/Button';
-import {mockResolvedAsyncFn} from 'modules/testUtils';
+import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 import * as api from 'modules/api/instances/instances';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
@@ -56,6 +57,30 @@ describe('Filters', () => {
     expect(node.state().filter.endDate).toEqual('');
     expect(node.state().filter.ids).toEqual('');
     expect(node.state().filter.errorMessage).toEqual('');
+    expect(node.state().filter.variable).toEqual({name: '', value: ''});
+  });
+
+  it('should render with prefilled input fields', () => {
+    // given
+    const node = shallow(
+      <Filters
+        groupedWorkflows={workflows}
+        {...mockProps}
+        filter={COMPLETE_FILTER}
+      />
+    );
+
+    // then
+    expect(node.state().filter.activityId).toEqual(COMPLETE_FILTER.activityId);
+    expect(node.state().filter.workflow).toEqual(COMPLETE_FILTER.workflow);
+    expect(node.state().filter.version).toEqual(COMPLETE_FILTER.version);
+    expect(node.state().filter.startDate).toEqual(COMPLETE_FILTER.startDate);
+    expect(node.state().filter.endDate).toEqual(COMPLETE_FILTER.endDate);
+    expect(node.state().filter.ids).toEqual(COMPLETE_FILTER.ids);
+    expect(node.state().filter.errorMessage).toEqual(
+      COMPLETE_FILTER.errorMessage
+    );
+    expect(node.state().filter.variable).toEqual(COMPLETE_FILTER.variable);
   });
 
   it('should render the running and finished filters', () => {
@@ -1018,7 +1043,9 @@ describe('Filters', () => {
   });
 
   describe('startDate filter', () => {
-    it('should exist', done => {
+    it('should exist', async () => {
+      jest.useFakeTimers();
+
       // given
       const target = {value: '1084-10-08', name: 'startDate'};
       const node = mount(
@@ -1039,18 +1066,19 @@ describe('Filters', () => {
 
       field.simulate('change', {target});
 
-      setTimeout(() => {
-        // then
-        expect(field.length).toEqual(1);
-        expect(field.props().placeholder).toEqual(
-          'Start Date yyyy-mm-dd hh:mm:ss'
-        );
-        expect(field.props().value).toEqual('');
-        expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-          startDate: '1084-10-08'
-        });
-        done();
-      }, DEBOUNCE_DELAY);
+      jest.advanceTimersByTime(DEBOUNCE_DELAY);
+
+      await flushPromises();
+
+      // then
+      expect(field.length).toEqual(1);
+      expect(field.props().placeholder).toEqual(
+        'Start Date yyyy-mm-dd hh:mm:ss'
+      );
+      expect(field.props().value).toEqual('');
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+        startDate: '1084-10-08'
+      });
     });
 
     it('should be prefilled with the value from props.filter.startDate', async () => {
@@ -1139,7 +1167,9 @@ describe('Filters', () => {
   });
 
   describe('endDate filter', () => {
-    it('should exist', done => {
+    it('should exist', async () => {
+      jest.useFakeTimers();
+
       // given
       const target = {value: '1984-10-08', name: 'endDate'};
       const node = mount(
@@ -1160,20 +1190,17 @@ describe('Filters', () => {
 
       field.simulate('change', {target});
 
-      // TODO(paddy): maybe it's possible to use act() instead of setTimeout from React 16.9
-      setTimeout(() => {
-        // then
-        expect(field.length).toEqual(1);
-        expect(field.props().name).toEqual('endDate');
-        expect(field.props().placeholder).toEqual(
-          'End Date yyyy-mm-dd hh:mm:ss'
-        );
-        expect(field.props().value).toEqual('');
-        expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-          endDate: '1984-10-08'
-        });
-        done();
-      }, DEBOUNCE_DELAY * 2);
+      jest.advanceTimersByTime(DEBOUNCE_DELAY);
+
+      await flushPromises();
+
+      expect(field.length).toEqual(1);
+      expect(field.props().name).toEqual('endDate');
+      expect(field.props().placeholder).toEqual('End Date yyyy-mm-dd hh:mm:ss');
+      expect(field.props().value).toEqual('');
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+        endDate: '1984-10-08'
+      });
     });
 
     it('should be prefilled with the value from props.filter.endDate', async () => {
@@ -1240,6 +1267,122 @@ describe('Filters', () => {
       expect(mockProps.onFilterChange.mock.calls[0][0].endDate).toBe(
         '2009-01-25'
       );
+    });
+  });
+
+  describe('variable filter', () => {
+    let node;
+
+    const triggerVariableChange = async ({node, name, value}) => {
+      const nameTarget = {target: {name: 'name', value: name}};
+      const valueTarget = {target: {name: 'value', value: value}};
+
+      const nameInput = node.find('input[data-test="nameInput"]');
+      const valueInput = node.find('input[data-test="valueInput"]');
+
+      nameInput.simulate('change', nameTarget);
+      valueInput.simulate('change', valueTarget);
+
+      jest.advanceTimersByTime(DEBOUNCE_DELAY);
+      await flushPromises();
+    };
+
+    beforeEach(() => {
+      jest.useFakeTimers();
+
+      node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflows={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
+      );
+    });
+
+    it('should call onFilterChange on valid variable', async () => {
+      // given
+      const variable = {name: 'variableName', value: '{"a": "b"}'};
+
+      // when
+
+      await triggerVariableChange({
+        node,
+        ...variable
+      });
+
+      // then
+      expect(mockProps.onFilterChange).toHaveBeenCalledTimes(1);
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({variable});
+    });
+
+    it('should call onFilterChange with empty object (on invalid JSON value)', async () => {
+      // given
+      const variable = {name: 'variableName', value: '{{{{'};
+
+      // when
+      await act(async () => {
+        await triggerVariableChange({
+          node,
+          ...variable
+        });
+      });
+
+      // then
+      expect(mockProps.onFilterChange).toHaveBeenCalledTimes(1);
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
+    });
+
+    it('should call onFilterChange with empty object (on empty name)', async () => {
+      // given
+      const variable = {name: '', value: '{"a": "b"}'};
+
+      // when
+      await act(async () => {
+        await triggerVariableChange({
+          node,
+          ...variable
+        });
+      });
+
+      // then
+      expect(mockProps.onFilterChange).toHaveBeenCalledTimes(1);
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
+    });
+
+    it('should call onFilterChange with empty object (on empty value)', async () => {
+      // given
+      const variable = {name: 'myVariable', value: ''};
+
+      // when
+      await act(async () => {
+        await triggerVariableChange({
+          node,
+          ...variable
+        });
+      });
+
+      // then
+      expect(mockProps.onFilterChange).toHaveBeenCalledTimes(1);
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
+    });
+
+    it('should call onFilterChange with empty object (on empty name and value)', async () => {
+      // given
+      const variable = {name: '', value: ''};
+
+      // when
+      await triggerVariableChange({
+        node,
+        ...variable
+      });
+
+      // then
+      expect(mockProps.onFilterChange).toHaveBeenCalledTimes(1);
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
     });
   });
 
@@ -1351,6 +1494,8 @@ describe('Filters', () => {
       expect(node.find('select[name="activityId"]').get(0).props.value).toBe(
         ''
       );
+      expect(node.find('input[name="name"]').get(0).props.value).toBe('');
+      expect(node.find('input[name="value"]').get(0).props.value).toBe('');
     });
 
     it('should call this.props.onFilterReset', async () => {

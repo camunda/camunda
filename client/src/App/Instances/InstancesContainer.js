@@ -339,7 +339,7 @@ class InstancesContainer extends Component {
     });
   };
 
-  setFilterFromInput = async filter => {
+  setFilterFromInput = filter => {
     if (isEqual(this.state.filter, filter)) {
       return;
     }

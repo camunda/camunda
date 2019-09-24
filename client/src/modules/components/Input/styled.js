@@ -41,5 +41,14 @@ export const Input = themed(styled.input`
     light: Colors.uiDark03
   })};
 
+  ${props => props.hasError && `border-color: ${Colors.incidentsAndErrors};`}
+
+  &:focus {
+    ${props =>
+      props.hasError &&
+      `box-shadow: 0 0 0 4px #ffafaf, 0 0 0 1px 
+    ${Colors.incidentsAndErrors};`}
+  }
+
   ${placeholderStyle};
 `);

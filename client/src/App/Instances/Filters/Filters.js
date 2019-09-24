@@ -26,7 +26,9 @@ import {
   getOptionsForWorkflowVersion,
   addAllVersionsOption,
   getLastVersionOfWorkflow,
-  isDateComplete,
+  checkIsDateComplete,
+  checkIsVariableComplete,
+  checkIsVariableValueValid,
   sortAndModify,
   sanitizeFilter
 } from './service';
@@ -122,18 +124,6 @@ export default class Filters extends React.Component {
     );
   };
 
-  // debounced fields will not be overwritten, if there is text inside
-  sanitizeDebouncedFilter = filter => {
-    let sanitizedDebouncedFilter = {};
-    Object.entries(filter).forEach(([key, value]) => {
-      const currentValue = this.state.filter[key];
-      const newValue = currentValue === '' ? value : currentValue;
-
-      sanitizedDebouncedFilter[key] = newValue;
-    });
-    return sanitizedDebouncedFilter;
-  };
-
   propagateFilter = () => {
     this.props.onFilterChange(sanitizeFilter(this.state.filter));
   };
@@ -143,14 +133,13 @@ export default class Filters extends React.Component {
       errorMessage,
       startDate,
       endDate,
+      variable,
       // fields that are evaluated immediately will be overwritten by props
       ...immediateFilter
     } = this.props.filter;
 
-    const debouncedFilter = {errorMessage, startDate, endDate};
-    const sanitizedDebouncedFilter = this.sanitizeDebouncedFilter(
-      debouncedFilter
-    );
+    const debouncedFilter = {errorMessage, startDate, endDate, variable};
+    const sanitizedDebouncedFilter = sanitizeFilter(debouncedFilter);
 
     this.setFilterState({...immediateFilter, ...sanitizedDebouncedFilter});
   };
@@ -192,6 +181,7 @@ export default class Filters extends React.Component {
   };
 
   onFilterReset = () => {
+    this.resetTimer();
     this.setFilterState(
       {...DEFAULT_FILTER_CONTROLLED_VALUES, ...DEFAULT_FILTER},
       this.props.onFilterReset
@@ -287,7 +277,7 @@ export default class Filters extends React.Component {
                       name="startDate"
                       placeholder="Start Date yyyy-mm-dd hh:mm:ss"
                       onChange={this.handleControlledInputChange}
-                      isComplete={isDateComplete}
+                      checkIsComplete={checkIsDateComplete}
                       onFilterChange={() =>
                         this.waitForTimer(this.propagateFilter)
                       }
@@ -299,7 +289,7 @@ export default class Filters extends React.Component {
                       name="endDate"
                       placeholder="End Date yyyy-mm-dd hh:mm:ss"
                       onChange={this.handleControlledInputChange}
-                      isComplete={isDateComplete}
+                      checkIsComplete={checkIsDateComplete}
                       onFilterChange={() =>
                         this.waitForTimer(this.propagateFilter)
                       }
@@ -326,8 +316,12 @@ export default class Filters extends React.Component {
                   <Styled.Field>
                     <Styled.VariableFilterInput
                       variable={this.state.filter.variable}
-                      onFilterChange={this.propagateFilter}
+                      onFilterChange={() =>
+                        this.waitForTimer(this.propagateFilter)
+                      }
                       onChange={this.handleVariableChange}
+                      checkIsComplete={checkIsVariableComplete}
+                      checkIsValueValid={checkIsVariableValueValid}
                     />
                   </Styled.Field>
                   <Styled.CheckboxGroup

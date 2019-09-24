@@ -4,45 +4,68 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {isDateComplete, sanitizeFilter} from './service';
+import {
+  checkIsDateComplete,
+  sanitizeFilter,
+  checkIsVariableComplete
+} from './service';
 import {DEFAULT_FILTER_CONTROLLED_VALUES} from 'modules/constants';
 
 describe('Filters/service', () => {
-  describe('isDateComplete', () => {
+  describe('checkIsDateComplete', () => {
     it('should return true for YYYY-MM-DD', () => {
-      expect(isDateComplete('2019-01-01')).toBe(true);
+      expect(checkIsDateComplete('2019-01-01')).toBe(true);
     });
 
     it('should return true for YYYY-MM-DD HH:mm', () => {
-      expect(isDateComplete('2019-03-01 12:59')).toBe(true);
+      expect(checkIsDateComplete('2019-03-01 12:59')).toBe(true);
     });
 
     it('should return true for YYYY-MM-DD HH:mm:ss', () => {
-      expect(isDateComplete('2019-03-12 12:59:30')).toBe(true);
+      expect(checkIsDateComplete('2019-03-12 12:59:30')).toBe(true);
     });
 
     it('should return true for empty string', () => {
-      expect(isDateComplete('')).toBe(true);
+      expect(checkIsDateComplete('')).toBe(true);
     });
 
     it('should return false for YYY', () => {
-      expect(isDateComplete('201')).toBe(false);
+      expect(checkIsDateComplete('201')).toBe(false);
     });
 
     it('should return false for YYYY-M', () => {
-      expect(isDateComplete('2019-0')).toBe(false);
+      expect(checkIsDateComplete('2019-0')).toBe(false);
     });
 
     it('should return false for YYYY-MM-D', () => {
-      expect(isDateComplete('2019-03-1')).toBe(false);
+      expect(checkIsDateComplete('2019-03-1')).toBe(false);
     });
 
     it('should return false for YYYY-MM-DD HH', () => {
-      expect(isDateComplete('2019-03-12 12')).toBe(false);
+      expect(checkIsDateComplete('2019-03-12 12')).toBe(false);
     });
 
     it('should return false for invalid characters', () => {
-      expect(isDateComplete('ABCD-EF-GH')).toBe(false);
+      expect(checkIsDateComplete('ABCD-EF-GH')).toBe(false);
+    });
+  });
+
+  describe('checkIsVariableComplete', () => {
+    it('should be complete when both input fields have content ', () => {
+      const variable = {name: 'fancyName', value: 'coolValue'};
+      expect(checkIsVariableComplete(variable)).toBe(true);
+    });
+    it('should be complete when both input fields are empty', () => {
+      const variable = {name: '', value: ''};
+      expect(checkIsVariableComplete(variable)).toBe(true);
+    });
+    it('should not be complete, if only name is empty', () => {
+      const variable = {name: '', value: 'coolValue'};
+      expect(checkIsVariableComplete(variable)).toBe(false);
+    });
+    it('should not be complete, if only value is empty', () => {
+      const variable = {name: 'fancyName', value: ''};
+      expect(checkIsVariableComplete(variable)).toBe(false);
     });
   });
 
