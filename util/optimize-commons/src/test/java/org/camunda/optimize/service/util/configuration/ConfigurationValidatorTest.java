@@ -216,6 +216,21 @@ public class ConfigurationValidatorTest {
     // then no exception is thrown
   }
 
+  @Test
+  public void logoSupportsSVGWithoutDoctypeHeader() {
+    // given
+    ConfigurationService configurationService = createConfiguration();
+    ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
+    String relativePathToLogo = "logo/logo_without_doctype_header.svg";
+    UIConfiguration uiConfiguration = createUIConfiguration(relativePathToLogo);
+    configurationService.setUiConfiguration(uiConfiguration);
+
+    // when
+    underTest.validate(configurationService);
+
+    // then no exception is thrown
+  }
+
   @Test(expected = OptimizeConfigurationException.class)
   public void unsupportedMimeTypeOfLogoThrowsError() {
     // given

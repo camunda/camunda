@@ -20,9 +20,11 @@ import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.Base64;
 import java.util.Set;
 
+import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePathAsAbsoluteUrl;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePathToStream;
 
 
@@ -109,8 +111,7 @@ public class UIConfigurationService implements ConfigurationReloadable {
     // we need to use this library to make the check
     // for the mime type independent from the OS.
     Tika tika = new Tika();
-    try(InputStream stream = resolvePathToStream(pathToLogoIcon)) {
-      return tika.detect(stream);
-    }
+    URL pathAsUrl = resolvePathAsAbsoluteUrl(pathToLogoIcon);
+    return tika.detect(pathAsUrl);
   }
 }
