@@ -47,6 +47,7 @@ import io.zeebe.model.bpmn.instance.dc.Bounds;
 import io.zeebe.model.bpmn.instance.di.Waypoint;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.function.Consumer;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 /** @author Sebastian Menski */
@@ -290,6 +291,13 @@ public abstract class AbstractBaseElementBuilder<
     final ExtensionElements extensionElements = getCreateSingleChild(ExtensionElements.class);
     extensionElements.addChildElement(extensionElement);
     return myself;
+  }
+
+  public <T extends BpmnModelElementInstance> B addExtensionElement(
+      Class<T> extensionClass, Consumer<T> builder) {
+    final T element = createInstance(extensionClass);
+    builder.accept(element);
+    return addExtensionElement(element);
   }
 
   public BpmnShape createBpmnShape(FlowNode node) {
