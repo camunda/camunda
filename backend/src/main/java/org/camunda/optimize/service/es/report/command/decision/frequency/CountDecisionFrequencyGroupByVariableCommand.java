@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
@@ -113,9 +114,14 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
 
   @Override
   protected void sortResultData(final SingleDecisionMapReportResult evaluationResult) {
-    final Optional<SortingDto> sorting = ((DecisionReportDataDto) getReportData()).getParameters().getSorting();
+    DecisionReportDataDto reportData = getReportData();
+    final Optional<SortingDto> sorting = reportData.getParameters().getSorting();
     if (sorting.isPresent()) {
-      MapResultSortingUtility.sortResultData(sorting.get(), evaluationResult);
+      MapResultSortingUtility.sortResultData(
+        sorting.get(),
+        evaluationResult,
+        ((DecisionGroupByVariableValueDto) (reportData.getGroupBy().getValue())).getType()
+      );
     } else if (VariableType.DATE.equals(getVariableGroupByDto().getType())) {
       MapResultSortingUtility.sortResultData(new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC), evaluationResult);
     }

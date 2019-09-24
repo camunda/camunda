@@ -105,9 +105,14 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
 
   @Override
   protected void sortResultData(final SingleProcessMapReportResult evaluationResult) {
-    final Optional<SortingDto> sortingOpt = ((ProcessReportDataDto) getReportData()).getParameters().getSorting();
+    ProcessReportDataDto reportData = getReportData();
+    final Optional<SortingDto> sortingOpt = reportData.getParameters().getSorting();
     if (sortingOpt.isPresent()) {
-      MapResultSortingUtility.sortResultData(sortingOpt.get(), evaluationResult);
+      MapResultSortingUtility.sortResultData(
+        sortingOpt.get(),
+        evaluationResult,
+        ((VariableGroupByValueDto) (reportData.getGroupBy().getValue())).getType()
+      );
 
     } else if (VariableType.DATE.equals(getVariableGroupByDto().getType())) {
       MapResultSortingUtility.sortResultData(
@@ -126,7 +131,7 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
         filter(
           FILTERED_VARIABLES_AGGREGATION,
           boolQuery().must(termQuery(getNestedVariableNameField(), variableName))
-          .must(termQuery(getNestedVariableTypeField(), variableType.getId()))
+            .must(termQuery(getNestedVariableTypeField(), variableType.getId()))
         )
           .subAggregation(variableSubAggregation)
           .subAggregation(reverseNested(FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION))

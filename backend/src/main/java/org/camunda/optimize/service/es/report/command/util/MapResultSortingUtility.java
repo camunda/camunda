@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResu
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
@@ -27,22 +28,52 @@ public class MapResultSortingUtility {
                                     final SingleDecisionMapReportResult resultData) {
     resultData.getResultAsDto().setData(sortResultData(
       sorting,
-      resultData.getResultAsDto().getData()
+      resultData.getResultAsDto().getData(),
+      VariableType.STRING
+    ));
+  }
+
+  public static void sortResultData(final SortingDto sorting,
+                                    final SingleDecisionMapReportResult resultData,
+                                    VariableType keyType) {
+    resultData.getResultAsDto().setData(sortResultData(
+      sorting,
+      resultData.getResultAsDto().getData(),
+      keyType
     ));
   }
 
   public static void sortResultData(final SortingDto sorting,
                                     final SingleProcessMapReportResult resultData) {
     resultData.getResultAsDto().setData(sortResultData(
-      sorting, resultData.getResultAsDto().getData()
+      sorting, resultData.getResultAsDto().getData(),
+      VariableType.STRING
     ));
   }
+
+  public static void sortResultData(final SortingDto sorting,
+                                    final SingleProcessMapReportResult resultData,
+                                    final VariableType keyType) {
+    resultData.getResultAsDto().setData(sortResultData(
+      sorting, resultData.getResultAsDto().getData(), keyType
+    ));
+  }
+
+  public static void sortResultData(final SortingDto sorting,
+                                    final SingleProcessMapDurationReportResult resultData,
+                                    final VariableType keyType) {
+    resultData.getResultAsDto().setData(sortResultData(
+      sorting, resultData.getResultAsDto().getData(), keyType
+    ));
+  }
+
 
   public static void sortResultData(final SortingDto sorting,
                                     final SingleProcessMapDurationReportResult resultData) {
     final List<MapResultEntryDto<Long>> mapResultEntryDtos = sortResultData(
       sorting,
-      resultData.getResultAsDto().getData()
+      resultData.getResultAsDto().getData(),
+      VariableType.STRING
     );
     resultData.getResultAsDto().setData(mapResultEntryDtos);
   }
@@ -51,14 +82,16 @@ public class MapResultSortingUtility {
                                     final HyperMapResultEntryDto<Long> resultData) {
     final List<MapResultEntryDto<Long>> mapResultEntryDtos = sortResultData(
       sorting,
-      resultData.getValue()
+      resultData.getValue(),
+      VariableType.STRING
     );
     resultData.setValue(mapResultEntryDtos);
   }
 
   private static <V extends Comparable> List<MapResultEntryDto<V>> sortResultData(
     final SortingDto sorting,
-    final List<MapResultEntryDto<V>> resultData) {
+    final List<MapResultEntryDto<V>> resultData,
+    final VariableType keyType) {
 
     final String sortBy = sorting.getBy().orElse(SortingDto.SORT_BY_KEY);
     final SortOrder sortOrder = sorting.getOrder().orElse(SortOrder.DESC);
@@ -67,7 +100,8 @@ public class MapResultSortingUtility {
     switch (sortBy) {
       default:
       case SortingDto.SORT_BY_KEY:
-        valueToSortByExtractor = entry -> entry.getKey().toLowerCase();
+        valueToSortByExtractor = VariableType.getNumericTypes().contains(keyType)
+          ? entry -> Double.valueOf(entry.getKey()) : entry -> entry.getKey().toLowerCase();
         break;
       case SortingDto.SORT_BY_VALUE:
         valueToSortByExtractor = MapResultEntryDto::getValue;
