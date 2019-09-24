@@ -14,8 +14,10 @@ import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.value.MessageRecordValue;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.Map;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -77,6 +79,10 @@ public class PublishMessageClient {
   public PublishMessageClient withTimeToLive(long timeToLive) {
     messageRecord.setTimeToLive(timeToLive);
     return this;
+  }
+
+  public PublishMessageClient withVariables(Map<String, Object> variables) {
+    return withVariables(MsgPackUtil.asMsgPack(variables));
   }
 
   public PublishMessageClient withVariables(DirectBuffer variables) {
