@@ -9,8 +9,10 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -26,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
@@ -38,12 +41,14 @@ import static org.hamcrest.core.IsNull.notNullValue;
 
 public class DashboardHandlingIT {
 
+  public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  public AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationRule);
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(engineIntegrationRule).around(embeddedOptimizeRule);
 
   @After
   public void cleanUp() {
@@ -130,7 +135,7 @@ public class DashboardHandlingIT {
     // given
     final String collectionId = addEmptyCollectionToOptimize();
     String dashboardId = addEmptyDashboardToCollectionAsDefaultUser(collectionId);
-    addEmptyReportToDashboard(dashboardId);
+    addEmptyReportToDashboardInCollection(dashboardId, collectionId);
 
     // when
     IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
@@ -162,7 +167,7 @@ public class DashboardHandlingIT {
     // given
     final String oldCollectionId = addEmptyCollectionToOptimize();
     String dashboardId = addEmptyDashboardToCollectionAsDefaultUser(oldCollectionId);
-    addEmptyReportToDashboard(dashboardId);
+    addEmptyReportToDashboardInCollection(dashboardId, oldCollectionId);
 
     final String newCollectionId = addEmptyCollectionToOptimize();
 
@@ -197,8 +202,9 @@ public class DashboardHandlingIT {
     final String shouldBeIgnoredString = "shouldNotBeUpdated";
     final OffsetDateTime shouldBeIgnoredDate = OffsetDateTime.now().plusHours(1);
     final String id = addEmptyPrivateDashboard();
+    final String reportId = addEmptySingleProcessReport();
     final ReportLocationDto reportLocationDto = new ReportLocationDto();
-    reportLocationDto.setId("report-123");
+    reportLocationDto.setId(reportId);
     reportLocationDto.setConfiguration("testConfiguration");
 
     final DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
@@ -217,7 +223,7 @@ public class DashboardHandlingIT {
     // then
     assertThat(updatedDashboard.getReports().size(), is(1));
     ReportLocationDto retrievedLocation = updatedDashboard.getReports().get(0);
-    assertThat(retrievedLocation.getId(), is("report-123"));
+    assertThat(retrievedLocation.getId(), is(reportId));
     assertThat(retrievedLocation.getConfiguration(), is("testConfiguration"));
     assertThat(updatedDashboard.getId(), is(id));
     assertThat(updatedDashboard.getCreated(), is(not(shouldBeIgnoredDate)));
@@ -225,6 +231,83 @@ public class DashboardHandlingIT {
     assertThat(updatedDashboard.getLastModified(), is(not(shouldBeIgnoredDate)));
     assertThat(updatedDashboard.getName(), is("MyDashboard"));
     assertThat(updatedDashboard.getOwner(), is(DEFAULT_USERNAME));
+  }
+
+  @Test
+  public void updateDashboardCollectionReportCanBeAddedToSameCollectionDashboard() {
+    // given
+    String collectionId = addEmptyCollectionToOptimize();
+    String dashboardId = addEmptyDashboardToCollectionAsDefaultUser(collectionId);
+    final String privateReportId = addEmptySingleProcessReportToCollection(collectionId);
+
+    // when
+    final Response updateResponse = addSingleReportToDashboard(dashboardId, privateReportId);
+
+    // then
+    assertThat(updateResponse.getStatus(), is(204));
+  }
+
+  @Test
+  public void updateDashboardCollectionReportCannotBeAddedToOtherCollectionDashboard() {
+    // given
+    String collectionId1 = addEmptyCollectionToOptimize();
+    String collectionId2 = addEmptyCollectionToOptimize();
+    String dashboardId = addEmptyDashboardToCollectionAsDefaultUser(collectionId1);
+    final String privateReportId = addEmptySingleProcessReportToCollection(collectionId2);
+
+    // when
+    final Response updateResponse = addSingleReportToDashboard(dashboardId, privateReportId);
+
+    // then
+    assertThat(updateResponse.getStatus(), is(400));
+  }
+
+  @Test
+  public void updateDashboardCollectionReportCannotBeAddedToPrivateDashboard() {
+    // given
+    String collectionId = addEmptyCollectionToOptimize();
+    String dashboardId = addEmptyPrivateDashboard();
+    final String privateReportId = addEmptySingleProcessReportToCollection(collectionId);
+
+    // when
+    final Response updateResponse = addSingleReportToDashboard(dashboardId, privateReportId);
+
+    // then
+    assertThat(updateResponse.getStatus(), is(400));
+  }
+
+  @Test
+  public void updateDashboardPrivateReportCannotBeAddedToCollectionDashboard() {
+    // given
+    String collectionId = addEmptyCollectionToOptimize();
+    String dashboardId = addEmptyDashboardToCollectionAsDefaultUser(collectionId);
+    final String privateReportId = createNewSingleReport();
+
+    // when
+    final Response updateResponse = addSingleReportToDashboard(dashboardId, privateReportId);
+
+    // then
+    assertThat(updateResponse.getStatus(), is(400));
+  }
+
+  @Test
+  public void updateDashboardAddingOtherUsersPrivateReportFails() {
+    //given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+
+    String dashboardId = addEmptyPrivateDashboard();
+    final String reportId = embeddedOptimizeRule
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
+
+    // when
+    final Response updateResponse = addSingleReportToDashboard(dashboardId, reportId);
+
+    // then
+    assertThat(updateResponse.getStatus(), is(403));
   }
 
   @Test
@@ -325,7 +408,11 @@ public class DashboardHandlingIT {
   }
 
   private void addEmptyReportToDashboard(final String dashboardId) {
-    final String reportId = addEmptySingleProcessReport();
+    addEmptyReportToDashboardInCollection(dashboardId, null);
+  }
+
+  private void addEmptyReportToDashboardInCollection(final String dashboardId, final String collectionId) {
+    final String reportId = addEmptySingleProcessReportToCollection(collectionId);
     final ReportLocationDto reportLocationDto = new ReportLocationDto();
     reportLocationDto.setId(reportId);
     updateDashboard(dashboardId, Collections.singletonList(reportLocationDto));
@@ -349,5 +436,18 @@ public class DashboardHandlingIT {
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
       .getId();
+  }
+
+  private Response addSingleReportToDashboard(final String dashboardId, final String privateReportId) {
+    final ReportLocationDto reportLocationDto = new ReportLocationDto();
+    reportLocationDto.setId(privateReportId);
+
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateDashboardRequest(
+        dashboardId,
+        new DashboardDefinitionDto(Collections.singletonList(reportLocationDto))
+      )
+      .execute();
   }
 }

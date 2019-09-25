@@ -6,8 +6,10 @@
 package org.camunda.optimize.dto.optimize.query.dashboard;
 
 import com.google.common.collect.ImmutableMap;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.entity.EntityData;
@@ -19,6 +21,8 @@ import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor
+@AllArgsConstructor
 public class DashboardDefinitionDto extends BaseDashboardDefinitionDto implements CollectionEntity {
 
   protected List<ReportLocationDto> reports = new ArrayList<>();

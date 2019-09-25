@@ -310,7 +310,8 @@ public class SharingServiceIT extends AbstractSharingIT {
     String dashboardShareId = addShareForDashboard(dashboardId);
 
     ReportLocationDto reportLocationDto = new ReportLocationDto();
-    reportLocationDto.setId("report-123");
+    final String reportId = createNewReport();
+    reportLocationDto.setId(reportId);
     reportLocationDto.setConfiguration("testConfiguration");
     DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
     dashboard.setReports(Collections.singletonList(reportLocationDto));
@@ -332,7 +333,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     // then
     assertThat(dashboardShareDto.getReports().size(), is(1));
     ReportLocationDto retrievedLocation = dashboardShareDto.getReports().get(0);
-    assertThat(retrievedLocation.getId(), is("report-123"));
+    assertThat(retrievedLocation.getId(), is(reportId));
     assertThat(retrievedLocation.getConfiguration(), is("testConfiguration"));
     assertThat(dashboardShareDto.getId(), is(dashboardId));
     assertThat(dashboardShareDto.getCreated(), is(not(shouldBeIgnoredDate)));

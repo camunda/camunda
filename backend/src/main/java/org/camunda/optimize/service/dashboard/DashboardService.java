@@ -25,12 +25,15 @@ import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.IdentityService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.util.IdGenerator;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -159,19 +162,37 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   public void updateDashboard(final DashboardDefinitionDto updatedDashboard, final String userId) {
     final String dashboardId = updatedDashboard.getId();
-    verifyEditAuthorization(dashboardId, userId);
+    final AuthorizedDashboardDefinitionDto dashboardWithEditAuthorization = getDashboardWithEditAuthorization(
+      dashboardId, userId
+    );
 
     final DashboardDefinitionUpdateDto updateDto = convertToUpdateDto(updatedDashboard, userId);
+    final String dashboardCollectionId = dashboardWithEditAuthorization.getDefinitionDto().getCollectionId();
+    updateDto.getReports().forEach(reportLocationDto -> {
+      if (IdGenerator.isValidId(reportLocationDto)) {
+        final ReportDefinitionDto reportDefinition =
+          reportService.getReportDefinition(reportLocationDto.getId(), userId).getDefinitionDto();
+        if (!Objects.equals(dashboardCollectionId, reportDefinition.getCollectionId())) {
+          throw new BadRequestException(String.format(
+            "Report %s does not reside in the same collection as the dashboard %s or are both not private entities",
+            reportDefinition.getId(),
+            dashboardId
+          ));
+        }
+      }
+    });
+
     dashboardWriter.updateDashboard(updateDto, dashboardId);
   }
 
   public void deleteDashboard(final String dashboardId, final String userId) {
-    verifyEditAuthorization(dashboardId, userId);
+    getDashboardWithEditAuthorization(dashboardId, userId);
 
     dashboardWriter.deleteDashboard(dashboardId);
   }
 
-  private void verifyEditAuthorization(final String dashboardId, final String userId) {
+  private AuthorizedDashboardDefinitionDto getDashboardWithEditAuthorization(final String dashboardId,
+                                                                             final String userId) {
     final AuthorizedDashboardDefinitionDto authorizedDashboardDefinition =
       getDashboardDefinition(dashboardId, userId);
     if (authorizedDashboardDefinition.getCurrentUserRole().ordinal() < RoleType.EDITOR.ordinal()) {
@@ -179,6 +200,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
         "User [%s] is not authorized to edit dashboard [%s].", userId, dashboardId
       ));
     }
+    return authorizedDashboardDefinition;
   }
 
   private void removeReportFromDashboards(final String reportId) {

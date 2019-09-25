@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.CombinedReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
@@ -30,6 +31,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultD
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -57,6 +59,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
@@ -75,10 +78,11 @@ public class CombinedReportHandlingIT {
   private static final String SERVICE_TASK_ID = "aSimpleServiceTask";
   private static final String TEST_REPORT_NAME = "My foo report";
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  protected EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule(engineRule.getEngineName());
+  private EngineIntegrationRule engineRule = new EngineIntegrationRule();
+  private ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  private EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  private EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule(engineRule.getEngineName());
+  private AuthorizationClient authorizationClient = new AuthorizationClient(engineRule);
 
   @Rule
   public RuleChain chain = RuleChain
@@ -164,6 +168,83 @@ public class CombinedReportHandlingIT {
     assertThat(newReport.getLastModified(), is(not(shouldBeIgnoredDate)));
     assertThat(newReport.getName(), is("MyReport"));
     assertThat(newReport.getOwner(), is(DEFAULT_USERNAME));
+  }
+
+  @Test
+  public void updateCombinedReportCollectionReportCanBeAddedToSameCollectionCombinedReport() {
+    // given
+    String collectionId = addEmptyCollectionToOptimize();
+    String combinedReportId = createNewCombinedReportInCollection(collectionId);
+    final String singleReportId = addEmptySingleProcessReportToCollection(collectionId);
+
+    // when
+    final Response updateResponse = addSingleReportToCombinedReport(combinedReportId, singleReportId);
+
+    // then
+    assertThat(updateResponse.getStatus(), is(204));
+  }
+
+  @Test
+  public void updateCombinedReportCollectionReportCannotBeAddedToOtherCollectionCombinedReport() {
+    // given
+    String collectionId1 = addEmptyCollectionToOptimize();
+    String collectionId2 = addEmptyCollectionToOptimize();
+    String combinedReportId = createNewCombinedReportInCollection(collectionId1);
+    final String singleReportId = addEmptySingleProcessReportToCollection(collectionId2);
+
+    // when
+    final Response updateResponse = addSingleReportToCombinedReport(combinedReportId, singleReportId);
+
+    // then
+    assertThat(updateResponse.getStatus(), is(400));
+  }
+
+  @Test
+  public void updateCombinedReportCollectionReportCannotBeAddedToPrivateCombinedReport() {
+    // given
+    String collectionId = addEmptyCollectionToOptimize();
+    String combinedReportId = createNewCombinedReport();
+    final String singleReportId = addEmptySingleProcessReportToCollection(collectionId);
+
+    // when
+    final Response updateResponse = addSingleReportToCombinedReport(combinedReportId, singleReportId);
+
+    // then
+    assertThat(updateResponse.getStatus(), is(400));
+  }
+
+  @Test
+  public void updatePrivateCombinedReportReportCannotBeAddedToCollectionCombinedReport() {
+    // given
+    String collectionId = addEmptyCollectionToOptimize();
+    String combinedReportId = createNewCombinedReportInCollection(collectionId);
+    final String singleReportId = addEmptySingleProcessReportToCollection(null);
+
+    // when
+    final Response updateResponse = addSingleReportToCombinedReport(combinedReportId, singleReportId);
+
+    // then
+    assertThat(updateResponse.getStatus(), is(400));
+  }
+
+  @Test
+  public void updatePrivateCombinedReportAddingOtherUsersPrivateReportFails() {
+    //given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+
+    String combinedReportId = createNewCombinedReportInCollection(null);
+    final String reportId = embeddedOptimizeRule
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
+
+    // when
+    final Response updateResponse = addSingleReportToCombinedReport(combinedReportId, reportId);
+
+    // then
+    assertThat(updateResponse.getStatus(), is(403));
   }
 
   @Test
@@ -962,16 +1043,24 @@ public class CombinedReportHandlingIT {
     return singleReportId;
   }
 
-  private String createNewCombinedReport(CombinedReportDefinitionDto report) {
-    String reportId = createNewCombinedReport();
-    updateReport(reportId, report);
-    return reportId;
-  }
-
   private String createNewCombinedReport(String... singleReportIds) {
     CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
     report.setData(createCombinedReport(singleReportIds));
     return createNewCombinedReport(report);
+  }
+
+  private String createNewCombinedReport(CombinedReportDefinitionDto report) {
+    String reportId = createNewCombinedReportInCollection(null);
+    updateReport(reportId, report);
+    return reportId;
+  }
+
+  private String createNewCombinedReportInCollection(String collectionId) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateCombinedReportRequest(collectionId)
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   private ProcessInstanceEngineDto deploySimpleServiceTaskProcessDefinition() {
@@ -1005,14 +1094,6 @@ public class CombinedReportHandlingIT {
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
-  }
-
-  private String createNewCombinedReport() {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest()
-      .execute(IdDto.class, 200)
-      .getId();
   }
 
   private String createNewSingleReport() {
@@ -1092,5 +1173,30 @@ public class CombinedReportHandlingIT {
       .addQueryParams(queryParams)
       .buildGetAllReportsRequest()
       .executeAndReturnList(ReportDefinitionDto.class, 200);
+  }
+
+  private String addEmptySingleProcessReportToCollection(final String collectionId) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest(collectionId)
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
+  private String addEmptyCollectionToOptimize() {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateCollectionRequest()
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
+  private Response addSingleReportToCombinedReport(final String combinedReportId, final String reportId) {
+    final CombinedReportDefinitionDto combinedReportData = new CombinedReportDefinitionDto();
+    combinedReportData.getData().getReports().add(new CombinedReportItemDto(reportId, "red"));
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportData)
+      .execute();
   }
 }

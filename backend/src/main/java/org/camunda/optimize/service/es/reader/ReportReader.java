@@ -339,7 +339,7 @@ public class ReportReader {
 
   private Optional<ReportDefinitionDto> processGetReportResponse(String reportId, GetResponse getResponse) {
     Optional<ReportDefinitionDto> result = Optional.empty();
-    if (getResponse.isExists()) {
+    if (getResponse != null && getResponse.isExists()) {
       String responseAsString = getResponse.getSourceAsString();
       try {
         ReportDefinitionDto report = objectMapper.readValue(responseAsString, ReportDefinitionDto.class);

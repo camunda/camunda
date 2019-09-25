@@ -168,7 +168,7 @@ public abstract class AbstractSharingIT {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildUpdateDashboardRequest(id, updatedDashboard)
-      .execute();
+      .execute(204);
   }
 
   protected String addShareForDashboard(String dashboardId) {

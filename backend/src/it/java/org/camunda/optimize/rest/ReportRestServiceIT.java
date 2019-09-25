@@ -560,7 +560,6 @@ public class ReportRestServiceIT {
     assertThat(report.getName(), is(testReportCopyName));
   }
 
-
   @Test
   @Parameters(method = "processAndDecisionReportType")
   public void copyPrivateSingleReportAndMoveToCollection(ReportType reportType) {
@@ -639,8 +638,8 @@ public class ReportRestServiceIT {
     // given
     final String collectionId = addEmptyCollectionToOptimize();
 
-    final String report1 = addEmptyProcessReport();
-    final String report2 = addEmptyProcessReport();
+    final String report1 = addEmptyProcessReport(collectionId);
+    final String report2 = addEmptyProcessReport(collectionId);
     CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReport(report1, report2);
     IdDto id = createAndUpdateCombinedReport(combined, collectionId);
 
@@ -693,8 +692,8 @@ public class ReportRestServiceIT {
     // given
     final String collectionId = addEmptyCollectionToOptimize();
 
-    final String report1 = addEmptyProcessReport();
-    final String report2 = addEmptyProcessReport();
+    final String report1 = addEmptyProcessReport(collectionId);
+    final String report2 = addEmptyProcessReport(collectionId);
     CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReport(report1, report2);
 
     IdDto id = createAndUpdateCombinedReport(combined, collectionId);
@@ -822,7 +821,7 @@ public class ReportRestServiceIT {
 
     embeddedOptimizeRule.getRequestExecutor()
       .buildUpdateCombinedProcessReportRequest(id.getId(), new CombinedReportDefinitionDto(combined), true)
-      .execute();
+      .execute(204);
     return id;
   }
 

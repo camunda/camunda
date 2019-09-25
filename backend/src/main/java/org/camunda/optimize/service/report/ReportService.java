@@ -44,12 +44,14 @@ import org.camunda.optimize.service.security.ReportAuthorizationService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.core.MultivaluedMap;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -60,6 +62,8 @@ import static org.camunda.optimize.service.engine.importing.DmnModelUtility.extr
 @Component
 @Slf4j
 public class ReportService implements CollectionReferencingService {
+  private static final String REPORT_NOT_IN_SAME_COLLECTION_ERROR_MESSAGE = "Either the report %s does not reside in " +
+    "the same collection as the combined report %s or both are not private entities";
 
   private final ReportWriter reportWriter;
   private final ReportReader reportReader;
@@ -163,19 +167,32 @@ public class ReportService implements CollectionReferencingService {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
 
     final ReportDefinitionDto currentReportVersion = getReportDefinition(reportId, userId).getDefinitionDto();
-    verifyUserAuthorizedToEditReport(userId, currentReportVersion);
+    final AuthorizedReportDefinitionDto authorizedCombinedReport = getReportWithEditAuthorization(
+      userId, currentReportVersion
+    );
 
     final CombinedProcessReportDefinitionUpdateDto reportUpdate = convertToCombinedProcessReportUpdate(
       updatedReport, userId
     );
+
     final CombinedReportDataDto data = reportUpdate.getData();
     if (data.getReportIds() != null && !data.getReportIds().isEmpty()) {
       final List<SingleProcessReportDefinitionDto> reportsOfCombinedReport = reportReader
         .getAllSingleProcessReportsForIdsOmitXml(data.getReportIds());
 
+      final String combinedReportCollectionId = authorizedCombinedReport.getDefinitionDto().getCollectionId();
       final SingleProcessReportDefinitionDto firstReport = reportsOfCombinedReport.get(0);
       final boolean allReportsCanBeCombined = reportsOfCombinedReport.stream()
-        .noneMatch(r -> semanticsForCombinedReportChanged(firstReport, r));
+        .peek(report -> {
+          final ReportDefinitionDto reportDefinition = getReportDefinition(report.getId(), userId).getDefinitionDto();
+
+          if (!Objects.equals(combinedReportCollectionId, reportDefinition.getCollectionId())) {
+            throw new BadRequestException(String.format(
+              REPORT_NOT_IN_SAME_COLLECTION_ERROR_MESSAGE, reportDefinition.getId(), reportId
+            ));
+          }
+        })
+        .noneMatch(report -> semanticsForCombinedReportChanged(firstReport, report));
       if (allReportsCanBeCombined) {
         final ProcessVisualization visualization = firstReport.getData() == null
           ? null
@@ -204,7 +221,7 @@ public class ReportService implements CollectionReferencingService {
     final SingleProcessReportDefinitionDto currentReportVersion = getSingleProcessReportDefinition(
       reportId, userId
     );
-    verifyUserAuthorizedToEditReport(userId, currentReportVersion);
+    getReportWithEditAuthorization(userId, currentReportVersion);
 
     final SingleProcessReportDefinitionUpdateDto reportUpdate = convertToSingleProcessReportUpdate(
       updatedReport, userId
@@ -229,7 +246,7 @@ public class ReportService implements CollectionReferencingService {
     ValidationHelper.ensureNotNull("data", updatedReport.getData());
     final SingleDecisionReportDefinitionDto currentReportVersion =
       getSingleDecisionReportDefinition(reportId, userId);
-    verifyUserAuthorizedToEditReport(userId, currentReportVersion);
+    getReportWithEditAuthorization(userId, currentReportVersion);
 
     final SingleDecisionReportDefinitionUpdateDto reportUpdate = convertToSingleDecisionReportUpdate(
       updatedReport, userId
@@ -247,7 +264,7 @@ public class ReportService implements CollectionReferencingService {
     throws OptimizeException {
 
     final ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
-    verifyUserAuthorizedToEditReport(userId, reportDefinition);
+    getReportWithEditAuthorization(userId, reportDefinition);
 
     if (!force) {
       final Set<ConflictedItemDto> conflictedItems = getConflictedItemsForDeleteReport(reportDefinition);
@@ -267,14 +284,15 @@ public class ReportService implements CollectionReferencingService {
     reportRelationService.handleDeleted(reportDefinition);
   }
 
-  private void verifyUserAuthorizedToEditReport(final String userId, final ReportDefinitionDto reportDefinition) {
-    if (!reportAuthorizationService.getAuthorizedRole(userId, reportDefinition)
-      .map(roleType -> roleType.ordinal() >= RoleType.EDITOR.ordinal())
-      .orElse(false)) {
+  private AuthorizedReportDefinitionDto getReportWithEditAuthorization(final String userId,
+                                                                       final ReportDefinitionDto reportDefinition) {
+    final Optional<RoleType> authorizedRole = reportAuthorizationService.getAuthorizedRole(userId, reportDefinition);
+    if (!authorizedRole.map(roleType -> roleType.ordinal() >= RoleType.EDITOR.ordinal()).orElse(false)) {
       throw new ForbiddenException(
-        "User [" + userId + "] is not authorized to delete report [" + reportDefinition.getName() + "]."
+        "User [" + userId + "] is not authorized to edit report [" + reportDefinition.getName() + "]."
       );
     }
+    return new AuthorizedReportDefinitionDto(reportDefinition, authorizedRole.get());
   }
 
   private Set<ConflictedItemDto> mapCombinedReportsToConflictingItems(List<CombinedReportDefinitionDto> combinedReportDtos) {
