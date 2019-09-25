@@ -10,6 +10,9 @@ services:
       - SPRING_PROFILES_ACTIVE=dev,dev-data
       - JAVA_OPTS=-Dlogging.config=file:/usr/app/config/log4j2.xml
       - SPRING_CONFIG_LOCATION=file:/usr/app/config/application.yml
+      - CAMUNDA_OPERATE_ELASTICSEARCH_HOST=elasticsearch
+      - CAMUNDA_OPERATE_ZEEBE_BROKERCONTACTPOINT=zeebe:26500
+      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_HOST=elasticsearch
     image: camunda/operate:latest
     ports:
       - 8080:8080
