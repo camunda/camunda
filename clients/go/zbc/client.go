@@ -147,7 +147,7 @@ func NewZBClientWithConfig(config *ZBClientConfig) (ZBClient, error) {
 }
 
 func applyZBClientEnvOverrides(config *ZBClientConfig) {
-	if insecureConn := os.Getenv(ZbInsecureEnvVar); insecureConn != "" {
+	if insecureConn, found := os.LookupEnv(ZbInsecureEnvVar); found {
 		config.UsePlaintextConnection = (insecureConn == "true")
 	}
 

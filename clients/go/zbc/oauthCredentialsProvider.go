@@ -233,7 +233,3 @@ func fetchAccessToken(authorizationServerURL string, payload *oauthRequestPayloa
 
 	return responsePayload, nil
 }
-
-func (config *OAuthProviderConfig) createDefaultCache() (OAuthCredentialsCache, error) {
-	return NewOAuthYamlCredentialsCache("")
-}
