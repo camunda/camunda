@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import org.camunda.optimize.upgrade.util.SchemaUpgradeUtil;
+import org.camunda.optimize.upgrade.util.UpgradeUtil;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
@@ -57,7 +57,7 @@ public class Version25WriterUtil {
                                             final List<String> childReports,
                                             final String owner) {
     final String id = IdGenerator.getNextId();
-    final String dataJsonString = SchemaUpgradeUtil.readClasspathFileAsString(
+    final String dataJsonString = UpgradeUtil.readClasspathFileAsString(
       "steps/collection_entities/25-combined-reports-data-fixture");
 
     final ObjectNode dataNode = (ObjectNode) objectMapper.readTree(dataJsonString);
@@ -92,7 +92,7 @@ public class Version25WriterUtil {
 
     final String id = IdGenerator.getNextId();
 
-    final String dataJsonString = SchemaUpgradeUtil.readClasspathFileAsString(
+    final String dataJsonString = UpgradeUtil.readClasspathFileAsString(
       "steps/collection_entities/25-single-decision-report-data-fixture");
 
     XContentBuilder contentBuilder = buildReportContent(id, dataJsonString, name, false, ReportType.DECISION);
@@ -117,7 +117,7 @@ public class Version25WriterUtil {
   public String createSingleProcessReport(final String name, final String userId) {
 
     final String id = IdGenerator.getNextId();
-    final String dataJsonString = SchemaUpgradeUtil.readClasspathFileAsString(
+    final String dataJsonString = UpgradeUtil.readClasspathFileAsString(
       "steps/collection_entities/25-single-process-report-data-fixture");
 
     XContentBuilder contentBuilder = buildReportContent(id, dataJsonString, name, userId, false, ReportType.PROCESS);

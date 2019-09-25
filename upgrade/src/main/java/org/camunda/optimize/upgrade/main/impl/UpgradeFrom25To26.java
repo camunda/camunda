@@ -6,27 +6,19 @@
 package org.camunda.optimize.upgrade.main.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
 import org.camunda.optimize.service.engine.importing.DmnModelUtility;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
-import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
-import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import org.camunda.optimize.upgrade.main.Upgrade;
+import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
@@ -42,8 +34,6 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -64,27 +54,12 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 
-public class UpgradeFrom25To26 implements Upgrade {
+public class UpgradeFrom25To26 extends UpgradeProcedure {
 
   private static final String FROM_VERSION = "2.5.0";
   private static final String TO_VERSION = "2.6.0";
 
-  private Logger logger = LoggerFactory.getLogger(getClass());
-
-
-  private ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
-  private OptimizeIndexNameService indexNameService = new OptimizeIndexNameService(configurationService);
-  private OptimizeElasticsearchClient client = new OptimizeElasticsearchClient(
-    ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-    indexNameService
-  );
-  private final ObjectMapper objectMapper = new ObjectMapperFactory(
-    new OptimizeDateTimeFormatterFactory().getObject(),
-    ConfigurationServiceBuilder.createDefaultConfiguration()
-  ).createOptimizeMapper();
-
   private static final String DEFINITION_ID_TO_VAR_NAMES_PARAMETER_NAME = "definitionIdToVarNames";
-
 
   @Override
   public String getInitialVersion() {
@@ -96,19 +71,9 @@ public class UpgradeFrom25To26 implements Upgrade {
     return TO_VERSION;
   }
 
-  @Override
-  public void performUpgrade() {
-    try {
-      UpgradePlan upgradePlan = buildUpgradePlan();
-      upgradePlan.execute();
-    } catch (Exception e) {
-      logger.error("Error while executing upgrade", e);
-      System.exit(2);
-    }
-  }
-
   public UpgradePlan buildUpgradePlan() {
     return UpgradePlanBuilder.createUpgradePlan()
+      .addUpgradeDependencies(upgradeDependencies)
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
       .addUpgradeStep(new UpdateMappingIndexStep(new SingleProcessReportIndex()))
@@ -122,7 +87,7 @@ public class UpgradeFrom25To26 implements Upgrade {
       .addUpgradeStep(createDecisionDefinitionOutputVariableNames())
       .addUpgradeStep(new UpdateMappingIndexStep(new DashboardIndex()))
       .addUpgradeStep(new UpdateMappingIndexStep(new CombinedReportIndex()))
-      .addUpgradeStep(new UpgradeCollectionIndexStep(client, configurationService, objectMapper))
+      .addUpgradeStep(new UpgradeCollectionIndexStep(prefixAwareClient, configurationService, objectMapper))
       .addUpgradeStep(createProcessInstanceIndexUpgrade())
       .build();
   }
@@ -220,7 +185,7 @@ public class UpgradeFrom25To26 implements Upgrade {
         .source(new SearchSourceBuilder().size(10))
         .scroll(scrollTimeOut);
 
-      SearchResponse currentScrollResponse = client.search(scrollSearchRequest, RequestOptions.DEFAULT);
+      SearchResponse currentScrollResponse = prefixAwareClient.search(scrollSearchRequest, RequestOptions.DEFAULT);
       while (currentScrollResponse != null && currentScrollResponse.getHits().getHits().length != 0) {
         Arrays.stream(currentScrollResponse.getHits().getHits())
           .map(SearchHit::getSourceAsMap)
@@ -236,7 +201,7 @@ public class UpgradeFrom25To26 implements Upgrade {
         if (currentScrollResponse.getHits().getTotalHits() > result.size()) {
           SearchScrollRequest scrollRequest = new SearchScrollRequest(currentScrollResponse.getScrollId());
           scrollRequest.scroll(scrollTimeOut);
-          currentScrollResponse = client.scroll(scrollRequest, RequestOptions.DEFAULT);
+          currentScrollResponse = prefixAwareClient.scroll(scrollRequest, RequestOptions.DEFAULT);
         } else {
           currentScrollResponse = null;
         }

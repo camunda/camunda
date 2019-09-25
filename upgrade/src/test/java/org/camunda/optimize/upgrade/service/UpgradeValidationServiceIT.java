@@ -30,16 +30,14 @@ public class UpgradeValidationServiceIT extends AbstractUpgradeIT {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    underTest = new UpgradeValidationService(
-      new ElasticsearchMetadataService(new ObjectMapper())
-    );
+    underTest = new UpgradeValidationService(new ElasticsearchMetadataService(new ObjectMapper()), prefixAwareClient);
     initSchema(Lists.newArrayList(METADATA_INDEX));
   }
 
   @Test
   public void versionValidationBreaksWithoutIndex() {
     try {
-      underTest.validateSchemaVersions(prefixAwareClient, "2.0", "2.1");
+      underTest.validateSchemaVersions("2.0", "2.1");
     } catch (UpgradeRuntimeException e) {
       //expected
       return;
@@ -55,7 +53,7 @@ public class UpgradeValidationServiceIT extends AbstractUpgradeIT {
 
     try {
       //when
-      underTest.validateSchemaVersions(prefixAwareClient, "2.0", "2.1");
+      underTest.validateSchemaVersions("2.0", "2.1");
     } catch (UpgradeRuntimeException e) {
       //expected
       //then
@@ -71,7 +69,7 @@ public class UpgradeValidationServiceIT extends AbstractUpgradeIT {
     setMetadataIndexVersion("2.0");
 
     //when
-    underTest.validateSchemaVersions(prefixAwareClient, "2.0", "2.1");
+    underTest.validateSchemaVersions("2.0", "2.1");
 
     //then - no exception
   }
@@ -83,7 +81,7 @@ public class UpgradeValidationServiceIT extends AbstractUpgradeIT {
 
     try {
       //when
-      underTest.validateSchemaVersions(prefixAwareClient, "2.0", null);
+      underTest.validateSchemaVersions("2.0", null);
     } catch (UpgradeRuntimeException e) {
       //expected
       //then
@@ -100,7 +98,7 @@ public class UpgradeValidationServiceIT extends AbstractUpgradeIT {
 
     try {
       //when
-      underTest.validateSchemaVersions(prefixAwareClient, "2.0", "");
+      underTest.validateSchemaVersions("2.0", "");
     } catch (UpgradeRuntimeException e) {
       //expected
       //then

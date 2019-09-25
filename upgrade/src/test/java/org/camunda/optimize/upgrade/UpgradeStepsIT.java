@@ -19,7 +19,7 @@ import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateMappingIndexStep;
-import org.camunda.optimize.upgrade.util.SchemaUpgradeUtil;
+import org.camunda.optimize.upgrade.util.UpgradeUtil;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -58,6 +58,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     //given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
+        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
@@ -82,6 +83,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     //given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
+        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
@@ -106,6 +108,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     //given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
+        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
@@ -131,6 +134,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     //given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
+        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
@@ -152,6 +156,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     //given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
+        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
@@ -187,6 +192,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     //given
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
+        .addUpgradeDependencies(upgradeDependencies)
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
@@ -210,7 +216,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
   private InsertDataStep buildInsertDataStep() {
     return new InsertDataStep(
       TEST_INDEX,
-      SchemaUpgradeUtil.readClasspathFileAsString("steps/insert_data/test_data.json")
+      UpgradeUtil.readClasspathFileAsString("steps/insert_data/test_data.json")
     );
   }
 

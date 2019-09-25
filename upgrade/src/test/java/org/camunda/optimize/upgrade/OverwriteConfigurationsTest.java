@@ -5,15 +5,16 @@
  */
 package org.camunda.optimize.upgrade;
 
-import org.camunda.optimize.upgrade.plan.UpgradePlan;
-import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static junit.framework.TestCase.fail;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEnvConfig;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
 public class OverwriteConfigurationsTest {
 
@@ -28,7 +29,7 @@ public class OverwriteConfigurationsTest {
   }
 
   @Test
-  public void verifyDateFormatEnhancedFromConfig() throws Exception {
+  public void verifyConfigurationCanBeOverwritten() throws Exception {
     // given
     createEnvConfig(
       "es:\n" +
@@ -38,19 +39,12 @@ public class OverwriteConfigurationsTest {
         "      httpPort: 9200"
     );
 
-    UpgradePlan upgradePlan = UpgradePlanBuilder.createUpgradePlan()
-      .fromVersion("2.0.0")
-      .toVersion("2.1.0")
-      .build();
+    // when
+    ConfigurationService configuration = ConfigurationServiceBuilder.createDefaultConfiguration();
 
-    try {
-      // when
-      upgradePlan.execute();
-      fail("Should throw an error, since the Elasticsearch host 'foo' does not exist!");
-    } catch (Exception e) {
-      // then this should throw an error
-    }
-
+    // then
+    assertThat(configuration.getElasticsearchConnectionNodes().size(), is(1));
+    assertThat(configuration.getElasticsearchConnectionNodes().get(0).getHost(), is("foo"));
   }
 
 }

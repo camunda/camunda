@@ -10,16 +10,31 @@ import org.camunda.optimize.upgrade.steps.UpgradeStep;
 public class UpgradePlanBuilder {
 
 
-  public static AddFromVersionBuilder createUpgradePlan() {
+  public static AddUpgradeDependenciesBuilder createUpgradePlan() {
     UpgradeExecutionPlan upgradeExecutionPlan = new UpgradeExecutionPlan();
-    return new UpgradePlanBuilder().addFromVersion(upgradeExecutionPlan);
+    return new UpgradePlanBuilder().startUpgradePlanBuild(upgradeExecutionPlan);
   }
 
-  private AddFromVersionBuilder addFromVersion(UpgradeExecutionPlan upgradeExecutionPlan) {
-    return new AddFromVersionBuilder(upgradeExecutionPlan);
+  private AddUpgradeDependenciesBuilder startUpgradePlanBuild(UpgradeExecutionPlan upgradeExecutionPlan) {
+    return new AddUpgradeDependenciesBuilder(upgradeExecutionPlan);
+  }
+
+  public class AddUpgradeDependenciesBuilder {
+
+    private UpgradeExecutionPlan upgradeExecutionPlan;
+
+    public AddUpgradeDependenciesBuilder(UpgradeExecutionPlan upgradeExecutionPlan) {
+      this.upgradeExecutionPlan = upgradeExecutionPlan;
+    }
+
+    public AddFromVersionBuilder addUpgradeDependencies(UpgradeExecutionDependencies upgradeDependencies) {
+      upgradeExecutionPlan.addUpgradeDependencies(upgradeDependencies);
+      return new AddFromVersionBuilder(upgradeExecutionPlan);
+    }
   }
 
   public class AddFromVersionBuilder {
+
     private UpgradeExecutionPlan upgradeExecutionPlan;
 
     public AddFromVersionBuilder(UpgradeExecutionPlan upgradeExecutionPlan) {

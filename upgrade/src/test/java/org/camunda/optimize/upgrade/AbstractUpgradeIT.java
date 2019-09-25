@@ -17,11 +17,9 @@ import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
-import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
-import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
-import org.camunda.optimize.upgrade.util.SchemaUpgradeUtil;
+import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
+import org.camunda.optimize.upgrade.util.UpgradeUtil;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.Request;
@@ -43,37 +41,29 @@ public abstract class AbstractUpgradeIT {
 
   protected ObjectMapper objectMapper;
   protected OptimizeElasticsearchClient prefixAwareClient;
-  protected ElasticsearchMetadataService metadataService;
-  protected ConfigurationService configurationService;
   protected OptimizeIndexNameService indexNameService;
-
-  @Before
-  protected void setUp() throws Exception {
-    configurationService = createDefaultConfiguration();
-    if (objectMapper == null) {
-      objectMapper = new ObjectMapperFactory(
-        new OptimizeDateTimeFormatterFactory().getObject(),
-        configurationService
-      ).createOptimizeMapper();
-    }
-    if (prefixAwareClient == null) {
-      indexNameService = new OptimizeIndexNameService(configurationService);
-      prefixAwareClient = new OptimizeElasticsearchClient(
-        ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-        indexNameService
-      );
-    }
-    if (metadataService == null) {
-      metadataService = new ElasticsearchMetadataService(objectMapper);
-    }
-    cleanAllDataFromElasticsearch();
-    createEmptyEnvConfig();
-  }
+  protected UpgradeExecutionDependencies upgradeDependencies;
+  private ElasticsearchMetadataService metadataService;
 
   @After
   public void after() throws Exception {
     cleanAllDataFromElasticsearch();
     deleteEnvConfig();
+  }
+
+  @Before
+  protected void setUp() throws Exception {
+    final ConfigurationService configurationService = createDefaultConfiguration();
+    if (upgradeDependencies == null) {
+      upgradeDependencies = UpgradeUtil.createUpgradeDependencies();
+      objectMapper = upgradeDependencies.getObjectMapper();
+      prefixAwareClient = upgradeDependencies.getPrefixAwareClient();
+      indexNameService = upgradeDependencies.getIndexNameService();
+      metadataService = upgradeDependencies.getMetadataService();
+    }
+
+    cleanAllDataFromElasticsearch();
+    createEmptyEnvConfig();
   }
 
   protected void initSchema(List<IndexMappingCreator> mappingCreators) {
@@ -87,23 +77,23 @@ public abstract class AbstractUpgradeIT {
     metadataService.writeMetadata(prefixAwareClient, new MetadataDto(version));
   }
 
+  protected void executeBulk(final String bulkPayload) throws IOException {
+    final Request request = new Request(HttpPost.METHOD_NAME, "/_bulk");
+    final HttpEntity entity = new NStringEntity(
+      UpgradeUtil.readClasspathFileAsString(bulkPayload),
+      ContentType.APPLICATION_JSON
+    );
+    request.setEntity(entity);
+    prefixAwareClient.getLowLevelClient().performRequest(request);
+    prefixAwareClient.getHighLevelClient().indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
+  }
+
   private void cleanAllDataFromElasticsearch() {
     try {
       prefixAwareClient.getHighLevelClient().indices().delete(new DeleteIndexRequest("_all"), RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new RuntimeException("Failed cleaning elasticsearch");
     }
-  }
-
-  protected void executeBulk(final String bulkPayload) throws IOException {
-    final Request request = new Request(HttpPost.METHOD_NAME, "/_bulk");
-    final HttpEntity entity = new NStringEntity(
-      SchemaUpgradeUtil.readClasspathFileAsString(bulkPayload),
-      ContentType.APPLICATION_JSON
-    );
-    request.setEntity(entity);
-    prefixAwareClient.getLowLevelClient().performRequest(request);
-    prefixAwareClient.getHighLevelClient().indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
   }
 
 }

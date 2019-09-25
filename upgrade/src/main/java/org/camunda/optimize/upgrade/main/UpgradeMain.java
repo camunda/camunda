@@ -28,7 +28,7 @@ public class UpgradeMain {
     new HashSet<>(Arrays.asList("n", "no"))
   );
 
-  private static Map<String, Upgrade> upgrades = new HashMap<>();
+  private static Map<String, UpgradeProcedure> upgrades = new HashMap<>();
 
   static {
     new LoggingConfigurationReader().defineLogbackLoggingConfiguration();
@@ -41,9 +41,9 @@ public class UpgradeMain {
       .filter(arg -> arg.matches("\\d\\.\\d\\.\\d"))
       .findFirst()
       .orElse(Version.VERSION);
-    Upgrade upgrade = upgrades.get(targetVersion);
+    UpgradeProcedure upgradeProcedure = upgrades.get(targetVersion);
 
-    if (upgrade == null) {
+    if (upgradeProcedure == null) {
       String errorMessage =
         "It was not possible to upgrade Optimize to version " + targetVersion + ".\n" +
           "Either this is the wrong upgrade jar or the jar is flawed. \n" +
@@ -52,11 +52,11 @@ public class UpgradeMain {
     }
 
     if (Arrays.stream(args).noneMatch(arg -> arg.contains("skip-warning"))) {
-      printWarning(upgrade.getInitialVersion(), upgrade.getTargetVersion());
+      printWarning(upgradeProcedure.getInitialVersion(), upgradeProcedure.getTargetVersion());
     }
 
     System.out.println("Execute upgrade...");
-    upgrade.performUpgrade();
+    upgradeProcedure.performUpgrade();
     System.out.println("Finished upgrade successfully!");
     System.exit(0);
   }
