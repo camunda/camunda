@@ -39,6 +39,7 @@
       }
     },
     "title": "Sammlungen, Dashboards, und Berichte",
+    "collectionTitle": "Dashboards und Berichte",
     "types": {
       "process": "Prozessbericht",
       "decision": "Entscheidungsbericht",

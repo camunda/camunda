@@ -79,11 +79,11 @@ export default withErrorHandling(
 
     render() {
       const {deleting, conflictedItems, deleteInProgress, creatingCollection} = this.state;
-      const {collection} = this.props;
+      const {collection, children} = this.props;
       return (
         <div className="EntityList">
           <div className="header">
-            <h1>{collection ? 'Dashboard and Reports' : t('home.title')}</h1>
+            <h1>{collection ? t('home.collectionTitle') : t('home.title')}</h1>
             <CreateNewButton
               createCollection={this.startCreatingCollection}
               collection={this.props.collection}
@@ -91,11 +91,7 @@ export default withErrorHandling(
           </div>
           <div className="content">
             <ul>{this.renderList()}</ul>
-            {!collection && (
-              <div className="data-hint">
-                <Icon type="hint" size="14" /> {t('home.data-hint')}
-              </div>
-            )}
+            {children}
           </div>
           <ConfirmationModal
             open={deleting}

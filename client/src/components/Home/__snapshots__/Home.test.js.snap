@@ -1,12 +1,27 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`should pass loaded entities to the EntityList 1`] = `
-<EntityListErrorHandler
-  data={
-    Object {
-      "isEntitiesList": true,
+<div
+  className="Home"
+>
+  <EntityListErrorHandler
+    data={
+      Object {
+        "isEntitiesList": true,
+      }
     }
-  }
-  onChange={[Function]}
-/>
+    onChange={[Function]}
+  >
+    <div
+      className="data-hint"
+    >
+      <Icon
+        size="14"
+        type="hint"
+      />
+       
+      Do you miss any data? The last update introduced user permissions. Ask your administrator for access rights.
+    </div>
+  </EntityListErrorHandler>
+</div>
 `;

@@ -8,10 +8,14 @@ import React from 'react';
 
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
+import {t} from 'translation';
+import {Icon} from 'components';
 
 import EntityList from './EntityList';
 
 import {loadEntities} from './service';
+
+import './Home.scss';
 
 export default withErrorHandling(
   class Home extends React.Component {
@@ -35,7 +39,15 @@ export default withErrorHandling(
     };
 
     render() {
-      return <EntityList data={this.state.entities} onChange={this.loadList} />;
+      return (
+        <div className="Home">
+          <EntityList data={this.state.entities} onChange={this.loadList}>
+            <div className="data-hint">
+              <Icon type="hint" size="14" /> {t('home.data-hint')}
+            </div>
+          </EntityList>
+        </div>
+      );
     }
   }
 );

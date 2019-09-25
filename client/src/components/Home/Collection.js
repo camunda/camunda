@@ -127,7 +127,6 @@ export default withErrorHandling(
             onClose={this.resetDelete}
             onConfirm={this.deleteCollection}
             entityName={collection && collection.name}
-            conflict={{type: 'delete', items: []}}
             loading={deleteInProgress}
           />
           {editingCollection && (

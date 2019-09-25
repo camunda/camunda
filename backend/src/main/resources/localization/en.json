@@ -39,6 +39,7 @@
       }
     },
     "title": "Collections, Dashboards, and Reports",
+    "collectionTitle": "Dashboards and Reports",
     "types": {
       "process": "Process Report",
       "decision": "Decision Report",

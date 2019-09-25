@@ -113,12 +113,6 @@ exports[`should match snapshot 1`] = `
     />
   </div>
   <ConfirmationModal
-    conflict={
-      Object {
-        "items": Array [],
-        "type": "delete",
-      }
-    }
     entityName="aCollectionName"
     loading={false}
     onClose={[Function]}
