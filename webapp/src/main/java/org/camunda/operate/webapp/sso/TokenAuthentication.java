@@ -46,7 +46,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     this.jwt = JWT.decode(tokens.getIdToken());
     return this;
   }
-
+  
   protected void authenticate() throws InsufficientAuthenticationException {
     Claim claim = jwt.getClaim(config.getClaimName());
     List<String> claims = claim.asList(String.class);
@@ -69,7 +69,8 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   }
 
   private boolean hasExpired() {
-    return jwt.getExpiresAt().before(new Date());
+    Date expires = jwt.getExpiresAt();
+    return expires != null && expires.before(new Date());
   }
 
   @Override
@@ -87,7 +88,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     if (authenticated) {
       throw new IllegalArgumentException("Create a new Authentication object to authenticate");
     }
-    authenticated = false;
+    this.authenticated = false;
   }
 
   @Override

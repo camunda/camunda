@@ -62,7 +62,7 @@ public class SSOController {
     } catch (InsufficientAuthenticationException iae) {
       logoutAndRedirectToNoPermissionPage(req, res);
     } catch (Throwable t /*AuthenticationException | IdentityVerificationException e*/) {
-      clearContextAndRedirectToNoPermission(res, t);
+      clearContextAndRedirectToNoPermission(req,res, t);
     }
   }
 
@@ -73,7 +73,7 @@ public class SSOController {
   @RequestMapping(value = SSOWebSecurityConfig.NO_PERMISSION)
   @ResponseBody
   public String noPermissions() {
-    return "No Permission for Operate - Please check your operate configuration or cloud configuration.";
+    return "No permission for Operate - Please check your operate configuration or cloud configuration.";
   }
 
   /**
@@ -85,26 +85,25 @@ public class SSOController {
   @RequestMapping(value = SSOWebSecurityConfig.LOGOUT_RESOURCE)
   public void logout(HttpServletRequest req, HttpServletResponse res) throws IOException {
     logger.debug("logout user");
-    if (req.getSession() != null) {
-      req.getSession().invalidate();
-    }
-    SecurityContextHolder.clearContext();
+    cleanup(req);
     logoutFromAuth0(res, getRedirectURI(req, SSOWebSecurityConfig.ROOT));
   }
 
-  protected void clearContextAndRedirectToNoPermission(HttpServletResponse res, Throwable t) throws IOException {
+  protected void clearContextAndRedirectToNoPermission(HttpServletRequest req,HttpServletResponse res, Throwable t) throws IOException {
     logger.error("Error in authentication callback: ", t);
-    SecurityContextHolder.clearContext();
+    cleanup(req);
     res.sendRedirect(SSOWebSecurityConfig.NO_PERMISSION);
   }
 
   protected void logoutAndRedirectToNoPermissionPage(HttpServletRequest req, HttpServletResponse res) throws IOException {
     logger.error("User is authenticated but there are no permissions. Show noPermission message");
-    if (req.getSession() != null) {
-      req.getSession().invalidate();
-    }
-    SecurityContextHolder.clearContext();
+    cleanup(req);
     logoutFromAuth0(res, getRedirectURI(req, SSOWebSecurityConfig.NO_PERMISSION));
+  }
+  
+  protected void cleanup(HttpServletRequest req) {
+    req.getSession().invalidate();
+    SecurityContextHolder.clearContext();
   }
   
   public String getLogoutUrlFor(String returnTo) {

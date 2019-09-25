@@ -64,16 +64,16 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
 
   /**
    * This is the client id of auth0 application (see Settings page on auth0
-   * dashboard) It's like an user name for the application
+   * dashboard) It's like an user name for the application - MUST given
    */
   @Value(value = "${camunda.operate.auth0.clientId}")
   private String clientId;
 
   /**
    * This is the client secret of auth0 application (see Settings page on auth0
-   * dashboard) It's like a password for the application
+   * dashboard) It's like a password for the application - MUST given 
    */
-  @Value(value = "${camunda.operate.auth0.clientSecret}")
+  @Value(value = "${camunda.operate.auth0.clientSecret}") 
   private String clientSecret;
 
   /**
@@ -83,8 +83,8 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
   private String claimName;
 
   /**
-   * The given organization should be contained in value of claim key
-   * (claimName)
+   * The given organization should be contained in value of claim key 
+   * (claimName) - MUST given
    */
   @Value(value = "${camunda.operate.auth0.organization}")
   private String organization;
@@ -130,10 +130,6 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
 
   public String getClientId() {
     return clientId;
-  }
-
-  public String getClientSecret() {
-    return clientSecret;
   }
 
   public String getClaimName() {
