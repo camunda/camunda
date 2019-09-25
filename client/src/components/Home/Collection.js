@@ -95,14 +95,18 @@ export default withErrorHandling(
                   <>
                     {collection.name}
                     <Dropdown label={<Icon type="overflow-menu-vertical" size="24px" />}>
-                      <Dropdown.Option onClick={this.startEditingCollection}>
-                        <Icon type="edit" />
-                        {t('common.edit')}
-                      </Dropdown.Option>
-                      <Dropdown.Option onClick={this.confirmDelete}>
-                        <Icon type="delete" />
-                        {t('common.delete')}
-                      </Dropdown.Option>
+                      {collection.currentUserRole === 'manager' && (
+                        <>
+                          <Dropdown.Option onClick={this.startEditingCollection}>
+                            <Icon type="edit" />
+                            {t('common.edit')}
+                          </Dropdown.Option>
+                          <Dropdown.Option onClick={this.confirmDelete}>
+                            <Icon type="delete" />
+                            {t('common.delete')}
+                          </Dropdown.Option>
+                        </>
+                      )}
                     </Dropdown>
                   </>
                 ) : (

@@ -106,6 +106,7 @@ export default themed(
         name,
         lastModifier,
         lastModified,
+        currentUserRole,
         isAuthorizedToShare,
         sharingEnabled,
         reports
@@ -134,20 +135,27 @@ export default themed(
                 <div className="tools">
                   {!fullScreenActive && (
                     <React.Fragment>
-                      <Link
-                        className="tool-button edit-button"
-                        to="edit"
-                        onClick={() => this.setAutorefresh(null)}
-                      >
-                        <Button>
-                          <Icon type="edit" />
-                          {t('common.edit')}
-                        </Button>
-                      </Link>
-                      <Button onClick={this.showDeleteModal} className="tool-button delete-button">
-                        <Icon type="delete" />
-                        {t('common.delete')}
-                      </Button>
+                      {currentUserRole === 'editor' && (
+                        <>
+                          <Link
+                            className="tool-button edit-button"
+                            to="edit"
+                            onClick={() => this.setAutorefresh(null)}
+                          >
+                            <Button>
+                              <Icon type="edit" />
+                              {t('common.edit')}
+                            </Button>
+                          </Link>
+                          <Button
+                            onClick={this.showDeleteModal}
+                            className="tool-button delete-button"
+                          >
+                            <Icon type="delete" />
+                            {t('common.delete')}
+                          </Button>
+                        </>
+                      )}
                       <Popover
                         className="tool-button share-button"
                         icon="share"

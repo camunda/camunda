@@ -151,7 +151,16 @@ export default withErrorHandling(
       }
 
       return searchFilteredData.map(entity => {
-        const {id, entityType, lastModified, name, data, reportType, combined} = entity;
+        const {
+          id,
+          entityType,
+          currentUserRole,
+          lastModified,
+          name,
+          data,
+          reportType,
+          combined
+        } = entity;
         return (
           <ListItem key={id} className={entityType}>
             <Link to={formatLink(id, entityType)}>
@@ -171,16 +180,19 @@ export default withErrorHandling(
               </ListItem.Section>
             </Link>
             <div className="contextMenu">
-              <Dropdown label={<Icon type="overflow-menu-vertical" size="24px" />}>
-                <Dropdown.Option link={formatLink(id, entityType) + 'edit'}>
-                  <Icon type="edit" />
-                  {t('common.edit')}
-                </Dropdown.Option>
-                <Dropdown.Option onClick={() => this.confirmDelete(entity)}>
-                  <Icon type="delete" />
-                  {t('common.delete')}
-                </Dropdown.Option>
-              </Dropdown>
+              {((entityType !== 'collection' && currentUserRole === 'editor') ||
+                currentUserRole === 'manager') && (
+                <Dropdown label={<Icon type="overflow-menu-vertical" size="24px" />}>
+                  <Dropdown.Option link={formatLink(id, entityType) + 'edit'}>
+                    <Icon type="edit" />
+                    {t('common.edit')}
+                  </Dropdown.Option>
+                  <Dropdown.Option onClick={() => this.confirmDelete(entity)}>
+                    <Icon type="delete" />
+                    {t('common.delete')}
+                  </Dropdown.Option>
+                </Dropdown>
+              )}
             </div>
           </ListItem>
         );

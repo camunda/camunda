@@ -10,7 +10,7 @@ import {shallow} from 'enzyme';
 import ThemedDashboardView from './DashboardView';
 
 import {Dropdown} from 'components';
-import {checkDeleteConflict, loadEntities} from 'services';
+import {checkDeleteConflict} from 'services';
 
 const {WrappedComponent: DashboardView} = ThemedDashboardView;
 
@@ -18,8 +18,7 @@ jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
     ...rest,
-    checkDeleteConflict: jest.fn(),
-    loadEntities: jest.fn().mockReturnValue([])
+    checkDeleteConflict: jest.fn()
   };
 });
 
@@ -40,7 +39,7 @@ it('should display the key properties of a dashboard', () => {
 });
 
 it('should provide a link to edit mode in view mode', () => {
-  const node = shallow(<DashboardView />);
+  const node = shallow(<DashboardView currentUserRole="editor" />);
 
   expect(node.find('.edit-button')).toExist();
 });
@@ -147,7 +146,7 @@ it('should set conflict state when conflict happens on delete button click', asy
   checkDeleteConflict.mockReturnValue({
     conflictedItems
   });
-  const node = shallow(<DashboardView />);
+  const node = shallow(<DashboardView currentUserRole="editor" />);
 
   await node.find('.delete-button').simulate('click');
   expect(node.state().conflicts).toEqual(conflictedItems);
@@ -168,4 +167,11 @@ it('should enable share button if authorized', () => {
   const node = shallow(<DashboardView isAuthorizedToShare sharingEnabled />);
 
   expect(node.find('.share-button')).not.toBeDisabled();
+});
+
+it('should hide edit/delete if the dashboard current user role is not "editor"', () => {
+  const node = shallow(<DashboardView currentUserRole="viewer" />);
+
+  expect(node.find('.delete-button')).not.toExist();
+  expect(node.find('.edit-button')).not.toExist();
 });

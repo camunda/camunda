@@ -8,7 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import {Dropdown, ConfirmationModal} from 'components';
-import {deleteEntity, updateEntity} from 'services';
+import {loadEntity, deleteEntity, updateEntity} from 'services';
 
 import CollectionWithErrorHandling from './Collection';
 import CollectionModal from './CollectionModal';
@@ -116,4 +116,21 @@ it('should modify the collections name with the eit modal', () => {
   node.find(CollectionModal).prop('onConfirm')('new Name');
 
   expect(updateEntity).toHaveBeenCalledWith('collection', 'aCollectionId', {name: 'new Name'});
+});
+
+it('should hide edit/delete from context menu for collection items that does not have a "manager" role', () => {
+  loadEntity.mockReturnValue({
+    id: 'aCollectionId',
+    name: 'aCollectionName',
+    owner: 'user_id',
+    lastModifier: 'user_id',
+    currentUserRole: 'editor',
+    data: {
+      entities: []
+    }
+  });
+  const node = shallow(<Collection {...props} />);
+
+  expect(node.find('.name').find({type: 'delete'})).not.toExist();
+  expect(node.find('.name').find({type: 'edit'})).not.toExist();
 });

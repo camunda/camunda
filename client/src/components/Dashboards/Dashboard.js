@@ -32,6 +32,7 @@ export default withErrorHandling(
         name: null,
         lastModified: null,
         lastModifier: null,
+        currentUserRole: null,
         loaded: false,
         redirect: '',
         reports: [],
@@ -60,6 +61,7 @@ export default withErrorHandling(
         name: t('dashboard.new'),
         lastModified: moment().format('Y-MM-DDTHH:mm:ss.SSSZZ'),
         lastModifier: t('common.you'),
+        currentUserRole: 'editor',
         reports: [],
         isAuthorizedToShare: true
       });
@@ -69,11 +71,12 @@ export default withErrorHandling(
       this.props.mightFail(
         loadEntity('dashboard', this.getId()),
         async response => {
-          const {name, lastModifier, lastModified, reports} = response;
+          const {name, lastModifier, currentUserRole, lastModified, reports} = response;
 
           this.setState({
             lastModifier,
             lastModified,
+            currentUserRole,
             loaded: true,
             name,
             reports: reports || [],
@@ -148,6 +151,7 @@ export default withErrorHandling(
         serverError,
         name,
         lastModified,
+        currentUserRole,
         lastModifier,
         sharingEnabled,
         isAuthorizedToShare,
@@ -189,6 +193,7 @@ export default withErrorHandling(
               isAuthorizedToShare={isAuthorizedToShare}
               loadDashboard={this.loadDashboard}
               deleteDashboard={this.deleteDashboard}
+              currentUserRole={currentUserRole}
               reports={reports}
             />
           )}

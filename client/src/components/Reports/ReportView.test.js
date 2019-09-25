@@ -40,6 +40,7 @@ const report = {
   lastModified: '2017-11-11T11:11:11.1111+0200',
   reportType: 'process',
   combined: false,
+  currentUserRole: 'editor',
   data: {
     processDefinitionKey: null,
     configuration: {},
@@ -144,4 +145,11 @@ it('should set conflict state when conflict happens on delete button click', asy
   await node.find('.delete-button').prop('onClick')();
   expect(node.state().conflict.type).toEqual('delete');
   expect(node.state().conflict.items).toEqual(conflictedItems);
+});
+
+it('should hide edit/delete if the report current user role is not "editor"', () => {
+  const node = shallow(<ReportView report={{...report, currentUserRole: 'viewer'}} />);
+
+  expect(node.find('.delete-button')).not.toExist();
+  expect(node.find('.edit-button')).not.toExist();
 });

@@ -75,7 +75,8 @@
       }
     },
     "combined": false,
-    "reportType": "process"
+    "reportType": "process",
+    "currentUserRole": "editor"
   },
   "new-combined": {
     "result": {
@@ -109,7 +110,8 @@
       "reports": []
     },
     "combined": true,
-    "reportType": "process"
+    "reportType": "process",
+    "currentUserRole": "editor"
   },
   "new-decision": {
     "id": "new-decision",
@@ -186,6 +188,7 @@
       }
     },
     "combined": false,
-    "reportType": "decision"
+    "reportType": "decision",
+    "currentUserRole": "editor"
   }
 }

@@ -84,7 +84,7 @@ export default class ReportView extends Component {
     const {report} = this.props;
     const {confirmModalVisible, conflict, redirect, sharingEnabled, deleteLoading} = this.state;
 
-    const {id, name, lastModifier, lastModified} = report;
+    const {id, name, currentUserRole, lastModifier, lastModified} = report;
 
     if (redirect) {
       return <Redirect to={redirect} />;
@@ -107,16 +107,20 @@ export default class ReportView extends Component {
                 <h1 className="name">{name}</h1>
               </div>
               <div className="tools">
-                <Link className="tool-button edit-button" to="edit">
-                  <Button>
-                    <Icon type="edit" />
-                    {t('common.edit')}
-                  </Button>
-                </Link>
-                <Button className="tool-button delete-button" onClick={this.showDeleteModal}>
-                  <Icon type="delete" />
-                  {t('common.delete')}
-                </Button>
+                {currentUserRole === 'editor' && (
+                  <>
+                    <Link className="tool-button edit-button" to="edit">
+                      <Button>
+                        <Icon type="edit" />
+                        {t('common.edit')}
+                      </Button>
+                    </Link>
+                    <Button className="tool-button delete-button" onClick={this.showDeleteModal}>
+                      <Icon type="delete" />
+                      {t('common.delete')}
+                    </Button>
+                  </>
+                )}
                 <Popover
                   className="tool-button share-button"
                   icon="share"
