@@ -13,4 +13,9 @@ pipelineJob('dependency-check') {
   triggers {
     cron('H 4 * * *')
   }
+
+  parameters {
+    stringParam('BRANCH', 'master', 'Branch to use for dependency check')
+  }
+
 }

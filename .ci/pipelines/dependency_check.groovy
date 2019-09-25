@@ -103,7 +103,7 @@ pipeline {
         stage('Prepare') {
             steps {
                 git url: 'git@github.com:camunda/camunda-optimize',
-                        branch: "master",
+                        branch: "${BRANCH}",
                         credentialsId: 'camunda-jenkins-github-ssh',
                         poll: false
             }
