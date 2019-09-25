@@ -369,7 +369,7 @@ public class CollectionWriter {
 
     try {
       final Map<String, Object> params = constructParamsForRoleUpdateScript(roleEntryId, userId);
-      params.put("role", roleUpdateDto.getRole().name());
+      params.put("role", roleUpdateDto.getRole().toString());
 
       final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScript(
         // @formatter:off
@@ -493,7 +493,7 @@ public class CollectionWriter {
   private Map<String, Object> constructParamsForRoleUpdateScript(String roleEntryId, String userId) {
     final Map<String, Object> params = new HashMap<>();
     params.put("roleEntryId", roleEntryId);
-    params.put("managerRole", RoleType.MANAGER.name());
+    params.put("managerRole", RoleType.MANAGER.toString());
     params.put("lastModifier", userId);
     params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
     return params;
