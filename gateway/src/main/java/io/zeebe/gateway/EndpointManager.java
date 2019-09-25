@@ -269,7 +269,7 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
         error -> streamObserver.onError(convertThrowable(error)));
   }
 
-  private StatusRuntimeException convertThrowable(Throwable cause) {
+  public static StatusRuntimeException convertThrowable(Throwable cause) {
     Status status = Status.INTERNAL;
 
     if (cause instanceof ExecutionException) {
@@ -300,7 +300,7 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
     return convertedThrowable;
   }
 
-  private Status mapBrokerErrorToStatus(BrokerError error) {
+  public static Status mapBrokerErrorToStatus(BrokerError error) {
     switch (error.getCode()) {
       case WORKFLOW_NOT_FOUND:
         return Status.NOT_FOUND.augmentDescription(error.getMessage());
@@ -314,7 +314,7 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
     }
   }
 
-  private Status mapRejectionToStatus(BrokerRejection rejection) {
+  public static Status mapRejectionToStatus(BrokerRejection rejection) {
     final String description =
         String.format(
             "Command rejected with code '%s': %s", rejection.getIntent(), rejection.getReason());
