@@ -12,6 +12,7 @@ import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.es.schema.templates.VariableTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
@@ -22,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -43,7 +45,7 @@ public class VariableReader extends AbstractReader {
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceKeyQuery, scopeKeyQuery));
 
-    final SearchRequest searchRequest = new SearchRequest(variableTemplate.getAlias())
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(variableTemplate, ALL)
       .source(new SearchSourceBuilder()
         .query(query)
         .sort(VariableTemplate.NAME, SortOrder.ASC));

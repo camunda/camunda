@@ -196,7 +196,7 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
         .source(new SearchSourceBuilder()
             .query(q)
             .size(100));
-    final List<Long> idsFromEls = ElasticsearchUtil.scrollFieldToTypedList(request, idFieldName, esClient);
+    final List<Long> idsFromEls = ElasticsearchUtil.scrollFieldToList(request, idFieldName, esClient);
     assertThat(idsFromEls).as(mainIndexName).isSubsetOf(ids);
   }
 

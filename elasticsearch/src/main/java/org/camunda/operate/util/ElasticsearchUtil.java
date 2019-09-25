@@ -5,8 +5,6 @@
  */
 package org.camunda.operate.util;
 
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,11 +13,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
 import org.camunda.operate.entities.OperateEntity;
+import org.camunda.operate.es.schema.templates.TemplateCreator;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
-import static org.camunda.operate.util.CollectionUtil.*;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -28,6 +25,7 @@ import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -41,9 +39,11 @@ import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.camunda.operate.util.CollectionUtil.map;
+import static org.camunda.operate.util.CollectionUtil.throwAwayNullElements;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 public abstract class ElasticsearchUtil {
 
@@ -53,9 +53,40 @@ public abstract class ElasticsearchUtil {
   public static final int SCROLL_KEEP_ALIVE_MS = 60000;
   public static final int TERMS_AGG_SIZE = 10000;
   public static final int TOPHITS_AGG_SIZE = 100;
-  
+  public static final int CARDINALITY_PRECISION_THRESHOLD = 1000;
+
   public static final Function<SearchHit,Long> searchHitIdToLong = (hit) -> Long.valueOf(hit.getId());
-  public static final Function<SearchHit,String> searchHitIdToString = (hit) -> hit.getId();
+  public static final Function<SearchHit,String> searchHitIdToString = SearchHit::getId;
+
+  public enum QueryType {
+    ONLY_ARCHIVE,
+    ONLY_RUNTIME,
+    ALL
+  }
+
+  /* CREATE QUERIES */
+
+  public static SearchRequest createSearchRequest(TemplateCreator template) {
+    return createSearchRequest(template, QueryType.ALL);
+  }
+
+  public static SearchRequest createSearchRequest(TemplateCreator template, QueryType queryType) {
+    SearchRequest searchRequest = new SearchRequest(whereToSearch(template, queryType)).indicesOptions(IndicesOptions.lenientExpandOpen());
+    return searchRequest;
+  }
+
+  private static String whereToSearch(TemplateCreator template, QueryType queryType) {
+    switch (queryType) {
+    case ONLY_ARCHIVE:
+      return template.getIndexPattern() + ",-" + template.getMainIndexName();
+    case ONLY_RUNTIME:
+      return template.getMainIndexName();
+    case ALL:
+    default:
+      return template.getAlias();
+    }
+  }
+
 
   public static QueryBuilder joinWithOr(BoolQueryBuilder boolQueryBuilder, QueryBuilder... queries) {
     List<QueryBuilder> notNullQueries = throwAwayNullElements(queries);
@@ -128,8 +159,49 @@ public abstract class ElasticsearchUtil {
     return boolQuery().must(QueryBuilders.wrapperQuery("{\"match_none\": {}}"));
   }
 
+  /* EXECUTE QUERY */
+
+  public static void processBulkRequest(RestHighLevelClient esClient, BulkRequest bulkRequest) throws PersistenceException {
+    processBulkRequest(esClient, bulkRequest, false);
+  }
+
+  public static void processBulkRequest(RestHighLevelClient esClient, BulkRequest bulkRequest, boolean refreshImmediately) throws PersistenceException {
+    if (bulkRequest.requests().size() > 0) {
+      try {
+        logger.debug("************* FLUSH BULK *************");
+        if (refreshImmediately) {
+          bulkRequest = bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+        }
+        final BulkResponse bulkItemResponses = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+        final BulkItemResponse[] items = bulkItemResponses.getItems();
+        for (BulkItemResponse responseItem : items) {
+          if (responseItem.isFailed()) {
+            logger.error(String.format("%s failed for type [%s] and id [%s]: %s", responseItem.getOpType(), responseItem.getIndex(), responseItem.getId(),
+                responseItem.getFailureMessage()), responseItem.getFailure().getCause());
+            throw new PersistenceException("Operation failed: " + responseItem.getFailureMessage(), responseItem.getFailure().getCause(), responseItem.getItemId());
+          }
+        }
+      } catch (IOException ex) {
+        throw new PersistenceException("Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
+      }
+    }
+  }
+
+  public static void executeUpdate(RestHighLevelClient esClient, UpdateRequest updateRequest) throws PersistenceException {
+    try {
+      esClient.update(updateRequest, RequestOptions.DEFAULT);
+    } catch (ElasticsearchException | IOException e)  {
+      final String errorMessage = String.format("Update request failed for type [%s] and id [%s] with the message [%s].",
+          updateRequest.type(), updateRequest.id(), e.getMessage());
+      logger.error(errorMessage, e);
+      throw new PersistenceException(errorMessage, e);
+    }
+  }
+
+  /* MAP QUERY RESULTS */
+
   public static <T> List<T> mapSearchHits(SearchHit[] searchHits, ObjectMapper objectMapper, Class<T> clazz) {
-    return map(searchHits, (searchHit) -> fromSearchHit(searchHit.getSourceAsString(), objectMapper, clazz)); 
+    return map(searchHits, (searchHit) -> fromSearchHit(searchHit.getSourceAsString(), objectMapper, clazz));
   }
 
   public static <T> T fromSearchHit(String searchHitString, ObjectMapper objectMapper, Class<T> clazz) {
@@ -156,43 +228,6 @@ public abstract class ElasticsearchUtil {
       throw new OperateRuntimeException(String.format("Error while reading entity of type %s from Elasticsearch!", valueType.toString()), e);
     }
     return workflowInstance;
-  }
-
-  public static void processBulkRequest(RestHighLevelClient esClient, BulkRequest bulkRequest) throws PersistenceException {
-    processBulkRequest(esClient, bulkRequest, false);
-  }
-
-  public static void processBulkRequest(RestHighLevelClient esClient, BulkRequest bulkRequest, boolean refreshImmediately) throws PersistenceException {
-    if (bulkRequest.requests().size() > 0) {
-      try {
-        logger.debug("************* FLUSH BULK *************");
-        if (refreshImmediately) {
-          bulkRequest = bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-        }
-        final BulkResponse bulkItemResponses = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
-        final BulkItemResponse[] items = bulkItemResponses.getItems();
-        for (BulkItemResponse responseItem : items) {
-          if (responseItem.isFailed()) {
-            logger.error(String.format("%s failed for type [%s] and id [%s]: %s", responseItem.getOpType(), responseItem.getIndex(), responseItem.getId(),
-              responseItem.getFailureMessage()), responseItem.getFailure().getCause());
-            throw new PersistenceException("Operation failed: " + responseItem.getFailureMessage(), responseItem.getFailure().getCause(), responseItem.getItemId());
-          }
-        }
-      } catch (IOException ex) {
-        throw new PersistenceException("Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
-      }
-    }
-  }
-
-  public static void executeUpdate(RestHighLevelClient esClient, UpdateRequest updateRequest) throws PersistenceException {
-      try {
-        esClient.update(updateRequest, RequestOptions.DEFAULT);
-      } catch (ElasticsearchException | IOException e)  {
-        final String errorMessage = String.format("Update request failed for type [%s] and id [%s] with the message [%s].",
-          updateRequest.type(), updateRequest.id(), e.getMessage());
-        logger.error(errorMessage, e);
-        throw new PersistenceException(errorMessage, e);
-      }
   }
 
   public static <T extends OperateEntity> List<T> scroll(SearchRequest searchRequest, Class<T> clazz, ObjectMapper objectMapper, RestHighLevelClient esClient)
@@ -309,11 +344,7 @@ public abstract class ElasticsearchUtil {
     return result;
   }
 
-  public static List<String> scrollFieldToList(SearchRequest request, String fieldName, RestHighLevelClient esClient) throws IOException {
-    return scrollFieldToTypedList(request, fieldName, esClient);
-  }
-
-  public static <T> List<T> scrollFieldToTypedList(SearchRequest request, String fieldName, RestHighLevelClient esClient) throws IOException {
+  public static <T> List<T> scrollFieldToList(SearchRequest request, String fieldName, RestHighLevelClient esClient) throws IOException {
     List<T> result = new ArrayList<>();
     Function<SearchHit, T> searchHitFieldToString = (searchHit) -> (T)searchHit.getSourceAsMap().get(fieldName);
 

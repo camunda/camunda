@@ -19,6 +19,7 @@ public abstract class AbstractTemplateCreator implements TemplateCreator {
 
   private static final Logger logger = LoggerFactory.getLogger(AbstractTemplateCreator.class);
 
+  public static final String EAGER_GLOBAL_ORDINALS = "eager_global_ordinals";
   public static final String PARTITION_ID = "partitionId";
 
   @Autowired

@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.List;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.ReindexException;
+import org.elasticsearch.action.admin.indices.forcemerge.ForceMergeRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -36,7 +37,19 @@ public class ArchiverHelper {
 
     reindexDocuments(sourceIndexName, destinationIndexName, idFieldName, workflowInstanceKeys);
 
+    forceMerge(destinationIndexName);
+
     deleteDocuments(sourceIndexName, idFieldName, workflowInstanceKeys);
+  }
+
+  private void forceMerge(String destinationIndexName) {
+    ForceMergeRequest request = new ForceMergeRequest(destinationIndexName);
+    try {
+      esClient.indices().forcemerge(request, RequestOptions.DEFAULT);
+    } catch (Exception e) {
+      logger.warn("Force merge request failed for index {} with the message {}", destinationIndexName, e.getMessage());
+      //ignoring an exception, as it's not crucial for archiving process
+    }
   }
 
   public String getDestinationIndexName(String sourceIndexName, String finishDate) {

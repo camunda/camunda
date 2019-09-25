@@ -20,6 +20,7 @@ public abstract class AbstractIndexCreator implements IndexCreator {
 
   private static final Logger logger = LoggerFactory.getLogger(AbstractIndexCreator.class);
 
+  public static final String EAGER_GLOBAL_ORDINALS = "eager_global_ordinals";
   public static final String PARTITION_ID = "partitionId";
 
   @Autowired

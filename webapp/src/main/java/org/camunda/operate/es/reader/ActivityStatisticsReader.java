@@ -24,27 +24,28 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.join.aggregations.Children;
 import org.elasticsearch.join.aggregations.ChildrenAggregationBuilder;
-import org.elasticsearch.join.aggregations.Parent;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITY_ID;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITY_STATE;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITY_TYPE;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.INCIDENT_KEY;
+import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_ARCHIVE;
+import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.join.aggregations.JoinAggregationBuilders.children;
-import static org.elasticsearch.join.aggregations.JoinAggregationBuilders.parent;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.cardinality;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
@@ -79,47 +80,61 @@ public class ActivityStatisticsReader {
 
     Map<String, ActivityStatisticsDto> statisticsMap = new HashMap<>();
 
+    SearchRequest searchRequest = createQuery(query, ONLY_RUNTIME);
+    runQueryAndCollectStats(statisticsMap, searchRequest);
+
+    if (query.isFinished()) {
+      searchRequest = createQuery(query, ONLY_ARCHIVE);
+      runQueryAndCollectStats(statisticsMap, searchRequest);
+    }
+
+    return statisticsMap.values();
+  }
+
+  public void runQueryAndCollectStats(Map<String, ActivityStatisticsDto> statisticsMap, SearchRequest searchRequest) {
+    try {
+      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+      if (searchResponse.getAggregations() != null) {
+        Children activities = searchResponse.getAggregations().get(AGG_ACTIVITIES);
+        CollectionUtil.asMap(
+            AGG_ACTIVE_ACTIVITIES,     (MapUpdater)ActivityStatisticsDto::setActive,
+            AGG_INCIDENT_ACTIVITIES,   (MapUpdater)ActivityStatisticsDto::setIncidents,
+            AGG_TERMINATED_ACTIVITIES, (MapUpdater)ActivityStatisticsDto::setCanceled,
+            AGG_FINISHED_ACTIVITIES,   (MapUpdater)ActivityStatisticsDto::setCompleted)
+            .forEach((aggName,mapUpdater) -> collectStatisticsFor(statisticsMap, activities, aggName, (MapUpdater)mapUpdater));
+      }
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining statistics for activities: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  public SearchRequest createQuery(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
     final QueryBuilder q = constantScoreQuery(listViewReader.createQueryFragment(query));
 
     ChildrenAggregationBuilder agg =
         children(AGG_ACTIVITIES, ListViewTemplate.ACTIVITIES_JOIN_RELATION);
 
-    if (query.isActive()) {
+    if (queryType != ONLY_ARCHIVE && query.isActive()) {
       agg = agg.subAggregation(getActiveActivitiesAgg());
     }
     if (query.isCanceled()) {
       agg = agg.subAggregation(getTerminatedActivitiesAgg());
     }
-    if (query.isIncidents()) {
+    if (queryType != ONLY_ARCHIVE && query.isIncidents()) {
       agg = agg.subAggregation(getIncidentActivitiesAgg());
     }
     agg = agg.subAggregation(getFinishedActivitiesAgg());
 
     logger.debug("Activities statistics request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
 
-    SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
-    searchRequest.source(new SearchSourceBuilder()
-        .query(q)
-        .size(0)
-        .aggregation(agg));
-
-    try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-
-      Children activities = searchResponse.getAggregations().get(AGG_ACTIVITIES);
-      CollectionUtil.asMap(
-          AGG_ACTIVE_ACTIVITIES,     (MapUpdater)ActivityStatisticsDto::setActive,
-          AGG_INCIDENT_ACTIVITIES,   (MapUpdater)ActivityStatisticsDto::setIncidents,
-          AGG_TERMINATED_ACTIVITIES, (MapUpdater)ActivityStatisticsDto::setCanceled,
-          AGG_FINISHED_ACTIVITIES,   (MapUpdater)ActivityStatisticsDto::setCompleted)
-        .forEach((aggName,mapUpdater) -> collectStatisticsFor(statisticsMap, activities, aggName, (MapUpdater)mapUpdater));
-    } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining statistics for activities: %s", e.getMessage());
-      logger.error(message, e);
-      throw new OperateRuntimeException(message, e);
-    }
-
-    return statisticsMap.values();
+    return ElasticsearchUtil.createSearchRequest(listViewTemplate, queryType)
+        .source(new SearchSourceBuilder()
+          .query(q)
+          .size(0)
+          .aggregation(agg));
   }
 
   private void collectStatisticsFor(Map<String, ActivityStatisticsDto> statisticsMap, Children activities,String aggName,MapUpdater mapUpdater) {
@@ -127,8 +142,8 @@ public class ActivityStatisticsReader {
     if (incidentActivitiesAgg != null) {
       ((Terms) incidentActivitiesAgg.getAggregations().get(AGG_UNIQUE_ACTIVITIES)).getBuckets().stream().forEach(b -> {
         String activityId = b.getKeyAsString();
-        final Parent aggregation = b.getAggregations().get(AGG_ACTIVITY_TO_WORKFLOW);
-        final long docCount = aggregation.getDocCount();  //number of workflow instances
+        final Cardinality aggregation = b.getAggregations().get(AGG_ACTIVITY_TO_WORKFLOW);
+        final long docCount = aggregation.getValue();  //number of workflow instances
         if (statisticsMap.get(activityId) == null) {
           statisticsMap.put(activityId, new ActivityStatisticsDto(activityId));
         }
@@ -140,8 +155,8 @@ public class ActivityStatisticsReader {
   private FilterAggregationBuilder getTerminatedActivitiesAgg() {
     return filter(AGG_TERMINATED_ACTIVITIES, termQuery(ACTIVITY_STATE, ActivityState.TERMINATED)).subAggregation(
           terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
-              .subAggregation(parent(AGG_ACTIVITY_TO_WORKFLOW, ACTIVITIES_JOIN_RELATION))
-          //we need this to count workflow instances, not the activity instances
+              .subAggregation(cardinality(AGG_ACTIVITY_TO_WORKFLOW).field(ListViewTemplate.WORKFLOW_INSTANCE_KEY).precisionThreshold(ElasticsearchUtil.CARDINALITY_PRECISION_THRESHOLD))
+        //we need this to count workflow instances, not the activity instances
       );
   }
 
@@ -149,7 +164,7 @@ public class ActivityStatisticsReader {
     return filter(AGG_ACTIVE_ACTIVITIES,
           boolQuery().mustNot(existsQuery(INCIDENT_KEY)).must(termQuery(ACTIVITY_STATE, ActivityState.ACTIVE.toString()))).subAggregation(
           terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
-              .subAggregation(parent(AGG_ACTIVITY_TO_WORKFLOW, ACTIVITIES_JOIN_RELATION))
+              .subAggregation(cardinality(AGG_ACTIVITY_TO_WORKFLOW).field(ListViewTemplate.WORKFLOW_INSTANCE_KEY).precisionThreshold(ElasticsearchUtil.CARDINALITY_PRECISION_THRESHOLD))
           //we need this to count workflow instances, not the activity instances
       );
   }
@@ -157,8 +172,8 @@ public class ActivityStatisticsReader {
   private FilterAggregationBuilder getIncidentActivitiesAgg() {
     return filter(AGG_INCIDENT_ACTIVITIES, existsQuery(INCIDENT_KEY)).subAggregation(
           terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
-              .subAggregation(parent(AGG_ACTIVITY_TO_WORKFLOW, ACTIVITIES_JOIN_RELATION))
-          //we need this to count workflow instances, not the activity instances
+              .subAggregation(cardinality(AGG_ACTIVITY_TO_WORKFLOW).field(ListViewTemplate.WORKFLOW_INSTANCE_KEY).precisionThreshold(ElasticsearchUtil.CARDINALITY_PRECISION_THRESHOLD))
+        //we need this to count workflow instances, not the activity instances
       );
   }
 
@@ -166,7 +181,7 @@ public class ActivityStatisticsReader {
     final QueryBuilder completedEndEventsQ = joinWithAnd(termQuery(ACTIVITY_TYPE, ActivityType.END_EVENT.toString()), termQuery(ACTIVITY_STATE, ActivityState.COMPLETED.toString()));
     return filter(AGG_FINISHED_ACTIVITIES, completedEndEventsQ).subAggregation(
         terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
-            .subAggregation(parent(AGG_ACTIVITY_TO_WORKFLOW, ACTIVITIES_JOIN_RELATION))
+            .subAggregation(cardinality(AGG_ACTIVITY_TO_WORKFLOW).field(ListViewTemplate.WORKFLOW_INSTANCE_KEY).precisionThreshold(ElasticsearchUtil.CARDINALITY_PRECISION_THRESHOLD))
         //we need this to count workflow instances, not the activity instances
     );
   }

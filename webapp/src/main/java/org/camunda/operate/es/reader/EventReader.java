@@ -75,7 +75,7 @@ public class EventReader extends AbstractReader {
     ConstantScoreQueryBuilder constantScoreQuery = QueryBuilders.constantScoreQuery(query);
     logger.debug("Events search request: \n{}", constantScoreQuery.toString());
 
-    return new SearchRequest(eventTemplate.getAlias())
+    return ElasticsearchUtil.createSearchRequest(eventTemplate)
       .source(new SearchSourceBuilder()
         .query(constantScoreQuery));
   }

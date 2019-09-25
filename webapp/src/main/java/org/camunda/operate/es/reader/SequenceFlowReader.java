@@ -11,6 +11,7 @@ import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.es.schema.templates.SequenceFlowTemplate;
 import org.camunda.operate.es.schema.templates.VariableTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
@@ -36,7 +37,7 @@ public class SequenceFlowReader extends AbstractReader {
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(workflowInstanceKeyQuery);
 
-    final SearchRequest searchRequest = new SearchRequest(sequenceFlowTemplate.getAlias())
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(sequenceFlowTemplate, ElasticsearchUtil.QueryType.ALL)
       .source(new SearchSourceBuilder()
         .query(query)
         .sort(SequenceFlowTemplate.ACTIVITY_ID, SortOrder.ASC));

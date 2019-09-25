@@ -12,6 +12,7 @@ import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceDto;
 import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeDto;
 import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeRequestDto;
@@ -71,7 +72,7 @@ public class ActivityInstanceReader extends AbstractReader {
 
   public List<ActivityInstanceEntity> getAllActivityInstances(Long workflowInstanceKey) {
     final TermQueryBuilder workflowInstanceKeyQuery = termQuery(ActivityInstanceTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
-    final SearchRequest searchRequest = new SearchRequest(activityInstanceTemplate.getAlias())
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(activityInstanceTemplate)
       .source(new SearchSourceBuilder()
         .query(constantScoreQuery(workflowInstanceKeyQuery))
         .sort(ActivityInstanceTemplate.POSITION, SortOrder.ASC));

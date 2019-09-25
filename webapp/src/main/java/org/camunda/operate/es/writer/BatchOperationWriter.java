@@ -232,7 +232,7 @@ public class BatchOperationWriter {
     final int batchSize = operateProperties.getElasticsearch().getBatchSize();
 
     final SearchSourceBuilder searchSourceBuilder = listViewReader.createSearchSourceBuilder(new ListViewRequestDto(batchOperationRequest.getQueries()));
-    final SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias())
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate, ElasticsearchUtil.QueryType.ONLY_RUNTIME)
         .source(searchSourceBuilder.size(batchSize).fetchSource(false));
     try {
       AtomicInteger operationsCount = new AtomicInteger();

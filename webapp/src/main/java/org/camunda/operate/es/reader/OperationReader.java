@@ -32,6 +32,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import static org.camunda.operate.entities.OperationState.LOCKED;
 import static org.camunda.operate.entities.OperationState.SCHEDULED;
+import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
+import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithOr;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
@@ -69,7 +71,7 @@ public class OperationReader extends AbstractReader {
 
     ConstantScoreQueryBuilder constantScoreQuery = constantScoreQuery(operationsQuery);
 
-    final SearchRequest searchRequest = new SearchRequest(operationTemplate.getMainIndexName())
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(operationTemplate, ONLY_RUNTIME)
       .source(new SearchSourceBuilder()
         .query(constantScoreQuery)
         .sort(OperationTemplate.START_DATE, SortOrder.ASC)
@@ -90,7 +92,7 @@ public class OperationReader extends AbstractReader {
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(termsQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKeys));
 
-    final SearchRequest searchRequest = new SearchRequest(operationTemplate.getAlias())
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(operationTemplate, ElasticsearchUtil.QueryType.ALL)
       .source(new SearchSourceBuilder()
         .query(query)
         .sort(OperationTemplate.WORKFLOW_INSTANCE_KEY, SortOrder.ASC)
@@ -118,7 +120,7 @@ public class OperationReader extends AbstractReader {
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey));
 
-    final SearchRequest searchRequest = new SearchRequest(operationTemplate.getAlias())
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(operationTemplate, ONLY_RUNTIME)
       .source(new SearchSourceBuilder()
         .query(query)
         .sort(OperationTemplate.INCIDENT_KEY, SortOrder.ASC)
@@ -148,7 +150,7 @@ public class OperationReader extends AbstractReader {
     final TermQueryBuilder operationTypeQ = termQuery(OperationTemplate.TYPE, OperationType.UPDATE_VARIABLE.name());
     final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceKeyQuery, scopeKeyQuery, operationTypeQ));
 
-    final SearchRequest searchRequest = new SearchRequest(operationTemplate.getAlias())
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
       .source(new SearchSourceBuilder()
         .query(query)
         .sort(OperationTemplate.START_DATE, SortOrder.DESC)
@@ -177,7 +179,7 @@ public class OperationReader extends AbstractReader {
     } else {
       query = constantScoreQuery(termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey));
     }
-    final SearchRequest searchRequest = new SearchRequest(operationTemplate.getAlias())
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
       .source(new SearchSourceBuilder()
         .query(query)
         .sort(OperationTemplate.START_DATE, SortOrder.DESC)

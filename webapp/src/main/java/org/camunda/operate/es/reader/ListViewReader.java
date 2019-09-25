@@ -66,6 +66,8 @@ import static org.camunda.operate.es.schema.templates.ListViewTemplate.VARIABLES
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.VAR_NAME;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.VAR_VALUE;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
+import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
+import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static org.camunda.operate.util.ElasticsearchUtil.createMatchNoneQuery;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithOr;
@@ -129,8 +131,9 @@ public class ListViewReader {
     searchSourceBuilder
       .from(firstResult)
       .size(maxResults);
-    SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
-    searchRequest.source(searchSourceBuilder);
+
+    SearchRequest searchRequest = createSearchRequest(workflowInstanceRequest)
+        .source(searchSourceBuilder);
     try {
       SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       result.setTotalCount(response.getHits().getTotalHits());
@@ -141,6 +144,15 @@ public class ListViewReader {
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
+  }
+
+  private SearchRequest createSearchRequest(ListViewRequestDto workflowInstanceRequest) {
+    for (ListViewQueryDto queryFragment: workflowInstanceRequest.getQueries()) {
+      if (queryFragment.isFinished()) {
+        return ElasticsearchUtil.createSearchRequest(listViewTemplate, ALL);
+      }
+    }
+    return ElasticsearchUtil.createSearchRequest(listViewTemplate, ONLY_RUNTIME);
   }
 
   public SearchSourceBuilder createSearchSourceBuilder(ListViewRequestDto request) {
@@ -186,7 +198,7 @@ public class ListViewReader {
     return joinWithAnd(
         createRunningFinishedQuery(query),
         createActivityIdQuery(query),
-        createIdsQuery(query),  
+        createIdsQuery(query),
         createErrorMessageQuery(query),
         createStartDateQuery(query),
         createEndDateQuery(query),
@@ -268,11 +280,11 @@ public class ListViewReader {
   private QueryBuilder createErrorMessageAsAndMatchQuery(String errorMessage) {
     return hasChildQuery(ACTIVITIES_JOIN_RELATION,QueryBuilders.matchQuery(ERROR_MSG, errorMessage).operator(Operator.AND), None);
   }
-  
+
   private QueryBuilder createErrorMessageAsWildcardQuery(String errorMessage) {
     return hasChildQuery(ACTIVITIES_JOIN_RELATION,QueryBuilders.wildcardQuery(ERROR_MSG, errorMessage), None);
   }
-  
+
   private QueryBuilder createErrorMessageQuery(ListViewQueryDto query) {
     String errorMessage = query.getErrorMessage();
     if (!StringUtils.isEmpty(errorMessage)) {
@@ -284,7 +296,7 @@ public class ListViewReader {
     }
     return null;
   }
-  
+
   private QueryBuilder createIdsQuery(ListViewQueryDto query) {
     if (CollectionUtil.isNotEmpty(query.getIds())) {
       return termsQuery(ListViewTemplate.ID, query.getIds());
@@ -297,9 +309,9 @@ public class ListViewReader {
     final TermsQueryBuilder workflowInstanceKeysQuery = termsQuery(ListViewTemplate.ID, workflowInstanceKeys);
     final HasChildQueryBuilder hasIncidentQ = hasChildQuery(ACTIVITIES_JOIN_RELATION, existsQuery(ListViewTemplate.INCIDENT_KEY), None);
 
-    SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
-    searchRequest.source(new SearchSourceBuilder()
-      .query(constantScoreQuery(joinWithAnd(isWorkflowInstanceQuery, workflowInstanceKeysQuery, hasIncidentQ))));
+    SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate, ONLY_RUNTIME)
+        .source(new SearchSourceBuilder()
+          .query(constantScoreQuery(joinWithAnd(isWorkflowInstanceQuery, workflowInstanceKeysQuery, hasIncidentQ))));
 
     try {
       return ElasticsearchUtil.scrollKeysToSet(searchRequest, esClient);

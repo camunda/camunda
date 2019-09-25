@@ -195,7 +195,7 @@ public class ListViewZeebeRecordProcessor {
       entity.setErrorMessage(StringUtils.trimWhitespace(recordValue.getErrorMessage()));
       entity.setIncidentKey(record.getKey());
       entity.setIncidentJobKey(recordValue.getJobKey());
-    } else if (intentStr.equals(IncidentIntent.CREATED.name())) {
+    } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {
       entity.setErrorMessage(null);
       entity.setIncidentKey(null);
       entity.setIncidentJobKey(null);

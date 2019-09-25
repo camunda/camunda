@@ -5,10 +5,11 @@
  */
 package org.camunda.operate.es.reader;
 
+import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
+import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -58,25 +59,25 @@ public class WorkflowInstanceReader extends AbstractReader {
    * @param workflowKey
    * @return
    */
-  public List<Long> queryWorkflowInstancesWithEmptyWorkflowVersion(Long workflowKey) {
-      QueryBuilder queryBuilder = constantScoreQuery(
-          joinWithAnd(
-              termQuery(ListViewTemplate.WORKFLOW_KEY, workflowKey),
-              boolQuery().mustNot(existsQuery(ListViewTemplate.WORKFLOW_VERSION))
-          )
-      );
-      SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias())
-                                      .source(new SearchSourceBuilder()
-                                      .query(queryBuilder)
-                                      .fetchSource(false));
-      try {
-        return ElasticsearchUtil.scrollKeysToList(searchRequest, esClient);
-      } catch (IOException e) {
-        final String message = String.format("Exception occurred, while obtaining workflow instance that has empty versions: %s", e.getMessage());
-        logger.error(message, e);
-        throw new OperateRuntimeException(message, e);
-      }
-  }
+//  public List<Long> queryWorkflowInstancesWithEmptyWorkflowVersion(Long workflowKey) {
+//      QueryBuilder queryBuilder = constantScoreQuery(
+//          joinWithAnd(
+//              termQuery(ListViewTemplate.WORKFLOW_KEY, workflowKey),
+//              boolQuery().mustNot(existsQuery(ListViewTemplate.WORKFLOW_VERSION))
+//          )
+//      );
+//      SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias())
+//                                      .source(new SearchSourceBuilder()
+//                                      .query(queryBuilder)
+//                                      .fetchSource(false));
+//      try {
+//        return ElasticsearchUtil.scrollKeysToList(searchRequest, esClient);
+//      } catch (IOException e) {
+//        final String message = String.format("Exception occurred, while obtaining workflow instance that has empty versions: %s", e.getMessage());
+//        logger.error(message, e);
+//        throw new OperateRuntimeException(message, e);
+//      }
+//  }
 
   /**
    * Searches for workflow instance by key.
@@ -123,7 +124,7 @@ public class WorkflowInstanceReader extends AbstractReader {
         termQuery(ListViewTemplate.WORKFLOW_INSTANCE_KEY,workflowInstanceKey)
     );
     
-    SearchRequest request = new SearchRequest(listViewTemplate.getAlias())
+    SearchRequest request = ElasticsearchUtil.createSearchRequest(listViewTemplate, ALL)
       .source(new SearchSourceBuilder()
       .query(constantScoreQuery(query)));
     
@@ -144,7 +145,7 @@ public class WorkflowInstanceReader extends AbstractReader {
     final TermQueryBuilder workflowInstanceKeyQuery = termQuery(ListViewTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
     final ExistsQueryBuilder existsIncidentQ = existsQuery(ListViewTemplate.INCIDENT_KEY);
 
-    final SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias())
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate, ONLY_RUNTIME)
       .source(new SearchSourceBuilder()
         .query(constantScoreQuery(joinWithAnd(workflowInstanceKeyQuery, existsIncidentQ)))
         .fetchSource(ListViewTemplate.ID, null));
@@ -158,7 +159,7 @@ public class WorkflowInstanceReader extends AbstractReader {
         new HasChildQueryBuilder(ListViewTemplate.ACTIVITIES_JOIN_RELATION, QueryBuilders.existsQuery(ListViewTemplate.INCIDENT_KEY), ScoreMode.None));
     final FilterAggregationBuilder runningAggregation = AggregationBuilders.filter("running",
         termQuery(ListViewTemplate.STATE, WorkflowInstanceState.ACTIVE));
-    final SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias())
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate, ONLY_RUNTIME)
         .source(new SearchSourceBuilder().size(0).aggregation(incidentsAggregation).aggregation(runningAggregation));
 
     try {

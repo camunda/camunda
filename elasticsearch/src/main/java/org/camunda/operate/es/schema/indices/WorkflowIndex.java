@@ -40,6 +40,7 @@ public class WorkflowIndex extends AbstractIndexCreator {
       .endObject()
       .startObject(BPMN_PROCESS_ID)
         .field("type", "keyword")
+        .field(EAGER_GLOBAL_ORDINALS, true)
       .endObject()
       .startObject(NAME)
         .field("type", "keyword")

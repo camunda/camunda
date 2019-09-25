@@ -7,6 +7,7 @@ package org.camunda.operate.es.reader;
 
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
+import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -87,7 +88,7 @@ public class IncidentStatisticsReader extends AbstractReader {
             termQuery(ListViewTemplate.STATE, WorkflowInstanceState.ACTIVE.toString()),
             hasChildQuery(ListViewTemplate.ACTIVITIES_JOIN_RELATION, existsQuery(ListViewTemplate.INCIDENT_KEY), ScoreMode.None));
 
-    SearchRequest searchRequest = new SearchRequest(workflowInstanceTemplate.getAlias())
+    SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(workflowInstanceTemplate, ONLY_RUNTIME)
         .source(new SearchSourceBuilder()
             .query(incidentsQuery)
             .aggregation(countWorkflowKeys).size(0));
@@ -115,7 +116,7 @@ public class IncidentStatisticsReader extends AbstractReader {
         termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION));
     Map<Long, IncidentByWorkflowStatisticsDto> results = new HashMap<>(statistics);
     try {
-      SearchRequest searchRequest = new SearchRequest(workflowInstanceTemplate.getAlias())
+      SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(workflowInstanceTemplate, ONLY_RUNTIME)
           .source(new SearchSourceBuilder()
               .query(runningInstanceQuery)
               .aggregation(countWorkflowKeys)
@@ -204,7 +205,7 @@ public class IncidentStatisticsReader extends AbstractReader {
             .subAggregation(cardinality(UNIQ_WORKFLOW_INSTANCES)
                 .field(IncidentTemplate.WORKFLOW_INSTANCE_KEY)));
 
-    final SearchRequest searchRequest = new SearchRequest(incidentTemplate.getAlias())
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
         .source(new SearchSourceBuilder()
             .aggregation(aggregation).size(0));
 

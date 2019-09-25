@@ -55,6 +55,7 @@ public class IncidentTemplate extends AbstractTemplateCreator implements Workflo
       .endObject()
       .startObject(ERROR_MSG)
         .field("type", "keyword")
+        .field(EAGER_GLOBAL_ORDINALS, true)
       .endObject()
       .startObject(ERROR_TYPE)
         .field("type", "keyword")

@@ -99,6 +99,7 @@ public class ListViewTemplate extends AbstractTemplateCreator {
       //activity instance fields
       .startObject(ACTIVITY_ID)
         .field("type", "keyword")
+        .field(EAGER_GLOBAL_ORDINALS, true)
       .endObject()
       .startObject(ACTIVITY_STATE)
         .field("type", "keyword")

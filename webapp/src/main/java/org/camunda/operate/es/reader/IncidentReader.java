@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.es.reader;
 
+import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -65,7 +66,7 @@ public class IncidentReader extends AbstractReader {
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(workflowInstanceKeyQuery);
 
-    final SearchRequest searchRequest = new SearchRequest(incidentTemplate.getAlias())
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
         .source(new SearchSourceBuilder().query(query).sort(IncidentTemplate.CREATION_TIME, SortOrder.ASC));
 
     try {
@@ -86,7 +87,7 @@ public class IncidentReader extends AbstractReader {
     final QueryBuilder workflowInstanceKeysQuery = constantScoreQuery(termsQuery(IncidentTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKeys));
     final int batchSize = operateProperties.getElasticsearch().getBatchSize();
 
-    final SearchRequest searchRequest = new SearchRequest(incidentTemplate.getAlias())
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
         .source(new SearchSourceBuilder()
             .query(workflowInstanceKeysQuery)
             .fetchSource(IncidentTemplate.WORKFLOW_INSTANCE_KEY, null)
@@ -112,7 +113,8 @@ public class IncidentReader extends AbstractReader {
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(idsQ);
 
-    final SearchRequest searchRequest = new SearchRequest(incidentTemplate.getAlias()).source(new SearchSourceBuilder().query(query));
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
+        .source(new SearchSourceBuilder().query(query));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       if (response.getHits().totalHits == 1) {
@@ -142,7 +144,7 @@ public class IncidentReader extends AbstractReader {
     final TermsAggregationBuilder flowNodesAgg = terms(flowNodesAggName).field(IncidentTemplate.FLOW_NODE_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
         .order(BucketOrder.key(true));
 
-    final SearchRequest searchRequest = new SearchRequest(incidentTemplate.getAlias())
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
         .source(new SearchSourceBuilder().query(constantScoreQuery(workflowInstanceQuery)).aggregation(errorTypesAgg).aggregation(flowNodesAgg));
 
     IncidentResponseDto incidentResponse = new IncidentResponseDto();
