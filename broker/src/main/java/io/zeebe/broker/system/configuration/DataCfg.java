@@ -10,6 +10,7 @@ package io.zeebe.broker.system.configuration;
 import io.zeebe.util.Environment;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 public class DataCfg implements ConfigurationEntry {
   public static final String DEFAULT_DIRECTORY = "data";
@@ -27,6 +28,8 @@ public class DataCfg implements ConfigurationEntry {
 
   @Override
   public void init(BrokerCfg globalConfig, String brokerBase, Environment environment) {
+    raftSegmentSize = Optional.ofNullable(raftSegmentSize).orElse(logSegmentSize);
+
     applyEnvironment(environment);
     directories.replaceAll(d -> ConfigurationUtil.toAbsolutePath(d, brokerBase));
   }
