@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -38,12 +39,19 @@ public class CollectionScopeEntryDto {
 
   public CollectionScopeEntryDto(final DefinitionType definitionType, final String definitionKey,
                                  final List<String> tenants, final List<String> versions) {
-    this.id = definitionType.getId() + ID_SEGMENT_SEPARATOR + definitionKey;
+    this.id = convertTypeAndKeyToScopeEntryId(definitionType, definitionKey);
     this.definitionType = definitionType;
     this.definitionKey = definitionKey;
     this.tenants = tenants;
     this.versions = versions;
   }
 
+  public String getId() {
+    return Optional.ofNullable(id).orElse(convertTypeAndKeyToScopeEntryId(definitionType, definitionKey));
+  }
+
+  private String convertTypeAndKeyToScopeEntryId(final DefinitionType definitionType, final String definitionKey) {
+    return definitionType.getId() + ID_SEGMENT_SEPARATOR + definitionKey;
+  }
 }
 

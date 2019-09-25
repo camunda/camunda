@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class CollectionRestServiceScopeIT {
 
@@ -45,7 +46,7 @@ public class CollectionRestServiceScopeIT {
   public void partialCollectionUpdateDoesNotAffectScopes() {
     //given
     final String collectionId = createNewCollection();
-    addScopeEntryToCollection(collectionId, createSimpleScopeEntry());
+    addScopeEntryToCollection(collectionId, createSimpleScopeEntry("_KEY_"));
     final SimpleCollectionDefinitionDto expectedCollection = getCollection(collectionId);
 
     // when
@@ -65,7 +66,7 @@ public class CollectionRestServiceScopeIT {
   public void addDefinitionScopeEntry() {
     // given
     final String collectionId = createNewCollection();
-    final CollectionScopeEntryDto entry = createSimpleScopeEntry();
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
 
     // when
     final String scopeEntryId = addScopeEntryToCollection(collectionId, entry);
@@ -80,14 +81,35 @@ public class CollectionRestServiceScopeIT {
   }
 
   @Test
+  public void addMultipleDefinitionScopeEntries() {
+    // given
+    final String collectionId = createNewCollection();
+    final CollectionScopeEntryDto entry1 = createSimpleScopeEntry("_KEY1_");
+    final CollectionScopeEntryDto entry2 = createSimpleScopeEntry("_KEY2_");
+
+    // when
+    final String scopeEntryId1 = addScopeEntryToCollection(collectionId, entry1);
+    final String scopeEntryId2 = addScopeEntryToCollection(collectionId, entry2);
+
+    SimpleCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeRule.getRequestExecutor()
+      .buildGetCollectionRequest(collectionId)
+      .execute(SimpleCollectionDefinitionDto.class, 200);
+
+    // then
+    assertThat(scopeEntryId1, is("process:_KEY1_"));
+    assertThat(scopeEntryId2, is("process:_KEY2_"));
+    assertThat(collectionDefinitionDto.getData().getScope(), containsInAnyOrder(entry1, entry2));
+  }
+
+  @Test
   public void addConflictingScopeDefinitionFails() {
     // given
     final String collectionId = createNewCollection();
-    addScopeEntryToCollection(collectionId, createSimpleScopeEntry());
+    addScopeEntryToCollection(collectionId, createSimpleScopeEntry("_KEY_"));
 
     // when
     embeddedOptimizeRule.getRequestExecutor()
-      .buildAddScopeEntryToCollectionRequest(collectionId, createSimpleScopeEntry())
+      .buildAddScopeEntryToCollectionRequest(collectionId, createSimpleScopeEntry("_KEY_"))
       // then
       .execute(409);
   }
@@ -96,7 +118,7 @@ public class CollectionRestServiceScopeIT {
   public void updateDefinitionScopeEntry() {
     // given
     final String collectionId = createNewCollection();
-    final CollectionScopeEntryDto entry = createSimpleScopeEntry();
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
     final String scopeEntryId = addScopeEntryToCollection(collectionId, entry);
 
     // when
@@ -124,7 +146,7 @@ public class CollectionRestServiceScopeIT {
     final String notExistingScopeEntryId = "PROCESS:abc";
 
     // when
-    final CollectionScopeEntryDto entry = createSimpleScopeEntry();
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .buildUpdateCollectionScopeEntryRequest(
@@ -143,7 +165,7 @@ public class CollectionRestServiceScopeIT {
   @Test
   public void removeScopeEntry() {
     String collectionId = createNewCollection();
-    CollectionScopeEntryDto entry = createSimpleScopeEntry();
+    CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
 
     String scopeEntryId = addScopeEntryToCollection(collectionId, entry);
 
@@ -167,7 +189,7 @@ public class CollectionRestServiceScopeIT {
   @Test
   public void removeScopeDefinitionFailsDueReportConflict() {
     String collectionId = createNewCollection();
-    CollectionScopeEntryDto entry = createSimpleScopeEntry();
+    CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
 
     final String scopeEntryId = addScopeEntryToCollection(collectionId, entry);
 
@@ -195,9 +217,9 @@ public class CollectionRestServiceScopeIT {
       .execute(404);
   }
 
-  private CollectionScopeEntryDto createSimpleScopeEntry() {
+  private CollectionScopeEntryDto createSimpleScopeEntry(String definitionKey) {
     return new CollectionScopeEntryDto(
-      DefinitionType.PROCESS, "_KEY_", Collections.singletonList("ALL"), Collections.singletonList(null)
+      DefinitionType.PROCESS, definitionKey, Collections.singletonList("ALL"), Collections.singletonList(null)
     );
   }
 

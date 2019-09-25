@@ -26,6 +26,7 @@ import java.util.List;
 
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -34,7 +35,8 @@ public class CollectionRestServiceRoleIT {
 
   private static final String USER_KERMIT = "kermit";
   private static final String TEST_GROUP = "testGroup";
-  
+  private static final String USER_MISS_PIGGY = "MissPiggy";
+
   public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -97,6 +99,36 @@ public class CollectionRestServiceRoleIT {
     assertThat(idDto.getId(), is(roleDto.getId()));
     final SimpleCollectionDefinitionDto collection = getCollection(collectionId);
     assertThat(collection.getData().getRoles(), hasItem(roleDto));
+  }
+
+  @Test
+  public void addMultipleUserRoles() {
+    // given
+    final String collectionId = createNewCollection();
+    engineIntegrationRule.addUser(USER_KERMIT, USER_KERMIT);
+    engineIntegrationRule.grantUserOptimizeAccess(USER_KERMIT);
+    engineIntegrationRule.addUser(USER_MISS_PIGGY, USER_MISS_PIGGY);
+    engineIntegrationRule.grantUserOptimizeAccess(USER_MISS_PIGGY);
+
+    // when
+    final CollectionRoleDto kermitRoleDto = new CollectionRoleDto(
+      new IdentityDto(USER_KERMIT, IdentityType.USER),
+      RoleType.EDITOR
+    );
+    IdDto kermitRoleIdDto = addRoleToCollection(collectionId, kermitRoleDto);
+
+    final CollectionRoleDto missPiggyRoleDto = new CollectionRoleDto(
+      new IdentityDto(USER_MISS_PIGGY, IdentityType.USER),
+      RoleType.VIEWER
+    );
+    IdDto missPiggyIdDto = addRoleToCollection(collectionId, missPiggyRoleDto);
+
+    // then
+    assertThat(kermitRoleIdDto.getId(), is(kermitRoleDto.getId()));
+    assertThat(missPiggyIdDto.getId(), is(missPiggyRoleDto.getId()));
+
+    final SimpleCollectionDefinitionDto collection = getCollection(collectionId);
+    assertThat(collection.getData().getRoles(), hasItems(kermitRoleDto, missPiggyRoleDto));
   }
 
   @Test

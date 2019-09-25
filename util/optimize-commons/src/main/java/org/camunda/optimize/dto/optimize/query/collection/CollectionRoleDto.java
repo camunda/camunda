@@ -13,19 +13,30 @@ import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 
+import java.util.Optional;
+
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @FieldNameConstants(asEnum = true)
 public class CollectionRoleDto {
+  private static final String ID_SEGMENT_SEPARATOR = ":";
+
   @Setter(value = AccessLevel.PROTECTED)
   private String id;
   private IdentityDto identity;
   private RoleType role;
 
   public CollectionRoleDto(final IdentityDto identity, final RoleType role) {
-    this.id = identity.getType().name() + ":" + identity.getId();
+    this.id = convertIdentityToRoleId(identity);
     this.identity = identity;
     this.role = role;
   }
 
+  public String getId() {
+    return Optional.ofNullable(id).orElse(convertIdentityToRoleId(identity));
+  }
+
+  private String convertIdentityToRoleId(final IdentityDto identity) {
+    return identity.getType().name() + ID_SEGMENT_SEPARATOR + identity.getId();
+  }
 }
