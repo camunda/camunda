@@ -38,6 +38,8 @@
       * [Message Events](bpmn-workflows/message-events.md)
       * [Timer Events](bpmn-workflows/timer-events.md)
     * [Sub Processes](bpmn-workflows/subprocesses.md)
+    * [Markers](bpmn-workflows/markers.md)
+      * [Multi-Instance](bpmn-workflows/multi-instance/multi-instance.md)
 * [BPMN Modeler](bpmn-modeler/README.md)
     * [Introduction](bpmn-modeler/introduction.md)
     * [Tasks](bpmn-modeler/tasks.md)
