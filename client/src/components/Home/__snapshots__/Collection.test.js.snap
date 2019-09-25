@@ -66,10 +66,20 @@ exports[`should match snapshot 1`] = `
       <li
         className="active"
       >
-        Dashboard & Reports
+        <Link
+          to="."
+        >
+          Dashboards & Reports
+        </Link>
       </li>
-      <li>
-        Users
+      <li
+        className=""
+      >
+        <Link
+          to="users"
+        >
+          Users
+        </Link>
       </li>
     </ul>
   </div>
@@ -110,6 +120,113 @@ exports[`should match snapshot 1`] = `
         ]
       }
       onChange={[Function]}
+    />
+  </div>
+  <ConfirmationModal
+    entityName="aCollectionName"
+    loading={false}
+    onClose={[Function]}
+    onConfirm={[Function]}
+    open={false}
+  />
+</div>
+`;
+
+exports[`should render content depending on the selected tab 1`] = `
+<div
+  className="Collection"
+>
+  <div
+    className="header"
+  >
+    <div
+      className="indicator"
+    />
+    <div
+      className="icon"
+    >
+      <ForwardRef(SvgCollection) />
+    </div>
+    <div
+      className="text"
+    >
+      <div
+        className="type"
+      >
+        Collection
+      </div>
+      <div
+        className="name"
+      >
+        aCollectionName
+        <Dropdown
+          label={
+            <Icon
+              size="24px"
+              type="overflow-menu-vertical"
+            />
+          }
+        >
+          <ForwardRef(DropdownOption)
+            onClick={[Function]}
+          >
+            <Icon
+              type="edit"
+            />
+            Edit
+          </ForwardRef(DropdownOption)>
+          <ForwardRef(DropdownOption)
+            onClick={[Function]}
+          >
+            <Icon
+              type="delete"
+            />
+            Delete
+          </ForwardRef(DropdownOption)>
+        </Dropdown>
+      </div>
+    </div>
+    <ul
+      className="navigation"
+    >
+      <li
+        className=""
+      >
+        <Link
+          to="."
+        >
+          Dashboards & Reports
+        </Link>
+      </li>
+      <li
+        className="active"
+      >
+        <Link
+          to="users"
+        >
+          Users
+        </Link>
+      </li>
+    </ul>
+  </div>
+  <div
+    className="content"
+  >
+    <UserListErrorHandler
+      collection="aCollectionId"
+      data={
+        Array [
+          Object {
+            "identity": Object {
+              "id": "kermit",
+              "type": "user",
+            },
+            "role": "manager",
+          },
+        ]
+      }
+      onChange={[Function]}
+      readOnly={false}
     />
   </div>
   <ConfirmationModal

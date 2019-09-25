@@ -1,0 +1,163 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should hide add button and edit menu when in readOnly mode 1`] = `
+<div
+  className="UserList"
+>
+  <div
+    className="header"
+  >
+    <h1>
+      Users and User Groups
+    </h1>
+  </div>
+  <div
+    className="content"
+  >
+    <ul>
+      <ListItem
+        className="user"
+        key="USER:kermit"
+      >
+        <ListItemSection
+          className="icon"
+        >
+          <ForwardRef(SvgUser) />
+        </ListItemSection>
+        <ListItemSection
+          className="name"
+        >
+          <div
+            className="type"
+          >
+            User
+          </div>
+          <div
+            className="entityName"
+          >
+            kermit
+          </div>
+        </ListItemSection>
+        <ListItemSection
+          className="containedEntities"
+        />
+        <ListItemSection
+          className="role"
+        >
+          Manager
+        </ListItemSection>
+      </ListItem>
+    </ul>
+  </div>
+  <ConfirmationModal
+    entityName={null}
+    loading={false}
+    onClose={[Function]}
+    onConfirm={[Function]}
+    open={null}
+  />
+  <AddUserModal
+    onClose={[Function]}
+    onConfirm={[Function]}
+    open={false}
+  />
+</div>
+`;
+
+exports[`should match snapshot 1`] = `
+<div
+  className="UserList"
+>
+  <div
+    className="header"
+  >
+    <h1>
+      Users and User Groups
+    </h1>
+    <ForwardRef(Button)
+      onClick={[Function]}
+    >
+      Add
+    </ForwardRef(Button)>
+  </div>
+  <div
+    className="content"
+  >
+    <ul>
+      <ListItem
+        className="user"
+        key="USER:kermit"
+      >
+        <ListItemSection
+          className="icon"
+        >
+          <ForwardRef(SvgUser) />
+        </ListItemSection>
+        <ListItemSection
+          className="name"
+        >
+          <div
+            className="type"
+          >
+            User
+          </div>
+          <div
+            className="entityName"
+          >
+            kermit
+          </div>
+        </ListItemSection>
+        <ListItemSection
+          className="containedEntities"
+        />
+        <ListItemSection
+          className="role"
+        >
+          Manager
+        </ListItemSection>
+        <div
+          className="contextMenu"
+        >
+          <Dropdown
+            label={
+              <Icon
+                size="24px"
+                type="overflow-menu-vertical"
+              />
+            }
+          >
+            <ForwardRef(DropdownOption)
+              onClick={[Function]}
+            >
+              <Icon
+                type="edit"
+              />
+              Edit
+            </ForwardRef(DropdownOption)>
+            <ForwardRef(DropdownOption)
+              onClick={[Function]}
+            >
+              <Icon
+                type="delete"
+              />
+              Delete
+            </ForwardRef(DropdownOption)>
+          </Dropdown>
+        </div>
+      </ListItem>
+    </ul>
+  </div>
+  <ConfirmationModal
+    entityName={null}
+    loading={false}
+    onClose={[Function]}
+    onConfirm={[Function]}
+    open={null}
+  />
+  <AddUserModal
+    onClose={[Function]}
+    onConfirm={[Function]}
+    open={false}
+  />
+</div>
+`;

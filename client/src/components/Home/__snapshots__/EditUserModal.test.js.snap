@@ -1,0 +1,94 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<Modal
+  className="EditUserModal"
+  onClose={[MockFunction]}
+  onConfirm={[Function]}
+  open={true}
+>
+  <Component>
+    Edit user
+  </Component>
+  <Component>
+    <Form>
+      User role
+      <FormGroup>
+        <LabeledInput
+          checked={false}
+          label={
+            <React.Fragment>
+              <h2
+                className="label"
+              >
+                Viewer
+              </h2>
+              <p
+                className="label"
+              >
+                Read-only access to all objects
+              </p>
+            </React.Fragment>
+          }
+          onChange={[Function]}
+          type="radio"
+        />
+        <LabeledInput
+          checked={true}
+          label={
+            <React.Fragment>
+              <h2
+                className="label"
+              >
+                Editor
+              </h2>
+              <p
+                className="label"
+              >
+                Create, edit and delete Dashboards and Reports
+              </p>
+            </React.Fragment>
+          }
+          onChange={[Function]}
+          type="radio"
+        />
+        <LabeledInput
+          checked={false}
+          label={
+            <React.Fragment>
+              <h2
+                className="label"
+              >
+                Manager
+              </h2>
+              <p
+                className="label"
+              >
+                Full rights editing Collection and Users
+              </p>
+            </React.Fragment>
+          }
+          onChange={[Function]}
+          type="radio"
+        />
+      </FormGroup>
+    </Form>
+  </Component>
+  <Component>
+    <ForwardRef(Button)
+      className="cancel"
+      onClick={[MockFunction]}
+    >
+      Cancel
+    </ForwardRef(Button)>
+    <ForwardRef(Button)
+      className="confirm"
+      color="blue"
+      onClick={[Function]}
+      variant="primary"
+    >
+      Apply
+    </ForwardRef(Button)>
+  </Component>
+</Modal>
+`;

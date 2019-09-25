@@ -41,11 +41,23 @@
     "title": "Sammlungen, Dashboards, und Berichte",
     "search": "Nach Namen filtern ...",
     "collectionTitle": "Dashboards und Berichte",
+    "collectionTitleWithAmpersand": "Dashboards & Berichte",
+    "userTitle": "Benutzer und Benutzergruppen",
     "types": {
       "process": "Prozessbericht",
       "decision": "Entscheidungsbericht",
       "combined": "Kombinierter Prozessbericht",
       "unknown": "Unbekannte Entität"
+    },
+    "roles": {
+      "addUserTitle": "Benutzer oder Benutzergruppe hinzufügen",
+      "userRole": "Benutzer-Rolle",
+      "viewer": "Betrachter",
+      "viewer-description": "Nur lesender Zugriff auf alle Objekte",
+      "editor": "Editor",
+      "editor-description": "Erstellen, bearbeiten und löschen von Dashboards und Berichten",
+      "manager": "Manager",
+      "manager-description": "Volle Rechte beim Bearbeiten von Sammlungen und Benutzern"
     },
     "data-hint": "Fehlen Daten? Mit dem letzten Update wurden Benutzerberechtigungen eingeführt. Fragen Sie Ihren Administrator nach Zugriffsrechten.",
     "empty": "Es wurde noch nichts erstellt",
@@ -343,14 +355,17 @@
   "common": {
     "name": "Name",
     "edit": "Bearbeiten",
+    "editName": "{name} bearbeiten",
     "delete": "Löschen",
     "save": "Speichern",
     "apply": "Anwenden",
     "cancel": "Abbrechen",
+    "add": "Hinzufügen",
     "copy": "Kopieren",
     "saving": "Speichern ... ",
     "creating": "Erstellen ...",
     "select": "Auswählen ...",
+    "selectWithoutEllipsis": "Wählen Sie",
     "enableAll": "Alle aktivieren",
     "disableAll": "Alle deaktivieren",
     "selectAll": "Alle auswählen",
@@ -389,11 +404,13 @@
     },
     "user": {
       "label": "Benutzer",
-      "label-plural": "Benutzer"
+      "label-plural": "Benutzer",
+      "id": "Benutzer ID"
     },
     "user-group": {
       "label": "Nutzergruppe",
-      "label-plural": "Nutzergruppen"
+      "label-plural": "Nutzergruppen",
+      "id": "Nutzergruppen ID"
     },
     "collection": {
       "label": "Sammlung",

@@ -41,11 +41,23 @@
     "title": "Collections, Dashboards, and Reports",
     "search": "Filter for name...",
     "collectionTitle": "Dashboards and Reports",
+    "collectionTitleWithAmpersand": "Dashboards & Reports",
+    "userTitle": "Users and User Groups",
     "types": {
       "process": "Process Report",
       "decision": "Decision Report",
       "combined": "Combined Report",
       "unknown": "Unknown Entity"
+    },
+    "roles": {
+      "addUserTitle": "Add User or User Group",
+      "userRole": "User role",
+      "viewer": "Viewer",
+      "viewer-description": "Read-only access to all objects",
+      "editor": "Editor",
+      "editor-description": "Create, edit and delete Dashboards and Reports",
+      "manager": "Manager",
+      "manager-description": "Full rights editing Collection and Users"
     },
     "data-hint": "Do you miss any data? The last update introduced user permissions. Ask your administrator for access rights.",
     "empty": "There are no items created yet",
@@ -343,14 +355,17 @@
   "common": {
     "name": "Name",
     "edit": "Edit",
+    "editName": "Edit {name}",
     "delete": "Delete",
     "save": "Save",
     "apply": "Apply",
     "cancel": "Cancel",
+    "add": "Add",
     "copy": "Copy",
     "saving": "Saving...",
     "creating": "Creating...",
     "select": "Select...",
+    "selectWithoutEllipsis": "Select",
     "enableAll": "Enable All",
     "disableAll": "Disable All",
     "selectAll": "Select All",
@@ -389,11 +404,13 @@
     },
     "user": {
       "label": "User",
-      "label-plural": "Users"
+      "label-plural": "Users",
+      "id": "User ID"
     },
     "user-group": {
       "label": "User Group",
-      "label-plural": "User Groups"
+      "label-plural": "User Groups",
+      "id": "User Group ID"
     },
     "collection": {
       "label": "Collection",

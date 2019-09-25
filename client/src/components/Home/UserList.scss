@@ -1,0 +1,171 @@
+.UserList {
+  width: 1000px;
+  height: 100%;
+  margin: auto;
+  position: relative;
+
+  .header {
+    margin-top: -36px;
+    padding-top: 58px;
+    padding-bottom: 21px;
+    position: fixed;
+    width: 1000px;
+    z-index: 1;
+    background-color: white;
+
+    h1 {
+      font-size: 18px;
+      line-height: 30px;
+      font-weight: normal;
+      color: #000;
+      display: inline;
+    }
+
+    .Button {
+      float: right;
+      width: 95px;
+    }
+  }
+
+  .content {
+    padding-top: 75px;
+  }
+
+  ul {
+    padding-inline-start: 0;
+    margin: 0 0 20px 0;
+  }
+
+  .ListItem {
+    position: relative;
+
+    .contextMenu {
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 100%;
+      width: 50px;
+      text-align: right;
+      visibility: hidden;
+      background-color: white;
+      border-radius: 4px;
+
+      .Dropdown {
+        width: 40px;
+        height: 100%;
+
+        .activateButton {
+          width: 40px;
+          padding: 0 30px 0 10px;
+          height: 100%;
+          background-color: white;
+          border: none;
+        }
+
+        .menu {
+          top: 10px;
+          left: 30px !important; // the calculateMenuStyle method of the Dropdown sets inline styles
+        }
+
+        .DropdownOption {
+          padding-left: 10px;
+
+          .Icon {
+            width: 14px;
+            height: 14px;
+            margin-right: 8px;
+          }
+        }
+
+        &.is-open {
+          visibility: visible;
+
+          .activateButton {
+            visibility: visible;
+          }
+        }
+      }
+
+      .downIcon {
+        display: none;
+      }
+
+      .Icon {
+        width: 24px;
+        height: 24px;
+      }
+    }
+
+    &:hover {
+      .contextMenu {
+        visibility: visible;
+      }
+    }
+  }
+
+  .ListItemSection {
+    color: #545454;
+
+    &.icon {
+      width: 24px;
+      margin-right: 18px;
+      position: relative;
+
+      svg {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 100%;
+      }
+    }
+
+    &.name {
+      width: 532px;
+      line-height: initial;
+      padding-top: 13px;
+
+      .type {
+        font-size: 9px;
+        color: #9b9b9b;
+      }
+
+      .entityName {
+        font-size: 15px;
+        font-weight: 600;
+        color: #000;
+
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    &.containedEntities,
+    &.role {
+      width: 200px;
+    }
+  }
+}
+
+.AddUserModal,
+.EditUserModal {
+  .FormGroup {
+    .Input[type='radio'] {
+      vertical-align: top;
+    }
+
+    .LabeledInput {
+      display: inline-block;
+      width: 90%;
+
+      p.label {
+        font-size: 0.8em;
+        color: gray;
+        margin-top: 0;
+      }
+
+      &.userIdInput {
+        margin-bottom: 1em;
+      }
+    }
+  }
+}

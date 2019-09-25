@@ -246,7 +246,7 @@ function formatUserCount({user, group}) {
   }
   if (user) {
     string += user + ' ';
-    string += t('common.user.' + (group > 1 ? 'label-plural' : 'label'));
+    string += t('common.user.' + (user > 1 ? 'label-plural' : 'label'));
   }
 
   return string;

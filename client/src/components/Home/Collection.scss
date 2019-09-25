@@ -108,6 +108,11 @@
         border-left: 1px solid;
         border-image: inherit;
 
+        a {
+          color: inherit;
+          text-decoration: inherit;
+        }
+
         &.active {
           box-shadow: 0 3px 0 #484c57;
         }

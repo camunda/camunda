@@ -5,7 +5,8 @@
  */
 
 import React from 'react';
-import {Redirect} from 'react-router-dom';
+import {Link, Redirect} from 'react-router-dom';
+import classnames from 'classnames';
 
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
@@ -16,6 +17,7 @@ import {showError} from 'notifications';
 import {ReactComponent as CollectionIcon} from './icons/collection.svg';
 
 import EntityList from './EntityList';
+import UserList from './UserList';
 import CollectionModal from './CollectionModal';
 
 import './Collection.scss';
@@ -77,6 +79,8 @@ export default withErrorHandling(
     render() {
       const {collection, deleting, deleteInProgress, editingCollection, goBack} = this.state;
 
+      const userTab = this.props.match.params.viewMode === 'users';
+
       if (goBack) {
         return <Redirect to="/" />;
       }
@@ -115,16 +119,30 @@ export default withErrorHandling(
               </div>
             </div>
             <ul className="navigation">
-              <li className="active">Dashboard &amp; Reports</li>
-              <li>Users</li>
+              <li className={classnames({active: !userTab})}>
+                <Link to=".">{t('home.collectionTitleWithAmpersand')}</Link>
+              </li>
+              <li className={classnames({active: userTab})}>
+                <Link to="users">{t('common.user.label-plural')}</Link>
+              </li>
             </ul>
           </div>
           <div className="content">
-            <EntityList
-              data={collection ? collection.data.entities : null}
-              onChange={this.loadCollection}
-              collection={collection ? collection.id : null}
-            />
+            {!userTab && (
+              <EntityList
+                data={collection ? collection.data.entities : null}
+                onChange={this.loadCollection}
+                collection={collection ? collection.id : null}
+              />
+            )}
+            {userTab && collection && (
+              <UserList
+                readOnly={collection.currentUserRole !== 'manager'}
+                data={collection.data.roles}
+                onChange={this.loadCollection}
+                collection={collection.id}
+              />
+            )}
           </div>
           <ConfirmationModal
             open={deleting}

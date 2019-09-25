@@ -1,0 +1,35 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
+import React from 'react';
+import {shallow} from 'enzyme';
+
+import EditUserModal from './EditUserModal';
+
+const props = {
+  initialRole: 'editor',
+  onClose: jest.fn(),
+  onConfirm: jest.fn(),
+  identity: {
+    id: 'user'
+  }
+};
+
+it('should match snapshot', () => {
+  const node = shallow(<EditUserModal {...props} />);
+
+  expect(node).toMatchSnapshot();
+});
+
+it('should call the onConfirm prop', () => {
+  const node = shallow(<EditUserModal {...props} />);
+
+  node.setState({role: 'manager'});
+
+  node.find('.confirm').simulate('click');
+
+  expect(props.onConfirm).toHaveBeenCalledWith('manager');
+});

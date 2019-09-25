@@ -60,7 +60,15 @@ jest.mock('services', () => {
             currentUserRole: 'editor' // or viewer
           }
         ],
-        roles: [], // array of role objects, for details see role endpoints
+        roles: [
+          {
+            identity: {
+              id: 'kermit',
+              type: 'user' // or group
+            },
+            role: 'manager' // or editor, viewer
+          }
+        ], // array of role objects, for details see role endpoints
         scope: [] // array of scope objects, for details see scope endpoints
       }
     })
@@ -69,7 +77,7 @@ jest.mock('services', () => {
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-  match: {params: {id: 'aCollectionId'}}
+  match: {params: {id: 'aCollectionId', viewMode: ''}}
 };
 
 it('should match snapshot', () => {
@@ -109,7 +117,7 @@ it('should show an edit modal when clicking the edit button', () => {
   expect(node.find(CollectionModal)).toExist();
 });
 
-it('should modify the collections name with the eit modal', () => {
+it('should modify the collections name with the edit modal', () => {
   const node = shallow(<Collection {...props} />);
 
   node.setState({editingCollection: true});
@@ -119,7 +127,7 @@ it('should modify the collections name with the eit modal', () => {
 });
 
 it('should hide edit/delete from context menu for collection items that does not have a "manager" role', () => {
-  loadEntity.mockReturnValue({
+  loadEntity.mockReturnValueOnce({
     id: 'aCollectionId',
     name: 'aCollectionName',
     owner: 'user_id',
@@ -133,4 +141,12 @@ it('should hide edit/delete from context menu for collection items that does not
 
   expect(node.find('.name').find({type: 'delete'})).not.toExist();
   expect(node.find('.name').find({type: 'edit'})).not.toExist();
+});
+
+it('should render content depending on the selected tab', () => {
+  const node = shallow(
+    <Collection {...props} match={{params: {id: 'aCollectionId', viewMode: 'users'}}} />
+  );
+
+  expect(node).toMatchSnapshot();
 });

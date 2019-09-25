@@ -1,0 +1,135 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<Modal
+  className="AddUserModal"
+  onClose={[Function]}
+  onConfirm={[Function]}
+  open={true}
+>
+  <Component>
+    Add User or User Group
+  </Component>
+  <Component>
+    <Form>
+      Select
+      <FormGroup>
+        <FormGroup
+          noSpacing={true}
+        >
+          <ForwardRef(Input)
+            checked={true}
+            onChange={[Function]}
+            type="radio"
+          />
+          <LabeledInput
+            autoComplete="off"
+            className="userIdInput"
+            label="User ID"
+            onChange={[Function]}
+            onClick={[Function]}
+            type="text"
+            value=""
+          />
+        </FormGroup>
+        <FormGroup
+          noSpacing={true}
+        >
+          <ForwardRef(Input)
+            checked={false}
+            className="groupIdRadio"
+            onChange={[Function]}
+            type="radio"
+          />
+          <LabeledInput
+            autoComplete="off"
+            className="groupIdInput"
+            label="User Group ID"
+            onChange={[Function]}
+            onClick={[Function]}
+            type="text"
+            value=""
+          />
+        </FormGroup>
+      </FormGroup>
+      User role
+      <FormGroup>
+        <LabeledInput
+          checked={true}
+          label={
+            <React.Fragment>
+              <h2
+                className="label"
+              >
+                Viewer
+              </h2>
+              <p
+                className="label"
+              >
+                Read-only access to all objects
+              </p>
+            </React.Fragment>
+          }
+          onChange={[Function]}
+          type="radio"
+        />
+        <LabeledInput
+          checked={false}
+          label={
+            <React.Fragment>
+              <h2
+                className="label"
+              >
+                Editor
+              </h2>
+              <p
+                className="label"
+              >
+                Create, edit and delete Dashboards and Reports
+              </p>
+            </React.Fragment>
+          }
+          onChange={[Function]}
+          type="radio"
+        />
+        <LabeledInput
+          checked={false}
+          label={
+            <React.Fragment>
+              <h2
+                className="label"
+              >
+                Manager
+              </h2>
+              <p
+                className="label"
+              >
+                Full rights editing Collection and Users
+              </p>
+            </React.Fragment>
+          }
+          onChange={[Function]}
+          type="radio"
+        />
+      </FormGroup>
+    </Form>
+  </Component>
+  <Component>
+    <ForwardRef(Button)
+      className="cancel"
+      onClick={[Function]}
+    >
+      Cancel
+    </ForwardRef(Button)>
+    <ForwardRef(Button)
+      className="confirm"
+      color="blue"
+      disabled={true}
+      onClick={[Function]}
+      variant="primary"
+    >
+      Add
+    </ForwardRef(Button)>
+  </Component>
+</Modal>
+`;
