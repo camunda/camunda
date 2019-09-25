@@ -31,7 +31,6 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
-import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.writer.ReportWriter;
@@ -40,6 +39,7 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.relations.CollectionReferencingService;
 import org.camunda.optimize.service.relations.ReportRelationService;
+import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.ReportAuthorizationService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.springframework.stereotype.Component;
@@ -67,7 +67,7 @@ public class ReportService implements CollectionReferencingService {
   private final ReportAuthorizationService reportAuthorizationService;
   private final ReportRelationService reportRelationService;
 
-  private final CollectionService collectionService;
+  private final AuthorizedCollectionService collectionService;
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForCollectionDelete(final SimpleCollectionDefinitionDto definition) {
@@ -84,17 +84,17 @@ public class ReportService implements CollectionReferencingService {
   }
 
   public IdDto createNewSingleDecisionReport(final String userId, final String collectionId) {
-    collectionService.verifyUserAuthorizedToEditCollectionResources(collectionId, userId);
+    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
     return reportWriter.createNewSingleDecisionReport(userId, collectionId);
   }
 
   public IdDto createNewSingleProcessReport(final String userId, final String collectionId) {
-    collectionService.verifyUserAuthorizedToEditCollectionResources(collectionId, userId);
+    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
     return reportWriter.createNewSingleProcessReport(userId, collectionId);
   }
 
   public IdDto createNewCombinedProcessReport(final String userId, final String collectionId) {
-    collectionService.verifyUserAuthorizedToEditCollectionResources(collectionId, userId);
+    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
     return reportWriter.createNewCombinedReport(userId, collectionId);
   }
 
@@ -117,7 +117,7 @@ public class ReportService implements CollectionReferencingService {
   public IdDto copyAndMoveReport(String reportId, String userId, String collectionId, String newReportName) {
     final AuthorizedReportDefinitionDto authorizedReportDefinition = getReportDefinition(reportId, userId);
     final ReportDefinitionDto originalReportDefinition = authorizedReportDefinition.getDefinitionDto();
-    collectionService.verifyUserAuthorizedToEditCollectionResources(collectionId, userId);
+    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
 
     final String oldCollectionId = originalReportDefinition.getCollectionId();
     final String newCollectionId = Objects.equals(oldCollectionId, collectionId) ? oldCollectionId : collectionId;

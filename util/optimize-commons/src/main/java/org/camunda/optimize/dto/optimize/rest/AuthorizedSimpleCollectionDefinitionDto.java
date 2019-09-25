@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.rest;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -29,6 +30,18 @@ public class AuthorizedSimpleCollectionDefinitionDto extends AuthorizedEntityDto
 
   public EntityDto toEntityDto() {
     return definitionDto.toEntityDto(getCurrentUserRole());
+  }
+
+  @JsonIgnore
+  public RoleType getCollectionResourceRole() {
+    switch (getCurrentUserRole()) {
+      case EDITOR:
+      case MANAGER:
+        return RoleType.EDITOR;
+      case VIEWER:
+      default:
+        return RoleType.VIEWER;
+    }
   }
 
 }

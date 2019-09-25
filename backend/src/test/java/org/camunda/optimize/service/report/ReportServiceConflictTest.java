@@ -11,13 +11,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
-import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.relations.ReportRelationService;
+import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.ReportAuthorizationService;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,7 +50,7 @@ public class ReportServiceConflictTest {
   ReportRelationService reportRelationService;
 
   @Mock
-  CollectionService collectionService;
+  AuthorizedCollectionService collectionService;
 
   ReportService underTest;
 

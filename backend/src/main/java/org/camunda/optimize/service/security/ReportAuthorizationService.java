@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.springframework.stereotype.Component;
 
@@ -24,11 +23,11 @@ import java.util.Optional;
 public class ReportAuthorizationService {
 
   private final DefinitionAuthorizationService definitionAuthorizationService;
-  private final CollectionService collectionService;
+  private final AuthorizedCollectionService collectionAuthorizationService;
 
   public Optional<RoleType> getAuthorizedRole(final String userId, final ReportDefinitionDto report) {
     final Optional<RoleType> authorizedByRole = getAuthorizedReportRole(userId, report);
-    return authorizedByRole.isPresent() && isAuthorizedToAccessDefinition(userId, report)
+    return authorizedByRole.isPresent() && isAuthorizedToAccessReportDefinition(userId, report)
       ? authorizedByRole
       : Optional.empty();
   }
@@ -36,15 +35,16 @@ public class ReportAuthorizationService {
   private Optional<RoleType> getAuthorizedReportRole(final String userId, final ReportDefinitionDto report) {
     RoleType role = null;
     if (report.getCollectionId() != null) {
-      role = collectionService.getUsersCollectionResourceRole(report.getCollectionId(), userId).orElse(null);
+      role = collectionAuthorizationService.getUsersCollectionResourceRole(userId, report.getCollectionId())
+        .orElse(null);
     } else if (Optional.ofNullable(report.getOwner()).map(owner -> owner.equals(userId)).orElse(true)) {
       role = RoleType.EDITOR;
     }
     return Optional.ofNullable(role);
   }
 
-  private boolean isAuthorizedToAccessDefinition(final String userId,
-                                                 final ReportDefinitionDto report) {
+  public boolean isAuthorizedToAccessReportDefinition(final String userId,
+                                                      final ReportDefinitionDto report) {
     boolean authorizedToAccessDefinition = false;
     if (report instanceof SingleProcessReportDefinitionDto) {
       final ProcessReportDataDto reportData = ((SingleProcessReportDefinitionDto) report).getData();

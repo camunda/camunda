@@ -64,7 +64,7 @@ public class CollectionRestService {
   public AuthorizedResolvedCollectionDefinitionDto getCollection(@Context ContainerRequestContext requestContext,
                                                                  @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionService.getResolvedCollectionDefinition(collectionId, userId);
+    return collectionService.getResolvedCollectionDefinition(userId, collectionId);
   }
 
   /**
@@ -82,7 +82,7 @@ public class CollectionRestService {
                                       @PathParam("id") String collectionId,
                                       @NotNull PartialCollectionUpdateDto updatedCollection) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    collectionService.updatePartialCollection(collectionId, userId, updatedCollection);
+    collectionService.updatePartialCollection(userId, collectionId, updatedCollection);
   }
 
   /**
@@ -95,7 +95,7 @@ public class CollectionRestService {
                                @PathParam("id") String collectionId,
                                @QueryParam("force") boolean force) throws OptimizeConflictException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    collectionService.deleteCollection(collectionId, force, userId);
+    collectionService.deleteCollection(userId, collectionId, force);
   }
 
   /**
@@ -107,7 +107,7 @@ public class CollectionRestService {
   public ConflictResponseDto getDeleteConflicts(@Context ContainerRequestContext requestContext,
                                                 @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionService.getDeleteConflictingItems(collectionId, userId);
+    return collectionService.getDeleteConflictingItems(userId, collectionId);
   }
 
   @POST
@@ -119,7 +119,7 @@ public class CollectionRestService {
                             @NotNull CollectionScopeEntryDto entryDto) throws OptimizeConflictException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final CollectionScopeEntryDto scopeEntryDto = collectionService.addScopeEntryToCollection(
-      collectionId, entryDto, userId
+      userId, collectionId, entryDto
     );
     return new IdDto(scopeEntryDto.getId());
   }
@@ -132,7 +132,7 @@ public class CollectionRestService {
                                                                                       NotFoundException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
-    collectionService.removeScopeEntry(collectionId, scopeEntryId, userId);
+    collectionService.removeScopeEntry(userId, collectionId, scopeEntryId);
   }
 
   @PUT
@@ -143,7 +143,7 @@ public class CollectionRestService {
                                @NotNull CollectionScopeEntryUpdateDto entryDto,
                                @PathParam("scopeEntryId") String scopeEntryId) throws OptimizeConflictException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    collectionService.updateScopeEntry(collectionId, entryDto, userId, scopeEntryId);
+    collectionService.updateScopeEntry(userId, collectionId, entryDto, scopeEntryId);
   }
 
   @GET
@@ -153,7 +153,7 @@ public class CollectionRestService {
   public List<CollectionRoleDto> getRoles(@Context ContainerRequestContext requestContext,
                                           @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionService.getSimpleCollectionDefinition(collectionId, userId)
+    return collectionService.getSimpleCollectionDefinition(userId, collectionId)
       .getDefinitionDto()
       .getData()
       .getRoles();
@@ -167,7 +167,7 @@ public class CollectionRestService {
                        @PathParam("id") String collectionId,
                        @NotNull CollectionRoleDto roleDtoRequest) throws OptimizeConflictException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    CollectionRoleDto collectionRoleDto = collectionService.addRoleToCollection(collectionId, roleDtoRequest, userId);
+    CollectionRoleDto collectionRoleDto = collectionService.addRoleToCollection(userId, collectionId, roleDtoRequest);
     return new IdDto(collectionRoleDto.getId());
   }
 
@@ -181,7 +181,7 @@ public class CollectionRestService {
                          @NotNull CollectionRoleUpdateDto roleUpdateDto) throws OptimizeConflictException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
-    collectionService.updateRoleOfCollection(collectionId, roleEntryId, roleUpdateDto, userId);
+    collectionService.updateRoleOfCollection(userId, collectionId, roleEntryId, roleUpdateDto);
   }
 
   @DELETE
@@ -191,7 +191,7 @@ public class CollectionRestService {
                          @PathParam("id") String collectionId,
                          @PathParam("roleEntryId") String roleEntryId) throws OptimizeConflictException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    collectionService.removeRoleFromCollection(collectionId, roleEntryId, userId);
+    collectionService.removeRoleFromCollection(userId, collectionId, roleEntryId);
   }
 
 }

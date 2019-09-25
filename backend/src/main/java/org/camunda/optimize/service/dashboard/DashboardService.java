@@ -17,12 +17,12 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
-import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.es.reader.DashboardReader;
 import org.camunda.optimize.service.es.writer.DashboardWriter;
 import org.camunda.optimize.service.relations.CollectionReferencingService;
 import org.camunda.optimize.service.relations.ReportReferencingService;
 import org.camunda.optimize.service.report.ReportService;
+import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.springframework.stereotype.Component;
 
@@ -41,7 +41,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   private final DashboardReader dashboardReader;
 
   private final ReportService reportService;
-  private final CollectionService collectionService;
+  private final AuthorizedCollectionService collectionService;
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForReportDelete(final ReportDefinitionDto reportDefinition) {
@@ -84,7 +84,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   }
 
   public IdDto createNewDashboardAndReturnId(final String userId, final String collectionId) {
-    collectionService.verifyUserAuthorizedToEditCollectionResources(collectionId, userId);
+    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
     return dashboardWriter.createNewDashboard(userId, collectionId);
   }
 
@@ -108,7 +108,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final AuthorizedDashboardDefinitionDto authorizedDashboard = getDashboardDefinition(dashboardId, userId);
     final DashboardDefinitionDto dashboardDefinition = authorizedDashboard.getDefinitionDto();
 
-    collectionService.verifyUserAuthorizedToEditCollectionResources(collectionId, userId);
+    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
 
     final List<ReportLocationDto> newDashboardReports = new ArrayList<>(dashboardDefinition.getReports());
 
@@ -134,7 +134,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final DashboardDefinitionDto dashboard = getDashboardDefinitionAsService(dashboardId);
     RoleType currentUserRole = null;
     if (dashboard.getCollectionId() != null) {
-      currentUserRole = collectionService.getUsersCollectionResourceRole(dashboard.getCollectionId(), userId)
+      currentUserRole = collectionService.getUsersCollectionResourceRole(userId, dashboard.getCollectionId())
         .orElse(null);
     } else if (dashboard.getOwner().equals(userId)) {
       currentUserRole = RoleType.EDITOR;
