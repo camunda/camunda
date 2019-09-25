@@ -109,10 +109,12 @@ public class AnalysisAuthorizationIT {
   public void branchAnalysis_authorizedTenant() {
     // given
     final String tenantId = "tenantId";
+    engineRule.createTenant(tenantId);
     final ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition(tenantId);
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
     authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
+
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -129,6 +131,7 @@ public class AnalysisAuthorizationIT {
   public void branchAnalysis_unauthorizedTenant() {
     // given
     final String tenantId = "tenantId";
+    engineRule.createTenant(tenantId);
     final ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition(tenantId);
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
@@ -149,6 +152,8 @@ public class AnalysisAuthorizationIT {
     // given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
+    engineRule.createTenant(tenantId1);
+    engineRule.createTenant(tenantId2);
     final ProcessDefinitionEngineDto processDefinition1 = deploySimpleGatewayProcessDefinition(tenantId1);
     final ProcessDefinitionEngineDto processDefinition2 = deploySimpleGatewayProcessDefinition(tenantId2);
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -164,6 +169,26 @@ public class AnalysisAuthorizationIT {
     Response response = executeBranchAnalysisAsKermit(processDefinition1, ImmutableList.of(tenantId1, tenantId2));
 
     //then
+    Assert.assertThat(response.getStatus(), is(403));
+  }
+
+  @Test
+  public void branchAnalysis_notAuthorizedToProcessDefinition() {
+    // given
+    final String tenantId = "tenantId";
+    engineRule.createTenant(tenantId);
+    ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition(tenantId);
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
+    startSimpleGatewayProcessAndTakeTask1(processDefinition);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    final Response response = executeBranchAnalysisAsKermit(processDefinition, ImmutableList.of(tenantId));
+
+    // then
     Assert.assertThat(response.getStatus(), is(403));
   }
 

@@ -20,7 +20,7 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.security.TenantAuthorizationService;
+import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -54,14 +54,17 @@ public class BranchAnalysisReader {
 
   private OptimizeElasticsearchClient esClient;
   private ProcessDefinitionService definitionService;
-  private TenantAuthorizationService tenantAuthorizationService;
+  private final DefinitionAuthorizationService definitionAuthorizationService;
   private ProcessQueryFilterEnhancer queryFilterEnhancer;
   private ProcessDefinitionReader processDefinitionReader;
 
   public BranchAnalysisDto branchAnalysis(final String userId, final BranchAnalysisQueryDto request) {
     ValidationHelper.validate(request);
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, request.getTenantIds())) {
-      throw new ForbiddenException("Current user is not authorized to access data of all provided tenants");
+    if (!definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
+      userId, request.getProcessDefinitionKey(), request.getTenantIds()
+    )) {
+      throw new ForbiddenException(
+        "Current user is not authorized to access data of the provided process definition and tenant combination");
     }
 
     log.debug(

@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -35,6 +36,7 @@ import java.util.Map;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
@@ -53,6 +55,7 @@ public class BranchAnalysisQueryIT {
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  private AuthorizationClient authorizationClient = new AuthorizationClient(engineRule);
 
   @Rule
   public RuleChain chain = RuleChain
@@ -249,6 +252,8 @@ public class BranchAnalysisQueryIT {
     //given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
+    engineRule.createTenant(tenantId1);
+    engineRule.createTenant(tenantId2);
     ProcessDefinitionEngineDto processDefinition1 = deploySimpleGatewayProcessDefinition(tenantId1);
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleGatewayProcessDefinition(tenantId2);
     startSimpleGatewayProcessAndTakeTask1(processDefinition1);
@@ -286,6 +291,8 @@ public class BranchAnalysisQueryIT {
     //given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
+    engineRule.createTenant(tenantId1);
+    engineRule.createTenant(tenantId2);
     ProcessDefinitionEngineDto processDefinition1 = deploySimpleGatewayProcessDefinition(tenantId1);
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleGatewayProcessDefinition(tenantId2);
     startSimpleGatewayProcessAndTakeTask1(processDefinition1);
