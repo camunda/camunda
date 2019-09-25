@@ -8,7 +8,7 @@ import React from 'react';
 import classnames from 'classnames';
 import {Link, withRouter} from 'react-router-dom';
 import {matchPath} from 'react-router';
-import {loadEntity} from 'services';
+import {loadEntitiesNames} from './service';
 
 import './NavItem.scss';
 
@@ -40,19 +40,28 @@ export default withRouter(
       } = this.props;
 
       let breadcrumbs = [];
+      const entitiesIds = {};
       for (let entity of breadcrumbsEntities) {
         const splittedUrl = pathname.split(`/${entity}/`);
         if (splittedUrl[1]) {
           const id = splittedUrl[1].split('/')[0];
           if (!id.includes('new')) {
-            const entityData = await loadEntity(entity, id);
+            entitiesIds[entity + 'Id'] = id;
             breadcrumbs.push({
-              name: entityData.name,
               id,
+              type: entity,
               url: splittedUrl[0] + `/${entity}/${id}/`
             });
           }
         }
+      }
+
+      if (breadcrumbs.length > 0) {
+        const names = await loadEntitiesNames(entitiesIds);
+        breadcrumbs = breadcrumbs.map(breadcrumb => ({
+          ...breadcrumb,
+          name: names[breadcrumb.type + 'Name']
+        }));
       }
 
       this.setState({breadcrumbs});
