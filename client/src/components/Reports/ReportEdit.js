@@ -53,7 +53,7 @@ export default withRouter(
             this.props.updateOverview(
               update(this.state.report, {name: {$set: name}, id: {$set: id}})
             );
-            this.setState({redirect: this.props.isNew ? `/report/${id}/` : './'});
+            this.setState({redirect: this.props.isNew ? `../${id}/` : './'});
           },
           async error => {
             if (error.statusText === 'Conflict') {

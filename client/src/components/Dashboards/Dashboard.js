@@ -106,7 +106,7 @@ export default withErrorHandling(
           this.setState({
             name,
             reports,
-            redirect: this.isNew() ? `/dashboard/${id}/` : './',
+            redirect: this.isNew() ? `../${id}/` : './',
             isAuthorizedToShare: await isAuthorizedToShareDashboard(id)
           });
         },
