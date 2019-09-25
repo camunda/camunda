@@ -7,7 +7,6 @@
 import React, {useState, useEffect} from 'react';
 import PropTypes from 'prop-types';
 
-import Input from 'modules/components/Input';
 import * as Styled from './styled';
 
 function ValidationTextInput({
@@ -46,14 +45,16 @@ function ValidationTextInput({
 
   return (
     <Styled.InputContainer>
-      <Input
-        {...props}
-        name={name}
-        value={value}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        hasError={isIncomplete}
-      />
+      {React.Children.map(children, child =>
+        React.cloneElement(child, {
+          ...props,
+          name,
+          value,
+          onChange: handleChange,
+          onBlur: handleBlur,
+          hasError: isIncomplete
+        })
+      )}
       {isIncomplete && <Styled.WarningIcon>!</Styled.WarningIcon>}
     </Styled.InputContainer>
   );
@@ -62,7 +63,10 @@ function ValidationTextInput({
 ValidationTextInput.propTypes = {
   onChange: PropTypes.func.isRequired,
   checkIsComplete: PropTypes.func,
-  onFilterChange: PropTypes.func
+  onFilterChange: PropTypes.func,
+  name: PropTypes.string,
+  value: PropTypes.string,
+  children: PropTypes.node
 };
 
 ValidationTextInput.defaultProps = {

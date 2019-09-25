@@ -10,6 +10,7 @@ import {ThemeProvider} from 'modules/theme';
 import {act} from 'react-dom/test-utils';
 
 import Input from 'modules/components/Input';
+import Textarea from 'modules/components/Textarea';
 import ValidationTextInput from './ValidationTextInput';
 import {mocks} from './ValidationTextInput.setup';
 
@@ -18,7 +19,7 @@ describe('ValidationTextInput', () => {
     jest.resetAllMocks();
   });
 
-  it('should render', () => {
+  it('should render text input', () => {
     // when
     const node = mount(
       <ThemeProvider>
@@ -26,12 +27,33 @@ describe('ValidationTextInput', () => {
           name="myInput"
           value="myPreset"
           onChange={() => {}}
-        />
+        >
+          <Input />
+        </ValidationTextInput>
       </ThemeProvider>
     );
 
     // then
     const inputNode = node.find('input');
+    expect(inputNode.props().value).toEqual('myPreset');
+  });
+
+  it('should render textarea', () => {
+    // when
+    const node = mount(
+      <ThemeProvider>
+        <ValidationTextInput
+          name="myInput"
+          value="myPreset"
+          onChange={() => {}}
+        >
+          <Textarea />
+        </ValidationTextInput>
+      </ThemeProvider>
+    );
+
+    // then
+    const inputNode = node.find('textarea');
     expect(inputNode.props().value).toEqual('myPreset');
   });
 
@@ -42,12 +64,14 @@ describe('ValidationTextInput', () => {
         <ValidationTextInput
           onChange={mocks.onChange}
           onFilterChange={mocks.onFilterChange}
-        />
+        >
+          <Input />
+        </ValidationTextInput>
       </ThemeProvider>
     );
 
     // when
-    const inputNode = node.find(Input);
+    const inputNode = node.find('input');
 
     inputNode.simulate('change', {
       target: {name: 'ErrorMessage', value: 'ERROR'}
@@ -71,7 +95,9 @@ describe('ValidationTextInput', () => {
           checkIsComplete={mocks.checkIsComplete.mockImplementation(
             () => false
           )}
-        />
+        >
+          <Input />
+        </ValidationTextInput>
       </ThemeProvider>
     );
 
@@ -80,6 +106,7 @@ describe('ValidationTextInput', () => {
     inputNode.simulate('blur');
 
     // then
+
     const InputNode = node.find(Input);
     expect(InputNode.props().hasError).toBe(true);
     expect(mocks.checkIsComplete).toBeCalledWith('incompleteValue');
@@ -95,7 +122,9 @@ describe('ValidationTextInput', () => {
           checkIsComplete={mocks.checkIsComplete.mockImplementation(
             () => false
           )}
-        />
+        >
+          <Input />
+        </ValidationTextInput>
       </ThemeProvider>
     );
 
@@ -127,7 +156,9 @@ describe('ValidationTextInput', () => {
           checkIsComplete={mocks.checkIsComplete.mockImplementation(
             value => value === 'complete'
           )}
-        />
+        >
+          <Input />
+        </ValidationTextInput>
       </ThemeProvider>
     );
 

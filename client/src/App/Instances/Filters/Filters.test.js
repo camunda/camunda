@@ -278,8 +278,11 @@ describe('Filters', () => {
   });
 
   describe('ids filter', () => {
-    it('should render an ids field', () => {
+    it('should render an ids field', async () => {
+      jest.useFakeTimers();
+
       // given
+      const target = {name: 'ids', value: '123'};
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
@@ -294,10 +297,13 @@ describe('Filters', () => {
       const field = node
         .find(Styled.Textarea)
         .filterWhere(n => n.props().name === 'ids');
-      const onBlur = field.props().onBlur;
 
       // when
-      onBlur({target: {value: '', name: 'ids'}});
+      field.simulate('change', {target});
+
+      jest.advanceTimersByTime(DEBOUNCE_DELAY);
+
+      await flushPromises();
 
       // then
       expect(field).toExist();
@@ -305,7 +311,9 @@ describe('Filters', () => {
       expect(field.prop('placeholder')).toEqual(
         'Instance Id(s) separated by space or comma'
       );
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+        [target.name]: target.value
+      });
     });
 
     it('should initialize the field with empty value', () => {

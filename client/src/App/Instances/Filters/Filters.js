@@ -10,6 +10,7 @@ import PropTypes from 'prop-types';
 import CollapsablePanel from 'modules/components/CollapsablePanel';
 import Badge from 'modules/components/Badge';
 import Button from 'modules/components/Button';
+import Input from 'modules/components/Input';
 import {
   DEFAULT_FILTER,
   FILTER_TYPES,
@@ -252,13 +253,17 @@ export default class Filters extends React.Component {
                     />
                   </Styled.Field>
                   <Styled.Field>
-                    <Styled.Textarea
+                    <Styled.ValidationTextInput
                       value={this.state.filter.ids}
                       name="ids"
                       placeholder="Instance Id(s) separated by space or comma"
-                      onBlur={this.propagateFilter}
                       onChange={this.handleControlledInputChange}
-                    />
+                      onFilterChange={() =>
+                        this.waitForTimer(this.propagateFilter)
+                      }
+                    >
+                      <Styled.Textarea />
+                    </Styled.ValidationTextInput>
                   </Styled.Field>
                   <Styled.Field>
                     <Styled.ValidationTextInput
@@ -269,7 +274,9 @@ export default class Filters extends React.Component {
                       onFilterChange={() =>
                         this.waitForTimer(this.propagateFilter)
                       }
-                    />
+                    >
+                      <Input />
+                    </Styled.ValidationTextInput>
                   </Styled.Field>
                   <Styled.Field>
                     <Styled.ValidationTextInput
@@ -281,7 +288,9 @@ export default class Filters extends React.Component {
                       onFilterChange={() =>
                         this.waitForTimer(this.propagateFilter)
                       }
-                    />
+                    >
+                      <Input />
+                    </Styled.ValidationTextInput>
                   </Styled.Field>
                   <Styled.Field>
                     <Styled.ValidationTextInput
@@ -293,7 +302,9 @@ export default class Filters extends React.Component {
                       onFilterChange={() =>
                         this.waitForTimer(this.propagateFilter)
                       }
-                    />
+                    >
+                      <Input />
+                    </Styled.ValidationTextInput>
                   </Styled.Field>
                   <Styled.Field>
                     <Styled.Select
