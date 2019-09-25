@@ -5,26 +5,14 @@
  */
 package org.camunda.optimize.upgrade.es;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.jsonpath.JsonPath;
 import lombok.Getter;
-import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.nio.entity.NStringEntity;
-import org.apache.http.util.EntityUtils;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import org.camunda.optimize.upgrade.wrapper.DestinationWrapper;
-import org.camunda.optimize.upgrade.wrapper.ReindexPayload;
-import org.camunda.optimize.upgrade.wrapper.ScriptWrapper;
-import org.camunda.optimize.upgrade.wrapper.SourceWrapper;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest.AliasActions;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
@@ -41,6 +29,7 @@ import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -59,9 +48,6 @@ public class ESIndexAdjuster {
   private static final Logger logger = LoggerFactory.getLogger(ESIndexAdjuster.class);
 
   private static final String TASKS_ENDPOINT = "_tasks";
-  private static final String REINDEX_OPERATION = "reindex";
-  private static final String MAPPING_OPERATION = "/_mapping";
-  private static final int ONE_SECOND = 1000;
 
   private final RestHighLevelClient restClient;
   @Getter
@@ -101,33 +87,6 @@ public class ESIndexAdjuster {
     }
   }
 
-  public String getIndexMappings(final String indexName) {
-    logger.debug("Retrieve index mapping for index [{}].", indexName);
-    try {
-      // we need to perform this request manually since Elasticsearch 6.5 automatically
-      // adds "master_timeout" parameter to the get mapping request which is not
-      // recognized prior to 6.4 and throws an error. As soon as we don't support 6.3 or
-      // older those lines can be replaced with the high rest client equivalent.
-      Response response = restClient.getLowLevelClient().performRequest(
-        new Request(HttpGet.METHOD_NAME, "/" + indexName + MAPPING_OPERATION)
-      );
-      String mappingWithIndexName = EntityUtils.toString(response.getEntity());
-      return extractMappings(indexName, mappingWithIndexName);
-    } catch (IOException e) {
-      String errorMessage =
-        String.format(
-          "Could not retrieve index mapping from [%s]!",
-          indexName
-        );
-      throw new UpgradeRuntimeException(errorMessage, e);
-    }
-  }
-
-  private String extractMappings(String indexName, String mappingWithIndexName) throws JsonProcessingException {
-    Map read = JsonPath.parse(mappingWithIndexName).read("$." + indexName);
-    return objectMapper.writeValueAsString(read);
-  }
-
   public void reindex(final String sourceIndex,
                       final String destinationIndex,
                       final String sourceType,
@@ -140,56 +99,41 @@ public class ESIndexAdjuster {
       mappingScript
     );
 
-    ReindexPayload toSend = new ReindexPayload();
-    toSend.setSource(new SourceWrapper(sourceIndex, sourceType));
-    toSend.setDest(new DestinationWrapper(destinationIndex, destType));
+    ReindexRequest reindexRequest = new ReindexRequest()
+      .setSourceIndices(sourceIndex)
+      .setSourceDocTypes(sourceType)
+      .setDestIndex(destinationIndex)
+      .setDestDocType(destType)
+      .setRefresh(true);
+
     if (mappingScript != null) {
-      toSend.setScript(new ScriptWrapper(mappingScript));
+      reindexRequest.setScript(new Script(mappingScript));
     }
-    ObjectMapper om = new ObjectMapper();
-    om.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
-    ReindexTaskResponse reindexTaskResponse;
+    String taskId;
     try {
-      HttpEntity entity = new NStringEntity(om.writeValueAsString(toSend), ContentType.APPLICATION_JSON);
-      final Request request = new Request(HttpPost.METHOD_NAME, "/" + getReindexEndpoint());
-      request.setEntity(entity);
-      request.addParameter("refresh", "true");
-      request.addParameter("wait_for_completion", "false");
-
-      final Response response = restClient.getLowLevelClient().performRequest(request);
-      if (response.getStatusLine().getStatusCode() != 200) {
-        throw new UpgradeRuntimeException("Failed to start reindex from " + sourceIndex + " to " + destinationIndex);
+      taskId = restClient.submitReindexTask(reindexRequest, RequestOptions.DEFAULT).getTask();
+      if (taskId == null) {
+        throw new UpgradeRuntimeException(String.format(
+          "Could not start reindexing of data from index [%s] to [%s]!",
+          sourceIndex,
+          destinationIndex
+        ));
       }
-      reindexTaskResponse = objectMapper.readValue(response.getEntity().getContent(), ReindexTaskResponse.class);
     } catch (IOException e) {
-      String errorMessage =
-        String.format(
-          "Could not reindex data from index [%s] to [%s]!",
-          sourceIndex,
-          destinationIndex
-        );
-      throw new UpgradeRuntimeException(errorMessage, e);
+      throw new UpgradeRuntimeException(String.format(
+        "Error while trying to reindex data from index [%s] to [%s]!",
+        sourceIndex,
+        destinationIndex
+      ), e);
     }
-
-    if (reindexTaskResponse.getTaskId() != null) {
-      waitUntilReindexingIsFinished(reindexTaskResponse.getTaskId(), sourceIndex, destinationIndex);
-    } else {
-      String errorMessage =
-        String.format(
-          "Could not reindex data from index [%s] to [%s]! Reindex request was not successful!",
-          sourceIndex,
-          destinationIndex
-        );
-      throw new UpgradeRuntimeException(errorMessage);
-    }
+    waitUntilReindexingTaskIsFinished(taskId, sourceIndex, destinationIndex);
   }
 
-  private void waitUntilReindexingIsFinished(final String taskId,
-                                             final String sourceIndex,
-                                             final String destinationIndex) {
+  private void waitUntilReindexingTaskIsFinished(final String taskId,
+                                                 final String sourceIndex,
+                                                 final String destinationIndex) {
     boolean finished = false;
-
     int progress = -1;
     while (!finished) {
       try {
@@ -197,7 +141,6 @@ public class ESIndexAdjuster {
           .performRequest(new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId));
         if (response.getStatusLine().getStatusCode() == 200) {
           TaskResponse taskResponse = objectMapper.readValue(response.getEntity().getContent(), TaskResponse.class);
-
           if (taskResponse.getError() != null) {
             logger.error(
               "A reindex batch that is part of the upgrade failed. Elasticsearch reported the following error: {}.",
@@ -207,10 +150,9 @@ public class ESIndexAdjuster {
             throw new UpgradeRuntimeException(taskResponse.getError().toString());
           }
 
-          final TaskResponse.Status taskStatus = taskResponse.getStatus();
-
           int currentProgress = new Double(taskResponse.getProgress() * 100.0).intValue();
           if (currentProgress != progress) {
+            final TaskResponse.Status taskStatus = taskResponse.getTaskStatus();
             progress = currentProgress;
             logger.info(
               "Reindexing from {} to {}, progress: {}%. Reindex status= total: {}, updated: {}, created: {}, deleted: {}",
@@ -223,8 +165,7 @@ public class ESIndexAdjuster {
               taskStatus.getDeleted()
             );
           }
-
-          finished = taskResponse.isDone();
+          finished = taskResponse.isCompleted();
         } else {
           logger.error(
             "Failed retrieving progress of reindex task, statusCode: {}, will retry",
@@ -233,17 +174,13 @@ public class ESIndexAdjuster {
         }
 
         if (!finished) {
-          Thread.sleep(ONE_SECOND);
+          Thread.sleep(1000);
         }
       } catch (IOException | InterruptedException e) {
         String errorMessage = "Error while trying to read reindex progress!";
         throw new UpgradeRuntimeException(errorMessage, e);
       }
     }
-  }
-
-  private String getReindexEndpoint() {
-    return "_" + REINDEX_OPERATION;
   }
 
   public void createIndex(final IndexMappingCreator mapping) {

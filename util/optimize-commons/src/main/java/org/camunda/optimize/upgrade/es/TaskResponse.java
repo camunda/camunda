@@ -5,48 +5,48 @@
  */
 package org.camunda.optimize.upgrade.es;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.Optional;
 
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TaskResponse {
+
   @JsonProperty("completed")
   private boolean completed;
-
   @JsonProperty("task")
   private Task task;
-
   @JsonProperty("error")
   private Error error;
 
-  protected TaskResponse() {
-  }
-
-  public TaskResponse(boolean completed, Task task, Error error) {
-    this.completed = completed;
-    this.task = task;
-    this.error = error;
-  }
-
-  public String getId() {
+  public String getTaskId() {
     return Optional.ofNullable(task).map(Task::getId).orElse(null);
   }
 
-  public Status getStatus() {
-    return Optional.ofNullable(task).flatMap(Task::getStatus).orElse(null);
-  }
-
-  public boolean isDone() {
+  public boolean isCompleted() {
     return completed;
   }
 
+  @JsonIgnore
+  public Status getTaskStatus() {
+    return Optional.ofNullable(task).flatMap(Task::getStatus).orElse(null);
+  }
+
+  @JsonIgnore
   public Double getProgress() {
-    return Optional.ofNullable(task).flatMap(Task::getStatus)
-      .map(status -> status.total == 0
-        ? 0.0D
-        : ((double) (status.created + status.updated + status.deleted)) / status.total)
+    return Optional.ofNullable(task)
+      .flatMap(Task::getStatus)
+      .filter(status -> status.getTotal() != 0)
+      .map(status -> ((double) (status.getCreated() + status.getUpdated() + status.getDeleted())) / status.getTotal())
       .orElse(0.0D);
   }
 
@@ -54,30 +54,31 @@ public class TaskResponse {
     return error;
   }
 
+  @NoArgsConstructor(access = AccessLevel.PROTECTED)
+  @AllArgsConstructor
+  @Setter
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class Task {
+
     @JsonProperty("id")
     private String id;
     @JsonProperty("status")
     private Status status;
 
-    protected Task() {
-    }
-
-    public Task(String id, Status status) {
-      this.id = id;
-      this.status = status;
-    }
-
     public String getId() {
       return id;
     }
 
+    @JsonIgnore
     public Optional<Status> getStatus() {
       return Optional.ofNullable(status);
     }
+
   }
 
+  @NoArgsConstructor(access = AccessLevel.PROTECTED)
+  @AllArgsConstructor
+  @Getter
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class Status {
 
@@ -89,34 +90,13 @@ public class TaskResponse {
     private Long created;
     @JsonProperty("deleted")
     private Long deleted;
-    public Long getTotal() {
-      return total;
-    }
 
-    protected Status() {
-    }
-
-    public Status(Long total, Long updated, Long created, Long deleted) {
-      this.total = total;
-      this.updated = updated;
-      this.created = created;
-      this.deleted = deleted;
-    }
-
-    public Long getUpdated() {
-      return updated;
-    }
-
-    public Long getCreated() {
-      return created;
-    }
-
-    public Long getDeleted() {
-      return deleted;
-    }
   }
 
+  @NoArgsConstructor(access = AccessLevel.PROTECTED)
+  @AllArgsConstructor
   @JsonIgnoreProperties(ignoreUnknown = true)
+  @Getter
   public static class Error {
     @JsonProperty("type")
     private String type;
@@ -124,27 +104,6 @@ public class TaskResponse {
     private String reason;
     @JsonProperty("phase")
     private String phase;
-
-    protected Error() {
-    }
-
-    public Error(String type, String reason, String phase) {
-      this.type = type;
-      this.reason = reason;
-      this.phase = phase;
-    }
-
-    public String getType() {
-      return type;
-    }
-
-    public String getReason() {
-      return reason;
-    }
-
-    public String getPhase() {
-      return phase;
-    }
 
     @Override
     public String toString() {
