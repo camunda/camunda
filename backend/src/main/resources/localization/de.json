@@ -39,6 +39,7 @@
       }
     },
     "title": "Sammlungen, Dashboards, und Berichte",
+    "search": "Nach Namen filtern ...",
     "collectionTitle": "Dashboards und Berichte",
     "types": {
       "process": "Prozessbericht",
@@ -47,7 +48,8 @@
       "unknown": "Unbekannte Entität"
     },
     "data-hint": "Fehlen Daten? Mit dem letzten Update wurden Benutzerberechtigungen eingeführt. Fragen Sie Ihren Administrator nach Zugriffsrechten.",
-    "empty": "Es wurde noch nichts erstellt"
+    "empty": "Es wurde noch nichts erstellt",
+    "notFound": "keine Ergebnisse gefunden"
   },
   "report": {
     "label": "Bericht",

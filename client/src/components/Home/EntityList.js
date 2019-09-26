@@ -9,7 +9,7 @@ import moment from 'moment';
 import {Link} from 'react-router-dom';
 
 import {t} from 'translation';
-import {LoadingIndicator, Icon, Dropdown, ConfirmationModal} from 'components';
+import {LoadingIndicator, Icon, Dropdown, ConfirmationModal, Input} from 'components';
 import {showError} from 'notifications';
 import {checkDeleteConflict, deleteEntity, createEntity} from 'services';
 import {withErrorHandling} from 'HOC';
@@ -30,7 +30,8 @@ export default withErrorHandling(
       deleting: null,
       conflictedItems: null,
       deleteInProgress: false,
-      creatingCollection: false
+      creatingCollection: false,
+      searchQuery: ''
     };
 
     confirmDelete = entity => {
@@ -78,12 +79,30 @@ export default withErrorHandling(
     stopCreatingCollection = () => this.setState({creatingCollection: false});
 
     render() {
-      const {deleting, conflictedItems, deleteInProgress, creatingCollection} = this.state;
+      const {
+        deleting,
+        conflictedItems,
+        deleteInProgress,
+        creatingCollection,
+        searchQuery
+      } = this.state;
       const {collection, children} = this.props;
       return (
         <div className="EntityList">
           <div className="header">
             <h1>{collection ? t('home.collectionTitle') : t('home.title')}</h1>
+            <div className="searchContainer">
+              <Icon className="searchIcon" type="search" />
+              <Input
+                required
+                type="text"
+                className="searchInput"
+                placeholder={t('home.search')}
+                value={searchQuery}
+                onChange={({target: {value}}) => this.setState({searchQuery: value})}
+                onClear={() => this.setState({searchQuery: ''})}
+              />
+            </div>
             <CreateNewButton
               createCollection={this.startCreatingCollection}
               collection={this.props.collection}
@@ -123,7 +142,15 @@ export default withErrorHandling(
         return <div className="empty">{t('home.empty')}</div>;
       }
 
-      return this.props.data.map(entity => {
+      const searchFilteredData = this.props.data.filter(({name}) =>
+        name.toLowerCase().includes(this.state.searchQuery.toLowerCase())
+      );
+
+      if (searchFilteredData.length === 0) {
+        return <div className="empty">{t('home.notFound')}</div>;
+      }
+
+      return searchFilteredData.map(entity => {
         const {id, entityType, lastModified, name, data, reportType, combined} = entity;
         return (
           <ListItem key={id} className={entityType}>

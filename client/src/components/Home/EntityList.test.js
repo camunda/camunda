@@ -128,3 +128,18 @@ it('should perform a delete and hide the modal afterwards', () => {
   expect(deleteEntity).toHaveBeenCalledWith('report', 'aReportId');
   expect(node.find('ConfirmationModal').prop('open')).toBeFalsy();
 });
+
+it('should filter results based on search input', () => {
+  const node = shallow(<EntityList {...props} />);
+  node.find('.searchInput').simulate('change', {target: {value: 'adashboard'}});
+
+  expect(node.find('ListItem').length).toBe(1);
+});
+
+it('should show no result found text when no matching entities were found', () => {
+  const node = shallow(<EntityList {...props} />);
+
+  node.find('.searchInput').simulate('change', {target: {value: 'not found entity'}});
+
+  expect(node.find('.empty')).toIncludeText('No results found');
+});

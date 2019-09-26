@@ -22,17 +22,33 @@
     width: 1000px;
     z-index: 1;
     background-color: white;
+    display: flex;
 
     h1 {
       font-size: 18px;
       line-height: 30px;
       font-weight: normal;
       color: #000;
-      display: inline;
+      margin: 0;
     }
 
-    .CreateNewButton {
-      float: right;
+    .searchContainer {
+      margin-left: auto;
+      margin-right: 20px;
+      position: relative;
+
+      .searchIcon {
+        position: absolute;
+        left: 10px;
+        top: 0;
+        bottom: 0;
+        margin: auto;
+        color: #6a727e;
+      }
+
+      .searchInput {
+        padding: 6px 35px;
+      }
     }
   }
 

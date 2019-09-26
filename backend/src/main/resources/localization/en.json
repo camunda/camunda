@@ -39,6 +39,7 @@
       }
     },
     "title": "Collections, Dashboards, and Reports",
+    "search": "Filter for name...",
     "collectionTitle": "Dashboards and Reports",
     "types": {
       "process": "Process Report",
@@ -47,7 +48,8 @@
       "unknown": "Unknown Entity"
     },
     "data-hint": "Do you miss any data? The last update introduced user permissions. Ask your administrator for access rights.",
-    "empty": "There are no items created yet"
+    "empty": "There are no items created yet",
+    "notFound": "No results found"
   },
   "report": {
     "label": "Report",
