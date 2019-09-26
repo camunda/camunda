@@ -94,7 +94,6 @@
       height: 100%;
       width: 50px;
       text-align: right;
-      visibility: hidden;
       background-color: white;
       border-radius: 4px;
 
@@ -124,14 +123,6 @@
             margin-right: 8px;
           }
         }
-
-        &.is-open {
-          visibility: visible;
-
-          .activateButton {
-            visibility: visible;
-          }
-        }
       }
 
       .downIcon {
@@ -144,10 +135,8 @@
       }
     }
 
-    &:hover {
-      .contextMenu {
-        visibility: visible;
-      }
+    &:not(:hover) .contextMenu .Button:not(:focus) {
+      opacity: 0;
     }
   }
 

@@ -49,14 +49,14 @@ it('should not call the onClose function when modal content is clicked', () => {
 
 it('should call the onConfirm function when enter is pressed', () => {
   const spy = jest.fn();
-  mount(
+  const node = mount(
     <Modal open={true} onConfirm={spy}>
       <input />
     </Modal>
   );
 
   const event = new KeyboardEvent('keydown', {key: 'Enter', bubbles: true});
-  document.body.dispatchEvent(event);
+  node.instance().el.dispatchEvent(event);
 
   expect(spy).toHaveBeenCalledWith(event);
 });

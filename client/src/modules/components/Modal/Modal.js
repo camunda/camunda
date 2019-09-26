@@ -24,13 +24,13 @@ export default class Modal extends React.Component {
     this.setFocus();
     new MutationObserver(this.fixPositioning).observe(this.el, {childList: true, subtree: true});
     window.addEventListener('resize', this.fixPositioning);
-    window.addEventListener('keydown', this.handleKeyPress);
+    this.el.addEventListener('keydown', this.handleKeyPress);
   }
 
   componentWillUnmount() {
+    this.el.removeEventListener('keydown', this.handleKeyPress);
     document.body.removeChild(this.el);
     window.removeEventListener('resize', this.fixPositioning);
-    window.removeEventListener('keydown', this.handleKeyPress);
   }
 
   fixPositioning = () => {
