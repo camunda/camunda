@@ -6,6 +6,7 @@
 
 import {ALL_VERSIONS_OPTION} from './constants';
 import {compactObject} from 'modules/utils';
+import {trimValue} from 'modules/utils/filter';
 import {sortBy} from 'lodash';
 
 /**
@@ -56,7 +57,10 @@ export function checkIsDateComplete(date) {
   if (date === '') {
     return true;
   }
-  return !!date.match(/^\d{4}-\d{2}-\d{2}(\W\d{2}:\d{2}(:\d{2})?)?$/);
+
+  return !!trimValue(date).match(
+    /^\d{4}-\d{2}-\d{2}(\W\d{2}:\d{2}(:\d{2})?)?$/
+  );
 }
 
 export function checkIsVariableComplete(variable) {

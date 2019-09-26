@@ -48,6 +48,10 @@ describe('Filters/service', () => {
     it('should return false for invalid characters', () => {
       expect(checkIsDateComplete('ABCD-EF-GH')).toBe(false);
     });
+
+    it('should return true for date with whitespaces', () => {
+      expect(checkIsDateComplete('     2019-03-12 12:59:30     ')).toBe(true);
+    });
   });
 
   describe('checkIsVariableComplete', () => {

@@ -126,12 +126,16 @@ export function getWorkflowByVersion(workflow, version) {
   });
 }
 
+export function trimValue(value) {
+  return typeof value === 'string' ? value.trim() : value;
+}
+
 function trimmFilter(filter) {
   let newFilter = {};
 
   for (let key in filter) {
     const value = filter[key];
-    newFilter[key] = typeof value === 'string' ? value.trim() : value;
+    newFilter[key] = trimValue(value);
   }
 
   return newFilter;
