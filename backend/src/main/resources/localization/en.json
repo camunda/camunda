@@ -46,6 +46,15 @@
     "collectionTitle": "Dashboards and Reports",
     "collectionTitleWithAmpersand": "Dashboards & Reports",
     "userTitle": "Users and User Groups",
+    "copy": {
+      "subEntity": "This {entityType} contains 1 Report. It will be copied, too.",
+      "subEntities": "This {entityType} contains {number} Reports. They will be copied, too.",
+      "inputLabel": "Name of Copy",
+      "moveLabel": "Move copy to …",
+      "noCollections": "No collections have been created",
+      "pleaseSelect": "Please select",
+      "gotoNew": "Go to new location"
+    },
     "types": {
       "process": "Process Report",
       "decision": "Decision Report",
@@ -365,6 +374,8 @@
     "cancel": "Cancel",
     "add": "Add",
     "copy": "Copy",
+    "copyName": "Copy {name}",
+    "copyLabel": "copy",
     "saving": "Saving...",
     "creating": "Creating...",
     "select": "Select...",

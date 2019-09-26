@@ -1,0 +1,136 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<Modal
+  className="CopyModal"
+  onClose={[MockFunction]}
+  onConfirm={[Function]}
+  open={true}
+>
+  <Component>
+    Copy Test Dashboard
+  </Component>
+  <Component>
+    <Form>
+      <FormGroup>
+        <LabeledInput
+          autoComplete="off"
+          label="Name of Copy"
+          onChange={[Function]}
+          type="text"
+          value="Test Dashboard (copy)"
+        />
+      </FormGroup>
+      <FormGroup
+        className="moveSection"
+      >
+        <Switch
+          checked={false}
+          label="Move copy to …"
+          onChange={[Function]}
+        />
+      </FormGroup>
+    </Form>
+  </Component>
+  <Component>
+    <ForwardRef(Button)
+      className="cancel"
+      onClick={[MockFunction]}
+    >
+      Cancel
+    </ForwardRef(Button)>
+    <ForwardRef(Button)
+      className="confirm"
+      color="blue"
+      disabled={false}
+      onClick={[Function]}
+      variant="primary"
+    >
+      Copy
+    </ForwardRef(Button)>
+  </Component>
+</Modal>
+`;
+
+exports[`should offer to move the copy 1`] = `
+<Modal
+  className="CopyModal"
+  onClose={[MockFunction]}
+  onConfirm={[Function]}
+  open={true}
+>
+  <Component>
+    Copy Test Dashboard
+  </Component>
+  <Component>
+    <Form>
+      <FormGroup>
+        <LabeledInput
+          autoComplete="off"
+          label="Name of Copy"
+          onChange={[Function]}
+          type="text"
+          value="Test Dashboard (copy)"
+        />
+      </FormGroup>
+      <FormGroup
+        className="moveSection"
+      >
+        <Switch
+          checked={true}
+          label="Move copy to …"
+          onChange={[Function]}
+        />
+      </FormGroup>
+      <FormGroup
+        noSpacing={true}
+      >
+        <Typeahead
+          formatter={[Function]}
+          initialValue={null}
+          noValuesMessage="No collections have been created"
+          onSelect={[Function]}
+          placeholder="Please select"
+          values={
+            Array [
+              Object {
+                "entityType": "collection",
+                "id": null,
+                "name": "Home",
+              },
+            ]
+          }
+        />
+      </FormGroup>
+      <FormGroup>
+        This Dashboard contains 2 Reports. They will be copied, too.
+      </FormGroup>
+      <FormGroup>
+        <LabeledInput
+          checked={true}
+          label="Go to new location"
+          onChange={[Function]}
+          type="checkbox"
+        />
+      </FormGroup>
+    </Form>
+  </Component>
+  <Component>
+    <ForwardRef(Button)
+      className="cancel"
+      onClick={[MockFunction]}
+    >
+      Cancel
+    </ForwardRef(Button)>
+    <ForwardRef(Button)
+      className="confirm"
+      color="blue"
+      disabled={true}
+      onClick={[Function]}
+      variant="primary"
+    >
+      Copy
+    </ForwardRef(Button)>
+  </Component>
+</Modal>
+`;

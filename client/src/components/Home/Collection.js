@@ -95,26 +95,22 @@ export default withErrorHandling(
             <div className="text">
               <div className="type">{t('common.collection.label')}</div>
               <div className="name">
-                {collection ? (
+                {collection && (
                   <>
                     {collection.name}
-                    <Dropdown label={<Icon type="overflow-menu-vertical" size="24px" />}>
-                      {collection.currentUserRole === 'manager' && (
-                        <>
-                          <Dropdown.Option onClick={this.startEditingCollection}>
-                            <Icon type="edit" />
-                            {t('common.edit')}
-                          </Dropdown.Option>
-                          <Dropdown.Option onClick={this.confirmDelete}>
-                            <Icon type="delete" />
-                            {t('common.delete')}
-                          </Dropdown.Option>
-                        </>
-                      )}
-                    </Dropdown>
+                    {collection.currentUserRole === 'manager' && (
+                      <Dropdown label={<Icon type="overflow-menu-vertical" size="24px" />}>
+                        <Dropdown.Option onClick={this.startEditingCollection}>
+                          <Icon type="edit" />
+                          {t('common.edit')}
+                        </Dropdown.Option>
+                        <Dropdown.Option onClick={this.confirmDelete}>
+                          <Icon type="delete" />
+                          {t('common.delete')}
+                        </Dropdown.Option>
+                      </Dropdown>
+                    )}
                   </>
-                ) : (
-                  ''
                 )}
               </div>
             </div>

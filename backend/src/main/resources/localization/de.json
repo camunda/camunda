@@ -46,6 +46,15 @@
     "collectionTitle": "Dashboards und Berichte",
     "collectionTitleWithAmpersand": "Dashboards & Berichte",
     "userTitle": "Benutzer und Benutzergruppen",
+    "copy": {
+      "subEntity": "{entityType} enthält 1 Bericht. Dieser wird ebenfalls kopiert.",
+      "subEntities": "{entityType} enthält {number} Berichte. Diese werden ebenfalls kopiert.",
+      "inputLabel": "Name der Kopie",
+      "moveLabel": "Verschiebe Kopie nach …",
+      "noCollections": "Es wurden keine Sammlungen erstellt",
+      "pleaseSelect": "Bitte auswählen",
+      "gotoNew": "Gehe zu Zielort"
+    },
     "types": {
       "process": "Prozessbericht",
       "decision": "Entscheidungsbericht",
@@ -365,6 +374,8 @@
     "cancel": "Abbrechen",
     "add": "Hinzufügen",
     "copy": "Kopieren",
+    "copyName": "{name} kopieren",
+    "copyLabel": "Kopie",
     "saving": "Speichern ... ",
     "creating": "Erstellen ...",
     "select": "Auswählen ...",

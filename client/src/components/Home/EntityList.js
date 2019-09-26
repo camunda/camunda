@@ -6,7 +6,7 @@
 
 import React from 'react';
 import moment from 'moment';
-import {Link} from 'react-router-dom';
+import {Link, Redirect} from 'react-router-dom';
 
 import {t} from 'translation';
 import {LoadingIndicator, Icon, Dropdown, ConfirmationModal, Input} from 'components';
@@ -16,11 +16,14 @@ import {withErrorHandling} from 'HOC';
 
 import CreateNewButton from './CreateNewButton';
 import CollectionModal from './CollectionModal';
+import CopyModal from './CopyModal';
 import ListItem from './ListItem';
 
 import {ReactComponent as ReportIcon} from './icons/report.svg';
 import {ReactComponent as DashboardIcon} from './icons/dashboard.svg';
 import {ReactComponent as CollectionIcon} from './icons/collection.svg';
+
+import {copyEntity} from './service';
 
 import './EntityList.scss';
 
@@ -29,6 +32,8 @@ export default withErrorHandling(
     state = {
       deleting: null,
       conflictedItems: null,
+      copying: null,
+      redirect: false,
       deleteInProgress: false,
       creatingCollection: false,
       searchQuery: ''
@@ -78,15 +83,38 @@ export default withErrorHandling(
     startCreatingCollection = () => this.setState({creatingCollection: true});
     stopCreatingCollection = () => this.setState({creatingCollection: false});
 
+    openCopyModal = entity => this.setState({copying: entity});
+    closeCopyModal = () => this.setState({copying: null});
+
+    copyEntity = (name, destination, redirect) => {
+      const {id, entityType} = this.state.copying;
+      this.props.mightFail(copyEntity(entityType, id, name, destination), () => {
+        if (redirect) {
+          this.setState({redirect: destination ? `/collection/${destination}/` : '/'});
+        } else {
+          this.props.onChange();
+        }
+      });
+      this.closeCopyModal();
+    };
+
     render() {
       const {
         deleting,
+        copying,
+        redirect,
         conflictedItems,
         deleteInProgress,
         creatingCollection,
         searchQuery
       } = this.state;
+
       const {collection, children, readOnly} = this.props;
+
+      if (redirect) {
+        return <Redirect to={redirect} />;
+      }
+
       return (
         <div className="EntityList">
           <div className="header">
@@ -131,6 +159,14 @@ export default withErrorHandling(
               onConfirm={name => createEntity('collection', {name})}
             />
           )}
+          {copying && (
+            <CopyModal
+              entity={copying}
+              collection={collection || null}
+              onClose={this.closeCopyModal}
+              onConfirm={this.copyEntity}
+            />
+          )}
         </div>
       );
     }
@@ -163,6 +199,11 @@ export default withErrorHandling(
           reportType,
           combined
         } = entity;
+
+        const canEdit =
+          (entityType !== 'collection' && currentUserRole === 'editor') ||
+          currentUserRole === 'manager';
+
         return (
           <ListItem key={id} className={entityType}>
             <Link to={formatLink(id, entityType)}>
@@ -182,17 +223,26 @@ export default withErrorHandling(
               </ListItem.Section>
             </Link>
             <div className="contextMenu">
-              {((entityType !== 'collection' && currentUserRole === 'editor') ||
-                currentUserRole === 'manager') && (
+              {(canEdit || entityType !== 'collection') && (
                 <Dropdown label={<Icon type="overflow-menu-vertical" size="24px" />}>
-                  <Dropdown.Option link={formatLink(id, entityType) + 'edit'}>
-                    <Icon type="edit" />
-                    {t('common.edit')}
-                  </Dropdown.Option>
-                  <Dropdown.Option onClick={() => this.confirmDelete(entity)}>
-                    <Icon type="delete" />
-                    {t('common.delete')}
-                  </Dropdown.Option>
+                  {canEdit && (
+                    <Dropdown.Option link={formatLink(id, entityType) + 'edit'}>
+                      <Icon type="edit" />
+                      {t('common.edit')}
+                    </Dropdown.Option>
+                  )}
+                  {entityType !== 'collection' && (
+                    <Dropdown.Option onClick={() => this.openCopyModal(entity)}>
+                      <Icon type="copy-document" />
+                      {t('common.copy')}
+                    </Dropdown.Option>
+                  )}
+                  {canEdit && (
+                    <Dropdown.Option onClick={() => this.confirmDelete(entity)}>
+                      <Icon type="delete" />
+                      {t('common.delete')}
+                    </Dropdown.Option>
+                  )}
                 </Dropdown>
               )}
             </div>

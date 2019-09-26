@@ -170,6 +170,14 @@ exports[`should match snapshot 1`] = `
               onClick={[Function]}
             >
               <Icon
+                type="copy-document"
+              />
+              Copy
+            </ForwardRef(DropdownOption)>
+            <ForwardRef(DropdownOption)
+              onClick={[Function]}
+            >
+              <Icon
                 type="delete"
               />
               Delete
@@ -233,6 +241,14 @@ exports[`should match snapshot 1`] = `
                 type="edit"
               />
               Edit
+            </ForwardRef(DropdownOption)>
+            <ForwardRef(DropdownOption)
+              onClick={[Function]}
+            >
+              <Icon
+                type="copy-document"
+              />
+              Copy
             </ForwardRef(DropdownOption)>
             <ForwardRef(DropdownOption)
               onClick={[Function]}

@@ -22,3 +22,13 @@ export async function editUser(collection, id, role) {
 export async function removeUser(collection, id) {
   return await del(`api/collection/${collection}/role/${id}`);
 }
+
+export async function copyEntity(type, id, name, collectionId) {
+  const query = {name};
+
+  if (collectionId || collectionId === null) {
+    query.collectionId = collectionId;
+  }
+
+  return await post(`api/${type}/${id}/copy`, undefined, {query});
+}

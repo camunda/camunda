@@ -6,13 +6,15 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import {Redirect} from 'react-router-dom';
 
 import {Dropdown} from 'components';
 import {checkDeleteConflict, deleteEntity} from 'services';
 
 import CreateNewButton from './CreateNewButton';
-
+import CopyModal from './CopyModal';
 import EntityListWithErrorHandling from './EntityList';
+import {copyEntity} from './service';
 
 const EntityList = EntityListWithErrorHandling.WrappedComponent;
 
@@ -24,6 +26,8 @@ jest.mock('services', () => {
     deleteEntity: jest.fn()
   };
 });
+
+jest.mock('./service', () => ({copyEntity: jest.fn()}));
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
@@ -132,6 +136,42 @@ it('should perform a delete and hide the modal afterwards', () => {
 
   expect(deleteEntity).toHaveBeenCalledWith('report', 'aReportId');
   expect(node.find('ConfirmationModal').prop('open')).toBeFalsy();
+});
+
+it('should show a copy modal when clicking copy in context menu', () => {
+  const node = shallow(<EntityList {...props} />);
+
+  node
+    .find(Dropdown)
+    .at(1)
+    .find(Dropdown.Option)
+    .at(1)
+    .simulate('click');
+
+  expect(node.find(CopyModal)).toExist();
+});
+
+it('should copy entity', () => {
+  const node = shallow(<EntityList {...props} />);
+
+  node
+    .find(Dropdown)
+    .at(1)
+    .find(Dropdown.Option)
+    .at(1)
+    .simulate('click');
+
+  node.find(CopyModal).prop('onConfirm')('new Name', 'someCollectionId', true);
+
+  expect(copyEntity).toHaveBeenCalledWith(
+    'dashboard',
+    'aDashboardId',
+    'new Name',
+    'someCollectionId'
+  );
+  expect(node.find(CopyModal)).not.toExist();
+  expect(node.find(Redirect)).toExist();
+  expect(node.find(Redirect).prop('to')).toBe('/collection/someCollectionId/');
 });
 
 it('should filter results based on search input', () => {
