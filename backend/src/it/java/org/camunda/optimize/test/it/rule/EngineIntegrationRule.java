@@ -758,7 +758,7 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   private String getSecuredEngineUrl() {
-    return getEngineUrl().replace("/engine-rest", "/engine-rest-secure");
+    return getEngineUrl().replace("/engine-rest", "/engine-it-plugin/basic-auth");
   }
 
   private ProcessDefinitionEngineDto getProcessDefinitionEngineDto(final DeploymentDto deployment) {

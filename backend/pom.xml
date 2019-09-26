@@ -465,31 +465,10 @@
         </dependency>
         <dependency>
           <groupId>org.camunda.optimize</groupId>
-          <artifactId>engine-rest-secure</artifactId>
-          <scope>test</scope>
-          <type>war</type>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.camunda.optimize</groupId>
-          <artifactId>engine-rest-custom</artifactId>
-          <scope>test</scope>
-          <type>war</type>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.camunda.optimize</groupId>
           <artifactId>engine-it-plugin</artifactId>
           <scope>test</scope>
           <type>war</type>
           <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.camunda.optimize</groupId>
-          <artifactId>engine-database-connection</artifactId>
-          <version>${project.version}</version>
-          <type>war</type>
-          <scope>test</scope>
         </dependency>
         <dependency>
           <groupId>org.camunda.optimize</groupId>
@@ -650,42 +629,10 @@
               <deployables>
                 <deployable>
                   <groupId>org.camunda.optimize</groupId>
-                  <artifactId>engine-rest-secure</artifactId>
-                  <type>war</type>
-                  <pingURL>
-                    http://localhost:${tomcat.connector.http.port}/engine-rest-secure/engine/default/process-definition
-                  </pingURL>
-                  <pingTimeout>${cargo.deploy.timeout}</pingTimeout>
-                  <properties>
-                    <context>engine-rest-secure</context>
-                  </properties>
-                </deployable>
-                <deployable>
-                  <groupId>org.camunda.optimize</groupId>
-                  <artifactId>engine-rest-custom</artifactId>
-                  <type>war</type>
-                  <pingURL>
-                    http://localhost:${tomcat.connector.http.port}/engine-rest-custom/engine/default/process-definition
-                  </pingURL>
-                  <pingTimeout>${cargo.deploy.timeout}</pingTimeout>
-                  <properties>
-                    <context>engine-rest-custom</context>
-                  </properties>
-                </deployable>
-                <deployable>
-                  <groupId>org.camunda.optimize</groupId>
                   <artifactId>engine-it-plugin</artifactId>
                   <type>war</type>
                   <properties>
                     <context>engine-it-plugin</context>
-                  </properties>
-                </deployable>
-                <deployable>
-                  <groupId>org.camunda.optimize</groupId>
-                  <artifactId>engine-database-connection</artifactId>
-                  <type>war</type>
-                  <properties>
-                    <context>engine-database-connection</context>
                   </properties>
                 </deployable>
               </deployables>

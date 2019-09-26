@@ -29,7 +29,7 @@ import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnM
 
 public class AbstractMultiEngineIT {
   private static final String REST_ENDPOINT = "http://localhost:8080/engine-rest";
-  private static final String SECURE_REST_ENDPOINT = "http://localhost:8080/engine-rest-secure";
+  private static final String SECURE_REST_ENDPOINT = "http://localhost:8080/engine-it-plugin/basic-auth";
   public static final String PROCESS_KEY_1 = "TestProcess1";
   public static final String PROCESS_KEY_2 = "TestProcess2";
   public static final String DECISION_KEY_1 = "TestDecision1";

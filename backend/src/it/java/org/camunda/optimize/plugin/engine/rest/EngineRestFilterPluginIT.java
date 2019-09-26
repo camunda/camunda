@@ -67,7 +67,7 @@ public class EngineRestFilterPluginIT {
     engineConfiguration.getAuthentication().setUser("kermit");
     engineConfiguration.setRest(
       engineConfiguration.getRest()
-        .replace("engine-rest", "engine-rest-custom")
+        .replace("engine-rest", "engine-it-plugin/custom-auth")
     );
     engineRule.addUser("kermit", "kermit");
     engineRule.grantAllAuthorizations("kermit");
@@ -82,7 +82,7 @@ public class EngineRestFilterPluginIT {
     engineConfiguration.getAuthentication().setEnabled(false);
     engineConfiguration.setRest(
       engineConfiguration.getRest()
-        .replace("engine-rest-custom", "engine-rest")
+        .replace("engine-it-plugin/custom-auth", "engine-rest")
     );
 
     // then

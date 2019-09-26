@@ -12,10 +12,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>engine-database-connection</module>
         <module>engine-it-plugin</module>
-        <module>engine-rest-secure</module>
-        <module>engine-rest-custom</module>
         <module>import-performance-tests</module>
         <module>query-performance-tests</module>
         <module>data-generation</module>

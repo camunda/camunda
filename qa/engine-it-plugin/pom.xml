@@ -34,6 +34,13 @@
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm</groupId>
+      <artifactId>camunda-engine-rest</artifactId>
+      <version>${version.camunda}</version>
+      <type>war</type>
+      <classifier>tomcat</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine-rest-core</artifactId>
       <version>${version.camunda}</version>
       <scope>provided</scope>
@@ -44,11 +51,70 @@
       <version>${version.camunda}</version>
       <scope>provided</scope>
     </dependency>
+
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
       <version>3.0.1</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.jboss.resteasy</groupId>
+      <artifactId>resteasy-jaxrs</artifactId>
+      <version>3.6.3.Final</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.spec.javax.servlet</groupId>
+      <artifactId>jboss-servlet-api_3.0_spec</artifactId>
+      <version>1.0.2.Final</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jboss.resteasy</groupId>
+      <artifactId>resteasy-jaxrs</artifactId>
+      <version>3.6.3.Final</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>1.4.196</version>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-war-plugin</artifactId>
+
+        <configuration>
+
+          <overlays>
+            <overlay>
+              <groupId>org.camunda.bpm</groupId>
+              <artifactId>camunda-engine-rest</artifactId>
+              <type>war</type>
+              <classifier>tomcat</classifier>
+              <!-- Overlay customization if needed -->
+              <excludes>
+                <exclude>WEB-INF/web.xml</exclude>
+              </excludes>
+            </overlay>
+          </overlays>
+
+          <webResources>
+            <resource>
+              <directory>src/main/runtime/latest</directory>
+            </resource>
+          </webResources>
+
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

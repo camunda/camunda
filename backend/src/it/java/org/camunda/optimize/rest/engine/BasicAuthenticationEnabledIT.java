@@ -58,7 +58,7 @@ public class BasicAuthenticationEnabledIT {
     engineConfiguration.getAuthentication().setEnabled(true);
     engineConfiguration.getAuthentication().setPassword(TEST_USERNAME);
     engineConfiguration.getAuthentication().setUser(TEST_PASSWORD);
-    engineConfiguration.setRest(HTTP_LOCALHOST + "/engine-rest-secure");
+    engineConfiguration.setRest(HTTP_LOCALHOST + "/engine-it-plugin/basic-auth");
 
     engineRule.addUser(TEST_USERNAME, TEST_PASSWORD);
     createRequiredAuthorizationsForBasicAuth();

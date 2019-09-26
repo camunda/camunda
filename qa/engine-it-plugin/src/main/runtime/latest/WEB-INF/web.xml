@@ -1,0 +1,86 @@
+<web-app version="2.5" xmlns="http://java.sun.com/xml/ns/javaee"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://java.sun.com/xml/ns/javaee    http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+
+  <!-- Http Basic Authentication Filter -->
+  <filter>
+    <filter-name>camunda-auth-basic</filter-name>
+    <filter-class>
+      org.camunda.bpm.engine.rest.security.auth.ProcessEngineAuthenticationFilter
+    </filter-class>
+    <init-param>
+      <param-name>authentication-provider</param-name>
+      <param-value>org.camunda.bpm.engine.rest.security.auth.impl.HttpBasicAuthenticationProvider</param-value>
+    </init-param>
+    <init-param>
+      <param-name>rest-url-pattern-prefix</param-name>
+      <param-value>/basic-auth</param-value>
+    </init-param>
+  </filter>
+
+  <filter>
+    <filter-name>camunda-auth-custom</filter-name>
+    <filter-class>
+      org.camunda.bpm.platform.authentication.filter.CustomAuthFilter
+    </filter-class>
+    <init-param>
+      <param-name>authentication-provider</param-name>
+      <param-value>org.camunda.bpm.engine.rest.security.auth.impl.HttpBasicAuthenticationProvider</param-value>
+    </init-param>
+    <init-param>
+	    <param-name>rest-url-pattern-prefix</param-name>
+	    <param-value>/custom-auth</param-value>
+	  </init-param>
+  </filter>
+
+  <filter-mapping>
+    <filter-name>camunda-auth-custom</filter-name>
+    <url-pattern>/custom-auth/*</url-pattern>
+  </filter-mapping>
+
+  <filter-mapping>
+    <filter-name>camunda-auth-basic</filter-name>
+    <url-pattern>/basic-auth/*</url-pattern>
+  </filter-mapping>
+
+  <filter>
+    <filter-name>Resteasy-custom</filter-name>
+    <filter-class>
+      org.jboss.resteasy.plugins.server.servlet.FilterDispatcher
+    </filter-class>
+    <init-param>
+      <param-name>javax.ws.rs.Application</param-name>
+      <param-value>org.camunda.bpm.engine.rest.impl.application.DefaultApplication</param-value>
+    </init-param>
+    <init-param>
+      <param-name>resteasy.servlet.mapping.prefix</param-name>
+      <param-value>/custom-auth</param-value>
+    </init-param>
+  </filter>
+
+  <filter>
+    <filter-name>Resteasy-basic</filter-name>
+    <filter-class>
+      org.jboss.resteasy.plugins.server.servlet.FilterDispatcher
+    </filter-class>
+    <init-param>
+      <param-name>javax.ws.rs.Application</param-name>
+      <param-value>org.camunda.bpm.engine.rest.impl.application.DefaultApplication</param-value>
+    </init-param>
+    <init-param>
+      <param-name>resteasy.servlet.mapping.prefix</param-name>
+      <param-value>/basic-auth</param-value>
+    </init-param>
+  </filter>
+
+  <filter-mapping>
+    <filter-name>Resteasy-custom</filter-name>
+    <url-pattern>/custom-auth/*</url-pattern>
+  </filter-mapping>
+
+  <filter-mapping>
+    <filter-name>Resteasy-basic</filter-name>
+    <url-pattern>/basic-auth/*</url-pattern>
+  </filter-mapping>
+
+</web-app>
