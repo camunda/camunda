@@ -79,12 +79,13 @@ public class ElasticsearchExporterIT extends AbstractElasticsearchExporterIntegr
         });
   }
 
-  private static Consumer<ElasticsearchNode> elastic(Consumer<ElasticsearchNode> configurator) {
+  private static Consumer<ElasticsearchNode> elastic(
+      final Consumer<ElasticsearchNode> configurator) {
     return configurator;
   }
 
   private static Consumer<ElasticsearchExporterConfiguration> exporter(
-      Consumer<ElasticsearchExporterConfiguration> configurator) {
+      final Consumer<ElasticsearchExporterConfiguration> configurator) {
     return configurator;
   }
 }

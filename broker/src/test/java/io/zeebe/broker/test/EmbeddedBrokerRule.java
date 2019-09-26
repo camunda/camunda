@@ -33,8 +33,8 @@ import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.TomlConfigurationReader;
 import io.zeebe.util.allocation.DirectBufferAllocator;
@@ -115,11 +115,11 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public static void assignSocketAddresses(final BrokerCfg brokerCfg) {
-    setGatewayApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
-    setGatewayClusterPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
-    setCommandApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
-    setInternalApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
-    setMonitoringPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
+    setGatewayApiPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
+    setGatewayClusterPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
+    setCommandApiPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
+    setInternalApiPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
+    setMonitoringPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
   }
 
   @Override

@@ -43,10 +43,10 @@ import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandResponseBuilder;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.TransportListener;
-import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.ArrayList;
@@ -77,7 +77,7 @@ public class BrokerClientTest {
     configuration
         .getCluster()
         .setHost("0.0.0.0")
-        .setPort(SocketUtil.getNextAddress().port())
+        .setPort(SocketUtil.getNextAddress().getPort())
         .setContactPoint(broker.getSocketAddress().toString())
         .setRequestTimeout("3s");
     configuration.init();

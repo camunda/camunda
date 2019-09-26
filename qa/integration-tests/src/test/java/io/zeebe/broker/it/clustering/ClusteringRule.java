@@ -40,8 +40,8 @@ import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
@@ -282,8 +282,8 @@ public class ClusteringRule extends ExternalResource {
 
     final GatewayCfg gatewayCfg = new GatewayCfg();
     gatewayCfg.getCluster().setContactPoint(contactPoint).setClusterName(clusterName);
-    gatewayCfg.getNetwork().setPort(SocketUtil.getNextAddress().port());
-    gatewayCfg.getCluster().setPort(SocketUtil.getNextAddress().port());
+    gatewayCfg.getNetwork().setPort(SocketUtil.getNextAddress().getPort());
+    gatewayCfg.getCluster().setPort(SocketUtil.getNextAddress().getPort());
     gatewayCfg.init();
 
     gatewayConfigurator.accept(gatewayCfg);
