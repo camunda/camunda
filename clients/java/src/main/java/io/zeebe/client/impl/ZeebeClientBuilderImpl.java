@@ -31,6 +31,9 @@ import java.time.Duration;
 import java.util.Properties;
 
 public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
+  public static final String PLAINTEXT_CONNECTION_VAR = "ZEEBE_INSECURE_CONNECTION";
+  public static final String CA_CERTIFICATE_VAR = "ZEEBE_CA_CERTIFICATE_PATH";
+
   private String brokerContactPoint = "0.0.0.0:26500";
   private int jobWorkerMaxJobsActive = 32;
   private int numJobWorkerExecutionThreads = 1;
@@ -212,9 +215,20 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
 
   @Override
   public ZeebeClient build() {
+    applyOverrides();
     applyDefaults();
 
     return new ZeebeClientImpl(this);
+  }
+
+  private void applyOverrides() {
+    if (Environment.system().isDefined(PLAINTEXT_CONNECTION_VAR)) {
+      usePlaintextConnection = Environment.system().getBoolean(PLAINTEXT_CONNECTION_VAR);
+    }
+
+    if (Environment.system().isDefined(CA_CERTIFICATE_VAR)) {
+      caCertificatePath(Environment.system().get(CA_CERTIFICATE_VAR));
+    }
   }
 
   @Override
