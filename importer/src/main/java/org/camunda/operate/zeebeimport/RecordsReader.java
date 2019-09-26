@@ -14,7 +14,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.camunda.operate.Metrics;
 import org.camunda.operate.es.schema.indices.ImportPositionIndex;
 import org.camunda.operate.exceptions.NoSuchIndexException;
 import org.camunda.operate.exceptions.OperateRuntimeException;
@@ -58,7 +57,7 @@ public class RecordsReader {
 
   public static final String PARTITION_ID_FIELD_NAME = ImportPositionIndex.PARTITION_ID;
 
-  private MetricsCounterImportListener metricsImportListener;
+  private EventsProcessedMetricsCounterImportListener metricsImportListener;
 
   /**
    * Partition id.
@@ -163,7 +162,7 @@ public class RecordsReader {
 
       JavaType valueType = objectMapper.getTypeFactory().constructParametricType(RecordImpl.class, importValueType.getRecordValueClass());
       final List<Record> result = ElasticsearchUtil.mapSearchHits(searchResponse.getHits().getHits(), objectMapper, valueType);
-      return new ImportBatch(partitionId, importValueType, result, new ImportListener.Compound(importListener, getMetricsImportListener()));
+      return new ImportBatch(partitionId, importValueType, result);
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
       logger.error(message, e);
@@ -240,14 +239,14 @@ public class RecordsReader {
     if ((active = importJobs.poll()) != null) {
       Future<Boolean> result = importExecutor.submit(active);
       //TODO what to do with failing jobs
-      logger.debug("Submitted active Job as Future {}",result);
+      logger.debug("Submitted active Job as Future {}", result);
     }
   }
 
   private void execute(Callable<Boolean> job) {
     Future<Boolean> result = importExecutor.submit(job);
     //TODO what to do with failing jobs
-    logger.debug("Submitted Job as Future {}",result);
+    logger.debug("Submitted Job as Future {}", result);
   }
 
   public int getPartitionId() {
@@ -266,12 +265,5 @@ public class RecordsReader {
     this.importListener = importListener;
   }
 
-  private MetricsCounterImportListener getMetricsImportListener() {
-    if (metricsImportListener == null) {
-      this.metricsImportListener = beanFactory
-          .getBean(MetricsCounterImportListener.class, Metrics.COUNTER_NAME_EVENTS_PROCESSED, importValueType.getValueType().name());
-    }
-    return metricsImportListener;
-  }
 }
 

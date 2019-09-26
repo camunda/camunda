@@ -25,13 +25,12 @@ public class ImportBatch {
 
   private List<Record> records;
 
-  private ImportListener importListener;
-  
-  public ImportBatch(int partitionId, ImportValueType importValueType, List<Record> records, ImportListener importListener) {
+  private int finishedWiCount = 0;
+
+  public ImportBatch(int partitionId, ImportValueType importValueType, List<Record> records) {
     this.partitionId = partitionId;
     this.importValueType = importValueType;
     this.records = records;
-    this.importListener = importListener;
   }
 
   public int getPartitionId() {
@@ -62,14 +61,23 @@ public class ImportBatch {
     return records.size();
   }
 
-  public void finished() {
-    int imported = getRecordsCount();
-    importListener.finished(imported);
+  public void incrementFinishedWiCount() {
+    finishedWiCount++;
   }
 
-  public void failed() {
-    int failed = getRecordsCount();
-    importListener.failed(failed);
+  public int getFinishedWiCount() {
+    return finishedWiCount;
   }
 
+  protected void notifyImportListenersAsFinished(List<ImportListener> importListeners) {
+    for (ImportListener importListener: importListeners) {
+      importListener.finished(this);
+    }
+  }
+
+  protected void notifyImportListenersAsFailed(List<ImportListener> importListeners) {
+    for (ImportListener importListener: importListeners) {
+      importListener.finished(this);
+    }
+  }
 }

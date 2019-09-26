@@ -104,7 +104,9 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     final Long workflowKey = deployWorkflow(model,"emptyNameProcess.bpmn");
     
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCreatedCheck, workflowInstanceKey);
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     // then it should returns the processId instead of an empty name 
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);

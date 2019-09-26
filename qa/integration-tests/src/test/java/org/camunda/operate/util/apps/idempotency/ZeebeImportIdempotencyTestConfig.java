@@ -6,15 +6,14 @@
 package org.camunda.operate.util.apps.idempotency;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import org.camunda.operate.exceptions.PersistenceException;
-import org.camunda.operate.zeebeimport.ImportValueType;
 import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
+import org.camunda.operate.zeebeimport.ImportBatch;
+import org.camunda.operate.zeebeimport.ImportValueType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import io.zeebe.protocol.record.Record;
 
 /**
  * Let's mock ElasticsearchBulkProcessor, so that it persists the data sucesfully, but throw an exception aftre that. This will cause the data to be imported twice.
@@ -33,8 +32,9 @@ public class ZeebeImportIdempotencyTestConfig {
     private Set<ImportValueType> alreadyFailedTypes = new HashSet<>();
 
     @Override
-    public void persistZeebeRecords(List<Record> zeebeRecords, ImportValueType importValueType) throws PersistenceException {
-      super.persistZeebeRecords(zeebeRecords, importValueType);
+    public void persistZeebeRecords(ImportBatch importBatch) throws PersistenceException {
+      super.persistZeebeRecords(importBatch);
+      ImportValueType importValueType = importBatch.getImportValueType();
       if (!alreadyFailedTypes.contains(importValueType)) {
         alreadyFailedTypes.add(importValueType);
         throw new PersistenceException(String.format("Fake exception when saving data of type %s to Elasticsearch", importValueType));

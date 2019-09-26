@@ -24,18 +24,20 @@ public class Metrics {
   public static final String TIMER_NAME_QUERY = OPERATE_NAMESPACE+"query";
   // Counters:
   public static final String COUNTER_NAME_EVENTS_PROCESSED = "events.processed";
+  public static final String COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI = "events.processed.finished.wi";
   public static final String COUNTER_NAME_COMMANDS = "commands";
+  public static final String COUNTER_NAME_ARCHIVED = "archived";
   // Tags
   // -----
   //  Keys:
   public static final String TAG_KEY_NAME = "name",
-                             TAG_KEY_TYPE="type",
+                             TAG_KEY_TYPE = "type",
                              TAG_KEY_STATUS = "status";
   //  Values:
   public static final String TAG_VALUE_WORKFLOWINSTANCES = "workflowInstances",
                              TAG_VALUE_CORESTATISTICS = "corestatistics",
-                             TAG_VALUE_SUCCEEDED="succeeded",
-                             TAG_VALUE_FAILED="failed";
+                             TAG_VALUE_SUCCEEDED = "succeeded",
+                             TAG_VALUE_FAILED = "failed";
 
   @Autowired
   private MeterRegistry registry;
@@ -50,7 +52,7 @@ public class Metrics {
    * @param tags - key value pairs of tags as Strings - The size of tags varargs must be even.
    */
   public void recordCounts(String name, int count, String ... tags) {
-    registry.counter(OPERATE_NAMESPACE+name, tags).increment(count); 
+    registry.counter(OPERATE_NAMESPACE + name, tags).increment(count);
   }
  
 }

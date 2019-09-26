@@ -25,6 +25,7 @@ import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.ElasticsearchManager;
+import org.camunda.operate.zeebeimport.ImportBatch;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.camunda.operate.zeebeimport.record.Intent;
 import org.camunda.operate.zeebeimport.record.RecordImpl;
@@ -88,7 +89,8 @@ public class ListViewZeebeRecordProcessor {
 
   }
 
-  public void processWorkflowInstanceRecord(Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> records, BulkRequest bulkRequest) throws PersistenceException {
+  public void processWorkflowInstanceRecord(Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> records, BulkRequest bulkRequest,
+      ImportBatch importBatch) throws PersistenceException {
 
     for (Map.Entry<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
       WorkflowInstanceForListViewEntity wiEntity = null;
@@ -107,7 +109,7 @@ public class ListViewZeebeRecordProcessor {
             //if we update smth, we need it to have affect at once
             bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
           }
-          wiEntity = updateWorkflowInstance(record, intentStr, recordValue, wiEntity);
+          wiEntity = updateWorkflowInstance(importBatch, record, intentStr, recordValue, wiEntity);
         } else if (!intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())) {
           updateActivityInstance(record, intentStr, recordValue, actEntities);
         }
@@ -122,7 +124,7 @@ public class ListViewZeebeRecordProcessor {
   }
 
 
-  private WorkflowInstanceForListViewEntity updateWorkflowInstance(Record record, String intentStr, 
+  private WorkflowInstanceForListViewEntity updateWorkflowInstance(ImportBatch importBatch, Record record, String intentStr,
                                                                    WorkflowInstanceRecordValueImpl recordValue,
                                                                    WorkflowInstanceForListViewEntity wiEntity) {
     if (wiEntity == null) {
@@ -140,6 +142,7 @@ public class ListViewZeebeRecordProcessor {
     wiEntity.setWorkflowName(workflowCache.getWorkflowNameOrDefaultValue(wiEntity.getWorkflowKey(), recordValue.getBpmnProcessId()));
 
     if (intentStr.equals(ELEMENT_COMPLETED.name()) || intentStr.equals(ELEMENT_TERMINATED.name())) {
+      importBatch.incrementFinishedWiCount();
       wiEntity.setEndDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
       if (intentStr.equals(ELEMENT_TERMINATED.name())) {
         wiEntity.setState(WorkflowInstanceState.CANCELED);

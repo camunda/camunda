@@ -57,7 +57,10 @@ public class ElasticsearchBulkProcessor {
   @Autowired
   private SequenceFlowZeebeRecordProcessor sequenceFlowZeebeRecordProcessor;
 
-  public void persistZeebeRecords(List<Record> zeebeRecords, ImportValueType importValueType) throws PersistenceException {
+  public void persistZeebeRecords(ImportBatch importBatch) throws PersistenceException {
+    List<Record> zeebeRecords = importBatch.getRecords();
+    ImportValueType importValueType = importBatch.getImportValueType();
+
     logger.debug("Writing [{}] Zeebe records to Elasticsearch", zeebeRecords.size());
 
     BulkRequest bulkRequest = new BulkRequest();
@@ -66,7 +69,7 @@ public class ElasticsearchBulkProcessor {
     case WORKFLOW_INSTANCE:
       Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> groupedWIRecords = zeebeRecords.stream()
           .map(obj -> (RecordImpl<WorkflowInstanceRecordValueImpl>) obj).collect(Collectors.groupingBy(obj -> obj.getValue().getWorkflowInstanceKey()));
-      listViewZeebeRecordProcessor.processWorkflowInstanceRecord(groupedWIRecords, bulkRequest);
+      listViewZeebeRecordProcessor.processWorkflowInstanceRecord(groupedWIRecords, bulkRequest, importBatch);
       Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> groupedWIRecordsPerActivity = zeebeRecords.stream()
           .map(obj -> (RecordImpl<WorkflowInstanceRecordValueImpl>) obj).collect(Collectors.groupingBy(obj -> obj.getKey()));
       activityInstanceZeebeRecordProcessor.processWorkflowInstanceRecord(groupedWIRecordsPerActivity, bulkRequest);

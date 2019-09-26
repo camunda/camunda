@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
+import org.camunda.operate.TestImportListener;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.zeebeimport.archiver.Archiver;
 import org.camunda.operate.zeebeimport.archiver.Archiver.FinishedAtDateIds;
@@ -105,6 +106,9 @@ public class OperateTester {
   
   @Autowired
   protected OperationExecutor operationExecutor;
+
+  @Autowired
+  private TestImportListener testImportListener;
 
   private Map<Object,Long> countImported = new HashMap<>();
 
@@ -203,14 +207,14 @@ public class OperateTester {
     boolean found = waitTill.test(arguments);
     long start = System.currentTimeMillis();
     while (!found && waitingRound < maxRounds) {
-      zeebeImporter.resetCounters();
+      testImportListener.resetCounters();
       shouldImportCount = 0;
       try {
         shouldImportCount += zeebeImporter.performOneRoundOfImport();
       } catch (Exception e) {
         logger.error(e.getMessage(), e);
       }
-      long imported = zeebeImporter.getImportedCount();
+      long imported = testImportListener.getImported();
       //long failed = zeebeImporter.getFailedCount();
       int waitForImports = 0;
       while (shouldImportCount != 0 && imported < shouldImportCount && waitForImports < 10) {
@@ -220,11 +224,11 @@ public class OperateTester {
           shouldImportCount += zeebeImporter.performOneRoundOfImport();
         } catch (Exception e) {
           waitingRound = 1;
-          zeebeImporter.resetCounters();
+          testImportListener.resetCounters();
           shouldImportCount = 0;
           logger.error(e.getMessage(), e);
         }
-        imported = zeebeImporter.getImportedCount();
+        imported = testImportListener.getImported();
       }
       if(shouldImportCount!=0) {
         logger.debug("Imported {} of {} records", imported, shouldImportCount);
@@ -236,7 +240,7 @@ public class OperateTester {
       logger.debug("Conditions met in round {} ({} ms).", waitingRound--, System.currentTimeMillis()-start);
     }
     waitingRound = 1;
-    zeebeImporter.resetCounters();
+    testImportListener.resetCounters();
     if (waitingRound >=  maxRounds) {
       throw new OperateRuntimeException("Timeout exception");
     }
