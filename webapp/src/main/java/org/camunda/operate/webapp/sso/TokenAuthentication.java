@@ -5,20 +5,19 @@
  */
 package org.camunda.operate.webapp.sso;
 
+import static org.springframework.beans.factory.config.ConfigurableBeanFactory.SCOPE_PROTOTYPE;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Scope;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import com.auth0.AuthenticationController;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
 import com.auth0.jwt.JWT;
@@ -27,50 +26,22 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 
 @Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
 @Component
+@Scope(SCOPE_PROTOTYPE)
 public class TokenAuthentication extends AbstractAuthenticationToken {
-
-  public TokenAuthentication() {
-    super(null);
-  }
-
+ 
   private DecodedJWT jwt;
   private boolean authenticated = false;
 
   @Autowired
   private SSOWebSecurityConfig config;
 
-  @Autowired
-  private AuthenticationController authenticator;
-
-  public TokenAuthentication setTokens(Tokens tokens) {
-    this.jwt = JWT.decode(tokens.getIdToken());
-    return this;
-  }
-  
-  protected void authenticate() throws InsufficientAuthenticationException {
-    Claim claim = jwt.getClaim(config.getClaimName());
-    List<String> claims = claim.asList(String.class);
-    if (claims != null) {
-      authenticated = claims.contains(config.getOrganization());
-    }
-    if (authenticated) {
-      SecurityContextHolder.getContext().setAuthentication(this);
-    } else {
-      throw new InsufficientAuthenticationException("No permission for operate - check your organization id");
-    }
-  }
-  
-  public String getAuthorizeUrl(final HttpServletRequest req,String redirectUri) {
-    String authorizeUrl = authenticator.buildAuthorizeUrl(req, redirectUri)
-        .withAudience(String.format("https://%s/userinfo", config.getBackendDomain())) // get user profile
-        .withScope("openid profile email") // which info we request
-        .build();
-    return authorizeUrl;
+  public TokenAuthentication() {
+    super(null);
   }
 
   private boolean hasExpired() {
     Date expires = jwt.getExpiresAt();
-    return expires != null && expires.before(new Date());
+    return expires == null || expires.before(new Date());
   }
 
   @Override
@@ -96,9 +67,16 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     return authenticated && !hasExpired();
   }
   
-  public void authenticate(final HttpServletRequest req) throws IdentityVerificationException {
-    setTokens(authenticator.handle(req));
-    authenticate();
+  public void authenticate(Tokens tokens) throws IdentityVerificationException {    
+    jwt = JWT.decode(tokens.getIdToken());
+    Claim claim = jwt.getClaim(config.getClaimName());
+    List<String> claims = claim.asList(String.class);
+    if (claims != null) {
+      authenticated = claims.contains(config.getOrganization());
+    }
+    if (!authenticated) {
+      throw new InsufficientAuthenticationException("No permission for operate - check your organization id");
+    }
   }
 
   /**

@@ -64,16 +64,12 @@ public class AuthenticationTest {
   @Autowired
   SSOWebSecurityConfig ssoConfig;
   
-  @Autowired
-  TokenAuthentication tokenAuthentication;
-  
   @MockBean
   AuthenticationController authenticationController;
   
   @Before
   public void setUp() throws Throwable{
     // mock building authorizeUrl
-    tokenAuthentication.setAuthenticated(false);
     AuthorizeUrl mockedAuthorizedUrl = mock(AuthorizeUrl.class);
     given(authenticationController.buildAuthorizeUrl(notNull(), notNull())).willReturn(mockedAuthorizedUrl);
     given(mockedAuthorizedUrl.withAudience(notNull())).willReturn(mockedAuthorizedUrl);
@@ -84,7 +80,6 @@ public class AuthenticationTest {
   @Test
   public void testLoginSuccess() throws Exception { 
     // Step 1 try to access document root
-    assertThat(tokenAuthentication.isAuthenticated()).isFalse();
     ResponseEntity<String> response = get(SSOWebSecurityConfig.ROOT);
     assertThatRequestIsRedirectedTo(response,urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
 
@@ -102,13 +97,11 @@ public class AuthenticationTest {
     
     response = get(SSOWebSecurityConfig.CALLBACK_URI);
     assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.ROOT));
-    assertThat(tokenAuthentication.isAuthenticated()).isTrue();
   }
   
   @Test
   public void testLoginFailedWithNoPermissions() throws Exception { 
     // Step 1 try to access document root
-    assertThat(tokenAuthentication.isAuthenticated()).isFalse();
     ResponseEntity<String> response = get(SSOWebSecurityConfig.ROOT);
     assertThatRequestIsRedirectedTo(response,urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
     
@@ -130,7 +123,6 @@ public class AuthenticationTest {
         ssoConfig.getClientId(),
         SSOWebSecurityConfig.NO_PERMISSION
     );
-    assertThat(tokenAuthentication.isAuthenticated()).isFalse();
   }
   
   @Test
@@ -152,7 +144,6 @@ public class AuthenticationTest {
     
     response = get(SSOWebSecurityConfig.CALLBACK_URI);
     assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.NO_PERMISSION));
-    assertThat(tokenAuthentication.isAuthenticated()).isFalse();
   }
   
   @Test
@@ -164,7 +155,6 @@ public class AuthenticationTest {
         ssoConfig.getClientId(),
         urlFor(SSOWebSecurityConfig.ROOT)
     );
-    assertThat(tokenAuthentication.isAuthenticated()).isFalse();
   }
   
   @Test
