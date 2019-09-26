@@ -58,7 +58,7 @@ import (
 const BrokerAddr = "0.0.0.0:26500"
 
 func main() {
-	zbClient, err := zbc.NewZBClient(&ZBClientConfig{
+	zbClient, err := zbc.NewZBClientWithConfig(&ZBClientConfig{
       GatewayAddress:         BrokerAddr,
       UsePlaintextConnection: true,})
 
@@ -133,7 +133,7 @@ import (
 const brokerAddr = "0.0.0.0:26500"
 
 func main() {
-	zbClient, err := zbc.NewZBClient(&ZBClientConfig{
+	zbClient, err := zbc.NewZBClientWithConfig(&ZBClientConfig{
       GatewayAddress:         brokerAddr,
       UsePlaintextConnection: true,})
 
@@ -175,7 +175,7 @@ import (
 const brokerAddr = "0.0.0.0:26500"
 
 func main() {
-	client, err := zbc.NewZBClient(&ZBClientConfig{
+	client, err := zbc.NewZBClientWithConfig(&ZBClientConfig{
       GatewayAddress:         brokerAddr,
       UsePlaintextConnection: true,})
 
@@ -250,7 +250,7 @@ import (
 const brokerAddr = "0.0.0.0:26500"
 
 func main() {
-	client, err := zbc.NewZBClient(&ZBClientConfig{
+	client, err := zbc.NewZBClientWithConfig(&ZBClientConfig{
       GatewayAddress:          brokerAddr,
       UsePlaintextConnection: true,})
 

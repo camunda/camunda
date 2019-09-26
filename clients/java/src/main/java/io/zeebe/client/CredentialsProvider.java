@@ -29,6 +29,12 @@ public interface CredentialsProvider {
    */
   void applyCredentials(Metadata headers);
 
+  /**
+   * Returns true if the request should be retried; otherwise returns false. For an example of this,
+   * see {@link OAuthCredentialsProvider#shouldRetryRequest(Throwable)}
+   *
+   * @param throwable error that caused the request to fail
+   */
   boolean shouldRetryRequest(Throwable throwable);
 
   /** @return a builder to configure and create a new {@link OAuthCredentialsProvider}. */
