@@ -77,7 +77,7 @@ public abstract class AbstractSharingIT {
 
   public static void assertErrorFields(ReportEvaluationException errorMessage) {
     assertThat(errorMessage.getReportDefinition(), is(notNullValue()));
-    ReportDefinitionDto reportDefinitionDto = errorMessage.getReportDefinition();
+    ReportDefinitionDto reportDefinitionDto = errorMessage.getReportDefinition().getDefinitionDto();
     if (reportDefinitionDto instanceof SingleProcessReportDefinitionDto) {
       SingleProcessReportDefinitionDto singleProcessReport =
         (SingleProcessReportDefinitionDto) reportDefinitionDto;

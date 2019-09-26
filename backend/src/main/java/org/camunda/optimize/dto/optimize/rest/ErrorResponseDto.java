@@ -7,18 +7,17 @@ package org.camunda.optimize.dto.optimize.rest;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 
 @Getter
 @Setter
 public class ErrorResponseDto {
   private String errorMessage;
-  private ReportDefinitionDto reportDefinition;
+  private AuthorizedReportDefinitionDto reportDefinition;
 
   public ErrorResponseDto() {
   }
 
-  public ErrorResponseDto(String errorMessage, ReportDefinitionDto reportDefinition) {
+  public ErrorResponseDto(String errorMessage, AuthorizedReportDefinitionDto reportDefinition) {
     this.errorMessage = errorMessage;
     this.reportDefinition = reportDefinition;
   }

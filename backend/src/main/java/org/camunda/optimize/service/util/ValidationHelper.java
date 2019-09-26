@@ -24,6 +24,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Star
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 
@@ -55,12 +56,14 @@ public class ValidationHelper {
     }
   }
 
-  public static void validateCombinedReportDefinition(CombinedReportDefinitionDto reportDefinition) {
-    if (reportDefinition.getData() == null) {
+  public static void validateCombinedReportDefinition(AuthorizedReportDefinitionDto reportDefinition) {
+    final CombinedReportDefinitionDto combinedReportDefinitionDto =
+      (CombinedReportDefinitionDto) reportDefinition.getDefinitionDto();
+    if (combinedReportDefinitionDto.getData() == null) {
       OptimizeValidationException ex =
         new OptimizeValidationException("Report data for a combined report is not allowed to be null!");
       throw new ReportEvaluationException(reportDefinition, ex);
-    } else if (reportDefinition.getData().getReportIds() == null) {
+    } else if (combinedReportDefinitionDto.getData().getReportIds() == null) {
       OptimizeValidationException ex =
         new OptimizeValidationException("Reports list for a combined report is not allowed to be null!");
       throw new ReportEvaluationException(reportDefinition, ex);

@@ -22,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedEntityDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -495,6 +496,32 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     assertThat(response.getStatus(), is(200));
     final AuthorizedEntityDto evaluationResultDto = response.readEntity(AuthorizedEntityDto.class);
     assertThat(evaluationResultDto.getCurrentUserRole(), is(getExpectedResourceRoleForCollectionRole(identityAndRole)));
+  }
+
+  @Test
+  @Parameters(method = ACCESS_IDENTITY_ROLES)
+  public void evaluateWithErrorContainsCurrentUserRole(final IdentityAndRole identityAndRole) {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+
+
+    final String collectionId = createNewCollectionAsDefaultUser();
+    final String reportId = createReportInCollectionAsDefaultUser(
+      new ReportScenario(ReportType.PROCESS, false), collectionId
+    );
+    addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
+
+    // when
+    final Response response = evaluateReportByIdAsKermit(reportId);
+
+    // then
+    assertThat(response.getStatus(), is(500));
+    final ErrorResponseDto errorResponseDto = response.readEntity(ErrorResponseDto.class);
+    assertThat(
+      errorResponseDto.getReportDefinition().getCurrentUserRole(),
+      is(getExpectedResourceRoleForCollectionRole(identityAndRole))
+    );
   }
 
   @Test

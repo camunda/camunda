@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.result.process.CombinedProcessReportResult;
@@ -70,30 +71,34 @@ public abstract class ReportEvaluationHandler {
       .orElseThrow(() -> new ForbiddenException(String.format(
         "User [%s] is not authorized to evaluate report [%s].", userId, report.getName()
       )));
-
+    final AuthorizedReportDefinitionDto authorizedReportDefinitionDto = new AuthorizedReportDefinitionDto(
+      report, currentUserRole
+    );
     final ReportEvaluationResult result;
     if (!report.getCombined()) {
-      result = evaluateSingleReportWithErrorCheck(report, customRecordLimit);
+      result = evaluateSingleReportWithErrorCheck(authorizedReportDefinitionDto, customRecordLimit);
     } else {
-      result = evaluateCombinedReport(userId, (CombinedReportDefinitionDto) report);
+      result = evaluateCombinedReport(userId, authorizedReportDefinitionDto);
     }
     return new AuthorizedReportEvaluationResult(result, currentUserRole);
   }
 
   private CombinedProcessReportResult evaluateCombinedReport(
     final String userId,
-    final CombinedReportDefinitionDto combinedReportDefinition) {
+    final AuthorizedReportDefinitionDto authorizedReportDefinitionDto) {
 
-    ValidationHelper.validateCombinedReportDefinition(combinedReportDefinition);
+    final CombinedReportDefinitionDto combinedReportDefinitionDto =
+      (CombinedReportDefinitionDto) authorizedReportDefinitionDto.getDefinitionDto();
+    ValidationHelper.validateCombinedReportDefinition(authorizedReportDefinitionDto);
     List<ReportEvaluationResult> resultList = evaluateListOfReportIds(
-      userId, combinedReportDefinition.getData().getReportIds()
+      userId, combinedReportDefinitionDto.getData().getReportIds()
     );
-    return transformToCombinedReportResult(combinedReportDefinition, resultList);
+    return transformToCombinedReportResult(combinedReportDefinitionDto, resultList);
   }
 
   private CombinedProcessReportResult transformToCombinedReportResult(
-    CombinedReportDefinitionDto combinedReportDefinition,
-    List<ReportEvaluationResult> singleReportResultList) {
+    final CombinedReportDefinitionDto combinedReportDefinition,
+    final List<ReportEvaluationResult> singleReportResultList) {
 
     final AtomicReference<Class> singleReportResultType = new AtomicReference<>();
     final Map<String, ReportEvaluationResult> reportIdToMapResult = singleReportResultList
@@ -138,10 +143,10 @@ public abstract class ReportEvaluationHandler {
    */
   protected abstract Optional<RoleType> getAuthorizedRole(String userId, ReportDefinitionDto report);
 
-  private ReportEvaluationResult evaluateSingleReportWithErrorCheck(final ReportDefinitionDto reportDefinition,
+  private ReportEvaluationResult evaluateSingleReportWithErrorCheck(final AuthorizedReportDefinitionDto reportDefinition,
                                                                     final Integer customRecordLimit) {
     try {
-      return singleReportEvaluator.evaluate(reportDefinition, customRecordLimit);
+      return singleReportEvaluator.evaluate(reportDefinition.getDefinitionDto(), customRecordLimit);
     } catch (OptimizeException | OptimizeValidationException e) {
       throw new ReportEvaluationException(reportDefinition, e);
     }
