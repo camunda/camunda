@@ -28,6 +28,7 @@ import (
 const (
 	DefaultAddressHost = "127.0.0.1"
 	DefaultAddressPort = "26500"
+	AddressEnvVar      = "ZEEBE_ADDRESS"
 )
 
 var client zbc.ZBClient
@@ -62,15 +63,14 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&addressFlag, "address", "", "Specify a contact point address")
-	rootCmd.PersistentFlags().StringVar(&caCertPathFlag, "certPath", "", "Specify a path to a certificate with which to validate gateway requests")
+	rootCmd.PersistentFlags().StringVar(&addressFlag, "address", "", "Specify a contact point address. This setting overrides the environment variable '"+AddressEnvVar+"'")
+	rootCmd.PersistentFlags().StringVar(&caCertPathFlag, "certPath", "", "Specify a path to a certificate with which to validate gateway requests. Can be overridden by the environment variable '"+zbc.ZbCaCertificatePath+"'")
 	rootCmd.PersistentFlags().StringVar(&clientIDFlag, "clientId", "", "Specify a client identifier to request an access token. Can be overridden by the environment variable '"+zbc.OAuthClientIdEnvVar+"'")
 	rootCmd.PersistentFlags().StringVar(&clientSecretFlag, "clientSecret", "", "Specify a client secret to request an access token. Can be overridden by the environment variable '"+zbc.OAuthClientSecretEnvVar+"'")
-	rootCmd.PersistentFlags().StringVar(&audienceFlag, "audience", "", "Specify the resource that the access token should be valid for. Can be overridden by the environment variable '"+zbc.OAuthTokenAudienceEnvVar+"'."+
-		" If unspecified, the address will be used as default and the authzUrl parameter will be ignored")
+	rootCmd.PersistentFlags().StringVar(&audienceFlag, "audience", "", "Specify the resource that the access token should be valid for. Can be overridden by the environment variable '"+zbc.OAuthTokenAudienceEnvVar+"'")
 	rootCmd.PersistentFlags().StringVar(&authzURLFlag, "authzUrl", zbc.OAuthDefaultAuthzURL, "Specify an authorization server URL from which to request an access token. Can be overridden by the environment variable '"+zbc.OAuthAuthorizationUrlEnvVar+"'")
-	rootCmd.PersistentFlags().BoolVar(&insecureFlag, "insecure", false, "Specify if zbctl should use an unsecured connection")
-	rootCmd.PersistentFlags().StringVar(&clientCacheFlag, "clientCache", zbc.DefaultOauthYamlCachePath, "Specify the path to use for the OAuth credentials cache. Can be overriden by the environment variable '" + zbc.OAuthCachePathEnvVar + "'")
+	rootCmd.PersistentFlags().BoolVar(&insecureFlag, "insecure", false, "Specify if zbctl should use an unsecured connection. Can be overridden by the environment variable '"+zbc.ZbInsecureEnvVar+"'")
+	rootCmd.PersistentFlags().StringVar(&clientCacheFlag, "clientCache", zbc.DefaultOauthYamlCachePath, "Specify the path to use for the OAuth credentials cache. Can be overriden by the environment variable '"+zbc.OAuthCachePathEnvVar+"'")
 }
 
 // initClient will create a client with in the following precedence: address flag, environment variable, default address
@@ -81,24 +81,24 @@ var initClient = func(cmd *cobra.Command, args []string) error {
 	host, port := parseAddress()
 
 	if clientIDFlag != "" || clientSecretFlag != "" {
-	    audience := audienceFlag
+		audience := audienceFlag
 		if audience == "" {
-            audience = host
+			audience = host
 		}
 
-        providerConfig := zbc.OAuthProviderConfig{
-            ClientID:               clientIDFlag,
-            ClientSecret:           clientSecretFlag,
-            Audience:               audience,
-            AuthorizationServerURL: authzURLFlag,
-        }
+		providerConfig := zbc.OAuthProviderConfig{
+			ClientID:               clientIDFlag,
+			ClientSecret:           clientSecretFlag,
+			Audience:               audience,
+			AuthorizationServerURL: authzURLFlag,
+		}
 
-        if clientCacheFlag != "" {
-            providerConfig.Cache, err = zbc.NewOAuthYamlCredentialsCache(clientCacheFlag)
-            if err != nil {
-                return err
-            }
-        }
+		if clientCacheFlag != "" {
+			providerConfig.Cache, err = zbc.NewOAuthYamlCredentialsCache(clientCacheFlag)
+			if err != nil {
+				return err
+			}
+		}
 
 		// create a credentials provider with the specified parameters
 		credsProvider, err = zbc.NewOAuthCredentialsProvider(&providerConfig)
@@ -121,18 +121,18 @@ func parseAddress() (address string, port string) {
 	address = DefaultAddressHost
 	port = DefaultAddressPort
 
-	addressEnv := os.Getenv("ZEEBE_ADDRESS")
+	addressEnv := os.Getenv(AddressEnvVar)
 	if len(addressEnv) > 0 {
 		address = addressEnv
 	} else if len(addressFlag) > 0 {
-	    address = addressFlag
-    }
+		address = addressFlag
+	}
 
-    if strings.Contains(address, ":") {
-        parts := strings.Split(address, ":")
-        address = parts[0]
-        port = parts[1]
-    }
+	if strings.Contains(address, ":") {
+		parts := strings.Split(address, ":")
+		address = parts[0]
+		port = parts[1]
+	}
 
 	return
 }
