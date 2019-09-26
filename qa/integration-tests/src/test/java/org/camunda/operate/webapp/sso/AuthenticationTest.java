@@ -22,6 +22,7 @@ import java.util.Map;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.json.JSONObject;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -144,6 +145,7 @@ public class AuthenticationTest {
     
     response = get(SSOWebSecurityConfig.CALLBACK_URI);
     assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.NO_PERMISSION));
+    
   }
   
   @Test
@@ -155,6 +157,29 @@ public class AuthenticationTest {
         ssoConfig.getClientId(),
         urlFor(SSOWebSecurityConfig.ROOT)
     );
+  }
+  
+  //TODO: Add test for redirect to originally requested url
+  @Ignore @Test
+  public void testLoginToAPIResource() throws Exception { 
+    // Step 1 try to access document root
+    ResponseEntity<String> response = get("/api/incidents/byError");
+    assertThatRequestIsRedirectedTo(response,urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
+    
+    // Step 2 Get Login provider url
+    response = get(SSOWebSecurityConfig.LOGIN_RESOURCE);   
+    assertThat(redirectLocationIn(response)).contains(
+        ssoConfig.getDomain(),
+        SSOWebSecurityConfig.CALLBACK_URI,
+        ssoConfig.getClientId(),
+        ssoConfig.getBackendDomain()
+    );
+    // Step 3 Call back uri, but there is an IdentityVerificationException.
+    given(authenticationController.handle(notNull())).willReturn(tokensFrom(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
+    
+    // Request with given cookie ...
+    //response = get(SSOWebSecurityConfig.CALLBACK_URI);
+    assertThatRequestIsRedirectedTo(response, urlFor("/api/incidents/byError"));
   }
   
   @Test

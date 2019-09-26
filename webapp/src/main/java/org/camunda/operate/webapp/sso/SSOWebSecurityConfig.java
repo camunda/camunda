@@ -5,8 +5,14 @@
  */
 package org.camunda.operate.webapp.sso;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +20,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 
 import com.auth0.AuthenticationController;
@@ -24,6 +31,8 @@ import com.auth0.AuthenticationController;
 @Component("webSecurityConfig")
 public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
 
+  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+  
   public static final String ROOT = "/";
   private static final String API = "/api/**";
   public static final String SSO_AUTH_PROFILE = "sso-auth";
@@ -47,6 +56,8 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
       ACTUATOR_ENDPOINTS,
       LOGIN_RESOURCE 
    };
+  
+  public static final String REQUESTED_URL = "requestedUrl";
 
   /**
    * Defines the domain which the user always sees<br/>
@@ -107,7 +118,17 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
       .antMatchers(AUTH_WHITELIST).permitAll()
       .antMatchers(API, ROOT).authenticated()
       .and().exceptionHandling()
-        .authenticationEntryPoint((req, res, ex) -> res.sendRedirect(LOGIN_RESOURCE));
+        .authenticationEntryPoint(this::authenticationEntry); 
+  }
+  
+  protected void authenticationEntry(HttpServletRequest req,HttpServletResponse res, AuthenticationException ex) throws IOException {
+    String requestedUrl = req.getRequestURI().toString();
+    if(req.getQueryString()!=null && !req.getQueryString().isEmpty()) {
+      requestedUrl = requestedUrl+"?"+req.getQueryString();
+    }
+    logger.debug("Try to access protected resource {}. Save it for later redirect",requestedUrl);
+    req.getSession().setAttribute(REQUESTED_URL, requestedUrl);
+    res.sendRedirect(LOGIN_RESOURCE);
   }
 
   /**

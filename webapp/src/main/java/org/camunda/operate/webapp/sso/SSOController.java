@@ -72,7 +72,12 @@ public class SSOController {
       TokenAuthentication authentication =  beanFactory.getBean(TokenAuthentication.class);
       authentication.authenticate(tokens);
       SecurityContextHolder.getContext().setAuthentication(authentication);
-      res.sendRedirect(SSOWebSecurityConfig.ROOT);
+      Object originalRequestUrl = req.getSession().getAttribute(SSOWebSecurityConfig.REQUESTED_URL);
+      if(originalRequestUrl != null) {
+        res.sendRedirect(originalRequestUrl.toString());
+      }else {
+        res.sendRedirect(SSOWebSecurityConfig.ROOT);
+      }
     } catch (InsufficientAuthenticationException iae) {
       logoutAndRedirectToNoPermissionPage(req, res);
     } catch (Throwable t /*AuthenticationException | IdentityVerificationException e*/) {
