@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.camunda.operate.TestImportListener;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationEntity;
@@ -87,6 +88,9 @@ public class ElasticsearchTestRule extends TestWatcher {
   @Autowired
   private RecordsReaderHolder recordsReaderHolder;
 
+  @Autowired
+  private TestImportListener testImportListener;
+
   Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
 
   protected boolean failed = false;
@@ -131,14 +135,14 @@ public class ElasticsearchTestRule extends TestWatcher {
     boolean found = waitTill.test(arguments);
     long start = System.currentTimeMillis();
     while (!found && waitingRound < maxRounds) {
-      zeebeImporter.resetCounters();
+      testImportListener.resetCounters();
       shouldImportCount = 0;
       try {
         shouldImportCount += zeebeImporter.performOneRoundOfImport();
       } catch (Exception e) {
         logger.error(e.getMessage(), e);
       }
-      long imported = zeebeImporter.getImportedCount();
+      long imported = testImportListener.getImported();
       //long failed = zeebeImporter.getFailedCount();
       int waitForImports = 0;
       while (shouldImportCount != 0 && imported < shouldImportCount && waitForImports < 10) {
@@ -148,11 +152,11 @@ public class ElasticsearchTestRule extends TestWatcher {
           shouldImportCount += zeebeImporter.performOneRoundOfImport();
         } catch (Exception e) {
           waitingRound = 1;
-          zeebeImporter.resetCounters();
+          testImportListener.resetCounters();
           shouldImportCount = 0;
           logger.error(e.getMessage(), e);
         }
-        imported = zeebeImporter.getImportedCount();
+        imported = testImportListener.getImported();
       }
       if(shouldImportCount!=0) {
         logger.debug("Imported {} of {} records", imported, shouldImportCount);
@@ -164,7 +168,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       logger.debug("Conditions met in round {} ({} ms).", waitingRound--, System.currentTimeMillis()-start);
     }
     waitingRound = 1;
-    zeebeImporter.resetCounters();
+    testImportListener.resetCounters();
     if (waitingRound >=  maxRounds) {
       logTimeout();
     }

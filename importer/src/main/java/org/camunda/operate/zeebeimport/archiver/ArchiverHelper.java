@@ -7,6 +7,7 @@ package org.camunda.operate.zeebeimport.archiver;
 
 import java.io.IOException;
 import java.util.List;
+import org.camunda.operate.Metrics;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.ReindexException;
 import org.elasticsearch.action.admin.indices.forcemerge.ForceMergeRequest;
@@ -31,6 +32,9 @@ public class ArchiverHelper {
   @Autowired
   private RestHighLevelClient esClient;
 
+  @Autowired
+  private Metrics metrics;
+
   public void moveDocuments(String sourceIndexName, String idFieldName, String finishDate, List<Long> workflowInstanceKeys) throws ReindexException {
 
     String destinationIndexName = getDestinationIndexName(sourceIndexName, finishDate);
@@ -40,6 +44,8 @@ public class ArchiverHelper {
     forceMerge(destinationIndexName);
 
     deleteDocuments(sourceIndexName, idFieldName, workflowInstanceKeys);
+
+    metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVED, workflowInstanceKeys.size());
   }
 
   private void forceMerge(String destinationIndexName) {

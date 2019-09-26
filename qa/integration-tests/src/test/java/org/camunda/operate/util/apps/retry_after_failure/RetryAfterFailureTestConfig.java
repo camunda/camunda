@@ -6,15 +6,14 @@
 package org.camunda.operate.util.apps.retry_after_failure;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import org.camunda.operate.exceptions.PersistenceException;
-import org.camunda.operate.zeebeimport.ImportValueType;
 import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
+import org.camunda.operate.zeebeimport.ImportBatch;
+import org.camunda.operate.zeebeimport.ImportValueType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import io.zeebe.protocol.record.Record;
 
 /**
  * Let's mock ElasticsearchBulkProcessor, so that it throw an exception with the 2st run and persist the data only with the second run.
@@ -33,12 +32,13 @@ public class RetryAfterFailureTestConfig {
     private Set<ImportValueType> alreadyFailedTypes = new HashSet<>();
 
     @Override
-    public void persistZeebeRecords(List<Record> zeebeRecords, ImportValueType importValueType) throws PersistenceException {
+    public void persistZeebeRecords(ImportBatch importBatch) throws PersistenceException {
+      ImportValueType importValueType = importBatch.getImportValueType();
       if (!alreadyFailedTypes.contains(importValueType)) {
         alreadyFailedTypes.add(importValueType);
         throw new PersistenceException(String.format("Fake exception when saving data of type %s to Elasticsearch", importValueType));
       } else {
-        super.persistZeebeRecords(zeebeRecords, importValueType);
+        super.persistZeebeRecords(importBatch);
       }
     }
 

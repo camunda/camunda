@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Configuration
 @DependsOn("schemaManager")
-public class ZeebeImporter extends Thread implements ImportListener {
+public class ZeebeImporter extends Thread {
 
   private static final Logger logger = LoggerFactory.getLogger(ZeebeImporter.class);
 
@@ -43,9 +43,6 @@ public class ZeebeImporter extends Thread implements ImportListener {
 
   @Autowired
   private RecordsReaderHolder recordsReaderHolder;
-
-  private Long imported = 0L;
-  private Long failed = 0L;
 
   @PostConstruct
   public void startImportingData() {
@@ -77,7 +74,6 @@ public class ZeebeImporter extends Thread implements ImportListener {
   public int performOneRoundOfImport() throws IOException {
     int countRecords = 0;
     for (RecordsReader recordsReader: recordsReaderHolder.getActiveRecordsReaders()) {
-      recordsReader.setImportListener(this);
       countRecords += importOneBatch(recordsReader);
     }
     return countRecords;
@@ -116,29 +112,6 @@ public class ZeebeImporter extends Thread implements ImportListener {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
-  }
-
-  public long getImportedCount() {
-    return imported.longValue();
-  }
-  
-  public long getFailedCount() {
-    return failed.longValue();
-  }
-  
-  @Override
-  public void finished(int count) {
-      imported += count;
-  }
-
-  @Override
-  public void failed(int count) {
-    failed += count;
-    logger.info("Failed to import {} records.",count); 
-  }
-
-  public void resetCounters() {
-     imported = 0L;
   }
 
 }

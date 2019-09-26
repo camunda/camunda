@@ -7,6 +7,7 @@ package org.camunda.operate.zeebeimport;
 
 import static org.springframework.beans.factory.config.ConfigurableBeanFactory.SCOPE_PROTOTYPE;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
@@ -32,6 +33,9 @@ public class ImportJob implements Callable<Boolean> {
   @Autowired
   private ImportPositionHolder importPositionHolder;
 
+  @Autowired
+  private List<ImportListener> importListeners;
+
   public ImportJob(ImportBatch importBatch) {
     this.importBatch = importBatch;
   }
@@ -40,16 +44,16 @@ public class ImportJob implements Callable<Boolean> {
   public Boolean call() {
     try {
       //do import
-      elasticsearchBulkProcessor.persistZeebeRecords(importBatch.getRecords(), importBatch.getImportValueType());
+      elasticsearchBulkProcessor.persistZeebeRecords(importBatch);
       //record latest position
       final long lastProcessedPosition = importBatch.getRecords().get(importBatch.getRecordsCount() - 1).getPosition();
       importPositionHolder.recordLatestLoadedPosition(importBatch.getImportValueType().getAliasTemplate(),
           importBatch.getPartitionId(), lastProcessedPosition);
-      importBatch.finished();
+      importBatch.notifyImportListenersAsFinished(importListeners);
       return true;
     } catch (Throwable ex) {
       logger.error(ex.getMessage(), ex);
-      importBatch.failed();
+      importBatch.notifyImportListenersAsFailed(importListeners);
       return false;
     }
   }

@@ -168,7 +168,7 @@ public abstract class ElasticsearchUtil {
   public static void processBulkRequest(RestHighLevelClient esClient, BulkRequest bulkRequest, boolean refreshImmediately) throws PersistenceException {
     if (bulkRequest.requests().size() > 0) {
       try {
-        logger.debug("************* FLUSH BULK *************");
+        logger.debug("************* FLUSH BULK START *************");
         if (refreshImmediately) {
           bulkRequest = bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
         }
@@ -181,6 +181,7 @@ public abstract class ElasticsearchUtil {
             throw new PersistenceException("Operation failed: " + responseItem.getFailureMessage(), responseItem.getFailure().getCause(), responseItem.getItemId());
           }
         }
+        logger.debug("************* FLUSH BULK FINISH *************");
       } catch (IOException ex) {
         throw new PersistenceException("Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
       }
