@@ -1,25 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe" package="io.zeebe.protocol.record"
+<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe" xmlns:xi="http://www.w3.org/2001/XInclude" package="io.zeebe.protocol.record"
   id="0" version="${protocol.version}" semanticVersion="${project.version}"
   description="Zeebe Protocol" byteOrder="littleEndian">
+
+  <xi:include href="common-types.xml"/>
+
   <types>
-    <composite name="messageHeader" description="Message identifiers and length of message root">
-      <type name="blockLength" primitiveType="uint16"/>
-      <type name="templateId" primitiveType="uint16"/>
-      <type name="schemaId" primitiveType="uint16"/>
-      <type name="version" primitiveType="uint16"/>
-    </composite>
-
-    <composite name="varDataEncoding">
-      <type name="length" primitiveType="uint32" maxValue="2147483647"/>
-      <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8"/>
-    </composite>
-
-    <composite name="groupSizeEncoding" description="Repeating group dimensions">
-      <type name="blockLength" primitiveType="uint16"/>
-      <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup"/>
-    </composite>
-
     <enum name="errorCode" encodingType="uint8" semanticType="String"
       description="The error code of an error">
       <validValue name="INTERNAL_ERROR">0</validValue>

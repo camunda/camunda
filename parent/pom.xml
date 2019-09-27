@@ -739,6 +739,10 @@
                 <key>sbe.decode.unknown.enum.values</key>
                 <value>true</value>
               </systemProperty>
+              <systemProperty>
+                <key>sbe.xinclude.aware</key>
+                <value>true</value>
+              </systemProperty>
             </systemProperties>
           </configuration>
         </plugin>
