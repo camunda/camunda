@@ -9,7 +9,7 @@ import moment from 'moment';
 import classnames from 'classnames';
 import Fullscreen from 'react-full-screen';
 import {Link} from 'react-router-dom';
-import {checkDeleteConflict, evaluateReport} from 'services';
+import {evaluateReport} from 'services';
 
 import {
   Button,
@@ -36,9 +36,7 @@ export default themed(
     state = {
       fullScreenActive: false,
       autoRefreshInterval: null,
-      confirmModalVisible: false,
-      conflicts: [],
-      deleteLoading: false
+      confirmModalVisible: false
     };
 
     componentWillUnmount = () => {
@@ -62,15 +60,6 @@ export default themed(
       this.setState({
         autoRefreshInterval: timeout
       });
-    };
-
-    showDeleteModal = async () => {
-      this.setState({
-        confirmModalVisible: true,
-        deleteLoading: true
-      });
-      const {conflictedItems} = await checkDeleteConflict(this.props.id, 'dashboard');
-      this.setState({conflicts: conflictedItems, deleteLoading: false});
     };
 
     getShareTooltip = () => {
@@ -100,6 +89,12 @@ export default themed(
       });
     };
 
+    openDeleteModal = async () => {
+      this.setState({
+        confirmModalVisible: true
+      });
+    };
+
     render() {
       const {
         id,
@@ -112,13 +107,7 @@ export default themed(
         reports
       } = this.props;
 
-      const {
-        fullScreenActive,
-        autoRefreshInterval,
-        confirmModalVisible,
-        conflicts,
-        deleteLoading
-      } = this.state;
+      const {fullScreenActive, autoRefreshInterval, confirmModalVisible} = this.state;
 
       return (
         <Fullscreen enabled={fullScreenActive} onChange={this.changeFullScreen}>
@@ -148,7 +137,7 @@ export default themed(
                             </Button>
                           </Link>
                           <Button
-                            onClick={this.showDeleteModal}
+                            onClick={this.openDeleteModal}
                             className="tool-button delete-button"
                           >
                             <Icon type="delete" />
@@ -232,9 +221,7 @@ export default themed(
               open={confirmModalVisible}
               onClose={this.closeConfirmModal}
               onConfirm={this.props.deleteDashboard}
-              conflict={{type: 'delete', items: conflicts}}
               entityName={name}
-              loading={deleteLoading}
             />
             <DashboardRenderer
               loadReport={evaluateReport}

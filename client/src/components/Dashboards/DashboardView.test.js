@@ -10,17 +10,8 @@ import {shallow} from 'enzyme';
 import ThemedDashboardView from './DashboardView';
 
 import {Dropdown} from 'components';
-import {checkDeleteConflict} from 'services';
 
 const {WrappedComponent: DashboardView} = ThemedDashboardView;
-
-jest.mock('services', () => {
-  const rest = jest.requireActual('services');
-  return {
-    ...rest,
-    checkDeleteConflict: jest.fn()
-  };
-});
 
 jest.mock('moment', () => () => {
   return {
@@ -139,17 +130,6 @@ it('should return to light mode when the component is unmounted', async () => {
   node.unmount();
 
   expect(spy).toHaveBeenCalled();
-});
-
-it('should set conflict state when conflict happens on delete button click', async () => {
-  const conflictedItems = [{id: '1', name: 'collection', type: 'Collection'}];
-  checkDeleteConflict.mockReturnValue({
-    conflictedItems
-  });
-  const node = shallow(<DashboardView currentUserRole="editor" />);
-
-  await node.find('.delete-button').simulate('click');
-  expect(node.state().conflicts).toEqual(conflictedItems);
 });
 
 it('should disable the share button if not authorized', () => {
