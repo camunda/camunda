@@ -42,7 +42,7 @@ type oauthCredsProviderTestSuite struct {
 }
 
 func TestOAuthCredsProviderSuite(t *testing.T) {
-	suite.Run(t, oauthCredsProviderTestSuite{envSuite: new(envSuite)})
+	suite.Run(t, &oauthCredsProviderTestSuite{envSuite: new(envSuite)})
 }
 
 func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProvider() {
