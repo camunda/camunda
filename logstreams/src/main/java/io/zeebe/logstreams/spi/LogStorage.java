@@ -9,6 +9,7 @@ package io.zeebe.logstreams.spi;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.function.LongUnaryOperator;
 
 /** Log structured storage abstraction */
 public interface LogStorage {
@@ -127,6 +128,16 @@ public interface LogStorage {
    * @return the address of the last block
    */
   long readLastBlock(ByteBuffer readBuffer, ReadResultProcessor processor);
+
+  /**
+   * Returns an address of the block that may contain the position. The exact address returned can
+   * be implementation-dependent. For example, a segmented storage can return the address of the
+   * first byte in the segment.
+   *
+   * @param positionReader takes an address as input and returns a position
+   * @return address in the underlying storage for which positionReader returns a value <= position
+   */
+  long lookUpApproximateAddress(long position, LongUnaryOperator positionReader);
 
   /**
    * @return true if the storage is byte addressable (each byte managed in the underlying storage
