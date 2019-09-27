@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -29,6 +30,7 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class CollectionRestServiceRoleIT {
@@ -227,6 +229,8 @@ public class CollectionRestServiceRoleIT {
 
     // then
     assertThat(response.getStatus(), is(HttpStatus.SC_CONFLICT));
+    final ConflictResponseDto conflictResponseDto = response.readEntity(ConflictResponseDto.class);
+    assertThat(conflictResponseDto.getErrorMessage(), is(notNullValue()));
 
     assertThat(getCollection(collectionId), is(expectedCollection));
   }
@@ -268,6 +272,8 @@ public class CollectionRestServiceRoleIT {
 
     // then
     assertThat(response.getStatus(), is(HttpStatus.SC_CONFLICT));
+    final ConflictResponseDto conflictResponseDto = response.readEntity(ConflictResponseDto.class);
+    assertThat(conflictResponseDto.getErrorMessage(), is(notNullValue()));
 
     assertThat(getCollection(collectionId), is(expectedCollection));
   }

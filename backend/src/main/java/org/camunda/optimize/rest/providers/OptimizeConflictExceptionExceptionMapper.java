@@ -24,7 +24,7 @@ public class OptimizeConflictExceptionExceptionMapper implements ExceptionMapper
     return Response
       .status(Response.Status.CONFLICT)
       .type(MediaType.APPLICATION_JSON_TYPE)
-      .entity(new ConflictResponseDto(conflictException.getConflictedItems()))
+      .entity(new ConflictResponseDto(conflictException.getMessage(), conflictException.getConflictedItems()))
       .build();
 
   }
