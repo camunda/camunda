@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import org.camunda.operate.Metrics;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.zeebeimport.archiver.Archiver;
@@ -60,6 +61,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 
@@ -87,6 +90,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   private ObjectMapper objectMapper;
 
   @Autowired
+  private MeterRegistry meterRegistry;
+
+  @Autowired
   private List<WorkflowInstanceDependant> workflowInstanceDependantTemplates;
 
   private Random random = new Random();
@@ -100,6 +106,12 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   public void before() {
     super.before();
     dateTimeFormatter = DateTimeFormatter.ofPattern(operateProperties.getElasticsearch().getRolloverDateFormat()).withZone(ZoneId.systemDefault());
+    for (Meter meter: meterRegistry.getMeters()) {
+      if (meter.getId().getName().equals(Metrics.OPERATE_NAMESPACE + Metrics.COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI)
+        || meter.getId().getName().equals(Metrics.OPERATE_NAMESPACE + Metrics.COUNTER_NAME_ARCHIVED)) {
+        meterRegistry.remove(meter);
+      }
+    }
   }
 
   @Test
