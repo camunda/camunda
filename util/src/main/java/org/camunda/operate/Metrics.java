@@ -26,7 +26,7 @@ public class Metrics {
   public static final String COUNTER_NAME_EVENTS_PROCESSED = "events.processed";
   public static final String COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI = "events.processed.finished.wi";
   public static final String COUNTER_NAME_COMMANDS = "commands";
-  public static final String COUNTER_NAME_ARCHIVED = "archived";
+  public static final String COUNTER_NAME_ARCHIVED = "archived.wi";
   // Tags
   // -----
   //  Keys:

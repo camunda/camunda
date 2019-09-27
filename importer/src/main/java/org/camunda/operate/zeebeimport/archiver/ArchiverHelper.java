@@ -32,9 +32,6 @@ public class ArchiverHelper {
   @Autowired
   private RestHighLevelClient esClient;
 
-  @Autowired
-  private Metrics metrics;
-
   public void moveDocuments(String sourceIndexName, String idFieldName, String finishDate, List<Long> workflowInstanceKeys) throws ReindexException {
 
     String destinationIndexName = getDestinationIndexName(sourceIndexName, finishDate);
@@ -45,7 +42,6 @@ public class ArchiverHelper {
 
     deleteDocuments(sourceIndexName, idFieldName, workflowInstanceKeys);
 
-    metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVED, workflowInstanceKeys.size());
   }
 
   private void forceMerge(String destinationIndexName) {

@@ -9,10 +9,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static org.camunda.operate.util.MetricAssert.assertThatMetricsFrom;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.hamcrest.CoreMatchers.containsString;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -130,6 +132,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     finishInstances(count2, endDate2, activityId);
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreFinishedCheck, ids2);
 
+    //assert metrics for finished workflow instances
+    assertThatMetricsFrom(mockMvc, containsString("operate_events_processed_finished_wi_total " + (count1 + count2)));
+
     //start instances 1 day ago
     int count3 = random.nextInt(6) + 5;
     final List<Long> ids3 = startInstances(processId, count3, endDate2);
@@ -149,6 +154,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     assertInstancesInCorrectIndex(count3, ids3, null);
 
     assertAllInstancesInAlias(count1 + count2 + count3);
+
+    //assert metrics for archived workflow instances
+    assertThatMetricsFrom(mockMvc, containsString("operate_archived_wi_total " + (count1 + count2)));
   }
 
   protected void createOperations(List<Long> ids1) throws PersistenceException {

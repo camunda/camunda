@@ -219,7 +219,6 @@ pipeline {
     stage('Run performance tests') {
       steps {
         container('maven') {
-          // Generate Data
           sh ("mvn -B -s settings.xml -f qa/query-performance-tests -P -docker verify")
         }
       }

@@ -17,16 +17,24 @@ public class MetricAssert {
   
   public static final String ENDPOINT = "/actuator/prometheus";
   
-  public static void assertThatMetricsAreDisabledFrom(MockMvc mockMvc) throws Exception {
+  public static void assertThatMetricsAreDisabledFrom(MockMvc mockMvc) {
     MockHttpServletRequestBuilder request = get(ENDPOINT);
-    mockMvc.perform(request)
-        .andExpect(status().is(404));
+    try {
+      mockMvc.perform(request)
+          .andExpect(status().is(404));
+    } catch (Exception e) {
+      throw new RuntimeException("Exception while asserting:" + e.getMessage(), e);
+    }
   }
   
-  public static void assertThatMetricsFrom(MockMvc mockMvc,Matcher<? super String> matcher) throws Exception {
+  public static void assertThatMetricsFrom(MockMvc mockMvc,Matcher<? super String> matcher) {
     MockHttpServletRequestBuilder request = get(ENDPOINT);
-    mockMvc.perform(request).andExpect(status().isOk())
-    .andExpect(content().string(matcher));
+    try {
+      mockMvc.perform(request).andExpect(status().isOk())
+        .andExpect(content().string(matcher));
+    } catch (Exception e) {
+      throw new RuntimeException("Exception while asserting:" + e.getMessage(), e);
+    }
   }
   
 }

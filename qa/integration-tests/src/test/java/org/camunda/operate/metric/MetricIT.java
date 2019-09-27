@@ -56,7 +56,7 @@ public class MetricIT extends OperateZeebeIntegrationTest{
   }
 
   @Test // OPE-624 
-  public void testProcessedEventsDuringImport() throws Exception {
+  public void testProcessedEventsDuringImport() {
     // Given metrics are enabled
     // When
     operateTester
@@ -72,7 +72,7 @@ public class MetricIT extends OperateZeebeIntegrationTest{
   }
   
   @Test // OPE-624 
-  public void testProcessedEventsDuringImportWithIncidents() throws Exception {
+  public void testProcessedEventsDuringImportWithIncidents() {
     // Given metrics are enabled
     // When
     operateTester

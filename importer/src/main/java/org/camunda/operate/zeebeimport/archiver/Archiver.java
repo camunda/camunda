@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.camunda.operate.Metrics;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceDependant;
 import org.camunda.operate.exceptions.OperateRuntimeException;
@@ -72,6 +73,9 @@ public class Archiver extends Thread {
   @Autowired
   private PartitionHolder partitionHolder;
 
+  @Autowired
+  private Metrics metrics;
+
   @PostConstruct
   public void startArchiving() {
     if (operateProperties.getElasticsearch().isRolloverEnabled()) {
@@ -131,6 +135,7 @@ public class Archiver extends Thread {
         //then remove workflow instances themselves
         reindexHelper.moveDocuments(workflowInstanceTemplate.getMainIndexName(), ListViewTemplate.WORKFLOW_INSTANCE_KEY, finishedAtDateIds.getFinishDate(),
           finishedAtDateIds.getWorkflowInstanceKeys());
+        metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVED, finishedAtDateIds.getWorkflowInstanceKeys().size());
         return finishedAtDateIds.getWorkflowInstanceKeys().size();
       } catch (ReindexException e) {
         logger.error(e.getMessage(), e);
