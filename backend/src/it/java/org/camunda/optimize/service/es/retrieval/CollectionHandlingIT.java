@@ -362,12 +362,13 @@ public class CollectionHandlingIT {
   }
 
   @Test
-  public void collectionItemsAreOrderedByModificationDateDescending() {
+  public void collectionItemsAreOrderedByTypeAndModificationDateDescending() {
     // given
     String collectionId = createNewCollection();
     String reportId1 = createNewSingleProcessReportInCollection(collectionId);
     String reportId2 = createNewSingleProcessReportInCollection(collectionId);
-    String dashboardId = createNewDashboardInCollection(collectionId);
+    String dashboardId1 = createNewDashboardInCollection(collectionId);
+    String dashboardId2 = createNewDashboardInCollection(collectionId);
 
     updateReport(reportId1, new SingleProcessReportDefinitionDto());
 
@@ -377,9 +378,10 @@ public class CollectionHandlingIT {
     ResolvedCollectionDefinitionDto collection = getCollectionById(collectionId);
 
     // then
-    assertThat(collection.getData().getEntities().get(0).getId(), is(reportId1));
-    assertThat(collection.getData().getEntities().get(1).getId(), is(dashboardId));
-    assertThat(collection.getData().getEntities().get(2).getId(), is(reportId2));
+    assertThat(collection.getData().getEntities().get(0).getId(), is(dashboardId2));
+    assertThat(collection.getData().getEntities().get(1).getId(), is(dashboardId1));
+    assertThat(collection.getData().getEntities().get(2).getId(), is(reportId1));
+    assertThat(collection.getData().getEntities().get(3).getId(), is(reportId2));
   }
 
   @Test

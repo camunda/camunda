@@ -247,7 +247,10 @@ public class CollectionService {
           entityDto.setCurrentUserRole(currentUserResourceRole);
           return entityDto;
         })
-        .sorted(Comparator.comparing(EntityDto::getLastModified).reversed())
+        .sorted(
+          Comparator.comparing(EntityDto::getEntityType)
+            .thenComparing(EntityDto::getLastModified, Comparator.reverseOrder())
+        )
         .collect(Collectors.toList())
     );
 
