@@ -12,7 +12,7 @@ A multi-instance activity is executed multiple times - once for each element of 
 
 On the execution level, a multi-instance activity has two parts: a **multi-instance body** and an inner activity. The multi-instance body is the container for all instances of the inner activity. 
 
-When the activity is entered, the multi-instance body is activated and one instance for every element of the `inputCollection` is created (sequentially or in parallel). When the all instances are completed then the body is completed and the activity is left.
+When the activity is entered, the multi-instance body is activated and one instance for every element of the `inputCollection` is created (sequentially or in parallel). When all instances are completed, the body is completed and the activity is left.
 
 ## Sequential vs. Parallel
 
@@ -30,7 +30,7 @@ In case of a **parallel** multi-instance activity, all instances are created whe
 
 A multi-instance activity **must** define the `inputCollection` variable to iterate over (e.g. `items`). The variable is read from the workflow instance on activating the multi-instance body. It must be an `array` of any type (e.g. `["item-1", "item-2"]`). 
 
-In order to access the current element of the `inputCollection` within the instance, the multi-instance activity can define the `inputElement` variable (e.g. `item`). The element is stored as local variable of the instance under the given name.
+In order to access the current element of the `inputCollection` within the instance, the multi-instance activity can define the `inputElement` variable (e.g. `item`). The element is stored as a local variable of the instance under the given name.
 
 If the `inputCollection` is empty then the multi-instance body is completed immediately and no instances are created. It behaves like the activity is skipped. 
 
@@ -56,7 +56,7 @@ When an non-interrupting boundary event is triggered then the instances are not 
 
 ## Special Multi-Instance Variables
 
-Every instance has a local variable `loopCounter`. It holds the index in the `inputCollection` of this instance, starting by `1`.
+Every instance has a local variable `loopCounter`. It holds the index in the `inputCollection` of this instance, starting with `1`.
 
 ## Variable Mappings
 
