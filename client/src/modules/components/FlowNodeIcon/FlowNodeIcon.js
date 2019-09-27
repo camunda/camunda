@@ -34,7 +34,11 @@ const flowNodes = {
   [TYPE.GATEWAY_EXCLUSIVE]: Styled[TYPE.GATEWAY_EXCLUSIVE]
 };
 
-function getFlowNodeTypeIcon({elementType, eventType}) {
+function getFlowNodeTypeIcon({elementType, eventType, multiInstanceType}) {
+  if (elementType === TYPE.MULTI_INSTANCE_BODY && multiInstanceType) {
+    return Styled[multiInstanceType];
+  }
+
   return !eventType
     ? flowNodes[elementType] || Styled[TYPE.TASK_DEFAULT]
     : getEventFlowNode(eventType, elementType) || Styled[TYPE.EVENT_START];

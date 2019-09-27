@@ -307,17 +307,27 @@ export default class Instance extends Component {
   };
 
   getNodeWithMetaData = node => {
-    let metaData;
+    const metaData = this.state.nodeMetaDataMap.get(node.activityId) || {
+      name: undefined,
+      type: {
+        elementType: undefined,
+        eventType: undefined,
+        multiInstanceType: undefined
+      }
+    };
 
-    // Add FlowNode Type
+    const typeDetails = {
+      ...metaData.type
+    };
+
     if (node.type === TYPE.WORKFLOW) {
-      metaData = {type: {elementType: TYPE.WORKFLOW}};
-    } else {
-      metaData = this.state.nodeMetaDataMap.get(node.activityId) || {
-        name: undefined,
-        type: {elementType: undefined, eventType: undefined}
-      };
+      typeDetails.elementType = TYPE.WORKFLOW;
     }
+
+    if (node.type === TYPE.MULTI_INSTANCE_BODY) {
+      typeDetails.elementType = TYPE.MULTI_INSTANCE_BODY;
+    }
+
     // Add Node Name
     const nodeName =
       node.id === this.state.instance.id
@@ -326,7 +336,7 @@ export default class Instance extends Component {
 
     return {
       ...node,
-      typeDetails: metaData.type,
+      typeDetails,
       name: nodeName
     };
   };

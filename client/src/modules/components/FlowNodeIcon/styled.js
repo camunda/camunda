@@ -26,6 +26,8 @@ import {ReactComponent as FlowNodeTaskService} from 'modules/components/Icon/flo
 import {ReactComponent as FlowNodeTaskReceive} from 'modules/components/Icon/flow-node-task-receive.svg';
 import {ReactComponent as FlowNodeTaskSend} from 'modules/components/Icon/flow-node-task-send.svg';
 import {ReactComponent as FlowNodeTaskSubProcess} from 'modules/components/Icon/flow-node-task-subprocess.svg';
+import {ReactComponent as FlowNodeTaskMulti} from 'modules/components/Icon/flow-node-task-multi.svg';
+import {ReactComponent as FlowNodeTaskParallel} from 'modules/components/Icon/flow-node-task-parallel.svg';
 
 /**
  * Event Imports
@@ -113,6 +115,18 @@ export const TASK_DEFAULT = themed(styled(FlowNodeTask)`
 `);
 
 export const TASK_SUBPROCESS = themed(styled(FlowNodeTaskSubProcess)`
+  ${newIconStyle};
+`);
+
+/**
+ * Task Icons
+ */
+
+export const MULTI_SEQUENTIAL = themed(styled(FlowNodeTaskMulti)`
+  ${newIconStyle};
+`);
+
+export const MULTI_PARALLEL = themed(styled(FlowNodeTaskParallel)`
   ${newIconStyle};
 `);
 

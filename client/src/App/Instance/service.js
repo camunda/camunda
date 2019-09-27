@@ -4,7 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {STATE, TYPE, FLOWNODE_TYPE_HANDLE} from 'modules/constants';
+import {
+  STATE,
+  TYPE,
+  FLOWNODE_TYPE_HANDLE,
+  MULTI_INSTANCE_TYPE
+} from 'modules/constants';
 import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
 import * as api from 'modules/api/instances';
 import {isFlowNode} from 'modules/utils/flowNodes/flowNodes';
@@ -28,6 +33,16 @@ function getElementType(bpmnElement) {
   }
 }
 
+function getMultiInstanceType(bpmnElement) {
+  if (!bpmnElement.loopCharacteristics) {
+    return;
+  }
+
+  return bpmnElement.loopCharacteristics.isSequential
+    ? MULTI_INSTANCE_TYPE.SEQUENTIAL
+    : MULTI_INSTANCE_TYPE.PARALLEL;
+}
+
 /**
  * @returns {Map} activityId -> name, flowNodeType, eventType
  * @param {*} elementRegistry (bpmn elementRegistry)
@@ -40,7 +55,8 @@ export function createNodeMetaDataMap(bpmnElements) {
         name: bpmnElement.name,
         type: {
           elementType: getElementType(bpmnElement),
-          eventType: getEventType(bpmnElement)
+          eventType: getEventType(bpmnElement),
+          multiInstanceType: getMultiInstanceType(bpmnElement)
         }
       });
 
