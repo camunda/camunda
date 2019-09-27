@@ -14,7 +14,6 @@
     * [Protocols](basics/protocols.md)
     * [Internal Processing](basics/internal-processing.md)
     * [Exporters](basics/exporters.md)
-    * [Performance](basics/performance.md)
     * [Clustering](basics/clustering.md)
 * [Getting Started Tutorial](getting-started/README.md)
     * [Tutorial Setup](getting-started/tutorial-setup.md)
