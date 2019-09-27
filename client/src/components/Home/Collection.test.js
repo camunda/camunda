@@ -8,12 +8,15 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import {Dropdown, ConfirmationModal} from 'components';
+import {refreshBreadcrumbs} from 'components/navigation';
 import {loadEntity, deleteEntity, updateEntity} from 'services';
 
 import CollectionWithErrorHandling from './Collection';
 import CollectionModal from './CollectionModal';
 
 const Collection = CollectionWithErrorHandling.WrappedComponent;
+
+jest.mock('components/navigation', () => ({refreshBreadcrumbs: jest.fn()}));
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -117,13 +120,14 @@ it('should show an edit modal when clicking the edit button', () => {
   expect(node.find(CollectionModal)).toExist();
 });
 
-it('should modify the collections name with the edit modal', () => {
+it('should modify the collections name with the edit modal', async () => {
   const node = shallow(<Collection {...props} />);
 
   node.setState({editingCollection: true});
-  node.find(CollectionModal).prop('onConfirm')('new Name');
+  await node.find(CollectionModal).prop('onConfirm')('new Name');
 
   expect(updateEntity).toHaveBeenCalledWith('collection', 'aCollectionId', {name: 'new Name'});
+  expect(refreshBreadcrumbs).toHaveBeenCalled();
 });
 
 it('should hide edit/delete from context menu for collection items that does not have a "manager" role', () => {

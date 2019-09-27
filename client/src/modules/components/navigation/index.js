@@ -5,4 +5,4 @@
  */
 
 export {SubNav} from './SubNav';
-export {NavItem} from './NavItem';
+export {NavItem, refreshBreadcrumbs} from './NavItem';

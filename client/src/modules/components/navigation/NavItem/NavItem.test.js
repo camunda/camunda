@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow, mount} from 'enzyme';
 
-import NavItem from './NavItem';
+import {default as NavItem, refreshBreadcrumbs} from './NavItem';
 
 import {loadEntitiesNames} from './service';
 
@@ -62,4 +62,22 @@ it('should render a breadcrumbs links when specified', async () => {
   expect(loadEntitiesNames).toHaveBeenCalledWith({dashboardId: 'did', reportId: 'rid'});
 
   expect(node).toMatchSnapshot();
+});
+
+it('should update breadcrumbs when requested', async () => {
+  const node = shallow(
+    <NavItem
+      name="testName"
+      active={['/report/*', '/dashboard/*']}
+      location={{pathname: '/dashboard/did/report/rid'}}
+      breadcrumbsEntities={['dashboard', 'report']}
+    />
+  );
+
+  await node.update();
+  loadEntitiesNames.mockClear();
+
+  expect(loadEntitiesNames).not.toHaveBeenCalled();
+  refreshBreadcrumbs();
+  expect(loadEntitiesNames).toHaveBeenCalled();
 });

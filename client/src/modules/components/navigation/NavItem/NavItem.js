@@ -12,6 +12,8 @@ import {loadEntitiesNames} from './service';
 
 import './NavItem.scss';
 
+const breadcrumbConstructors = [];
+
 export default withRouter(
   class NavItem extends React.Component {
     state = {
@@ -19,16 +21,16 @@ export default withRouter(
     };
 
     async componentDidMount() {
-      if (this.props.breadcrumbsEntities) {
-        await this.constructBreadcrumbs();
-      }
+      await this.constructBreadcrumbs();
+      breadcrumbConstructors.push(this.constructBreadcrumbs);
+    }
+
+    componentWillUnmount() {
+      breadcrumbConstructors.splice(breadcrumbConstructors.indexOf(this.constructBreadcrumbs), 1);
     }
 
     async componentDidUpdate(prevProps) {
-      if (
-        prevProps.location.pathname !== this.props.location.pathname &&
-        this.props.breadcrumbsEntities
-      ) {
+      if (prevProps.location.pathname !== this.props.location.pathname) {
         await this.constructBreadcrumbs();
       }
     }
@@ -38,6 +40,10 @@ export default withRouter(
         location: {pathname},
         breadcrumbsEntities
       } = this.props;
+
+      if (!breadcrumbsEntities) {
+        return;
+      }
 
       let breadcrumbs = [];
       const entitiesIds = {};
@@ -90,3 +96,7 @@ export default withRouter(
     }
   }
 );
+
+export function refreshBreadcrumbs() {
+  breadcrumbConstructors.forEach(fct => fct());
+}

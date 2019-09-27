@@ -13,6 +13,7 @@ import {withErrorHandling} from 'HOC';
 import {Icon, Dropdown, ConfirmationModal} from 'components';
 import {loadEntity, updateEntity, deleteEntity} from 'services';
 import {showError} from 'notifications';
+import {refreshBreadcrumbs} from 'components/navigation';
 
 import {ReactComponent as CollectionIcon} from './icons/collection.svg';
 
@@ -158,6 +159,7 @@ export default withErrorHandling(
                 await updateEntity('collection', collection.id, {name});
                 this.loadCollection();
                 this.stopEditingCollection();
+                refreshBreadcrumbs();
               }}
             />
           )}

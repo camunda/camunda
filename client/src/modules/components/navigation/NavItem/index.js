@@ -4,4 +4,4 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default as NavItem} from './NavItem';
+export {default as NavItem, refreshBreadcrumbs} from './NavItem';
