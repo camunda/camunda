@@ -39,7 +39,10 @@
       }
     },
     "title": "Collections, Dashboards, and Reports",
-    "search": "Filter for name...",
+    "search": {
+      "name": "Filter for name...",
+      "id": "Filter for user ID..."
+    },
     "collectionTitle": "Dashboards and Reports",
     "collectionTitleWithAmpersand": "Dashboards & Reports",
     "userTitle": "Users and User Groups",

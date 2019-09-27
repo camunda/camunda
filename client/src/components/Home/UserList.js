@@ -7,7 +7,7 @@
 import React from 'react';
 
 import {t} from 'translation';
-import {LoadingIndicator, Icon, Dropdown, ConfirmationModal, Button} from 'components';
+import {LoadingIndicator, Icon, Dropdown, Input, ConfirmationModal, Button} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 
@@ -28,7 +28,8 @@ export default withErrorHandling(
       deleting: null,
       editing: null,
       addingUser: false,
-      deleteInProgress: false
+      deleteInProgress: false,
+      searchQuery: ''
     };
 
     confirmDelete = entity => {
@@ -70,13 +71,25 @@ export default withErrorHandling(
     closeEditUserModal = () => this.setState({editing: null});
 
     render() {
-      const {deleting, editing, deleteInProgress, addingUser} = this.state;
+      const {deleting, editing, deleteInProgress, searchQuery, addingUser} = this.state;
       const {readOnly} = this.props;
 
       return (
         <div className="UserList">
           <div className="header">
             <h1>{t('home.userTitle')}</h1>
+            <div className="searchContainer">
+              <Icon className="searchIcon" type="search" />
+              <Input
+                required
+                type="text"
+                className="searchInput"
+                placeholder={t('home.search.id')}
+                value={searchQuery}
+                onChange={({target: {value}}) => this.setState({searchQuery: value})}
+                onClear={() => this.setState({searchQuery: ''})}
+              />
+            </div>
             {!readOnly && <Button onClick={this.openAddUserModal}>{t('common.add')}</Button>}
           </div>
           <div className="content">
@@ -113,7 +126,15 @@ export default withErrorHandling(
         return <LoadingIndicator />;
       }
 
-      return data.map(entity => {
+      const searchFilteredData = this.props.data.filter(({identity: {id}}) =>
+        id.toLowerCase().includes(this.state.searchQuery.toLowerCase())
+      );
+
+      if (searchFilteredData.length === 0) {
+        return <div className="empty">{t('home.notFound')}</div>;
+      }
+
+      return searchFilteredData.map(entity => {
         const {id, identity, role} = entity;
         return (
           <ListItem key={id} className={identity.type}>

@@ -4,6 +4,16 @@
   margin: auto;
   position: relative;
 
+  .empty {
+    height: 56px;
+    border-radius: 4px;
+    border: solid 1px #d8dce3;
+    text-align: center;
+    line-height: 56px;
+    font-size: 14px;
+    color: #9b9b9b;
+  }
+
   .header {
     margin-top: -36px;
     padding-top: 58px;
@@ -12,17 +22,36 @@
     width: 1000px;
     z-index: 1;
     background-color: white;
+    display: flex;
 
     h1 {
       font-size: 18px;
       line-height: 30px;
       font-weight: normal;
       color: #000;
-      display: inline;
+      margin: 0;
+    }
+
+    .searchContainer {
+      margin-left: auto;
+      position: relative;
+
+      .searchIcon {
+        position: absolute;
+        left: 10px;
+        top: 0;
+        bottom: 0;
+        margin: auto;
+        color: #6a727e;
+      }
+
+      .searchInput {
+        padding: 6px 35px;
+      }
     }
 
     .Button {
-      float: right;
+      margin-left: 20px;
       width: 95px;
     }
   }

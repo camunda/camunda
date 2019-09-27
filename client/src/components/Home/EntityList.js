@@ -97,7 +97,7 @@ export default withErrorHandling(
                 required
                 type="text"
                 className="searchInput"
-                placeholder={t('home.search')}
+                placeholder={t('home.search.name')}
                 value={searchQuery}
                 onChange={({target: {value}}) => this.setState({searchQuery: value})}
                 onClear={() => this.setState({searchQuery: ''})}
