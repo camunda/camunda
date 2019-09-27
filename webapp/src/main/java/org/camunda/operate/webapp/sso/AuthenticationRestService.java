@@ -42,11 +42,7 @@ public class AuthenticationRestService {
     if (claims.containsKey(configuration.getNameKey())) {
       name = claims.get(configuration.getNameKey()).asString();
     }
-    try {
-      return UserDto.fromName(name);
-    } catch (Throwable t) {
-      return UserDto.fromName(tokenAuth.getName());
-    }
+    return UserDto.fromName(name);
   }
 
 }
