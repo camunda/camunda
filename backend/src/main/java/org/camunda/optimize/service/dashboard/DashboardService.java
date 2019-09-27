@@ -32,7 +32,9 @@ import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -118,10 +120,19 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final List<ReportLocationDto> newDashboardReports = new ArrayList<>(dashboardDefinition.getReports());
 
     if (!isSameCollection(collectionId, dashboardDefinition.getCollectionId())) {
+      final Map<String, String> uniqueReportCopies = new HashMap<>();
       newDashboardReports.clear();
       dashboardDefinition.getReports().forEach(reportLocationDto -> {
-        final IdDto idDto = reportService.copyAndMoveReport(reportLocationDto.getId(), userId, collectionId);
-        newDashboardReports.add(reportLocationDto.toBuilder().id(idDto.getId()).build());
+        final String reportCopyId = uniqueReportCopies.computeIfAbsent(
+          reportLocationDto.getId(),
+          reportId -> reportService.copyAndMoveReport(
+            reportLocationDto.getId(), userId, collectionId, uniqueReportCopies
+          ).getId()
+        );
+
+        newDashboardReports.add(
+          reportLocationDto.toBuilder().id(reportCopyId).configuration(reportLocationDto.getConfiguration()).build()
+        );
       });
     }
 

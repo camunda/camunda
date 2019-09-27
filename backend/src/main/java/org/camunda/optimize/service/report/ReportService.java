@@ -48,8 +48,10 @@ import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.core.MultivaluedMap;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -107,18 +109,38 @@ public class ReportService implements CollectionReferencingService {
     return new ConflictResponseDto(getConflictedItemsForDeleteReport(currentReportVersion));
   }
 
-  public IdDto copyReport(String reportId, String userId, String newReportName) {
+  public IdDto copyReport(final String reportId, final String userId, final String newReportName) {
     final AuthorizedReportDefinitionDto authorizedReportDefinition = getReportDefinition(reportId, userId);
     final ReportDefinitionDto oldReportDefinition = authorizedReportDefinition.getDefinitionDto();
 
-    return copyAndMoveReport(reportId, userId, oldReportDefinition.getCollectionId(), newReportName);
+    return copyAndMoveReport(reportId, userId, oldReportDefinition.getCollectionId(), newReportName, new HashMap<>());
   }
 
-  public IdDto copyAndMoveReport(String reportId, String userId, String collectionId) {
-    return copyAndMoveReport(reportId, userId, collectionId, null);
+  public IdDto copyAndMoveReport(final String reportId,
+                                 final String userId,
+                                 final String collectionId) {
+    return copyAndMoveReport(reportId, userId, collectionId, new HashMap<>());
   }
 
-  public IdDto copyAndMoveReport(String reportId, String userId, String collectionId, String newReportName) {
+  public IdDto copyAndMoveReport(final String reportId,
+                                 final String userId,
+                                 final String collectionId,
+                                 final Map<String, String> existingReportCopies) {
+    return copyAndMoveReport(reportId, userId, collectionId, null, existingReportCopies);
+  }
+
+  public IdDto copyAndMoveReport(final String reportId,
+                                 final String userId,
+                                 final String collectionId,
+                                 final String newReportName) {
+    return copyAndMoveReport(reportId, userId, collectionId, newReportName, new HashMap<>());
+  }
+
+  public IdDto copyAndMoveReport(final String reportId,
+                                 final String userId,
+                                 final String collectionId,
+                                 final String newReportName,
+                                 final Map<String, String> existingReportCopies) {
     final AuthorizedReportDefinitionDto authorizedReportDefinition = getReportDefinition(reportId, userId);
     final ReportDefinitionDto originalReportDefinition = authorizedReportDefinition.getDefinitionDto();
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
@@ -126,7 +148,7 @@ public class ReportService implements CollectionReferencingService {
     final String oldCollectionId = originalReportDefinition.getCollectionId();
     final String newCollectionId = Objects.equals(oldCollectionId, collectionId) ? oldCollectionId : collectionId;
 
-    return copyAndMoveReport(originalReportDefinition, userId, newReportName, newCollectionId);
+    return copyAndMoveReport(originalReportDefinition, userId, newReportName, newCollectionId, existingReportCopies);
   }
 
   public AuthorizedReportDefinitionDto getReportDefinition(final String reportId, final String userId) {
@@ -306,7 +328,8 @@ public class ReportService implements CollectionReferencingService {
   private IdDto copyAndMoveReport(final ReportDefinitionDto originalReportDefinition,
                                   final String userId,
                                   final String newReportName,
-                                  final String newCollectionId) {
+                                  final String newCollectionId,
+                                  final Map<String, String> existingReportCopies) {
     final String newName = newReportName != null ? newReportName : originalReportDefinition.getName() + " – Copy";
     final String oldCollectionId = originalReportDefinition.getCollectionId();
 
@@ -329,12 +352,18 @@ public class ReportService implements CollectionReferencingService {
       }
     } else {
       CombinedReportDefinitionDto combinedReportDefinition = (CombinedReportDefinitionDto) originalReportDefinition;
-      return copyAndMoveCombinedReport(userId, newName, newCollectionId, oldCollectionId, combinedReportDefinition.getData());
+      return copyAndMoveCombinedReport(
+        userId, newName, newCollectionId, oldCollectionId, combinedReportDefinition.getData(), existingReportCopies
+      );
     }
   }
 
-  private IdDto copyAndMoveCombinedReport(final String userId, final String newName, final String newCollectionId,
-                                          final String oldCollectionId, final CombinedReportDataDto oldCombinedReportData) {
+  private IdDto copyAndMoveCombinedReport(final String userId,
+                                          final String newName,
+                                          final String newCollectionId,
+                                          final String oldCollectionId,
+                                          final CombinedReportDataDto oldCombinedReportData,
+                                          final Map<String, String> existingReportCopies) {
     final CombinedReportDataDto newCombinedReportData = new CombinedReportDataDto(
       oldCombinedReportData.getConfiguration(),
       oldCombinedReportData.getVisualization(),
@@ -344,8 +373,12 @@ public class ReportService implements CollectionReferencingService {
     if (!StringUtils.equals(newCollectionId, oldCollectionId)) {
       final List<CombinedReportItemDto> newReports = new ArrayList<>();
       oldCombinedReportData.getReports().forEach(combinedReportItemDto -> {
-        final IdDto idDto = copyAndMoveReport(combinedReportItemDto.getId(), userId, newCollectionId);
-        newReports.add(combinedReportItemDto.toBuilder().id(idDto.getId()).build());
+        final String reportCopyId = existingReportCopies.computeIfAbsent(
+          combinedReportItemDto.getId(), reportId -> copyAndMoveReport(reportId, userId, newCollectionId).getId()
+        );
+        newReports.add(
+          combinedReportItemDto.toBuilder().id(reportCopyId).color(combinedReportItemDto.getColor()).build()
+        );
       });
       newCombinedReportData.setReports(newReports);
     }

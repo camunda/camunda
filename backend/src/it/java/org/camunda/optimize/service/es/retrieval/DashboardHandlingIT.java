@@ -6,8 +6,10 @@
 package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -24,13 +26,16 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
+import static org.hamcrest.CoreMatchers.everyItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -107,9 +112,7 @@ public class DashboardHandlingIT {
     final String collectionId = addEmptyCollectionToOptimize();
 
     // when
-    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
-      .buildCopyDashboardRequest(dashboardId, collectionId)
-      .execute(IdDto.class, 200);
+    IdDto copyId = copyDashboardToCollection(dashboardId, collectionId);
 
     // then
     DashboardDefinitionDto oldDashboard = getDashboardById(dashboardId);
@@ -128,6 +131,76 @@ public class DashboardHandlingIT {
       newReportIds,
       not(containsInAnyOrder(oldDashboard.getReports().stream().map(ReportLocationDto::getId).toArray()))
     );
+  }
+
+  @Test
+  public void copyPrivateDashboardAndMoveToCollection_duplicateReportIsOnlyCopiedOnce() {
+    // given
+    String dashboardId = addEmptyPrivateDashboard();
+    String reportId = addEmptySingleProcessReport();
+    addReportsToDashboard(dashboardId, reportId, reportId);
+
+    final String collectionId = addEmptyCollectionToOptimize();
+
+    // when
+    IdDto copyId = copyDashboardToCollection(dashboardId, collectionId);
+
+    // then
+    DashboardDefinitionDto oldDashboard = getDashboardById(dashboardId);
+    DashboardDefinitionDto dashboard = getDashboardById(copyId.getId());
+    assertThat(dashboard.getName(), is(oldDashboard.getName() + " – Copy"));
+    assertThat(dashboard.getCollectionId(), is(collectionId));
+    assertThat(oldDashboard.getCollectionId(), is(nullValue()));
+
+    final List<String> newReportIds = dashboard.getReports()
+      .stream()
+      .map(ReportLocationDto::getId)
+      .collect(Collectors.toList());
+
+    assertThat(newReportIds.size(), is(2));
+    assertThat(
+      newReportIds,
+      not(containsInAnyOrder(oldDashboard.getReports().stream().map(ReportLocationDto::getId).toArray()))
+    );
+    assertThat(newReportIds, everyItem(is(newReportIds.get(0))));
+
+    final ResolvedCollectionDefinitionDto collectionById = getCollectionById(collectionId);
+    assertThat(collectionById.getData().getEntities().size(), is(2));
+  }
+
+  @Test
+  public void copyPrivateDashboardAndMoveToCollection_duplicateReportIsOnlyCopiedOnceIfReferencedFromCombinedReport() {
+    // given
+    String dashboardId = addEmptyPrivateDashboard();
+    String reportId = addEmptySingleProcessReport();
+    String combinedReportId = createNewCombinedReport(reportId);
+    addReportsToDashboard(dashboardId, reportId, combinedReportId);
+
+    final String collectionId = addEmptyCollectionToOptimize();
+
+    // when
+    IdDto copyId = copyDashboardToCollection(dashboardId, collectionId);
+
+    // then
+    DashboardDefinitionDto oldDashboard = getDashboardById(dashboardId);
+    DashboardDefinitionDto dashboard = getDashboardById(copyId.getId());
+    assertThat(dashboard.getName(), is(oldDashboard.getName() + " – Copy"));
+    assertThat(dashboard.getCollectionId(), is(collectionId));
+    assertThat(oldDashboard.getCollectionId(), is(nullValue()));
+
+    final List<String> newReportIds = dashboard.getReports()
+      .stream()
+      .map(ReportLocationDto::getId)
+      .collect(Collectors.toList());
+
+    assertThat(newReportIds.size(), is(2));
+    assertThat(
+      newReportIds,
+      not(containsInAnyOrder(oldDashboard.getReports().stream().map(ReportLocationDto::getId).toArray()))
+    );
+
+    final ResolvedCollectionDefinitionDto collectionById = getCollectionById(collectionId);
+    assertThat(collectionById.getData().getEntities().size(), is(3));
   }
 
   @Test
@@ -413,9 +486,17 @@ public class DashboardHandlingIT {
 
   private void addEmptyReportToDashboardInCollection(final String dashboardId, final String collectionId) {
     final String reportId = addEmptySingleProcessReportToCollection(collectionId);
-    final ReportLocationDto reportLocationDto = new ReportLocationDto();
-    reportLocationDto.setId(reportId);
-    updateDashboard(dashboardId, Collections.singletonList(reportLocationDto));
+    addReportsToDashboard(dashboardId, reportId);
+  }
+
+  private void addReportsToDashboard(final String dashboardId, final String... reportIds) {
+    final List<ReportLocationDto> reportLocationDtos = new ArrayList<>();
+    for (String reportId : reportIds) {
+      final ReportLocationDto reportLocationDto = new ReportLocationDto();
+      reportLocationDto.setId(reportId);
+      reportLocationDtos.add(reportLocationDto);
+    }
+    updateDashboard(dashboardId, reportLocationDtos);
   }
 
   private String addEmptySingleProcessReport() {
@@ -449,5 +530,45 @@ public class DashboardHandlingIT {
         new DashboardDefinitionDto(Collections.singletonList(reportLocationDto))
       )
       .execute();
+  }
+
+  private String createNewCombinedReport(String... singleReportIds) {
+    CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
+    report.setData(createCombinedReport(singleReportIds));
+    return createNewCombinedReport(report);
+  }
+
+  private String createNewCombinedReport(CombinedReportDefinitionDto report) {
+    String reportId = createNewCombinedReportInCollection(null);
+    updateCombinedReport(reportId, report);
+    return reportId;
+  }
+
+  private String createNewCombinedReportInCollection(String collectionId) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateCombinedReportRequest(collectionId)
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
+  private void updateCombinedReport(String id, CombinedReportDefinitionDto updatedReport) {
+    embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateCombinedProcessReportRequest(id, updatedReport)
+      .execute(204);
+  }
+
+  private IdDto copyDashboardToCollection(final String dashboardId, final String collectionId) {
+    return embeddedOptimizeRule.getRequestExecutor()
+      .buildCopyDashboardRequest(dashboardId, collectionId)
+      .execute(IdDto.class, 200);
+  }
+
+  private ResolvedCollectionDefinitionDto getCollectionById(final String collectionId) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildGetCollectionRequest(collectionId)
+      .execute(ResolvedCollectionDefinitionDto.class, 200);
   }
 }
