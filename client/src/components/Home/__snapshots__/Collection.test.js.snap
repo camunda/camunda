@@ -120,6 +120,7 @@ exports[`should match snapshot 1`] = `
         ]
       }
       onChange={[Function]}
+      readOnly={false}
     />
   </div>
   <ConfirmationModal

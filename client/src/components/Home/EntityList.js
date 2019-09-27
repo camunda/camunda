@@ -86,7 +86,7 @@ export default withErrorHandling(
         creatingCollection,
         searchQuery
       } = this.state;
-      const {collection, children} = this.props;
+      const {collection, children, readOnly} = this.props;
       return (
         <div className="EntityList">
           <div className="header">
@@ -103,10 +103,12 @@ export default withErrorHandling(
                 onClear={() => this.setState({searchQuery: ''})}
               />
             </div>
-            <CreateNewButton
-              createCollection={this.startCreatingCollection}
-              collection={this.props.collection}
-            />
+            {!readOnly && (
+              <CreateNewButton
+                createCollection={this.startCreatingCollection}
+                collection={this.props.collection}
+              />
+            )}
           </div>
           <div className="content">
             <ul>{this.renderList()}</ul>

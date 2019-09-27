@@ -10,6 +10,8 @@ import {shallow} from 'enzyme';
 import {Dropdown} from 'components';
 import {checkDeleteConflict, deleteEntity} from 'services';
 
+import CreateNewButton from './CreateNewButton';
+
 import EntityListWithErrorHandling from './EntityList';
 
 const EntityList = EntityListWithErrorHandling.WrappedComponent;
@@ -204,4 +206,10 @@ it('should hide edit/delete from context menu for report/dashboard items that do
 
   expect(node.find('.contextMenu').find({type: 'delete'})).not.toExist();
   expect(node.find('.contextMenu').find({type: 'edit'})).not.toExist();
+});
+
+it('should hide the create new button if it is in readonly mode', () => {
+  const node = shallow(<EntityList {...props} readOnly />);
+
+  expect(node.find(CreateNewButton)).not.toExist();
 });

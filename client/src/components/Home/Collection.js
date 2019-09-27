@@ -130,6 +130,7 @@ export default withErrorHandling(
           <div className="content">
             {!userTab && (
               <EntityList
+                readOnly={!collection || collection.currentUserRole === 'viewer'}
                 data={collection ? collection.data.entities : null}
                 onChange={this.loadCollection}
                 collection={collection ? collection.id : null}
