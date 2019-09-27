@@ -90,9 +90,6 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   private ObjectMapper objectMapper;
 
   @Autowired
-  private MeterRegistry meterRegistry;
-
-  @Autowired
   private List<WorkflowInstanceDependant> workflowInstanceDependantTemplates;
 
   private Random random = new Random();
@@ -106,12 +103,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   public void before() {
     super.before();
     dateTimeFormatter = DateTimeFormatter.ofPattern(operateProperties.getElasticsearch().getRolloverDateFormat()).withZone(ZoneId.systemDefault());
-    for (Meter meter: meterRegistry.getMeters()) {
-      if (meter.getId().getName().equals(Metrics.OPERATE_NAMESPACE + Metrics.COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI)
-        || meter.getId().getName().equals(Metrics.OPERATE_NAMESPACE + Metrics.COUNTER_NAME_ARCHIVED)) {
-        meterRegistry.remove(meter);
-      }
-    }
+    clearMetrics();
   }
 
   @Test

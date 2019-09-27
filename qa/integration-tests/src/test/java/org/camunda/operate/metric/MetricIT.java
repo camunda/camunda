@@ -10,6 +10,7 @@ import static org.camunda.operate.util.MetricAssert.assertThatMetricsFrom;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 
+import org.camunda.operate.Metrics;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.it.OperateTester;
@@ -21,6 +22,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 
@@ -37,12 +40,13 @@ public class MetricIT extends OperateZeebeIntegrationTest{
 
   @Autowired
   private OperateTester operateTester;
-  
+
   @Before
   public void before() {
     super.before();
     injectZeebeClientIntoOperationHandler();
     operateTester.setZeebeClient(getClient()).setMockMvcTestRule(mockMvcTestRule);
+    clearMetrics();
   }
 
   private void injectZeebeClientIntoOperationHandler() {

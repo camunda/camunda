@@ -35,6 +35,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -138,7 +140,9 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
   @Autowired
   protected OperationExecutor operationExecutor;
- 
+  @Autowired
+  private MeterRegistry meterRegistry;
+
   @Before
   public void before() {
     super.before();
@@ -289,5 +293,11 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     batchOperationDto.getQueries().add(query);
     batchOperationDto.setOperationType(operationType);
     return batchOperationDto;
+  }
+
+  protected void clearMetrics() {
+    for (Meter meter: meterRegistry.getMeters()) {
+      meterRegistry.remove(meter);
+    }
   }
 }
