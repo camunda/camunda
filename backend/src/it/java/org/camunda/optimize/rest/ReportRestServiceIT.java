@@ -610,6 +610,12 @@ public class ReportRestServiceIT {
     final CombinedReportDataDto newData = (CombinedReportDataDto) newReport.getData();
     assertThat(newData.getReportIds().isEmpty(), is(false));
     assertThat(newData.getReportIds(), not(containsInAnyOrder(report1, report2)));
+
+    newData.getReportIds()
+      .forEach(newSingleReportId -> {
+        final ReportDefinitionDto newSingleReport = getReport(newSingleReportId);
+        assertThat(newSingleReport.getCollectionId(), is(collectionId));
+      });
   }
 
   @Test
@@ -663,6 +669,12 @@ public class ReportRestServiceIT {
     final CombinedReportDataDto newData = (CombinedReportDataDto) newReport.getData();
     assertThat(newData.getReportIds().isEmpty(), is(false));
     assertThat(newData.getReportIds(), not(containsInAnyOrder(report1, report2)));
+
+    newData.getReportIds()
+      .forEach(newSingleReportId -> {
+        final ReportDefinitionDto newSingleReport = getReport(newSingleReportId);
+        assertThat(newSingleReport.getCollectionId(), is(nullValue()));
+      });
   }
 
   @Test
@@ -719,6 +731,12 @@ public class ReportRestServiceIT {
     final CombinedReportDataDto newData = (CombinedReportDataDto) newReport.getData();
     assertThat(newData.getReportIds().isEmpty(), is(false));
     assertThat(newData.getReportIds(), not(containsInAnyOrder(report1, report2)));
+
+    newData.getReportIds()
+      .forEach(newSingleReportId -> {
+        final ReportDefinitionDto newSingleReport = getReport(newSingleReportId);
+        assertThat(newSingleReport.getCollectionId(), is(newCollectionId));
+      });
   }
 
   @Test

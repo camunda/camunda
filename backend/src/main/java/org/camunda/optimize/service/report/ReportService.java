@@ -329,12 +329,12 @@ public class ReportService implements CollectionReferencingService {
       }
     } else {
       CombinedReportDefinitionDto combinedReportDefinition = (CombinedReportDefinitionDto) originalReportDefinition;
-      return copyCombinedReport(userId, newName, newCollectionId, oldCollectionId, combinedReportDefinition.getData());
+      return copyAndMoveCombinedReport(userId, newName, newCollectionId, oldCollectionId, combinedReportDefinition.getData());
     }
   }
 
-  private IdDto copyCombinedReport(final String userId, final String newName, final String newCollectionId,
-                                   final String oldCollectionId, final CombinedReportDataDto oldCombinedReportData) {
+  private IdDto copyAndMoveCombinedReport(final String userId, final String newName, final String newCollectionId,
+                                          final String oldCollectionId, final CombinedReportDataDto oldCombinedReportData) {
     final CombinedReportDataDto newCombinedReportData = new CombinedReportDataDto(
       oldCombinedReportData.getConfiguration(),
       oldCombinedReportData.getVisualization(),
@@ -344,18 +344,13 @@ public class ReportService implements CollectionReferencingService {
     if (!StringUtils.equals(newCollectionId, oldCollectionId)) {
       final List<CombinedReportItemDto> newReports = new ArrayList<>();
       oldCombinedReportData.getReports().forEach(combinedReportItemDto -> {
-        final IdDto idDto = copyReport(combinedReportItemDto.getId(), userId, null);
+        final IdDto idDto = copyAndMoveReport(combinedReportItemDto.getId(), userId, newCollectionId);
         newReports.add(combinedReportItemDto.toBuilder().id(idDto.getId()).build());
       });
       newCombinedReportData.setReports(newReports);
     }
 
-    return reportWriter.createNewCombinedReport(
-      userId,
-      newCombinedReportData,
-      newName,
-      newCollectionId
-    );
+    return reportWriter.createNewCombinedReport(userId, newCombinedReportData, newName, newCollectionId);
   }
 
   private Set<ConflictedItemDto> getConflictedItemsForDeleteReport(ReportDefinitionDto reportDefinition) {
