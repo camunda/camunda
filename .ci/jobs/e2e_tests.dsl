@@ -11,7 +11,7 @@ pipelineJob('e2e_tests') {
   }
 
   parameters {
-    stringParam('BRANCH', 'master', 'Branch to use for elasticsearch compatibility tests.')
+    stringParam('BRANCH', 'master', 'Branch to use for E2E tests.')
     stringParam('ES_VERSION', '6.2.0', 'Elasticsearch version to use.')
     stringParam('CAMBPM_VERSION', '7.11.0', 'Camunda BPM version to use.')
   }
